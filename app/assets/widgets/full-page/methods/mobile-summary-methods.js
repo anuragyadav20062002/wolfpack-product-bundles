@@ -145,8 +145,29 @@ _toggleCompactMobileSummaryTray(sheet) {
     this._populateCompactMobileSummaryTray(sheet);
     return;
   }
-  this.compactMobileSummaryTrayExpanded = !this.compactMobileSummaryTrayExpanded;
+  const nextExpanded = !this.compactMobileSummaryTrayExpanded;
+  this.compactMobileSummaryTrayExpanded = nextExpanded;
   this._populateCompactMobileSummaryTray(sheet);
+
+  sheet.classList.remove(
+    'fpb-mobile-summary-tray-animating-open',
+    'fpb-mobile-summary-tray-animating-closed'
+  );
+  sheet.classList.add(
+    nextExpanded
+      ? 'fpb-mobile-summary-tray-animating-open'
+      : 'fpb-mobile-summary-tray-animating-closed'
+  );
+
+  if (this.compactMobileSummaryTrayAnimationTimeout) {
+    clearTimeout(this.compactMobileSummaryTrayAnimationTimeout);
+  }
+  this.compactMobileSummaryTrayAnimationTimeout = setTimeout(() => {
+    sheet.classList.remove(
+      'fpb-mobile-summary-tray-animating-open',
+      'fpb-mobile-summary-tray-animating-closed'
+    );
+  }, 260);
 },
 
 _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {

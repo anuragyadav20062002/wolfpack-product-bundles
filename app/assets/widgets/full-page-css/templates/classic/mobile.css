@@ -353,6 +353,8 @@
     gap: 8px;
     background: var(--bundle-side-panel-bg, var(--bundle-full-page-bg-color));
     box-sizing: border-box;
+    animation: fpb-mobile-summary-drawer-in 280ms cubic-bezier(0.22, 1, 0.36, 1)
+      both;
   }
 
   .fpb-mobile-classic-footer .fpb-mobile-summary-bundle-items {

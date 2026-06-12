@@ -1005,6 +1005,10 @@ body:has([data-fpb-design-preset]) {
     box-shadow: none;
     background: #fff;
     z-index: 9999;
+    transition:
+      height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: height, grid-template-rows;
   }
   .fpb-mobile-bottom-sheet.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
     .side-panel-discount-message {
@@ -1329,6 +1333,10 @@ body:has([data-fpb-design-preset]) {
     transform: rotate(45deg);
     margin: 4px 7px 0 0;
     box-sizing: border-box;
+    transition:
+      transform 220ms ease,
+      margin 220ms ease;
+    transform-origin: center;
   }
   .fpb-mobile-summary-tray.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded {
     grid-template-rows: 104.96875px 302px;

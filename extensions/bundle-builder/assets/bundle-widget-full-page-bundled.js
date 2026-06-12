@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.25
+ * Version : 3.0.26
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.25';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.26';
 (function() {
   'use strict';
 
@@ -4172,10 +4172,26 @@ showThemeEditorPreview(bundleId) {
       color: white;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     ">
-      <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
-      <h3 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600;">Bundle Widget Preview</h3>
-      <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">
-        Bundle ID: <code style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace;">${bundleId}</code>
+      <div style="
+        font-size: 48px;
+        margin-bottom: 16px;
+      ">📦</div>
+      <h3 style="
+        margin: 0 0 12px 0;
+        font-size: 20px;
+        font-weight: 600;
+      ">Bundle Widget Preview</h3>
+      <p style="
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        opacity: 0.9;
+      ">
+        Bundle ID: <code style="
+          background: rgba(255, 255, 255, 0.2);
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-family: monospace;
+        ">${bundleId}</code>
       </p>
       <div style="
         margin: 20px auto 0;
@@ -4187,12 +4203,20 @@ showThemeEditorPreview(bundleId) {
         font-size: 13px;
         line-height: 1.6;
       ">
-        <div style="font-weight: 600; margin-bottom: 8px;">✅ Widget Configured Successfully</div>
-        <div style="opacity: 0.9;">
+        <div style="
+          font-weight: 600;
+          margin-bottom: 8px;
+        ">✅ Widget Configured Successfully</div>
+        <div style="
+          opacity: 0.9;
+        ">
           This widget will automatically display on <strong>bundle container products</strong>.
           <br><br>
           <strong>To see it in action:</strong>
-          <ol style="margin: 8px 0; padding-left: 20px;">
+          <ol style="
+            margin: 8px 0;
+            padding-left: 20px;
+          ">
             <li>Save your theme</li>
             <li>Navigate to a bundle product page</li>
             <li>The widget will appear with product selection steps</li>
@@ -4832,8 +4856,29 @@ _toggleCompactMobileSummaryTray(sheet) {
     this._populateCompactMobileSummaryTray(sheet);
     return;
   }
-  this.compactMobileSummaryTrayExpanded = !this.compactMobileSummaryTrayExpanded;
+  const nextExpanded = !this.compactMobileSummaryTrayExpanded;
+  this.compactMobileSummaryTrayExpanded = nextExpanded;
   this._populateCompactMobileSummaryTray(sheet);
+
+  sheet.classList.remove(
+    'fpb-mobile-summary-tray-animating-open',
+    'fpb-mobile-summary-tray-animating-closed'
+  );
+  sheet.classList.add(
+    nextExpanded
+      ? 'fpb-mobile-summary-tray-animating-open'
+      : 'fpb-mobile-summary-tray-animating-closed'
+  );
+
+  if (this.compactMobileSummaryTrayAnimationTimeout) {
+    clearTimeout(this.compactMobileSummaryTrayAnimationTimeout);
+  }
+  this.compactMobileSummaryTrayAnimationTimeout = setTimeout(() => {
+    sheet.classList.remove(
+      'fpb-mobile-summary-tray-animating-open',
+      'fpb-mobile-summary-tray-animating-closed'
+    );
+  }, 260);
 },
 
 _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
@@ -4932,8 +4977,8 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
       const emptyCard = document.createElement('div');
       emptyCard.className = 'fpb-mobile-summary-empty-product-card';
       const emptyStateIcon = emptyStateIconUrl
-        ? `<img src="${emptyStateIconUrl}" alt="" width="63" height="63" style="width:63px;height:63px;object-fit:contain">`
-        : '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:32px;line-height:1;font-weight:700;color:#a6a3a3">+</span>';
+        ? `<img class="fpb-mobile-summary-slot-icon-img" src="${emptyStateIconUrl}" alt="" width="63" height="63">`
+        : '<span class="fpb-mobile-summary-slot-plus">+</span>';
       emptyCard.innerHTML = `
         <div class="fpb-mobile-summary-empty-product-image">${emptyStateIcon}</div>
         <div class="fpb-mobile-summary-empty-product-info">
@@ -6567,17 +6612,15 @@ createPromoDiscountTierBadges(pricing, currencyInfo) {
   const rules = Array.isArray(pricing?.rules) ? pricing.rules : [];
   if (!pricing?.enabled || rules.length === 0) return '';
 
-  const rowStyle = 'position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px';
-  const badgeStyle = 'display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.88);color:#111;border:1px solid rgba(17,17,17,.18);font-size:12px;line-height:1.2;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)';
   const badges = rules
     .filter(rule => rule && (rule.conditionType === 'quantity' || rule.conditionType === 'amount'))
     .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
     .map(rule => this.formatPromoDiscountTierLabel(rule, pricing, currencyInfo))
     .filter(Boolean)
-    .map(label => `<span class="promo-discount-tier-badge" style="${badgeStyle}">${ComponentGenerator.escapeHtml(label)}</span>`);
+    .map(label => `<span class="promo-discount-tier-badge">${ComponentGenerator.escapeHtml(label)}</span>`);
 
   if (badges.length === 0) return '';
-  return `<div class="promo-discount-tier-row" style="${rowStyle}">${badges.join('')}</div>`;
+  return `<div class="promo-discount-tier-row">${badges.join('')}</div>`;
 },
 
 formatPromoDiscountTierLabel(rule, pricing, currencyInfo) {

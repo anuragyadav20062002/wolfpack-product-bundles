@@ -418,7 +418,10 @@
     padding: 5px;
     z-index: 1001;
     transform: translateY(0) !important;
-    transition: none;
+    transition:
+      height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: height, grid-template-rows;
   }
 
   .fpb-mobile-summary-count-badge {
@@ -438,6 +441,23 @@
     font-size: 14px;
     line-height: 25px;
     box-sizing: border-box;
+  }
+
+  .fpb-mobile-summary-count-badge::before {
+    transition:
+      transform 220ms ease,
+      margin 220ms ease;
+    transform-origin: center;
+  }
+
+  .fpb-mobile-summary-tray-animating-open
+    .fpb-mobile-summary-count-badge::before {
+    animation: fpb-mobile-summary-chevron-open 220ms ease both;
+  }
+
+  .fpb-mobile-summary-tray-animating-closed
+    .fpb-mobile-summary-count-badge::before {
+    animation: fpb-mobile-summary-chevron-close 220ms ease both;
   }
 
   .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
@@ -473,6 +493,8 @@
     padding: 10px 0;
     background: #ffffff;
     box-sizing: border-box;
+    animation: fpb-mobile-summary-drawer-in 280ms cubic-bezier(0.22, 1, 0.36, 1)
+      both;
   }
 
   .fpb-mobile-summary-bundle-items {
@@ -561,5 +583,50 @@
 
   .bundle-widget-full-page {
     padding-bottom: 70px;
+  }
+}
+
+@keyframes fpb-mobile-summary-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fpb-mobile-summary-chevron-open {
+  from {
+    margin: 4px 7px 0 0;
+    transform: rotate(45deg);
+  }
+
+  to {
+    margin: -3px 7px 0 0;
+    transform: rotate(225deg);
+  }
+}
+
+@keyframes fpb-mobile-summary-chevron-close {
+  from {
+    margin: -3px 7px 0 0;
+    transform: rotate(225deg);
+  }
+
+  to {
+    margin: 4px 7px 0 0;
+    transform: rotate(45deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fpb-mobile-summary-tray,
+  .fpb-mobile-summary-count-badge::before,
+  .fpb-mobile-summary-products-section {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
   }
 }

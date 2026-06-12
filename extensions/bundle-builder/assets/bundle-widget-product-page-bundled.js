@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.25
+ * Version : 3.0.26
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.25';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.26';
 (function() {
   'use strict';
 
@@ -3590,10 +3590,26 @@ showThemeEditorPreview(bundleId) {
       color: white;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     ">
-      <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
-      <h3 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600;">Bundle Widget Preview</h3>
-      <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">
-        Bundle ID: <code style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace;">${bundleId}</code>
+      <div style="
+        font-size: 48px;
+        margin-bottom: 16px;
+      ">📦</div>
+      <h3 style="
+        margin: 0 0 12px 0;
+        font-size: 20px;
+        font-weight: 600;
+      ">Bundle Widget Preview</h3>
+      <p style="
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        opacity: 0.9;
+      ">
+        Bundle ID: <code style="
+          background: rgba(255, 255, 255, 0.2);
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-family: monospace;
+        ">${bundleId}</code>
       </p>
       <div style="
         margin: 20px auto 0;
@@ -3605,12 +3621,20 @@ showThemeEditorPreview(bundleId) {
         font-size: 13px;
         line-height: 1.6;
       ">
-        <div style="font-weight: 600; margin-bottom: 8px;">✅ Widget Configured Successfully</div>
-        <div style="opacity: 0.9;">
+        <div style="
+          font-weight: 600;
+          margin-bottom: 8px;
+        ">✅ Widget Configured Successfully</div>
+        <div style="
+          opacity: 0.9;
+        ">
           This widget will automatically display on <strong>bundle container products</strong>.
           <br><br>
           <strong>To see it in action:</strong>
-          <ol style="margin: 8px 0; padding-left: 20px;">
+          <ol style="
+            margin: 8px 0;
+            padding-left: 20px;
+          ">
             <li>Save your theme</li>
             <li>Navigate to a bundle product page</li>
             <li>The widget will appear with product selection steps</li>
@@ -4707,7 +4731,8 @@ _createStepBannerImage(step) {
   const img = document.createElement('img');
   img.src = step.bannerImageUrl;
   img.alt = step.name || '';
-  img.style.cssText = 'width:100%;display:block;';
+  img.style.width = '100%';
+  img.style.display = 'block';
   wrapper.appendChild(img);
   return wrapper;
 },
@@ -5290,7 +5315,10 @@ _createRibbonSvg() {
     const img = document.createElement('img');
     img.src = rawUrl;
     img.alt = 'Gift badge';
-    img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'contain';
+    img.style.display = 'block';
     ribbon.appendChild(img);
   } else {
     ribbon.innerHTML = `<svg viewBox="0 0 24 24" fill="#e53e3e" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
