@@ -365,7 +365,7 @@
   bottom: 0;
   background: rgba(24, 24, 24, 0.8);
   z-index: 10000;
-  display: flex;
+  display: none;
   align-items: flex-end;
   justify-content: center;
   padding: 0;
@@ -391,6 +391,7 @@
 }
 
 .bundle-modal-overlay.active {
+  display: flex;
   opacity: 1;
   visibility: visible;
 }
