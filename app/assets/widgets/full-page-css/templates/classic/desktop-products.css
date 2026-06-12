@@ -208,8 +208,9 @@
 
   .fpb-preset-classic .sidebar-content .inline-quantity-controls {
     box-shadow: none;
-    background: transparent;
-    overflow: visible;
+    background: var(--bundle-inline-qty-bg, #000000);
+    border-radius: var(--fpb-card-quantity-selector-radius, 5px);
+    overflow: hidden;
   }
 
   .fpb-preset-classic .sidebar-content .inline-qty-btn {
@@ -460,23 +461,28 @@
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]
     .sidebar-content
     .inline-quantity-controls {
-    width: 100%;
-    height: var(--classic-text-button-height);
-    border-radius: 0;
+    width: var(--fpb-card-quantity-selector-width, 68px);
+    min-width: var(--fpb-card-quantity-selector-width, 68px);
+    height: var(--fpb-card-quantity-selector-height, 35px);
+    padding: 0 10px;
+    background: var(--bundle-inline-qty-bg, #000000);
+    border-radius: var(--fpb-card-quantity-selector-radius, 5px);
     display: grid;
-    grid-template-columns: var(--classic-text-button-height) minmax(0, 1fr) var(
-        --classic-text-button-height
-      );
-    gap: 8px;
+    grid-template-columns:
+      var(--fpb-card-quantity-button-width, 20px)
+      minmax(8px, 1fr)
+      var(--fpb-card-quantity-button-width, 20px);
+    gap: 0;
     align-items: center;
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]
     .sidebar-content
     .inline-qty-btn {
-    width: var(--classic-text-button-height);
-    height: var(--classic-text-button-height);
-    border-radius: var(--bundle-add-btn-radius, 5px);
+    width: var(--fpb-card-quantity-button-width, 20px);
+    height: var(--fpb-card-quantity-selector-height, 35px);
+    border-radius: 0;
+    background: transparent;
     font-size: 22px;
     line-height: 1;
     font-weight: 700;
@@ -488,8 +494,10 @@
     .inline-qty-display {
     min-width: 0;
     padding: 0;
-    font-size: 18px;
-    line-height: var(--classic-text-button-height);
+    color: var(--bundle-inline-qty-text, #ffffff);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: var(--fpb-card-quantity-selector-height, 35px);
     text-align: center;
   }
 }

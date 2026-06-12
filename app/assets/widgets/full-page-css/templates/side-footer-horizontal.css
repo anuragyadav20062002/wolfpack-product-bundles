@@ -157,17 +157,17 @@
     grid-column: 1;
     width: 100%;
     min-width: 0;
-    height: 48px;
-    min-height: 48px;
+    height: 35px;
+    min-height: 35px;
     margin: 0;
     align-self: end;
     justify-self: stretch;
   }
 
   .fpb-h .product-card.selected .inline-quantity-controls {
-    width: 100%;
-    min-width: 0;
-    height: 48px;
+    width: var(--fpb-card-quantity-selector-width, 68px);
+    min-width: var(--fpb-card-quantity-selector-width, 68px);
+    height: var(--fpb-card-quantity-selector-height, 35px);
   }
 
   .fpb-h .product-add-btn {
@@ -373,8 +373,8 @@
     grid-column: 1;
     width: 100%;
     min-width: 0;
-    height: 48px;
-    min-height: 48px;
+    height: 35px;
+    min-height: 35px;
     margin: 0;
     align-self: end;
     justify-self: stretch;
@@ -384,9 +384,9 @@
     .sidebar-content
     .product-card.selected
     .inline-quantity-controls {
-    width: 100%;
-    min-width: 0;
-    height: 48px;
+    width: var(--fpb-card-quantity-selector-width, 68px);
+    min-width: var(--fpb-card-quantity-selector-width, 68px);
+    height: var(--fpb-card-quantity-selector-height, 35px);
   }
 }
 
@@ -585,16 +585,16 @@
     grid-column: 1;
     width: 100%;
     min-width: 0;
-    height: 48px;
-    min-height: 48px;
+    height: 35px;
+    min-height: 35px;
     margin: 0;
     align-self: end;
     justify-self: stretch;
   }
   .fpb-h .product-card.selected .inline-quantity-controls {
-    width: 100%;
-    min-width: 0;
-    height: 48px;
+    width: var(--fpb-card-quantity-selector-width, 119px);
+    min-width: var(--fpb-card-quantity-selector-width, 119px);
+    height: var(--fpb-card-quantity-selector-height, 35px);
   }
 
   .fpb-h .full-page-side-panel {

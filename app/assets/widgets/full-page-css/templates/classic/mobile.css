@@ -285,32 +285,29 @@
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]
     .sidebar-content
     .inline-quantity-controls {
-    width: 100%;
-    height: var(--classic-text-button-height);
-    background: transparent;
+    width: var(--fpb-card-quantity-selector-width, 119px);
+    min-width: var(--fpb-card-quantity-selector-width, 119px);
+    height: var(--fpb-card-quantity-selector-height, 35px);
+    padding: 0 10px;
+    background: var(--bundle-inline-qty-bg, #000000);
     box-shadow: none;
-    border-radius: 0;
+    border-radius: var(--fpb-card-quantity-selector-radius, 5px);
     display: grid;
-    grid-template-columns: var(--classic-text-button-height) minmax(0, 1fr) var(
-        --classic-text-button-height
-      );
-    gap: 8px;
+    grid-template-columns:
+      var(--fpb-card-quantity-button-width, 30px)
+      minmax(8px, 1fr)
+      var(--fpb-card-quantity-button-width, 30px);
+    gap: 0;
     align-items: center;
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]
     .sidebar-content
     .inline-qty-btn {
-    width: var(--classic-text-button-height);
-    height: var(--classic-text-button-height);
-    border-radius: var(--bundle-add-btn-radius, 5px);
-    background: var(
-      --bundle-inline-qty-bg,
-      var(
-        --bundle-add-btn-color,
-        var(--bundle-global-primary-button, currentColor)
-      )
-    );
+    width: var(--fpb-card-quantity-button-width, 30px);
+    height: var(--fpb-card-quantity-selector-height, 35px);
+    border-radius: 0;
+    background: transparent;
     color: var(
       --bundle-inline-qty-text,
       var(--bundle-button-text-color, var(--bundle-full-page-bg-color))
@@ -326,15 +323,15 @@
     .sidebar-content
     .inline-qty-display {
     color: var(
-      --bundle-product-card-font-color,
-      var(--bundle-global-primary-text, currentColor)
+      --bundle-inline-qty-text,
+      var(--bundle-button-text-color, var(--bundle-full-page-bg-color))
     );
     min-width: 0;
     padding: 0;
-    font-size: 18px;
-    line-height: var(--classic-text-button-height);
+    font-size: 16px;
+    line-height: var(--fpb-card-quantity-selector-height, 35px);
     text-align: center;
-    font-weight: 700;
+    font-weight: 400;
   }
 
   .fpb-mobile-summary-tray.fpb-mobile-classic-footer.fpb-mobile-summary-tray-expanded {
