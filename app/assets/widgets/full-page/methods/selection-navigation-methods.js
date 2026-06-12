@@ -227,7 +227,11 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       selectedOverlay.textContent = '✓';
       productCard.appendChild(selectedOverlay);
     }
-    selectedOverlay.style.display = 'flex';
+    if (this.getFullPageDesignPreset?.() === 'DEFAULT') {
+      selectedOverlay.style.removeProperty('display');
+    } else {
+      selectedOverlay.style.display = 'flex';
+    }
     productCard.classList.add('selected');
 
   } else {
