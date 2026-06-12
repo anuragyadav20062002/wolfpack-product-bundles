@@ -53,6 +53,15 @@ jest.mock("../../../app/lib/tier-config-validator.server", () => ({
   validateTierConfig: jest.fn().mockResolvedValue(null),
 }));
 
+jest.mock("../../../app/lib/css-sanitizer", () => ({
+  processCss: jest.fn((css: string) => ({
+    sanitizedCss: css.replace(/<script/gi, ""),
+    isValid: true,
+    warnings: [],
+    syntaxErrors: [],
+  })),
+}));
+
 jest.mock("../../../app/services/theme-colors.server", () => ({
   syncThemeColors: jest.fn().mockResolvedValue(undefined),
 }));
@@ -294,10 +303,65 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
   });
 
+  it("sanitizes bundleLevelCss before saving", async () => {
+    const { processCss } = require("../../../app/lib/css-sanitizer");
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({
+        bundleLevelCss: "<script>alert(1)</script>#bundle-builder-app { outline: 1px solid red; }",
+      }),
+    );
+
+    expect(processCss).toHaveBeenCalledWith(
+      "<script>alert(1)</script>#bundle-builder-app { outline: 1px solid red; }",
+    );
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bundleLevelCss: ">alert(1)</script>#bundle-builder-app { outline: 1px solid red; }",
+        }),
+      }),
+    );
+  });
+
+  it("stores null for empty bundleLevelCss", async () => {
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ bundleLevelCss: "" }),
+    );
+
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bundleLevelCss: null,
+        }),
+      }),
+    );
+  });
+
   it("does NOT call metafield services when shopifyProductId is absent", async () => {
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", makeFormData());
     expect(updateBundleProductMetafields).not.toHaveBeenCalled();
     expect(updateComponentProductMetafields).not.toHaveBeenCalled();
+  });
+
+  it("passes variantSelectorEnabled=false to DB when form has false", async () => {
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ variantSelectorEnabled: "false" }),
+    );
+
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ variantSelectorEnabled: false }),
+      }),
+    );
   });
 
   it("auto-activates a draft bundle when a step has StepProduct", async () => {

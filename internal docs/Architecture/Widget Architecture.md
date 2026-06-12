@@ -32,7 +32,7 @@ The shared Bundle Product Modal is intentionally a single-image product details 
 
 ## Storefront Surfaces
 
-- Theme Editor now exposes one body app embed: `bundle-app-embed` (`Wolfpack Bundle`). It is the activation/status surface.
+- Theme Editor now exposes one body app embed: `bundle-app-embed` (`Wolfpack Bundle`). It is the activation/status surface and hydrates app-created full-page bundle page markers only when a dedicated full-page app block has not already rendered a widget container.
 - Product-page builder placement uses the `bundle-product-page` app block.
 - Product-page upsell placement uses `bundle-upsell-block` or `bundle-upsell-button`.
 - Full-page bundle public links use Shopify page URLs (`/pages/{handle}`) so the store theme and theme-extension assets own rendering. Legacy signed app-proxy links redirect to the linked Shopify page when possible.

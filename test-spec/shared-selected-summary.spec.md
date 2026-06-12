@@ -12,6 +12,7 @@ Define the shared selected-product row and slot summary primitives before templa
 | 2 | Default/included row | Product with `isDefault` | Included badge and no remove button | Preserves default product behavior |
 | 3 | Empty row | No product | Skeleton row DOM | Used by sidebars/trays |
 | 4 | Escaping | HTML in title | Escaped text | Prevents HTML injection |
+| 5 | Sidebar summary controls | Product with quantity and remove action | Quantity is rendered as a plain number and the remove action renders an icon-only control | No CSS/layout assertion |
 
 ### SelectedProductSlots
 | # | Scenario | Input | Expected Output | Notes |

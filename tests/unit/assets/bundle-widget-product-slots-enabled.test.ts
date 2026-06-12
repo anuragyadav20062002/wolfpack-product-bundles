@@ -15,4 +15,10 @@ describe("storefront Product Slots bundle setting", () => {
     expect(fullPageSource).toContain("this._shouldRenderProductSlots()");
     expect(fullPageSource).toContain("if (!this._shouldRenderProductSlots())");
   });
+
+  it("FPB uses Product Slots state for compact sidebar slot layout", () => {
+    expect(fullPageSource).toContain("getSummarySidebarEmptyStateMode()");
+    expect(fullPageSource).toContain("full-page-side-panel--inline-slots");
+    expect(fullPageSource).toContain("side-panel-products--skeleton-list");
+  });
 });

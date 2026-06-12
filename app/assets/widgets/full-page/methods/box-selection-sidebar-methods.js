@@ -34,13 +34,20 @@ getSidebarTierCtaContent(nextRule) {
   const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
   const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
   const ruleId = bundleQuantityOptions.defaultRuleId || nextRule?.id || rules[0]?.id;
+  const rule = ruleId ? rules.find(item => String(item?.id || '') === String(ruleId)) : null;
   const option = ruleId ? (optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]) : null;
   const label = typeof option?.label === 'string' && option.label.trim()
     ? option.label.trim()
     : (typeof option?.tierText === 'string' ? option.tierText.trim() : '');
-  const subtext = typeof option?.subtext === 'string' && option.subtext.trim()
+  let subtext = typeof option?.subtext === 'string' && option.subtext.trim()
     ? option.subtext.trim()
     : (typeof option?.tierSubtext === 'string' ? option.tierSubtext.trim() : '');
+  if (pricing.method === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && rule) {
+    const discountValue = Number(rule.discountValue ?? rule.discount?.value ?? 0) || 0;
+    if (discountValue > 0) {
+      subtext = `Bundle for ${CurrencyManager.convertAndFormat(discountValue, CurrencyManager.getCurrencyInfo())}`;
+    }
+  }
 
   if (!label && !subtext) return null;
   return { label, subtext };
@@ -387,8 +394,11 @@ _getDefaultTimelineIconDataUri(step) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 },
 
-_isStandardSideFooterTimeline() {
-  return this.resolveFullPageLayout() === 'footer_side' && this.getFullPageDesignPreset() === 'DEFAULT';
+_usesReferenceStepBarTimeline() {
+  return FullPagePreset.shouldUseReferenceStepBarTimeline({
+    layout: this.resolveFullPageLayout(),
+    presetId: this.getFullPageDesignPreset(),
+  });
 },
 
 buildStepTimelineEntries() {

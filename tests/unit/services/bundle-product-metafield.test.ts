@@ -436,6 +436,7 @@ describe("updateBundleProductMetafields", () => {
           subTitle: "Review your bundle",
         },
       },
+      bundleLevelCss: ".bundle-widget-product-page { outline: 1px solid blue; }",
     };
 
     await updateBundleProductMetafields(

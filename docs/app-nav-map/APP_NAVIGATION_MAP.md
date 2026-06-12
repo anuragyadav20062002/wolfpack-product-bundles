@@ -479,6 +479,7 @@ Billing Page
 | `/api/activate-pixel` | Activate UTM web pixel |
 | `/apps/product-bundles/api/proxy-health` | Proxy health check |
 | `/api/attribution` | UTM attribution analytics data |
+| `/api/web-vitals` | No-op tombstone for retired custom Admin Web Vitals beacons; returns 204 for stale POSTs |
 | `/api/widget-error` | Widget runtime error logging |
 | `/api/webhooks/pubsub` | Pub/Sub webhook handler |
 | `/api/inngest` | Inngest background job handler |

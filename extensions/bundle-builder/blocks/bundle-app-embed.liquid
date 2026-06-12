@@ -2,10 +2,9 @@
   Wolfpack Bundle — Single App Embed
   ==================================
   Global activation surface used by the app to confirm the theme is connected.
-  FPB bundle pages expose a hidden marker from the app-created Shopify page.
-  The embed hydrates that marker into the full-page widget container so the
-  renderer assets are requested without requiring merchants to manually place a
-  section block.
+  App-created full-page bundle pages also carry a hidden marker in the page
+  body. The embed hydrates that marker only when a dedicated full-page app block
+  has not already rendered the widget container.
 {% endcomment %}
 
 <script>
@@ -61,7 +60,7 @@
     function hydrateFullPageBundleMarker() {
       var marker = document.querySelector('[data-wpb-full-page-bundle][data-bundle-id]');
       if (!marker || marker.dataset.wpbHydrated === 'true') return;
-      if (document.querySelector('#bundle-builder-app')) return;
+      if (document.querySelector('#bundle-builder-app, .bundle-widget-full-page[data-bundle-id]')) return;
 
       var bundleId = marker.dataset.bundleId;
       if (!bundleId) return;

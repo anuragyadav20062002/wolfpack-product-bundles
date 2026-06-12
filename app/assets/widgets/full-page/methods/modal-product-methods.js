@@ -17,6 +17,7 @@ import { renderSharedProductCard } from '../../shared/components/product-card.js
 import { renderSelectedProductRow } from '../../shared/components/selected-product-row.js';
 import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
 import { renderStepTimelineEntry } from '../../shared/components/step-timeline.js';
+import { VariantSelectorComponent } from '../../shared/variant-selector.js';
 import {
   buildCartLineDisplayProperties,
   buildCartLineSourceProperties,

@@ -75,7 +75,7 @@ shouldRenderMultipleCategoryTimelineEntry(step) {
 
 // Create circular icon-based step timeline with connecting lines and three icon states
 createStepTimeline() {
-  if (this._isStandardSideFooterTimeline()) {
+  if (this._usesReferenceStepBarTimeline()) {
     return this.createStandardStepTimeline();
   }
 

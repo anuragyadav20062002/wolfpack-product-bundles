@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 3.0.26
+ * Version : 3.0.37
  * Built   : 2026-06-12
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.26';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.37';
 (function (window) {
   'use strict';
 
@@ -106,7 +106,7 @@ const ConditionValidator = (function () {
 
   /**
    * Normalize an operator name. The validator accepts both Wolfpack-style
-   * snake_case (`greater_than_or_equal_to`) and EB-style camelCase
+   * snake_case (`greater_than_or_equal_to`) and camelCase
    * (`greaterThanOrEqualTo`) so the same evaluator works against step rules
    * (snake_case) and category rules (camelCase, persisted from the admin
    * UI's CATEGORY_CONDITION_OPERATOR_OPTIONS).
@@ -1988,6 +1988,37 @@ function hideLoadingOverlayElement(overlay, timeoutMs = DEFAULT_HIDE_TIMEOUT_MS)
 }
 
 
+const bundleLevelCssMethods = {
+  getBundleLevelCssStyleId(bundleId) {
+    const safeId = String(bundleId || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '-');
+    return `wpb-bundle-level-css-${safeId}`;
+  },
+
+  removeExistingBundleLevelCss() {
+    document
+      .querySelectorAll('style[data-wpb-bundle-level-css]')
+      .forEach((style) => style.remove());
+  },
+
+  applyBundleLevelCss(bundle) {
+    this.removeExistingBundleLevelCss();
+
+    const css = typeof bundle?.bundleLevelCss === 'string'
+      ? bundle.bundleLevelCss.trim()
+      : '';
+
+    if (!css) return;
+
+    const style = document.createElement('style');
+    style.id = this.getBundleLevelCssStyleId(bundle.id);
+    style.type = 'text/css';
+    style.dataset.wpbBundleLevelCss = String(bundle.id || '');
+    style.textContent = css;
+    document.head.appendChild(style);
+  },
+};
+
+
 
 /**
  * VariantSelectorComponent
@@ -2326,10 +2357,19 @@ const FullPagePreset = (function () {
     container.dataset.fpbTemplate = resolveTemplateAttr(bundle);
   }
 
+  function shouldUseReferenceStepBarTimeline({ layout, presetId } = {}) {
+    const normalizedLayout = typeof layout === 'string' ? layout.trim().toLowerCase() : '';
+    if (normalizedLayout !== 'footer_side') return false;
+
+    const preset = resolvePresetAttr({ bundleDesignPresetId: presetId });
+    return ['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
+  }
+
   return {
     resolvePresetAttr,
     resolveTemplateAttr,
     markContainer,
+    shouldUseReferenceStepBarTimeline,
   };
 }());
 

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.26
+ * Version : 3.0.37
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.26';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.37';
 (function() {
   'use strict';
 
@@ -1728,6 +1728,36 @@ function hideLoadingOverlayElement(overlay, timeoutMs = DEFAULT_HIDE_TIMEOUT_MS)
   scheduler(finish, timeoutMs);
 }
 
+const bundleLevelCssMethods = {
+  getBundleLevelCssStyleId(bundleId) {
+    const safeId = String(bundleId || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '-');
+    return `wpb-bundle-level-css-${safeId}`;
+  },
+
+  removeExistingBundleLevelCss() {
+    document
+      .querySelectorAll('style[data-wpb-bundle-level-css]')
+      .forEach((style) => style.remove());
+  },
+
+  applyBundleLevelCss(bundle) {
+    this.removeExistingBundleLevelCss();
+
+    const css = typeof bundle?.bundleLevelCss === 'string'
+      ? bundle.bundleLevelCss.trim()
+      : '';
+
+    if (!css) return;
+
+    const style = document.createElement('style');
+    style.id = this.getBundleLevelCssStyleId(bundle.id);
+    style.type = 'text/css';
+    style.dataset.wpbBundleLevelCss = String(bundle.id || '');
+    style.textContent = css;
+    document.head.appendChild(style);
+  },
+};
+
 class VariantSelectorComponent {
 
   static renderHtml(product, primaryOptionName) {
@@ -2026,15 +2056,36 @@ const FullPagePreset = (function () {
     container.dataset.fpbTemplate = resolveTemplateAttr(bundle);
   }
 
+  function shouldUseReferenceStepBarTimeline({ layout, presetId } = {}) {
+    const normalizedLayout = typeof layout === 'string' ? layout.trim().toLowerCase() : '';
+    if (normalizedLayout !== 'footer_side') return false;
+
+    const preset = resolvePresetAttr({ bundleDesignPresetId: presetId });
+    return ['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
+  }
+
   return {
     resolvePresetAttr,
     resolveTemplateAttr,
     markContainer,
+    shouldUseReferenceStepBarTimeline,
   };
 }());
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FullPagePreset;
+}
+
+function shouldRenderInlineVariantSelector({
+  bundleVariantSelectorEnabled = true,
+  product,
+  displayVariantsAsIndividualProducts = false,
+} = {}) {
+  if (bundleVariantSelectorEnabled === false) return false;
+  if (!product || !Array.isArray(product.variants) || product.variants.length <= 1) return false;
+  if (displayVariantsAsIndividualProducts === true) return false;
+  if (product.parentProductId && product.variants.length === 0) return false;
+  return true;
 }
 
 /**
@@ -2228,7 +2279,8 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const quantity = Math.max(0, Number(currentQuantity || 0));
   const isSelected = quantity > 0;
   const mode = options.mode || 'grid';
-  const title = product.parentTitle || product.title || '';
+  const variantText = getVariantDisplayText(product);
+  const title = getDisplayTitle(product, variantText);
   const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
@@ -2236,6 +2288,7 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
     'bw-product-card',
     'product-card',
     `bw-product-card--mode-${escapeAttribute(mode)}`,
+    variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
     isSelected ? 'bw-product-card--selected selected' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
@@ -2247,7 +2300,10 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
         ${options.stockBadgeHtml || ''}
       </div>
       <div class="bw-product-card__body product-content-wrapper">
-        <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
+        <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+          <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
+          ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
+        </div>
         ${price ? `
           <div class="bw-product-card__price product-price-row">
             ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
@@ -2268,6 +2324,46 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
       </div>
     </div>
   `;
+}
+
+function getDisplayTitle(product, variantText) {
+  const parentTitle = typeof product.parentTitle === 'string' ? product.parentTitle.trim() : '';
+  const rawTitle = typeof product.title === 'string' ? product.title.trim() : '';
+
+  if (variantText && parentTitle) return parentTitle;
+
+  const separatorIndex = rawTitle.indexOf(' - ');
+  if (variantText && separatorIndex > 0) {
+    return rawTitle.slice(0, separatorIndex).trim();
+  }
+
+  return parentTitle || rawTitle;
+}
+
+function getVariantDisplayText(product) {
+  const explicitVariantTitle = typeof product.variantTitle === 'string' ? product.variantTitle.trim() : '';
+  if (explicitVariantTitle && explicitVariantTitle !== 'Default Title') {
+    return explicitVariantTitle;
+  }
+
+  const parentTitle = typeof product.parentTitle === 'string' ? product.parentTitle.trim() : '';
+  const rawTitle = typeof product.title === 'string' ? product.title.trim() : '';
+  const canInferExpandedVariant = Boolean(product.parentProductId || parentTitle);
+  if (!rawTitle) return '';
+
+  if (parentTitle) {
+    const parentPrefix = `${parentTitle} - `;
+    if (rawTitle.startsWith(parentPrefix)) {
+      return rawTitle.slice(parentPrefix.length).trim();
+    }
+  }
+
+  const separatorIndex = rawTitle.indexOf(' - ');
+  if (canInferExpandedVariant && separatorIndex > 0) {
+    return rawTitle.slice(separatorIndex + 3).trim();
+  }
+
+  return '';
 }
 
 function renderAddButton(selectionKey, options) {
@@ -2344,10 +2440,10 @@ function renderSelectedProductRow(product = null, options = {}) {
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
-        <span class="bw-selected-row__quantity">x${quantity}</span>
+        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">${quantity}</span>
         ${removable ? `
-          <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Remove ${escapeAttribute(title)}">
-            Remove
+          <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Delete ${escapeAttribute(title)}">
+            ${renderTrashIcon()}
           </button>
         ` : ''}
       </div>
@@ -2367,6 +2463,14 @@ function renderEmptyRow(options) {
       </div>
       <div class="bw-selected-row__action bw-selected-row__action--empty"></div>
     </div>
+  `;
+}
+
+function renderTrashIcon() {
+  return `
+    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" aria-hidden="true" focusable="false">
+      <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    </svg>
   `;
 }
 
@@ -4979,7 +5083,7 @@ _renderInpageStepProducts(stepIndex, target) {
           <span class="product-price${usesCascadeCards ? ' gbbMixCascadeProductsPrice' : ''}">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
         </div>
       ` : ''}
-      ${this.renderVariantSelector(product)}
+      ${this.renderInlineCardVariantSelector(product, currentStep)}
       ${showQuantitySelector ? `
         <div class="product-quantity-wrapper">
           <div class="product-quantity-selector">
@@ -5002,7 +5106,7 @@ _renderInpageStepProducts(stepIndex, target) {
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderVariantSelector(product),
+          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'row',
           className: `bw-ppb-cascade-product-row gbbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
@@ -5019,7 +5123,7 @@ _renderInpageStepProducts(stepIndex, target) {
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderVariantSelector(product),
+          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
@@ -5046,6 +5150,18 @@ _renderInpageStepProducts(stepIndex, target) {
   }).join('');
 
   this.attachProductEventHandlers(target, stepIndex);
+},
+
+renderInlineCardVariantSelector(product, step) {
+  if (!shouldRenderInlineVariantSelector({
+    bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
+    product,
+    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividual === true || step?.displayVariantsAsIndividualProducts === true,
+  })) {
+    return '';
+  }
+
+  return this.renderVariantSelector(product);
 },
 
 createAddMoreCard(step, stepIndex, currentCount) {
@@ -7045,6 +7161,7 @@ class BundleWidgetProductPage {
 
       this.setupDOMElements();
       this._markProductPageTemplate();
+      this.applyBundleLevelCss(this.selectedBundle);
 
       this.renderUI();
 
@@ -7144,6 +7261,7 @@ Object.assign(
   ProductPageModalMethods,
   ProductPageSelectionMethods,
   ProductPageCartMethods,
+  bundleLevelCssMethods,
   modalSlotTemplateMethods,
   cascadeTemplateMethods,
   cogniveTemplateMethods,

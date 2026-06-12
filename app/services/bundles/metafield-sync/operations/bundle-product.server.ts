@@ -436,6 +436,9 @@ export async function updateBundleProductMetafields(
     boxSelection: bundleConfiguration.boxSelection ?? null,
     bundleUpsellConfig: bundleConfiguration.bundleUpsellConfig ?? null,
     bundleTextConfig: bundleConfiguration.bundleTextConfig ?? null,
+    bundleLevelCss: typeof bundleConfiguration.bundleLevelCss === 'string' && bundleConfiguration.bundleLevelCss.trim()
+      ? bundleConfiguration.bundleLevelCss
+      : null,
     personalizationData: bundleConfiguration.personalizationData ?? null,
     discountDisplayOverride: bundleConfiguration.discountDisplayOverride ?? null,
     individualSellingPlanSelection: bundleConfiguration.individualSellingPlanSelection ?? {

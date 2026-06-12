@@ -378,14 +378,15 @@ describe('refreshFullPageBundlePageBody', () => {
   });
 });
 
-describe('full-page app embed hydration contract', () => {
-  it('exposes and calls the full-page initializer when hydrating a marker', () => {
-    const widgetSource = readFileSync(join(process.cwd(), 'app/assets/bundle-widget-full-page.js'), 'utf8');
+describe('full-page app embed marker hydration contract', () => {
+  it('hydrates marker pages without duplicating a dedicated full-page app block', () => {
     const embedSource = readFileSync(join(process.cwd(), 'extensions/bundle-builder/blocks/bundle-app-embed.liquid'), 'utf8');
 
-    expect(widgetSource).toContain('window.WolfpackFullPageBundle.init = initializeFullPageWidget');
-    expect(embedSource).toContain('function initializeHydratedFullPageBundle()');
-    expect(embedSource).toContain('window.WolfpackFullPageBundle.init()');
-    expect(embedSource).toContain('script.addEventListener');
+    expect(embedSource).toContain('window.__WOLFPACK_BUNDLE_EMBED_ACTIVE__ = true;');
+    expect(embedSource).toContain('bundle-widget-full-page-bundled.js');
+    expect(embedSource).toContain('bundle-widget-full-page.css');
+    expect(embedSource).toContain('[data-wpb-full-page-bundle][data-bundle-id]');
+    expect(embedSource).toContain("document.querySelector('#bundle-builder-app, .bundle-widget-full-page[data-bundle-id]')");
+    expect(embedSource).toContain('WolfpackFullPageBundle.init()');
   });
 });

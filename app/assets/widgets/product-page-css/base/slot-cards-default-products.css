@@ -438,9 +438,29 @@
   border: 0;
   padding: 0;
   background: transparent;
-  color: var(--bundle-side-panel-remove-color, currentColor);
+  color: var(--bundle-side-panel-remove-color, #d92d20);
   cursor: pointer;
-  font: inherit;
+  font-size: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+
+.bw-selected-row__remove svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.bw-selected-row__remove:hover {
+  color: var(--bundle-side-panel-remove-hover, #b42318);
+  background: rgba(217, 45, 32, 0.1);
 }
 
 .bw-selected-row__badges {

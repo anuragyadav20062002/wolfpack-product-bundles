@@ -108,5 +108,6 @@ export {
   clearStepSelection,
   removeSelectedProduct,
 } from './engine/bundle-actions.js';
+export { shouldRenderInlineVariantSelector } from './variant-selector-policy.js';
 // NOTE: ConditionValidator uses IIFE + module.exports for Jest compat.
 // Import it directly: import './condition-validator.js' (it sets a global in IIFE builds).
