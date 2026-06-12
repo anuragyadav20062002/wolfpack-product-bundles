@@ -22,6 +22,7 @@ const SHARED_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/shared/component-generator.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/default-loading-animation.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/loading-overlay.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/bundle-level-css-methods.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/variant-selector.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/full-page-preset.js'),
 ];

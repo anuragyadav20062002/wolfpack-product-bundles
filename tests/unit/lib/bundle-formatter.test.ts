@@ -88,6 +88,35 @@ describe("formatBundleForWidget", () => {
     expect(result.productSlotIconUrl).toBe("https://cdn.example.test/slot-icon.png");
   });
 
+  it("emits per-bundle Bundle Level CSS for FPB storefront runtime", () => {
+    const css = "#bundle-builder-app { outline: 1px solid rgb(255, 0, 204); }";
+    const result = formatBundleForWidget(makeBundle({
+      bundleType: "full_page",
+      bundleLevelCss: css,
+    }) as any);
+
+    expect(result.bundleLevelCss).toBe(css);
+  });
+
+  it("emits per-bundle Bundle Level CSS for PPB storefront runtime", () => {
+    const css = ".bundle-widget-product-page { outline: 1px solid rgb(0, 200, 255); }";
+    const result = formatBundleForWidget(makeBundle({
+      bundleType: "product_page",
+      bundleLevelCss: css,
+    }) as any);
+
+    expect(result.bundleLevelCss).toBe(css);
+  });
+
+  it("emits null bundleLevelCss when the bundle has no Bundle Level CSS", () => {
+    const result = formatBundleForWidget(makeBundle({
+      bundleType: "product_page",
+      bundleLevelCss: null,
+    }) as any);
+
+    expect(result.bundleLevelCss).toBeNull();
+  });
+
   it("converts variant price strings to integer cents", () => {
     const step = makeStep({
       StepProduct: [

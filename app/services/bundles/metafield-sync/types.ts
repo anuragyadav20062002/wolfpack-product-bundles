@@ -63,6 +63,7 @@ export interface BundleUiConfig {
   boxSelection?: Record<string, unknown> | null;
   bundleUpsellConfig?: Record<string, unknown> | null;
   bundleTextConfig?: Record<string, unknown> | null;
+  bundleLevelCss?: string | null;
   personalizationData?: Record<string, unknown> | null;
   discountDisplayOverride?: Record<string, unknown> | null;
   individualSellingPlanSelection?: Record<string, unknown>;

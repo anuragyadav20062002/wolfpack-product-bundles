@@ -32,6 +32,7 @@ export interface FormattedBundle {
   boxSelection: Record<string, unknown> | null;
   bundleUpsellConfig: Record<string, unknown> | null;
   bundleTextConfig: Record<string, unknown> | null;
+  bundleLevelCss: string | null;
   personalizationData: Record<string, unknown> | null;
   discountDisplayOverride: Record<string, unknown> | null;
   individualSellingPlanSelection: Record<string, unknown>;
@@ -266,6 +267,9 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     boxSelection: (bundle.boxSelection as Record<string, unknown> | null) ?? null,
     bundleUpsellConfig: (bundle.bundleUpsellConfig as Record<string, unknown> | null) ?? null,
     bundleTextConfig: (bundle.bundleTextConfig as Record<string, unknown> | null) ?? null,
+    bundleLevelCss: typeof bundle.bundleLevelCss === "string" && bundle.bundleLevelCss.trim()
+      ? bundle.bundleLevelCss
+      : null,
     personalizationData: (bundle.personalizationData as Record<string, unknown> | null) ?? null,
     discountDisplayOverride: (bundle.discountDisplayOverride as Record<string, unknown> | null) ?? null,
     individualSellingPlanSelection: (bundle.individualSellingPlanSelection as Record<string, unknown> | null) ?? {

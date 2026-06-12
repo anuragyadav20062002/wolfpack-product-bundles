@@ -26,6 +26,7 @@ import {
 } from "../../../../services/bundles/standard-metafields.server";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { parseConditionValue } from "../../../../lib/parse-condition-value";
+import { processCss } from "../../../../lib/css-sanitizer";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
 import {
   normaliseShopifyProductId,
@@ -602,7 +603,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleBannerMobileUrlRaw = formData.get("bundleBannerMobileUrl") as string | null;
     const bundleBannerMobileUrl = bundleBannerMobileUrlRaw || null;
     const bundleLevelCssRaw = formData.get("bundleLevelCss") as string | null;
-    const bundleLevelCss = bundleLevelCssRaw || null;
+    const bundleLevelCssInput = typeof bundleLevelCssRaw === "string" ? bundleLevelCssRaw : "";
+    const { sanitizedCss: sanitizedBundleLevelCss } = processCss(bundleLevelCssInput);
+    const bundleLevelCss = sanitizedBundleLevelCss.trim() || null;
     const productSlotsEnabled = formData.get("productSlotsEnabled") === "true";
     const maxQtyPerProductRaw = formData.get("maxQtyPerProduct") as string | null;
     const maxQtyPerProduct = maxQtyPerProductRaw ? parseInt(maxQtyPerProductRaw, 10) || null : null;
