@@ -418,6 +418,12 @@ none)}
   background:var(--bundle-skeleton-color,currentColor);
   opacity:.18}
 
+.bw-selected-slot__icon {
+  display:block;
+  width:var(--bw-selected-slot-placeholder-size,36px);
+  height:var(--bw-selected-slot-placeholder-size,36px);
+  object-fit:contain}
+
 .bw-selected-slot__label {
   min-width:0;
   font-size:var(--bw-selected-slot-label-size,12px);

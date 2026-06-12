@@ -5372,14 +5372,23 @@ export default function ConfigureBundleFlow() {
                           <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
                             You can change the default icon that renders in the empty slots
                           </p>
-                          <s-stack direction="inline" gap="small">
-                            <s-button variant="secondary" onClick={() => setShowSlotIconPicker(true)}>
-                              Upload file
-                            </s-button>
-                            <span style={{ marginTop: "4px", fontSize: "12px", color: "#6d7175" }}>
-                              {productSlotIconUrl ? getFileNameFromUrl(productSlotIconUrl) : "No file chosen"}
-                            </span>
-                          </s-stack>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, border: "1px dashed #c9cccf", borderRadius: 8, background: "#f6f6f7" }}>
+                            <div style={{ display: "grid", placeItems: "center", width: 56, height: 56, borderRadius: 6, border: "1px dashed #c9cccf", background: "#fff", overflow: "hidden" }}>
+                              {productSlotIconUrl ? (
+                                <img src={productSlotIconUrl} alt="" style={{ display: "block", width: 40, height: 40, objectFit: "contain" }} />
+                              ) : (
+                                <span aria-hidden="true" style={{ color: "#6d7175", fontSize: 28, lineHeight: 1 }}>+</span>
+                              )}
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {productSlotIconUrl ? getFileNameFromUrl(productSlotIconUrl) : "Default plus icon"}
+                              </p>
+                              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6d7175" }}>
+                                Empty slots use this image when Product Slots is enabled.
+                              </p>
+                            </div>
+                          </div>
                           {showSlotIconPicker && (
                             <FilePicker
                               autoOpen

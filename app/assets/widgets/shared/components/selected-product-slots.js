@@ -36,9 +36,14 @@ function renderSlot(slot = {}, index, options) {
   ].join(' ');
 
   if (!product) {
+    const iconUrl = slot.iconUrl || options.emptySlotIconUrl || '';
+    const emptyVisual = iconUrl
+      ? `<img class="bw-selected-slot__icon" src="${escapeAttribute(iconUrl)}" alt="" loading="lazy">`
+      : '<span class="bw-selected-slot__placeholder"></span>';
+
     return `
       <button type="button" class="${classes}" data-bw-selected-slot="true" data-slot-id="${escapeAttribute(slotId)}" data-action="select-slot">
-        <span class="bw-selected-slot__placeholder"></span>
+        ${emptyVisual}
         <span class="bw-selected-slot__label">${escapeHtml(label)}</span>
       </button>
     `;

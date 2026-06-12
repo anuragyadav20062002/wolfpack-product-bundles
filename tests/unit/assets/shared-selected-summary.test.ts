@@ -104,6 +104,16 @@ describe('shared selected product slots contract', () => {
 
     expect(html).toContain('bw-selected-slots--mode-vertical');
   });
+
+  it('renders a merchant slot icon for empty selected slots', () => {
+    const html = renderSelectedProductSlots([
+      { id: 'slot-1', label: 'Choose first item', iconUrl: 'https://cdn.shopify.com/slot-icon.png' },
+    ]);
+
+    expect(html).toContain('bw-selected-slot__icon');
+    expect(html).toContain('src="https://cdn.shopify.com/slot-icon.png"');
+    expect(html).not.toContain('bw-selected-slot__placeholder');
+  });
 });
 
 describe('shared selected summary CSS contract', () => {

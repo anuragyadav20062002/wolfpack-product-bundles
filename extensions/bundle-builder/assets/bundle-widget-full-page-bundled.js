@@ -2430,9 +2430,14 @@ function renderSlot(slot = {}, index, options) {
   ].join(' ');
 
   if (!product) {
+    const iconUrl = slot.iconUrl || options.emptySlotIconUrl || '';
+    const emptyVisual = iconUrl
+      ? `<img class="bw-selected-slot__icon" src="${escapeAttribute(iconUrl)}" alt="" loading="lazy">`
+      : '<span class="bw-selected-slot__placeholder"></span>';
+
     return `
       <button type="button" class="${classes}" data-bw-selected-slot="true" data-slot-id="${escapeAttribute(slotId)}" data-action="select-slot">
-        <span class="bw-selected-slot__placeholder"></span>
+        ${emptyVisual}
         <span class="bw-selected-slot__label">${escapeHtml(label)}</span>
       </button>
     `;
@@ -5716,6 +5721,9 @@ renderClassicSidebarSlots(allSelectedProducts = [], slotCount = 0) {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = renderSelectedProductSlots(slotData, {
     className: 'classic-sidebar-slots bw-selected-slots--classic-sidebar',
+    emptySlotIconUrl: this._shouldRenderProductSlots()
+      ? this.selectedBundle?.productSlotIconUrl || ''
+      : '',
   }).trim();
   const slots = wrapper.firstElementChild;
 
@@ -8101,12 +8109,19 @@ _renderFreeGiftSection(container) {
 },
 
 _renderStandardSidebarEmptySlots(container) {
+  const emptyStateIconUrl = this._shouldRenderProductSlots()
+    ? this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '')
+    : '';
+  const thumbnailMarkup = emptyStateIconUrl
+    ? `<img class="side-panel-product-img side-panel-product-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
+    : '<div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>';
+
   for (let i = 0; i < 2; i += 1) {
     const slot = document.createElement('div');
     slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
     slot.innerHTML = `
       <div class="side-panel-product-img-wrap">
-        <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
+        ${thumbnailMarkup}
       </div>
       <div class="side-panel-product-info side-panel-skeleton-lines">
         <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>

@@ -215,6 +215,9 @@ renderClassicSidebarSlots(allSelectedProducts = [], slotCount = 0) {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = renderSelectedProductSlots(slotData, {
     className: 'classic-sidebar-slots bw-selected-slots--classic-sidebar',
+    emptySlotIconUrl: this._shouldRenderProductSlots()
+      ? this.selectedBundle?.productSlotIconUrl || ''
+      : '',
   }).trim();
   const slots = wrapper.firstElementChild;
 

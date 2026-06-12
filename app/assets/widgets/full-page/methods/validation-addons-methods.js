@@ -400,12 +400,19 @@ _renderFreeGiftSection(container) {
 },
 
 _renderStandardSidebarEmptySlots(container) {
+  const emptyStateIconUrl = this._shouldRenderProductSlots()
+    ? this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '')
+    : '';
+  const thumbnailMarkup = emptyStateIconUrl
+    ? `<img class="side-panel-product-img side-panel-product-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
+    : '<div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>';
+
   for (let i = 0; i < 2; i += 1) {
     const slot = document.createElement('div');
     slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
     slot.innerHTML = `
       <div class="side-panel-product-img-wrap">
-        <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
+        ${thumbnailMarkup}
       </div>
       <div class="side-panel-product-info side-panel-skeleton-lines">
         <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
