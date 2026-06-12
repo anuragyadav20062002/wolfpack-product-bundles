@@ -48,6 +48,8 @@
     "node": "^18.20 || ^20.10 || >=21.0.0"
   },
   "dependencies": {
+    "@heymantle/client": "^1.1.75",
+    "@heymantle/react": "^0.0.73",
     "@prisma/adapter-pg": "^6.10.1",
     "@prisma/client": "^6.14.0",
     "@remix-run/dev": "^2.16.1",
@@ -75,11 +77,11 @@
     "react-dom": "^18.2.0",
     "react-i18next": "^17.0.7",
     "recharts": "^3.8.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.12",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
-    "vite-tsconfig-paths": "^5.0.1",
-    "sharp": "^0.34.5"
+    "vite-tsconfig-paths": "^5.0.1"
   },
   "devDependencies": {
     "@preact/signals": "^2.3.0",
