@@ -422,7 +422,10 @@ createStandardSidebarDiscountProgress({ discountMessage, combinedDiscountInfo, t
       targetValue,
       message: discountMessage || '',
     }),
-    { mode: this.config.discountProgressBarType === 'simple' ? 'bar' : 'stepped' }
+    {
+      mode: this.config.discountProgressBarType === 'simple' ? 'bar' : 'stepped',
+      messagePlacement: 'external',
+    }
   ).trim();
 
   const progress = wrapper.firstElementChild;

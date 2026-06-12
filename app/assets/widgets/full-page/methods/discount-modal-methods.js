@@ -91,6 +91,7 @@ _renderDiscountProgress(options = {}) {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = renderDiscountProgress(progressData, {
     mode: progressBarType === 'simple' ? 'bar' : 'stepped',
+    messagePlacement: placement === 'sidebar' ? 'external' : 'inline',
     className: progressBarType === 'simple'
       ? `fpb-discount-progress fpb-dp-simple${isReached ? ' reached' : ''}`
       : `fpb-discount-progress fpb-dp-step_based${isReached ? ' reached' : ''}`,

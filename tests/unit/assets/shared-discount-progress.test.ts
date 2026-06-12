@@ -72,6 +72,20 @@ describe('shared discount progress renderer', () => {
     expect(html).not.toContain('<strong>Save</strong>');
   });
 
+  it('omits inline message text when the host renders discount copy externally', () => {
+    const html = renderDiscountProgress({
+      currentValue: 1,
+      targetValue: 2,
+      progressPercent: 50,
+      message: 'Add one more item',
+      success: false,
+    }, { messagePlacement: 'external' });
+
+    expect(html).not.toContain('Add one more item');
+    expect(html).not.toContain('bw-discount-progress__message');
+    expect(html).toContain('bw-discount-progress__track');
+  });
+
   it('supports stepped mode', () => {
     const html = renderDiscountProgress({
       currentValue: 5,

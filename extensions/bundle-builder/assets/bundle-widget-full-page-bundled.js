@@ -2048,6 +2048,7 @@ function renderDiscountProgress(progressData = {}, options = {}) {
   const progressPercent = normalizePercent(progressData.progressPercent);
   const mode = options.mode || 'bar';
   const message = progressData.message || '';
+  const shouldRenderMessage = options.messagePlacement !== 'external' && message;
   const milestones = Array.isArray(progressData.milestones) ? progressData.milestones : [];
   const rootClasses = [
     'bw-discount-progress',
@@ -2058,7 +2059,7 @@ function renderDiscountProgress(progressData = {}, options = {}) {
 
   return `
     <div class="${rootClasses}" data-bw-discount-progress="true" style="--bw-discount-progress-width:${progressPercent}%">
-      ${message ? `<div class="bw-discount-progress__message ${escapeAttribute(options.messageClassName || '')}">${escapeHtml(message)}</div>` : ''}
+      ${shouldRenderMessage ? `<div class="bw-discount-progress__message ${escapeAttribute(options.messageClassName || '')}">${escapeHtml(message)}</div>` : ''}
       ${renderMilestones(milestones, options)}
       <div class="bw-discount-progress__track ${escapeAttribute(options.trackClassName || '')}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPercent}">
         <div class="bw-discount-progress__fill ${escapeAttribute(options.fillClassName || '')}"></div>
@@ -5103,7 +5104,10 @@ createStandardSidebarDiscountProgress({ discountMessage, combinedDiscountInfo, t
       targetValue,
       message: discountMessage || '',
     }),
-    { mode: this.config.discountProgressBarType === 'simple' ? 'bar' : 'stepped' }
+    {
+      mode: this.config.discountProgressBarType === 'simple' ? 'bar' : 'stepped',
+      messagePlacement: 'external',
+    }
   ).trim();
 
   const progress = wrapper.firstElementChild;
@@ -8573,6 +8577,7 @@ _renderDiscountProgress(options = {}) {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = renderDiscountProgress(progressData, {
     mode: progressBarType === 'simple' ? 'bar' : 'stepped',
+    messagePlacement: placement === 'sidebar' ? 'external' : 'inline',
     className: progressBarType === 'simple'
       ? `fpb-discount-progress fpb-dp-simple${isReached ? ' reached' : ''}`
       : `fpb-discount-progress fpb-dp-step_based${isReached ? ' reached' : ''}`,
