@@ -105,7 +105,8 @@ _createStepBannerImage(step) {
   const img = document.createElement('img');
   img.src = step.bannerImageUrl;
   img.alt = step.name || '';
-  img.style.cssText = 'width:100%;display:block;';
+  img.style.width = '100%';
+  img.style.display = 'block';
   wrapper.appendChild(img);
   return wrapper;
 },

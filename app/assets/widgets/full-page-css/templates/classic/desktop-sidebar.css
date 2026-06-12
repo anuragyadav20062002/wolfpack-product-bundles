@@ -10,7 +10,10 @@
     border: 1px solid var(--bundle-side-panel-border, currentColor);
     border-radius: var(--bundle-side-panel-btn-radius, 10px);
     background: var(--bundle-side-panel-bg, var(--bundle-full-page-bg-color));
-    color: var(--bundle-side-panel-text-color, var(--bundle-global-primary-text, currentColor));
+    color: var(
+      --bundle-side-panel-text-color,
+      var(--bundle-global-primary-text, currentColor)
+    );
     top: 80px;
     box-sizing: border-box;
     box-shadow: none;
@@ -36,14 +39,20 @@
     font-size: 20px;
     line-height: 30px;
     font-weight: 700;
-    color: var(--bundle-side-panel-title-color, var(--bundle-global-primary-text, currentColor));
+    color: var(
+      --bundle-side-panel-title-color,
+      var(--bundle-global-primary-text, currentColor)
+    );
   }
 
   .fpb-preset-classic .side-panel-subtitle {
     font-size: 14px;
     line-height: 20px;
     margin: 0;
-    color: var(--bundle-side-panel-text-color, var(--bundle-global-primary-text, currentColor));
+    color: var(
+      --bundle-side-panel-text-color,
+      var(--bundle-global-primary-text, currentColor)
+    );
   }
 
   .fpb-preset-classic .side-panel-clear-btn {
@@ -56,8 +65,22 @@
     padding: 5px 14px;
     border: 0;
     border-radius: var(--bundle-side-panel-btn-radius, 5px);
-    background: var(--bundle-side-panel-clear-bg, color-mix(in srgb, var(--bundle-side-panel-clear-color, var(--bundle-global-primary-button, currentColor)) 12%, transparent));
-    color: var(--bundle-side-panel-clear-color, var(--bundle-global-primary-button, currentColor));
+    background: var(
+      --bundle-side-panel-clear-bg,
+      color-mix(
+        in srgb,
+        var(
+            --bundle-side-panel-clear-color,
+            var(--bundle-global-primary-button, currentColor)
+          )
+          12%,
+        transparent
+      )
+    );
+    color: var(
+      --bundle-side-panel-clear-color,
+      var(--bundle-global-primary-button, currentColor)
+    );
     align-items: center;
     justify-content: center;
   }
@@ -71,10 +94,20 @@
 
   .fpb-preset-classic .fpb-box-selection-option {
     min-height: 62px;
-    border: 1px solid var(--bundle-sidebar-button-bg, var(--bundle-global-primary-button, currentColor));
+    border: 1px solid
+      var(
+        --bundle-sidebar-button-bg,
+        var(--bundle-global-primary-button, currentColor)
+      );
     border-radius: var(--bundle-side-panel-btn-radius, 6px);
-    background: var(--bundle-side-panel-product-bg, var(--bundle-full-page-bg-color));
-    color: var(--bundle-sidebar-button-bg, var(--bundle-global-primary-button, currentColor));
+    background: var(
+      --bundle-side-panel-product-bg,
+      var(--bundle-full-page-bg-color)
+    );
+    color: var(
+      --bundle-sidebar-button-bg,
+      var(--bundle-global-primary-button, currentColor)
+    );
     display: grid;
     justify-items: center;
     align-content: center;
@@ -84,8 +117,14 @@
   }
 
   .fpb-preset-classic .fpb-box-selection-option-active {
-    background: var(--bundle-sidebar-button-bg, var(--bundle-global-primary-button, currentColor));
-    color: var(--bundle-sidebar-button-text, var(--bundle-button-text-color, var(--bundle-full-page-bg-color)));
+    background: var(
+      --bundle-sidebar-button-bg,
+      var(--bundle-global-primary-button, currentColor)
+    );
+    color: var(
+      --bundle-sidebar-button-text,
+      var(--bundle-button-text-color, var(--bundle-full-page-bg-color))
+    );
   }
 
   .fpb-preset-classic .fpb-box-selection-title {
@@ -104,7 +143,10 @@
     margin: 0;
     padding: 5px 0 0;
     background: transparent;
-    color: var(--bundle-side-panel-discount-color, var(--bundle-global-primary-text, currentColor));
+    color: var(
+      --bundle-side-panel-discount-color,
+      var(--bundle-global-primary-text, currentColor)
+    );
     font-size: 16px;
     font-weight: 700;
     line-height: 28.8px;
@@ -120,18 +162,27 @@
 
   .fpb-preset-classic .fpb-dp-sidebar .fpb-dp-track {
     height: 8px;
-    background: var(--fpb-discount-track-empty, var(--bundle-side-panel-product-border, currentColor));
+    background: var(
+      --fpb-discount-track-empty,
+      var(--bundle-side-panel-product-border, currentColor)
+    );
   }
 
   .fpb-preset-classic .fpb-dp-sidebar .fpb-dp-fill {
-    background: var(--fpb-discount-track-filled, var(--bundle-global-primary-button, currentColor));
+    background: var(
+      --fpb-discount-track-filled,
+      var(--bundle-global-primary-button, currentColor)
+    );
   }
 
   .fpb-preset-classic .side-panel-item-count {
     font-size: 16px;
     font-weight: 400;
     line-height: 28.8px;
-    color: var(--bundle-side-panel-text-color, var(--bundle-global-primary-text, currentColor));
+    color: var(
+      --bundle-side-panel-text-color,
+      var(--bundle-global-primary-text, currentColor)
+    );
     margin: 18px 0 10px;
     padding: 0;
   }
@@ -149,8 +200,14 @@
     border-radius: var(--bundle-side-panel-btn-radius, 5px);
     display: grid;
     place-items: center;
-    background: var(--bundle-side-panel-product-bg, var(--bundle-full-page-bg-color));
-    color: var(--bundle-side-panel-product-title-color, var(--bundle-global-primary-text, currentColor));
+    background: var(
+      --bundle-side-panel-product-bg,
+      var(--bundle-full-page-bg-color)
+    );
+    color: var(
+      --bundle-side-panel-product-title-color,
+      var(--bundle-global-primary-text, currentColor)
+    );
   }
 
   .fpb-preset-classic .classic-sidebar-slot--filled {
@@ -187,7 +244,10 @@
     padding: 0;
     display: grid;
     place-items: center;
-    background: var(--bundle-side-panel-remove-hover, var(--bundle-side-panel-remove-color, currentColor));
+    background: var(
+      --bundle-side-panel-remove-hover,
+      var(--bundle-side-panel-remove-color, currentColor)
+    );
     color: var(--bundle-button-text-color, var(--bundle-full-page-bg-color));
     font-size: 16px;
     line-height: 1;
@@ -202,7 +262,11 @@
     gap: 12px;
     margin: 10px 0 0;
     padding: 15px 0 0;
-    border-top: 1px solid var(--bundle-side-panel-divider-color, var(--bundle-side-panel-border, currentColor));
+    border-top: 1px solid
+      var(
+        --bundle-side-panel-divider-color,
+        var(--bundle-side-panel-border, currentColor)
+      );
     align-items: end;
   }
 
@@ -220,7 +284,10 @@
     font-size: 14px;
     font-weight: 700;
     line-height: normal;
-    color: var(--bundle-side-panel-total-label-color, var(--bundle-global-primary-text, currentColor));
+    color: var(
+      --bundle-side-panel-total-label-color,
+      var(--bundle-global-primary-text, currentColor)
+    );
   }
 
   .fpb-preset-classic .side-panel-total-prices {
@@ -230,11 +297,17 @@
   }
 
   .fpb-preset-classic .side-panel-total-original {
-    color: var(--bundle-side-panel-total-original-color, var(--bundle-side-panel-text-color, currentColor));
+    color: var(
+      --bundle-side-panel-total-original-color,
+      var(--bundle-side-panel-text-color, currentColor)
+    );
   }
 
   .fpb-preset-classic .side-panel-total-final {
-    color: var(--bundle-side-panel-total-final-color, var(--bundle-global-primary-text, currentColor));
+    color: var(
+      --bundle-side-panel-total-final-color,
+      var(--bundle-global-primary-text, currentColor)
+    );
     font-size: 16px;
     font-weight: 700;
     line-height: 18px;
@@ -255,8 +328,14 @@
     padding: 8px;
     border: 0;
     border-radius: var(--bundle-side-panel-btn-radius, 5px);
-    background: var(--bundle-side-panel-next-bg, var(--bundle-global-primary-button, currentColor));
-    color: var(--bundle-side-panel-next-color, var(--bundle-button-text-color, var(--bundle-full-page-bg-color)));
+    background: var(
+      --bundle-side-panel-next-bg,
+      var(--bundle-global-primary-button, currentColor)
+    );
+    color: var(
+      --bundle-side-panel-next-color,
+      var(--bundle-button-text-color, var(--bundle-full-page-bg-color))
+    );
     font-size: 16px;
     font-weight: 700;
     line-height: 25px;
@@ -267,5 +346,4 @@
     opacity: 1;
     cursor: pointer;
   }
-
 }

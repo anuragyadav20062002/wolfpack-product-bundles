@@ -245,8 +245,8 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
       const emptyCard = document.createElement('div');
       emptyCard.className = 'fpb-mobile-summary-empty-product-card';
       const emptyStateIcon = emptyStateIconUrl
-        ? `<img src="${emptyStateIconUrl}" alt="" width="63" height="63" style="width:63px;height:63px;object-fit:contain">`
-        : '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:32px;line-height:1;font-weight:700;color:#a6a3a3">+</span>';
+        ? `<img class="fpb-mobile-summary-slot-icon-img" src="${emptyStateIconUrl}" alt="" width="63" height="63">`
+        : '<span class="fpb-mobile-summary-slot-plus">+</span>';
       emptyCard.innerHTML = `
         <div class="fpb-mobile-summary-empty-product-image">${emptyStateIcon}</div>
         <div class="fpb-mobile-summary-empty-product-info">

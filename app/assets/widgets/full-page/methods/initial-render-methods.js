@@ -188,10 +188,26 @@ showThemeEditorPreview(bundleId) {
       color: white;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     ">
-      <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
-      <h3 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600;">Bundle Widget Preview</h3>
-      <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">
-        Bundle ID: <code style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace;">${bundleId}</code>
+      <div style="
+        font-size: 48px;
+        margin-bottom: 16px;
+      ">📦</div>
+      <h3 style="
+        margin: 0 0 12px 0;
+        font-size: 20px;
+        font-weight: 600;
+      ">Bundle Widget Preview</h3>
+      <p style="
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        opacity: 0.9;
+      ">
+        Bundle ID: <code style="
+          background: rgba(255, 255, 255, 0.2);
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-family: monospace;
+        ">${bundleId}</code>
       </p>
       <div style="
         margin: 20px auto 0;
@@ -203,12 +219,20 @@ showThemeEditorPreview(bundleId) {
         font-size: 13px;
         line-height: 1.6;
       ">
-        <div style="font-weight: 600; margin-bottom: 8px;">✅ Widget Configured Successfully</div>
-        <div style="opacity: 0.9;">
+        <div style="
+          font-weight: 600;
+          margin-bottom: 8px;
+        ">✅ Widget Configured Successfully</div>
+        <div style="
+          opacity: 0.9;
+        ">
           This widget will automatically display on <strong>bundle container products</strong>.
           <br><br>
           <strong>To see it in action:</strong>
-          <ol style="margin: 8px 0; padding-left: 20px;">
+          <ol style="
+            margin: 8px 0;
+            padding-left: 20px;
+          ">
             <li>Save your theme</li>
             <li>Navigate to a bundle product page</li>
             <li>The widget will appear with product selection steps</li>

@@ -289,17 +289,15 @@ createPromoDiscountTierBadges(pricing, currencyInfo) {
   const rules = Array.isArray(pricing?.rules) ? pricing.rules : [];
   if (!pricing?.enabled || rules.length === 0) return '';
 
-  const rowStyle = 'position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px';
-  const badgeStyle = 'display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.88);color:#111;border:1px solid rgba(17,17,17,.18);font-size:12px;line-height:1.2;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)';
   const badges = rules
     .filter(rule => rule && (rule.conditionType === 'quantity' || rule.conditionType === 'amount'))
     .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
     .map(rule => this.formatPromoDiscountTierLabel(rule, pricing, currencyInfo))
     .filter(Boolean)
-    .map(label => `<span class="promo-discount-tier-badge" style="${badgeStyle}">${ComponentGenerator.escapeHtml(label)}</span>`);
+    .map(label => `<span class="promo-discount-tier-badge">${ComponentGenerator.escapeHtml(label)}</span>`);
 
   if (badges.length === 0) return '';
-  return `<div class="promo-discount-tier-row" style="${rowStyle}">${badges.join('')}</div>`;
+  return `<div class="promo-discount-tier-row">${badges.join('')}</div>`;
 },
 
 formatPromoDiscountTierLabel(rule, pricing, currencyInfo) {

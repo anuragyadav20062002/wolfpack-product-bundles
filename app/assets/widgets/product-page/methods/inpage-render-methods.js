@@ -425,7 +425,10 @@ _createRibbonSvg() {
     const img = document.createElement('img');
     img.src = rawUrl;
     img.alt = 'Gift badge';
-    img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'contain';
+    img.style.display = 'block';
     ribbon.appendChild(img);
   } else {
     ribbon.innerHTML = `<svg viewBox="0 0 24 24" fill="#e53e3e" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

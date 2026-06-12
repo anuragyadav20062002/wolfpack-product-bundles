@@ -202,7 +202,10 @@
   text-align: left;
   cursor: pointer;
   box-shadow: var(--p-shadow-100);
-  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
 }
 
 .appEmbedCard:hover {
@@ -431,7 +434,9 @@
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .resourceItem:hover,
@@ -473,7 +478,10 @@
   color: inherit;
   background: #fff;
   text-decoration: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .resourceThumbnailCard:hover {
@@ -646,5 +654,4 @@
     grid-template-columns: 1fr;
     padding: 18px;
   }
-
 }

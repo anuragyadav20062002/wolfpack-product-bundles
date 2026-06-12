@@ -1080,8 +1080,12 @@
 }
 
 @keyframes templateDrawerSlideUp {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .templateDialogHeader {
@@ -1120,7 +1124,7 @@
 }
 
 .templateDialogHandle::before {
-  content: '';
+  content: "";
   display: block;
   width: 36px;
   height: 4px;
@@ -1424,7 +1428,10 @@
   opacity: 0;
   pointer-events: none;
   text-align: center;
-  transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    visibility 140ms ease;
   visibility: hidden;
   z-index: var(--rich-help-card-layer);
 }
@@ -1495,16 +1502,34 @@
   width: 54px;
   height: 5px;
   margin: 0 -1px;
-  background: linear-gradient(90deg, var(--rich-help-accent) 0 50%, var(--rich-help-secondary) 50% 100%);
+  background: linear-gradient(
+    90deg,
+    var(--rich-help-accent) 0 50%,
+    var(--rich-help-secondary) 50% 100%
+  );
 }
 
-.richHelpVisual_stepFlow { --rich-help-accent: #4caf50; }
-.richHelpVisual_category { --rich-help-accent: #202223; }
-.richHelpVisual_quantity { --rich-help-accent: #5c6ac4; }
-.richHelpVisual_progress { --rich-help-accent: #008060; }
-.richHelpVisual_messaging { --rich-help-accent: #007ace; }
-.richHelpVisual_rules { --rich-help-accent: #bf0711; }
-.richHelpVisual_loading { --rich-help-accent: #9c6ade; }
+.richHelpVisual_stepFlow {
+  --rich-help-accent: #4caf50;
+}
+.richHelpVisual_category {
+  --rich-help-accent: #202223;
+}
+.richHelpVisual_quantity {
+  --rich-help-accent: #5c6ac4;
+}
+.richHelpVisual_progress {
+  --rich-help-accent: #008060;
+}
+.richHelpVisual_messaging {
+  --rich-help-accent: #007ace;
+}
+.richHelpVisual_rules {
+  --rich-help-accent: #bf0711;
+}
+.richHelpVisual_loading {
+  --rich-help-accent: #9c6ade;
+}
 
 .richHelpCategoryVisual {
   display: grid;
@@ -1599,7 +1624,10 @@
   font-weight: 600;
   color: #202223;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
 }
 .stepChip:hover,
 .stepChipActive:hover {
@@ -1675,7 +1703,9 @@
   font-weight: 650;
   color: #ffffff;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .addStepBtn:hover {
   border-color: #111827;
@@ -1683,16 +1713,32 @@
 }
 
 /* ── Slide Animation ──────────────────────────────────────────── */
-.slideForward  { animation: fpbSlideInRight 0.28s cubic-bezier(0.4, 0, 0.2, 1); }
-.slideBackward { animation: fpbSlideInLeft  0.28s cubic-bezier(0.4, 0, 0.2, 1); }
+.slideForward {
+  animation: fpbSlideInRight 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slideBackward {
+  animation: fpbSlideInLeft 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 @keyframes fpbSlideInRight {
-  from { transform: translateX(48px); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
+  from {
+    transform: translateX(48px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 @keyframes fpbSlideInLeft {
-  from { transform: translateX(-48px); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
+  from {
+    transform: translateX(-48px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* ── Card ─────────────────────────────────────────────────────── */
@@ -1839,7 +1885,9 @@
   border-left: none;
   border-right: none;
 }
-.tab:hover { color: #374151; }
+.tab:hover {
+  color: #374151;
+}
 
 .tabActive {
   min-width: 264px;
@@ -1971,7 +2019,9 @@
   color: #303030;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 
 .categoryChevron:hover {
@@ -2059,7 +2109,10 @@
 
 .bxyRewardGrid {
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(220px, 1.25fr);
+  grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(
+      220px,
+      1.25fr
+    );
   gap: 8px;
   align-items: end;
 }
@@ -2524,7 +2577,9 @@
   padding: 12px;
 }
 
-.addRuleWrap { display: block; }
+.addRuleWrap {
+  display: block;
+}
 
 .addSectionButton {
   display: flex;
@@ -2542,7 +2597,9 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
   margin-top: 8px;
 }
 
@@ -2578,14 +2635,34 @@
   border-bottom: 1px solid #f3f4f6;
   font-size: 14px;
 }
-.summaryItem:last-child { border-bottom: none; }
+.summaryItem:last-child {
+  border-bottom: none;
+}
 
-.summaryLabel { flex: 1; color: #374151; font-weight: 500; }
-.summaryValue { color: #6b7280; font-size: 13px; }
-.summaryValueActive { color: #1a1a1a; font-size: 13px; font-weight: 600; }
+.summaryLabel {
+  flex: 1;
+  color: #374151;
+  font-weight: 500;
+}
+.summaryValue {
+  color: #6b7280;
+  font-size: 13px;
+}
+.summaryValueActive {
+  color: #1a1a1a;
+  font-size: 13px;
+  font-weight: 600;
+}
 
-.previewButtonWrap { display: block; width: 100%; margin-top: 4px; }
-.previewButtonWrap s-button { display: block; width: 100%; }
+.previewButtonWrap {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+.previewButtonWrap s-button {
+  display: block;
+  width: 100%;
+}
 
 .loadingAnimationPreview {
   display: grid;
@@ -2619,41 +2696,113 @@
 }
 
 @media (max-width: 600px) {
-  .canvasHeader { flex-direction: column; }
-  .canvasActions { width: 100%; justify-content: flex-start; }
-  .editGrid { flex-direction: column; }
-  .leftColumn { width: 100%; min-width: 0; flex-basis: auto; }
-  .visibilityGuideGrid { grid-template-columns: 1fr; }
-  .settingsRow { align-items: flex-start; flex-direction: column; }
-  .settingsRowControl { justify-content: flex-start; min-width: 0; width: 100%; }
-  .settingsNestedFields { grid-template-columns: 1fr; }
-  .stepOverviewCard { flex-direction: column; }
-  .stepNumberTile { flex-basis: auto; }
-  .categoryFilterRow { grid-template-columns: 1fr; }
-  .stepConfigRow { grid-template-columns: 1fr; }
-  .mediaFieldGrid { grid-template-columns: 1fr; }
-  .ruleFields { flex-direction: column; }
-  .iconBox { width: 100%; }
-  .ruleRow { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; }
-  .templateVariableGrid { grid-template-columns: 1fr; }
-  .templateDialogIntro { flex-direction: column; }
-  .templateDialogGrid { grid-template-columns: 1fr; gap: 16px; }
-  .templateReadyPanel { max-width: 100%; padding: 40px 24px; }
-  .templateOptionAction { min-width: 64px; }
-  .templateDialogFooter { padding: 16px; }
-  .stepNav { padding-inline: 12px; }
+  .canvasHeader {
+    flex-direction: column;
+  }
+  .canvasActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .editGrid {
+    flex-direction: column;
+  }
+  .leftColumn {
+    width: 100%;
+    min-width: 0;
+    flex-basis: auto;
+  }
+  .visibilityGuideGrid {
+    grid-template-columns: 1fr;
+  }
+  .settingsRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .settingsRowControl {
+    justify-content: flex-start;
+    min-width: 0;
+    width: 100%;
+  }
+  .settingsNestedFields {
+    grid-template-columns: 1fr;
+  }
+  .stepOverviewCard {
+    flex-direction: column;
+  }
+  .stepNumberTile {
+    flex-basis: auto;
+  }
+  .categoryFilterRow {
+    grid-template-columns: 1fr;
+  }
+  .stepConfigRow {
+    grid-template-columns: 1fr;
+  }
+  .mediaFieldGrid {
+    grid-template-columns: 1fr;
+  }
+  .ruleFields {
+    flex-direction: column;
+  }
+  .iconBox {
+    width: 100%;
+  }
+  .ruleRow {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+  }
+  .templateVariableGrid {
+    grid-template-columns: 1fr;
+  }
+  .templateDialogIntro {
+    flex-direction: column;
+  }
+  .templateDialogGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .templateReadyPanel {
+    max-width: 100%;
+    padding: 40px 24px;
+  }
+  .templateOptionAction {
+    min-width: 64px;
+  }
+  .templateDialogFooter {
+    padding: 16px;
+  }
+  .stepNav {
+    padding-inline: 12px;
+  }
   .stepChip,
   .stepChipActive,
-  .addStepBtn { width: 100%; justify-content: flex-start; }
-  .stepChipLabel { max-width: none; }
-  .richHelpCard { left: auto; right: 0; transform: translate(0, 8px); }
+  .addStepBtn {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .stepChipLabel {
+    max-width: none;
+  }
+  .richHelpCard {
+    left: auto;
+    right: 0;
+    transform: translate(0, 8px);
+  }
   .richHelp:hover .richHelpCard,
-  .richHelp:focus-within .richHelpCard { transform: translate(0, 0); }
-  .richHelpCard::before { left: auto; right: 18px; transform: rotate(45deg); }
+  .richHelp:focus-within .richHelpCard {
+    transform: translate(0, 0);
+  }
+  .richHelpCard::before {
+    left: auto;
+    right: 18px;
+    transform: rotate(45deg);
+  }
 }
 
 @media (max-width: 480px) {
-  .addonsReferenceStepCard .addonsMediaFieldGrid { grid-template-columns: 1fr; }
+  .addonsReferenceStepCard .addonsMediaFieldGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── Take your bundle live card ── */

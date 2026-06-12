@@ -28,10 +28,13 @@
   /* ── Lines / shadows ───────────────────────────────────────────── */
   --wpb-line: rgba(21, 20, 15, 0.08);
   --wpb-line-strong: rgba(21, 20, 15, 0.18);
-  --wpb-shadow-card: 0 1px 0 rgba(21, 20, 15, 0.04), 0 4px 16px rgba(21, 20, 15, 0.06);
+  --wpb-shadow-card:
+    0 1px 0 rgba(21, 20, 15, 0.04), 0 4px 16px rgba(21, 20, 15, 0.06);
 
   /* ── Type scale ────────────────────────────────────────────────── */
-  --wpb-font-stack: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --wpb-font-stack:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue",
+    Arial, sans-serif;
   --wpb-display: 700 44px/48px var(--wpb-font-stack);
   --wpb-numeric: 600 28px/32px var(--wpb-font-stack);
   --wpb-numeric-sm: 600 20px/24px var(--wpb-font-stack);
@@ -90,9 +93,15 @@
   align-items: center;
   gap: 4px;
 }
-.wpb-delta--pos { color: var(--wpb-accent-success); }
-.wpb-delta--neg { color: var(--wpb-accent-warning); }
-.wpb-delta--neutral { color: var(--wpb-ink-500); }
+.wpb-delta--pos {
+  color: var(--wpb-accent-success);
+}
+.wpb-delta--neg {
+  color: var(--wpb-accent-warning);
+}
+.wpb-delta--neutral {
+  color: var(--wpb-ink-500);
+}
 
 .wpb-section-header {
   display: flex;
