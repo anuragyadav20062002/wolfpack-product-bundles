@@ -18,7 +18,9 @@ describe("ServerTiming.track", () => {
     expect(list).toHaveLength(1);
     expect(list[0].name).toBe("auth");
     expect(list[0].durationMs).toBeGreaterThanOrEqual(10);
-    expect(t.toHeader()).toMatch(/^auth;dur=\d+(\.\d+)?$/);
+    const header = t.toHeader();
+    expect(header.startsWith("auth;dur=")).toBe(true);
+    expect(Number.isFinite(Number(header.slice("auth;dur=".length)))).toBe(true);
   });
 
   it("records duration even when the inner fn throws and re-throws", async () => {

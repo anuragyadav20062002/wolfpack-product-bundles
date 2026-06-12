@@ -8,6 +8,14 @@
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
+import { WidgetInstallationService } from '../../../app/services/widget-installation.server';
+import { renamePageHandle } from '../../../app/services/widget-installation/widget-full-page-bundle.server';
+import { updateBundleProductMetafields } from '../../../app/services/bundles/metafield-sync.server';
+import {
+  handleValidateWidgetPlacement,
+  handleRenamePageSlug,
+} from '../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server';
+
 jest.mock('../../../app/lib/logger', () => ({
   AppLogger: {
     info: jest.fn(),
@@ -43,14 +51,6 @@ jest.mock('../../../app/services/bundles/metafield-sync.server', () => ({
   updateBundleProductMetafields: jest.fn(),
   updateComponentProductMetafields: jest.fn(),
 }));
-
-import { WidgetInstallationService } from '../../../app/services/widget-installation.server';
-import { renamePageHandle } from '../../../app/services/widget-installation/widget-full-page-bundle.server';
-import { updateBundleProductMetafields } from '../../../app/services/bundles/metafield-sync.server';
-import {
-  handleValidateWidgetPlacement,
-  handleRenamePageSlug,
-} from '../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server';
 
 const getDb = () => require('../../../app/db.server').default;
 const mockCreateFullPageBundle = WidgetInstallationService.createFullPageBundle as jest.MockedFunction<typeof WidgetInstallationService.createFullPageBundle>;

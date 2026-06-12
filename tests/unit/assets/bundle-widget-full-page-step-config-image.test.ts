@@ -1,11 +1,7 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFullPageWidgetSources } from './widget-source-helpers';
 
 describe("full-page widget Step Config image contract", () => {
-  const source = readFileSync(
-    join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-    "utf8",
-  );
+  const source = readFullPageWidgetSources();
 
   it("renders timeline icons from the runtime stepImage key", () => {
     expect(source).toContain("step.stepImage");

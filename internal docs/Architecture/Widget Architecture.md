@@ -14,7 +14,19 @@ sources: app/assets/bundle-widget-full-page.js, app/assets/bundle-widget-product
 | Full-Page Bundle (FPB) | `app/assets/bundle-widget-full-page.js` | `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js` | `bundle-full-page.liquid` |
 | Product-Page (PDP) | `app/assets/bundle-widget-product-page.js` | `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js` | `bundle-product-page.liquid` |
 
-Shared components live in `app/assets/bundle-widget-components.js` (included in both bundles).
+Shared runtime modules live under `app/assets/widgets/shared/`. The build script inlines them into both storefront bundles. `app/assets/bundle-widget-components.js` remains a source-level import barrel only; storefronts do not load it as a separate asset.
+
+Template behavior is resolved through plain config modules and method modules:
+
+- FPB configs: `app/assets/widgets/full-page/templates/{standard,classic,compact,horizontal}.config.js`
+- PPB configs: `app/assets/widgets/product-page/templates/{grid,list,horizontal-slots,vertical-slots}.config.js`
+- Registries normalize legacy EB-compatible identifiers to those target template configs.
+
+Template installer/prototype patch functions have been removed. Widget entry files compose exported template method objects in the same central `Object.assign` used for controller method modules.
+
+Source module names should describe their storefront responsibility. Avoid mechanical names such as `chunk-01.js` or `part-01.css`; those hide ownership and make stale widget code harder to spot.
+
+The shared Bundle Product Modal is intentionally a single-image product details modal: product image, name, description, variant controls when needed, quantity, and Add To Box. Do not reintroduce modal thumbnails, image counters, or carousel/gallery controls; EB's landing-page quick-view modal does not use a gallery.
 
 ---
 
@@ -24,6 +36,7 @@ Shared components live in `app/assets/bundle-widget-components.js` (included in 
 - Product-page builder placement uses the `bundle-product-page` app block.
 - Product-page upsell placement uses `bundle-upsell-block` or `bundle-upsell-button`.
 - Full-page bundle public links use Shopify page URLs (`/pages/{handle}`) so the store theme and theme-extension assets own rendering. Legacy signed app-proxy links redirect to the linked Shopify page when possible.
+- Storefront JS/CSS must be loaded from Shopify theme-extension assets with Liquid `asset_url`. App proxy routes are only for API/data responses, not widget asset hosting.
 
 ## FPB Load Strategy
 
@@ -89,7 +102,14 @@ Shopify enforces **100,000 B** on app block CSS assets.
 ```bash
 wc -c extensions/bundle-builder/assets/*.css
 ```
-If over limit, strip block comments and excess blank lines (see `CLAUDE.md` for the Python one-liner).
+
+Keep base CSS below the limit by moving template-specific rules into separate extension assets:
+- FPB base: `bundle-widget-full-page.css`
+- FPB templates: `bundle-widget-full-page-{standard,classic,compact,horizontal}.css`
+- PPB base: `bundle-widget.css`
+- PPB templates: `bundle-widget-product-page-{cascade,cognive,modal}.css`
+
+The Liquid blocks expose template CSS URL maps and the widget runtime loads the active template stylesheet. Do not solve the limit by minifying readable source into one-line CSS; remove redundant/conflicting rules or split template CSS by ownership.
 
 ---
 

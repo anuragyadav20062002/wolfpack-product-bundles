@@ -75,5 +75,38 @@ export { TemplateManager } from './template-manager.js';
 export { ComponentGenerator } from './component-generator.js';
 export { createDefaultLoadingAnimation } from './default-loading-animation.js';
 export { VariantSelectorComponent } from './variant-selector.js';
+export { renderDiscountProgress } from './components/discount-progress.js';
+export {
+  createBundleBannerElement,
+  createStepBannerImageElement,
+} from './components/bundle-banners.js';
+export { renderQuantityControl } from './components/quantity-control.js';
+export { renderSelectedProductRow } from './components/selected-product-row.js';
+export { renderSelectedProductSlots } from './components/selected-product-slots.js';
+export { renderSharedProductCard } from './components/product-card.js';
+export { renderStepTimelineEntry } from './components/step-timeline.js';
+export { createBundleState } from './engine/create-bundle-state.js';
+export {
+  getCurrentStep,
+  getDiscountProgressData,
+  getSelectedEntries,
+  getSelectedProductEntries,
+  getSelectedQuantity,
+  getSelectedSubtotalCents,
+  getTimelineEntryState,
+} from './engine/bundle-selectors.js';
+export {
+  buildCartLineDisplayProperties,
+  buildCartLineSourceProperties,
+} from './engine/cart-lines.js';
+export {
+  buildProductPageCartFormData,
+  extractBundleDetailsSourceProperties,
+} from './engine/cart-submit.js';
+export {
+  addSelectedProduct,
+  clearStepSelection,
+  removeSelectedProduct,
+} from './engine/bundle-actions.js';
 // NOTE: ConditionValidator uses IIFE + module.exports for Jest compat.
 // Import it directly: import './condition-validator.js' (it sets a global in IIFE builds).

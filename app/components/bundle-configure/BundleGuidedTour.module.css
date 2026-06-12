@@ -11,12 +11,20 @@
   z-index: 600;
   color: white;
   animation: tourEntrance 0.25s ease both;
-  transition: top 0.35s ease, left 0.35s ease;
+  transition:
+    top 0.35s ease,
+    left 0.35s ease;
 }
 
 @keyframes tourEntrance {
-  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .tourHeader {
@@ -37,7 +45,9 @@
   transition: color 0.15s;
 }
 
-.dismissTourLink:hover { color: white; }
+.dismissTourLink:hover {
+  color: white;
+}
 
 .progressTrack {
   height: 4px;
@@ -94,7 +104,9 @@
   transition: opacity 0.15s;
 }
 
-.dismissBtn:hover { opacity: 1; }
+.dismissBtn:hover {
+  opacity: 1;
+}
 
 .nextBtn {
   background: white;
@@ -108,7 +120,9 @@
   transition: opacity 0.15s;
 }
 
-.nextBtn:hover { opacity: 0.88; }
+.nextBtn:hover {
+  opacity: 0.88;
+}
 
 /* SVG spotlight backdrop — dims the page with a cutout over the target element */
 .backdrop {
@@ -122,8 +136,12 @@
 }
 
 @keyframes backdropFadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Applied to target DOM elements via classList — must be global */
@@ -135,6 +153,10 @@
 }
 
 @keyframes wpbTourPulse {
-  from { outline-color: transparent; }
-  to   { outline-color: #005bd3; }
+  from {
+    outline-color: transparent;
+  }
+  to {
+    outline-color: #005bd3;
+  }
 }

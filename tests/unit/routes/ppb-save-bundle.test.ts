@@ -593,7 +593,7 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     });
   });
 
-  it("keeps Product Slots independent from Product Page box-selection quantity validation", async () => {
+  it("ignores FPB-only Product Slots while preserving Product Page box-selection quantity validation", async () => {
     const discountData = makeDiscountData({
       discountEnabled: true,
       discountType: "percentage_off",
@@ -629,7 +629,7 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
 
     const updateCall = getDb().bundle.update.mock.calls[0][0];
-    expect(updateCall.data.productSlotsEnabled).toBe(true);
+    expect(updateCall.data).not.toHaveProperty("productSlotsEnabled");
     expect(updateCall.data.validateQuantityPerProduct).toEqual({ isEnabled: false, allowedQuantity: 1 });
     expect(updateCall.data.boxSelection).toMatchObject({
       isEnabled: true,
@@ -637,7 +637,7 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     });
   });
 
-  it("enables Product Page box-selection quantity validation even when Product Slots are disabled", async () => {
+  it("enables Product Page box-selection quantity validation without Product Slots config", async () => {
     const discountData = makeDiscountData({
       discountEnabled: true,
       discountType: "percentage_off",
@@ -673,7 +673,7 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
 
     const updateCall = getDb().bundle.update.mock.calls[0][0];
-    expect(updateCall.data.productSlotsEnabled).toBe(false);
+    expect(updateCall.data).not.toHaveProperty("productSlotsEnabled");
     expect(updateCall.data.validateQuantityPerProduct).toEqual({ isEnabled: true, allowedQuantity: 1 });
     expect(updateCall.data.boxSelection).toMatchObject({
       isEnabled: true,
@@ -1250,7 +1250,6 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
         isEnabled: true,
         allowedQuantity: 1,
       },
-      productSlotsEnabled: true,
       individualSellingPlanSelection: {
         isEnabled: false,
         showFor: "ALL_PRODUCTS",
@@ -1282,7 +1281,6 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
       bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
       defaultProductsData: JSON.stringify(directContracts.defaultProductsData),
       validateQuantityPerProduct: JSON.stringify(directContracts.validateQuantityPerProduct),
-      productSlotsEnabled: String(directContracts.productSlotsEnabled),
       individualSellingPlanSelection: JSON.stringify(directContracts.individualSellingPlanSelection),
       bundleTextConfig: JSON.stringify(directContracts.bundleTextConfig),
     });

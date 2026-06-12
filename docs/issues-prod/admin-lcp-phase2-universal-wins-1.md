@@ -87,13 +87,13 @@ Expected p75 TTFB drop on multi-route navigations: 200–500 ms.
 - [x] Vite `manualChunks` for `vendor-react` / `vendor-charts` / `vendor-shopify` / `vendor-remix`.
 - [x] `v3_singleFetch: true`.
 - [ ] Deploy (`npm run deploy:sit`).
-- [ ] Re-record `/app/dashboard` metrics via `?perf=1` overlay; append a new H2 in `docs/perf/baseline-2026-06-07.md`.
-- [ ] Verify `AdminWebVital` aggregate query shows p75 LCP shift on `agent-5sfidg3m.myshopify.com`.
+- [ ] Re-record `/app/dashboard` metrics via Chrome Performance / Lighthouse; append a new H2 in `docs/perf/baseline-2026-06-07.md`.
+- [ ] Confirm Shopify App Bridge-collected Web Vitals are available for BFS assessment; use Chrome `Server-Timing` locally for route diagnosis.
 - [ ] Phase 3 (next issue): image optimisation across the admin — AVIF/WebP for `/public/FPB-*.png`, `loading="lazy"` + `width`/`height` everywhere, drop the dashboard `new Image()` preload.
 
 ## Verification (post-deploy)
 
-1. Hard reload `/app/dashboard?perf=1` — overlay should show LCP / FCP improvements vs `baseline-2026-06-07.md`.
+1. Hard reload `/app/dashboard` and capture Chrome Performance / Lighthouse metrics against `baseline-2026-06-07.md`.
 2. Open Chrome DevTools → Network tab → filter by `chunk` — confirm three new files appear: `vendor-react-*.js`, `vendor-shopify-*.js`, `vendor-remix-*.js`. `vendor-charts-*.js` only appears on analytics navigation (it's still eager-loaded in Phase 2; lazy comes in Phase 5).
 3. Navigate Dashboard → Settings → back to Dashboard — the vendor chunks should serve from cache (200 from disk cache).
 4. Network tab → filter by font — Inter font request shows as priority "Low" (preload) and the stylesheet response shows `Stylesheet` content type but does NOT block FCP (look for a green arrow before its line in the Performance trace).

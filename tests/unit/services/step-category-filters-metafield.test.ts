@@ -5,6 +5,9 @@
  * the steps array of the bundle_ui_config metafield payload.
  */
 
+import { updateBundleProductMetafields } from "../../../app/services/bundles/metafield-sync/operations/bundle-product.server";
+import { BundleType } from "../../../app/constants/bundle";
+
 jest.mock("../../../app/lib/logger", () => ({
   AppLogger: {
     info: jest.fn(),
@@ -23,9 +26,6 @@ jest.mock("../../../app/utils/variant-lookup.server", () => ({
   }),
   batchGetFirstVariantsWithPrices: jest.fn().mockResolvedValue(new Map()),
 }));
-
-import { updateBundleProductMetafields } from "../../../app/services/bundles/metafield-sync/operations/bundle-product.server";
-import { BundleType } from "../../../app/constants/bundle";
 
 // ---------------------------------------------------------------------------
 // Helpers

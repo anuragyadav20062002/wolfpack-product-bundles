@@ -400,8 +400,6 @@ function buildBundleBaseConfig(
     discountDisplayOverride?: unknown;
     individualSellingPlanSelection?: unknown;
     validateQuantityPerProduct?: unknown;
-    productSlotsEnabled?: boolean | null;
-    productSlotIconUrl?: string | null;
     useSingleStepCategoriesAsBundleSteps?: boolean | null;
     pricing?: {
       displayOptions?: unknown;
@@ -481,8 +479,6 @@ function buildBundleBaseConfig(
       isEnabled: false,
       allowedQuantity: 1,
     },
-    productSlotsEnabled: updatedBundle.productSlotsEnabled ?? false,
-    productSlotIconUrl: updatedBundle.productSlotIconUrl ?? null,
     useSingleStepCategoriesAsBundleSteps: updatedBundle.useSingleStepCategoriesAsBundleSteps ?? false,
     renderFilledSlotsAsHorizontalStacked: resolveProductPageRenderFilledSlotsAsHorizontalStacked(
       updatedBundle.bundleDesignTemplate,
@@ -705,8 +701,6 @@ function buildSyncBundleConfiguration(
       isEnabled: false,
       allowedQuantity: 1,
     },
-    productSlotsEnabled: bundle.productSlotsEnabled ?? false,
-    productSlotIconUrl: bundle.productSlotIconUrl ?? null,
     useSingleStepCategoriesAsBundleSteps: bundle.useSingleStepCategoriesAsBundleSteps ?? false,
     renderFilledSlotsAsHorizontalStacked: resolveProductPageRenderFilledSlotsAsHorizontalStacked(
       bundle.bundleDesignTemplate,
@@ -1026,7 +1020,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       showProgressBar: discountData.displayOptions?.progressBar?.enabled === true,
       method: discountData.discountType,
     });
-    const productSlotsEnabled = formData.get("productSlotsEnabled") === "true";
     const parsedBundleSettings = parsePPBBundleSettings(formData);
     const quantityValidationEnabled = parsedBundleSettings.validateQuantityPerProduct?.isEnabled === true;
     const directBoxSelection = discountData.discountEnabled === true

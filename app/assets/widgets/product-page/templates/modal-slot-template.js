@@ -1,20 +1,28 @@
-export function installModalSlotTemplate(BundleWidgetProductPage) {
-  const prototype = BundleWidgetProductPage.prototype;
+import { resolveProductPageTemplateConfig } from './registry.js';
+import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
 
-  prototype._isProductPageModalSlotTemplate = function() {
-    return this._getProductPageTemplateType() === 'PDP_MODAL';
-  };
+export const modalSlotTemplateMethods = {
+  _isProductPageModalSlotTemplate() {
+    const config = resolveProductPageTemplateConfig({
+      templateType: this._getProductPageTemplateType(),
+      designPreset: this._getProductPageDesignPreset(),
+      renderFilledSlotsAsHorizontalStacked: this.selectedBundle?.renderFilledSlotsAsHorizontalStacked,
+    });
 
-  prototype._usesVerticalModalSlotLayout = function() {
-    if (this._getProductPageTemplateType() !== 'PDP_MODAL') return false;
+    return config?.templateType === 'PDP_MODAL';
+  },
 
-    const stackedSetting = this.selectedBundle?.renderFilledSlotsAsHorizontalStacked;
-    if (typeof stackedSetting === 'boolean') return stackedSetting !== true;
+  _usesVerticalModalSlotLayout() {
+    const config = resolveProductPageTemplateConfig({
+      templateType: this._getProductPageTemplateType(),
+      designPreset: this._getProductPageDesignPreset(),
+      renderFilledSlotsAsHorizontalStacked: this.selectedBundle?.renderFilledSlotsAsHorizontalStacked,
+    });
 
-    return this._getProductPageDesignPreset() === 'SIMPLIFIED';
-  };
+    return config?.id === 'VERTICAL_SLOTS';
+  },
 
-  prototype.syncProductPagePrimaryCtaStyle = function() {
+  syncProductPagePrimaryCtaStyle() {
     const button = this.elements?.addToCartButton;
     if (!button) return;
 
@@ -22,9 +30,9 @@ export function installModalSlotTemplate(BundleWidgetProductPage) {
       'bw-ppb-primary-cta--modal-vertical',
       this._getProductPageTemplateType() === 'PDP_MODAL' && this._usesVerticalModalSlotLayout()
     );
-  };
+  },
 
-  prototype._createModalSlotStepSection = function(step) {
+  _createModalSlotStepSection(step) {
     const section = document.createElement('div');
     const isVertical = this._usesVerticalModalSlotLayout();
 
@@ -35,15 +43,21 @@ export function installModalSlotTemplate(BundleWidgetProductPage) {
     title.textContent = step.pageTitle || step.name || '';
     section.appendChild(title);
 
-    const grid = document.createElement('div');
-    grid.className = `bw-ppb-modal-slot-grid${isVertical ? ' bw-ppb-modal-slot-grid--simplified' : ''}`;
-    section.appendChild(grid);
+    const gridHost = document.createElement('div');
+    gridHost.innerHTML = renderSelectedProductSlots([], {
+      mode: isVertical ? 'vertical' : 'horizontal',
+      className: `bw-ppb-modal-slot-grid${isVertical ? ' bw-ppb-modal-slot-grid--simplified' : ''}`,
+    }).trim();
+    const grid = gridHost.firstElementChild;
+    if (grid?.matches('[data-bw-selected-slots="true"]')) {
+      section.appendChild(grid);
+    }
 
     return section;
-  };
+  },
 
   // Create an empty state card for a step (shown when no products selected)
-  prototype.createEmptyStateCard = function(step, stepIndex, instanceIndex = 0) {
+  createEmptyStateCard(step, stepIndex, instanceIndex = 0) {
     const stepBox = document.createElement('div');
     stepBox.dataset.stepIndex = stepIndex;
 
@@ -87,21 +101,11 @@ export function installModalSlotTemplate(BundleWidgetProductPage) {
     stepBox.addEventListener('click', () => this.openModal(stepIndex));
 
     return stepBox;
-  };
+  },
 
-  prototype._appendSlotIcon = function(iconWrapper) {
-    const productSlotIconUrl = this.selectedBundle?.productSlotIconUrl || null;
-    if (productSlotIconUrl) {
-      const slotIconImg = document.createElement('img');
-      slotIconImg.src = productSlotIconUrl;
-      slotIconImg.alt = '';
-      slotIconImg.className = 'bw-slot-card__slot-icon-img';
-      iconWrapper.appendChild(slotIconImg);
-      return;
-    }
-
+  _appendSlotIcon(iconWrapper) {
     iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
     </svg>`;
-  };
-}
+  },
+};

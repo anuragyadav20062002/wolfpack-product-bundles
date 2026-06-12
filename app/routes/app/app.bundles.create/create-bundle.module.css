@@ -28,7 +28,6 @@
   color: #1a1a1a;
 }
 
-
 /* ── Step Indicator ──────────────────────────────────────── */
 
 .formContent {
@@ -93,7 +92,9 @@
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   background: #ffffff;
 }
 
@@ -170,7 +171,9 @@
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   background: #ffffff;
 }
 
@@ -197,7 +200,6 @@
   font-weight: 600;
   color: #1a1a1a;
 }
-
 
 /* ── Wizard Footer ───────────────────────────────────────── */
 

@@ -1,11 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-
+import { readProductPageWidgetSources } from './widget-source-helpers';
 describe('PPB compare-at price visibility contract', () => {
-  const widgetSource = readFileSync(
-    join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-    'utf8'
-  );
+  const widgetSource = readProductPageWidgetSources();
   const metafieldSource = readFileSync(
     join(process.cwd(), 'app/services/bundles/metafield-sync/operations/bundle-product.server.ts'),
     'utf8'

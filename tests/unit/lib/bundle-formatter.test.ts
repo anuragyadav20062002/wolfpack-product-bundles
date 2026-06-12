@@ -375,7 +375,7 @@ describe("formatBundleForWidget", () => {
     expect(result.renderFilledSlotsAsHorizontalStacked).toBe(false);
   });
 
-  it("includes direct product-page bundle settings contracts", () => {
+  it("includes direct product-page bundle settings contracts without FPB Product Slots", () => {
     const defaultProductsData = {
       isDefaultProductsEnabled: true,
       defaultProductsTitle: "Preselected audit products",
@@ -412,13 +412,15 @@ describe("formatBundleForWidget", () => {
       defaultProductsData,
       validateQuantityPerProduct,
       productSlotsEnabled: true,
+      productSlotIconUrl: "https://cdn.example.test/slot-icon.png",
       individualSellingPlanSelection,
       bundleTextConfig,
     }) as any);
 
     expect(result.defaultProductsData).toEqual(defaultProductsData);
     expect(result.validateQuantityPerProduct).toEqual(validateQuantityPerProduct);
-    expect(result.productSlotsEnabled).toBe(true);
+    expect(result.productSlotsEnabled).toBe(false);
+    expect(result.productSlotIconUrl).toBeNull();
     expect(result.individualSellingPlanSelection).toEqual(individualSellingPlanSelection);
     expect(result.bundleTextConfig).toEqual(bundleTextConfig);
   });

@@ -78,8 +78,6 @@ export function parsePPBBundleSettings(formData: FormData) {
   return {
     preSelectedProductVariantId: str(formData, "preSelectedProductVariantId"),
     maxQtyPerProduct:            int(formData, "maxQtyPerProduct"),
-    productSlotsEnabled:         bool(formData, "productSlotsEnabled", false),
-    productSlotIconUrl:          str(formData, "productSlotIconUrl"),
     variantSelectorEnabled:      bool(formData, "variantSelectorEnabled", true),
     showTextOnAddButton:         bool(formData, "showTextOnAddButton", false),
     bundleCartTitle:             str(formData, "bundleCartTitle"),

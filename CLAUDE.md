@@ -9,66 +9,14 @@
 
 ---
 
-## 📋 Issue Tracking System
+## Architecture and Gotcha Documentation
 
-**BEFORE making ANY code changes, commits, or file modifications:**
+Do not create issue files or run the feature pipeline by default. They are overhead for normal repo work.
 
-1. **Create or Update Issue File** — `docs/issues-prod/{issueName}-{number}.md`
-2. **Log Progress** — date/time, what changed, why, what's next
-3. **Reference in Commit Messages** — `[{issueName}-{number}] type: description`
-
-### Issue File Structure
-
-```markdown
-# Issue: [Title]
-**Issue ID:** {issueName}-{number}
-**Status:** [In Progress | Completed | Blocked]
-**Priority:** [🔴 High | 🟡 Medium | 🟢 Low]
-**Created:** YYYY-MM-DD
-**Last Updated:** YYYY-MM-DD HH:MM
-
-## Overview
-## Progress Log
-### YYYY-MM-DD HH:MM - [Action]
-- What was done / Files changed / Next steps
-
-## Related Documentation
-## Phases Checklist
-- [ ] Phase 1
-```
-
-### Commit Format
-
-```
-[issue-id] type: description
-
-# Types: feat | fix | refactor | docs | style | chore | test
-# Example: [full-page-design-improvements-1] fix: Product cards maintain fixed dimensions
-```
-
-### Workflow
-
-1. **Before work:** Create/open issue file, add Progress Log entry for what you're about to do.
-2. **Before commit:** Update issue file with completed work, update "Last Updated" timestamp.
-3. **Commit:** Stage issue file alongside code changes. Use `[issue-id] type: msg` format.
-
----
-
-## 🚀 Feature Pipeline — Mandatory for New Features
-
-**BEFORE writing any code for a new feature**, invoke the `feature-pipeline` skill.
-
-Stages (must run in order):
-1. **BR** — Research + Business Requirement
-2. **PO** — Product Owner Requirements + acceptance criteria
-3. **Architect** — ADR + file-by-file plan
-4. **SDE** — Implementation
-
-**SDE must NOT begin until BR → PO → Architect are complete.**
-
-Skip pipeline for: bug fixes, debugging, single-file refactors, typos, config values, docs-only.
-
-**Decision rule:** "fix/debug/broken" → skip. "add/build/implement/I want/we need" → pipeline mandatory.
+Document only durable knowledge:
+- **Core architecture changes** — update the relevant note in `internal docs/` and link it from `internal docs/index.md`.
+- **Gotcha moments** — document non-obvious debugging findings, Shopify/API behavior, build constraints, deployment quirks, or data-model facts that will matter again.
+- **Routine edits** — do not create process docs for ordinary implementation progress, cosmetic changes, or one-off fixes.
 
 ---
 
@@ -129,7 +77,7 @@ Create `test-spec/{module-name}.spec.md` alongside every TDD session.
 
 ```markdown
 # Test Spec: {Module / Feature Name}
-**Spec ID:** {module-name}  **Issue:** [{issue-id}]  **Created:** YYYY-MM-DD
+**Spec ID:** {module-name}  **Created:** YYYY-MM-DD
 
 ## Purpose
 ## Test Cases
@@ -139,27 +87,20 @@ Create `test-spec/{module-name}.spec.md` alongside every TDD session.
 - [ ] All listed test cases pass
 ```
 
-Reference in commit: `[issue-id] test: add unit tests for {module}\nSpec: test-spec/{module-name}.spec.md`
-
 ---
 
 ## 🚫 Strict Rules
 
-1. ❌ NO commits without updating issue file first
-2. ❌ NO commits without proper `[issue-id]` prefix
-3. ✅ ALL changes must be logged in progress log
-4. ✅ Update issue file BEFORE and AFTER each commit
-5. ❌ NO code for new features without completing feature-pipeline first
-6. ❌ NEVER run `shopify app deploy` autonomously — see Shopify Deploy Rule
-7. ✅ Write tests BEFORE implementation for all new code
-8. ✅ Run linter on modified files BEFORE every commit — see Lint Before Commit
-9. ❌ NO backwards-compatibility shims or migration hacks — see No Backwards Compatibility Rule
-10. ✅ CREATE a test spec file in `test-spec/` for every TDD session
-11. ❌ NO hardcoded fallback UI copy strings — never fabricate merchant-facing marketing copy
-12. ❌ NO unnecessary API fallback chains — use the single correct source per official docs
-13. ❌ NEVER commit Chrome DevTools investigation screenshots
-14. ❌ NO competitor references in code (`eb`, `skai`, `skailama`, `easybundles`) — docs only
-15. ❌ NO unit tests that assert on CSS, class names, or element placement — see No UI Styling or Placement Unit Tests rule
+1. ❌ NEVER run `shopify app deploy` autonomously — see Shopify Deploy Rule
+2. ✅ Write tests BEFORE implementation for all new code
+3. ✅ Run linter on modified files BEFORE every commit — see Lint Before Commit
+4. ❌ NO backwards-compatibility shims or migration hacks — see No Backwards Compatibility Rule
+5. ✅ CREATE a test spec file in `test-spec/` for every TDD session
+6. ❌ NO hardcoded fallback UI copy strings — never fabricate merchant-facing marketing copy
+7. ❌ NO unnecessary API fallback chains — use the single correct source per official docs
+8. ❌ NEVER commit Chrome DevTools investigation screenshots
+9. ❌ NO competitor references in code (`eb`, `skai`, `skailama`, `easybundles`) — docs only
+10. ❌ NO unit tests that assert on CSS, class names, or element placement — see No UI Styling or Placement Unit Tests rule
 
 ---
 
@@ -234,6 +175,20 @@ Let me know once it completes.
 ```
 
 The npm scripts run `scripts/generate-extension-templates.js` first — never call `shopify app deploy` directly.
+
+---
+
+## 🧪 Shopify Dev Environment Rule
+
+**NEVER run `npm run dev` autonomously.** The development server will always be provided by the user.
+
+If asked or prompted about starting the dev environment, provide instructions only. Tell the user to start the SIT app config explicitly with the SIT TOML, not the standard PROD config:
+
+```bash
+shopify app dev --config shopify.app.wolfpack-product-bundles-sit.toml
+```
+
+Do not run dev against the standard PROD `shopify.web.toml` / production Shopify app configuration.
 
 ---
 
@@ -429,7 +384,7 @@ PR Impact Analysis section:
 
 After modifying code files, run:
 ```bash
-python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"
+npm run graphify:rebuild
 ```
 
 ---

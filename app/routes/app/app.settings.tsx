@@ -1247,6 +1247,7 @@ function ControlsField({
   const isChecked = value === "Checked";
   const inputId = `settings-${field.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   const hasInlineAction = field.description === "Edit Language" || field.description === "Know More";
+  const displayValue = value.trim() ? value : field.value ?? "";
 
   if (field.kind === "toggle") {
     return (
@@ -1365,6 +1366,19 @@ function ControlsField({
       <div className={styles.ebFieldStack}>
         <span>{field.label}</span>
         <img className={styles.ebPreviewImage} src={value || field.value} alt={field.label} />
+        {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
+      </div>
+    );
+  }
+
+  if (field.kind === "loadingSpinner") {
+    return (
+      <div className={styles.ebFieldStack}>
+        <span>{field.label}</span>
+        <div className={styles.ebLoadingSpinnerPreview} role="img" aria-label={`${field.label} default spinner preview`}>
+          <span className={styles.ebLoadingSpinner} aria-hidden="true" />
+        </div>
+        <span className={styles.ebFieldNote}>{displayValue ? displayValue : "Default spinner"}</span>
         {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
       </div>
     );

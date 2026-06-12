@@ -174,12 +174,16 @@
   cursor: pointer;
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.35s ease, box-shadow 0.35s ease;
+  transition:
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 .demoPricingLink:hover {
   border-color: #f4c430;
-  box-shadow: 0 0 16px rgba(244, 196, 48, 0.5), 0 0 32px rgba(244, 196, 48, 0.25);
+  box-shadow:
+    0 0 16px rgba(244, 196, 48, 0.5),
+    0 0 32px rgba(244, 196, 48, 0.25);
 }
 
 .demoPricingImg {
