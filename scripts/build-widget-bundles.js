@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
-const WIDGET_VERSION = '3.0.32';
+const WIDGET_VERSION = '3.0.33';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
@@ -29,6 +29,7 @@ const SHARED_MODULES = [
 
 const WIDGET_SHARED_MODULES = [
   ...SHARED_MODULES,
+  join(ROOT_DIR, 'app/assets/widgets/shared/variant-selector-policy.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/components/discount-progress.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/components/bundle-banners.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/components/quantity-control.js'),

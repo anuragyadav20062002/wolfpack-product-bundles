@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.32
+ * Version : 3.0.33
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.32';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.33';
 (function() {
   'use strict';
 
@@ -2074,6 +2074,18 @@ const FullPagePreset = (function () {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FullPagePreset;
+}
+
+function shouldRenderInlineVariantSelector({
+  bundleVariantSelectorEnabled = true,
+  product,
+  displayVariantsAsIndividualProducts = false,
+} = {}) {
+  if (bundleVariantSelectorEnabled === false) return false;
+  if (!product || !Array.isArray(product.variants) || product.variants.length <= 1) return false;
+  if (displayVariantsAsIndividualProducts === true) return false;
+  if (product.parentProductId && product.variants.length === 0) return false;
+  return true;
 }
 
 /**
