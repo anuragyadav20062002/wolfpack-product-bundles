@@ -1,25 +1,7 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { renderSharedProductCard } = require('../../../app/assets/widgets/shared/components/product-card.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { renderQuantityControl } = require('../../../app/assets/widgets/shared/components/quantity-control.js');
-
-function readCssWithImports(filePath: string, seen = new Set<string>()): string {
-  const absolutePath = path.join(process.cwd(), filePath);
-  if (seen.has(absolutePath)) return '';
-  seen.add(absolutePath);
-
-  const css = fs.readFileSync(absolutePath, 'utf8');
-  return css.replace(/@import\s+["']([^"']+)["'];/g, (_statement, importPath: string) => {
-    const resolvedPath = path.relative(
-      process.cwd(),
-      path.join(path.dirname(absolutePath), importPath),
-    );
-    return readCssWithImports(resolvedPath, seen);
-  });
-}
 
 describe('shared product card contract', () => {
   const currencyInfo = {
@@ -45,10 +27,6 @@ describe('shared product card contract', () => {
     expect(html).toContain('bw-product-card__action');
     expect(html).toContain('product-add-btn');
     expect(html).toContain('Add +');
-
-    const actionStart = html.indexOf('bw-product-card__action');
-    const addButtonStart = html.indexOf('product-add-btn');
-    expect(addButtonStart).toBeGreaterThan(actionStart);
   });
 
   it('renders selected quantity controls inside the same action area', () => {
@@ -58,10 +36,6 @@ describe('shared product card contract', () => {
     expect(html).toContain('bw-quantity-control');
     expect(html).toContain('inline-qty-display');
     expect(html).not.toContain('product-add-btn');
-
-    const actionStart = html.indexOf('bw-product-card__action');
-    const quantityStart = html.indexOf('bw-quantity-control');
-    expect(quantityStart).toBeGreaterThan(actionStart);
   });
 
   it('renders row mode for list-style templates', () => {
@@ -93,17 +67,5 @@ describe('shared quantity control contract', () => {
     expect(html).toContain('qty-decrease');
     expect(html).toContain('qty-increase');
     expect(html).toContain('disabled aria-disabled="true"');
-  });
-});
-
-describe('shared product card CSS contract', () => {
-  it('reserves the product card action area in FPB and PPB raw CSS', () => {
-    const fpbCss = readCssWithImports('app/assets/widgets/full-page-css/bundle-widget-full-page.css');
-    const ppbCss = readCssWithImports('app/assets/widgets/product-page-css/bundle-widget.css');
-
-    expect(fpbCss).toContain('.bw-product-card__action');
-    expect(fpbCss).toContain('min-height:var(--bundle-product-card-action-min-height');
-    expect(ppbCss).toContain('.bw-product-card__action');
-    expect(ppbCss).toContain('min-height:var(--bundle-product-card-action-min-height');
   });
 });

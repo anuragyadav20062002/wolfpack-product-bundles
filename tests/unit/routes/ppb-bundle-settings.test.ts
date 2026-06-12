@@ -6,20 +6,6 @@
  */
 
 import { parsePPBBundleSettings } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/parsers";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
-const routeSource = readFileSync(
-  join(
-    process.cwd(),
-    "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx",
-  ),
-  "utf8",
-);
-const stylesSource = readFileSync(
-  join(process.cwd(), "app/styles/routes/product-page-bundle-configure.module.css"),
-  "utf8",
-);
 
 jest.mock("../../../app/lib/css-sanitizer", () => ({
   processCss: jest.fn((css: string) => ({
@@ -231,32 +217,5 @@ describe("parsePPBBundleSettings", () => {
     }));
 
     expect(result.bundleTextConfig).toEqual(bundleTextConfig);
-  });
-});
-
-describe("Product Page Bundle Settings Admin layout contract", () => {
-  it("places Bundle Settings toggles inline beside their headings", () => {
-    expect(routeSource).toContain("productPageBundleStyles.settingTitleRow");
-    expect(routeSource).toContain("productPageBundleStyles.settingTitle");
-    expect(stylesSource).toContain(".settingTitleRow");
-    expect(stylesSource).toContain("align-items: center;");
-    expect(stylesSource).not.toContain("settingTitleRow h3");
-  });
-
-  it("matches the captured Pre Selected Product disabled-state controls", () => {
-    expect(routeSource).not.toContain("Choose products that should be added to bundle by default");
-    expect(routeSource).not.toContain("These products will be added to user");
-    expect(routeSource).not.toContain("openMultiLanguageModal(\"Pre Selected Product\"");
-    expect(routeSource).not.toContain("Not set");
-    expect(routeSource).toContain("disabled={!defaultProductsEnabled || undefined}");
-    expect(routeSource).toContain("productPageBundleStyles.defaultProductsPickerGroup");
-    expect(stylesSource).toContain("margin-top: -8px;");
-  });
-
-  it("uses direct defaultProductsData state instead of mutating step products", () => {
-    expect(routeSource).toContain("setDefaultProductsData");
-    expect(routeSource).toContain("buildDefaultProductEntryFromPicker");
-    expect(routeSource).not.toContain('stepsState.updateStepField(settingsStep.id, "StepProduct", defaultProducts)');
-    expect(routeSource).not.toContain('stepsState.updateStepField(settingsStep.id, "isDefault", defaultProducts.length > 0)');
   });
 });

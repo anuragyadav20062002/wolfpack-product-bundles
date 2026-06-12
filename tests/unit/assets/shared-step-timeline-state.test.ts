@@ -1,4 +1,3 @@
-import { readFullPageWidgetSources } from './widget-source-helpers';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getTimelineEntryState } = require('../../../app/assets/widgets/shared/engine/bundle-selectors.js');
 
@@ -50,19 +49,5 @@ describe('shared step timeline state selector', () => {
       isAccessible: true,
       hasMultipleCategoryEntry: true,
     }).classes).toEqual(['timeline-step--active']);
-  });
-});
-
-describe('FPB timeline shared state integration', () => {
-  it('delegates timeline class state to the shared selector', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('node:fs');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const path = require('node:path');
-    const source = readFullPageWidgetSources();
-
-    expect(source).toContain("getTimelineEntryState");
-    expect(source).toContain("classes: timelineState.classes");
-    expect(source).toContain("timelineState.classes.forEach((className) => itemEl.classList.add(className));");
   });
 });

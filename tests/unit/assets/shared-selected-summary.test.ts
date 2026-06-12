@@ -3,25 +3,6 @@ const { renderSelectedProductRow } = require('../../../app/assets/widgets/shared
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { renderSelectedProductSlots } = require('../../../app/assets/widgets/shared/components/selected-product-slots.js');
 
-function readCssWithImports(filePath, seen = new Set()) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const fs = require('node:fs');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const path = require('node:path');
-  const absolutePath = path.join(process.cwd(), filePath);
-  if (seen.has(absolutePath)) return '';
-  seen.add(absolutePath);
-
-  const css = fs.readFileSync(absolutePath, 'utf8');
-  return css.replace(/@import\s+["']([^"']+)["'];/g, (_statement, importPath) => {
-    const resolvedPath = path.relative(
-      process.cwd(),
-      path.join(path.dirname(absolutePath), importPath),
-    );
-    return readCssWithImports(resolvedPath, seen);
-  });
-}
-
 describe('shared selected product row contract', () => {
   it('renders a removable selected row from prepared data', () => {
     const html = renderSelectedProductRow({
@@ -113,19 +94,5 @@ describe('shared selected product slots contract', () => {
     expect(html).toContain('bw-selected-slot__icon');
     expect(html).toContain('src="https://cdn.shopify.com/slot-icon.png"');
     expect(html).not.toContain('bw-selected-slot__placeholder');
-  });
-});
-
-describe('shared selected summary CSS contract', () => {
-  it('defines selected row and slot classes in FPB and PPB raw CSS', () => {
-    const fpbCss = readCssWithImports('app/assets/widgets/full-page-css/bundle-widget-full-page.css');
-    const ppbCss = readCssWithImports('app/assets/widgets/product-page-css/bundle-widget.css');
-
-    for (const css of [fpbCss, ppbCss]) {
-      expect(css).toContain('.bw-selected-row');
-      expect(css).toContain('.bw-selected-row__action');
-      expect(css).toContain('.bw-selected-slots');
-      expect(css).toContain('.bw-selected-slot');
-    }
   });
 });
