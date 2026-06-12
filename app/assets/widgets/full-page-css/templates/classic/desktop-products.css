@@ -186,8 +186,7 @@
   }
 
   .fpb-preset-classic .sidebar-content .product-variant-badge,
-  .fpb-preset-classic .sidebar-content .product-spacer,
-  .fpb-preset-classic .sidebar-content .product-quantity-wrapper {
+  .fpb-preset-classic .sidebar-content .product-spacer {
     display: none !important;
   }
 

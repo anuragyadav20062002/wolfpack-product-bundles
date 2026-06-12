@@ -398,10 +398,7 @@ body:has([data-fpb-design-preset]) {
     .product-variant-badge,
   .layout-sidebar[data-fpb-design-preset="DEFAULT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
-    .product-spacer,
-  .layout-sidebar[data-fpb-design-preset="DEFAULT"][data-fpb-card-cta-mode="icon"]
-    .sidebar-content
-    .product-quantity-wrapper {
+    .product-spacer {
     display: none;
   }
   .layout-sidebar[data-fpb-design-preset="DEFAULT"][data-fpb-card-cta-mode="icon"]
@@ -614,10 +611,7 @@ body:has([data-fpb-design-preset]) {
     .product-variant-badge,
   .layout-sidebar[data-fpb-design-preset="DEFAULT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
-    .product-spacer,
-  .layout-sidebar[data-fpb-design-preset="DEFAULT"][data-fpb-card-cta-mode="icon"]
-    .sidebar-content
-    .product-quantity-wrapper {
+    .product-spacer {
     display: none;
   }
   .layout-sidebar[data-fpb-design-preset="DEFAULT"][data-fpb-card-cta-mode="icon"]
