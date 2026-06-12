@@ -37,10 +37,10 @@
   flex-shrink: 0;
   box-sizing: border-box;
   background: var(
-    --bundle-add-btn-color,
-    var(--bundle-global-primary-button, #111111)
+    --bundle-button-bg,
+    var(--bundle-add-btn-color, var(--bundle-global-primary-button, #111111))
   );
-  color: var(--bundle-button-text-color, #ffffff);
+  color: var(--bundle-button-text-color, var(--bundle-global-button-text, #ffffff));
   border: none;
   border-radius: var(--bundle-add-btn-radius, 99px);
   padding: 0;
@@ -172,9 +172,9 @@
 }
 
 .vs-btn--selected {
-  border-color: var(--bundle-global-primary-button, #111111);
-  background: var(--bundle-global-primary-button, #111111);
-  color: #fff;
+  border-color: var(--bundle-button-bg, var(--bundle-global-primary-button, #111111));
+  background: var(--bundle-button-bg, var(--bundle-global-primary-button, #111111));
+  color: var(--bundle-button-text-color, var(--bundle-global-button-text, #ffffff));
 }
 
 .vs-btn--oos {
@@ -363,9 +363,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(24, 24, 24, 0.8);
   z-index: 10000;
-  display: flex;
+  display: none;
   align-items: flex-end;
   justify-content: center;
   padding: 0;
@@ -391,6 +391,7 @@
 }
 
 .bundle-modal-overlay.active {
+  display: flex;
   opacity: 1;
   visibility: visible;
 }
@@ -412,17 +413,18 @@
 
 @media (min-width: 640px) {
   .bundle-modal-container {
-    border-radius: 12px;
-    max-width: 600px;
+    border-radius: 10px;
+    max-width: min(1280px, calc(100vw - 40px));
     max-height: 90vh;
     transform: scale(0.9);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: none;
+    padding: 20px;
   }
 }
 
 @media (min-width: 1024px) {
   .bundle-modal-container {
-    max-width: 1000px;
+    width: min(1280px, calc(100vw - 40px));
   }
 }
 

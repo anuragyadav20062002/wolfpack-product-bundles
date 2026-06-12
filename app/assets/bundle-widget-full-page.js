@@ -79,6 +79,7 @@ import {
 import { ConditionValidator } from './widgets/shared/condition-validator.js';
 import { createDefaultLoadingAnimation } from './widgets/shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from './widgets/shared/loading-overlay.js';
+import { bundleLevelCssMethods } from './widgets/shared/bundle-level-css-methods.js';
 import { standardTemplateMethods } from './widgets/full-page/templates/standard-template.js';
 import { classicTemplateMethods } from './widgets/full-page/templates/classic-template.js';
 import { compactTemplateMethods } from './widgets/full-page/templates/compact-template.js';
@@ -237,6 +238,7 @@ class BundleWidgetFullPage {
       // Mark template/preset before first render so full-page selectors can
       // resolve immediately for both render paths.
       this.applyFullPageDesignPresetMarker();
+      this.applyBundleLevelCss(this.selectedBundle);
 
       // Render initial UI (async for full-page bundles to load products)
       await this.renderUI();
@@ -284,7 +286,7 @@ class BundleWidgetFullPage {
   // ========================================================================
   // wpb:* CustomEvents dispatched on window so themes / GTM / Klaviyo / Meta
   // Pixel can forward to their analytics back-ends without app-side wiring.
-  // Mirrors EB's gbb-* event surface (see issue wpb-storefront-analytics-events-1).
+  // Mirrors the external gbb-* event surface (see issue wpb-storefront-analytics-events-1).
   // ========================================================================
 
 
@@ -312,6 +314,7 @@ Object.assign(
   fullPageSelectionNavigationMethods,
   fullPageRuntimeCartSettingsMethods,
   fullPageTierFloatingRuntimeMethods,
+  bundleLevelCssMethods,
   standardTemplateMethods,
   classicTemplateMethods,
   compactTemplateMethods,

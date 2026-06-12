@@ -26,6 +26,7 @@ import {
 } from "../../../../services/bundles/standard-metafields.server";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { parseConditionValue } from "../../../../lib/parse-condition-value";
+import { processCss } from "../../../../lib/css-sanitizer";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
 import {
   normaliseShopifyProductId,
@@ -582,6 +583,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const showCompareAtPrices = formData.get("showCompareAtPrices") === "true";
     const cartRedirectToCheckout = formData.get("cartRedirectToCheckout") === "true";
     const allowQuantityChanges = formData.get("allowQuantityChanges") !== "false";
+    const variantSelectorEnabled = formData.get("variantSelectorEnabled") !== "false";
     const showTextOnAddButton = formData.get("showTextOnAddButton") === "true";
     const textOverridesRaw = formData.get("textOverrides") as string | null;
     const textOverridesByLocaleRaw = formData.get("textOverridesByLocale") as string | null;
@@ -602,7 +604,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleBannerMobileUrlRaw = formData.get("bundleBannerMobileUrl") as string | null;
     const bundleBannerMobileUrl = bundleBannerMobileUrlRaw || null;
     const bundleLevelCssRaw = formData.get("bundleLevelCss") as string | null;
-    const bundleLevelCss = bundleLevelCssRaw || null;
+    const bundleLevelCssInput = typeof bundleLevelCssRaw === "string" ? bundleLevelCssRaw : "";
+    const { sanitizedCss: sanitizedBundleLevelCss } = processCss(bundleLevelCssInput);
+    const bundleLevelCss = sanitizedBundleLevelCss.trim() || null;
     const productSlotsEnabled = formData.get("productSlotsEnabled") === "true";
     const maxQtyPerProductRaw = formData.get("maxQtyPerProduct") as string | null;
     const maxQtyPerProduct = maxQtyPerProductRaw ? parseInt(maxQtyPerProductRaw, 10) || null : null;
@@ -762,6 +766,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         showCompareAtPrices,
         cartRedirectToCheckout,
         allowQuantityChanges,
+        variantSelectorEnabled,
         showTextOnAddButton,
         searchBarEnabled,
         textOverrides,

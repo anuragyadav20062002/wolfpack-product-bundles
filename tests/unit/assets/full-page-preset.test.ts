@@ -88,3 +88,29 @@ describe('FullPagePreset.markContainer', () => {
     expect(container.dataset.fpbDesignPreset).toBe('CLASSIC');
   });
 });
+
+describe('FullPagePreset.shouldUseReferenceStepBarTimeline', () => {
+  it.each(['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
+    'enables the reference step bar for FPB footer-side preset %s',
+    (presetId) => {
+      expect(FullPagePreset.shouldUseReferenceStepBarTimeline({
+        layout: 'footer_side',
+        presetId,
+      })).toBe(true);
+    },
+  );
+
+  it('accepts STANDARD as the DEFAULT preset alias', () => {
+    expect(FullPagePreset.shouldUseReferenceStepBarTimeline({
+      layout: 'footer_side',
+      presetId: 'STANDARD',
+    })).toBe(true);
+  });
+
+  it('does not enable the reference step bar outside the footer-side FPB layout', () => {
+    expect(FullPagePreset.shouldUseReferenceStepBarTimeline({
+      layout: 'footer_bottom',
+      presetId: 'DEFAULT',
+    })).toBe(false);
+  });
+});

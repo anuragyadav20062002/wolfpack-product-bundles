@@ -399,7 +399,32 @@ _renderFreeGiftSection(container) {
   container.appendChild(section);
 },
 
-_renderStandardSidebarEmptySlots(container) {
+_renderStandardSidebarEmptySlots(container, options = {}) {
+  const slotCount = this.getSummarySidebarMaxItemCount();
+  const filledCount = Math.max(0, Number(options.filledCount || 0));
+  const emptySlotCount = Math.max(0, slotCount - filledCount);
+  const mode = options.mode || this.getSummarySidebarEmptyStateMode();
+
+  if (mode === 'slots') {
+    const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+    const slots = document.createElement('div');
+    slots.className = 'side-panel-inline-slots';
+
+    for (let i = 0; i < emptySlotCount; i += 1) {
+      const slot = document.createElement('div');
+      slot.className = 'side-panel-inline-slot';
+      slot.innerHTML = emptyStateIconUrl
+        ? `<img class="side-panel-inline-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
+        : '<span class="side-panel-inline-slot-placeholder">+</span>';
+      slots.appendChild(slot);
+    }
+
+    if (slots.children.length > 0) {
+      container.appendChild(slots);
+    }
+    return;
+  }
+
   const emptyStateIconUrl = this._shouldRenderProductSlots()
     ? this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '')
     : '';
@@ -407,7 +432,7 @@ _renderStandardSidebarEmptySlots(container) {
     ? `<img class="side-panel-product-img side-panel-product-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
     : '<div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>';
 
-  for (let i = 0; i < 2; i += 1) {
+  for (let i = 0; i < slotCount; i += 1) {
     const slot = document.createElement('div');
     slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
     slot.innerHTML = `
@@ -427,7 +452,8 @@ _renderStandardSidebarEmptySlots(container) {
 
 // Render empty-summary skeleton rows that match selected product rows.
 _renderSidebarProductSkeletons(container) {
-  for (let i = 0; i < 5; i++) {
+  const slotCount = this.getSummarySidebarMaxItemCount();
+  for (let i = 0; i < slotCount; i++) {
     const slot = document.createElement('div');
     slot.className = 'side-panel-product-row side-panel-skeleton-slot';
     slot.innerHTML = `
@@ -443,5 +469,28 @@ _renderSidebarProductSkeletons(container) {
     `;
     container.appendChild(slot);
   }
+},
+
+getSummarySidebarMaxItemCount(selectedCount = 0) {
+  const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+  const totalStepMax = steps.reduce((total, step) => {
+    if (!step || step.enabled === false) return total;
+
+    const maxQuantity = Number(step.maxQuantity);
+    const minQuantity = Number(step.minQuantity);
+    const stepCount = Number.isFinite(maxQuantity) && maxQuantity > 0
+      ? maxQuantity
+      : Number.isFinite(minQuantity) && minQuantity > 0
+        ? minQuantity
+        : 1;
+
+    return total + stepCount;
+  }, 0);
+
+  return Math.max(totalStepMax, Number(selectedCount || 0), 1);
+},
+
+getSummarySidebarEmptyStateMode() {
+  return this._shouldRenderProductSlots?.() === true ? 'slots' : 'skeletons';
 },
 };

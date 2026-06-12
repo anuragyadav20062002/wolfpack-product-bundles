@@ -50,6 +50,14 @@ declare global {
       // Application Features
       /** Enable/disable application logging (default: true) */
       APP_LOGGING_ENABLED?: string;
+
+      // Mantle Configuration
+      /** Mantle App ID used by the server identify flow and React provider */
+      MANTLE_APP_ID?: string;
+      /** Mantle API key for server-side identify requests. Never expose to the browser. */
+      MANTLE_API_KEY?: string;
+      /** Optional Mantle API URL override */
+      MANTLE_API_URL?: string;
     }
   }
 }

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.26
+ * Version : 3.0.37
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.26';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.37';
 (function() {
   'use strict';
 
@@ -1728,6 +1728,36 @@ function hideLoadingOverlayElement(overlay, timeoutMs = DEFAULT_HIDE_TIMEOUT_MS)
   scheduler(finish, timeoutMs);
 }
 
+const bundleLevelCssMethods = {
+  getBundleLevelCssStyleId(bundleId) {
+    const safeId = String(bundleId || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '-');
+    return `wpb-bundle-level-css-${safeId}`;
+  },
+
+  removeExistingBundleLevelCss() {
+    document
+      .querySelectorAll('style[data-wpb-bundle-level-css]')
+      .forEach((style) => style.remove());
+  },
+
+  applyBundleLevelCss(bundle) {
+    this.removeExistingBundleLevelCss();
+
+    const css = typeof bundle?.bundleLevelCss === 'string'
+      ? bundle.bundleLevelCss.trim()
+      : '';
+
+    if (!css) return;
+
+    const style = document.createElement('style');
+    style.id = this.getBundleLevelCssStyleId(bundle.id);
+    style.type = 'text/css';
+    style.dataset.wpbBundleLevelCss = String(bundle.id || '');
+    style.textContent = css;
+    document.head.appendChild(style);
+  },
+};
+
 class VariantSelectorComponent {
 
   static renderHtml(product, primaryOptionName) {
@@ -2026,15 +2056,36 @@ const FullPagePreset = (function () {
     container.dataset.fpbTemplate = resolveTemplateAttr(bundle);
   }
 
+  function shouldUseReferenceStepBarTimeline({ layout, presetId } = {}) {
+    const normalizedLayout = typeof layout === 'string' ? layout.trim().toLowerCase() : '';
+    if (normalizedLayout !== 'footer_side') return false;
+
+    const preset = resolvePresetAttr({ bundleDesignPresetId: presetId });
+    return ['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
+  }
+
   return {
     resolvePresetAttr,
     resolveTemplateAttr,
     markContainer,
+    shouldUseReferenceStepBarTimeline,
   };
 }());
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FullPagePreset;
+}
+
+function shouldRenderInlineVariantSelector({
+  bundleVariantSelectorEnabled = true,
+  product,
+  displayVariantsAsIndividualProducts = false,
+} = {}) {
+  if (bundleVariantSelectorEnabled === false) return false;
+  if (!product || !Array.isArray(product.variants) || product.variants.length <= 1) return false;
+  if (displayVariantsAsIndividualProducts === true) return false;
+  if (product.parentProductId && product.variants.length === 0) return false;
+  return true;
 }
 
 /**
@@ -2228,7 +2279,8 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const quantity = Math.max(0, Number(currentQuantity || 0));
   const isSelected = quantity > 0;
   const mode = options.mode || 'grid';
-  const title = product.parentTitle || product.title || '';
+  const variantText = getVariantDisplayText(product);
+  const title = getDisplayTitle(product, variantText);
   const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
@@ -2236,6 +2288,7 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
     'bw-product-card',
     'product-card',
     `bw-product-card--mode-${escapeAttribute(mode)}`,
+    variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
     isSelected ? 'bw-product-card--selected selected' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
@@ -2247,7 +2300,10 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
         ${options.stockBadgeHtml || ''}
       </div>
       <div class="bw-product-card__body product-content-wrapper">
-        <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
+        <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+          <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
+          ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
+        </div>
         ${price ? `
           <div class="bw-product-card__price product-price-row">
             ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
@@ -2268,6 +2324,46 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
       </div>
     </div>
   `;
+}
+
+function getDisplayTitle(product, variantText) {
+  const parentTitle = typeof product.parentTitle === 'string' ? product.parentTitle.trim() : '';
+  const rawTitle = typeof product.title === 'string' ? product.title.trim() : '';
+
+  if (variantText && parentTitle) return parentTitle;
+
+  const separatorIndex = rawTitle.indexOf(' - ');
+  if (variantText && separatorIndex > 0) {
+    return rawTitle.slice(0, separatorIndex).trim();
+  }
+
+  return parentTitle || rawTitle;
+}
+
+function getVariantDisplayText(product) {
+  const explicitVariantTitle = typeof product.variantTitle === 'string' ? product.variantTitle.trim() : '';
+  if (explicitVariantTitle && explicitVariantTitle !== 'Default Title') {
+    return explicitVariantTitle;
+  }
+
+  const parentTitle = typeof product.parentTitle === 'string' ? product.parentTitle.trim() : '';
+  const rawTitle = typeof product.title === 'string' ? product.title.trim() : '';
+  const canInferExpandedVariant = Boolean(product.parentProductId || parentTitle);
+  if (!rawTitle) return '';
+
+  if (parentTitle) {
+    const parentPrefix = `${parentTitle} - `;
+    if (rawTitle.startsWith(parentPrefix)) {
+      return rawTitle.slice(parentPrefix.length).trim();
+    }
+  }
+
+  const separatorIndex = rawTitle.indexOf(' - ');
+  if (canInferExpandedVariant && separatorIndex > 0) {
+    return rawTitle.slice(separatorIndex + 3).trim();
+  }
+
+  return '';
 }
 
 function renderAddButton(selectionKey, options) {
@@ -2344,10 +2440,10 @@ function renderSelectedProductRow(product = null, options = {}) {
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
-        <span class="bw-selected-row__quantity">x${quantity}</span>
+        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">${quantity}</span>
         ${removable ? `
-          <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Remove ${escapeAttribute(title)}">
-            Remove
+          <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Delete ${escapeAttribute(title)}">
+            ${renderTrashIcon()}
           </button>
         ` : ''}
       </div>
@@ -2367,6 +2463,14 @@ function renderEmptyRow(options) {
       </div>
       <div class="bw-selected-row__action bw-selected-row__action--empty"></div>
     </div>
+  `;
+}
+
+function renderTrashIcon() {
+  return `
+    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" aria-hidden="true" focusable="false">
+      <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    </svg>
   `;
 }
 
@@ -4644,6 +4748,7 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
 
   const sheet = document.createElement('div');
   sheet.className = 'fpb-mobile-bottom-sheet';
+  this._syncMobilePortalThemeVars(sheet);
   const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
   if (usesCompactMobileSummaryTray) {
     sheet.classList.add('fpb-mobile-summary-tray');
@@ -4662,6 +4767,7 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
 
   const bar = document.createElement('div');
   bar.className = 'fpb-mobile-bottom-bar';
+  this._syncMobilePortalThemeVars(bar);
 
   const toggleBtn = document.createElement('button');
   toggleBtn.className = 'fpb-mobile-toggle-btn';
@@ -4725,7 +4831,35 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
 
 _populateMobileSheet(sheet) {
   sheet.innerHTML = '';
+  this._syncMobilePortalThemeVars(sheet);
   this.renderSidePanel(sheet);
+},
+
+_syncMobilePortalThemeVars(...elements) {
+  const source = this.container || document.documentElement;
+  const sourceStyles = getComputedStyle(source);
+  const fallbackStyles = source === document.documentElement
+    ? sourceStyles
+    : getComputedStyle(document.documentElement);
+  const themeVars = [
+    '--bundle-add-btn-color',
+    '--bundle-button-bg',
+    '--bundle-button-text-color',
+    '--bundle-global-button-text',
+    '--bundle-global-primary-button',
+    '--bundle-sidebar-button-bg',
+    '--bundle-sidebar-button-text',
+  ];
+
+  elements.filter(Boolean).forEach((element) => {
+    themeVars.forEach((property) => {
+      const value = sourceStyles.getPropertyValue(property).trim()
+        || fallbackStyles.getPropertyValue(property).trim();
+      if (value) {
+        element.style.setProperty(property, value);
+      }
+    });
+  });
 },
 
 usesCompactMobileSummaryTray() {
@@ -5198,6 +5332,11 @@ renderSidePanel(panel) {
     this.resolveFullPageLayout() === 'footer_side' &&
     this.getFullPageDesignPreset() === 'CLASSIC' &&
     !isMobileSheet;
+  const summaryEmptyStateMode = this.getSummarySidebarEmptyStateMode();
+  const useInlineSummarySlots = summaryEmptyStateMode === 'slots';
+
+  panel.classList.toggle('full-page-side-panel--inline-slots', useInlineSummarySlots);
+  panel.classList.toggle('full-page-side-panel--skeleton-list', !useInlineSummarySlots);
 
   const header = document.createElement('div');
   header.className = 'side-panel-header';
@@ -5272,20 +5411,13 @@ renderSidePanel(panel) {
     }
 
     if (this.config.showDiscountProgressBar) {
-      const progressBar = isStandardDesktopSidebar
-        ? this.createStandardSidebarDiscountProgress({
-          discountMessage,
-          combinedDiscountInfo,
-          totalPrice,
-          totalQuantity,
-        })
-        : this._renderDiscountProgress({
-          placement: "sidebar",
-          combinedDiscountInfo,
-          totalPrice,
-          totalQuantity,
-          unitPrices,
-        });
+      const progressBar = this._renderDiscountProgress({
+        placement: "sidebar",
+        combinedDiscountInfo,
+        totalPrice,
+        totalQuantity,
+        unitPrices,
+      });
       if (progressBar) {
         progressBar.classList.add('fpb-dp-sidebar');
         panel.appendChild(progressBar);
@@ -5323,6 +5455,8 @@ renderSidePanel(panel) {
     if (isHorizontalPreset) {
       productsContainer.classList.add('side-panel-products--slots');
     }
+    productsContainer.classList.toggle('side-panel-products--inline-slots', useInlineSummarySlots);
+    productsContainer.classList.toggle('side-panel-products--skeleton-list', !useInlineSummarySlots);
 
     if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
@@ -5359,7 +5493,7 @@ renderSidePanel(panel) {
         const imgSrc = this._getSelectedProductImageSrc(item);
 
         const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
-        const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
+        const qtySpan = `<span class="side-panel-product-qty" aria-label="Quantity ${item.quantity}">${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
           ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
           : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
@@ -5394,7 +5528,9 @@ renderSidePanel(panel) {
         if (!item.isDefault) {
           const removeBtn = document.createElement('button');
           removeBtn.className = 'side-panel-product-remove';
-          removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
+          removeBtn.type = 'button';
+          removeBtn.setAttribute('aria-label', `Delete ${summaryTitle || 'product'}`);
+          removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" aria-hidden="true" focusable="false"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
           removeBtn.addEventListener('click', () => {
             const stepIndex = item.stepIndex;
             const productId = item.variantId || item.productId || item.id;
@@ -5416,8 +5552,16 @@ renderSidePanel(panel) {
 
         productsContainer.appendChild(row);
       });
+      if (isStandardDesktopSidebar && useInlineSummarySlots) {
+        this._renderStandardSidebarEmptySlots(productsContainer, {
+          mode: summaryEmptyStateMode,
+          filledCount: allSelectedProducts.length,
+        });
+      }
     } else if (isStandardDesktopSidebar) {
-      this._renderStandardSidebarEmptySlots(productsContainer);
+      this._renderStandardSidebarEmptySlots(productsContainer, {
+        mode: summaryEmptyStateMode,
+      });
     }
     if (isHorizontalPreset) {
       const requiredSlots = Math.max(
@@ -5585,13 +5729,20 @@ getSidebarTierCtaContent(nextRule) {
   const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
   const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
   const ruleId = bundleQuantityOptions.defaultRuleId || nextRule?.id || rules[0]?.id;
+  const rule = ruleId ? rules.find(item => String(item?.id || '') === String(ruleId)) : null;
   const option = ruleId ? (optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]) : null;
   const label = typeof option?.label === 'string' && option.label.trim()
     ? option.label.trim()
     : (typeof option?.tierText === 'string' ? option.tierText.trim() : '');
-  const subtext = typeof option?.subtext === 'string' && option.subtext.trim()
+  let subtext = typeof option?.subtext === 'string' && option.subtext.trim()
     ? option.subtext.trim()
     : (typeof option?.tierSubtext === 'string' ? option.tierSubtext.trim() : '');
+  if (pricing.method === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && rule) {
+    const discountValue = Number(rule.discountValue ?? rule.discount?.value ?? 0) || 0;
+    if (discountValue > 0) {
+      subtext = `Bundle for ${CurrencyManager.convertAndFormat(discountValue, CurrencyManager.getCurrencyInfo())}`;
+    }
+  }
 
   if (!label && !subtext) return null;
   return { label, subtext };
@@ -5936,8 +6087,11 @@ _getDefaultTimelineIconDataUri(step) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 },
 
-_isStandardSideFooterTimeline() {
-  return this.resolveFullPageLayout() === 'footer_side' && this.getFullPageDesignPreset() === 'DEFAULT';
+_usesReferenceStepBarTimeline() {
+  return FullPagePreset.shouldUseReferenceStepBarTimeline({
+    layout: this.resolveFullPageLayout(),
+    presetId: this.getFullPageDesignPreset(),
+  });
 },
 
 buildStepTimelineEntries() {
@@ -6022,7 +6176,7 @@ shouldRenderMultipleCategoryTimelineEntry(step) {
 },
 
 createStepTimeline() {
-  if (this._isStandardSideFooterTimeline()) {
+  if (this._usesReferenceStepBarTimeline()) {
     return this.createStandardStepTimeline();
   }
 
@@ -7060,7 +7214,13 @@ createProductCard(product, stepIndex) {
 
   const step = (this.selectedBundle?.steps || [])[stepIndex];
   const primaryOptionName = step?.primaryVariantOption || null;
-  const variantSelectorHtml = VariantSelectorComponent.renderHtml(product, primaryOptionName);
+  const variantSelectorHtml = shouldRenderInlineVariantSelector({
+    bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
+    product,
+    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
+  })
+    ? VariantSelectorComponent.renderHtml(product, primaryOptionName)
+    : '';
 
   const designPreset = this.getFullPageDesignPreset();
   let htmlString;
@@ -7165,6 +7325,7 @@ applyStandardExpandedVariantTitle(cardElement, product) {
   const preset = this.getFullPageDesignPreset();
   if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
   if (!cardElement) return;
+  if (cardElement.querySelector('[data-bw-card-variant-row="true"]')) return;
 
   const variantTitle = this.getSummaryProductVariantDisplay(product);
   if (!product?.parentProductId || !variantTitle) return;
@@ -7181,7 +7342,12 @@ applyStandardExpandedVariantTitle(cardElement, product) {
   if (!parentTitle) return;
 
   cardElement.classList.add('product-card--expanded-variant');
-  titleEl.textContent = `${parentTitle}\n${variantTitle}`;
+  titleEl.textContent = parentTitle;
+  const variantEl = document.createElement('div');
+  variantEl.className = 'bw-product-card__variant product-variant-row';
+  variantEl.setAttribute('data-bw-card-variant-row', 'true');
+  variantEl.textContent = variantTitle;
+  titleEl.insertAdjacentElement('afterend', variantEl);
 },
 
 getSummaryProductDisplayTitle(item) {
@@ -7297,7 +7463,12 @@ attachProductCardListeners(cardElement, product, stepIndex) {
     }
   });
 
-  if (product.variants && product.variants.length > 1) {
+  const step = (this.selectedBundle?.steps || [])[stepIndex];
+  if (shouldRenderInlineVariantSelector({
+    bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
+    product,
+    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
+  })) {
     VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
       const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
 
@@ -8151,7 +8322,32 @@ _renderFreeGiftSection(container) {
   container.appendChild(section);
 },
 
-_renderStandardSidebarEmptySlots(container) {
+_renderStandardSidebarEmptySlots(container, options = {}) {
+  const slotCount = this.getSummarySidebarMaxItemCount();
+  const filledCount = Math.max(0, Number(options.filledCount || 0));
+  const emptySlotCount = Math.max(0, slotCount - filledCount);
+  const mode = options.mode || this.getSummarySidebarEmptyStateMode();
+
+  if (mode === 'slots') {
+    const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+    const slots = document.createElement('div');
+    slots.className = 'side-panel-inline-slots';
+
+    for (let i = 0; i < emptySlotCount; i += 1) {
+      const slot = document.createElement('div');
+      slot.className = 'side-panel-inline-slot';
+      slot.innerHTML = emptyStateIconUrl
+        ? `<img class="side-panel-inline-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
+        : '<span class="side-panel-inline-slot-placeholder">+</span>';
+      slots.appendChild(slot);
+    }
+
+    if (slots.children.length > 0) {
+      container.appendChild(slots);
+    }
+    return;
+  }
+
   const emptyStateIconUrl = this._shouldRenderProductSlots()
     ? this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '')
     : '';
@@ -8159,7 +8355,7 @@ _renderStandardSidebarEmptySlots(container) {
     ? `<img class="side-panel-product-img side-panel-product-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
     : '<div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>';
 
-  for (let i = 0; i < 2; i += 1) {
+  for (let i = 0; i < slotCount; i += 1) {
     const slot = document.createElement('div');
     slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
     slot.innerHTML = `
@@ -8178,7 +8374,8 @@ _renderStandardSidebarEmptySlots(container) {
 },
 
 _renderSidebarProductSkeletons(container) {
-  for (let i = 0; i < 5; i++) {
+  const slotCount = this.getSummarySidebarMaxItemCount();
+  for (let i = 0; i < slotCount; i++) {
     const slot = document.createElement('div');
     slot.className = 'side-panel-product-row side-panel-skeleton-slot';
     slot.innerHTML = `
@@ -8194,6 +8391,29 @@ _renderSidebarProductSkeletons(container) {
     `;
     container.appendChild(slot);
   }
+},
+
+getSummarySidebarMaxItemCount(selectedCount = 0) {
+  const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+  const totalStepMax = steps.reduce((total, step) => {
+    if (!step || step.enabled === false) return total;
+
+    const maxQuantity = Number(step.maxQuantity);
+    const minQuantity = Number(step.minQuantity);
+    const stepCount = Number.isFinite(maxQuantity) && maxQuantity > 0
+      ? maxQuantity
+      : Number.isFinite(minQuantity) && minQuantity > 0
+        ? minQuantity
+        : 1;
+
+    return total + stepCount;
+  }, 0);
+
+  return Math.max(totalStepMax, Number(selectedCount || 0), 1);
+},
+
+getSummarySidebarEmptyStateMode() {
+  return this._shouldRenderProductSlots?.() === true ? 'slots' : 'skeletons';
 },
 };
 
@@ -8551,14 +8771,27 @@ getDiscountProgressMilestones(totalPrice = 0, totalQuantity = 0) {
       const threshold = Number(rule.conditionValue || 0) || 0;
       const tierText = tierTextByRuleId?.[ruleId] || {};
       const boxRule = boxRules.find(box => box.ruleId === ruleId);
+      const discountMethod = pricing?.method || BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF;
+      const discountValue = Number(rule.discountValue ?? rule.discount?.value ?? 0) || 0;
+      const fallbackTitle = rule.conditionType === 'quantity' && threshold > 0
+        ? `${threshold} Pack`
+        : String(threshold);
+      let fallbackSubTitle = '';
+      if (discountValue > 0) {
+        if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF) {
+          fallbackSubTitle = `Save ${Math.round(discountValue)}%`;
+        } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF) {
+          fallbackSubTitle = `Save ${CurrencyManager.convertAndFormat(discountValue, CurrencyManager.getCurrencyInfo())}`;
+        }
+      }
       const isReached = rule.conditionType === 'amount'
         ? Number(totalPrice || 0) >= threshold
         : Number(totalQuantity || 0) >= threshold;
 
       return {
         ruleId,
-        title: tierText.tierText || boxRule?.boxLabel || String(threshold),
-        subTitle: tierText.tierSubtext || boxRule?.boxSubtext || '',
+        title: tierText.tierText || boxRule?.boxLabel || fallbackTitle,
+        subTitle: tierText.tierSubtext || boxRule?.boxSubtext || fallbackSubTitle,
         isReached,
       };
     })
@@ -9806,7 +10039,11 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       selectedOverlay.textContent = '✓';
       productCard.appendChild(selectedOverlay);
     }
-    selectedOverlay.style.display = 'flex';
+    if (this.getFullPageDesignPreset?.() === 'DEFAULT') {
+      selectedOverlay.style.removeProperty('display');
+    } else {
+      selectedOverlay.style.display = 'flex';
+    }
     productCard.classList.add('selected');
 
   } else {
@@ -10893,6 +11130,7 @@ class BundleWidgetFullPage {
       this.setupDOMElements();
 
       this.applyFullPageDesignPresetMarker();
+      this.applyBundleLevelCss(this.selectedBundle);
 
       await this.renderUI();
 
@@ -10949,6 +11187,7 @@ Object.assign(
   fullPageSelectionNavigationMethods,
   fullPageRuntimeCartSettingsMethods,
   fullPageTierFloatingRuntimeMethods,
+  bundleLevelCssMethods,
   standardTemplateMethods,
   classicTemplateMethods,
   compactTemplateMethods,
