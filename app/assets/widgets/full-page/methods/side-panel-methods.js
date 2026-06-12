@@ -74,13 +74,7 @@ renderSidePanel(panel) {
     clearBtn.className = 'side-panel-clear-btn';
     clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Clear`;
     clearBtn.addEventListener('click', () => {
-      // Issue: clear-step-timeline-reset-1 — reset step-timeline so
-      // conditionally-unlocked steps re-lock when selections are cleared.
-      this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
-      this.currentStepIndex = 0;
-      this.searchQuery = '';
-      this.activeCollectionId = null;
-      this.reRenderFullPage();
+      this.showClearCartConfirmation();
     });
     header.appendChild(clearBtn);
   }

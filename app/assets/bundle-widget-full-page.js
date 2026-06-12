@@ -111,6 +111,7 @@ import { fullPageFooterSelectionMethods } from './widgets/full-page/methods/foot
 import { fullPageValidationAddonsMethods } from './widgets/full-page/methods/validation-addons-methods.js';
 import { fullPageStepFooterMethods } from './widgets/full-page/methods/step-footer-methods.js';
 import { fullPageDiscountModalMethods } from './widgets/full-page/methods/discount-modal-methods.js';
+import { fullPageClearCartConfirmationMethods } from './widgets/full-page/methods/clear-cart-confirmation-methods.js';
 import { fullPageProductProcessingMethods } from './widgets/full-page/methods/product-processing-methods.js';
 import { fullPageModalProductMethods } from './widgets/full-page/methods/modal-product-methods.js';
 import { fullPageSelectionNavigationMethods } from './widgets/full-page/methods/selection-navigation-methods.js';
@@ -305,6 +306,7 @@ Object.assign(
   fullPageValidationAddonsMethods,
   fullPageStepFooterMethods,
   fullPageDiscountModalMethods,
+  fullPageClearCartConfirmationMethods,
   fullPageProductProcessingMethods,
   fullPageModalProductMethods,
   fullPageSelectionNavigationMethods,
