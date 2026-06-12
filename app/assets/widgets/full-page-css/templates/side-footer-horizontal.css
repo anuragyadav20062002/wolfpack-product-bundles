@@ -653,41 +653,62 @@ minmax(0,
     grid-row:4;
     grid-column:1 / -1;
     display:grid;
-    grid-template-columns:minmax(0,1fr) 208.406px;
-    grid-template-rows:44px;
-    gap:8px;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:18px 41px;
+    row-gap:15px;
+    column-gap:0;
     align-items:start;
     width:100%;
-    margin:0;
-    padding:30px 0 0;
+    height:90px;
+    margin:10px 0 0;
+    padding:15px 0 0;
   }
 
   .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-total {
     display:grid;
-    grid-template-columns:minmax(0,1fr);
-    grid-template-rows:18px 18px;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    grid-template-rows:18px;
     gap:8px;
     align-items:center;
     justify-content:start;
-    width:auto;
-    min-height:0;
+    width:100%;
+    height:18px;
+    min-height:18px;
     padding:0;
     margin:0;
   }
 
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-total-label {
+    grid-column:1;
+    grid-row:1;
+    width:100%;
+    height:18px;
+    line-height:18px;
+  }
+
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-total-prices {
+    grid-column:2;
+    grid-row:1;
+    justify-content:flex-start;
+    width:100%;
+    height:18px;
+  }
+
   .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-nav {
     display:grid;
-    grid-template-columns:208.406px;
-    grid-template-rows:44px;
-    gap:0;
-    width:208.406px;
+    grid-template-columns:0 minmax(0,1fr);
+    grid-template-rows:41px;
+    gap:0 5px;
+    width:100%;
+    height:41px;
     margin:0;
     padding:0;
   }
 
   .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-btn-next {
-    width:208.406px;
-    min-width:208.406px;
+    grid-column:2;
+    width:100%;
+    min-width:0;
     height:41px;
     padding:8px;
     border:0;

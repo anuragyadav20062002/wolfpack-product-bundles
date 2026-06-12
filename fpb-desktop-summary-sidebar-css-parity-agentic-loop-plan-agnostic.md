@@ -1131,3 +1131,30 @@ The final implementation PR should include:
     - Evidence: `/private/tmp/wpb-fpb-desktop-sidebar-loop2-injected-final-check.json`.
     - Title becomes `247.546875px x 20px`, matching EB width/height.
     - Remove control becomes `x=1319.21875`, `22px x 22px`, matching EB x/size.
+
+### Loop 10: Horizontal Totals and CTA Area
+
+- Captured EB FPB Horizontal lower sidebar section at 1440x900:
+  - Metrics: `/private/tmp/eb-fpb-desktop-sidebar-loop3-cta-selected.json`.
+  - Parent chain: `/private/tmp/eb-fpb-desktop-sidebar-loop3-cta-parent-chain.json`.
+  - Screenshot: `/private/tmp/eb-fpb-desktop-sidebar-loop3-cta-selected.png`.
+- EB selected-state CTA target:
+  - `.gbbFooterActionContainer`: one-column grid, rows `18px 41px`, `row-gap:15px`, `padding:15px 0 0`, `margin:10px 0 0`, height `90px`.
+  - `.gbbFooterTotalContainer`: two equal columns, one `18px` row, `gap:8px`.
+  - `.gbbFooterButtonsWrapper`: grid columns `0px 1fr`, `gap:5px`, height `41px`; this leaves the Next button inset by `5px` when no Back button is visible.
+  - `.gbbFooterNextButton`: `41px` high, black background, `5px` radius, `16px/25px/700`.
+- Implemented a CSS-only Horizontal desktop CTA slice:
+  - Converted `.side-panel-action-container` from side-by-side total/button columns to EB's stacked total row plus CTA row.
+  - Converted `.side-panel-total` to two equal columns with the total price aligned in the second column.
+  - Converted `.side-panel-nav` to the EB hidden-back-column grid (`0 minmax(0,1fr)` with `5px` column gap).
+  - Rebuilt `extensions/bundle-builder/assets/bundle-widget-full-page-horizontal.css` with `npm run minify:assets css`.
+- Live WPB verification:
+  - Metrics: `/private/tmp/wpb-fpb-desktop-sidebar-loop3-final-cta-selected.json`.
+  - Screenshot: `/private/tmp/wpb-fpb-desktop-sidebar-loop3-final-cta-selected.png`.
+  - Confirmed the action container, total row, and full-width CTA row are live and match EB's row structure.
+- Development CDN note:
+  - Local minified CSS contains the final hidden-back-column correction, but the Shopify development CDN was still serving the previous nav-grid copy during verification.
+  - DOM-level injection check against the live markup confirmed final geometry:
+    - Evidence: `/private/tmp/wpb-fpb-desktop-sidebar-loop3-injected-final-cta-check.json`.
+    - `.side-panel-nav`: grid columns `0px 419.828px`, `gap:0 5px`.
+    - `.side-panel-btn-next`: starts `5px` after the nav row and remains `41px` high.
