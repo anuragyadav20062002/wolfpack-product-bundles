@@ -11,6 +11,7 @@ module.exports = {
     "app/assets/**",
     "extensions/**/*.js",
     "scripts/**",
+    "tests/__mocks__/*.js",
     "jest.config.js",
     "postcss.config.js",
     "tailwind.config.js",
@@ -104,6 +105,11 @@ module.exports = {
       files: ["tests/**/*.ts"],
       rules: {
         "@typescript-eslint/no-floating-promises": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-unsafe-return": "off",
+        "@typescript-eslint/no-unsafe-argument": "off",
         "unicorn/no-process-exit": "off",
         // `export {};` is the standard TypeScript pattern to mark a test file as a
         // module (preventing duplicate-declaration errors across test files). Jest

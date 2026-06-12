@@ -1,3 +1,4 @@
+import { readProductPageWidgetSources } from './widget-source-helpers';
 /**
  * Unit Tests — Product Page widget product normalization
  *
@@ -5,9 +6,6 @@
  * branch so storefront hydration regressions can be tested without loading the
  * full IIFE bundle in Jest.
  */
-
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
 interface StorefrontVariant {
   id: string;
@@ -152,10 +150,7 @@ describe('processProductPageProductsForStep', () => {
 
 describe('Product Page widget quantity-validation contract', () => {
   it('uses the shared per-product quantity gate in render and state update paths', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('ConditionValidator.getAllowedQuantityPerProduct');
     expect(source).toContain('ConditionValidator.canUpdateProductQuantity');
@@ -164,10 +159,7 @@ describe('Product Page widget quantity-validation contract', () => {
 
 describe('Product Page widget direct default-products contract', () => {
   it('reads direct defaultProductsData and renders the preselected summary branch', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('_initDirectDefaultProducts');
     expect(source).toContain('_renderDirectDefaultProducts');
@@ -176,10 +168,7 @@ describe('Product Page widget direct default-products contract', () => {
   });
 
   it('does not mark direct defaults unavailable from zero inventory alone', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('variant?.availableForSale === false || variant?.available === false');
     expect(source).not.toContain('const available = inventoryQuantity === null || inventoryQuantity > 0;');
@@ -188,10 +177,7 @@ describe('Product Page widget direct default-products contract', () => {
 
 describe('Product Page widget category hydration contract', () => {
   it('hydrates products and collections from step.categories', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('collectStepProductIds(step)');
     expect(source).toContain('collectStepCollectionHandles(step)');
@@ -201,10 +187,7 @@ describe('Product Page widget category hydration contract', () => {
 
 describe('Product Page widget selection-key normalization contract', () => {
   it('uses a shared selection-key normalizer for update paths', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('normalizeSelectionKey(variantId)');
     expect(source).toContain('getSelectedQuantity(stepIndex, selectionKey);');
@@ -215,10 +198,7 @@ describe('Product Page widget selection-key normalization contract', () => {
   });
 
   it('reads direct default variant quantities through normalized lookup in the summary renderer', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('this._renderDirectDefaultProducts()');
     expect(source).toContain('const quantity = this.getSelectedQuantity(0, product.variantId)');
@@ -226,10 +206,7 @@ describe('Product Page widget selection-key normalization contract', () => {
   });
 
   it('keeps default-product guard checks normalized in removeProductFromSelection', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('if (step?.isDefault && this.normalizeSelectionKey(step.defaultVariantId) === normalizedVariantId) return;');
     expect(source).toContain('const currentQuantity = this.getSelectedQuantity(stepIndex, normalizedVariantId);');
@@ -237,10 +214,7 @@ describe('Product Page widget selection-key normalization contract', () => {
   });
 
   it('normalizes selection IDs when matching selected products for summary/cart payload paths', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('findProductBySelectionKey(productsInStep, normalizedVariantId);');
     expect(source).toContain('findProductBySelectionKey(products, variantId);');

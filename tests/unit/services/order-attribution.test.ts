@@ -6,6 +6,8 @@
  * correctly without attempting database operations.
  */
 
+import { handleOrderCreate } from "../../../app/services/webhooks/handlers/orders.server";
+
 jest.mock("../../../app/db.server", () => ({
   __esModule: true,
   default: {},
@@ -15,8 +17,6 @@ jest.mock("../../../app/shopify.server", () => ({
   __esModule: true,
   default: {},
 }));
-
-import { handleOrderCreate } from "../../../app/services/webhooks/handlers/orders.server";
 
 describe("handleOrderCreate", () => {
   it("skips when no payload", async () => {

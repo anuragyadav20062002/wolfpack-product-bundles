@@ -52,10 +52,10 @@ export class ComponentGenerator {
     const renderInlineQuantityControls = () => {
       if (!isSelected) return '';
       return `
-        <div class="inline-quantity-controls">
-          <button class="inline-qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-          <span class="inline-qty-display">${currentQuantity}</span>
-          <button class="inline-qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+        <div class="inline-quantity-controls bw-quantity-control">
+          <button class="inline-qty-btn qty-decrease bw-quantity-control__button" data-product-id="${selectionKey}">−</button>
+          <span class="inline-qty-display bw-quantity-control__value">${currentQuantity}</span>
+          <button class="inline-qty-btn qty-increase bw-quantity-control__button" data-product-id="${selectionKey}">+</button>
         </div>
       `;
     };
@@ -64,8 +64,8 @@ export class ComponentGenerator {
     const renderBottomAction = () => {
       if (actionMode === 'expandingQuantity') {
         return `
-          <div class="product-card-action ${isSelected ? 'is-expanded' : ''}">
-            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`}
+          <div class="product-card-action bw-product-card__action ${isSelected ? 'is-expanded' : ''}">
+            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn bw-product-card__add-button" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`}
           </div>
         `;
       }
@@ -73,7 +73,7 @@ export class ComponentGenerator {
       if (isSelected) {
         return renderInlineQuantityControls();
       }
-      return `<button class="product-add-btn" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`;
+      return `<button class="product-add-btn bw-product-card__add-button" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`;
     };
 
     // Render variant badge if this is an expanded variant card
@@ -85,23 +85,23 @@ export class ComponentGenerator {
     };
 
     return `
-      <div class="product-card ${isSelected ? 'selected' : ''}" data-product-id="${selectionKey}">
+      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
         ${isSelected ? `
           <div class="selected-overlay">✓</div>
         ` : ''}
 
-        <div class="product-image">
-          <img src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
+        <div class="product-image bw-product-card__media">
+          <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
         </div>
 
-        <div class="product-content-wrapper">
-          <div class="product-title">${this.escapeHtml(product.parentTitle || product.title)}</div>
+        <div class="product-content-wrapper bw-product-card__body">
+          <div class="product-title bw-product-card__title">${this.escapeHtml(product.parentTitle || product.title)}</div>
           ${renderVariantBadge()}
 
           ${product.price ? `
-            <div class="product-price-row">
-              ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
-              <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+            <div class="product-price-row bw-product-card__price">
+              ${product.compareAtPrice ? `<span class="product-price-strike bw-product-card__compare-price">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
+              <span class="product-price bw-product-card__current-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
             </div>
           ` : ''}
 

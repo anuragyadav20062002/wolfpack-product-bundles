@@ -17,19 +17,21 @@ import { loadShopAdminLocale } from "../../services/admin-locale.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  try {
-    await ensureShopHasExpiringOfflineSession(prisma, session.shop, sessionStorage);
-  } catch (error) {
+function ensureExpiringOfflineSessionInBackground(shop: string) {
+  void ensureShopHasExpiringOfflineSession(prisma, shop, sessionStorage).catch((error) => {
     AppLogger.error("Failed to ensure expiring offline session during app load", {
       component: "app.app",
-      shop: session.shop,
+      shop,
     }, error);
-  }
+  });
+}
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  ensureExpiringOfflineSessionInBackground(session.shop);
   const locale = await loadShopAdminLocale(session.shop);
   const polarisTranslations = getPolarisLocale(locale);
-  const mantleAppToken = process.env.MANTLE_APP_TOKEN || "";
+  const mantleAppToken = process.env.MANTLE_APP_TOKEN ?? "";
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
     locale,
@@ -48,7 +50,6 @@ function AdminNavigation() {
       <a href="/app/settings">{t("nav.settings")}</a>
       <a href="/app/integrations">{t("nav.integrations")}</a>
       <a href="/app/attribution">{t("nav.analytics")}</a>
-      <a href="/app/pricing">{t("nav.pricing")}</a>
       <a href="/app/events">{t("nav.events")}</a>
     </ui-nav-menu>
   );
@@ -69,7 +70,7 @@ export default function App() {
         {mantleAppToken ? (
           <MantleTracker appToken={mantleAppToken} customerId={shop} />
         ) : null}
-        {/* polaris.js deferred so App Bridge (injected above by AppProvider) initialises first */}
+        {/* polaris.js deferred so App Bridge (loaded statically from app/root.tsx <head>) initialises first */}
         <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
         <AdminNavigation />
         <Outlet />

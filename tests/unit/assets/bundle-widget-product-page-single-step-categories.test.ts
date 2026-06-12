@@ -1,11 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
+import { readProductPageWidgetSources } from './widget-source-helpers';
 describe('PPB single-step categories-as-steps storefront contract', () => {
-  const source = readFileSync(
-    join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-    'utf8'
-  );
+  const source = readProductPageWidgetSources();
 
   it('exposes the category-step expansion helper for focused runtime testing', () => {
     expect(source).toContain('function ppbExpandSingleStepCategoriesAsSteps(bundle)');

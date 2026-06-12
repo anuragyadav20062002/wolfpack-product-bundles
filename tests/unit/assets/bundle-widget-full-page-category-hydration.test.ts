@@ -1,12 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
+import { readFullPageWidgetSources } from './widget-source-helpers';
 describe('Full Page widget category hydration contract', () => {
   it('hydrates products and collections from step.categories without changing config load order', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
-      'utf8',
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain('collectStepProductIds(step)');
     expect(source).toContain('collectStepCollectionHandles(step)');
@@ -19,10 +14,7 @@ describe('Full Page widget category hydration contract', () => {
   });
 
   it('gates variant-card expansion on the active category or non-category step flag', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
-      'utf8',
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain('displayVariantsAsIndividualProducts: category.displayVariantsAsIndividualProducts === true');
     expect(source).toContain('shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory)');
@@ -34,10 +26,7 @@ describe('Full Page widget category hydration contract', () => {
   });
 
   it('keeps parent product cards by selecting the first available variant', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
-      'utf8',
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain('getFirstAvailableVariant(product)');
     expect(source).toContain('const defaultVariant = this.getFirstAvailableVariant(product);');
@@ -46,10 +35,7 @@ describe('Full Page widget category hydration contract', () => {
   });
 
   it('does not mark sellable Storefront variants out of stock from zero quantity alone', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
-      'utf8',
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain('isVariantOutOfStock(product)');
     expect(source).toContain('if (product.available === false) {');
@@ -60,10 +46,7 @@ describe('Full Page widget category hydration contract', () => {
   });
 
   it('renders inactive category section rows after the active category grid', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
-      'utf8',
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain('createCategorySectionRows(this.currentStepIndex)');
     expect(source).toContain('fpb-category-section-rows');
@@ -73,17 +56,16 @@ describe('Full Page widget category hydration contract', () => {
   });
 
   it('adds a multiple-category timeline item between the paid step and add-ons step', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
-      'utf8',
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain('buildStepTimelineEntries()');
     expect(source).toContain('shouldRenderMultipleCategoryTimelineEntry(step)');
     expect(source).toContain("label: 'Multiple Categories'");
     expect(source).toContain("type: 'multiple_categories'");
-    expect(source).toContain('timelineEntries.forEach((entry, displayIndex)');
+    expect(source).toContain('} = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);');
+    expect(source).toContain('visibleEntries.forEach((entry, displayIndex)');
     expect(source).toContain('const step = entry.step;');
-    expect(source).toContain('stepEl.dataset.timelineType = entry.type;');
+    expect(source).toContain('timelineType: entry.type,');
+    expect(source).toContain('data-timeline-type="${escapeAttribute(timelineType)}"');
   });
 });

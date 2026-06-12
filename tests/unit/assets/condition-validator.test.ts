@@ -6,8 +6,8 @@
  *
  * Focus areas:
  *  - calculateStepTotalAfterUpdate: must include newQuantity even for NEW products
- *  - canUpdateQuantity: all operator types, edge cases, undefined-safe
- *  - isStepConditionSatisfied: all operator types, edge cases, undefined-safe
+ *  - canUpdateQuantity: supported operator types, edge cases, undefined-safe
+ *  - isStepConditionSatisfied: supported operator types, edge cases, undefined-safe
  *
  * The critical bug that prompted this test suite:
  *   When productId is NOT yet in currentSelections (first addition), the old
@@ -36,8 +36,6 @@ function makeStep(operator: string, value: number, type = 'quantity') {
 }
 
 const EQ  = 'equal_to';
-const GT  = 'greater_than';
-const LT  = 'less_than';
 const GTE = 'greater_than_or_equal_to';
 const LTE = 'less_than_or_equal_to';
 
@@ -190,35 +188,6 @@ describe('canUpdateQuantity — EQUAL_TO', () => {
   });
 });
 
-// ─── canUpdateQuantity — LESS_THAN ────────────────────────────────────────────
-
-describe('canUpdateQuantity — LESS_THAN', () => {
-  const step = makeStep(LT, 3);
-
-  it('allows total strictly below N (1 < 3)', () => {
-    expect(canUpdateQuantity(step, {}, 'A', 1).allowed).toBe(true);
-  });
-
-  it('allows total of N-1 (2 < 3)', () => {
-    expect(canUpdateQuantity(step, { A: 1 }, 'A', 2).allowed).toBe(true);
-  });
-
-  it('blocks total equal to N (3 < 3 = false)', () => {
-    const result = canUpdateQuantity(step, { A: 2 }, 'A', 3);
-    expect(result.allowed).toBe(false);
-    expect(result.limitText).toBe('less than 3');
-  });
-
-  it('blocks total above N (4 < 3 = false)', () => {
-    expect(canUpdateQuantity(step, { A: 3 }, 'A', 4).allowed).toBe(false);
-  });
-
-  it('blocks when adding new product pushes total to N', () => {
-    // A:2, new product B with qty 1 → total 3, not < 3
-    expect(canUpdateQuantity(step, { A: 2 }, 'B', 1).allowed).toBe(false);
-  });
-});
-
 // ─── canUpdateQuantity — LESS_THAN_OR_EQUAL_TO ────────────────────────────────
 
 describe('canUpdateQuantity — LESS_THAN_OR_EQUAL_TO', () => {
@@ -237,18 +206,6 @@ describe('canUpdateQuantity — LESS_THAN_OR_EQUAL_TO', () => {
   it('blocks when new product pushes total above N', () => {
     // A:3 satisfies LTE 3. Adding B:1 → total 4 > 3 → blocked.
     expect(canUpdateQuantity(step, { A: 3 }, 'B', 1).allowed).toBe(false);
-  });
-});
-
-// ─── canUpdateQuantity — GREATER_THAN ────────────────────────────────────────
-
-describe('canUpdateQuantity — GREATER_THAN', () => {
-  const step = makeStep(GT, 2);
-
-  it('always allows increases (minimum-quantity condition has no upper bound)', () => {
-    expect(canUpdateQuantity(step, {}, 'A', 1).allowed).toBe(true);
-    expect(canUpdateQuantity(step, { A: 5 }, 'A', 10).allowed).toBe(true);
-    expect(canUpdateQuantity(step, { A: 100 }, 'B', 50).allowed).toBe(true);
   });
 });
 
@@ -328,45 +285,6 @@ describe('isStepConditionSatisfied — EQUAL_TO', () => {
   });
 });
 
-// ─── isStepConditionSatisfied — GREATER_THAN ──────────────────────────────────
-
-describe('isStepConditionSatisfied — GREATER_THAN', () => {
-  const step = makeStep(GT, 2);
-
-  it('satisfied when total is strictly greater than N', () => {
-    expect(isStepConditionSatisfied(step, { A: 3 })).toBe(true);
-    expect(isStepConditionSatisfied(step, { A: 2, B: 1 })).toBe(true);
-  });
-
-  it('not satisfied when total equals N', () => {
-    expect(isStepConditionSatisfied(step, { A: 2 })).toBe(false);
-  });
-
-  it('not satisfied when total is below N', () => {
-    expect(isStepConditionSatisfied(step, { A: 1 })).toBe(false);
-    expect(isStepConditionSatisfied(step, {})).toBe(false);
-  });
-});
-
-// ─── isStepConditionSatisfied — LESS_THAN ─────────────────────────────────────
-
-describe('isStepConditionSatisfied — LESS_THAN', () => {
-  const step = makeStep(LT, 3);
-
-  it('satisfied when total is strictly less than N', () => {
-    expect(isStepConditionSatisfied(step, {})).toBe(true);        // 0 < 3
-    expect(isStepConditionSatisfied(step, { A: 2 })).toBe(true); // 2 < 3
-  });
-
-  it('not satisfied when total equals N', () => {
-    expect(isStepConditionSatisfied(step, { A: 3 })).toBe(false);
-  });
-
-  it('not satisfied when total exceeds N', () => {
-    expect(isStepConditionSatisfied(step, { A: 4 })).toBe(false);
-  });
-});
-
 // ─── isStepConditionSatisfied — GREATER_THAN_OR_EQUAL_TO ─────────────────────
 
 describe('isStepConditionSatisfied — GREATER_THAN_OR_EQUAL_TO', () => {
@@ -408,9 +326,9 @@ describe('isStepConditionSatisfied — LESS_THAN_OR_EQUAL_TO', () => {
 // ─── isStepConditionSatisfied — unknown operator ──────────────────────────────
 
 describe('isStepConditionSatisfied — unknown operator', () => {
-  it('defaults to satisfied for unrecognised operators', () => {
+  it('treats unrecognised operators as unsatisfied', () => {
     const step = makeStep('unknown_op', 2);
-    expect(isStepConditionSatisfied(step, { A: 10 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { A: 10 })).toBe(false);
   });
 });
 
@@ -454,25 +372,6 @@ describe('canUpdateQuantity — two conditions (GTE + LTE, i.e. range)', () => {
   it('allows decreasing from 7 back to 6 (decrease always permitted by LTE)', () => {
     // A:6, B:1 → set A to 5 → total 6 → allowed
     expect(canUpdateQuantity(step, { A: 6, B: 1 }, 'A', 5).allowed).toBe(true);
-  });
-});
-
-describe('canUpdateQuantity — two conditions (GT + LT, i.e. exclusive range)', () => {
-  // step: quantity > 1 AND quantity < 5  →  2 ≤ total ≤ 4
-  const step = makeStep2(GT, 1, LT, 5);
-
-  it('allows total 1 (building up; neither blocks increases below cap)', () => {
-    expect(canUpdateQuantity(step, {}, 'A', 1).allowed).toBe(true);
-  });
-
-  it('allows total 4 (4 < 5 passes)', () => {
-    expect(canUpdateQuantity(step, { A: 3 }, 'A', 4).allowed).toBe(true);
-  });
-
-  it('blocks total 5 — secondary LT 5 blocks', () => {
-    const result = canUpdateQuantity(step, { A: 4 }, 'A', 5);
-    expect(result.allowed).toBe(false);
-    expect(result.limitText).toBe('less than 5');
   });
 });
 
@@ -534,26 +433,6 @@ describe('isStepConditionSatisfied — two conditions (GTE 2 AND LTE 6)', () => 
   });
 });
 
-describe('isStepConditionSatisfied — two conditions (GT 1 AND LT 5)', () => {
-  const step = makeStep2(GT, 1, LT, 5);
-
-  it('not satisfied at total = 1 (1 > 1 fails)', () => {
-    expect(isStepConditionSatisfied(step, { A: 1 })).toBe(false);
-  });
-
-  it('satisfied at total = 2', () => {
-    expect(isStepConditionSatisfied(step, { A: 2 })).toBe(true);
-  });
-
-  it('satisfied at total = 4', () => {
-    expect(isStepConditionSatisfied(step, { A: 4 })).toBe(true);
-  });
-
-  it('not satisfied at total = 5 (5 < 5 fails)', () => {
-    expect(isStepConditionSatisfied(step, { A: 5 })).toBe(false);
-  });
-});
-
 describe('isStepConditionSatisfied — single lower-bound only (GTE 2, no second)', () => {
   const step = makeStep(GTE, 2);
 
@@ -581,12 +460,30 @@ describe('isStepConditionSatisfied — null / undefined second condition fields'
 // ─── OPERATORS export ─────────────────────────────────────────────────────────
 
 describe('OPERATORS constants', () => {
-  it('exports all expected operator keys', () => {
+  it('exports only EB-supported step and category rule operators', () => {
     expect(OPERATORS.EQUAL_TO).toBe('equal_to');
-    expect(OPERATORS.GREATER_THAN).toBe('greater_than');
-    expect(OPERATORS.LESS_THAN).toBe('less_than');
     expect(OPERATORS.GREATER_THAN_OR_EQUAL_TO).toBe('greater_than_or_equal_to');
     expect(OPERATORS.LESS_THAN_OR_EQUAL_TO).toBe('less_than_or_equal_to');
+    expect(OPERATORS.GREATER_THAN).toBeUndefined();
+    expect(OPERATORS.LESS_THAN).toBeUndefined();
+  });
+});
+
+describe('unsupported strict operators', () => {
+  it('does not satisfy step rules with strict greater-than or strict less-than operators', () => {
+    expect(isStepConditionSatisfied(makeStep('greater_than', 2), { A: 3 })).toBe(false);
+    expect(isStepConditionSatisfied(makeStep('less_than', 3), { A: 2 })).toBe(false);
+  });
+
+  it('does not satisfy category rules with EB-style strict operators', () => {
+    const makeCategory = (condition: string) => ({
+      categoryId: 'cat-A',
+      products: [{ id: 'p1' }],
+      conditions: [{ type: 'quantity', condition, value: 1 }],
+    });
+
+    expect(isStepConditionSatisfied({ categories: [makeCategory('greaterThan')] }, { p1: 2 })).toBe(false);
+    expect(isStepConditionSatisfied({ categories: [makeCategory('lessThan')] }, {})).toBe(false);
   });
 });
 

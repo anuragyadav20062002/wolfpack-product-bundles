@@ -67,6 +67,20 @@ describe("deriveControlDependencies", () => {
     }).categoryRulesVisible).toBe(false);
   });
 
+  it("tracks category rule visibility from the current draft category count", () => {
+    expect(deriveControlDependencies({
+      categoryCount: 1,
+    }).categoryRulesVisible).toBe(false);
+
+    expect(deriveControlDependencies({
+      categoryCount: 2,
+    }).categoryRulesVisible).toBe(true);
+
+    expect(deriveControlDependencies({
+      categoryCount: 1,
+    }).categoryRulesVisible).toBe(false);
+  });
+
   it("makes step and category rule modes mutually exclusive", () => {
     expect(deriveControlDependencies({
       categoryCount: 2,

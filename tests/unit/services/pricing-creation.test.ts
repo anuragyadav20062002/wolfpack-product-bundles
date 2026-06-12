@@ -5,6 +5,8 @@
 
 import { createMockGraphQLResponse } from '../../setup';
 
+import { calculateBundlePrice, clearPriceCache } from '../../../app/services/bundles/pricing-calculation.server';
+
 // We need to test the actual calculateBundlePrice function
 // Mock only the external dependencies (admin.graphql calls)
 
@@ -17,8 +19,6 @@ jest.mock('../../../app/lib/logger', () => ({
     error: jest.fn(),
   },
 }));
-
-import { calculateBundlePrice, clearPriceCache } from '../../../app/services/bundles/pricing-calculation.server';
 
 describe('calculateBundlePrice — all discount methods', () => {
   const createMockAdmin = (...prices: string[]) => {

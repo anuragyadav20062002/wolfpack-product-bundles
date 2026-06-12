@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readProductPageWidgetSources } from './widget-source-helpers';
 
 // ============================================================
 // PPB product-page direct add-ons discount + cart contract tests
@@ -7,10 +6,7 @@ import { join } from "node:path";
 
 describe("Product Page widget direct Add-ons contract", () => {
   it("tracks the add-on discount helpers and product selection keys path", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-product-page.js"),
-      "utf8",
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain("getAddonLineDiscount(step)");
     expect(source).toContain("getAddonProductSelectionKeys(step)");
@@ -21,10 +17,7 @@ describe("Product Page widget direct Add-ons contract", () => {
   });
 
   it("renders add-on-related UI text and labels from step config", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-product-page.js"),
-      "utf8",
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain("addonLabel");
     expect(source).toContain("addonAddText");
@@ -35,24 +28,17 @@ describe("Product Page widget direct Add-ons contract", () => {
   });
 
   it("does not emit chargeable add-ons as free-gift cart lines", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-product-page.js"),
-      "utf8",
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain("step?.isFreeGift && step?.addonDisplayFree === true");
     expect(source).toContain("if (addonDiscount && step?.addonDisplayFree !== true) {");
-    expect(source).toContain("properties['_bundle_step_type'] = addonDiscount");
+    expect(source).toContain("properties._bundle_step_type = `addon:${addonDiscount.type}:${addonDiscount.value}`");
     expect(source).toContain("`addon:${addonDiscount.type}:${addonDiscount.value}`");
-    expect(source).toContain(": 'addon';");
     expect(source).not.toContain("if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';");
   });
 
   it("includes selected add-on discount savings in cart display properties", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-product-page.js"),
-      "utf8",
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain("buildCartLineSourceProperties(selectedLines)");
     expect(source).toContain("const combinedDiscountAmount = Math.min(totalPrice, baseDiscountAmount + addonDiscountAmount);");
@@ -61,30 +47,26 @@ describe("Product Page widget direct Add-ons contract", () => {
     expect(source).toContain("const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));");
     expect(source).toContain("const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));");
     expect(source).toContain("const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);");
-    expect(source).toContain("discountPercentage: combinedDiscountInfo.discountPercentage");
+    expect(source).toContain("const discountPercentage = combinedDiscountInfo.discountPercentage");
+    expect(source).toContain("buildCartLineSourceProperties({");
+    expect(source).toContain("discountPercentage,");
     expect(source).toContain("youSave");
     expect(source).toContain("amountPercentage");
     expect(source).toContain("const addonDiscountAmount");
   });
 
   it("uses combined base + selected add-on discount for visible product-page totals", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-product-page.js"),
-      "utf8",
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain("const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);");
     expect(source).toContain("const discountText = combinedDiscountInfo.hasDiscount");
     expect(source).toContain("const formattedPrice = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);");
-    expect(source).toContain("button.textContent = `${this._resolveText('addToCartButton', 'Add Bundle to Cart')} • ${formattedPrice}`;");
+    expect(source).toContain("button.textContent = `${this._resolveText('addToCartButton', 'Add Bundle to Cart')} \\u2022 ${formattedPrice}`;");
     expect(source).toContain("totalPillFinal.textContent = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);");
   });
 
   it("uses combined discount for PPB modal/footer pricing and messaging paths", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-product-page.js"),
-      "utf8",
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain("this.updateModalHeaderText(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);");
     expect(source).toContain("this.updateFooterTotalPrices(totalPrice, combinedDiscountInfo, currencyInfo);");

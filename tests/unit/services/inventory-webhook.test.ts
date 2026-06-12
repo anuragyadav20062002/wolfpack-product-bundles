@@ -3,6 +3,9 @@
  * Tests webhook processing for inventory_levels/update topic
  */
 
+import { handleInventoryUpdate } from '../../../app/services/webhooks/handlers/inventory.server';
+import { syncBundleInventory } from '../../../app/services/bundles/inventory-sync.server';
+
 jest.mock('../../../app/db.server', () => ({
   __esModule: true,
   default: {
@@ -24,9 +27,6 @@ jest.mock('../../../app/shopify.server', () => ({
 jest.mock('../../../app/services/bundles/inventory-sync.server', () => ({
   syncBundleInventory: jest.fn(),
 }));
-
-import { handleInventoryUpdate } from '../../../app/services/webhooks/handlers/inventory.server';
-import { syncBundleInventory } from '../../../app/services/bundles/inventory-sync.server';
 
 describe('Inventory Webhook Handler', () => {
   beforeEach(() => {

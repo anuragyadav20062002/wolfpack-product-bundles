@@ -78,6 +78,7 @@ import {
   getDefaultDiscountRuleSuccessMessage,
   getDefaultDiscountRuleText,
 } from "../../../lib/pricing-display-options";
+import { deriveControlDependencies } from "../../../lib/bundle-config/control-dependencies";
 import {
   INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE,
   PRODUCT_PAGE_EDIT_DEFAULTS_HREF,
@@ -862,9 +863,6 @@ export default function ConfigureBundleFlow() {
   const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>(
     (initialValidateQuantityPerProduct?.allowedQuantity ?? (bundle as any).maxQtyPerProduct ?? 1).toString()
   );
-  const [productSlotsEnabled, setProductSlotsEnabled] = useState<boolean>((bundle as any).productSlotsEnabled ?? false);
-  const [productSlotIconUrl, setProductSlotIconUrl] = useState<string>((bundle as any).productSlotIconUrl ?? "");
-  const [showSlotIconPicker, setShowSlotIconPicker] = useState(false);
   const [variantSelectorEnabled, setVariantSelectorEnabled] = useState<boolean>((bundle as any).variantSelectorEnabled ?? true);
   const [showTextOnAddButton, setShowTextOnAddButton] = useState<boolean>((bundle as any).showTextOnAddButton ?? false);
   const [bundleCartTitle, setBundleCartTitle] = useState<string>((bundle as any).bundleCartTitle ?? "");
@@ -1217,8 +1215,6 @@ export default function ConfigureBundleFlow() {
       // FR-05: Bundle Settings
       formData.append("preSelectedProductVariantId", preSelectedProductVariantId);
       formData.append("maxQtyPerProduct", maxQtyPerProduct);
-      formData.append("productSlotsEnabled", String(productSlotsEnabled));
-      formData.append("productSlotIconUrl", productSlotIconUrl);
       formData.append("variantSelectorEnabled", String(variantSelectorEnabled));
       formData.append("showTextOnAddButton", String(showTextOnAddButton));
       formData.append("bundleCartTitle", bundleCartTitle);
@@ -1314,7 +1310,6 @@ export default function ConfigureBundleFlow() {
     bundleEmbedCollectionsSelectedData,
     bundleEmbedSpecificCollectionPages,
     bundleEmbedAddBrowsedProduct,
-    productSlotsEnabled,
     quantityValidationEnabled,
     maxQtyPerProduct,
     individualSellingPlanEnabled,
@@ -1565,7 +1560,7 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
-    enablePreviewGate.requestPreview(() => {
+    enablePreviewGate.requestPreview(async () => {
     // Pick the URL via the shared helper. When the theme app extension is
     // enabled AND the bundle is active or unlisted, this returns the live
     // storefront URL so the merchant sees the customer-facing experience;
@@ -1593,28 +1588,54 @@ export default function ConfigureBundleFlow() {
       productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
     }
 
-    if (productUrl) {
-      // Add template view parameter if template name is set
-      if (formState.templateName && !productUrl.includes('/admin.shopify.com/')) {
-        const separator = productUrl.includes('?') ? '&' : '?';
-        productUrl += `${separator}view=${formState.templateName}`;
-      }
-
-      open(productUrl, '_blank');
-
-      const isPreviewUrl = bundleProduct && productUrl === bundleProduct.onlineStorePreviewUrl;
-      const message = isPreviewUrl
-        ? "Bundle product preview opened in new tab"
-        : "Bundle product opened in new tab";
-
-      shopify.toast.show(message, { isError: false });
-    } else {
+    if (!productUrl) {
       AppLogger.error('Bundle product data:', {}, bundleProduct);
       shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", {
         isError: true,
         duration: 5000
       });
+      return;
     }
+
+    const isStorefrontUrl = !productUrl.includes('/admin.shopify.com/');
+
+    // Open a new tab synchronously so the browser keeps the click gesture
+    // (and doesn't block as a popup) across the async templateSuffix sync.
+    const previewWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
+
+    // Sync the product's templateSuffix with the bundle's intended template
+    // so the bare /products/{handle} URL serves it — no ?view= needed.
+    // Place Widget already does this on its own path; this covers merchants
+    // who preview before placing the widget. Empty templateName → null
+    // suffix (default product template).
+    if (isStorefrontUrl && bundleProduct?.id) {
+      try {
+        const formData = new FormData();
+        formData.append("intent", "assignProductTemplate");
+        formData.append("productId", bundleProduct.id);
+        formData.append("templateSuffix", (formState.templateName || "").trim());
+        await fetch(window.location.href, {
+          method: "POST",
+          body: formData,
+        });
+      } catch (err) {
+        AppLogger.error('Failed to sync product templateSuffix before preview', {}, err);
+        // Continue — best-effort sync.
+      }
+    }
+
+    if (previewWindow && !previewWindow.closed) {
+      previewWindow.location.href = productUrl;
+    } else {
+      window.open(productUrl, "_blank", "noopener,noreferrer");
+    }
+
+    const isPreviewUrl = bundleProduct && productUrl === bundleProduct.onlineStorePreviewUrl;
+    const message = isPreviewUrl
+      ? "Bundle product preview opened in new tab"
+      : "Bundle product opened in new tab";
+
+    shopify.toast.show(message, { isError: false });
     });
   }, [isDirty, bundle, bundleProduct, shop, shopify, formState.templateName, enablePreviewGate, appEmbedEnabled]);
 
@@ -2919,7 +2940,9 @@ export default function ConfigureBundleFlow() {
                                   </button>
                                   {(() => {
                                     const stepCategories = (((step as any).StepCategory as any[] | undefined) ?? []);
-                                    const categoryRulesAvailable = stepCategories.length > 0;
+                                    const categoryRulesAvailable = deriveControlDependencies({
+                                      categoryCount: stepCategories.length,
+                                    }).categoryRulesVisible;
                                     const hasStepRules = (conditionsState.stepConditions[step.id] || []).length > 0;
                                     const hasCategoryRules = stepCategories.some((category: any) => (category.conditions || []).length > 0);
                                     const activeRuleMode = hasCategoryRules ? "category" : hasStepRules ? "step" : "none";
@@ -4332,16 +4355,20 @@ export default function ConfigureBundleFlow() {
                       hideCropEditor
                     />
 
-                    {loadingGif && (
-                      <s-stack direction="block" gap="small-100">
-                        <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#6d7175" }}>PREVIEW</p>
-                        <img
-                          src={loadingGif}
-                          alt="Loading animation preview"
-                          style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: "1px solid #e1e3e5" }}
-                        />
-                      </s-stack>
-                    )}
+                    <s-stack direction="block" gap="small-100">
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#6d7175" }}>PREVIEW</p>
+                      <div
+                        className={productPageBundleStyles.loadingAnimationPreview}
+                        role="img"
+                        aria-label={loadingGif ? "Loading animation preview" : "Default loading spinner preview"}
+                      >
+                        {loadingGif ? (
+                          <img src={loadingGif} alt="" />
+                        ) : (
+                          <span className={productPageBundleStyles.loadingAnimationPreviewSpinner} aria-hidden="true" />
+                        )}
+                      </div>
+                    </s-stack>
                   </s-stack>
                 </s-section>
               </s-stack>
@@ -4439,7 +4466,7 @@ export default function ConfigureBundleFlow() {
                         <div className={productPageBundleStyles.settingTitleRow}>
                           <h3 className={productPageBundleStyles.settingTitle}>Enable Quantity Validation</h3>
                           <span className={productPageBundleStyles.settingInlineSwitch}>
-                            <s-checkbox
+                            <s-switch
                               accessibilityLabel="Enable quantity validation"
                               checked={quantityValidationEnabled || undefined}
                               onChange={(e) => { setQuantityValidationEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
@@ -4457,59 +4484,6 @@ export default function ConfigureBundleFlow() {
                         <s-banner tone="info">
                           Bundles with 3+ products see 24% higher conversion rates when search filters are enabled.
                         </s-banner>
-                        <s-stack direction="block" gap="small-400">
-                          <div className={productPageBundleStyles.settingTitleRow}>
-                            <h3 className={productPageBundleStyles.settingTitle}>Product Slots</h3>
-                            <span className={productPageBundleStyles.settingInlineSwitch}>
-                              <s-switch
-                                accessibilityLabel="Enable product slots display"
-                                checked={productSlotsEnabled || undefined}
-                                onChange={(e) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                              />
-                            </span>
-                          </div>
-                          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                            This feature displays empty slots on the storefront.
-                          </p>
-                        </s-stack>
-                        {/* Slot Icon — nested inside quantity validation */}
-                        <s-stack direction="block" gap="small-400">
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Slot Icon</h3>
-                          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                            You can change the default icon that renders in the empty slots
-                          </p>
-                          {showSlotIconPicker && (
-                            <FilePicker
-                              autoOpen
-                              onClose={() => setShowSlotIconPicker(false)}
-                              value={productSlotIconUrl || null}
-                              onChange={(url: string | null) => {
-                                setProductSlotIconUrl(url ?? "");
-                                setShowSlotIconPicker(false);
-                                markAsDirty();
-                              }}
-                              label="Slot Icon"
-                              hideCropEditor
-                            />
-                          )}
-                          <s-stack direction="inline" gap="small">
-                            <s-button variant="primary" icon="upload" onClick={() => setShowSlotIconPicker(true)}>
-                              Change Icon
-                            </s-button>
-                            <s-button
-                              variant="secondary"
-                              onClick={() => {
-                                setProductSlotIconUrl("");
-                                markAsDirty();
-                              }}
-                            >
-                              Reset
-                            </s-button>
-                          </s-stack>
-                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                            Note: Only applicable when rules are based on quantity
-                          </p>
-                        </s-stack>
                         {individualSellingPlanBlocked && (
                           <s-banner tone="warning">
                             {INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE}
@@ -4534,20 +4508,30 @@ export default function ConfigureBundleFlow() {
                         <p style={{ margin: 0, fontSize: 13, color: "#8c9196" }}>
                           Let customers select a unique selling plan (subscription, pre-order, etc.) for each product in the bundle.
                         </p>
-                        <s-select
-                          label="Apply to products"
-                          value={individualSellingPlanShowFor}
-                          disabled={individualSellingPlanBlocked || !individualSellingPlanEnabled || undefined}
-                          onChange={(e) => {
-                            setIndividualSellingPlanShowFor(
-                              ((e.target as HTMLSelectElement).value as IndividualSellingPlanShowFor)
-                            );
-                            markAsDirty();
-                          }}
-                        >
-                          <s-option value="ALL_PRODUCTS">All products</s-option>
-                          <s-option value="OOS_PRODUCTS">Out of stock products</s-option>
-                        </s-select>
+                        {!individualSellingPlanBlocked && individualSellingPlanEnabled && (
+                          <s-stack direction="block" gap="small-200">
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#202223" }}>Apply to products</p>
+                            {([
+                              { value: "ALL_PRODUCTS", label: "Show for all products", description: "Display selling plan options on every product in the bundle." },
+                              { value: "OOS_PRODUCTS", label: "Show only for out of stock products", description: "Display selling plan options only when a product is out of stock (e.g. for pre-orders)." },
+                            ] as { value: IndividualSellingPlanShowFor; label: string; description: string }[]).map(({ value, label, description }) => (
+                              <label key={value} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                                <input
+                                  type="radio"
+                                  name="individualSellingPlanShowFor"
+                                  value={value}
+                                  checked={individualSellingPlanShowFor === value}
+                                  onChange={() => { setIndividualSellingPlanShowFor(value); markAsDirty(); }}
+                                  style={{ marginTop: 3, flexShrink: 0 }}
+                                />
+                                <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 500, color: "#202223" }}>{label}</span>
+                                  <span style={{ fontSize: 12, color: "#6d7175" }}>{description}</span>
+                                </span>
+                              </label>
+                            ))}
+                          </s-stack>
+                        )}
                       </s-stack>
                     </s-section>
 

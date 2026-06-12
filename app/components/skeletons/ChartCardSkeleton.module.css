@@ -1,0 +1,44 @@
+.card {
+  background: #fff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f2f3;
+}
+
+.headerBar {
+  width: 160px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f1f2f3 0%, #e6e7e8 50%, #f1f2f3 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+.body {
+  padding: 20px;
+}
+
+.shimmer {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f6f6f7 0%, #ececed 50%, #f6f6f7 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

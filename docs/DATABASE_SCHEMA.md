@@ -883,6 +883,6 @@ For migration history, see `prisma/migrations/` directory.
 
 ## Related Documentation
 
-- [Architecture Overview](ARCHITECTURE_OVERVIEW.md)
+- [Application Architecture](APPLICATION_ARCHITECTURE.md)
 - [Feature Guide](FEATURE_GUIDE.md)
 - [API Endpoints](API_ENDPOINTS.md)

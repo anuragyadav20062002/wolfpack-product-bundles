@@ -25,6 +25,7 @@ import {
   DISCOUNT_METHOD_OPTIONS,
 } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
+import { OptimisedImage } from "../../../components/OptimisedImage";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
@@ -79,6 +80,12 @@ import {
 import { BundleStatusSection } from "../_shared/bundle-configure/BundleStatusSection";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
 import { INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE } from "../../../lib/bundle-config/product-page-admin-sections";
+import {
+  buildDefaultProductEntryFromPicker,
+  normalizeDefaultProductsData,
+  type DefaultProductsData,
+} from "../../../lib/bundle-config/default-products";
+import { deriveControlDependencies } from "../../../lib/bundle-config/control-dependencies";
 
 // Types - extracted to separate module for better organization
 import type { LoaderData } from "./types";
@@ -93,7 +100,6 @@ const fullPageTemplateOptions = [
 type IndividualSellingPlanShowFor = "ALL_PRODUCTS" | "OOS_PRODUCTS";
 
 const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
-
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await requireAdminSession(request);
@@ -540,8 +546,8 @@ function QuestionHelpTooltip({
 }) {
   const { t } = useTranslation();
   const tooltip = HELP_TOOLTIPS[tooltipKey];
-  const title = t(`tooltips.${tooltipKey}.title`, '');
-  const description = t(`tooltips.${tooltipKey}.description`);
+  const title = t(`tooltips.${tooltipKey}.title`, tooltip.fallbackTitle || '');
+  const description = t(`tooltips.${tooltipKey}.description`, tooltip.fallbackDescription || tooltip.accessibilityLabel || '');
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; arrowLeft: number } | null>(null);
 
@@ -571,7 +577,7 @@ function QuestionHelpTooltip({
         <s-button
           variant="tertiary"
           icon="info"
-          accessibilityLabel={title || description}
+          accessibilityLabel={tooltip.accessibilityLabel || title || description}
         />
       </span>
       <span
@@ -1054,8 +1060,16 @@ export default function ConfigureBundleFlow() {
   const [productSlotIconUrl, setProductSlotIconUrl] = useState<string>((bundle as any).productSlotIconUrl ?? "");
   const [showSlotIconPicker, setShowSlotIconPicker] = useState(false);
   const [bundleLevelCssExpanded, setBundleLevelCssExpanded] = useState(false);
+  const initialDefaultProductsData = useMemo(
+    () => normalizeDefaultProductsData((bundle as any).defaultProductsData),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [bundle]
+  );
+  const [defaultProductsData, setDefaultProductsData] = useState<DefaultProductsData>(initialDefaultProductsData);
+  const originalDefaultProductsDataRef = useRef<DefaultProductsData>(initialDefaultProductsData);
   const [showTextOnPlusEnabled, setShowTextOnPlusEnabled] = useState<boolean>(
-    !!((bundle as any).textOverrides?.addToCartButton)
+    ((bundle as any).showTextOnAddButton ?? false) === true
+      || !!((bundle as any).textOverrides?.addToCartButton)
   );
   const [individualSellingPlanEnabled, setIndividualSellingPlanEnabled] = useState<boolean>(
     ((bundle as any).individualSellingPlanSelection as { isEnabled?: boolean } | null)?.isEnabled === true
@@ -1509,6 +1523,10 @@ export default function ConfigureBundleFlow() {
     isDisableAddonStepModalOpen ? showPolarisModal(disableAddonStepModalRef) : hidePolarisModal(disableAddonStepModalRef);
   }, [isDisableAddonStepModalOpen]);
 
+  const buildDefaultProductsData = useCallback(() => {
+    return normalizeDefaultProductsData(defaultProductsData);
+  }, [defaultProductsData]);
+
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
   }, []);
@@ -1882,6 +1900,7 @@ export default function ConfigureBundleFlow() {
       formData.append("cartRedirectToCheckout", String(cartRedirectToCheckout));
       formData.append("allowQuantityChanges", String(allowQuantityChanges));
       formData.append("searchBarEnabled", String(searchBarEnabled));
+      formData.append("showTextOnAddButton", String(showTextOnPlusEnabled));
       formData.append("textOverrides", Object.keys(textOverrides).length > 0 ? JSON.stringify(textOverrides) : "");
       formData.append("textOverridesByLocale", Object.keys(textOverridesByLocale).length > 0 ? JSON.stringify(textOverridesByLocale) : "");
       formData.append("bundleTextConfig", JSON.stringify({
@@ -1912,6 +1931,7 @@ export default function ConfigureBundleFlow() {
         isEnabled: pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? false : individualSellingPlanEnabled,
         showFor: individualSellingPlanShowFor,
       }));
+      formData.append("defaultProductsData", JSON.stringify(buildDefaultProductsData()));
 
       // Submit to server action using fetcher
 
@@ -1988,6 +2008,8 @@ export default function ConfigureBundleFlow() {
     productSlotIconUrl,
     individualSellingPlanEnabled,
     individualSellingPlanShowFor,
+    defaultProductsData,
+    buildDefaultProductsData,
     shopify
   ]);
 
@@ -3489,7 +3511,9 @@ export default function ConfigureBundleFlow() {
                       </button>
                       {(() => {
                         const stepCategories = (((step as any).StepCategory as any[] | undefined) ?? []);
-                        const categoryRulesAvailable = stepCategories.length > 0;
+                        const categoryRulesAvailable = deriveControlDependencies({
+                          categoryCount: stepCategories.length,
+                        }).categoryRulesVisible;
                         const hasStepRules = (conditionsState.stepConditions[step.id] || []).length > 0;
                         const hasCategoryRules = stepCategories.some((category: any) => (category.conditions || []).length > 0);
                         const activeRuleMode = hasCategoryRules ? "category" : hasStepRules ? "step" : "none";
@@ -5144,16 +5168,20 @@ export default function ConfigureBundleFlow() {
                       hideCropEditor
                     />
 
-                    {loadingGif && (
-                      <s-stack direction="block" gap="small-100">
-                        <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>PREVIEW</p>
-                        <img
-                          src={loadingGif}
-                          alt="Loading animation preview"
-                          style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: "1px solid #e1e3e5" }}
-                        />
-                      </s-stack>
-                    )}
+                    <s-stack direction="block" gap="small-100">
+                      <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>PREVIEW</p>
+                      <div
+                        className={fullPageBundleStyles.loadingAnimationPreview}
+                        role="img"
+                        aria-label={loadingGif ? "Loading animation preview" : "Default loading spinner preview"}
+                      >
+                        {loadingGif ? (
+                          <img src={loadingGif} alt="" />
+                        ) : (
+                          <span className={fullPageBundleStyles.loadingAnimationPreviewSpinner} aria-hidden="true" />
+                        )}
+                      </div>
+                    </s-stack>
                   </s-stack>
                 </s-section>
 
@@ -5203,33 +5231,93 @@ export default function ConfigureBundleFlow() {
 
                     {/* Pre Selected Product */}
                     <s-section>
-                      <s-stack direction="block" gap="small">
-                        <s-stack direction="inline" alignItems="center" gap="small">
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Pre Selected Product</h3>
-                          {settingsStep && (
-                            <s-switch
-                              accessibilityLabel="Enable pre selected product for active step"
-                              checked={settingsStep.isDefault || undefined}
-                              onChange={(e) => {
-                                stepsState.updateStepField(settingsStep.id, "isDefault", (e.target as HTMLInputElement).checked);
-                                markAsDirty();
-                              }}
-                            />
-                          )}
-                        </s-stack>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          Choose products that should be added to bundle by default
-                        </p>
-                        <s-banner tone="info">
-                          Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
-                        </s-banner>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          These products will be added to user&apos;s box automatically on the first step.
-                        </p>
-                        <s-button variant="primary" onClick={() => handleSectionChange("step_setup")}>
-                          Browse Products
-                        </s-button>
-                      </s-stack>
+                      {(() => {
+                        const defaultProductsEnabled = defaultProductsData.isDefaultProductsEnabled === true;
+                        const selectedDefaultProducts = defaultProductsData.products ?? [];
+                        const defaultProductCount = selectedDefaultProducts.length;
+                        const defaultProductSelectionIds = selectedDefaultProducts
+                          .map((product: any) => product.graphqlId || product.productId || product.id)
+                          .filter(Boolean)
+                          .map((id: string) => ({ id }));
+                        const handleDefaultProductPicker = async () => {
+                          const picked = await (shopify as any).resourcePicker({
+                            type: "product",
+                            multiple: true,
+                            action: "select",
+                            selectionIds: defaultProductSelectionIds,
+                          });
+                          if (!picked) return;
+                          const defaultProducts = picked
+                            .map(buildDefaultProductEntryFromPicker)
+                            .filter((p: any): p is NonNullable<ReturnType<typeof buildDefaultProductEntryFromPicker>> => Boolean(p));
+                          setDefaultProductsData((prev) => ({
+                            isDefaultProductsEnabled: true,
+                            defaultProductsTitle: prev.defaultProductsTitle ?? "",
+                            products: defaultProducts,
+                          }));
+                          markAsDirty();
+                        };
+                        return (
+                          <s-stack direction="block" gap="small">
+                            <s-stack direction="inline" alignItems="center" gap="small">
+                              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Pre Selected Product</h3>
+                              <s-switch
+                                accessibilityLabel="Enable pre selected product"
+                                checked={defaultProductsEnabled || undefined}
+                                onChange={(e) => {
+                                  const checked = (e.target as HTMLInputElement).checked;
+                                  setDefaultProductsData((prev) => ({
+                                    ...prev,
+                                    isDefaultProductsEnabled: checked,
+                                    defaultProductsTitle: prev.defaultProductsTitle ?? "",
+                                    products: prev.products ?? [],
+                                  }));
+                                  markAsDirty();
+                                }}
+                              />
+                            </s-stack>
+                            <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                              Choose products that should be added to bundle by default
+                            </p>
+                            <s-banner tone="info">
+                              Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
+                            </s-banner>
+                            {!defaultProductsEnabled && (
+                              <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                                These products will be added to user&apos;s box automatically on the first step.
+                              </p>
+                            )}
+                            {defaultProductsEnabled && (
+                              <>
+                                <s-text-field
+                                  label="Default products title"
+                                  value={defaultProductsData.defaultProductsTitle ?? ""}
+                                  onInput={(e) => {
+                                    const value = (e.target as HTMLInputElement).value;
+                                    setDefaultProductsData((prev) => ({ ...prev, defaultProductsTitle: value }));
+                                    markAsDirty();
+                                  }}
+                                  autocomplete="off"
+                                />
+                                <div>
+                                  <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600 }}>Choose default products</p>
+                                  <s-stack direction="inline" alignItems="center" gap="small">
+                                    <s-button variant="primary" onClick={handleDefaultProductPicker}>
+                                      Browse Products
+                                    </s-button>
+                                    {defaultProductCount > 0 && <s-badge tone="success">{defaultProductCount} selected</s-badge>}
+                                  </s-stack>
+                                </div>
+                              </>
+                            )}
+                            {!defaultProductsEnabled && (
+                              <s-button variant="secondary" disabled>
+                                Browse Products
+                              </s-button>
+                            )}
+                          </s-stack>
+                        );
+                      })()}
                     </s-section>
 
                     {/* Enable Quantity Validation + Product Slots + Slot Icon */}
@@ -5237,7 +5325,7 @@ export default function ConfigureBundleFlow() {
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Enable Quantity Validation</h3>
-                          <s-checkbox
+                          <s-switch
                             accessibilityLabel="Enable quantity validation"
                             checked={quantityValidationEnabled || undefined}
                             onChange={(e) => { setQuantityValidationEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
@@ -5255,8 +5343,11 @@ export default function ConfigureBundleFlow() {
                         {settingsStep && (
                           <s-stack direction="block" gap="small-400">
                             <s-stack direction="inline" alignItems="center" gap="small">
-                              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>Product Slots</p>
-                              <s-checkbox
+                              <p style={{ display: "flex", alignItems: "center", gap: 6, margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>
+                                Product Slots
+                                <QuestionHelpTooltip tooltipKey="productSlots" />
+                              </p>
+                              <s-switch
                                 accessibilityLabel="Enable product slots display"
                                 checked={productSlotsEnabled || undefined}
                                 onChange={(e) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
@@ -5269,10 +5360,36 @@ export default function ConfigureBundleFlow() {
                         )}
                         {/* Slot Icon — nested inside EQV section */}
                         <s-stack direction="block" gap="small-400">
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Slot Icon</h3>
-                          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                            You can change the default icon that renders in the empty slots
-                          </p>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                            <div style={{ display: "grid", placeItems: "center", flex: "0 0 84px", width: 84, height: 84, border: "1px solid #dfe3e8", borderRadius: 6, background: "#fff", overflow: "hidden" }}>
+                              {productSlotIconUrl ? (
+                                <img src={productSlotIconUrl} alt="" style={{ display: "block", width: 56, height: 56, objectFit: "contain" }} />
+                              ) : (
+                                <span aria-hidden="true" style={{ color: "#777", fontSize: 34, fontWeight: 300, lineHeight: 1 }}>+</span>
+                              )}
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1, paddingTop: 2 }}>
+                              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 650, lineHeight: "20px" }}>Slot Icon</h3>
+                              <p style={{ margin: "2px 0 10px", fontSize: 13, lineHeight: "18px", color: "#303030" }}>
+                                You can change the default icon that renders in the empty slots
+                              </p>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <s-button variant="secondary" onClick={() => setShowSlotIconPicker(true)}>
+                                  Change Icon
+                                </s-button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProductSlotIconUrl("");
+                                    markAsDirty();
+                                  }}
+                                  style={{ appearance: "none", border: 0, padding: 0, background: "transparent", color: "#005bd3", font: "inherit", fontSize: 13, lineHeight: "20px", cursor: "pointer" }}
+                                >
+                                  Reset
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                           {showSlotIconPicker && (
                             <FilePicker
                               autoOpen
@@ -5284,23 +5401,10 @@ export default function ConfigureBundleFlow() {
                                 markAsDirty();
                               }}
                               label="Slot Icon"
+                              uploadLabel="No file chosen"
                               hideCropEditor
                             />
                           )}
-                          <s-stack direction="inline" gap="small">
-                            <s-button variant="primary" icon="upload" onClick={() => setShowSlotIconPicker(true)}>
-                              Change Icon
-                            </s-button>
-                            <s-button
-                              variant="secondary"
-                              onClick={() => {
-                                setProductSlotIconUrl("");
-                                markAsDirty();
-                              }}
-                            >
-                              Reset
-                            </s-button>
-                          </s-stack>
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
                             Note: Only applicable when rules are based on quantity
                           </p>
@@ -5387,17 +5491,28 @@ export default function ConfigureBundleFlow() {
                           />
                         </SettingsRow>
                         {!individualSellingPlanBlocked && individualSellingPlanEnabled && (
-                          <s-select
-                            label="Apply to products"
-                            value={individualSellingPlanShowFor}
-                            onChange={(e) => {
-                              setIndividualSellingPlanShowFor((e.target as HTMLSelectElement).value as IndividualSellingPlanShowFor);
-                              markAsDirty();
-                            }}
-                          >
-                            <s-option value="ALL_PRODUCTS">All products</s-option>
-                            <s-option value="OOS_PRODUCTS">Out of stock products</s-option>
-                          </s-select>
+                          <s-stack direction="block" gap="small-200">
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#202223" }}>Apply to products</p>
+                            {([
+                              { value: "ALL_PRODUCTS", label: "Show for all products", description: "Display selling plan options on every product in the bundle." },
+                              { value: "OOS_PRODUCTS", label: "Show only for out of stock products", description: "Display selling plan options only when a product is out of stock (e.g. for pre-orders)." },
+                            ] as { value: IndividualSellingPlanShowFor; label: string; description: string }[]).map(({ value, label, description }) => (
+                              <label key={value} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                                <input
+                                  type="radio"
+                                  name="individualSellingPlanShowFor"
+                                  value={value}
+                                  checked={individualSellingPlanShowFor === value}
+                                  onChange={() => { setIndividualSellingPlanShowFor(value); markAsDirty(); }}
+                                  style={{ marginTop: 3, flexShrink: 0 }}
+                                />
+                                <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 500, color: "#202223" }}>{label}</span>
+                                  <span style={{ fontSize: 12, color: "#6d7175" }}>{description}</span>
+                                </span>
+                              </label>
+                            ))}
+                          </s-stack>
                         )}
                       </s-stack>
                     </s-section>
@@ -5483,18 +5598,44 @@ export default function ConfigureBundleFlow() {
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                           <div>
                             <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500 }}>Banner Image: Desktop</p>
-                            <FilePicker
-                              value={bundleBannerDesktopUrl || null}
-                              onChange={(url) => { setBundleBannerDesktopUrl(url ?? ""); markAsDirty(); }}
-                            />
+                            {bundleBannerDesktopUrl ? (
+                              <div style={{ position: "relative", borderRadius: 8, overflow: "hidden", border: "1px solid #c9cccf" }}>
+                                <img src={bundleBannerDesktopUrl} alt="Banner Image: Desktop" style={{ width: "100%", display: "block", maxHeight: 180, objectFit: "cover" }} />
+                                <button
+                                  type="button"
+                                  onClick={() => { setBundleBannerDesktopUrl(""); markAsDirty(); }}
+                                  style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid #c9cccf", borderRadius: 4, cursor: "pointer", padding: "4px 10px", fontSize: 12, fontWeight: 500, display: "flex", alignItems: "center", gap: 4, color: "#d72c0d" }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ) : (
+                              <FilePicker
+                                value={null}
+                                onChange={(url) => { setBundleBannerDesktopUrl(url ?? ""); markAsDirty(); }}
+                              />
+                            )}
                             <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6d7175" }}>Recommended Size: <span style={{ color: "#202223" }}>1900x230</span></p>
                           </div>
                           <div>
                             <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500 }}>Banner Image: Mobile</p>
-                            <FilePicker
-                              value={bundleBannerMobileUrl || null}
-                              onChange={(url) => { setBundleBannerMobileUrl(url ?? ""); markAsDirty(); }}
-                            />
+                            {bundleBannerMobileUrl ? (
+                              <div style={{ position: "relative", borderRadius: 8, overflow: "hidden", border: "1px solid #c9cccf" }}>
+                                <img src={bundleBannerMobileUrl} alt="Banner Image: Mobile" style={{ width: "100%", display: "block", maxHeight: 180, objectFit: "cover" }} />
+                                <button
+                                  type="button"
+                                  onClick={() => { setBundleBannerMobileUrl(""); markAsDirty(); }}
+                                  style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid #c9cccf", borderRadius: 4, cursor: "pointer", padding: "4px 10px", fontSize: 12, fontWeight: 500, display: "flex", alignItems: "center", gap: 4, color: "#d72c0d" }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ) : (
+                              <FilePicker
+                                value={null}
+                                onChange={(url) => { setBundleBannerMobileUrl(url ?? ""); markAsDirty(); }}
+                              />
+                            )}
                             <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6d7175" }}>Recommended Size: <span style={{ color: "#202223" }}>1100x500</span></p>
                           </div>
                         </div>
@@ -6114,7 +6255,15 @@ export default function ConfigureBundleFlow() {
                           }}
                         >
                           <span className={fullPageBundleStyles.templateOptionImageFrame}>
-                            <img src={tpl.image} alt={tpl.label} className={fullPageBundleStyles.templateOptionImage} />
+                            <OptimisedImage
+                              src={tpl.image}
+                              alt={tpl.label}
+                              className={fullPageBundleStyles.templateOptionImage}
+                              width={400}
+                              height={300}
+                              loading="eager"
+                              fetchPriority="high"
+                            />
                           </span>
                           <span className={fullPageBundleStyles.templateOptionFooter}>
                             <span className={fullPageBundleStyles.templateOptionLabel}>{tpl.label}</span>

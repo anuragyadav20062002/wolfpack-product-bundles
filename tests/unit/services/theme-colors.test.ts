@@ -6,6 +6,9 @@
  */
 
 // Mock db.server before importing the module under test
+import db from "../../../app/db.server";
+import { syncThemeColors } from "../../../app/services/theme-colors.server";
+
 jest.mock("../../../app/db.server", () => ({
   __esModule: true,
   default: {
@@ -14,9 +17,6 @@ jest.mock("../../../app/db.server", () => ({
     },
   },
 }));
-
-import db from "../../../app/db.server";
-import { syncThemeColors } from "../../../app/services/theme-colors.server";
 
 function makeAdmin(responses: unknown[]) {
   let callIndex = 0;

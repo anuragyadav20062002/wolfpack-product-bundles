@@ -582,6 +582,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const showCompareAtPrices = formData.get("showCompareAtPrices") === "true";
     const cartRedirectToCheckout = formData.get("cartRedirectToCheckout") === "true";
     const allowQuantityChanges = formData.get("allowQuantityChanges") !== "false";
+    const showTextOnAddButton = formData.get("showTextOnAddButton") === "true";
     const textOverridesRaw = formData.get("textOverrides") as string | null;
     const textOverridesByLocaleRaw = formData.get("textOverridesByLocale") as string | null;
     const textOverrides = textOverridesRaw ? JSON.parse(textOverridesRaw) : null;
@@ -612,6 +613,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       ? JSON.parse(validateQuantityPerProductRaw)
       : { isEnabled: false, allowedQuantity: 1 };
     const individualSellingPlanSelection = parseIndividualSellingPlanSelection(formData);
+    const defaultProductsDataRaw = formData.get("defaultProductsData") as string | null;
+    const defaultProductsData = defaultProductsDataRaw ? JSON.parse(defaultProductsDataRaw) : null;
     const quantityValidationEnabled = validateQuantityPerProduct?.isEnabled === true;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
@@ -759,6 +762,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         showCompareAtPrices,
         cartRedirectToCheckout,
         allowQuantityChanges,
+        showTextOnAddButton,
         searchBarEnabled,
         textOverrides,
         textOverridesByLocale,
@@ -778,6 +782,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         productSlotIconUrl,
         validateQuantityPerProduct,
         individualSellingPlanSelection,
+        ...(defaultProductsData !== null && { defaultProductsData }),
         // Update steps if provided
         ...(stepsData && {
           steps: {

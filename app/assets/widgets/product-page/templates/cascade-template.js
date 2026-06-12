@@ -1,43 +1,34 @@
 import {
-  BUNDLE_WIDGET,
   ComponentGenerator,
   CurrencyManager,
   PricingCalculator,
 } from '../../../bundle-widget-components.js';
+import { renderSelectedProductRow } from '../../shared/components/selected-product-row.js';
+import { getSelectedProductEntries } from '../../shared/engine/bundle-selectors.js';
+import { resolveProductPageTemplateConfig } from './registry.js';
 
-export function installCascadeTemplate(BundleWidgetProductPage) {
-  const prototype = BundleWidgetProductPage.prototype;
-
-  prototype._isProductPageCascadeTemplate = function() {
-    return this._getProductPageTemplateType() === 'PDP_INPAGE'
-      && this._getProductPageDesignPreset() === 'CASCADE';
-  };
-
-  prototype._getSelectedProductEntries = function() {
-    const entries = [];
-    (this.selectedProducts || []).forEach((stepSelections, stepIndex) => {
-      const products = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
-      Object.entries(stepSelections || {}).forEach(([variantId, quantity]) => {
-        const normalizedQuantity = Number(quantity) || 0;
-        if (normalizedQuantity <= 0) return;
-
-        const product = products.find(candidate =>
-          this.normalizeSelectionKey(candidate.variantId || candidate.id) === this.normalizeSelectionKey(variantId)
-        );
-        if (!product) return;
-
-        entries.push({
-          stepIndex,
-          variantId,
-          quantity: normalizedQuantity,
-          product,
-        });
-      });
+export const cascadeTemplateMethods = {
+  _isProductPageCascadeTemplate() {
+    const config = resolveProductPageTemplateConfig({
+      templateType: this._getProductPageTemplateType(),
+      designPreset: this._getProductPageDesignPreset(),
+      renderFilledSlotsAsHorizontalStacked: this.selectedBundle?.renderFilledSlotsAsHorizontalStacked,
     });
-    return entries;
-  };
 
-  prototype._getCascadeFooterMessage = function() {
+    return config?.id === 'LIST';
+  },
+
+  _getSelectedProductEntries() {
+    return getSelectedProductEntries({
+      selectedProducts: this.selectedProducts,
+      stepProductData: this.stepProductData,
+    }, {
+      expandProductsByStep: (products) => this.expandProductsByVariant(products || []),
+      normalizeSelectionKey: (value) => this.normalizeSelectionKey(value),
+    });
+  },
+
+  _getCascadeFooterMessage() {
     const displayOptions = this.selectedBundle?.messaging?.displayOptions;
     const pbConfig = displayOptions?.progressBar;
     const rules = this.selectedBundle?.pricing?.rules || [];
@@ -77,9 +68,9 @@ export function installCascadeTemplate(BundleWidgetProductPage) {
       .replace(/{amountNeeded}/g, conditionText)
       .replace(/{itemsNeeded}/g, `${Math.ceil(diff)}`)
       .replace(/{progressPercentage}/g, `${Math.round(progress * 100)}`);
-  };
+  },
 
-  prototype._renderCascadeFooter = function(el) {
+  _renderCascadeFooter(el) {
     el.className = 'bundle-footer-messaging bw-ppb-cascade-footer gbbMixCascadeFooterWrapper gbbMixCascadeFooterWrapper--bundleATCBtnV2 gbbMixCascadeFooterWrapper--cartDrawerUI';
     el.style.display = '';
     el.style.cssText = '';
@@ -106,16 +97,18 @@ export function installCascadeTemplate(BundleWidgetProductPage) {
       list.className = 'bw-ppb-cascade-selected-list gbbMixCascadeCartItemsWrapper';
       selectedEntries.forEach(({ stepIndex, variantId, quantity, product }) => {
         const item = document.createElement('div');
-        item.className = 'bw-ppb-cascade-selected-item gbbMixCascadeBundleCartItem';
-        item.innerHTML = `
-          <img class="gbbMixCascadeCartItemImage" src="${product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(product.title || '')}" loading="lazy">
-          <span class="gbbMixCascadeCartItemTitle">${ComponentGenerator.escapeHtml(product.title || '')}${quantity > 1 ? ` × ${quantity}` : ''}</span>
-          <button type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(product.title || 'product')}">×</button>
-        `;
-        item.querySelector('button')?.addEventListener('click', () => {
+        item.innerHTML = renderSelectedProductRow({
+          ...product,
+          variantId,
+          quantity,
+        }, {
+          className: 'bw-ppb-cascade-selected-item gbbMixCascadeBundleCartItem',
+        }).trim();
+        const row = item.firstElementChild;
+        row?.querySelector('[data-action="remove-selected-product"]')?.addEventListener('click', () => {
           this.removeProductFromSelection(stepIndex, variantId);
         });
-        list.appendChild(item);
+        if (row) list.appendChild(row);
       });
       drawer.appendChild(list);
     }
@@ -129,5 +122,5 @@ export function installCascadeTemplate(BundleWidgetProductPage) {
       messageEl.textContent = message;
       el.appendChild(messageEl);
     }
-  };
-}
+  },
+};

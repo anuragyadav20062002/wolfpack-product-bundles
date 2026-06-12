@@ -1,18 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * Build script for bundling widget JavaScript files
- *
- * This script combines the shared components with widget-specific code
- * into single bundled files for the Shopify theme extension.
- *
- * Usage: node scripts/build-widget-bundles.js [full-page|product-page|all]
- *
- * Output:
- * - extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js
- * - extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js
- */
-
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -21,22 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
-// ---------------------------------------------------------------------------
-// WIDGET VERSION
-// ---------------------------------------------------------------------------
-// Increment this before building when you intend to deploy widget changes.
-// Use semantic versioning (MAJOR.MINOR.PATCH):
-//   PATCH  — bug fix
-//   MINOR  — new storefront feature (backwards-compatible)
-//   MAJOR  — breaking change requiring merchant theme update
-//
-// After incrementing, run:  npm run build:widgets
-// Then deploy:              shopify app deploy
-//
-// Verify live version in browser DevTools on the storefront:
-//   console.log(window.__BUNDLE_WIDGET_VERSION__)
-// ---------------------------------------------------------------------------
-const WIDGET_VERSION = '3.0.22';
+const WIDGET_VERSION = '3.0.26';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
@@ -54,7 +26,22 @@ const SHARED_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/shared/full-page-preset.js'),
 ];
 
-// Source files
+const WIDGET_SHARED_MODULES = [
+  ...SHARED_MODULES,
+  join(ROOT_DIR, 'app/assets/widgets/shared/components/discount-progress.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/components/bundle-banners.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/components/quantity-control.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/components/product-card.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/components/selected-product-row.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/components/selected-product-slots.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/components/step-timeline.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/engine/create-bundle-state.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/engine/bundle-selectors.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/engine/bundle-actions.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/engine/cart-lines.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/engine/cart-submit.js'),
+];
+
 const SOURCES = {
   modal: join(ROOT_DIR, 'app/assets/bundle-modal-component.js'),
   fullPage: join(ROOT_DIR, 'app/assets/bundle-widget-full-page.js'),
@@ -62,7 +49,6 @@ const SOURCES = {
   sdk: join(ROOT_DIR, 'app/assets/sdk/wolfpack-bundles.js'),
 };
 
-// SDK module files (inlined into the SDK bundle, in dependency order)
 const SDK_MODULES = [
   join(ROOT_DIR, 'app/assets/sdk/state.js'),
   join(ROOT_DIR, 'app/assets/sdk/config-loader.js'),
@@ -74,30 +60,71 @@ const SDK_MODULES = [
 ];
 
 const PRODUCT_PAGE_MODULES = [
+  join(ROOT_DIR, 'app/assets/widgets/product-page/templates/grid.config.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/templates/list.config.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/templates/horizontal-slots.config.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/templates/vertical-slots.config.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/templates/registry.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/cascade-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/cognive-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/config-lifecycle-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/default-product-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/dom-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/footer-modal-state-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/modal-state-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/widget-misc-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/layout-shell-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/inpage-render-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/product-data-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/selection-data-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/modal-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/selection-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/cart-methods.js'),
+];
+
+const MODAL_MODULES = [
+  join(ROOT_DIR, 'app/assets/widgets/full-page/modal/variant-methods.js'),
 ];
 
 const FULL_PAGE_MODULES = [
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/standard.config.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/classic.config.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/compact.config.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/horizontal.config.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/registry.js'),
   join(ROOT_DIR, 'app/assets/widgets/full-page/templates/standard-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/full-page/templates/classic-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/full-page/templates/compact-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/full-page/templates/horizontal-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/analytics-config-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/initial-render-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/responsive-layout-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/mobile-summary-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/side-panel-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/box-selection-sidebar-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/timeline-banner-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/search-category-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/product-grid-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/product-card-footer-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/footer-selection-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/validation-addons-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/step-footer-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/discount-modal-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/clear-cart-confirmation-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/product-processing-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/modal-product-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/selection-navigation-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/runtime-cart-settings-methods.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/methods/tier-floating-runtime-methods.js'),
 ];
 
-// Output files
 const OUTPUTS = {
   fullPage: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js'),
   productPage: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js'),
   sdk: join(ROOT_DIR, 'extensions/bundle-builder/assets/wolfpack-bundles-sdk.js'),
 };
 
-/**
- * Build a header banner injected at the top of every bundle.
- * window.__BUNDLE_WIDGET_VERSION__ lets developers verify which build is running
- * in browser DevTools: console.log(window.__BUNDLE_WIDGET_VERSION__)
- */
 function buildBanner(widgetType) {
   const buildDate = new Date().toISOString().split('T')[0];
   return `/*!
@@ -112,9 +139,6 @@ function buildBanner(widgetType) {
 window.__BUNDLE_WIDGET_VERSION__ = '${WIDGET_VERSION}';`;
 }
 
-/**
- * Read a file and return its contents
- */
 function readFile(path) {
   try {
     return readFileSync(path, 'utf-8');
@@ -193,10 +217,10 @@ function removeCommonJsExports(code) {
 /**
  * Read and process all shared component modules
  */
-function readSharedComponents() {
+function readSharedComponents(modules = SHARED_MODULES) {
   const moduleCodes = [];
 
-  for (const modulePath of SHARED_MODULES) {
+  for (const modulePath of modules) {
     if (!existsSync(modulePath)) {
       console.error(`Missing module file: ${modulePath}`);
       process.exit(1);
@@ -255,6 +279,22 @@ function readFullPageModules() {
     const processed = removeUseStrict(removeModuleStatements(code));
     moduleCodes.push(processed);
   }
+  return moduleCodes.join('\n\n');
+}
+
+function readModalModules() {
+  const moduleCodes = [];
+  for (const modulePath of MODAL_MODULES) {
+    if (!existsSync(modulePath)) {
+      console.error(`Missing modal module: ${modulePath}`);
+      process.exit(1);
+    }
+
+    const code = readFile(modulePath);
+    const processed = removeUseStrict(removeModuleStatements(code));
+    moduleCodes.push(processed);
+  }
+
   return moduleCodes.join('\n\n');
 }
 
@@ -317,8 +357,8 @@ ${entryCode}
 function buildFullPageBundle() {
   console.log('Building full-page widget bundle...');
 
-  // Read source files
-  const componentsCode = readSharedComponents();
+  const componentsCode = readSharedComponents(WIDGET_SHARED_MODULES);
+  const modalModulesCode = readModalModules();
   const modalCode = readFile(SOURCES.modal);
   const fullPageModulesCode = readFullPageModules();
   const widgetCode = readFile(SOURCES.fullPage);
@@ -342,6 +382,8 @@ ${componentsCode}
   // BUNDLE PRODUCT MODAL COMPONENT
   // ============================================================================
 
+${modalModulesCode}
+
 ${processedModal}
 
   // Export modal to window for widget access
@@ -358,7 +400,6 @@ ${processedWidget}
 })();
 `;
 
-  // Write output
   writeFileSync(OUTPUTS.fullPage, bundledCode);
   console.log(`  -> ${OUTPUTS.fullPage}`);
   console.log(`  -> ${(bundledCode.length / 1024).toFixed(1)} KB`);
@@ -371,7 +412,7 @@ function buildProductPageBundle() {
   console.log('Building product-page widget bundle...');
 
   // Read source files
-  const componentsCode = readSharedComponents();
+  const componentsCode = readSharedComponents(WIDGET_SHARED_MODULES);
   const productPageModulesCode = readProductPageModules();
   const widgetCode = readFile(SOURCES.productPage);
 
@@ -400,7 +441,6 @@ ${processedWidget}
 })();
 `;
 
-  // Write output
   writeFileSync(OUTPUTS.productPage, bundledCode);
   console.log(`  -> ${OUTPUTS.productPage}`);
   console.log(`  -> ${(bundledCode.length / 1024).toFixed(1)} KB`);

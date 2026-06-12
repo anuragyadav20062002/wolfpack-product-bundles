@@ -1,10 +1,6 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFullPageWidgetSources } from './widget-source-helpers';
 
-const source = readFileSync(
-  join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-  "utf8",
-);
+const source = readFullPageWidgetSources();
 
 describe("full-page selected product summary images", () => {
   it("normalizes selected product image sources before rendering summary slots", () => {

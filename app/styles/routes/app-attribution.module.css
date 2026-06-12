@@ -113,7 +113,9 @@
   font-size: 13px;
   cursor: pointer;
   color: #202223;
-  transition: background 120ms, border-color 120ms;
+  transition:
+    background 120ms,
+    border-color 120ms;
 }
 
 .presetChip:hover {
@@ -170,9 +172,15 @@
   border-radius: 12px 12px 0 0;
 }
 
-.statCard.accent1::before { background: linear-gradient(90deg, #5c6ac4, #9c6ade); }
-.statCard.accent2::before { background: linear-gradient(90deg, #00848e, #00a0ac); }
-.statCard.accent3::before { background: linear-gradient(90deg, #f49342, #f26419); }
+.statCard.accent1::before {
+  background: linear-gradient(90deg, #5c6ac4, #9c6ade);
+}
+.statCard.accent2::before {
+  background: linear-gradient(90deg, #00848e, #00a0ac);
+}
+.statCard.accent3::before {
+  background: linear-gradient(90deg, #f49342, #f26419);
+}
 
 .statLabel {
   font-size: 12px;
@@ -432,13 +440,27 @@
 }
 
 /* colour palette for platform dots */
-.dot0 { background: #5c6ac4; }
-.dot1 { background: #00848e; }
-.dot2 { background: #f49342; }
-.dot3 { background: #de3618; }
-.dot4 { background: #50b83c; }
-.dot5 { background: #9c6ade; }
-.dotDefault { background: #c4cdd0; }
+.dot0 {
+  background: #5c6ac4;
+}
+.dot1 {
+  background: #00848e;
+}
+.dot2 {
+  background: #f49342;
+}
+.dot3 {
+  background: #de3618;
+}
+.dot4 {
+  background: #50b83c;
+}
+.dot5 {
+  background: #9c6ade;
+}
+.dotDefault {
+  background: #c4cdd0;
+}
 
 /* ── Bundle Revenue Section ─────────────────────────────────── */
 
@@ -584,7 +606,10 @@
   font-weight: 500;
   color: #202223;
   cursor: pointer;
-  transition: background 120ms, border-color 120ms, color 120ms;
+  transition:
+    background 120ms,
+    border-color 120ms,
+    color 120ms;
   line-height: 1;
   white-space: nowrap;
 }

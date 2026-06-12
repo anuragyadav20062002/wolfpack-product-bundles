@@ -42,3 +42,4 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Features/Bundle Instance Tracking]] — EB `_easyBundle:OfferId`, MERGE dedup, unique titles
 - [[Operations/Deployment]] — Render + Shopify deploy process
 - [[Operations/Build Process]] — Widget bundles, WASM, CSS size limits
+- [[Operations/Admin Performance]] — App Bridge Web Vitals source, retired custom telemetry, Admin loader critical path
