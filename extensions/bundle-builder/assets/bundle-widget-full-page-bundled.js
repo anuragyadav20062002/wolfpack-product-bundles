@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.34
+ * Version : 3.0.35
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.34';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.35';
 (function() {
   'use strict';
 
@@ -5366,20 +5366,13 @@ renderSidePanel(panel) {
     }
 
     if (this.config.showDiscountProgressBar) {
-      const progressBar = isStandardDesktopSidebar
-        ? this.createStandardSidebarDiscountProgress({
-          discountMessage,
-          combinedDiscountInfo,
-          totalPrice,
-          totalQuantity,
-        })
-        : this._renderDiscountProgress({
-          placement: "sidebar",
-          combinedDiscountInfo,
-          totalPrice,
-          totalQuantity,
-          unitPrices,
-        });
+      const progressBar = this._renderDiscountProgress({
+        placement: "sidebar",
+        combinedDiscountInfo,
+        totalPrice,
+        totalQuantity,
+        unitPrices,
+      });
       if (progressBar) {
         progressBar.classList.add('fpb-dp-sidebar');
         panel.appendChild(progressBar);

@@ -135,20 +135,13 @@ renderSidePanel(panel) {
     }
 
     if (this.config.showDiscountProgressBar) {
-      const progressBar = isStandardDesktopSidebar
-        ? this.createStandardSidebarDiscountProgress({
-          discountMessage,
-          combinedDiscountInfo,
-          totalPrice,
-          totalQuantity,
-        })
-        : this._renderDiscountProgress({
-          placement: "sidebar",
-          combinedDiscountInfo,
-          totalPrice,
-          totalQuantity,
-          unitPrices,
-        });
+      const progressBar = this._renderDiscountProgress({
+        placement: "sidebar",
+        combinedDiscountInfo,
+        totalPrice,
+        totalQuantity,
+        unitPrices,
+      });
       if (progressBar) {
         progressBar.classList.add('fpb-dp-sidebar');
         panel.appendChild(progressBar);
