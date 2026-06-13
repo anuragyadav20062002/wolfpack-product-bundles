@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.40
+ * Version : 3.0.41
  * Built   : 2026-06-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.40';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.41';
 (function() {
   'use strict';
 
@@ -8293,17 +8293,20 @@ _initDefaultProducts() {
   const steps = this.selectedBundle?.steps || [];
   steps.forEach((step, stepIndex) => {
     if (!step.isDefault || !step.defaultVariantId) return;
+
+    const targetId = this.extractId(step.defaultVariantId);
     const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
     const product = allProducts.find(p =>
-      p.variantId === step.defaultVariantId ||
-      p.id === step.defaultVariantId ||
-      p.gid === step.defaultVariantId ||
-      (p.variants || []).some(v => v.id === step.defaultVariantId || v.gid === step.defaultVariantId)
+      this.extractId(p.variantId) === targetId ||
+      this.extractId(p.id) === targetId ||
+      this.extractId(p.gid) === targetId ||
+      (p.variants || []).some(v =>
+        this.extractId(v.id) === targetId || this.extractId(v.gid) === targetId
+      )
     );
     if (product) {
       if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-
-      const normalizedId = this.extractId(step.defaultVariantId) || step.defaultVariantId;
+      const normalizedId = targetId || step.defaultVariantId;
       this.selectedProducts[stepIndex][normalizedId] = 1;
     }
   });
