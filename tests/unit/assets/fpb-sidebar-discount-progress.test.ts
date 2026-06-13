@@ -162,9 +162,10 @@ describe('FPB summary sidebar discount progress', () => {
 
       expect(panel.querySelector('.side-panel-discount-message')?.innerHTML).toContain('Add');
       expect(summaryContent).not.toBeNull();
-      expect(summaryContent?.children[0].className).toContain('fpb-discount-progress');
-      expect(summaryContent?.children[1].className).toBe('side-panel-item-count');
-      expect(summaryContent?.children[2].tagName).toBe('DIV');
+      expect(summaryContent?.children[0].className).toBe('side-panel-discount-message');
+      expect(summaryContent?.children[1].className).toContain('fpb-discount-progress');
+      expect(summaryContent?.children[2].className).toBe('side-panel-item-count');
+      expect(summaryContent?.children[3].tagName).toBe('DIV');
       expect(panel.querySelector('.fpb-discount-progress.fpb-dp-step_based.fpb-dp-sidebar')).not.toBeNull();
       expect(panel.querySelector('.bw-discount-progress--standard-sidebar')).toBeNull();
     },
@@ -181,9 +182,10 @@ describe('FPB summary sidebar discount progress', () => {
 
       expect(panel.querySelector('.side-panel-discount-message')?.innerHTML).toContain('Add');
       expect(summaryContent).not.toBeNull();
-      expect(summaryContent?.children[0].className).toContain('fpb-discount-progress');
-      expect(summaryContent?.children[1].className).toBe('side-panel-item-count');
-      expect(summaryContent?.children[2].tagName).toBe('DIV');
+      expect(summaryContent?.children[0].className).toBe('side-panel-discount-message');
+      expect(summaryContent?.children[1].className).toContain('fpb-discount-progress');
+      expect(summaryContent?.children[2].className).toBe('side-panel-item-count');
+      expect(summaryContent?.children[3].tagName).toBe('DIV');
       expect(panel.querySelector('.fpb-discount-progress.fpb-dp-simple.fpb-dp-sidebar')).not.toBeNull();
       expect(panel.querySelector('.bw-discount-progress--standard-sidebar')).toBeNull();
     },

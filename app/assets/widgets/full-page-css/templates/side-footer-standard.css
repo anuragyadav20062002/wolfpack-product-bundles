@@ -1232,11 +1232,12 @@ body:has([data-fpb-design-preset]) {
     display: grid;
     position: sticky;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 104.96875px 58px;
+    grid-template-rows: auto auto;
     bottom: 0;
     left: 10px;
     width: var(--fpb-mobile-footer-shell-width);
-    height: 173.96875px;
+    height: auto;
+    min-height: 0;
     padding: 5px;
     border-radius: 0;
     box-shadow: none;
@@ -1249,8 +1250,8 @@ body:has([data-fpb-design-preset]) {
   }
   .fpb-mobile-bottom-sheet.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
     .side-panel-discount-message {
-    height: 104.96875px;
-    overflow: hidden;
+    height: auto;
+    overflow: visible;
   }
   .fpb-mobile-bottom-sheet.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
     .side-panel-btn-next {
@@ -1661,8 +1662,8 @@ body:has([data-fpb-design-preset]) {
     transform-origin: center;
   }
   .fpb-mobile-summary-tray.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded {
-    grid-template-rows: 104.96875px 302px;
-    height: 417.96875px;
+    grid-template-rows: auto auto;
+    height: auto;
   }
   .fpb-mobile-summary-tray.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded
     .fpb-mobile-summary-count-badge::before {
@@ -1673,8 +1674,8 @@ body:has([data-fpb-design-preset]) {
     .side-panel-discount-message {
     background: transparent;
     color: #000;
-    height: 104.96875px;
-    overflow: hidden;
+    height: auto;
+    overflow: visible;
   }
   .fpb-mobile-summary-discount-text {
     display: flex;
@@ -1694,9 +1695,10 @@ body:has([data-fpb-design-preset]) {
     display: grid;
     position: relative;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 236px 38px;
+    grid-template-rows: auto auto;
     width: var(--fpb-mobile-footer-inner-width);
-    height: 302px;
+    height: auto;
+    min-height: 0;
     padding: 10px 0;
     background: #fff;
     box-sizing: border-box;
@@ -1704,9 +1706,10 @@ body:has([data-fpb-design-preset]) {
   .fpb-mobile-summary-bundle-items {
     display: grid;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 54px 172px;
+    grid-template-rows: auto auto;
     width: var(--fpb-mobile-footer-inner-width);
-    height: 236px;
+    height: auto;
+    min-height: 0;
   }
   .fpb-mobile-summary-bundle-header {
     display: grid;
@@ -1764,10 +1767,11 @@ body:has([data-fpb-design-preset]) {
   .fpb-mobile-summary-products-list {
     display: grid;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 81px 86px;
+    grid-auto-rows: auto;
     gap: 10px;
     width: var(--fpb-mobile-footer-inner-width);
-    height: 172px;
+    max-height: 172px;
+    height: auto;
     padding: 5px 0 0;
     overflow: auto;
     box-sizing: border-box;

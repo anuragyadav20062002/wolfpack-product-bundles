@@ -134,7 +134,7 @@ renderSidePanel(panel) {
       const msgEl = document.createElement('div');
       msgEl.className = 'side-panel-discount-message';
       msgEl.innerHTML = discountMessage;
-      panel.appendChild(msgEl);
+      summaryContent.appendChild(msgEl);
     }
 
     if (this.config.showDiscountProgressBar) {
