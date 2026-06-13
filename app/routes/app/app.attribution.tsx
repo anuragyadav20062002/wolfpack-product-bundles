@@ -318,8 +318,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .map(([medium, d]) => ({ medium, ...d }))
     .sort((a, b) => b.revenue - a.revenue);
 
+  // Exclude attribution rows that have no bundleId — those represent UTM-tracked
+  // orders that didn't include any bundle product (recorded by api.attribution for
+  // broader analytics). Including them here makes TopCampaigns show non-zero while
+  // the bundle-aware cards (RevenueAttribution, BundlePerformanceMatrix) stay at
+  // zero for the same campaign, which reads as a bug on a Bundle Analytics page.
   const byCampaignMap: Record<string, { revenue: number; orders: number; source: string }> = {};
   for (const a of currentAttributions) {
+    if (!a.bundleId) continue;
     const campaign = a.utmCampaign || "(no campaign)";
     if (!byCampaignMap[campaign]) {
       byCampaignMap[campaign] = { revenue: 0, orders: 0, source: a.utmSource || "direct" };
