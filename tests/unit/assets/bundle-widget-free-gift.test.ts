@@ -92,22 +92,34 @@ function getFreeGiftRemainingCount(steps: Step[], selectedProducts: SelectedProd
   return Math.max(0, total - selected);
 }
 
+function extractId(idString: unknown): string | null {
+  if (idString == null || idString === '') return null;
+  const str = String(idString);
+  const gidMatch = str.match(/gid:\/\/shopify\/\w+\/(\d+)/);
+  if (gidMatch) return gidMatch[1];
+  return str.split('/').pop() ?? null;
+}
+
 function initDefaultProducts(steps: Step[], selectedProducts: SelectedProducts): SelectedProducts {
   const result: SelectedProducts = { ...selectedProducts };
   steps.forEach((step, stepIndex) => {
     if (!step.isDefault || !step.defaultVariantId) return;
+    const targetId = extractId(step.defaultVariantId);
     const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
     const product = allProducts.find(p =>
-      p.variantId === step.defaultVariantId ||
-      p.id === step.defaultVariantId ||
-      p.gid === step.defaultVariantId ||
-      (p.variants || []).some((v: any) => v.id === step.defaultVariantId || v.gid === step.defaultVariantId)
+      extractId(p.variantId) === targetId ||
+      extractId(p.id) === targetId ||
+      extractId((p as any).gid) === targetId ||
+      (p.variants || []).some((v: any) =>
+        extractId(v.id) === targetId || extractId(v.gid) === targetId
+      )
     );
     if (product) {
       if (!result[stepIndex]) result[stepIndex] = {};
-      result[stepIndex][step.defaultVariantId!] = {
+      const normalizedKey = targetId ?? step.defaultVariantId!;
+      result[stepIndex][normalizedKey] = {
         ...product,
-        variantId: step.defaultVariantId!,
+        variantId: normalizedKey,
         quantity: 1,
         isDefault: true,
       };
@@ -397,6 +409,9 @@ describe('initDefaultProducts', () => {
     expect(result).toEqual({});
   });
 
+  // Production code stores the normalized (numeric) variant id as the selection
+  // key, not the original GID — see this.extractId(step.defaultVariantId) in
+  // validation-addons-methods.js. The tests below assert that contract.
   it('pre-populates selectedProducts for a default step with matching product', () => {
     const variantId = 'gid://shopify/ProductVariant/123';
     const product = { id: 'prod-1', title: 'Gift Box', variantId, price: 499, StepProduct: [] };
@@ -409,9 +424,9 @@ describe('initDefaultProducts', () => {
     ];
     const result = initDefaultProducts(steps, {});
     expect(result[0]).toBeDefined();
-    expect(result[0][variantId]).toBeDefined();
-    expect(result[0][variantId].quantity).toBe(1);
-    expect(result[0][variantId].isDefault).toBe(true);
+    expect(result[0]['123']).toBeDefined();
+    expect(result[0]['123'].quantity).toBe(1);
+    expect(result[0]['123'].isDefault).toBe(true);
   });
 
   it('marks pre-populated products with isDefault=true', () => {
@@ -419,7 +434,7 @@ describe('initDefaultProducts', () => {
     const product = { id: 'prod-2', title: 'Mandatory Box', variantId, price: 999 };
     const steps = [makeStep({ isDefault: true, defaultVariantId: variantId, products: [product] })];
     const result = initDefaultProducts(steps, {});
-    expect(result[0][variantId].isDefault).toBe(true);
+    expect(result[0]['456'].isDefault).toBe(true);
   });
 
   it('finds product by StepProduct when not in products array', () => {
@@ -434,8 +449,8 @@ describe('initDefaultProducts', () => {
       }),
     ];
     const result = initDefaultProducts(steps, {});
-    expect(result[0][variantId]).toBeDefined();
-    expect(result[0][variantId].isDefault).toBe(true);
+    expect(result[0]['789']).toBeDefined();
+    expect(result[0]['789'].isDefault).toBe(true);
   });
 
   it('does not overwrite existing selections', () => {
@@ -446,8 +461,7 @@ describe('initDefaultProducts', () => {
       0: { 'other-v': makeSelection('other-v') },
     };
     const result = initDefaultProducts(steps, existingSelected);
-    // New default product added alongside existing
-    expect(result[0][variantId]).toBeDefined();
+    expect(result[0]['111']).toBeDefined();
     expect(result[0]['other-v']).toBeDefined();
   });
 
@@ -460,8 +474,49 @@ describe('initDefaultProducts', () => {
       makeStep({ isDefault: true, defaultVariantId: v2, products: [{ id: 'p2', variantId: v2 }] }),
     ];
     const result = initDefaultProducts(steps, {});
-    expect(result[0][v1]).toBeDefined();
-    expect(result[2][v2]).toBeDefined();
+    expect(result[0]['001']).toBeDefined();
+    expect(result[2]['002']).toBeDefined();
     expect(result[1]).toBeUndefined();
+  });
+
+  // Triage #6 — pre-selected product not added on frontend.
+  // defaultVariantId is saved as GID, but step.products[].variantId is sometimes
+  // emitted as a numeric string by the widget formatter. The strict === comparison
+  // misses these, so the default product is silently dropped.
+  it('matches a product whose variantId is numeric when defaultVariantId is a GID', () => {
+    const defaultVariantId = 'gid://shopify/ProductVariant/123';
+    const product = { id: 'prod-1', title: 'Mandatory Box', variantId: '123', price: 499 };
+    const steps = [makeStep({ isDefault: true, defaultVariantId, products: [product] })];
+    const result = initDefaultProducts(steps, {});
+    expect(result[0]).toBeDefined();
+    expect(Object.values(result[0])[0]?.isDefault).toBe(true);
+  });
+
+  it('matches a product whose variantId is a GID when defaultVariantId is numeric', () => {
+    const defaultVariantId = '456';
+    const product = {
+      id: 'prod-2',
+      title: 'Mandatory Box',
+      variantId: 'gid://shopify/ProductVariant/456',
+      price: 999,
+    };
+    const steps = [makeStep({ isDefault: true, defaultVariantId, products: [product] })];
+    const result = initDefaultProducts(steps, {});
+    expect(result[0]).toBeDefined();
+    expect(Object.values(result[0])[0]?.isDefault).toBe(true);
+  });
+
+  it('matches a product whose nested variants[].id is a GID when defaultVariantId is numeric', () => {
+    const defaultVariantId = '789';
+    const product = {
+      id: 'prod-3',
+      title: 'Mandatory Box',
+      variants: [{ id: 'gid://shopify/ProductVariant/789' }],
+      price: 0,
+    };
+    const steps = [makeStep({ isDefault: true, defaultVariantId, products: [product] })];
+    const result = initDefaultProducts(steps, {});
+    expect(result[0]).toBeDefined();
+    expect(Object.values(result[0])[0]?.isDefault).toBe(true);
   });
 });

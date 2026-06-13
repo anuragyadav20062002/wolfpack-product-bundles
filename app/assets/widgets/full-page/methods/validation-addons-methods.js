@@ -329,18 +329,22 @@ _initDefaultProducts() {
   const steps = this.selectedBundle?.steps || [];
   steps.forEach((step, stepIndex) => {
     if (!step.isDefault || !step.defaultVariantId) return;
+    // Normalize both sides of the comparison — defaultVariantId is saved as a
+    // GID while step.products[].variantId is sometimes emitted numeric, so a
+    // strict === miss left the default product silently unselected.
+    const targetId = this.extractId(step.defaultVariantId);
     const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
     const product = allProducts.find(p =>
-      p.variantId === step.defaultVariantId ||
-      p.id === step.defaultVariantId ||
-      p.gid === step.defaultVariantId ||
-      (p.variants || []).some(v => v.id === step.defaultVariantId || v.gid === step.defaultVariantId)
+      this.extractId(p.variantId) === targetId ||
+      this.extractId(p.id) === targetId ||
+      this.extractId(p.gid) === targetId ||
+      (p.variants || []).some(v =>
+        this.extractId(v.id) === targetId || this.extractId(v.gid) === targetId
+      )
     );
     if (product) {
       if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-      // Normalize to numeric ID (strips GID prefix) so the key matches the variantId
-      // produced by processProductsForStep() via extractId().
-      const normalizedId = this.extractId(step.defaultVariantId) || step.defaultVariantId;
+      const normalizedId = targetId || step.defaultVariantId;
       this.selectedProducts[stepIndex][normalizedId] = 1;
     }
   });
