@@ -41,6 +41,7 @@ describe('fullPageBoxSelectionSidebarMethods.getSidebarTierCtaContent', () => {
         messages: {
           displayOptions: {
             bundleQuantityOptions: {
+              enabled: true,
               defaultRuleId: 'rule-5',
               optionsByRuleId: {
                 'rule-5': {
@@ -77,6 +78,7 @@ describe('fullPageBoxSelectionSidebarMethods.getSidebarTierCtaContent', () => {
         messages: {
           displayOptions: {
             bundleQuantityOptions: {
+              enabled: true,
               defaultRuleId: 'rule-3',
               optionsByRuleId: {
                 'rule-3': {
@@ -95,5 +97,39 @@ describe('fullPageBoxSelectionSidebarMethods.getSidebarTierCtaContent', () => {
       label: 'Box of 3',
       subtext: '10% off',
     });
+  });
+
+  it('does not render tier CTA content when bundle quantity option display is disabled', () => {
+    const content = fullPageBoxSelectionSidebarMethods.getSidebarTierCtaContent.call(
+      makeContext({
+        enabled: true,
+        method: 'fixed_bundle_price',
+        rules: [
+          {
+            id: 'rule-5',
+            conditionType: 'quantity',
+            conditionValue: 5,
+            discountValue: 500000,
+          },
+        ],
+        messages: {
+          displayOptions: {
+            bundleQuantityOptions: {
+              enabled: false,
+              defaultRuleId: 'rule-5',
+              optionsByRuleId: {
+                'rule-5': {
+                  label: 'Box of 5',
+                  subtext: '500000% off',
+                },
+              },
+            },
+          },
+        },
+      }),
+      null,
+    );
+
+    expect(content).toBeNull();
   });
 });

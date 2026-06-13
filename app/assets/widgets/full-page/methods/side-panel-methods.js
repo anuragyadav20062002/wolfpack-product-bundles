@@ -109,6 +109,9 @@ renderSidePanel(panel) {
     panel.appendChild(boxSelection);
   }
 
+  const summaryContent = document.createElement('div');
+  summaryContent.className = 'side-panel-summary-content';
+
   // Discount messaging
   if (this.selectedBundle?.pricing?.enabled) {
     const variables = TemplateManager.createDiscountVariables(
@@ -131,7 +134,7 @@ renderSidePanel(panel) {
       const msgEl = document.createElement('div');
       msgEl.className = 'side-panel-discount-message';
       msgEl.innerHTML = discountMessage;
-      panel.appendChild(msgEl);
+      summaryContent.appendChild(msgEl);
     }
 
     if (this.config.showDiscountProgressBar) {
@@ -144,7 +147,7 @@ renderSidePanel(panel) {
       });
       if (progressBar) {
         progressBar.classList.add('fpb-dp-sidebar');
-        panel.appendChild(progressBar);
+        summaryContent.appendChild(progressBar);
       }
     }
   }
@@ -157,7 +160,7 @@ renderSidePanel(panel) {
     : isStandardDesktopSidebar
       ? `${allSelectedProducts.length} item(s)`
       : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
-  panel.appendChild(countLabel);
+  summaryContent.appendChild(countLabel);
 
   // Selected products list / Classic slots
   if (isClassicDesktopSidebar) {
@@ -170,8 +173,8 @@ renderSidePanel(panel) {
       allSelectedProducts,
       classicSlotCount
     );
-  
-    panel.appendChild(classicSlots);
+
+    summaryContent.appendChild(classicSlots);
   } else {
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
@@ -327,15 +330,17 @@ renderSidePanel(panel) {
         }
       }
     }
-    panel.appendChild(productsContainer);
+    summaryContent.appendChild(productsContainer);
   }
-  
+
   if (!isStandardDesktopSidebar && !isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
     const skeletonContainer = document.createElement('div');
     skeletonContainer.className = 'side-panel-skeleton-slots';
     this._renderSidebarProductSkeletons(skeletonContainer);
-    panel.appendChild(skeletonContainer);
+    summaryContent.appendChild(skeletonContainer);
   }
+
+  panel.appendChild(summaryContent);
 
   // Free gift section (locked or unlocked)
   if (!isClassicDesktopSidebar && !isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
@@ -370,11 +375,6 @@ renderSidePanel(panel) {
   const sidebarTierCtaContent = (conditionless || isLastStep)
     ? this.getSidebarTierCtaContent(nextRule)
     : null;
-  if (sidebarTierCtaContent) {
-    actionSection.style.gridTemplateColumns = '1fr';
-    actionSection.style.gap = '8px';
-    totalSection.style.alignItems = 'center';
-  }
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'side-panel-btn side-panel-btn-next';
@@ -385,32 +385,37 @@ renderSidePanel(panel) {
       ? this._resolveText('addToCartButton', 'Add to Cart')
       : nextStepLabel;
   if (sidebarTierCtaContent) {
-    const labelHtml = sidebarTierCtaContent.label
-      ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
-      : '';
-    const subtextHtml = sidebarTierCtaContent.subtext
-      ? `<span class="side-panel-btn-tier-subtext">${this._escapeHTML(sidebarTierCtaContent.subtext)}</span>`
-      : '';
-    nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
+    const labelText = sidebarTierCtaContent.label || '';
+    const subtextText = sidebarTierCtaContent.subtext || '';
+    const ctaTextParts = [labelText, subtextText].filter((item) => item !== '');
+    nextBtn.textContent = ctaTextParts.join(' ');
+    nextBtn.classList.add('side-panel-btn-has-tier-cta');
+    if (ctaTextParts.length) {
+      nextBtn.title = ctaTextParts.join(' ');
+    }
   }
   if (!isStandardDesktopSidebar && (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed))) {
     nextBtn.disabled = true;
   }
-  nextBtn.addEventListener('click', () => {
+  nextBtn.addEventListener('click', async () => {
+    if (this._isWidgetActionBusy) return;
+
     if (conditionless || isLastStep) {
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
       }
-      this.addBundleToCart();
+      await this.addBundleToCart(nextBtn);
     } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
       const giftName = this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName;
       ToastManager.show(giftName ? `Complete all steps to unlock ${giftName}!` : 'Complete all steps first.');
     } else if (this.canProceedToNextStep()) {
-      this.activeCollectionId = null;
-      this.searchQuery = '';
-      this.currentStepIndex++;
-      this.renderFullPageLayoutWithSidebar();
+      await this._withWidgetActionBusy(async () => {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
+        this.currentStepIndex++;
+        await this.renderFullPageLayoutWithSidebar();
+      }, { actionButton: nextBtn });
     } else {
       ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
     }

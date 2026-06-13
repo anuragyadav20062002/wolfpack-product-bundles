@@ -131,6 +131,7 @@ class BundleWidgetFullPage {
     this.selectedBoxSelectionRuleId = null;
     this.currentStepIndex = 0;
     this.isInitialized = false;
+    this._isWidgetActionBusy = false;
     this.config = {};
     this.elements = {};
     this.compactMobileSummaryTrayExpanded = false;
@@ -238,6 +239,7 @@ class BundleWidgetFullPage {
       // Mark template/preset before first render so full-page selectors can
       // resolve immediately for both render paths.
       this.applyFullPageDesignPresetMarker();
+      await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
       this.applyBundleLevelCss(this.selectedBundle);
 
       // Render initial UI (async for full-page bundles to load products)

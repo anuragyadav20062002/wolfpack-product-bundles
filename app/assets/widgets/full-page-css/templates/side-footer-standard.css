@@ -1232,11 +1232,12 @@ body:has([data-fpb-design-preset]) {
     display: grid;
     position: sticky;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 104.96875px 58px;
+    grid-template-rows: auto auto;
     bottom: 0;
     left: 10px;
     width: var(--fpb-mobile-footer-shell-width);
-    height: 173.96875px;
+    height: auto;
+    min-height: 0;
     padding: 5px;
     border-radius: 0;
     box-shadow: none;
@@ -1249,8 +1250,8 @@ body:has([data-fpb-design-preset]) {
   }
   .fpb-mobile-bottom-sheet.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
     .side-panel-discount-message {
-    height: 104.96875px;
-    overflow: hidden;
+    height: auto;
+    overflow: visible;
   }
   .fpb-mobile-bottom-sheet.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
     .side-panel-btn-next {
@@ -1329,16 +1330,18 @@ body:has([data-fpb-design-preset]) {
   margin: 0;
   padding: 5px 0 0;
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 700;
   line-height: 28.8px;
   text-align: left;
   color: #000;
+  order: 1;
 }
 .layout-sidebar[data-fpb-design-preset="DEFAULT"]
   .fpb-discount-progress.fpb-dp-sidebar {
-  grid-row: 2;
+  grid-row: 3;
   grid-column: 1;
   align-self: end;
+  order: 2;
 }
 .layout-sidebar[data-fpb-design-preset="DEFAULT"] .side-panel-item-count {
   grid-row: 3;
@@ -1659,8 +1662,8 @@ body:has([data-fpb-design-preset]) {
     transform-origin: center;
   }
   .fpb-mobile-summary-tray.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded {
-    grid-template-rows: 104.96875px 302px;
-    height: 417.96875px;
+    grid-template-rows: auto auto;
+    height: auto;
   }
   .fpb-mobile-summary-tray.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded
     .fpb-mobile-summary-count-badge::before {
@@ -1671,8 +1674,8 @@ body:has([data-fpb-design-preset]) {
     .side-panel-discount-message {
     background: transparent;
     color: #000;
-    height: 104.96875px;
-    overflow: hidden;
+    height: auto;
+    overflow: visible;
   }
   .fpb-mobile-summary-discount-text {
     display: flex;
@@ -1688,108 +1691,14 @@ body:has([data-fpb-design-preset]) {
     line-height: 27px;
     text-align: center;
   }
-  .fpb-mobile-summary-tray .fpb-discount-progress.fpb-dp-sidebar {
-    width: var(--fpb-mobile-footer-progress-width);
-    height: 96px;
-    margin: 0;
-    overflow: visible;
-  }
-  .fpb-mobile-summary-tray .fpb-dp-sidebar.fpb-dp-step_based {
-    display: grid;
-    grid-template-columns: var(--fpb-mobile-footer-progress-width);
-    grid-template-rows: 33.1953px 12px 51.1875px;
-  }
-  .fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-list {
-    display: grid;
-    grid-template-columns: 1fr;
-    justify-items: end;
-    align-items: center;
-    height: 33.1953px;
-    margin: 0;
-    padding: 0 0 8px;
-    box-sizing: border-box;
-  }
-  .fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-dp-track {
-    position: relative;
-    align-self: center;
-    height: 6px;
-    overflow: visible;
-  }
-  .fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-dp-track::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    right: 0;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--fpb-discount-track-empty, #c1e7c5);
-    transform: translate(0, -50%);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
-    pointer-events: none;
-  }
-  .fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle-list {
-    display: grid;
-    grid-template-columns: 1fr;
-    justify-items: end;
-    align-items: start;
-    height: 51.1875px;
-    margin: 0;
-    padding: 8px 0 0;
-    box-sizing: border-box;
-  }
-  .fpb-mobile-summary-tray
-    .fpb-dp-sidebar
-    .fpb-discount-step.fpb-discount-step-reached,
-  .fpb-mobile-summary-tray
-    .fpb-dp-sidebar
-    .fpb-discount-step:not(.fpb-discount-step-reached)
-    ~ .fpb-discount-step {
-    display: none;
-  }
-  .fpb-mobile-summary-tray
-    .fpb-dp-sidebar
-    .fpb-discount-step:not(.fpb-discount-step-reached) {
-    justify-self: end;
-    align-items: flex-end;
-    text-align: right;
-  }
-  .fpb-mobile-summary-tray
-    .fpb-dp-sidebar
-    .fpb-discount-step-subtitle.fpb-discount-step-reached,
-  .fpb-mobile-summary-tray
-    .fpb-dp-sidebar
-    .fpb-discount-step-subtitle:not(.fpb-discount-step-reached)
-    ~ .fpb-discount-step-subtitle {
-    display: none;
-  }
-  .fpb-mobile-summary-tray
-    .fpb-dp-sidebar
-    .fpb-discount-step-subtitle:not(.fpb-discount-step-reached) {
-    justify-self: end;
-    width: max-content;
-    max-width: 120px;
-    text-align: right;
-  }
-  .fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-title {
-    color: #000;
-    font-size: 15px;
-    font-weight: 400;
-    line-height: 27px;
-  }
-  .fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle {
-    color: #000;
-    font-size: 15px;
-    font-weight: 400;
-    line-height: 27px;
-  }
   .fpb-mobile-summary-products-section {
     display: grid;
     position: relative;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 236px 38px;
+    grid-template-rows: auto auto;
     width: var(--fpb-mobile-footer-inner-width);
-    height: 302px;
+    height: auto;
+    min-height: 0;
     padding: 10px 0;
     background: #fff;
     box-sizing: border-box;
@@ -1797,9 +1706,10 @@ body:has([data-fpb-design-preset]) {
   .fpb-mobile-summary-bundle-items {
     display: grid;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 54px 172px;
+    grid-template-rows: auto auto;
     width: var(--fpb-mobile-footer-inner-width);
-    height: 236px;
+    height: auto;
+    min-height: 0;
   }
   .fpb-mobile-summary-bundle-header {
     display: grid;
@@ -1857,10 +1767,11 @@ body:has([data-fpb-design-preset]) {
   .fpb-mobile-summary-products-list {
     display: grid;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 81px 86px;
+    grid-auto-rows: auto;
     gap: 10px;
     width: var(--fpb-mobile-footer-inner-width);
-    height: 172px;
+    max-height: 172px;
+    height: auto;
     padding: 5px 0 0;
     overflow: auto;
     box-sizing: border-box;

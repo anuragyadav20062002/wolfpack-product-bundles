@@ -313,13 +313,13 @@ _createMobileSummaryActionButton({
   priceSpan.textContent = priceText;
   ctaBtn.append(labelSpan, separatorSpan, priceSpan);
   if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
-  ctaBtn.addEventListener('click', () => {
+  ctaBtn.addEventListener('click', async () => {
     if (shouldAddToCart) {
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
       }
-      this.addBundleToCart();
+      await this.addBundleToCart(ctaBtn);
     } else {
       const targetStepIndex = hasUpcomingAddonStep ? this.freeGiftStepIndex : this.currentStepIndex + 1;
       if (this.canNavigateToStep(targetStepIndex) && this.canProceedToNextStep()) {
@@ -328,7 +328,9 @@ _createMobileSummaryActionButton({
         this.searchQuery = '';
         this.currentStepIndex = targetStepIndex;
         this._emitStorefrontEvent('step-changed', { previousStepIndex, currentStepIndex: targetStepIndex, direction: 'next' });
-        this.renderFullPageLayoutWithSidebar();
+        await this._withWidgetActionBusy(async () => {
+          await this.renderFullPageLayoutWithSidebar();
+        }, { actionButton: ctaBtn });
       } else if (!this.canNavigateToStep(targetStepIndex)) {
         ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
       } else {

@@ -25,10 +25,25 @@ function escapeHtmlAttribute(value: string): string {
     .replace(/>/g, "&gt;");
 }
 
+function buildBundleConfigBootstrap(bundleId: string, bundle?: any): object {
+  const base = {
+    v: 2,
+    type: "full_page",
+    bundleType: "full_page",
+    id: bundleId,
+  };
+
+  if (bundle?.updatedAt) {
+    return { ...base, updatedAt: String(bundle.updatedAt) };
+  }
+
+  return base;
+}
+
 function buildFullPageBundleBodyHtml(bundleId: string, shop: string, bundle?: any): string {
   const escapedBundleId = escapeHtmlAttribute(bundleId);
   const escapedShop = escapeHtmlAttribute(shop);
-  const bundleConfig = bundle ? JSON.stringify(formatBundleForWidget(bundle)) : "null";
+  const bundleConfig = JSON.stringify(buildBundleConfigBootstrap(bundleId, bundle));
   const bundleSettings = bundle ? JSON.stringify(buildBundleSettings(bundle)) : "null";
 
   return `

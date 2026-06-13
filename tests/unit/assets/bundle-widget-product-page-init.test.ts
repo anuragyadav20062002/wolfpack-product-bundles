@@ -58,6 +58,8 @@ interface MockDataset {
 interface ParseResult {
   /** null → no valid bundle found; object → keyed by bundle id */
   bundleData: Record<string, any> | null;
+  /** true when marker payload is present and requires API hydration */
+  needsFetch: boolean;
   /** true → hide container; false → proceed with init */
   shouldHide: boolean;
   /** true → show theme-editor preview instead of hiding */
@@ -88,9 +90,18 @@ function parseBundleConfigDataset(
   ) {
     try {
       const singleBundle = JSON.parse(configValue);
-      if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
-        bundleData = { [singleBundle.id]: singleBundle };
+      if (
+        singleBundle &&
+        typeof singleBundle === 'object' &&
+        singleBundle.v === 2 &&
+        singleBundle.type === 'product_page' &&
+        typeof singleBundle.id === 'string' &&
+        singleBundle.id.trim() !== ''
+      ) {
+        return { bundleData: null, shouldHide: false, isThemeEditor: false, needsFetch: true };
       }
+
+      // Full-object payloads are no longer accepted from DOM.
     } catch {
       // invalid JSON — treat as absent
     }
@@ -100,12 +111,12 @@ function parseBundleConfigDataset(
     const isThemeEditor = shopifyDesignMode;
     const bundleIdFromDataset = dataset.bundleId;
     if (isThemeEditor && bundleIdFromDataset) {
-      return { bundleData: null, shouldHide: false, isThemeEditor: true };
+      return { bundleData: null, shouldHide: false, isThemeEditor: true, needsFetch: false };
     }
-    return { bundleData: null, shouldHide: true, isThemeEditor: false };
+    return { bundleData: null, shouldHide: true, isThemeEditor: false, needsFetch: false };
   }
 
-  return { bundleData, shouldHide: false, isThemeEditor: false };
+  return { bundleData, shouldHide: false, isThemeEditor: false, needsFetch: false };
 }
 
 /**
@@ -157,6 +168,7 @@ describe('parseBundleConfigDataset — non-bundle product pages', () => {
     const result = parseBundleConfigDataset({ bundleConfig: '' }, false);
     expect(result.shouldHide).toBe(true);
     expect(result.bundleData).toBeNull();
+    expect(result.needsFetch).toBe(false);
   });
 
   it('hides container when data-bundle-config is the string "null"', () => {
@@ -193,7 +205,7 @@ describe('parseBundleConfigDataset — non-bundle product pages', () => {
   });
 });
 
-describe('parseBundleConfigDataset — valid bundle product pages', () => {
+describe('parseBundleConfigDataset — marker bootstrap path', () => {
   const validBundle = {
     id: 'cmnrv4f1m0000a63geuvef3f5',
     name: 'Hello',
@@ -201,30 +213,24 @@ describe('parseBundleConfigDataset — valid bundle product pages', () => {
     pricing: null,
   };
 
-  it('returns bundleData keyed by bundle id when config is valid', () => {
+  it('does not accept legacy full-object payloads from DOM', () => {
     const result = parseBundleConfigDataset(
       { bundleConfig: JSON.stringify(validBundle) },
+      false
+    );
+    expect(result.shouldHide).toBe(true);
+    expect(result.bundleData).toBeNull();
+    expect(result.needsFetch).toBe(false);
+  });
+
+  it('accepts bootstrap marker config and marks fetch requirement', () => {
+    const result = parseBundleConfigDataset(
+      { bundleConfig: JSON.stringify({ v: 2, type: 'product_page', bundleType: 'product_page', id: 'cmpvppb123' }) },
       false
     );
     expect(result.shouldHide).toBe(false);
-    expect(result.bundleData).not.toBeNull();
-    expect(result.bundleData![validBundle.id]).toMatchObject({ id: validBundle.id, name: 'Hello' });
-  });
-
-  it('does not hide container when valid bundle config is present', () => {
-    const result = parseBundleConfigDataset(
-      { bundleConfig: JSON.stringify(validBundle) },
-      false
-    );
-    expect(result.shouldHide).toBe(false);
-  });
-
-  it('preserves full bundle structure including steps', () => {
-    const result = parseBundleConfigDataset(
-      { bundleConfig: JSON.stringify(validBundle) },
-      false
-    );
-    expect(result.bundleData![validBundle.id].steps).toHaveLength(1);
+    expect(result.bundleData).toBeNull();
+    expect(result.needsFetch).toBe(true);
   });
 });
 

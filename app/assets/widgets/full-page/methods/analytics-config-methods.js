@@ -297,6 +297,8 @@ parseConfiguration() {
     this.bundleSettings = {};
   }
 
+  this._bundleConfigCacheMode = 'none';
+
   // Apply card layout settings as CSS variables
   this.applyCardLayoutSettings();
 },
@@ -315,6 +317,30 @@ applyCardLayoutSettings() {
   );
 },
 
+_parseBundleConfigPayload(rawValue) {
+  if (!rawValue || rawValue.trim() === '' || rawValue === 'null' || rawValue === 'undefined') {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue);
+    return typeof parsed === 'object' && parsed !== null ? parsed : null;
+  } catch (_error) {
+    return null;
+  }
+},
+
+_isBundleConfigBootstrapPayload(payload) {
+  return !!(
+    payload &&
+    typeof payload === 'object' &&
+    payload.v &&
+    payload.type === 'full_page' &&
+    typeof payload.id === 'string' &&
+    payload.id.trim() !== ''
+  );
+},
+
 async loadBundleData() {
   let bundleData = null;
 
@@ -328,20 +354,17 @@ async loadBundleData() {
     // The metafield is written by the app when "Place Widget Now" or "Sync Bundle"
     // is clicked — it eliminates the proxy round-trip for first paint.
     const cachedConfig = this.container.dataset.bundleConfig;
-    if (cachedConfig && cachedConfig.trim() !== '' && cachedConfig !== 'null' && cachedConfig !== 'undefined') {
-      try {
-        const parsed = JSON.parse(cachedConfig);
-        const hasRequiredTemplate = parsed.bundleDesignTemplate && parsed.bundleDesignPresetId;
-        if (parsed && typeof parsed === 'object' && parsed.id && hasRequiredTemplate) {
-          bundleData = { [parsed.id]: parsed };
-        }
-      } catch (_e) {
-        // Malformed JSON in the attribute — fall through to proxy
+    const cachedPayload = this._parseBundleConfigPayload(cachedConfig);
+    if (cachedPayload) {
+      if (this._isBundleConfigBootstrapPayload(cachedPayload)) {
+        this._bundleConfigCacheMode = 'bootstrap';
       }
     }
 
     // Fall back to proxy API if metafield cache was absent or unparseable.
     if (!bundleData) {
+      this._bundleConfigCacheMode = 'proxy';
+
       // Retry once after a short delay for transient server errors (504/503).
       // This handles Render cold-start: the first request times out while the
       // server is warming up; the retry ~3 s later succeeds.
