@@ -22,12 +22,12 @@ describe("bundle product media helpers", () => {
         {
           id: "gid://shopify/MediaImage/current",
           alt: "",
-          image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+          image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.avif" },
         },
         {
           id: "gid://shopify/MediaImage/duplicate",
           alt: "",
-          image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+          image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.avif" },
         },
       ],
       "Product Page Fixture",
@@ -52,7 +52,7 @@ describe("bundle product media helpers", () => {
         {
           id: "gid://shopify/MediaImage/current",
           alt: "Product Page Fixture - Bundle",
-          image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+          image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.avif" },
         },
         {
           id: "gid://shopify/MediaImage/old",

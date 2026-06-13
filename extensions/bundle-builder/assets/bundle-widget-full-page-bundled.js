@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.37
- * Built   : 2026-06-12
+ * Version : 3.0.40
+ * Built   : 2026-06-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.37';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.40';
 (function() {
   'use strict';
 
@@ -265,7 +265,8 @@ const BUNDLE_WIDGET = {
     BUY_X_GET_Y: 'buy_x_get_y'
   },
 
-  PLACEHOLDER_IMAGE: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'
+  PLACEHOLDER_IMAGE: '/bundle-product-placeholder.avif',
+  PLACEHOLDER_IMAGE_FALLBACK: '/bundle-product-placeholder.png'
 };
 
 class CurrencyManager {
@@ -602,7 +603,8 @@ class BundleDataManager {
       id: sp.product?.id || sp.productId,
       shopifyProductId: sp.product?.shopifyProductId || sp.shopifyProductId,
       title: sp.product?.title || 'Untitled Product',
-      imageUrl: sp.product?.imageUrl || '/placeholder.png',
+
+      imageUrl: sp.product?.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE,
       price: sp.product?.price || 0,
       compareAtPrice: sp.product?.compareAtPrice || null,
       variants: sp.product?.variants || [],
@@ -1549,7 +1551,7 @@ class ComponentGenerator {
         ` : ''}
 
         <div class="product-image bw-product-card__media">
-          <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
+          <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="if (this.src.indexOf('${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}') === -1) this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}'">
         </div>
 
         <div class="product-content-wrapper bw-product-card__body">
@@ -3983,6 +3985,8 @@ parseConfiguration() {
     this.bundleSettings = {};
   }
 
+  this._bundleConfigCacheMode = 'none';
+
   this.applyCardLayoutSettings();
 },
 
@@ -4000,6 +4004,30 @@ applyCardLayoutSettings() {
   );
 },
 
+_parseBundleConfigPayload(rawValue) {
+  if (!rawValue || rawValue.trim() === '' || rawValue === 'null' || rawValue === 'undefined') {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue);
+    return typeof parsed === 'object' && parsed !== null ? parsed : null;
+  } catch (_error) {
+    return null;
+  }
+},
+
+_isBundleConfigBootstrapPayload(payload) {
+  return !!(
+    payload &&
+    typeof payload === 'object' &&
+    payload.v &&
+    payload.type === 'full_page' &&
+    typeof payload.id === 'string' &&
+    payload.id.trim() !== ''
+  );
+},
+
 async loadBundleData() {
   let bundleData = null;
 
@@ -4009,19 +4037,15 @@ async loadBundleData() {
   if (bundleType === 'full_page' && bundleId) {
 
     const cachedConfig = this.container.dataset.bundleConfig;
-    if (cachedConfig && cachedConfig.trim() !== '' && cachedConfig !== 'null' && cachedConfig !== 'undefined') {
-      try {
-        const parsed = JSON.parse(cachedConfig);
-        const hasRequiredTemplate = parsed.bundleDesignTemplate && parsed.bundleDesignPresetId;
-        if (parsed && typeof parsed === 'object' && parsed.id && hasRequiredTemplate) {
-          bundleData = { [parsed.id]: parsed };
-        }
-      } catch (_e) {
-
+    const cachedPayload = this._parseBundleConfigPayload(cachedConfig);
+    if (cachedPayload) {
+      if (this._isBundleConfigBootstrapPayload(cachedPayload)) {
+        this._bundleConfigCacheMode = 'bootstrap';
       }
     }
 
     if (!bundleData) {
+      this._bundleConfigCacheMode = 'proxy';
 
       const RETRY_DELAY_MS = 3000;
       const RETRYABLE_STATUSES = new Set([503, 504]);
@@ -4549,6 +4573,7 @@ async renderFullPageLayout() {
   this.elements.stepsContainer.innerHTML = '';
   this.elements.stepsContainer.classList.add('full-page-layout');
   this.applyFullPageDesignPresetMarker();
+  await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
   this.ensureBundleBannerRuntimeStyles();
   this.ensureCompactPresetRuntimeStyles();
   this.ensureHorizontalSidePanelSlotRuntimeStyles();
@@ -4630,6 +4655,7 @@ async renderFullPageLayoutWithSidebar() {
   this.elements.stepsContainer.innerHTML = '';
   this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
   this.applyFullPageDesignPresetMarker();
+  await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
   this.ensureBundleBannerRuntimeStyles();
   this.ensureStandardPresetRuntimeStyles();
   this.ensureClassicPresetRuntimeStyles();
@@ -4795,18 +4821,22 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
   ctaBtn.className = 'fpb-mobile-cta-btn';
   ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
   if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
-  ctaBtn.addEventListener('click', () => {
+  ctaBtn.addEventListener('click', async () => {
+    if (this._isWidgetActionBusy) return;
+
     if (conditionlessMobile || (isLastStep && isComplete)) {
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
       }
-      this.addBundleToCart();
+      await this.addBundleToCart(ctaBtn);
     } else if (!isLastStep && this.canNavigateToStep(this.currentStepIndex + 1) && this.canProceedToNextStep()) {
-      this.activeCollectionId = null;
-      this.searchQuery = '';
-      this.currentStepIndex++;
-      this.renderFullPageLayoutWithSidebar();
+      await this._withWidgetActionBusy(async () => {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
+        this.currentStepIndex++;
+        await this.renderFullPageLayoutWithSidebar();
+      }, { actionButton: ctaBtn });
     } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
       ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
     } else {
@@ -5158,13 +5188,13 @@ _createMobileSummaryActionButton({
   priceSpan.textContent = priceText;
   ctaBtn.append(labelSpan, separatorSpan, priceSpan);
   if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
-  ctaBtn.addEventListener('click', () => {
+  ctaBtn.addEventListener('click', async () => {
     if (shouldAddToCart) {
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
       }
-      this.addBundleToCart();
+      await this.addBundleToCart(ctaBtn);
     } else {
       const targetStepIndex = hasUpcomingAddonStep ? this.freeGiftStepIndex : this.currentStepIndex + 1;
       if (this.canNavigateToStep(targetStepIndex) && this.canProceedToNextStep()) {
@@ -5173,7 +5203,9 @@ _createMobileSummaryActionButton({
         this.searchQuery = '';
         this.currentStepIndex = targetStepIndex;
         this._emitStorefrontEvent('step-changed', { previousStepIndex, currentStepIndex: targetStepIndex, direction: 'next' });
-        this.renderFullPageLayoutWithSidebar();
+        await this._withWidgetActionBusy(async () => {
+          await this.renderFullPageLayoutWithSidebar();
+        }, { actionButton: ctaBtn });
       } else if (!this.canNavigateToStep(targetStepIndex)) {
         ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
       } else {
@@ -5640,11 +5672,6 @@ renderSidePanel(panel) {
   const sidebarTierCtaContent = (conditionless || isLastStep)
     ? this.getSidebarTierCtaContent(nextRule)
     : null;
-  if (sidebarTierCtaContent) {
-    actionSection.style.gridTemplateColumns = '1fr';
-    actionSection.style.gap = '8px';
-    totalSection.style.alignItems = 'center';
-  }
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'side-panel-btn side-panel-btn-next';
@@ -5655,32 +5682,37 @@ renderSidePanel(panel) {
       ? this._resolveText('addToCartButton', 'Add to Cart')
       : nextStepLabel;
   if (sidebarTierCtaContent) {
-    const labelHtml = sidebarTierCtaContent.label
-      ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
-      : '';
-    const subtextHtml = sidebarTierCtaContent.subtext
-      ? `<span class="side-panel-btn-tier-subtext">${this._escapeHTML(sidebarTierCtaContent.subtext)}</span>`
-      : '';
-    nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
+    const labelText = sidebarTierCtaContent.label || '';
+    const subtextText = sidebarTierCtaContent.subtext || '';
+    const ctaTextParts = [labelText, subtextText].filter((item) => item !== '');
+    nextBtn.textContent = ctaTextParts.join(' ');
+    nextBtn.classList.add('side-panel-btn-has-tier-cta');
+    if (ctaTextParts.length) {
+      nextBtn.title = ctaTextParts.join(' ');
+    }
   }
   if (!isStandardDesktopSidebar && (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed))) {
     nextBtn.disabled = true;
   }
-  nextBtn.addEventListener('click', () => {
+  nextBtn.addEventListener('click', async () => {
+    if (this._isWidgetActionBusy) return;
+
     if (conditionless || isLastStep) {
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
       }
-      this.addBundleToCart();
+      await this.addBundleToCart(nextBtn);
     } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
       const giftName = this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName;
       ToastManager.show(giftName ? `Complete all steps to unlock ${giftName}!` : 'Complete all steps first.');
     } else if (this.canProceedToNextStep()) {
-      this.activeCollectionId = null;
-      this.searchQuery = '';
-      this.currentStepIndex++;
-      this.renderFullPageLayoutWithSidebar();
+      await this._withWidgetActionBusy(async () => {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
+        this.currentStepIndex++;
+        await this.renderFullPageLayoutWithSidebar();
+      }, { actionButton: nextBtn });
     } else {
       ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
     }
@@ -5725,6 +5757,7 @@ getSidebarTierCtaContent(nextRule) {
 
   const displayOptions = pricing.messages?.displayOptions || {};
   const bundleQuantityOptions = displayOptions.bundleQuantityOptions || {};
+  if (bundleQuantityOptions.enabled !== true) return null;
   const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
   const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
   const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
@@ -8393,23 +8426,56 @@ _renderSidebarProductSkeletons(container) {
   }
 },
 
+_getSummarySidebarRequiredQuantity(step) {
+  if (!step || step.enabled === false || step.isDefault || step.isFreeGift) return null;
+  if (ConditionValidator.isCategoryRuleMode(step)) return null;
+
+  let requiredQuantity = null;
+
+  const pushLowerBound = (operator, value) => {
+    if (!Number.isFinite(value) || value <= 0) {
+      return;
+    }
+
+    if (operator === ConditionValidator.OPERATORS.EQUAL_TO) {
+      requiredQuantity = Math.max(requiredQuantity ?? 0, value);
+      return;
+    }
+    if (operator === ConditionValidator.OPERATORS.GREATER_THAN_OR_EQUAL_TO) {
+      requiredQuantity = Math.max(requiredQuantity ?? 0, value);
+    }
+  };
+
+  if (step.conditionOperator != null && step.conditionValue != null) {
+    const primary = Number(step.conditionValue);
+    pushLowerBound(step.conditionOperator, primary);
+  }
+
+  if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    const secondary = Number(step.conditionValue2);
+    pushLowerBound(step.conditionOperator2, secondary);
+  }
+
+  if (requiredQuantity != null && requiredQuantity > 0) {
+    return requiredQuantity;
+  }
+
+  return null;
+},
+
 getSummarySidebarMaxItemCount(selectedCount = 0) {
   const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
-  const totalStepMax = steps.reduce((total, step) => {
-    if (!step || step.enabled === false) return total;
+  let totalRequired = 0;
 
-    const maxQuantity = Number(step.maxQuantity);
-    const minQuantity = Number(step.minQuantity);
-    const stepCount = Number.isFinite(maxQuantity) && maxQuantity > 0
-      ? maxQuantity
-      : Number.isFinite(minQuantity) && minQuantity > 0
-        ? minQuantity
-        : 1;
+  for (const step of steps) {
+    const required = this._getSummarySidebarRequiredQuantity(step);
+    if (Number.isFinite(required) && required > 0) {
+      totalRequired += required;
+    }
+  }
 
-    return total + stepCount;
-  }, 0);
-
-  return Math.max(totalStepMax, Number(selectedCount || 0), 1);
+  const selected = Number(selectedCount || 0);
+  return Math.max(totalRequired, selected, 1);
 },
 
 getSummarySidebarEmptyStateMode() {
@@ -8452,7 +8518,10 @@ buildCartLineDisplayProperties(displayProperties) {
   return buildSharedCartLineDisplayProperties(displayProperties, this.getCartLineLabels());
 },
 
-async addBundleToCart() {
+async addBundleToCart(clickedButton = null) {
+  if (this._isWidgetActionBusy) return;
+  const actionButton = clickedButton || this.container?.querySelector('.footer-btn-next');
+
   try {
 
     const allStepsValid = this.areBundleConditionsMet();
@@ -8523,8 +8592,7 @@ async addBundleToCart() {
       Object.assign(item.properties, sourceProperties);
     });
 
-    const nextBtn = this.container.querySelector('.footer-btn-next');
-    if (nextBtn) nextBtn.disabled = true;
+    this._setWidgetBusy(true, actionButton);
     this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
     try {
@@ -8541,7 +8609,7 @@ async addBundleToCart() {
         throw new Error('Failed to add to cart');
       }
 
-      const result = await response.json();
+      await response.json();
 
       await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties);
 
@@ -8555,7 +8623,7 @@ async addBundleToCart() {
       ToastManager.show('Failed to add bundle to cart. Please try again.');
     } finally {
       this.hideLoadingOverlay();
-      if (nextBtn) nextBtn.disabled = false;
+      this._setWidgetBusy(false, actionButton);
     }
 
   } catch (error) {
@@ -10342,6 +10410,64 @@ hideLoadingOverlay() {
   hideLoadingOverlayElement(overlay);
 },
 
+_getButtonDataset(button) {
+  if (!button) return null;
+  if (!button.dataset) button.dataset = {};
+  return button.dataset;
+},
+
+_setActionButtonLoadingState(button, isLoading) {
+  if (!button) return;
+  const dataset = this._getButtonDataset(button);
+
+  if (isLoading) {
+    if (dataset.fpbLoadingOriginalHtml === undefined) {
+      dataset.fpbLoadingOriginalHtml = button.innerHTML || '';
+      dataset.fpbLoadingWasDisabled = String(button.disabled === true);
+    }
+    button.classList.add('fpb-inline-spinner-active');
+    button.disabled = true;
+    button.innerHTML = '<span class="fpb-inline-spinner" aria-hidden="true"></span>';
+    return;
+  }
+
+  if (dataset?.fpbLoadingOriginalHtml !== undefined) {
+    button.innerHTML = dataset.fpbLoadingOriginalHtml;
+    button.disabled = dataset.fpbLoadingWasDisabled === 'true';
+    delete dataset.fpbLoadingOriginalHtml;
+    delete dataset.fpbLoadingWasDisabled;
+  }
+  button.classList.remove('fpb-inline-spinner-active');
+},
+
+_setWidgetBusy(isBusy, activeButton = null) {
+  this._isWidgetActionBusy = Boolean(isBusy);
+
+  if (!this.container) return;
+  this.container.classList.toggle('fpb-widget-busy', this._isWidgetActionBusy);
+
+  this._setActionButtonLoadingState(activeButton, isBusy);
+},
+
+_withWidgetActionBusy(action, options = {}) {
+  const { actionButton = null } = options;
+
+  if (!this.container || this._isWidgetActionBusy) return Promise.resolve(false);
+
+  this._setWidgetBusy(true, actionButton);
+
+  return Promise.resolve()
+    .then(() => action())
+    .then(() => true)
+    .catch((error) => {
+      console.error('[Wolfpack Bundles] Widget action failed:', error);
+      throw error;
+    })
+    .finally(() => {
+      this._setWidgetBusy(false, actionButton);
+    });
+},
+
 generateBundleInstanceId() {
 
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -10551,21 +10677,81 @@ ensureFullPageTemplateStylesheet(preset) {
   const urls = window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ || {};
   const href = urls[presetKey] || urls[templateKey] || urls.DEFAULT || urls.STANDARD;
 
-  if (!href || typeof document === 'undefined') return;
+  if (!href || typeof document === 'undefined') return Promise.resolve();
 
-  const alreadyLoaded = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some((link) =>
+  if (!this._fpbTemplateStylesheetPromises) {
+    this._fpbTemplateStylesheetPromises = new Map();
+  }
+
+  const pendingPromise = this._fpbTemplateStylesheetPromises.get(href);
+  if (pendingPromise) {
+    return pendingPromise;
+  }
+
+  const existingLink = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).find((link) =>
     link.getAttribute('href') === href
     || link.href === href
     || link.dataset.wpbFpbTemplateCss === templateKey
   );
 
-  if (alreadyLoaded) return;
+  const markLoaded = (link) => {
+    if (link instanceof HTMLLinkElement) {
+      link.dataset.wpbFpbTemplateCssLoaded = '1';
+    }
+  };
+
+  const isStylesheetLoaded = (link) => {
+    if (!link) return false;
+    if (link.dataset?.wpbFpbTemplateCssLoaded === '1') return true;
+
+    try {
+      return !!link.sheet;
+    } catch (_error) {
+      return false;
+    }
+  };
+
+  if (existingLink) {
+    if (isStylesheetLoaded(existingLink)) {
+      markLoaded(existingLink);
+      return Promise.resolve();
+    }
+
+    const promise = new Promise((resolve) => {
+      const done = () => {
+        markLoaded(existingLink);
+        this._fpbTemplateStylesheetPromises.delete(href);
+        resolve();
+      };
+
+      existingLink.addEventListener('load', done, { once: true });
+      existingLink.addEventListener('error', done, { once: true });
+    });
+
+    this._fpbTemplateStylesheetPromises.set(href, promise);
+    return promise;
+  }
 
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = href;
   link.dataset.wpbFpbTemplateCss = templateKey;
+
+  const promise = new Promise((resolve) => {
+    const done = () => {
+      markLoaded(link);
+      this._fpbTemplateStylesheetPromises.delete(href);
+      resolve();
+    };
+
+    link.addEventListener('load', done, { once: true });
+    link.addEventListener('error', done, { once: true });
+  });
+
+  this._fpbTemplateStylesheetPromises.set(href, promise);
   document.head.appendChild(link);
+
+  return promise;
 },
 
 getProductAddButtonText() {
@@ -10600,7 +10786,7 @@ applyFullPageDesignPresetMarker() {
   this.elements.stepsContainer.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
   this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
   this.elements.stepsContainer.classList.toggle('fpb-i', cardCtaMode === 'icon');
-  this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
+  void this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
 },
 
 /** Returns true if the given tier index is the currently active one. */
@@ -10869,14 +11055,9 @@ showErrorUI(_error) {
 /**
  * Background layout refresh — runs after initial render.
  *
- * The CDN-cached `data-bundle-config` attribute can be stale for minutes-to-hours
- * after the merchant saves a layout change. This method fetches the latest config
- * from the proxy API and, if the layout differs from what was cached, re-renders
- * the steps container so the correct layout is shown within seconds of page load.
- *
- * Only runs when:
- *   1. Cached data was used for first render (data-bundle-config attr was present)
- *   2. Not in the Shopify theme editor (designMode)
+ * In compact-marker mode, we always fetch the bundle via API before render,
+ * so this refresh path is effectively a no-op for initialized API loads.
+ * It is preserved for legacy cached payload paths and exits early when not needed.
  *
  * Fire-and-forget: all errors are silently swallowed.
  */
@@ -10884,9 +11065,7 @@ async _scheduleLayoutRefresh() {
   const bundleId = this.container.dataset.bundleId;
   if (!bundleId) return;
 
-  const cachedAttr = this.container.dataset.bundleConfig;
-  const usedCache = cachedAttr && cachedAttr !== 'null' && cachedAttr !== 'undefined' && cachedAttr.trim() !== '';
-  if (!usedCache) return;
+  if (this._bundleConfigCacheMode !== 'full') return;
 
   try {
     const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
@@ -11047,6 +11226,7 @@ class BundleWidgetFullPage {
     this.selectedBoxSelectionRuleId = null;
     this.currentStepIndex = 0;
     this.isInitialized = false;
+    this._isWidgetActionBusy = false;
     this.config = {};
     this.elements = {};
     this.compactMobileSummaryTrayExpanded = false;
@@ -11130,6 +11310,7 @@ class BundleWidgetFullPage {
       this.setupDOMElements();
 
       this.applyFullPageDesignPresetMarker();
+      await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
       this.applyBundleLevelCss(this.selectedBundle);
 
       await this.renderUI();

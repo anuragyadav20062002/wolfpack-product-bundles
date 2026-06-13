@@ -1014,7 +1014,7 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
                     {
                       id: "gid://shopify/MediaImage/current",
                       alt: "",
-                      image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+                      image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.avif" },
                     },
                   ],
                 },
@@ -1110,7 +1110,7 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
                     {
                       id: "gid://shopify/MediaImage/current",
                       alt: "",
-                      image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+                      image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.avif" },
                     },
                     {
                       id: "gid://shopify/MediaImage/old",

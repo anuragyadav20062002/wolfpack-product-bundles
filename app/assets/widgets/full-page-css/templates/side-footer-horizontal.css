@@ -793,46 +793,6 @@
   line-height: 27px;
   text-align: center;
 }
-.fpb-mobile-summary-tray .fpb-discount-progress.fpb-dp-sidebar {
-  display: grid !important;
-  width: var(--fpb-mobile-footer-progress-width);
-  height: 96px;
-  margin: 0;
-  overflow: visible;
-}
-.fpb-mobile-summary-tray .fpb-dp-sidebar.fpb-dp-step_based {
-  display: grid;
-  grid-template-columns: var(--fpb-mobile-footer-progress-width);
-  grid-template-rows: 33.1953px 12px 51.1875px;
-}
-.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-list {
-  height: 33.1953px;
-  margin: 0;
-  padding: 0 0 8px;
-  box-sizing: border-box;
-}
-.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-dp-track {
-  align-self: center;
-  height: 6px;
-}
-.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle-list {
-  height: 51.1875px;
-  margin: 0;
-  padding: 8px 0 0;
-  box-sizing: border-box;
-}
-.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-title {
-  color: #000;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 27px;
-}
-.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle {
-  color: #000;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 27px;
-}
 .fpb-mobile-summary-products-section {
   display: grid;
   position: relative;
@@ -1166,10 +1126,19 @@
     background: transparent;
     color: #000;
     font-size: 16px;
-    font-weight: 400;
+    font-weight: 700;
     line-height: 28.8px;
     text-align: left;
     overflow: hidden;
+    order: 1;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]
+    .fpb-discount-progress.fpb-dp-sidebar {
+    grid-row: 3;
+    grid-column: 1 / -1;
+    align-self: end;
+    order: 2;
   }
 
   .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .side-panel-item-count {

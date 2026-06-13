@@ -471,23 +471,56 @@ _renderSidebarProductSkeletons(container) {
   }
 },
 
+_getSummarySidebarRequiredQuantity(step) {
+  if (!step || step.enabled === false || step.isDefault || step.isFreeGift) return null;
+  if (ConditionValidator.isCategoryRuleMode(step)) return null;
+
+  let requiredQuantity = null;
+
+  const pushLowerBound = (operator, value) => {
+    if (!Number.isFinite(value) || value <= 0) {
+      return;
+    }
+
+    if (operator === ConditionValidator.OPERATORS.EQUAL_TO) {
+      requiredQuantity = Math.max(requiredQuantity ?? 0, value);
+      return;
+    }
+    if (operator === ConditionValidator.OPERATORS.GREATER_THAN_OR_EQUAL_TO) {
+      requiredQuantity = Math.max(requiredQuantity ?? 0, value);
+    }
+  };
+
+  if (step.conditionOperator != null && step.conditionValue != null) {
+    const primary = Number(step.conditionValue);
+    pushLowerBound(step.conditionOperator, primary);
+  }
+
+  if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    const secondary = Number(step.conditionValue2);
+    pushLowerBound(step.conditionOperator2, secondary);
+  }
+
+  if (requiredQuantity != null && requiredQuantity > 0) {
+    return requiredQuantity;
+  }
+
+  return null;
+},
+
 getSummarySidebarMaxItemCount(selectedCount = 0) {
   const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
-  const totalStepMax = steps.reduce((total, step) => {
-    if (!step || step.enabled === false) return total;
+  let totalRequired = 0;
 
-    const maxQuantity = Number(step.maxQuantity);
-    const minQuantity = Number(step.minQuantity);
-    const stepCount = Number.isFinite(maxQuantity) && maxQuantity > 0
-      ? maxQuantity
-      : Number.isFinite(minQuantity) && minQuantity > 0
-        ? minQuantity
-        : 1;
+  for (const step of steps) {
+    const required = this._getSummarySidebarRequiredQuantity(step);
+    if (Number.isFinite(required) && required > 0) {
+      totalRequired += required;
+    }
+  }
 
-    return total + stepCount;
-  }, 0);
-
-  return Math.max(totalStepMax, Number(selectedCount || 0), 1);
+  const selected = Number(selectedCount || 0);
+  return Math.max(totalRequired, selected, 1);
 },
 
 getSummarySidebarEmptyStateMode() {

@@ -51,5 +51,8 @@ export const BUNDLE_WIDGET = {
   },
 
   // Shared asset URLs
-  PLACEHOLDER_IMAGE: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'
+  // AVIF is default for lower bytes and better decoding efficiency; PNG remains as a guaranteed fallback via
+  // component-level onerror handling.
+  PLACEHOLDER_IMAGE: '/bundle-product-placeholder.avif',
+  PLACEHOLDER_IMAGE_FALLBACK: '/bundle-product-placeholder.png'
 };

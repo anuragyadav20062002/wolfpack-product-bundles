@@ -60,12 +60,45 @@
     opacity 0.15s;
 }
 
+.fpb-inline-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: bundle-loading-spinner 0.75s linear infinite;
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.bundle-widget-full-page.fpb-widget-busy {
+  pointer-events: none;
+}
+
+.bundle-widget-full-page.fpb-widget-busy .side-panel-btn-next,
+.bundle-widget-full-page.fpb-widget-busy .fpb-mobile-cta-btn {
+  opacity: 0.65;
+}
+
+.fpb-inline-spinner-active {
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .side-panel-btn-tier-label,
 .side-panel-btn-tier-subtext {
   display: block;
   max-width: 100%;
   overflow-wrap: anywhere;
   text-align: center;
+}
+
+.side-panel-btn-next.side-panel-btn-has-tier-cta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .side-panel-btn-tier-label {
@@ -490,24 +523,17 @@
     animation: fpb-mobile-summary-chevron-close 220ms ease both;
   }
 
-  .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
+.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
     .side-panel-discount-message {
     background: transparent;
     color: #000000;
     margin: 0;
     padding: 5px 0 0;
     font-size: 15px;
-    font-weight: 400;
+    font-weight: 700;
     line-height: 27px;
     text-align: center;
-  }
-
-  .fpb-mobile-summary-tray .fpb-discount-progress.fpb-dp-sidebar {
-    display: grid !important;
-    width: var(--fpb-mobile-footer-progress-width);
-    height: 96px;
-    margin: 0;
-    overflow: visible;
+    order: 1;
   }
 
   .fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded {

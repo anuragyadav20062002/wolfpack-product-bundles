@@ -1,6 +1,8 @@
 import { createDefaultLoadingAnimation } from '../../shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from '../../shared/loading-overlay.js';
 
+const MIN_LOADING_OVERLAY_VISIBLE_MS = 180;
+
 export const ProductPageWidgetMiscMethods = {
 showLoadingOverlay(gifUrl) {
   if (!this.container) return;
@@ -14,6 +16,8 @@ showLoadingOverlay(gifUrl) {
 
   const overlay = document.createElement('div');
   overlay.className = 'bundle-loading-overlay';
+  overlay.style.minHeight = 'var(--bundle-ppb-loading-overlay-min-height, 180px)';
+  overlay.style.minWidth = 'var(--bundle-ppb-loading-overlay-min-width, 180px)';
 
   if (gifUrl) {
     const img = document.createElement('img');
@@ -34,12 +38,28 @@ showLoadingOverlay(gifUrl) {
   // dataset attribute — microtasks settle before animation frames).
   // eslint-disable-next-line no-unused-expressions
   overlay.offsetHeight;
+
+  // Keep overlay visible briefly so we avoid a flash that never renders.
+  this._bundleLoadingOverlayToken = (this._bundleLoadingOverlayToken || 0) + 1;
+  this._loadingOverlayShownAt = performance.now();
+  overlay.dataset.wpbLoadingToken = String(this._bundleLoadingOverlayToken);
   markLoadingOverlayVisible(overlay);
 },
 
 hideLoadingOverlay() {
   const overlay = this.container?.querySelector('.bundle-loading-overlay');
-  hideLoadingOverlayElement(overlay);
+  if (!overlay) return;
+  const overlayToken = Number(overlay.dataset.wpbLoadingToken || 0);
+  if (!overlayToken || overlayToken !== this._bundleLoadingOverlayToken) return;
+
+  const visibleMs = performance.now() - (this._loadingOverlayShownAt || 0);
+  const delayMs = Math.max(0, MIN_LOADING_OVERLAY_VISIBLE_MS - visibleMs);
+
+  window.setTimeout(() => {
+    if (this._bundleLoadingOverlayToken !== overlayToken) return;
+    this._bundleLoadingOverlayToken = 0;
+    hideLoadingOverlayElement(overlay);
+  }, delayMs);
 },
 
 // ========================================================================

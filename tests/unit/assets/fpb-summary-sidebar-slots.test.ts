@@ -4,32 +4,32 @@ export {};
 const { fullPageValidationAddonsMethods } = require('../../../app/assets/widgets/full-page/methods/validation-addons-methods.js');
 
 function makeContext(steps: any[]) {
-  return {
+  return Object.assign(Object.create(fullPageValidationAddonsMethods), {
     selectedBundle: { steps },
-  };
+  });
 }
 
 describe('fullPageValidationAddonsMethods.getSummarySidebarMaxItemCount', () => {
-  it('sums enabled step max quantities for the full bundle capacity', () => {
+  it('sums configured required quantities from step quantity conditions', () => {
     const count = fullPageValidationAddonsMethods.getSummarySidebarMaxItemCount.call(
       makeContext([
-        { enabled: true, minQuantity: 1, maxQuantity: 1 },
-        { enabled: true, minQuantity: 1, maxQuantity: 3 },
+        { enabled: true, conditionType: 'QUANTITY', conditionOperator: 'greater_than_or_equal_to', conditionValue: 2 },
+        { enabled: true, conditionType: 'QUANTITY', conditionOperator: 'equal_to', conditionValue: 3 },
       ]),
     );
 
-    expect(count).toBe(4);
+    expect(count).toBe(5);
   });
 
-  it('ignores disabled steps when calculating summary sidebar capacity', () => {
+  it('falls back to one row when there is no explicit required-quantity condition', () => {
     const count = fullPageValidationAddonsMethods.getSummarySidebarMaxItemCount.call(
       makeContext([
-        { enabled: true, minQuantity: 1, maxQuantity: 2 },
+        { enabled: true, minQuantity: 1 },
         { enabled: false, minQuantity: 1, maxQuantity: 5 },
       ]),
     );
 
-    expect(count).toBe(2);
+    expect(count).toBe(1);
   });
 
   it('keeps enough rows for selected products when selected count exceeds configured fallback', () => {

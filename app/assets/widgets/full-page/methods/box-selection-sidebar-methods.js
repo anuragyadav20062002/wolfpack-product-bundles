@@ -30,6 +30,7 @@ getSidebarTierCtaContent(nextRule) {
 
   const displayOptions = pricing.messages?.displayOptions || {};
   const bundleQuantityOptions = displayOptions.bundleQuantityOptions || {};
+  if (bundleQuantityOptions.enabled !== true) return null;
   const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
   const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
   const rules = Array.isArray(pricing.rules) ? pricing.rules : [];

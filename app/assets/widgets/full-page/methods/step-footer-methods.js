@@ -59,7 +59,10 @@ buildCartLineDisplayProperties(displayProperties) {
 },
 
 // Add bundle to cart
-async addBundleToCart() {
+async addBundleToCart(clickedButton = null) {
+  if (this._isWidgetActionBusy) return;
+  const actionButton = clickedButton || this.container?.querySelector('.footer-btn-next');
+
   try {
     // Final validation: all paid steps must be satisfied.
     // Free gift and default steps are non-blocking and are intentionally skipped here —
@@ -137,9 +140,8 @@ async addBundleToCart() {
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
     });
-    // Disable the Add to Cart button and show loading overlay
-    const nextBtn = this.container.querySelector('.footer-btn-next');
-    if (nextBtn) nextBtn.disabled = true;
+
+    this._setWidgetBusy(true, actionButton);
     this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
     try {
@@ -156,7 +158,7 @@ async addBundleToCart() {
         throw new Error('Failed to add to cart');
       }
 
-      const result = await response.json();
+      await response.json();
 
       await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties);
 
@@ -172,7 +174,7 @@ async addBundleToCart() {
       ToastManager.show('Failed to add bundle to cart. Please try again.');
     } finally {
       this.hideLoadingOverlay();
-      if (nextBtn) nextBtn.disabled = false;
+      this._setWidgetBusy(false, actionButton);
     }
 
   } catch (error) {

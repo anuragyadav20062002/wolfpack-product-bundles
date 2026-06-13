@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.37
- * Built   : 2026-06-12
+ * Version : 3.0.40
+ * Built   : 2026-06-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.37';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.40';
 (function() {
   'use strict';
 
@@ -265,7 +265,8 @@ const BUNDLE_WIDGET = {
     BUY_X_GET_Y: 'buy_x_get_y'
   },
 
-  PLACEHOLDER_IMAGE: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'
+  PLACEHOLDER_IMAGE: '/bundle-product-placeholder.avif',
+  PLACEHOLDER_IMAGE_FALLBACK: '/bundle-product-placeholder.png'
 };
 
 class CurrencyManager {
@@ -602,7 +603,8 @@ class BundleDataManager {
       id: sp.product?.id || sp.productId,
       shopifyProductId: sp.product?.shopifyProductId || sp.shopifyProductId,
       title: sp.product?.title || 'Untitled Product',
-      imageUrl: sp.product?.imageUrl || '/placeholder.png',
+
+      imageUrl: sp.product?.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE,
       price: sp.product?.price || 0,
       compareAtPrice: sp.product?.compareAtPrice || null,
       variants: sp.product?.variants || [],
@@ -1549,7 +1551,7 @@ class ComponentGenerator {
         ` : ''}
 
         <div class="product-image bw-product-card__media">
-          <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
+          <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="if (this.src.indexOf('${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}') === -1) this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}'">
         </div>
 
         <div class="product-content-wrapper bw-product-card__body">
@@ -3331,64 +3333,120 @@ _scheduleCartTransformSelfHeal() {
   }
 },
 
-parseConfiguration() {
-  const dataset = this.container.dataset;
+  parseConfiguration() {
+    const dataset = this.container.dataset;
 
-  this.config = {
-    bundleId: dataset.bundleId || null,
-    isContainerProduct: dataset.isContainerProduct === 'true',
-    containerBundleId: dataset.containerBundleId || null,
-    hideDefaultButtons: dataset.hideDefaultButtons === 'true',
-    showStepNumbers: dataset.showStepNumbers !== 'false',
+    this.config = {
+      bundleId: dataset.bundleId || null,
+      isContainerProduct: dataset.isContainerProduct === 'true',
+      containerBundleId: dataset.containerBundleId || null,
+      hideDefaultButtons: dataset.hideDefaultButtons === 'true',
+      showStepNumbers: dataset.showStepNumbers !== 'false',
 
-    showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
+      showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
 
-    discountTextTemplate: 'Add {conditionText} to get {discountText}',
-    successMessageTemplate: 'Congratulations! You got {discountText}!',
-    currentProductId: window.currentProductId,
-    currentProductGid: window.currentProductGid,
-    currentProductHandle: window.currentProductHandle,
-    currentProductCollections: window.currentProductCollections
-  };
-},
+      discountTextTemplate: 'Add {conditionText} to get {discountText}',
+      successMessageTemplate: 'Congratulations! You got {discountText}!',
+      currentProductId: window.currentProductId,
+      currentProductGid: window.currentProductGid,
+      currentProductHandle: window.currentProductHandle,
+      currentProductCollections: window.currentProductCollections
+    };
+  },
 
-async loadBundleData() {
-  let bundleData = null;
-
-  const configValue = this.container.dataset.bundleConfig;
-  if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
-    try {
-      const singleBundle = JSON.parse(configValue);
-
-      if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
-        bundleData = { [singleBundle.id]: singleBundle };
-      } else {
-      }
-    } catch (error) {
+  _parseBundleConfigPayload(rawValue) {
+    if (!rawValue || rawValue.trim() === '' || rawValue === 'null' || rawValue === 'undefined') {
+      return null;
     }
-  } else {
-  }
 
-  if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+    try {
+      const parsed = JSON.parse(rawValue);
+      return typeof parsed === 'object' && parsed !== null ? parsed : null;
+    } catch (_error) {
+      return null;
+    }
+  },
 
-    const isThemeEditor = window.Shopify?.designMode ||
-                         window.isThemeEditorContext ||
-                         window.location.pathname.includes('/editor') ||
-                         window.location.search.includes('preview_theme_id');
+  _isBundleConfigBootstrapPayload(payload) {
+    return !!(
+      payload &&
+      typeof payload === 'object' &&
+      payload.v &&
+      payload.type === 'product_page' &&
+      typeof payload.id === 'string' &&
+      payload.id.trim() !== ''
+    );
+  },
 
-    const bundleIdFromDataset = this.container.dataset.bundleId;
+  async loadBundleData() {
+    let bundleData = null;
+    const bundleType = this.container.dataset.bundleType;
+    const bundleId = this.container.dataset.bundleId;
+    const configValue = this._parseBundleConfigPayload(this.container.dataset.bundleConfig);
 
-    if (isThemeEditor && bundleIdFromDataset) {
-      this.showThemeEditorPreview(bundleIdFromDataset);
+    if (bundleType === 'product_page' && this._isBundleConfigBootstrapPayload(configValue)) {
+      const RETRY_DELAY_MS = 3000;
+      const RETRYABLE_STATUSES = new Set([503, 504]);
+
+      const fetchBundleData = async () => {
+        const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(configValue.id)}.json`;
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+          let errorDetails = `${response.status} ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorDetails = JSON.stringify(errorData);
+          } catch (_) {
+
+          }
+          const err = new Error(`API request failed: ${errorDetails}`);
+          err.status = response.status;
+          throw err;
+        }
+
+        const data = await response.json();
+        if (data.success && data.bundle) {
+          return { [data.bundle.id]: data.bundle };
+        }
+
+        throw new Error('Invalid API response structure');
+      };
+
+      try {
+        try {
+          bundleData = await fetchBundleData();
+        } catch (firstErr) {
+          if (RETRYABLE_STATUSES.has(firstErr.status)) {
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+            bundleData = await fetchBundleData();
+          } else {
+            throw firstErr;
+          }
+        }
+      } catch (_error) {
+      }
+    }
+
+    if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+      const isThemeEditor = window.Shopify?.designMode ||
+                           window.isThemeEditorContext ||
+                           window.location.pathname.includes('/editor') ||
+                           window.location.search.includes('preview_theme_id');
+
+      const bundleIdFromDataset = bundleId || this.container.dataset.bundleId;
+
+      if (isThemeEditor && bundleIdFromDataset) {
+        this.showThemeEditorPreview(bundleIdFromDataset);
+        return;
+      }
+
+      this.container.style.display = 'none';
       return;
     }
 
-    this.container.style.display = 'none';
-    return;
-  }
-
-  this.bundleData = bundleData;
-},
+    this.bundleData = bundleData;
+  },
 
 selectBundle() {
   this.selectedBundle = ppbExpandSingleStepCategoriesAsSteps(
@@ -3437,22 +3495,82 @@ ensureProductPageTemplateStylesheet(templateType, designPreset) {
     ? urls[presetKey] || urls.MODAL || urls.SIMPLIFIED
     : urls[presetKey] || urls.CASCADE || urls.COGNIVE;
 
-  if (!href || typeof document === 'undefined') return;
+  if (!href || typeof document === 'undefined') return Promise.resolve();
+
+  if (!this._ppbTemplateStylesheetPromises) {
+    this._ppbTemplateStylesheetPromises = new Map();
+  }
 
   const assetKey = templateKey === 'PDP_MODAL' ? 'MODAL' : presetKey;
-  const alreadyLoaded = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some((link) =>
+  const pendingPromise = this._ppbTemplateStylesheetPromises.get(href);
+  if (pendingPromise) {
+    return pendingPromise;
+  }
+
+  const existingLink = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).find((link) =>
     link.getAttribute('href') === href
     || link.href === href
     || link.dataset.wpbPpbTemplateCss === assetKey
   );
 
-  if (alreadyLoaded) return;
+  const markLoaded = (link) => {
+    if (link instanceof HTMLLinkElement) {
+      link.dataset.wpbPpbTemplateCssLoaded = '1';
+    }
+  };
+
+  const isStylesheetLoaded = (link) => {
+    if (!link) return false;
+    if (link.dataset?.wpbPpbTemplateCssLoaded === '1') return true;
+
+    try {
+      return !!link.sheet;
+    } catch (_error) {
+      return false;
+    }
+  };
+
+  if (existingLink) {
+    if (isStylesheetLoaded(existingLink)) {
+      markLoaded(existingLink);
+      return Promise.resolve();
+    }
+
+    const promise = new Promise((resolve) => {
+      const done = () => {
+        markLoaded(existingLink);
+        this._ppbTemplateStylesheetPromises.delete(href);
+        resolve();
+      };
+
+      existingLink.addEventListener('load', done, { once: true });
+      existingLink.addEventListener('error', done, { once: true });
+    });
+
+    this._ppbTemplateStylesheetPromises.set(href, promise);
+    return promise;
+  }
 
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = href;
   link.dataset.wpbPpbTemplateCss = assetKey;
+
+  const promise = new Promise((resolve) => {
+    const done = () => {
+      markLoaded(link);
+      this._ppbTemplateStylesheetPromises.delete(href);
+      resolve();
+    };
+
+    link.addEventListener('load', done, { once: true });
+    link.addEventListener('error', done, { once: true });
+  });
+
+  this._ppbTemplateStylesheetPromises.set(href, promise);
   document.head.appendChild(link);
+
+  return promise;
 },
 
 _markProductPageTemplate() {
@@ -3480,7 +3598,7 @@ _markProductPageTemplate() {
   document.body?.setAttribute('gbbmix-template-id', designPreset);
   document.body?.setAttribute('gbbmix-template-type', templateType);
   document.body?.setAttribute('gbb-mix-consolidated-design', 'true');
-  this.ensureProductPageTemplateStylesheet(templateType, designPreset);
+  void this.ensureProductPageTemplateStylesheet(templateType, designPreset);
 
   if (templateType === 'PDP_MODAL') {
     const slotOrientation = this._usesVerticalModalSlotLayout() ? 'vertical' : 'horizontal';
@@ -4564,6 +4682,8 @@ updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo) {
 
 };
 
+const MIN_LOADING_OVERLAY_VISIBLE_MS = 180;
+
 const ProductPageWidgetMiscMethods = {
 showLoadingOverlay(gifUrl) {
   if (!this.container) return;
@@ -4577,6 +4697,8 @@ showLoadingOverlay(gifUrl) {
 
   const overlay = document.createElement('div');
   overlay.className = 'bundle-loading-overlay';
+  overlay.style.minHeight = 'var(--bundle-ppb-loading-overlay-min-height, 180px)';
+  overlay.style.minWidth = 'var(--bundle-ppb-loading-overlay-min-width, 180px)';
 
   if (gifUrl) {
     const img = document.createElement('img');
@@ -4592,12 +4714,27 @@ showLoadingOverlay(gifUrl) {
   this.container.appendChild(overlay);
 
   overlay.offsetHeight;
+
+  this._bundleLoadingOverlayToken = (this._bundleLoadingOverlayToken || 0) + 1;
+  this._loadingOverlayShownAt = performance.now();
+  overlay.dataset.wpbLoadingToken = String(this._bundleLoadingOverlayToken);
   markLoadingOverlayVisible(overlay);
 },
 
 hideLoadingOverlay() {
   const overlay = this.container?.querySelector('.bundle-loading-overlay');
-  hideLoadingOverlayElement(overlay);
+  if (!overlay) return;
+  const overlayToken = Number(overlay.dataset.wpbLoadingToken || 0);
+  if (!overlayToken || overlayToken !== this._bundleLoadingOverlayToken) return;
+
+  const visibleMs = performance.now() - (this._loadingOverlayShownAt || 0);
+  const delayMs = Math.max(0, MIN_LOADING_OVERLAY_VISIBLE_MS - visibleMs);
+
+  window.setTimeout(() => {
+    if (this._bundleLoadingOverlayToken !== overlayToken) return;
+    this._bundleLoadingOverlayToken = 0;
+    hideLoadingOverlayElement(overlay);
+  }, delayMs);
 },
 
 attachEventListeners() {
@@ -7128,9 +7265,9 @@ class BundleWidgetProductPage {
 
       this.parseConfiguration();
 
-      let initialGif = null;
-      try { initialGif = JSON.parse(this.container.dataset.bundleConfig || '{}')?.loadingGif || null; } catch {}
-      this.showLoadingOverlay(initialGif);
+      this.showLoadingOverlay(null);
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      await new Promise(resolve => requestAnimationFrame(resolve));
 
       await this.loadDesignSettingsCSS();
       await this.loadLanguageSettings();
@@ -7143,6 +7280,10 @@ class BundleWidgetProductPage {
       if (!this.bundleData) return;
 
       this.selectBundle();
+
+      if (this.selectedBundle?.loadingGif) {
+        this.showLoadingOverlay(this.selectedBundle.loadingGif);
+      }
 
       if (!this.selectedBundle) {
         this.hideLoadingOverlay();
@@ -7161,6 +7302,7 @@ class BundleWidgetProductPage {
 
       this.setupDOMElements();
       this._markProductPageTemplate();
+      await this.ensureProductPageTemplateStylesheet(this._getProductPageTemplateType(), this._getProductPageDesignPreset());
       this.applyBundleLevelCss(this.selectedBundle);
 
       this.renderUI();

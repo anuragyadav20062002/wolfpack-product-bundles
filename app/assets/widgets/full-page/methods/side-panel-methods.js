@@ -370,11 +370,6 @@ renderSidePanel(panel) {
   const sidebarTierCtaContent = (conditionless || isLastStep)
     ? this.getSidebarTierCtaContent(nextRule)
     : null;
-  if (sidebarTierCtaContent) {
-    actionSection.style.gridTemplateColumns = '1fr';
-    actionSection.style.gap = '8px';
-    totalSection.style.alignItems = 'center';
-  }
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'side-panel-btn side-panel-btn-next';
@@ -385,32 +380,37 @@ renderSidePanel(panel) {
       ? this._resolveText('addToCartButton', 'Add to Cart')
       : nextStepLabel;
   if (sidebarTierCtaContent) {
-    const labelHtml = sidebarTierCtaContent.label
-      ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
-      : '';
-    const subtextHtml = sidebarTierCtaContent.subtext
-      ? `<span class="side-panel-btn-tier-subtext">${this._escapeHTML(sidebarTierCtaContent.subtext)}</span>`
-      : '';
-    nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
+    const labelText = sidebarTierCtaContent.label || '';
+    const subtextText = sidebarTierCtaContent.subtext || '';
+    const ctaTextParts = [labelText, subtextText].filter((item) => item !== '');
+    nextBtn.textContent = ctaTextParts.join(' ');
+    nextBtn.classList.add('side-panel-btn-has-tier-cta');
+    if (ctaTextParts.length) {
+      nextBtn.title = ctaTextParts.join(' ');
+    }
   }
   if (!isStandardDesktopSidebar && (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed))) {
     nextBtn.disabled = true;
   }
-  nextBtn.addEventListener('click', () => {
+  nextBtn.addEventListener('click', async () => {
+    if (this._isWidgetActionBusy) return;
+
     if (conditionless || isLastStep) {
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
       }
-      this.addBundleToCart();
+      await this.addBundleToCart(nextBtn);
     } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
       const giftName = this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName;
       ToastManager.show(giftName ? `Complete all steps to unlock ${giftName}!` : 'Complete all steps first.');
     } else if (this.canProceedToNextStep()) {
-      this.activeCollectionId = null;
-      this.searchQuery = '';
-      this.currentStepIndex++;
-      this.renderFullPageLayoutWithSidebar();
+      await this._withWidgetActionBusy(async () => {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
+        this.currentStepIndex++;
+        await this.renderFullPageLayoutWithSidebar();
+      }, { actionButton: nextBtn });
     } else {
       ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
     }
