@@ -116,6 +116,11 @@ describe('api.bundle.$bundleId.json — status filtering', () => {
 
     const call = mockFindFirst().mock.calls[0]?.[0];
     expect(call?.where?.status?.in).not.toContain(BundleStatus.DRAFT);
+
+    expect(call?.where?.status?.in).toHaveLength(2);
+    expect(call?.where?.status?.in).toEqual(
+      expect.arrayContaining([BundleStatus.ACTIVE, BundleStatus.UNLISTED]),
+    );
   });
 });
 
@@ -160,5 +165,10 @@ describe('wpb.$bundleId (FPB proxy page) — status filtering', () => {
 
     const call = mockFindFirst().mock.calls[0]?.[0];
     expect(call?.where?.status?.in).not.toContain(BundleStatus.DRAFT);
+
+    expect(call?.where?.status?.in).toHaveLength(2);
+    expect(call?.where?.status?.in).toEqual(
+      expect.arrayContaining([BundleStatus.ACTIVE, BundleStatus.UNLISTED]),
+    );
   });
 });
