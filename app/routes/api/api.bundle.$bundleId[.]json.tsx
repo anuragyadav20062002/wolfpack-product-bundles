@@ -174,17 +174,15 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       bundleId
     });
 
-    // Allow draft, active, and unlisted bundles.
-    // Draft: merchants can test before publishing.
-    // Unlisted: hidden from search/collections/sitemap but accessible via direct URL —
-    //   the API is HMAC-protected + UUID bundle ID so serving it here is safe.
-    // Archived bundles are excluded — they are taken offline.
+    // Public storefront surface — only ACTIVE and UNLISTED bundles are served.
+    // Unlisted: hidden from search/collections/sitemap but accessible via direct URL.
+    // Draft and Archived are excluded; merchants preview drafts inside the admin.
     const bundle = await db.bundle.findFirst({
       where: {
         id: bundleId,
         shopId: shopDomain,
         status: {
-          in: [BundleStatus.DRAFT, BundleStatus.ACTIVE, BundleStatus.UNLISTED]
+          in: [BundleStatus.ACTIVE, BundleStatus.UNLISTED]
         }
       },
       include: {
