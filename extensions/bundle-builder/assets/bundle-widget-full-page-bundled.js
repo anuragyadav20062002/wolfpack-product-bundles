@@ -5418,6 +5418,9 @@ renderSidePanel(panel) {
     panel.appendChild(boxSelection);
   }
 
+  const summaryContent = document.createElement('div');
+  summaryContent.className = 'side-panel-summary-content';
+
   if (this.selectedBundle?.pricing?.enabled) {
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
@@ -5452,7 +5455,7 @@ renderSidePanel(panel) {
       });
       if (progressBar) {
         progressBar.classList.add('fpb-dp-sidebar');
-        panel.appendChild(progressBar);
+        summaryContent.appendChild(progressBar);
       }
     }
   }
@@ -5464,7 +5467,7 @@ renderSidePanel(panel) {
     : isStandardDesktopSidebar
       ? `${allSelectedProducts.length} item(s)`
       : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
-  panel.appendChild(countLabel);
+  summaryContent.appendChild(countLabel);
 
   if (isClassicDesktopSidebar) {
     const classicSlotCount = this.getClassicSidebarSlotCount(
@@ -5477,7 +5480,7 @@ renderSidePanel(panel) {
       classicSlotCount
     );
 
-    panel.appendChild(classicSlots);
+    summaryContent.appendChild(classicSlots);
   } else {
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
@@ -5632,15 +5635,17 @@ renderSidePanel(panel) {
         }
       }
     }
-    panel.appendChild(productsContainer);
+    summaryContent.appendChild(productsContainer);
   }
 
   if (!isStandardDesktopSidebar && !isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
     const skeletonContainer = document.createElement('div');
     skeletonContainer.className = 'side-panel-skeleton-slots';
     this._renderSidebarProductSkeletons(skeletonContainer);
-    panel.appendChild(skeletonContainer);
+    summaryContent.appendChild(skeletonContainer);
   }
+
+  panel.appendChild(summaryContent);
 
   if (!isClassicDesktopSidebar && !isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
 

@@ -109,6 +109,9 @@ renderSidePanel(panel) {
     panel.appendChild(boxSelection);
   }
 
+  const summaryContent = document.createElement('div');
+  summaryContent.className = 'side-panel-summary-content';
+
   // Discount messaging
   if (this.selectedBundle?.pricing?.enabled) {
     const variables = TemplateManager.createDiscountVariables(
@@ -144,7 +147,7 @@ renderSidePanel(panel) {
       });
       if (progressBar) {
         progressBar.classList.add('fpb-dp-sidebar');
-        panel.appendChild(progressBar);
+        summaryContent.appendChild(progressBar);
       }
     }
   }
@@ -157,7 +160,7 @@ renderSidePanel(panel) {
     : isStandardDesktopSidebar
       ? `${allSelectedProducts.length} item(s)`
       : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
-  panel.appendChild(countLabel);
+  summaryContent.appendChild(countLabel);
 
   // Selected products list / Classic slots
   if (isClassicDesktopSidebar) {
@@ -170,8 +173,8 @@ renderSidePanel(panel) {
       allSelectedProducts,
       classicSlotCount
     );
-  
-    panel.appendChild(classicSlots);
+
+    summaryContent.appendChild(classicSlots);
   } else {
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
@@ -327,15 +330,17 @@ renderSidePanel(panel) {
         }
       }
     }
-    panel.appendChild(productsContainer);
+    summaryContent.appendChild(productsContainer);
   }
-  
+
   if (!isStandardDesktopSidebar && !isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
     const skeletonContainer = document.createElement('div');
     skeletonContainer.className = 'side-panel-skeleton-slots';
     this._renderSidebarProductSkeletons(skeletonContainer);
-    panel.appendChild(skeletonContainer);
+    summaryContent.appendChild(skeletonContainer);
   }
+
+  panel.appendChild(summaryContent);
 
   // Free gift section (locked or unlocked)
   if (!isClassicDesktopSidebar && !isStandardDesktopSidebar) this._renderFreeGiftSection(panel);

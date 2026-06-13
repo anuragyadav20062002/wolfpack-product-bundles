@@ -169,6 +169,46 @@
   outline-offset: 2px;
 }
 
+.full-page-side-panel .side-panel-summary-content {
+  grid-row: 3;
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.full-page-side-panel .side-panel-summary-content > :is(
+    .side-panel-item-count,
+    .side-panel-products,
+    .classic-sidebar-slots,
+    .side-panel-skeleton-slots
+  ) {
+  margin: 0;
+}
+
+.full-page-side-panel .side-panel-summary-content > .fpb-discount-progress.fpb-dp-sidebar {
+  order: 0;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.full-page-side-panel .side-panel-summary-content > .side-panel-item-count {
+  order: 1;
+}
+
+.full-page-side-panel .side-panel-summary-content > :is(
+    .side-panel-products,
+    .classic-sidebar-slots,
+    .side-panel-skeleton-slots
+  ) {
+  order: 2;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
 .discount-progress-banner {
   display: flex;
   align-items: center;
