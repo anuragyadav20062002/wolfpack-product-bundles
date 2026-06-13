@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 3.0.37
- * Built   : 2026-06-12
+ * Version : 3.0.40
+ * Built   : 2026-06-13
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.37';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.40';
 (function (window) {
   'use strict';
 
@@ -372,7 +372,10 @@ const BUNDLE_WIDGET = {
   },
 
   // Shared asset URLs
-  PLACEHOLDER_IMAGE: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'
+  // AVIF is default for lower bytes and better decoding efficiency; PNG remains as a guaranteed fallback via
+  // component-level onerror handling.
+  PLACEHOLDER_IMAGE: '/bundle-product-placeholder.avif',
+  PLACEHOLDER_IMAGE_FALLBACK: '/bundle-product-placeholder.png'
 };
 
 
@@ -740,7 +743,9 @@ class BundleDataManager {
       id: sp.product?.id || sp.productId,
       shopifyProductId: sp.product?.shopifyProductId || sp.shopifyProductId,
       title: sp.product?.title || 'Untitled Product',
-      imageUrl: sp.product?.imageUrl || '/placeholder.png',
+      // AVIF is preferred for new widget payloads; old /bundle-product-placeholder.png kept as a compatibility fallback by
+      // component-level onerror handling.
+      imageUrl: sp.product?.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE,
       price: sp.product?.price || 0,
       compareAtPrice: sp.product?.compareAtPrice || null,
       variants: sp.product?.variants || [],
@@ -1768,7 +1773,7 @@ class ComponentGenerator {
         ` : ''}
 
         <div class="product-image bw-product-card__media">
-          <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
+          <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="if (this.src.indexOf('${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}') === -1) this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}'">
         </div>
 
         <div class="product-content-wrapper bw-product-card__body">

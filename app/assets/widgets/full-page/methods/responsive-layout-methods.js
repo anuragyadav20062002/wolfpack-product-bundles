@@ -41,6 +41,7 @@ async renderFullPageLayout() {
   this.elements.stepsContainer.innerHTML = '';
   this.elements.stepsContainer.classList.add('full-page-layout');
   this.applyFullPageDesignPresetMarker();
+  await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
   this.ensureBundleBannerRuntimeStyles();
   this.ensureCompactPresetRuntimeStyles();
   this.ensureHorizontalSidePanelSlotRuntimeStyles();
@@ -138,6 +139,7 @@ async renderFullPageLayoutWithSidebar() {
   this.elements.stepsContainer.innerHTML = '';
   this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
   this.applyFullPageDesignPresetMarker();
+  await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
   this.ensureBundleBannerRuntimeStyles();
   this.ensureStandardPresetRuntimeStyles();
   this.ensureClassicPresetRuntimeStyles();
@@ -313,18 +315,22 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
   ctaBtn.className = 'fpb-mobile-cta-btn';
   ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
   if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
-  ctaBtn.addEventListener('click', () => {
+  ctaBtn.addEventListener('click', async () => {
+    if (this._isWidgetActionBusy) return;
+
     if (conditionlessMobile || (isLastStep && isComplete)) {
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
       }
-      this.addBundleToCart();
+      await this.addBundleToCart(ctaBtn);
     } else if (!isLastStep && this.canNavigateToStep(this.currentStepIndex + 1) && this.canProceedToNextStep()) {
-      this.activeCollectionId = null;
-      this.searchQuery = '';
-      this.currentStepIndex++;
-      this.renderFullPageLayoutWithSidebar();
+      await this._withWidgetActionBusy(async () => {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
+        this.currentStepIndex++;
+        await this.renderFullPageLayoutWithSidebar();
+      }, { actionButton: ctaBtn });
     } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
       ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
     } else {

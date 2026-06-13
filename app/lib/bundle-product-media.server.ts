@@ -1,4 +1,6 @@
-export const BUNDLE_PRODUCT_PLACEHOLDER_IMAGE_PATH = "/bundle-product-placeholder.png";
+// Prefer AVIF for lower transfer size; keep filename-level compatibility via a stable
+// `bundle-product-placeholder` prefix for cleanup/duplication detection.
+export const BUNDLE_PRODUCT_PLACEHOLDER_IMAGE_PATH = "/bundle-product-placeholder.avif";
 const BUNDLE_PRODUCT_PLACEHOLDER_IMAGE_FILENAME = "bundle-product-placeholder.";
 
 type ProductMediaInput = {

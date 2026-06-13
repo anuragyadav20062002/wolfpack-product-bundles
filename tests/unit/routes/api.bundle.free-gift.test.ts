@@ -45,7 +45,7 @@ const mockAppProxy = authenticate.public.appProxy as jest.MockedFunction<any>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeRequest(bundleId: string, fields?: string) {
+function makeRequest(bundleId: string, fields?: string, extraHeaders: Record<string, string> = {}) {
   const params = new URLSearchParams({
     shop: 'test.myshopify.com',
     timestamp: '1234567890',
@@ -58,7 +58,14 @@ function makeRequest(bundleId: string, fields?: string) {
     .join('');
   const signature = createHmac('sha256', 'test_api_secret').update(message).digest('hex');
   params.set('signature', signature);
-  return new Request(`https://test.myshopify.com/apps/product-bundles/api/bundle/${bundleId}.json?${params.toString()}`);
+  const headers = {
+    'content-type': 'application/json',
+    ...extraHeaders,
+  };
+
+  return new Request(`https://test.myshopify.com/apps/product-bundles/api/bundle/${bundleId}.json?${params.toString()}`, {
+    headers,
+  });
 }
 
 function makeBaseStep(overrides: Record<string, any> = {}) {
@@ -261,5 +268,66 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
       expect(data.bundle.steps[0].isDefault).toBe(false);
       expect(data.bundle.steps[0].defaultVariantId).toBeNull();
     });
+  });
+});
+
+describe('api.bundle.$bundleId.json — bootstrap projection and cache headers', () => {
+  it('returns bootstrap projection when requested via fields=bootstrap', async () => {
+    mockFindFirst().mockResolvedValue(makeBundle([makeBaseStep()]));
+
+    const res = await loader({
+      request: makeRequest('bundle-abc', 'bootstrap'),
+      params: { bundleId: 'bundle-abc' },
+      context: {},
+    }) as Response;
+
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.bootstrap).toMatchObject({
+      v: 2,
+      type: 'full_page',
+      bundleType: 'full_page',
+      id: 'bundle-abc',
+    });
+    expect(data.bundle).toBeUndefined();
+    expect(data.bootstrap.bundleDesignTemplate).toBe('FBP_SIDE_FOOTER');
+    expect(data.bootstrap.bundleDesignPresetId).toBe('DEFAULT');
+  });
+
+  it('returns 304 and empty body for fresh cache validators', async () => {
+    const baseTimestamp = '2026-01-01T00:00:00.000Z';
+    const bundle = {
+      ...makeBundle([makeBaseStep()]),
+      id: 'bundle-cache',
+      updatedAt: new Date(baseTimestamp),
+    } as any;
+
+    mockFindFirst().mockResolvedValue(bundle);
+    const first = await loader({
+      request: makeRequest('bundle-cache'),
+      params: { bundleId: 'bundle-cache' },
+      context: {},
+    }) as Response;
+
+    const etag = first.headers.get('ETag');
+    const lastModified = first.headers.get('Last-Modified');
+
+    expect(etag).toBeDefined();
+    expect(lastModified).toBeDefined();
+
+    mockFindFirst().mockResolvedValue(bundle);
+    const second = await loader({
+      request: makeRequest('bundle-cache', undefined, {
+        'if-none-match': etag ?? '',
+        'if-modified-since': lastModified ?? '',
+      }),
+      params: { bundleId: 'bundle-cache' },
+      context: {},
+    }) as Response;
+
+    expect(second.status).toBe(304);
+    expect(await second.text()).toBe('');
   });
 });

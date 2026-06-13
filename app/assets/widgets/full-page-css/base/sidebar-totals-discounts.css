@@ -60,12 +60,45 @@
     opacity 0.15s;
 }
 
+.fpb-inline-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: bundle-loading-spinner 0.75s linear infinite;
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.bundle-widget-full-page.fpb-widget-busy {
+  pointer-events: none;
+}
+
+.bundle-widget-full-page.fpb-widget-busy .side-panel-btn-next,
+.bundle-widget-full-page.fpb-widget-busy .fpb-mobile-cta-btn {
+  opacity: 0.65;
+}
+
+.fpb-inline-spinner-active {
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .side-panel-btn-tier-label,
 .side-panel-btn-tier-subtext {
   display: block;
   max-width: 100%;
   overflow-wrap: anywhere;
   text-align: center;
+}
+
+.side-panel-btn-next.side-panel-btn-has-tier-cta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .side-panel-btn-tier-label {
@@ -134,6 +167,53 @@
   outline: var(--bundle-focus-outline-width, 2px) solid
     var(--bundle-focus-outline-color, #5c6ac4);
   outline-offset: 2px;
+}
+
+.full-page-side-panel .side-panel-summary-content {
+  grid-row: 3;
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.full-page-side-panel .side-panel-summary-content > .side-panel-discount-message {
+  order: 0;
+  width: 100%;
+  margin: 0 0 8px;
+}
+
+.full-page-side-panel .side-panel-summary-content > :is(
+    .side-panel-products,
+    .classic-sidebar-slots,
+    .side-panel-skeleton-slots
+  ) {
+  order: 3;
+  margin: 0;
+}
+
+.full-page-side-panel .side-panel-summary-content > .fpb-discount-progress.fpb-dp-sidebar {
+  order: 1;
+  width: 100%;
+  flex: 0 0 auto;
+  margin: 0 0 8px;
+}
+
+.full-page-side-panel .side-panel-summary-content > .side-panel-item-count {
+  order: 2;
+  margin: 0 0 8px;
+}
+
+.full-page-side-panel .side-panel-summary-content > :is(
+    .side-panel-products,
+    .classic-sidebar-slots,
+    .side-panel-skeleton-slots
+  ) {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
 }
 
 .discount-progress-banner {
@@ -433,7 +513,8 @@
     left: 10px;
     right: auto;
     width: var(--fpb-mobile-footer-shell-width);
-    height: 196px;
+    min-height: 196px;
+    height: auto;
     gap: 0;
     max-height: none;
     overflow: visible;
@@ -497,31 +578,24 @@
     margin: 0;
     padding: 5px 0 0;
     font-size: 15px;
-    font-weight: 400;
+    font-weight: 700;
     line-height: 27px;
     text-align: center;
   }
 
-  .fpb-mobile-summary-tray .fpb-discount-progress.fpb-dp-sidebar {
-    display: grid !important;
-    width: var(--fpb-mobile-footer-progress-width);
-    height: 96px;
-    margin: 0;
-    overflow: visible;
-  }
-
   .fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded {
-    grid-template-rows: 104.96875px 302px;
-    height: 417.96875px;
+    grid-template-rows: auto auto;
+    height: auto;
   }
 
   .fpb-mobile-summary-products-section {
     display: grid;
     position: relative;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 236px 38px;
+    grid-template-rows: auto auto;
     width: var(--fpb-mobile-footer-inner-width);
-    height: 302px;
+    min-height: 0;
+    height: auto;
     padding: 10px 0;
     background: #ffffff;
     box-sizing: border-box;
@@ -532,18 +606,20 @@
   .fpb-mobile-summary-bundle-items {
     display: grid;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 54px 172px;
+    grid-template-rows: auto auto;
     width: var(--fpb-mobile-footer-inner-width);
-    height: 236px;
+    min-height: 0;
+    height: auto;
   }
 
   .fpb-mobile-summary-products-list {
     display: grid;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: 81px 86px;
+    grid-auto-rows: auto;
     gap: 10px;
     width: var(--fpb-mobile-footer-inner-width);
-    height: 172px;
+    max-height: 172px;
+    height: auto;
     padding: 5px 0 0;
     overflow: auto;
     box-sizing: border-box;
@@ -582,10 +658,10 @@
 
   .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-nav {
     display: grid;
-    height: 58px;
+    height: auto;
     align-items: start;
     margin: 0;
-    padding: 10px 0;
+    padding: 0;
     box-sizing: border-box;
   }
 

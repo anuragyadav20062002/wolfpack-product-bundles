@@ -28,6 +28,7 @@ export interface FormattedBundle {
   bundleDesignTemplate: string | null;
   bundleDesignPresetId: string | null;
   bundleDesignTemplateData: { templateId: string } | null;
+  loadingGif: string | null;
   defaultProductsData: Record<string, unknown>;
   boxSelection: Record<string, unknown> | null;
   bundleUpsellConfig: Record<string, unknown> | null;
@@ -264,6 +265,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     bundleDesignTemplate,
     bundleDesignPresetId,
     bundleDesignTemplateData,
+    loadingGif: bundle.loadingGif ?? null,
     defaultProductsData: (bundle.defaultProductsData as Record<string, unknown> | null) ?? {},
     boxSelection: (bundle.boxSelection as Record<string, unknown> | null) ?? null,
     bundleUpsellConfig: (bundle.bundleUpsellConfig as Record<string, unknown> | null) ?? null,

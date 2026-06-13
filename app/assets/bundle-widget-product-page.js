@@ -213,10 +213,10 @@ class BundleWidgetProductPage {
       // Parse configuration
       this.parseConfiguration();
 
-      // Show loading overlay immediately — read gif from dataset before async fetch
-      let initialGif = null;
-      try { initialGif = JSON.parse(this.container.dataset.bundleConfig || '{}')?.loadingGif || null; } catch {}
-      this.showLoadingOverlay(initialGif);
+      // Show loading overlay immediately with fallback spinner while bundle config loads.
+      this.showLoadingOverlay(null);
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      await new Promise(resolve => requestAnimationFrame(resolve));
 
       // Load design settings CSS
       await this.loadDesignSettingsCSS();
@@ -234,6 +234,10 @@ class BundleWidgetProductPage {
 
       // Select appropriate bundle
       this.selectBundle();
+
+      if (this.selectedBundle?.loadingGif) {
+        this.showLoadingOverlay(this.selectedBundle.loadingGif);
+      }
 
       if (!this.selectedBundle) {
         this.hideLoadingOverlay();
@@ -255,6 +259,7 @@ class BundleWidgetProductPage {
       // Setup DOM elements
       this.setupDOMElements();
       this._markProductPageTemplate();
+      await this.ensureProductPageTemplateStylesheet(this._getProductPageTemplateType(), this._getProductPageDesignPreset());
       this.applyBundleLevelCss(this.selectedBundle);
 
       // Render initial UI

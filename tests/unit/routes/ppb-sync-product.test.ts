@@ -288,7 +288,7 @@ describe("PPB handleSyncProduct", () => {
                     {
                       id: "gid://shopify/MediaImage/current",
                       alt: "Product Page Fixture - Bundle",
-                      image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+                      image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.avif" },
                     },
                     {
                       id: "gid://shopify/MediaImage/old",
@@ -394,7 +394,7 @@ describe("PPB handleSyncProduct", () => {
           }),
           media: [
             expect.objectContaining({
-              originalSource: "https://app.example.test/bundle-product-placeholder.png",
+              originalSource: "https://app.example.test/bundle-product-placeholder.avif",
               alt: null,
               mediaContentType: "IMAGE",
             }),
@@ -485,7 +485,7 @@ describe("PPB handleSyncProduct", () => {
           }),
           media: [
             expect.objectContaining({
-              originalSource: "https://app.example.test/bundle-product-placeholder.png",
+              originalSource: "https://app.example.test/bundle-product-placeholder.avif",
               alt: null,
               mediaContentType: "IMAGE",
             }),

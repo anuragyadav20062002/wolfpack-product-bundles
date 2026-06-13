@@ -126,7 +126,7 @@ describe("handleUpdateBundleProduct", () => {
     const formData = new FormData();
     formData.set("productId", "gid://shopify/Product/1");
     formData.set("productTitle", "Product Page Fixture");
-    formData.set("productImageUrl", "https://app.example.test/bundle-product-placeholder.png");
+    formData.set("productImageUrl", "https://app.example.test/bundle-product-placeholder.avif");
 
     const response = await handleUpdateBundleProduct(
       admin,
@@ -148,7 +148,7 @@ describe("handleUpdateBundleProduct", () => {
           },
           media: [
             {
-              originalSource: "https://app.example.test/bundle-product-placeholder.png",
+              originalSource: "https://app.example.test/bundle-product-placeholder.avif",
               alt: "Product Page Fixture - Bundle",
               mediaContentType: "IMAGE",
             },
