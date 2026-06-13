@@ -1546,10 +1546,6 @@ class ComponentGenerator {
 
     return `
       <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
-        ${isSelected ? `
-          <div class="selected-overlay">✓</div>
-        ` : ''}
-
         <div class="product-image bw-product-card__media">
           <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="if (this.src.indexOf('${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}') === -1) this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}'">
         </div>
@@ -8295,6 +8291,7 @@ _initDefaultProducts() {
     if (!step.isDefault || !step.defaultVariantId) return;
 
     const targetId = this.extractId(step.defaultVariantId);
+    if (!targetId) return;
     const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
     const product = allProducts.find(p =>
       this.extractId(p.variantId) === targetId ||
@@ -8306,8 +8303,7 @@ _initDefaultProducts() {
     );
     if (product) {
       if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-      const normalizedId = targetId || step.defaultVariantId;
-      this.selectedProducts[stepIndex][normalizedId] = 1;
+      this.selectedProducts[stepIndex][targetId] = 1;
     }
   });
 },
@@ -9759,12 +9755,8 @@ renderModalProducts(stepIndex, productsToRender = null) {
         ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
         : '';
 
-    return `
+      return `
       <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 && !renderSelectedQuantityBadge ? `
-          <div class="selected-overlay">✓</div>
-        ` : ''}
-
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}
@@ -10057,7 +10049,6 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
   const actionContainer = actionWrapper || contentWrapper;
   const existingAddBtn = productCard.querySelector('.product-add-btn');
   const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
-  let selectedOverlay = productCard.querySelector('.selected-overlay');
 
   if (quantity > 0) {
     if (actionWrapper) {
@@ -10109,17 +10100,9 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
-    if (!selectedOverlay) {
-      selectedOverlay = document.createElement('div');
-      selectedOverlay.className = 'selected-overlay';
-      selectedOverlay.textContent = '✓';
-      productCard.appendChild(selectedOverlay);
-    }
-    if (this.getFullPageDesignPreset?.() === 'DEFAULT') {
-      selectedOverlay.style.removeProperty('display');
-    } else {
-      selectedOverlay.style.display = 'flex';
-    }
+    productCard.querySelectorAll('.selected-overlay').forEach((node) => {
+      node.remove();
+    });
     productCard.classList.add('selected');
 
   } else {
@@ -10144,9 +10127,9 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       });
     }
 
-    if (selectedOverlay) {
-      selectedOverlay.style.display = 'none';
-    }
+    productCard.querySelectorAll('.selected-overlay').forEach((node) => {
+      node.remove();
+    });
     productCard.classList.remove('selected');
   }
 

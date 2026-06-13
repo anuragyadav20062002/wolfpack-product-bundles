@@ -177,6 +177,9 @@
   min-width: 0;
   min-height: 0;
   width: 100%;
+  height: auto !important;
+  max-height: none !important;
+  flex: 1 1 auto;
 }
 
 .full-page-side-panel .side-panel-summary-content > .side-panel-discount-message {
@@ -214,6 +217,19 @@
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
+  max-height: none;
+}
+
+.full-page-side-panel .side-panel-summary-content > :is(
+  .side-panel-discount-message,
+  .fpb-discount-progress.fpb-dp-sidebar,
+  .side-panel-item-count,
+  .side-panel-products,
+  .classic-sidebar-slots,
+  .side-panel-skeleton-slots
+) {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .discount-progress-banner {
@@ -698,6 +714,20 @@
   .bundle-widget-full-page {
     padding-bottom: 70px;
   }
+}
+
+.bundle-widget-full-page .full-page-side-panel,
+.bundle-widget-full-page .layout-sidebar .full-page-side-panel {
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto !important;
+}
+
+.bundle-widget-full-page .side-panel-action-container,
+.bundle-widget-full-page .layout-sidebar .side-panel-action-container {
+  border-top: 1px solid var(--bundle-side-panel-border, rgba(0, 0, 0, 0.08));
+  padding-top: 12px;
+  margin-top: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @keyframes fpb-mobile-summary-drawer-in {

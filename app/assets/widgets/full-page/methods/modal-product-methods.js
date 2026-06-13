@@ -161,12 +161,8 @@ renderModalProducts(stepIndex, productsToRender = null) {
         ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
         : '';
 
-    return `
+      return `
       <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 && !renderSelectedQuantityBadge ? `
-          <div class="selected-overlay">✓</div>
-        ` : ''}
-
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}

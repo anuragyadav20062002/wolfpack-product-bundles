@@ -166,7 +166,6 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
   const actionContainer = actionWrapper || contentWrapper;
   const existingAddBtn = productCard.querySelector('.product-add-btn');
   const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
-  let selectedOverlay = productCard.querySelector('.selected-overlay');
 
   // Toggle between "Add to Bundle" button and quantity controls
   if (quantity > 0) {
@@ -220,18 +219,9 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
-    // Show selected overlay
-    if (!selectedOverlay) {
-      selectedOverlay = document.createElement('div');
-      selectedOverlay.className = 'selected-overlay';
-      selectedOverlay.textContent = '✓';
-      productCard.appendChild(selectedOverlay);
-    }
-    if (this.getFullPageDesignPreset?.() === 'DEFAULT') {
-      selectedOverlay.style.removeProperty('display');
-    } else {
-      selectedOverlay.style.display = 'flex';
-    }
+    productCard.querySelectorAll('.selected-overlay').forEach((node) => {
+      node.remove();
+    });
     productCard.classList.add('selected');
 
   } else {
@@ -258,10 +248,9 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       });
     }
 
-    // Hide selected overlay
-    if (selectedOverlay) {
-      selectedOverlay.style.display = 'none';
-    }
+    productCard.querySelectorAll('.selected-overlay').forEach((node) => {
+      node.remove();
+    });
     productCard.classList.remove('selected');
   }
 

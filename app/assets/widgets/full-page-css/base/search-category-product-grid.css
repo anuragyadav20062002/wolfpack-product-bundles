@@ -450,3 +450,74 @@
   justify-content: flex-end;
   min-height: 35px;
 }
+
+.bundle-widget-full-page .product-card,
+.bundle-widget-full-page .product-card.selected {
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  box-sizing: border-box;
+  align-items: stretch;
+}
+
+.bundle-widget-full-page .product-card .product-content-wrapper,
+.bundle-widget-full-page .product-card.selected .product-content-wrapper {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+  box-sizing: border-box;
+}
+
+.bundle-widget-full-page .product-card .product-title,
+.bundle-widget-full-page .product-card .product-variant-row,
+.bundle-widget-full-page .product-card .product-price-row,
+.bundle-widget-full-page .product-card .product-card-action {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.bundle-widget-full-page .product-card .product-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bundle-widget-full-page .product-card .product-variant-row {
+  white-space: normal;
+  margin-top: 4px;
+}
+
+.bundle-widget-full-page .product-price-row {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  min-height: 0 !important;
+  gap: 4px;
+  white-space: normal;
+}
+
+.bundle-widget-full-page .product-price-row .product-price,
+.bundle-widget-full-page .product-price-row .product-price-strike {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bundle-widget-full-page .product-card-action,
+.bundle-widget-full-page .product-card.selected .product-card-action,
+.bundle-widget-full-page .product-card-action.is-expanded,
+.bundle-widget-full-page .product-card.selected .product-card-action.is-expanded {
+  margin-top: 10px;
+  padding-top: 10px;
+  height: auto !important;
+  min-height: 35px !important;
+  border-top: 1px solid
+    var(--bundle-product-card-divider-color, rgba(0, 0, 0, 0.12));
+  justify-content: flex-end;
+}
+
+.bundle-widget-full-page .product-card.selected .selected-overlay,
+.bundle-widget-full-page .product-card .selected-overlay {
+  display: none !important;
+}
