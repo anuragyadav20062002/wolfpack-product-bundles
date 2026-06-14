@@ -361,6 +361,8 @@ renderSidePanel(panel) {
   }
 
   // Action row
+  const actionDivider = document.createElement('div');
+  actionDivider.className = 'side-panel-action-divider';
   const actionSection = document.createElement('div');
   actionSection.className = 'side-panel-action-container';
   actionSection.appendChild(totalSection);
@@ -423,6 +425,7 @@ renderSidePanel(panel) {
 
   navSection.appendChild(nextBtn);
   actionSection.appendChild(navSection);
+  panel.appendChild(actionDivider);
   panel.appendChild(actionSection);
 },
 

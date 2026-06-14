@@ -179,11 +179,15 @@ applyStandardExpandedVariantTitle(cardElement, product) {
 
   cardElement.classList.add('product-card--expanded-variant');
   titleEl.textContent = parentTitle;
+  const variantDividerEl = document.createElement('div');
+  variantDividerEl.className = 'bw-product-card__variant-divider';
+  variantDividerEl.setAttribute('aria-hidden', 'true');
+  titleEl.insertAdjacentElement('afterend', variantDividerEl);
   const variantEl = document.createElement('div');
   variantEl.className = 'bw-product-card__variant product-variant-row';
   variantEl.setAttribute('data-bw-card-variant-row', 'true');
   variantEl.textContent = variantTitle;
-  titleEl.insertAdjacentElement('afterend', variantEl);
+  variantDividerEl.insertAdjacentElement('afterend', variantEl);
 },
 
 getSummaryProductDisplayTitle(item) {
@@ -243,7 +247,6 @@ getSummaryVariantFromDisplayTitle(displayTitle) {
 
 applySelectedQuantityBadge(cardElement, currentQuantity) {
   if (!cardElement) return;
-  cardElement.querySelector('.selected-overlay')?.remove();
   const actionWrapper = cardElement.querySelector('.product-card-action');
   if (!actionWrapper) return;
 

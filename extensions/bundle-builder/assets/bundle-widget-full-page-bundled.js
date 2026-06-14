@@ -1545,7 +1545,7 @@ class ComponentGenerator {
     };
 
     return `
-      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
+      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
         <div class="product-image bw-product-card__media">
           <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="if (this.src.indexOf('${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}') === -1) this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}'">
         </div>
@@ -2282,12 +2282,16 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
+  const hasVariantText = Boolean(variantText);
+  const variantDivider = hasVariantText
+    ? '<div class="bw-product-card__variant-divider" aria-hidden="true"></div>'
+    : '';
   const rootClasses = [
     'bw-product-card',
     'product-card',
     `bw-product-card--mode-${escapeAttribute(mode)}`,
     variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
-    isSelected ? 'bw-product-card--selected selected' : '',
+    isSelected ? 'bw-product-card--selected' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
 
@@ -2298,8 +2302,9 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
         ${options.stockBadgeHtml || ''}
       </div>
       <div class="bw-product-card__body product-content-wrapper">
-        <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+          <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
+          ${variantDivider}
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
         </div>
         ${price ? `
@@ -4133,6 +4138,12 @@ selectBundle() {
   if (!this.selectedBundle && this.config?.bundleId && this.bundleData?.[this.config.bundleId]?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
     this.selectedBundle = this.bundleData[this.config.bundleId];
   }
+  if (this.selectedBundle) {
+    this.config.showStepTimeline = this.resolveShowStepTimeline(
+      this.selectedBundle.showStepTimeline ?? null,
+      this.config.showStepTimeline
+    );
+  }
 
   this.updateMessagesFromBundle();
 },
@@ -5659,8 +5670,11 @@ renderSidePanel(panel) {
     return;
   }
 
+  const actionDivider = document.createElement('div');
+  actionDivider.className = 'side-panel-action-divider';
   const actionSection = document.createElement('div');
   actionSection.className = 'side-panel-action-container';
+  actionSection.appendChild(actionDivider);
   actionSection.appendChild(totalSection);
 
   const navSection = document.createElement('div');
@@ -7377,11 +7391,15 @@ applyStandardExpandedVariantTitle(cardElement, product) {
 
   cardElement.classList.add('product-card--expanded-variant');
   titleEl.textContent = parentTitle;
+  const variantDividerEl = document.createElement('div');
+  variantDividerEl.className = 'bw-product-card__variant-divider';
+  variantDividerEl.setAttribute('aria-hidden', 'true');
+  titleEl.insertAdjacentElement('afterend', variantDividerEl);
   const variantEl = document.createElement('div');
   variantEl.className = 'bw-product-card__variant product-variant-row';
   variantEl.setAttribute('data-bw-card-variant-row', 'true');
   variantEl.textContent = variantTitle;
-  titleEl.insertAdjacentElement('afterend', variantEl);
+  variantDividerEl.insertAdjacentElement('afterend', variantEl);
 },
 
 getSummaryProductDisplayTitle(item) {
@@ -7441,7 +7459,6 @@ getSummaryVariantFromDisplayTitle(displayTitle) {
 
 applySelectedQuantityBadge(cardElement, currentQuantity) {
   if (!cardElement) return;
-  cardElement.querySelector('.selected-overlay')?.remove();
   const actionWrapper = cardElement.querySelector('.product-card-action');
   if (!actionWrapper) return;
 
@@ -7981,6 +7998,10 @@ findProductByVariantId(step, variantId) {
 isStepCompleted(stepIndex) {
   const step = this.selectedBundle.steps[stepIndex];
   const stepSelections = this.selectedProducts[stepIndex] || {};
+  if (typeof this.validateStep === 'function') {
+    return this.validateStep(stepIndex);
+  }
+
   return ConditionValidator.isStepConditionSatisfied(step, stepSelections);
 },
 
@@ -9756,7 +9777,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
         : '';
 
       return `
-      <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+      <div class="product-card ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}
@@ -9785,12 +9806,12 @@ renderModalProducts(stepIndex, productsToRender = null) {
               </div>
             </div>
 
-            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
+            <button class="product-add-btn"
                     data-product-id="${selectionKey}"
                     data-product-handle="${product.handle || ''}"
                     data-step-id="${step.id}"
                     ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? '✓ Added to Bundle' : this.getProductAddButtonText())}
+              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? 'Added to Bundle' : this.getProductAddButtonText())}
             </button>
           `}
         </div>
@@ -10100,10 +10121,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
-    productCard.querySelectorAll('.selected-overlay').forEach((node) => {
-      node.remove();
-    });
-    productCard.classList.add('selected');
+    productCard.classList.add('bw-product-card--selected');
 
   } else {
     if (actionWrapper) {
@@ -10127,10 +10145,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       });
     }
 
-    productCard.querySelectorAll('.selected-overlay').forEach((node) => {
-      node.remove();
-    });
-    productCard.classList.remove('selected');
+    productCard.classList.remove('bw-product-card--selected');
   }
 
   this._refreshSiblingDimState(stepIndex);

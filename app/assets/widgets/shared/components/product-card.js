@@ -21,12 +21,14 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
   const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
+  const hasVariantText = Boolean(variantText);
+  const variantDivider = '<div class="bw-product-card__variant-divider" aria-hidden="true"></div>';
   const rootClasses = [
     'bw-product-card',
     'product-card',
     `bw-product-card--mode-${escapeAttribute(mode)}`,
     variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
-    isSelected ? 'bw-product-card--selected selected' : '',
+    isSelected ? 'bw-product-card--selected' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
 
@@ -37,8 +39,9 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
         ${options.stockBadgeHtml || ''}
       </div>
       <div class="bw-product-card__body product-content-wrapper">
-        <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+          <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
+          ${variantDivider}
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
         </div>
         ${price ? `

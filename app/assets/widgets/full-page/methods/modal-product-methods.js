@@ -162,7 +162,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
         : '';
 
       return `
-      <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+      <div class="product-card ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}
@@ -191,12 +191,12 @@ renderModalProducts(stepIndex, productsToRender = null) {
               </div>
             </div>
 
-            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
+            <button class="product-add-btn"
                     data-product-id="${selectionKey}"
                     data-product-handle="${product.handle || ''}"
                     data-step-id="${step.id}"
                     ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? '✓ Added to Bundle' : this.getProductAddButtonText())}
+              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? 'Added to Bundle' : this.getProductAddButtonText())}
             </button>
           `}
         </div>

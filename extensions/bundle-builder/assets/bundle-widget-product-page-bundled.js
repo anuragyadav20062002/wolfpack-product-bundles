@@ -1545,7 +1545,7 @@ class ComponentGenerator {
     };
 
     return `
-      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
+      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
         <div class="product-image bw-product-card__media">
           <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="if (this.src.indexOf('${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}') === -1) this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}'">
         </div>
@@ -2282,12 +2282,16 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
+  const hasVariantText = Boolean(variantText);
+  const variantDivider = hasVariantText
+    ? '<div class="bw-product-card__variant-divider" aria-hidden="true"></div>'
+    : '';
   const rootClasses = [
     'bw-product-card',
     'product-card',
     `bw-product-card--mode-${escapeAttribute(mode)}`,
     variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
-    isSelected ? 'bw-product-card--selected selected' : '',
+    isSelected ? 'bw-product-card--selected' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
 
@@ -2298,8 +2302,9 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
         ${options.stockBadgeHtml || ''}
       </div>
       <div class="bw-product-card__body product-content-wrapper">
-        <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+          <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
+          ${variantDivider}
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
         </div>
         ${price ? `

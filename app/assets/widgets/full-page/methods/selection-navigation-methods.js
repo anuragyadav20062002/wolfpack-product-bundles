@@ -219,10 +219,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
-    productCard.querySelectorAll('.selected-overlay').forEach((node) => {
-      node.remove();
-    });
-    productCard.classList.add('selected');
+    productCard.classList.add('bw-product-card--selected');
 
   } else {
     if (actionWrapper) {
@@ -248,10 +245,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       });
     }
 
-    productCard.querySelectorAll('.selected-overlay').forEach((node) => {
-      node.remove();
-    });
-    productCard.classList.remove('selected');
+    productCard.classList.remove('bw-product-card--selected');
   }
 
   // Refresh dimmed state on all sibling cards now that the selection has changed

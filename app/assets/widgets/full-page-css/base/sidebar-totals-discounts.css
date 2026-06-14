@@ -170,22 +170,34 @@
 }
 
 .full-page-side-panel .side-panel-summary-content {
-  grid-row: 3;
-  grid-column: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  height: 100%;
+  max-height: none;
   width: 100%;
-  height: auto !important;
-  max-height: none !important;
+  align-self: stretch;
   flex: 1 1 auto;
+}
+
+.full-page-side-panel .side-panel-summary-content {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
 }
 
 .full-page-side-panel .side-panel-summary-content > .side-panel-discount-message {
   order: 0;
   width: 100%;
   margin: 0 0 8px;
+  text-align: center;
+}
+
+.full-page-side-panel .side-panel-discount-message {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .full-page-side-panel .side-panel-summary-content > :is(
@@ -718,16 +730,46 @@
 
 .bundle-widget-full-page .full-page-side-panel,
 .bundle-widget-full-page .layout-sidebar .full-page-side-panel {
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 0;
 }
 
 .bundle-widget-full-page .side-panel-action-container,
 .bundle-widget-full-page .layout-sidebar .side-panel-action-container {
-  border-top: 1px solid var(--bundle-side-panel-border, rgba(0, 0, 0, 0.08));
   padding-top: 12px;
-  margin-top: 12px;
+  margin-top: auto;
   width: 100%;
   box-sizing: border-box;
+  align-self: stretch;
+}
+
+.bundle-widget-full-page .side-panel-action-container,
+.bundle-widget-full-page .layout-sidebar .side-panel-action-container {
+  padding-top: 12px !important;
+  margin-top: auto !important;
+}
+
+.bundle-widget-full-page .side-panel-action-divider,
+.bundle-widget-full-page .layout-sidebar .side-panel-action-divider {
+  width: 100%;
+  height: 1px;
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  background: var(--bundle-side-panel-divider-color, var(--bundle-side-panel-border, rgba(0, 0, 0, 0.08)));
+  margin: 0 0 12px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .bundle-widget-full-page .side-panel-action-container,
+  .bundle-widget-full-page .layout-sidebar .side-panel-action-container {
+    padding-top: 12px;
+    margin-top: auto;
+  }
 }
 
 @keyframes fpb-mobile-summary-drawer-in {

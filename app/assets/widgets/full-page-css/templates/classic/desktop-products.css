@@ -352,7 +352,6 @@
     height: 28px;
     min-height: 28px;
     padding: 0 0 5px;
-    border-bottom: 1px solid #e3e3e3;
     overflow: hidden;
   }
   #bundle-builder-app[data-bundle-type="full_page"]
@@ -431,12 +430,6 @@
     font-size: 16px;
     font-weight: 700;
     line-height: 1;
-  }
-
-  .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
-    .sidebar-content
-    .product-add-btn.added::before {
-    content: "✓";
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="icon"]

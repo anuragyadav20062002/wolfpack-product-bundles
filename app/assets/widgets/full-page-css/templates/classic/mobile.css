@@ -51,16 +51,12 @@
     overflow: visible;
   }
 
-  .fpb-preset-classic .sidebar-content .product-card.selected {
+  .fpb-preset-classic .sidebar-content .product-card.bw-product-card--selected {
     border-color: var(
       --bundle-product-card-selected-border-color,
       var(--bundle-global-primary-button, currentColor)
     );
     box-shadow: none;
-  }
-
-  .fpb-preset-classic .sidebar-content .selected-overlay {
-    display: none !important;
   }
 
   .fpb-preset-classic .sidebar-content .product-image {
@@ -283,11 +279,6 @@
     font-size: 16px;
     font-weight: 700;
     line-height: 1;
-  }
-
-  .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
-    .product-add-btn.added::before {
-    content: "✓";
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]
