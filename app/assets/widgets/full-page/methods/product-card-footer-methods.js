@@ -29,7 +29,6 @@ export const fullPageProductCardFooterMethods = {
 createProductCard(product, stepIndex) {
   const productId = product.variantId || product.id;
   const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
-  const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
 
 
   // Ensure product has an image URL (use multiple fallbacks)
@@ -85,10 +84,6 @@ createProductCard(product, stepIndex) {
   wrapper.innerHTML = htmlString.trim();
   const cardElement = wrapper.firstChild;
 
-  if (renderSelectedQuantityBadge) {
-    this.applySelectedQuantityBadge(cardElement, currentQuantity);
-  }
-
   this.applyStandardExpandedVariantTitle(cardElement, product);
 
   // Default (included) step: add "Included" badge and disable interaction controls
@@ -114,7 +109,7 @@ createProductCard(product, stepIndex) {
         badge.appendChild(img);
       } else {
         badge.textContent = this._resolveText('includedBadge', 'Included');
-      }
+}
       imgEl.parentElement.appendChild(badge);
     }
   }
@@ -243,28 +238,6 @@ getSummaryVariantFromDisplayTitle(displayTitle) {
   if (separatorIndex <= 0) return '';
   const variantCandidate = displayTitle.slice(separatorIndex + 3).trim();
   return variantCandidate || '';
-},
-
-applySelectedQuantityBadge(cardElement, currentQuantity) {
-  if (!cardElement) return;
-  const actionWrapper = cardElement.querySelector('.product-card-action');
-  if (!actionWrapper) return;
-
-  const priceRow = cardElement.querySelector('.product-price-row');
-  const actionRow = document.createElement('div');
-  actionRow.className = 'product-selected-action-row';
-  if (priceRow) {
-    actionRow.appendChild(priceRow);
-  }
-
-  const quantityBadge = document.createElement('span');
-  quantityBadge.className = 'inline-quantity-display-only';
-  quantityBadge.textContent = String(currentQuantity);
-  actionRow.appendChild(quantityBadge);
-
-  actionWrapper.classList.remove('is-expanded');
-  actionWrapper.classList.add('has-selected-quantity-badge');
-  actionWrapper.replaceChildren(actionRow);
 },
 
 // Attach event listeners to product card

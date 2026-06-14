@@ -1,4 +1,4 @@
-[data-bundle-type="full_page"][data-fpb-design-preset="COMPACT"] {
+[data-fpb-design-preset="COMPACT"] {
   width: min(100vw, var(--compact-desktop-shell-max-width, 1536px));
   max-width: var(--compact-desktop-shell-max-width, 1536px);
   margin-left: calc(50% - min(50vw, 768px));
@@ -119,7 +119,6 @@
     box-shadow: none;
     background: #fff;
   }
-  #bundle-builder-app[data-bundle-type="full_page"]
     .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant {
@@ -178,7 +177,6 @@
     overflow: visible !important;
     align-items: start !important;
   }
-  #bundle-builder-app[data-bundle-type="full_page"]
     .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant
@@ -190,7 +188,6 @@
         var(--compact-desktop-card-value-row) + 1px
     ) !important;
   }
-  #bundle-builder-app[data-bundle-type="full_page"]
     .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant
@@ -237,7 +234,6 @@
     letter-spacing: 0 !important;
     overflow: visible !important;
   }
-  #bundle-builder-app[data-bundle-type="full_page"]
     .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant
@@ -251,7 +247,6 @@
     padding: 0 0 5px !important;
     overflow: hidden !important;
   }
-  #bundle-builder-app[data-bundle-type="full_page"]
     .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant
@@ -392,11 +387,6 @@
     .product-image {
     height: var(--compact-mobile-image-height, 150px);
     min-height: var(--compact-mobile-image-height, 150px);
-  }
-
-  .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
-    .sidebar-content
-    .product-card.bw-product-card--selected {
   }
 
   .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]

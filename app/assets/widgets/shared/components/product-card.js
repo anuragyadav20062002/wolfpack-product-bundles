@@ -51,6 +51,7 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
           </div>
         ` : ''}
         ${options.variantSelectorHtml || ''}
+        <div class="product-card-divider" aria-hidden="true"></div>
         <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
           ${isSelected
             ? renderQuantityControl({

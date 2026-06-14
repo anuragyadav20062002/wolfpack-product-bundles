@@ -174,8 +174,6 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  height: 100%;
-  max-height: none;
   width: 100%;
   align-self: stretch;
   flex: 1 1 auto;
@@ -658,7 +656,6 @@
     grid-template-columns:
       65px minmax(0, calc(var(--fpb-mobile-footer-inner-width) - 147px))
       64px;
-    grid-template-rows: 60px;
     gap: 9px;
     width: var(--fpb-mobile-footer-inner-width);
     height: 81px;
@@ -814,5 +811,12 @@
   .fpb-mobile-summary-products-section {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .bundle-widget-full-page .full-page-side-panel,
+  .bundle-widget-full-page .layout-sidebar .full-page-side-panel {
+    display: none !important;
   }
 }
