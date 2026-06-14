@@ -4,6 +4,7 @@
   "version": "2.0.0",
   "scripts": {
     "build": "npm run optimise:images && remix vite:build",
+    "build-dev": "remix vite:build",
     "optimise:images": "node scripts/optimise-public-images.mjs",
     "build:widgets": "node scripts/build-widget-bundles.js all && node scripts/minify-assets.js js",
     "build:widgets:full-page": "node scripts/build-widget-bundles.js full-page && node scripts/minify-assets.js js",
