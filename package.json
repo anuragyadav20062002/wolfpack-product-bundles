@@ -42,7 +42,6 @@
     "test:ci": "jest --ci --coverage --watchAll=false",
     "graphify:rebuild": "node scripts/rebuild-graphify.mjs",
     "pre-deploy": "npm test && npm run build",
-    "migrate:pricing-rules": "tsx scripts/migrate-pricing-rules.ts --dry-run"
   },
   "type": "module",
   "engines": {
