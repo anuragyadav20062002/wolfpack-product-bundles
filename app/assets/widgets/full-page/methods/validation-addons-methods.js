@@ -329,10 +329,9 @@ _initDefaultProducts() {
   const steps = this.selectedBundle?.steps || [];
   steps.forEach((step, stepIndex) => {
     if (!step.isDefault || !step.defaultVariantId) return;
-    // Normalize both sides of the comparison — defaultVariantId is saved as a
-    // GID while step.products[].variantId is sometimes emitted numeric, so a
-    // strict === miss left the default product silently unselected.
+    // Canonicalize variant identifiers before matching and storing selection state.
     const targetId = this.extractId(step.defaultVariantId);
+    if (!targetId) return;
     const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
     const product = allProducts.find(p =>
       this.extractId(p.variantId) === targetId ||
@@ -344,8 +343,7 @@ _initDefaultProducts() {
     );
     if (product) {
       if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-      const normalizedId = targetId || step.defaultVariantId;
-      this.selectedProducts[stepIndex][normalizedId] = 1;
+      this.selectedProducts[stepIndex][targetId] = 1;
     }
   });
 },

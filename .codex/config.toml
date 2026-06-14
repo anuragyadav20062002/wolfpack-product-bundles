@@ -5,6 +5,15 @@ args = [
     "--autoConnect",
 ]
 
+[mcp_servers.chrome-devtools.tools.resize_page]
+approval_mode = "approve"
+
+[mcp_servers.chrome-devtools.tools.emulate]
+approval_mode = "approve"
+
+[mcp_servers.chrome-devtools.tools.hover]
+approval_mode = "approve"
+
 [mcp_servers.figma]
 url = "https://mcp.figma.com/mcp"
 
@@ -20,3 +29,6 @@ args = [
     "-y",
     "@shopify/dev-mcp@latest",
 ]
+
+[mcp_servers.shopify-dev-mcp.tools.learn_shopify_api]
+approval_mode = "approve"

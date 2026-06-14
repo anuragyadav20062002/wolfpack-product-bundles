@@ -105,6 +105,7 @@ function initDefaultProducts(steps: Step[], selectedProducts: SelectedProducts):
   steps.forEach((step, stepIndex) => {
     if (!step.isDefault || !step.defaultVariantId) return;
     const targetId = extractId(step.defaultVariantId);
+    if (!targetId) return;
     const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
     const product = allProducts.find(p =>
       extractId(p.variantId) === targetId ||
@@ -116,7 +117,7 @@ function initDefaultProducts(steps: Step[], selectedProducts: SelectedProducts):
     );
     if (product) {
       if (!result[stepIndex]) result[stepIndex] = {};
-      const normalizedKey = targetId ?? step.defaultVariantId!;
+      const normalizedKey = targetId;
       result[stepIndex][normalizedKey] = {
         ...product,
         variantId: normalizedKey,
