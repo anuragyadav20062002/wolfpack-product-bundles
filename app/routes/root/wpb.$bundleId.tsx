@@ -27,7 +27,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       shopId: shopDomain,
       bundleType: "full_page",
       status: {
-        in: [BundleStatus.DRAFT, BundleStatus.ACTIVE, BundleStatus.UNLISTED],
+        in: [BundleStatus.ACTIVE, BundleStatus.UNLISTED],
       },
     },
     include: {

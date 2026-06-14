@@ -54,6 +54,7 @@ TDD does NOT apply to: one-line config changes, CSS-only changes, docs changes, 
 **A unit test must verify a component's BEHAVIOUR, never its CSS, class names, or where it sits on the screen.** These tests are useless: they fail on harmless cosmetic refactors, never catch real bugs, and ossify implementation details.
 
 **Banned patterns — do not write, and remove on sight:**
+- For storefront templates, implement styling changes (dividers, borders, spacing, alignment, spacing/padding, height/width-related presentation) in CSS files, not through JavaScript DOM injection or runtime HTML composition.
 - Reading a `.css` / `.module.css` file with `fs.readFileSync(...)` and asserting on CSS properties (`width:`, `height:`, `padding:`, `margin:`, `grid-template-columns`, `font-size:`, `color:`, `background:`, `border-radius:`, etc.).
 - Reading a `.tsx` / `.jsx` / `.js` source file and asserting that a CSS class name is present (`expect(source).toContain("styles.someClass")` or `expect(source).toContain('className="...')`).
 - Asserting on element order via `indexOf` comparisons on source text (`expect(source.indexOf("A")).toBeLessThan(source.indexOf("B"))`) to verify "X renders before Y on screen".

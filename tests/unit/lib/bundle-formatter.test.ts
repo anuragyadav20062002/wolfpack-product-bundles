@@ -104,6 +104,14 @@ describe("formatBundleForWidget", () => {
     expect(result.variantSelectorEnabled).toBe(true);
   });
 
+  it("emits the saved loading GIF for storefront runtime", () => {
+    const result = formatBundleForWidget(makeBundle({
+      loadingGif: "https://cdn.example.test/loading.gif",
+    }) as any);
+
+    expect(result.loadingGif).toBe("https://cdn.example.test/loading.gif");
+  });
+
   it("emits per-bundle Bundle Level CSS for FPB storefront runtime", () => {
     const css = "#bundle-builder-app { outline: 1px solid rgb(255, 0, 204); }";
     const result = formatBundleForWidget(makeBundle({

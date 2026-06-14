@@ -246,7 +246,9 @@ export class BundleDataManager {
       id: sp.product?.id || sp.productId,
       shopifyProductId: sp.product?.shopifyProductId || sp.shopifyProductId,
       title: sp.product?.title || 'Untitled Product',
-      imageUrl: sp.product?.imageUrl || '/placeholder.png',
+      // AVIF is preferred for new widget payloads; old /bundle-product-placeholder.png kept as a compatibility fallback by
+      // component-level onerror handling.
+      imageUrl: sp.product?.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE,
       price: sp.product?.price || 0,
       compareAtPrice: sp.product?.compareAtPrice || null,
       variants: sp.product?.variants || [],

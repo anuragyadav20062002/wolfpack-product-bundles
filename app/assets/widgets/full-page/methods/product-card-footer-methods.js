@@ -29,7 +29,6 @@ export const fullPageProductCardFooterMethods = {
 createProductCard(product, stepIndex) {
   const productId = product.variantId || product.id;
   const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
-  const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
 
 
   // Ensure product has an image URL (use multiple fallbacks)
@@ -85,10 +84,6 @@ createProductCard(product, stepIndex) {
   wrapper.innerHTML = htmlString.trim();
   const cardElement = wrapper.firstChild;
 
-  if (renderSelectedQuantityBadge) {
-    this.applySelectedQuantityBadge(cardElement, currentQuantity);
-  }
-
   this.applyStandardExpandedVariantTitle(cardElement, product);
 
   // Default (included) step: add "Included" badge and disable interaction controls
@@ -114,7 +109,7 @@ createProductCard(product, stepIndex) {
         badge.appendChild(img);
       } else {
         badge.textContent = this._resolveText('includedBadge', 'Included');
-      }
+}
       imgEl.parentElement.appendChild(badge);
     }
   }
@@ -179,11 +174,15 @@ applyStandardExpandedVariantTitle(cardElement, product) {
 
   cardElement.classList.add('product-card--expanded-variant');
   titleEl.textContent = parentTitle;
+  const variantDividerEl = document.createElement('div');
+  variantDividerEl.className = 'bw-product-card__variant-divider';
+  variantDividerEl.setAttribute('aria-hidden', 'true');
+  titleEl.insertAdjacentElement('afterend', variantDividerEl);
   const variantEl = document.createElement('div');
   variantEl.className = 'bw-product-card__variant product-variant-row';
   variantEl.setAttribute('data-bw-card-variant-row', 'true');
   variantEl.textContent = variantTitle;
-  titleEl.insertAdjacentElement('afterend', variantEl);
+  variantDividerEl.insertAdjacentElement('afterend', variantEl);
 },
 
 getSummaryProductDisplayTitle(item) {
@@ -239,29 +238,6 @@ getSummaryVariantFromDisplayTitle(displayTitle) {
   if (separatorIndex <= 0) return '';
   const variantCandidate = displayTitle.slice(separatorIndex + 3).trim();
   return variantCandidate || '';
-},
-
-applySelectedQuantityBadge(cardElement, currentQuantity) {
-  if (!cardElement) return;
-  cardElement.querySelector('.selected-overlay')?.remove();
-  const actionWrapper = cardElement.querySelector('.product-card-action');
-  if (!actionWrapper) return;
-
-  const priceRow = cardElement.querySelector('.product-price-row');
-  const actionRow = document.createElement('div');
-  actionRow.className = 'product-selected-action-row';
-  if (priceRow) {
-    actionRow.appendChild(priceRow);
-  }
-
-  const quantityBadge = document.createElement('span');
-  quantityBadge.className = 'inline-quantity-display-only';
-  quantityBadge.textContent = String(currentQuantity);
-  actionRow.appendChild(quantityBadge);
-
-  actionWrapper.classList.remove('is-expanded');
-  actionWrapper.classList.add('has-selected-quantity-badge');
-  actionWrapper.replaceChildren(actionRow);
 },
 
 // Attach event listeners to product card
@@ -327,7 +303,7 @@ attachProductCardListeners(cardElement, product, stepIndex) {
           migratedQty = 0;
         } else if (newQtyAvail !== null && oldQty > newQtyAvail) {
           migratedQty = newQtyAvail;
-          ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+          ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
         }
         if (migratedQty > 0) {
           this.selectedProducts[stepIndex][newVariantId] = migratedQty;

@@ -88,8 +88,16 @@ createStepTimeline() {
 
   const timelineEntries = this.buildStepTimelineEntries();
   const totalEntryCount = Math.max(timelineEntries.length, 1);
+  const hasMultipleCategoryEntryForStep = (entry) => (
+    this.shouldRenderMultipleCategoryTimelineEntry(entry?.step)
+  );
   const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
-    entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    entry.type === 'multiple_categories'
+      ? Number(entry.stepIndex) === Number(this.currentStepIndex)
+      : entry.type === 'step'
+        ? Number(entry.stepIndex) === Number(this.currentStepIndex)
+          && !hasMultipleCategoryEntryForStep(entry)
+        : false
   )));
   const {
     visibleEntries,
@@ -222,7 +230,12 @@ createStandardStepTimeline() {
   const timelineEntries = this.buildStepTimelineEntries();
   const totalEntryCount = Math.max(timelineEntries.length, 1);
   const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
-    entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    entry.type === 'multiple_categories'
+      ? Number(entry.stepIndex) === Number(this.currentStepIndex)
+      : entry.type === 'step'
+        ? Number(entry.stepIndex) === Number(this.currentStepIndex)
+          && !this.shouldRenderMultipleCategoryTimelineEntry(entry.step)
+        : false
   )));
   const {
     visibleEntries,
@@ -231,9 +244,14 @@ createStandardStepTimeline() {
     isPaged,
   } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
   const entryCount = Math.max(visibleEntries.length, 1);
-  const activeVisibleEntryIndex = Math.max(0, visibleEntries.findIndex((entry) => (
-    entry.type === 'step' && entry.stepIndex === this.currentStepIndex
-  )));
+  const activeVisibleEntryIndex = Math.max(0, visibleEntries.findIndex((entry) => {
+    if (Number(entry.stepIndex) !== Number(this.currentStepIndex)) {
+      return false;
+    }
+    if (entry.type === 'multiple_categories') return true;
+    if (entry.type === 'step') return !this.shouldRenderMultipleCategoryTimelineEntry(entry.step);
+    return false;
+  }));
   const progressFill = entryCount > 1
     ? Math.max(0, Math.min(100, (activeVisibleEntryIndex / (entryCount - 1)) * 100))
     : 0;
@@ -287,6 +305,8 @@ createStandardStepTimeline() {
   visibleEntries.forEach((entry) => {
     const step = entry.step;
     const index = entry.stepIndex;
+    const isCategoryEntry = entry.type === 'multiple_categories';
+    const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
     const itemEl = document.createElement('div');
     itemEl.className = 'standard-navigation-item timeline-step';
     itemEl.dataset.stepIndex = index;
@@ -295,11 +315,11 @@ createStandardStepTimeline() {
     const timelineState = getTimelineEntryState({
       entry,
       currentStepIndex: this.currentStepIndex,
-      isCompleted: entry.type === 'step'
-        && !(entry.type === 'step' && index === this.currentStepIndex)
-        && this.isStepCompleted(index),
+      isCompleted: isCategoryEntry
+        ? this.isStepCompleted(index)
+        : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex),
       isAccessible: this.isStepAccessible(index),
-      hasMultipleCategoryEntry: false,
+      hasMultipleCategoryEntry,
     });
     timelineState.classes.forEach((className) => itemEl.classList.add(className));
 

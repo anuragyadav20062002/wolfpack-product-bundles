@@ -20,6 +20,7 @@ import {
 } from "../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { useTranslation } from "react-i18next";
+import { HelpTooltipImage } from "../../../components/HelpTooltipImage";
 import { HELP_TOOLTIPS, type HelpTooltipKey } from "../../../constants/help-tooltips";
 import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
 import { handleAdminSaveLockedEvent } from "../../../lib/admin-save-lock";
@@ -544,7 +545,7 @@ function QuestionHelpTooltip({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
           "--rich-help-arrow-left": `${tooltipPos.arrowLeft}px`,
         } as React.CSSProperties : undefined}
       >
-        {tooltip.visual && <span className={productPageBundleStyles.richHelpImagePlaceholder} />}
+        {tooltip.imageSrc && <HelpTooltipImage src={tooltip.imageSrc} alt={title || tooltip.accessibilityLabel || description} />}
         {title && <span className={productPageBundleStyles.richHelpTitle}>{title}</span>}
         <span className={productPageBundleStyles.richHelpDescription}>{description}</span>
       </span>
@@ -3524,6 +3525,7 @@ export default function ConfigureBundleFlow() {
                               <p className={productPageBundleStyles.displayOptionTitle}>Bundle Quantity Options</p>
                               <p className={productPageBundleStyles.displayOptionDescription}>Configure this section to enable quantity options.</p>
                             </div>
+                            <QuestionHelpTooltip tooltipKey="bundleQuantityOptions" />
                             <s-switch
                               checked={qtyOptionsEnabled || undefined}
                               disabled={!bundleQuantityOptionsEligible || undefined}
@@ -3599,6 +3601,7 @@ export default function ConfigureBundleFlow() {
                             <p className={productPageBundleStyles.displayOptionTitle}>Progress Bar</p>
                             <p className={productPageBundleStyles.displayOptionDescription}>Edit the progress bar content and settings.</p>
                           </div>
+                          <QuestionHelpTooltip tooltipKey="discountProgressBar" />
                           <s-switch
                             checked={progressBarEnabled || undefined}
                             onChange={(e) => { setProgressBarEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
@@ -3676,6 +3679,7 @@ export default function ConfigureBundleFlow() {
                             <p className={productPageBundleStyles.displayOptionTitle}>Discount Messaging</p>
                             <p className={productPageBundleStyles.displayOptionDescription}>Edit how discount messages appear above the subtotal.</p>
                           </div>
+                          <QuestionHelpTooltip tooltipKey="discountMessaging" />
                           <s-switch
                             checked={pricingState.discountMessagingEnabled || undefined}
                             onChange={(e) => pricingState.setDiscountMessagingEnabled((e.target as HTMLInputElement).checked)}
@@ -4558,7 +4562,10 @@ export default function ConfigureBundleFlow() {
                         )}
                         <div className={productPageBundleStyles.settingTitleRow}>
                           <div>
-                            <h3 className={productPageBundleStyles.settingTitle}>Variant Selector</h3>
+                            <h3 className={productPageBundleStyles.settingTitle}>
+                              Variant Selector
+                              <QuestionHelpTooltip tooltipKey="variantSelector" />
+                            </h3>
                             <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
                               Enable variant selection within the product cards instead of the quick look
                             </p>
@@ -4582,6 +4589,7 @@ export default function ConfigureBundleFlow() {
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Cart line item discount display</h3>
+                          <QuestionHelpTooltip tooltipKey="cartLineItemDiscountDisplay" />
                           <button
                             type="button"
                             onClick={() => {

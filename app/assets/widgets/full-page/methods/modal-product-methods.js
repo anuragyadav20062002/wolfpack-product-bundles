@@ -138,14 +138,16 @@ renderModalProducts(stepIndex, productsToRender = null) {
   productGrid.innerHTML = products.map(product => {
     const selectionKey = product.variantId || product.id;
     const currentQuantity = selectedProducts[selectionKey] || 0;
-    const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const priceMarkup = product.price ? `
-            <div class="product-price-row">
-              ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
-              <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
-            </div>
-          ` : '';
+
+    const imageUrl = product.imageUrl || product.image?.src || product.featuredImage?.url || product.images?.[0]?.url || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    product.imageUrl = imageUrl;
+
+    if (!product.imageUrl || product.imageUrl === '') {
+      product.imageUrl = BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    }
+
+    const variantSelectorHtml = this.renderVariantSelector(product, step);
 
     // Per-variant stock state derived from Storefront API quantityAvailable
     const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
@@ -161,51 +163,22 @@ renderModalProducts(stepIndex, productsToRender = null) {
         ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
         : '';
 
-    return `
-      <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 && !renderSelectedQuantityBadge ? `
-          <div class="selected-overlay">✓</div>
-        ` : ''}
-
-        <div class="product-image">
-          <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
-          ${stockBadge}
-        </div>
-
-        <div class="product-content-wrapper">
-          <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
-
-          ${renderSelectedQuantityBadge ? '' : priceMarkup}
-
-          <div class="product-spacer"></div>
-
-          ${this.renderVariantSelector(product, this.selectedBundle?.steps?.[stepIndex])}
-
-          ${renderSelectedQuantityBadge ? `
-            <div class="product-selected-action-row">
-              ${priceMarkup}
-              <span class="inline-quantity-display-only" data-product-id="${selectionKey}">${currentQuantity}</span>
-            </div>
-          ` : `
-            <div class="product-quantity-wrapper">
-              <div class="product-quantity-selector">
-                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-                <span class="qty-display">${currentQuantity}</span>
-                <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
-              </div>
-            </div>
-
-            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
-                    data-product-id="${selectionKey}"
-                    data-product-handle="${product.handle || ''}"
-                    data-step-id="${step.id}"
-                    ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? '✓ Added to Bundle' : this.getProductAddButtonText())}
-            </button>
-          `}
-        </div>
-      </div>
-    `;
+    return renderSharedProductCard(
+      {
+        ...product,
+        imageUrl,
+      },
+      currentQuantity,
+      currencyInfo,
+      {
+        variantSelectorHtml,
+        stockBadgeHtml: stockBadge,
+        addButtonText: outOfStock ? 'Out of stock' : this.getProductAddButtonText(),
+        addDisabled,
+        decreaseDisabled: currentQuantity <= 0,
+        increaseDisabled,
+      }
+    );
   }).join('');
 
   // Attach event handlers
@@ -238,7 +211,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
   // Quantity button handlers
   newProductGrid.addEventListener('click', (e) => {
-    if (e.target.classList.contains('qty-btn')) {
+    if (e.target.classList.contains('inline-qty-btn')) {
       e.stopPropagation();
       const productId = e.target.dataset.productId;
       const isIncrease = e.target.classList.contains('qty-increase');
@@ -319,7 +292,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
               migratedQty = 0;
             } else if (newQtyAvail !== null && newQtyAvail > 0 && oldQuantity > newQtyAvail) {
               migratedQty = newQtyAvail;
-              ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+              ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
             }
             if (migratedQty > 0) {
               this.selectedProducts[stepIndex][newVariantId] = migratedQty;

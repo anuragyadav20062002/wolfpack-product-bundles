@@ -329,19 +329,21 @@ _initDefaultProducts() {
   const steps = this.selectedBundle?.steps || [];
   steps.forEach((step, stepIndex) => {
     if (!step.isDefault || !step.defaultVariantId) return;
+    // Canonicalize variant identifiers before matching and storing selection state.
+    const targetId = this.extractId(step.defaultVariantId);
+    if (!targetId) return;
     const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
     const product = allProducts.find(p =>
-      p.variantId === step.defaultVariantId ||
-      p.id === step.defaultVariantId ||
-      p.gid === step.defaultVariantId ||
-      (p.variants || []).some(v => v.id === step.defaultVariantId || v.gid === step.defaultVariantId)
+      this.extractId(p.variantId) === targetId ||
+      this.extractId(p.id) === targetId ||
+      this.extractId(p.gid) === targetId ||
+      (p.variants || []).some(v =>
+        this.extractId(v.id) === targetId || this.extractId(v.gid) === targetId
+      )
     );
     if (product) {
       if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-      // Normalize to numeric ID (strips GID prefix) so the key matches the variantId
-      // produced by processProductsForStep() via extractId().
-      const normalizedId = this.extractId(step.defaultVariantId) || step.defaultVariantId;
-      this.selectedProducts[stepIndex][normalizedId] = 1;
+      this.selectedProducts[stepIndex][targetId] = 1;
     }
   });
 },
@@ -471,23 +473,56 @@ _renderSidebarProductSkeletons(container) {
   }
 },
 
+_getSummarySidebarRequiredQuantity(step) {
+  if (!step || step.enabled === false || step.isDefault || step.isFreeGift) return null;
+  if (ConditionValidator.isCategoryRuleMode(step)) return null;
+
+  let requiredQuantity = null;
+
+  const pushLowerBound = (operator, value) => {
+    if (!Number.isFinite(value) || value <= 0) {
+      return;
+    }
+
+    if (operator === ConditionValidator.OPERATORS.EQUAL_TO) {
+      requiredQuantity = Math.max(requiredQuantity ?? 0, value);
+      return;
+    }
+    if (operator === ConditionValidator.OPERATORS.GREATER_THAN_OR_EQUAL_TO) {
+      requiredQuantity = Math.max(requiredQuantity ?? 0, value);
+    }
+  };
+
+  if (step.conditionOperator != null && step.conditionValue != null) {
+    const primary = Number(step.conditionValue);
+    pushLowerBound(step.conditionOperator, primary);
+  }
+
+  if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    const secondary = Number(step.conditionValue2);
+    pushLowerBound(step.conditionOperator2, secondary);
+  }
+
+  if (requiredQuantity != null && requiredQuantity > 0) {
+    return requiredQuantity;
+  }
+
+  return null;
+},
+
 getSummarySidebarMaxItemCount(selectedCount = 0) {
   const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
-  const totalStepMax = steps.reduce((total, step) => {
-    if (!step || step.enabled === false) return total;
+  let totalRequired = 0;
 
-    const maxQuantity = Number(step.maxQuantity);
-    const minQuantity = Number(step.minQuantity);
-    const stepCount = Number.isFinite(maxQuantity) && maxQuantity > 0
-      ? maxQuantity
-      : Number.isFinite(minQuantity) && minQuantity > 0
-        ? minQuantity
-        : 1;
+  for (const step of steps) {
+    const required = this._getSummarySidebarRequiredQuantity(step);
+    if (Number.isFinite(required) && required > 0) {
+      totalRequired += required;
+    }
+  }
 
-    return total + stepCount;
-  }, 0);
-
-  return Math.max(totalStepMax, Number(selectedCount || 0), 1);
+  const selected = Number(selectedCount || 0);
+  return Math.max(totalRequired, selected, 1);
 },
 
 getSummarySidebarEmptyStateMode() {

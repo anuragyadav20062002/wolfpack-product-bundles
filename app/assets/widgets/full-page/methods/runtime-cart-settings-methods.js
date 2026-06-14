@@ -31,7 +31,7 @@ updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
   // If discount is not enabled, show step name (escaped)
   if (!this.selectedBundle?.pricing?.enabled) {
     const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-    modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
+    modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || 'Step ' + (this.currentStepIndex + 1);
     return;
   }
 
@@ -142,6 +142,64 @@ showLoadingOverlay(gifUrl) {
 hideLoadingOverlay() {
   const overlay = this.container?.querySelector('.bundle-loading-overlay');
   hideLoadingOverlayElement(overlay);
+},
+
+_getButtonDataset(button) {
+  if (!button) return null;
+  if (!button.dataset) button.dataset = {};
+  return button.dataset;
+},
+
+_setActionButtonLoadingState(button, isLoading) {
+  if (!button) return;
+  const dataset = this._getButtonDataset(button);
+
+  if (isLoading) {
+    if (dataset.fpbLoadingOriginalHtml === undefined) {
+      dataset.fpbLoadingOriginalHtml = button.innerHTML || '';
+      dataset.fpbLoadingWasDisabled = String(button.disabled === true);
+    }
+    button.classList.add('fpb-inline-spinner-active');
+    button.disabled = true;
+    button.innerHTML = '<span class="fpb-inline-spinner" aria-hidden="true"></span>';
+    return;
+  }
+
+  if (dataset?.fpbLoadingOriginalHtml !== undefined) {
+    button.innerHTML = dataset.fpbLoadingOriginalHtml;
+    button.disabled = dataset.fpbLoadingWasDisabled === 'true';
+    delete dataset.fpbLoadingOriginalHtml;
+    delete dataset.fpbLoadingWasDisabled;
+  }
+  button.classList.remove('fpb-inline-spinner-active');
+},
+
+_setWidgetBusy(isBusy, activeButton = null) {
+  this._isWidgetActionBusy = Boolean(isBusy);
+
+  if (!this.container) return;
+  this.container.classList.toggle('fpb-widget-busy', this._isWidgetActionBusy);
+
+  this._setActionButtonLoadingState(activeButton, isBusy);
+},
+
+_withWidgetActionBusy(action, options = {}) {
+  const { actionButton = null } = options;
+
+  if (!this.container || this._isWidgetActionBusy) return Promise.resolve(false);
+
+  this._setWidgetBusy(true, actionButton);
+
+  return Promise.resolve()
+    .then(() => action())
+    .then(() => true)
+    .catch((error) => {
+      console.error('[Wolfpack Bundles] Widget action failed:', error);
+      throw error;
+    })
+    .finally(() => {
+      this._setWidgetBusy(false, actionButton);
+    });
 },
 
 // ========================================================================
@@ -369,21 +427,81 @@ ensureFullPageTemplateStylesheet(preset) {
   const urls = window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ || {};
   const href = urls[presetKey] || urls[templateKey] || urls.DEFAULT || urls.STANDARD;
 
-  if (!href || typeof document === 'undefined') return;
+  if (!href || typeof document === 'undefined') return Promise.resolve();
 
-  const alreadyLoaded = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some((link) =>
+  if (!this._fpbTemplateStylesheetPromises) {
+    this._fpbTemplateStylesheetPromises = new Map();
+  }
+
+  const pendingPromise = this._fpbTemplateStylesheetPromises.get(href);
+  if (pendingPromise) {
+    return pendingPromise;
+  }
+
+  const existingLink = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).find((link) =>
     link.getAttribute('href') === href
     || link.href === href
     || link.dataset.wpbFpbTemplateCss === templateKey
   );
 
-  if (alreadyLoaded) return;
+  const markLoaded = (link) => {
+    if (link instanceof HTMLLinkElement) {
+      link.dataset.wpbFpbTemplateCssLoaded = '1';
+    }
+  };
+
+  const isStylesheetLoaded = (link) => {
+    if (!link) return false;
+    if (link.dataset?.wpbFpbTemplateCssLoaded === '1') return true;
+
+    try {
+      return !!link.sheet;
+    } catch (_error) {
+      return false;
+    }
+  };
+
+  if (existingLink) {
+    if (isStylesheetLoaded(existingLink)) {
+      markLoaded(existingLink);
+      return Promise.resolve();
+    }
+
+    const promise = new Promise((resolve) => {
+      const done = () => {
+        markLoaded(existingLink);
+        this._fpbTemplateStylesheetPromises.delete(href);
+        resolve();
+      };
+
+      existingLink.addEventListener('load', done, { once: true });
+      existingLink.addEventListener('error', done, { once: true });
+    });
+
+    this._fpbTemplateStylesheetPromises.set(href, promise);
+    return promise;
+  }
 
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = href;
   link.dataset.wpbFpbTemplateCss = templateKey;
+
+  const promise = new Promise((resolve) => {
+    const done = () => {
+      markLoaded(link);
+      this._fpbTemplateStylesheetPromises.delete(href);
+      resolve();
+    };
+
+    link.addEventListener('load', done, { once: true });
+    link.addEventListener('error', done, { once: true });
+  });
+
+  this._fpbTemplateStylesheetPromises.set(href, promise);
   document.head.appendChild(link);
+
+  return promise;
 },
 
 getProductAddButtonText() {
@@ -418,7 +536,7 @@ applyFullPageDesignPresetMarker() {
   this.elements.stepsContainer.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
   this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
   this.elements.stepsContainer.classList.toggle('fpb-i', cardCtaMode === 'icon');
-  this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
+  void this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
 },
 
 /** Returns true if the given tier index is the currently active one. */

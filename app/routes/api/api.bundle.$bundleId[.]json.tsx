@@ -15,11 +15,13 @@ import { verifyAppProxyRequest } from "../../lib/app-proxy.server";
  *
  * Supports sparse fieldsets for optimized responses:
  * ?fields=id,name,steps.products.id,steps.products.title
+ * ?fields=bootstrap
  *
  * Examples:
  * - Full response: /api/bundle/123.json
  * - Minimal: /api/bundle/123.json?fields=id,name,status
  * - Nested: /api/bundle/123.json?fields=id,name,steps.id,steps.name,steps.products.id
+ * - Bootstrap pointer: /api/bundle/123.json?fields=bootstrap
  */
 
 /**
@@ -93,6 +95,51 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type'
 };
 
+function buildBundleBootstrapPayload(bundleId: string, bundle: ReturnType<typeof formatBundleForWidget>, updatedAt: Date | null) {
+  return {
+    v: 2,
+    type: bundle.bundleType,
+    bundleType: bundle.bundleType,
+    id: bundleId,
+    ...(bundle.bundleDesignTemplate ? { bundleDesignTemplate: bundle.bundleDesignTemplate } : {}),
+    ...(bundle.bundleDesignPresetId ? { bundleDesignPresetId: bundle.bundleDesignPresetId } : {}),
+    ...(updatedAt ? { updatedAt: updatedAt.toISOString() } : {}),
+  };
+}
+
+function getNormalizedEtag(etag: string) {
+  return etag.replace(/^W\//i, '').replace(/^"|"$/g, '').trim();
+}
+
+function isFreshByCacheHeaders(
+  request: Request,
+  etag: string,
+  lastModified: Date | null
+) {
+  const clientEtags = request.headers.get('if-none-match');
+  if (clientEtags) {
+    const candidateEtags = clientEtags
+      .split(',')
+      .map(tag => getNormalizedEtag(tag));
+
+    if (candidateEtags.includes(getNormalizedEtag(etag))) {
+      return true;
+    }
+  }
+
+  const clientLastModifiedHeader = request.headers.get('if-modified-since');
+  if (!clientLastModifiedHeader || !lastModified) {
+    return false;
+  }
+
+  const clientLastModifiedMs = Date.parse(clientLastModifiedHeader);
+  if (Number.isNaN(clientLastModifiedMs)) {
+    return false;
+  }
+
+  return lastModified.getTime() <= clientLastModifiedMs;
+}
+
 export const loader: LoaderFunction = async ({ request, params }) => {
   const url = new URL(request.url);
   const requestedFields = parseFieldsParam(url.searchParams.get('fields'));
@@ -127,17 +174,15 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       bundleId
     });
 
-    // Allow draft, active, and unlisted bundles.
-    // Draft: merchants can test before publishing.
-    // Unlisted: hidden from search/collections/sitemap but accessible via direct URL —
-    //   the API is HMAC-protected + UUID bundle ID so serving it here is safe.
-    // Archived bundles are excluded — they are taken offline.
+    // Public storefront surface — only ACTIVE and UNLISTED bundles are served.
+    // Unlisted: hidden from search/collections/sitemap but accessible via direct URL.
+    // Draft and Archived are excluded; merchants preview drafts inside the admin.
     const bundle = await db.bundle.findFirst({
       where: {
         id: bundleId,
         shopId: shopDomain,
         status: {
-          in: [BundleStatus.DRAFT, BundleStatus.ACTIVE, BundleStatus.UNLISTED]
+          in: [BundleStatus.ACTIVE, BundleStatus.UNLISTED]
         }
       },
       include: {
@@ -183,32 +228,54 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     // We do NOT call the Shopify Admin API here — that endpoint is public-facing
     // (every storefront visitor triggers it) and Admin API calls are rate-limited.
     const formattedBundle = formatBundleForWidget(bundle);
+    const updatedAt = bundle.updatedAt ? new Date(bundle.updatedAt) : null;
+    const bootstrapPayload = buildBundleBootstrapPayload(formattedBundle.id, formattedBundle, updatedAt);
+
+    const lastModified = updatedAt;
+    const etag = `bundle:${bundle.id}:${updatedAt ? updatedAt.getTime() : 0}`;
+    const commonHeaders = {
+      ...CORS_HEADERS,
+      'Cache-Control': 'public, max-age=10, s-maxage=30, must-revalidate',
+      'Vary': 'Accept-Encoding',
+      'Last-Modified': lastModified ? lastModified.toUTCString() : new Date(0).toUTCString(),
+      'ETag': `"${etag}"`
+    };
+
+    if (isFreshByCacheHeaders(request, `"${etag}"`, lastModified)) {
+      return new Response(null, {
+        status: 304,
+        headers: commonHeaders,
+      });
+    }
 
     const responsePayload = {
       success: true,
       bundle: formattedBundle,
       timestamp: new Date().toISOString()
     };
+    const bootstrapResponsePayload = {
+      ...responsePayload,
+      bootstrap: bootstrapPayload
+    };
 
     // Apply sparse fieldsets if requested
     if (requestedFields) {
-      const bundleFields = requestedFields.map(f => `bundle.${f}`);
-      const filtered = filterFields(responsePayload, ['success', 'timestamp', ...bundleFields]);
+      const wantsBootstrap = requestedFields.includes('bootstrap');
+      const requestedDataFields = requestedFields.filter((field) => field !== 'bootstrap');
+      const bundleFields = requestedDataFields.map(f => `bundle.${f}`);
+      const filtered = filterFields(bootstrapResponsePayload, ['success', 'timestamp', ...bundleFields]);
+
+      if (wantsBootstrap) {
+        filtered.bootstrap = bootstrapPayload;
+      }
+
       return json(filtered, {
-        headers: {
-          ...CORS_HEADERS,
-          'Cache-Control': 'public, max-age=10, s-maxage=30, must-revalidate',
-          'Vary': 'Accept-Encoding'
-        }
+        headers: commonHeaders,
       });
     }
 
     return json(responsePayload, {
-      headers: {
-        ...CORS_HEADERS,
-        'Cache-Control': 'public, max-age=10, s-maxage=30, must-revalidate',
-        'Vary': 'Accept-Encoding'
-      }
+      headers: commonHeaders,
     });
 
   } catch (error) {

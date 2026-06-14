@@ -107,7 +107,7 @@ async switchTier(bundleId, tierIndex) {
     this.activeTierIndex = tierIndex;
     this.updatePillActiveStates();
   } catch (err) {
-    ToastManager.show(`Failed to load tier: ${err.message}`);
+    ToastManager.show('Failed to load tier: ' + err.message);
     // Restore previous active state styling
     this.updatePillActiveStates();
   } finally {
@@ -293,14 +293,9 @@ showErrorUI(_error) {
 /**
  * Background layout refresh — runs after initial render.
  *
- * The CDN-cached `data-bundle-config` attribute can be stale for minutes-to-hours
- * after the merchant saves a layout change. This method fetches the latest config
- * from the proxy API and, if the layout differs from what was cached, re-renders
- * the steps container so the correct layout is shown within seconds of page load.
- *
- * Only runs when:
- *   1. Cached data was used for first render (data-bundle-config attr was present)
- *   2. Not in the Shopify theme editor (designMode)
+ * In compact-marker mode, we always fetch the bundle via API before render,
+ * so this refresh path is effectively a no-op for initialized API loads.
+ * It is preserved for legacy cached payload paths and exits early when not needed.
  *
  * Fire-and-forget: all errors are silently swallowed.
  */
@@ -308,11 +303,7 @@ async _scheduleLayoutRefresh() {
   const bundleId = this.container.dataset.bundleId;
   if (!bundleId) return;
 
-  // Only needed when we served the first render from the CDN-cached metafield.
-  // If the proxy API was used for the first render, the data is already fresh.
-  const cachedAttr = this.container.dataset.bundleConfig;
-  const usedCache = cachedAttr && cachedAttr !== 'null' && cachedAttr !== 'undefined' && cachedAttr.trim() !== '';
-  if (!usedCache) return;
+  if (this._bundleConfigCacheMode !== 'full') return;
 
   try {
     const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;

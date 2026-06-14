@@ -34,6 +34,14 @@
   {% assign bundle_id = block.settings.bundle_id %}
 {% endif %}
 
+{% assign bundle_config_json = 'null' %}
+{% if bundle_id != blank %}
+  {% capture bundle_config_payload %}
+    {"v":2,"type":"product_page","bundleType":"product_page","id":{{ bundle_id | json }}}
+  {% endcapture %}
+  {% assign bundle_config_json = bundle_config_payload | strip %}
+{% endif %}
+
 <div
   {{ block.shopify_attributes }}
   id="bundle-builder-app"
@@ -42,11 +50,28 @@
   data-is-bundle-product="{{ is_bundle_product }}"
   data-is-container-product="{{ is_bundle_product }}"
   data-container-bundle-id="{{ bundle_id }}"
-  data-bundle-config='{{ bundle_ui_config | json }}'
+  data-bundle-config='{{ bundle_config_json | escape }}'
   data-hide-default-buttons="{{ is_bundle_product }}"
   data-show-step-numbers="{{ block.settings.show_step_numbers }}"
   class="bundle-widget-container"
 >
+  {%- comment -%}
+    Render a bootstrap spinner in the DOM immediately so the widget area
+    does not stay blank while the PPB JS bundle is downloading and
+    initialising (the runtime adds/removes this overlay on startup).
+  {%- endcomment -%}
+  <div
+    class="bundle-loading-overlay is-visible"
+    role="status"
+    aria-live="polite"
+    aria-label="Loading bundle"
+  >
+    <div
+      class="bundle-loading-overlay__spinner"
+      role="status"
+      aria-label="Loading"
+    ></div>
+  </div>
   <div class="bundle-steps"></div>
   <div class="bundle-includes"></div>
   <button class="add-bundle-to-cart">{{ block.settings.add_to_cart_label }}</button>

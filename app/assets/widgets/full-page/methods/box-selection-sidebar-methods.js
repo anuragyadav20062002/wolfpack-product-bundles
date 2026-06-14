@@ -30,6 +30,7 @@ getSidebarTierCtaContent(nextRule) {
 
   const displayOptions = pricing.messages?.displayOptions || {};
   const bundleQuantityOptions = displayOptions.bundleQuantityOptions || {};
+  if (bundleQuantityOptions.enabled !== true) return null;
   const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
   const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
   const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
@@ -127,7 +128,13 @@ showBoxSelectionValidationMessage() {
   const state = this.getBoxSelectionValidationState();
   if (!state.isEnabled || state.isValid) return;
 
-  ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
+  ToastManager.show(
+    'Select exactly '
+    + state.activeRule.boxQuantity
+    + ' item(s) for '
+    + (state.activeRule.boxLabel || 'this box')
+    + ' before adding to cart.'
+  );
 },
 
 renderBoxSelectionOptions(totalQuantity = 0) {

@@ -65,21 +65,44 @@ export class CurrencyManager {
       'CHF': 'CHF', 'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr',
       'PLN': 'zł', 'CZK': 'Kč', 'HUF': 'Ft', 'RUB': '₽',
       'BRL': 'R$', 'MXN': '$', 'ZAR': 'R', 'SGD': 'S$',
-      'HKD': 'HK$', 'NZD': 'NZ$', 'KRW': '₩', 'THB': '฿'
+      'HKD': 'HK$', 'NZD': 'NZ$', 'KRW': '₩', 'THB': '฿',
+      'PKR': 'Rs.', 'LKR': 'Rs.', 'NPR': 'Rs.',
+      'BDT': '৳', 'NGN': '₦', 'KES': 'KSh', 'GHS': 'GH₵',
+      'EGP': 'E£', 'IDR': 'Rp', 'MYR': 'RM', 'PHP': '₱',
+      'VND': '₫', 'TRY': '₺', 'ILS': '₪', 'TWD': 'NT$',
+      'SAR': 'SR', 'AED': 'AED', 'QAR': 'QR', 'KWD': 'KD',
+      'BHD': 'BD', 'OMR': 'OMR', 'JOD': 'JD', 'LBP': 'L£',
+      'MAD': 'DH', 'TND': 'DT', 'DZD': 'DA',
+      'ARS': 'AR$', 'CLP': 'CLP$', 'COP': 'COL$', 'PEN': 'S/.',
+      'UYU': '$U', 'VES': 'Bs', 'BOB': 'Bs.', 'PYG': '₲',
+      'UAH': '₴', 'BGN': 'лв', 'RON': 'lei', 'HRK': 'kn',
+      'RSD': 'дин', 'ISK': 'kr'
     };
     return symbols[currencyCode] || currencyCode;
+  }
+
+  /**
+   * Ensure the format string uses the proper symbol for the given currency.
+   * If Shopify's format contains the 3-letter currency code (e.g. "PKR {{amount}}"),
+   * replace it with the symbol from our map ("Rs. {{amount}}"). This preserves
+   * the merchant's decimal/thousand-separator placeholder choice
+   * (e.g. {{amount_with_comma_separator}}) while ensuring symbols always render.
+   */
+  static normalizeCurrencyFormat(format, code, symbol) {
+    if (!format) return `${symbol}{{amount}}`;
+    if (!code || !symbol || symbol === code) return format;
+    return format.replace(new RegExp(`\\b${code}\\b`, 'g'), symbol);
   }
 
   static getCurrencyInfo() {
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
     const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
-    // Use Shopify's currency format if available (set by currency switcher apps).
-    // Otherwise build a symbol-prefixed format from the display currency so we never
-    // inherit the shop's base-currency format string (e.g. ₹{{amount}}) for a customer
-    // viewing in a different currency (e.g. GBP).
-    const displayFormat = window.Shopify?.currency?.format
-      || `${displaySymbol}{{amount}}`;
+    const displayFormat = this.normalizeCurrencyFormat(
+      window.Shopify?.currency?.format,
+      customerCurrency.code,
+      displaySymbol
+    );
 
     return {
       // For calculations (always use shop's base currency)
