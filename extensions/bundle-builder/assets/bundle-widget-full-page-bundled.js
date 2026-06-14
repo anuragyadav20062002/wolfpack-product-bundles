@@ -337,13 +337,6 @@ class CurrencyManager {
     return symbols[currencyCode] || currencyCode;
   }
 
-  /**
-   * Ensure the format string uses the proper symbol for the given currency.
-   * If Shopify's format contains the 3-letter currency code (e.g. "PKR {{amount}}"),
-   * replace it with the symbol from our map ("Rs. {{amount}}"). This preserves
-   * the merchant's decimal/thousand-separator placeholder choice
-   * (e.g. {{amount_with_comma_separator}}) while ensuring symbols always render.
-   */
   static normalizeCurrencyFormat(format, code, symbol) {
     if (!format) return `${symbol}{{amount}}`;
     if (!code || !symbol || symbol === code) return format;
@@ -379,14 +372,6 @@ class CurrencyManager {
     };
   }
 
-  /**
-   * Convert an amount from shop base currency to the customer's display currency,
-   * then format it. Use this everywhere a price is rendered to the customer.
-   *
-   * @param {number} amount  Price in shop base currency cents
-   * @param {object} currencyInfo  Result of getCurrencyInfo()
-   * @returns {string}  Formatted price string in the display currency
-   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -2427,13 +2412,6 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
-
-/**
- * Shared selected product row renderer.
- *
- * Renders prepared display data only; selection rules, default-product rules,
- * and free-gift lock state stay in the caller until templates migrate.
- */
 
 const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
 
@@ -9599,13 +9577,6 @@ processProductsForStep(products, step) {
   });
 },
 
-/**
- * Look up real stock for a variant in a step's product data.
- * Returns:
- *   - available: positive numeric remaining stock, or null when uncapped
- *   - outOfStock: true only when Shopify marks the variant unavailable
- *   - acceptsBackorder: true when Shopify marks the variant as backorderable
- */
 isVariantOutOfStock(product) {
   if (!product) {
     return false;
@@ -10580,10 +10551,6 @@ generateBundleSessionKey() {
   return Math.random().toString(36).slice(2, 5).toUpperCase();
 },
 
-/**
- * Parses the JSON string from data-tier-config into a TierConfig array.
- * Returns [] on any error — pill bar is simply not shown.
- */
 parseTierConfig(rawJson) {
   try {
     const parsed = JSON.parse(rawJson);
@@ -10598,20 +10565,6 @@ parseTierConfig(rawJson) {
   }
 },
 
-/**
- * Resolves which tier config array to use for pill rendering.
- *
- * Preference order:
- *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
- *     tiers in the admin UI (>= 2 valid entries after mapping).
- *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
- *     source, used as fallback when apiTierConfig is null/undefined.
- *
- * apiTierConfig entries use { label, linkedBundleId } (DB schema).
- * Widget pill entries use { label, bundleId } — this method performs the mapping.
- *
- * Returns [] when fewer than 2 valid tiers exist after filtering.
- */
 resolveTierConfig(apiTierConfig, dataTierConfig) {
   if (apiTierConfig == null) return dataTierConfig;
 
@@ -10629,14 +10582,6 @@ resolveTierConfig(apiTierConfig, dataTierConfig) {
   return mapped.length >= 2 ? mapped : [];
 },
 
-/**
- * Resolves whether to show the step timeline.
- * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
- *
- * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
- * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
- * @returns {boolean}
- */
 resolveShowStepTimeline(apiValue, dataAttrValue) {
   if (apiValue !== null && apiValue !== undefined) return apiValue;
   return dataAttrValue;
@@ -10794,15 +10739,10 @@ applyFullPageDesignPresetMarker() {
   void this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
 },
 
-/** Returns true if the given tier index is the currently active one. */
 isTierActive(tierIndex) {
   return tierIndex === this.activeTierIndex;
 },
 
-/**
- * Inserts the tier pill bar as the first child of the container.
- * No-op when fewer than 2 tiers are configured (backward-compatible).
- */
 };
 
 const fullPageTierFloatingRuntimeMethods = {
@@ -10829,7 +10769,6 @@ initTierPills(tiers) {
   this.elements.tierPillBar = bar;
 },
 
-/** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
 updatePillActiveStates() {
   if (!this.elements.tierPillBar) return;
   this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
@@ -10840,7 +10779,6 @@ updatePillActiveStates() {
   });
 },
 
-/** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
 async switchTier(bundleId, tierIndex) {
   if (tierIndex === this.activeTierIndex) return;
 

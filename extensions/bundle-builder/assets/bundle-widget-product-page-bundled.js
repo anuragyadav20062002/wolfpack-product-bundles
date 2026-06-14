@@ -337,13 +337,6 @@ class CurrencyManager {
     return symbols[currencyCode] || currencyCode;
   }
 
-  /**
-   * Ensure the format string uses the proper symbol for the given currency.
-   * If Shopify's format contains the 3-letter currency code (e.g. "PKR {{amount}}"),
-   * replace it with the symbol from our map ("Rs. {{amount}}"). This preserves
-   * the merchant's decimal/thousand-separator placeholder choice
-   * (e.g. {{amount_with_comma_separator}}) while ensuring symbols always render.
-   */
   static normalizeCurrencyFormat(format, code, symbol) {
     if (!format) return `${symbol}{{amount}}`;
     if (!code || !symbol || symbol === code) return format;
@@ -379,14 +372,6 @@ class CurrencyManager {
     };
   }
 
-  /**
-   * Convert an amount from shop base currency to the customer's display currency,
-   * then format it. Use this everywhere a price is rendered to the customer.
-   *
-   * @param {number} amount  Price in shop base currency cents
-   * @param {object} currencyInfo  Result of getCurrencyInfo()
-   * @returns {string}  Formatted price string in the display currency
-   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -2427,13 +2412,6 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
-
-/**
- * Shared selected product row renderer.
- *
- * Renders prepared display data only; selection rules, default-product rules,
- * and free-gift lock state stay in the caller until templates migrate.
- */
 
 const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
 
