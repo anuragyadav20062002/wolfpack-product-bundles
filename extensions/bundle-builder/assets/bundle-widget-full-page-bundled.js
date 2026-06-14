@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.40
- * Built   : 2026-06-13
+ * Version : 3.0.42
+ * Built   : 2026-06-14
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.40';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.42';
 (function() {
   'use strict';
 
@@ -321,18 +321,37 @@ class CurrencyManager {
       'CHF': 'CHF', 'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr',
       'PLN': 'zł', 'CZK': 'Kč', 'HUF': 'Ft', 'RUB': '₽',
       'BRL': 'R$', 'MXN': '$', 'ZAR': 'R', 'SGD': 'S$',
-      'HKD': 'HK$', 'NZD': 'NZ$', 'KRW': '₩', 'THB': '฿'
+      'HKD': 'HK$', 'NZD': 'NZ$', 'KRW': '₩', 'THB': '฿',
+      'PKR': 'Rs.', 'LKR': 'Rs.', 'NPR': 'Rs.',
+      'BDT': '৳', 'NGN': '₦', 'KES': 'KSh', 'GHS': 'GH₵',
+      'EGP': 'E£', 'IDR': 'Rp', 'MYR': 'RM', 'PHP': '₱',
+      'VND': '₫', 'TRY': '₺', 'ILS': '₪', 'TWD': 'NT$',
+      'SAR': 'SR', 'AED': 'AED', 'QAR': 'QR', 'KWD': 'KD',
+      'BHD': 'BD', 'OMR': 'OMR', 'JOD': 'JD', 'LBP': 'L£',
+      'MAD': 'DH', 'TND': 'DT', 'DZD': 'DA',
+      'ARS': 'AR$', 'CLP': 'CLP$', 'COP': 'COL$', 'PEN': 'S/.',
+      'UYU': '$U', 'VES': 'Bs', 'BOB': 'Bs.', 'PYG': '₲',
+      'UAH': '₴', 'BGN': 'лв', 'RON': 'lei', 'HRK': 'kn',
+      'RSD': 'дин', 'ISK': 'kr'
     };
     return symbols[currencyCode] || currencyCode;
+  }
+
+  static normalizeCurrencyFormat(format, code, symbol) {
+    if (!format) return `${symbol}{{amount}}`;
+    if (!code || !symbol || symbol === code) return format;
+    return format.replace(new RegExp(`\\b${code}\\b`, 'g'), symbol);
   }
 
   static getCurrencyInfo() {
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
     const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
-
-    const displayFormat = window.Shopify?.currency?.format
-      || `${displaySymbol}{{amount}}`;
+    const displayFormat = this.normalizeCurrencyFormat(
+      window.Shopify?.currency?.format,
+      customerCurrency.code,
+      displaySymbol
+    );
 
     return {
 
@@ -353,14 +372,6 @@ class CurrencyManager {
     };
   }
 
-  /**
-   * Convert an amount from shop base currency to the customer's display currency,
-   * then format it. Use this everywhere a price is rendered to the customer.
-   *
-   * @param {number} amount  Price in shop base currency cents
-   * @param {object} currencyInfo  Result of getCurrencyInfo()
-   * @returns {string}  Formatted price string in the display currency
-   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -1545,11 +1556,7 @@ class ComponentGenerator {
     };
 
     return `
-      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
-        ${isSelected ? `
-          <div class="selected-overlay">✓</div>
-        ` : ''}
-
+      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
         <div class="product-image bw-product-card__media">
           <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="if (this.src.indexOf('${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}') === -1) this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}'">
         </div>
@@ -2286,12 +2293,13 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
+  const hasVariantText = Boolean(variantText);
   const rootClasses = [
     'bw-product-card',
     'product-card',
     `bw-product-card--mode-${escapeAttribute(mode)}`,
     variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
-    isSelected ? 'bw-product-card--selected selected' : '',
+    isSelected ? 'bw-product-card--selected' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
 
@@ -2302,26 +2310,28 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
         ${options.stockBadgeHtml || ''}
       </div>
       <div class="bw-product-card__body product-content-wrapper">
-        <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+          <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
         </div>
-        ${price ? `
-          <div class="bw-product-card__price product-price-row">
-            ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
-            <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
+        <div class="product-card-price-action">
+          ${price ? `
+            <div class="bw-product-card__price product-price-row">
+              ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
+              <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
+            </div>
+          ` : ''}
+          ${options.variantSelectorHtml || ''}
+          <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
+            ${isSelected
+              ? renderQuantityControl({
+                variantId: selectionKey,
+                quantity,
+                decreaseDisabled: options.decreaseDisabled === true,
+                increaseDisabled: options.increaseDisabled === true,
+              })
+              : renderAddButton(selectionKey, options)}
           </div>
-        ` : ''}
-        ${options.variantSelectorHtml || ''}
-        <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
-          ${isSelected
-            ? renderQuantityControl({
-              variantId: selectionKey,
-              quantity,
-              decreaseDisabled: options.decreaseDisabled === true,
-              increaseDisabled: options.increaseDisabled === true,
-            })
-            : renderAddButton(selectionKey, options)}
         </div>
       </div>
     </div>
@@ -2402,13 +2412,6 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
-
-/**
- * Shared selected product row renderer.
- *
- * Renders prepared display data only; selection rules, default-product rules,
- * and free-gift lock state stay in the caller until templates migrate.
- */
 
 const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
 
@@ -4137,6 +4140,12 @@ selectBundle() {
   if (!this.selectedBundle && this.config?.bundleId && this.bundleData?.[this.config.bundleId]?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
     this.selectedBundle = this.bundleData[this.config.bundleId];
   }
+  if (this.selectedBundle) {
+    this.config.showStepTimeline = this.resolveShowStepTimeline(
+      this.selectedBundle.showStepTimeline ?? null,
+      this.config.showStepTimeline
+    );
+  }
 
   this.updateMessagesFromBundle();
 },
@@ -5663,6 +5672,8 @@ renderSidePanel(panel) {
     return;
   }
 
+  const actionDivider = document.createElement('div');
+  actionDivider.className = 'side-panel-action-divider';
   const actionSection = document.createElement('div');
   actionSection.className = 'side-panel-action-container';
   actionSection.appendChild(totalSection);
@@ -5725,6 +5736,7 @@ renderSidePanel(panel) {
 
   navSection.appendChild(nextBtn);
   actionSection.appendChild(navSection);
+  panel.appendChild(actionDivider);
   panel.appendChild(actionSection);
 },
 
@@ -5860,7 +5872,13 @@ showBoxSelectionValidationMessage() {
   const state = this.getBoxSelectionValidationState();
   if (!state.isEnabled || state.isValid) return;
 
-  ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
+  ToastManager.show(
+    'Select exactly '
+    + state.activeRule.boxQuantity
+    + ' item(s) for '
+    + (state.activeRule.boxLabel || 'this box')
+    + ' before adding to cart.'
+  );
 },
 
 renderBoxSelectionOptions(totalQuantity = 0) {
@@ -6227,8 +6245,16 @@ createStepTimeline() {
 
   const timelineEntries = this.buildStepTimelineEntries();
   const totalEntryCount = Math.max(timelineEntries.length, 1);
+  const hasMultipleCategoryEntryForStep = (entry) => (
+    this.shouldRenderMultipleCategoryTimelineEntry(entry?.step)
+  );
   const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
-    entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    entry.type === 'multiple_categories'
+      ? Number(entry.stepIndex) === Number(this.currentStepIndex)
+      : entry.type === 'step'
+        ? Number(entry.stepIndex) === Number(this.currentStepIndex)
+          && !hasMultipleCategoryEntryForStep(entry)
+        : false
   )));
   const {
     visibleEntries,
@@ -6357,7 +6383,12 @@ createStandardStepTimeline() {
   const timelineEntries = this.buildStepTimelineEntries();
   const totalEntryCount = Math.max(timelineEntries.length, 1);
   const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
-    entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    entry.type === 'multiple_categories'
+      ? Number(entry.stepIndex) === Number(this.currentStepIndex)
+      : entry.type === 'step'
+        ? Number(entry.stepIndex) === Number(this.currentStepIndex)
+          && !this.shouldRenderMultipleCategoryTimelineEntry(entry.step)
+        : false
   )));
   const {
     visibleEntries,
@@ -6366,9 +6397,14 @@ createStandardStepTimeline() {
     isPaged,
   } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
   const entryCount = Math.max(visibleEntries.length, 1);
-  const activeVisibleEntryIndex = Math.max(0, visibleEntries.findIndex((entry) => (
-    entry.type === 'step' && entry.stepIndex === this.currentStepIndex
-  )));
+  const activeVisibleEntryIndex = Math.max(0, visibleEntries.findIndex((entry) => {
+    if (Number(entry.stepIndex) !== Number(this.currentStepIndex)) {
+      return false;
+    }
+    if (entry.type === 'multiple_categories') return true;
+    if (entry.type === 'step') return !this.shouldRenderMultipleCategoryTimelineEntry(entry.step);
+    return false;
+  }));
   const progressFill = entryCount > 1
     ? Math.max(0, Math.min(100, (activeVisibleEntryIndex / (entryCount - 1)) * 100))
     : 0;
@@ -6422,6 +6458,8 @@ createStandardStepTimeline() {
   visibleEntries.forEach((entry) => {
     const step = entry.step;
     const index = entry.stepIndex;
+    const isCategoryEntry = entry.type === 'multiple_categories';
+    const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
     const itemEl = document.createElement('div');
     itemEl.className = 'standard-navigation-item timeline-step';
     itemEl.dataset.stepIndex = index;
@@ -6430,11 +6468,11 @@ createStandardStepTimeline() {
     const timelineState = getTimelineEntryState({
       entry,
       currentStepIndex: this.currentStepIndex,
-      isCompleted: entry.type === 'step'
-        && !(entry.type === 'step' && index === this.currentStepIndex)
-        && this.isStepCompleted(index),
+      isCompleted: isCategoryEntry
+        ? this.isStepCompleted(index)
+        : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex),
       isAccessible: this.isStepAccessible(index),
-      hasMultipleCategoryEntry: false,
+      hasMultipleCategoryEntry,
     });
     timelineState.classes.forEach((className) => itemEl.classList.add(className));
 
@@ -7239,7 +7277,6 @@ const fullPageProductCardFooterMethods = {
 createProductCard(product, stepIndex) {
   const productId = product.variantId || product.id;
   const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
-  const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
 
   if (!product.imageUrl || product.imageUrl === '') {
     product.imageUrl = product.image?.src ||
@@ -7290,10 +7327,6 @@ createProductCard(product, stepIndex) {
   wrapper.innerHTML = htmlString.trim();
   const cardElement = wrapper.firstChild;
 
-  if (renderSelectedQuantityBadge) {
-    this.applySelectedQuantityBadge(cardElement, currentQuantity);
-  }
-
   this.applyStandardExpandedVariantTitle(cardElement, product);
 
   const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
@@ -7318,7 +7351,7 @@ createProductCard(product, stepIndex) {
         badge.appendChild(img);
       } else {
         badge.textContent = this._resolveText('includedBadge', 'Included');
-      }
+}
       imgEl.parentElement.appendChild(badge);
     }
   }
@@ -7381,11 +7414,15 @@ applyStandardExpandedVariantTitle(cardElement, product) {
 
   cardElement.classList.add('product-card--expanded-variant');
   titleEl.textContent = parentTitle;
+  const variantDividerEl = document.createElement('div');
+  variantDividerEl.className = 'bw-product-card__variant-divider';
+  variantDividerEl.setAttribute('aria-hidden', 'true');
+  titleEl.insertAdjacentElement('afterend', variantDividerEl);
   const variantEl = document.createElement('div');
   variantEl.className = 'bw-product-card__variant product-variant-row';
   variantEl.setAttribute('data-bw-card-variant-row', 'true');
   variantEl.textContent = variantTitle;
-  titleEl.insertAdjacentElement('afterend', variantEl);
+  variantDividerEl.insertAdjacentElement('afterend', variantEl);
 },
 
 getSummaryProductDisplayTitle(item) {
@@ -7441,29 +7478,6 @@ getSummaryVariantFromDisplayTitle(displayTitle) {
   if (separatorIndex <= 0) return '';
   const variantCandidate = displayTitle.slice(separatorIndex + 3).trim();
   return variantCandidate || '';
-},
-
-applySelectedQuantityBadge(cardElement, currentQuantity) {
-  if (!cardElement) return;
-  cardElement.querySelector('.selected-overlay')?.remove();
-  const actionWrapper = cardElement.querySelector('.product-card-action');
-  if (!actionWrapper) return;
-
-  const priceRow = cardElement.querySelector('.product-price-row');
-  const actionRow = document.createElement('div');
-  actionRow.className = 'product-selected-action-row';
-  if (priceRow) {
-    actionRow.appendChild(priceRow);
-  }
-
-  const quantityBadge = document.createElement('span');
-  quantityBadge.className = 'inline-quantity-display-only';
-  quantityBadge.textContent = String(currentQuantity);
-  actionRow.appendChild(quantityBadge);
-
-  actionWrapper.classList.remove('is-expanded');
-  actionWrapper.classList.add('has-selected-quantity-badge');
-  actionWrapper.replaceChildren(actionRow);
 },
 
 attachProductCardListeners(cardElement, product, stepIndex) {
@@ -7524,7 +7538,7 @@ attachProductCardListeners(cardElement, product, stepIndex) {
           migratedQty = 0;
         } else if (newQtyAvail !== null && oldQty > newQtyAvail) {
           migratedQty = newQtyAvail;
-          ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+          ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
         }
         if (migratedQty > 0) {
           this.selectedProducts[stepIndex][newVariantId] = migratedQty;
@@ -7985,6 +7999,10 @@ findProductByVariantId(step, variantId) {
 isStepCompleted(stepIndex) {
   const step = this.selectedBundle.steps[stepIndex];
   const stepSelections = this.selectedProducts[stepIndex] || {};
+  if (typeof this.validateStep === 'function') {
+    return this.validateStep(stepIndex);
+  }
+
   return ConditionValidator.isStepConditionSatisfied(step, stepSelections);
 },
 
@@ -8293,18 +8311,21 @@ _initDefaultProducts() {
   const steps = this.selectedBundle?.steps || [];
   steps.forEach((step, stepIndex) => {
     if (!step.isDefault || !step.defaultVariantId) return;
+
+    const targetId = this.extractId(step.defaultVariantId);
+    if (!targetId) return;
     const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
     const product = allProducts.find(p =>
-      p.variantId === step.defaultVariantId ||
-      p.id === step.defaultVariantId ||
-      p.gid === step.defaultVariantId ||
-      (p.variants || []).some(v => v.id === step.defaultVariantId || v.gid === step.defaultVariantId)
+      this.extractId(p.variantId) === targetId ||
+      this.extractId(p.id) === targetId ||
+      this.extractId(p.gid) === targetId ||
+      (p.variants || []).some(v =>
+        this.extractId(v.id) === targetId || this.extractId(v.gid) === targetId
+      )
     );
     if (product) {
       if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-
-      const normalizedId = this.extractId(step.defaultVariantId) || step.defaultVariantId;
-      this.selectedProducts[stepIndex][normalizedId] = 1;
+      this.selectedProducts[stepIndex][targetId] = 1;
     }
   });
 },
@@ -8749,7 +8770,7 @@ clearStepSelections(stepIndex) {
   this.renderSteps();
   this.updateFooterMessaging();
 
-  ToastManager.show(`All selections cleared from this step`);
+  ToastManager.show('All selections cleared from this step');
 },
 
 renderFooter() {
@@ -9556,13 +9577,6 @@ processProductsForStep(products, step) {
   });
 },
 
-/**
- * Look up real stock for a variant in a step's product data.
- * Returns:
- *   - available: positive numeric remaining stock, or null when uncapped
- *   - outOfStock: true only when Shopify marks the variant unavailable
- *   - acceptsBackorder: true when Shopify marks the variant as backorderable
- */
 isVariantOutOfStock(product) {
   if (!product) {
     return false;
@@ -9735,14 +9749,16 @@ renderModalProducts(stepIndex, productsToRender = null) {
   productGrid.innerHTML = products.map(product => {
     const selectionKey = product.variantId || product.id;
     const currentQuantity = selectedProducts[selectionKey] || 0;
-    const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const priceMarkup = product.price ? `
-            <div class="product-price-row">
-              ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
-              <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
-            </div>
-          ` : '';
+
+    const imageUrl = product.imageUrl || product.image?.src || product.featuredImage?.url || product.images?.[0]?.url || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    product.imageUrl = imageUrl;
+
+    if (!product.imageUrl || product.imageUrl === '') {
+      product.imageUrl = BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    }
+
+    const variantSelectorHtml = this.renderVariantSelector(product, step);
 
     const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
     const atMaxStock = available !== null && available > 0 && currentQuantity >= available;
@@ -9756,51 +9772,22 @@ renderModalProducts(stepIndex, productsToRender = null) {
         ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
         : '';
 
-    return `
-      <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 && !renderSelectedQuantityBadge ? `
-          <div class="selected-overlay">✓</div>
-        ` : ''}
-
-        <div class="product-image">
-          <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
-          ${stockBadge}
-        </div>
-
-        <div class="product-content-wrapper">
-          <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
-
-          ${renderSelectedQuantityBadge ? '' : priceMarkup}
-
-          <div class="product-spacer"></div>
-
-          ${this.renderVariantSelector(product, this.selectedBundle?.steps?.[stepIndex])}
-
-          ${renderSelectedQuantityBadge ? `
-            <div class="product-selected-action-row">
-              ${priceMarkup}
-              <span class="inline-quantity-display-only" data-product-id="${selectionKey}">${currentQuantity}</span>
-            </div>
-          ` : `
-            <div class="product-quantity-wrapper">
-              <div class="product-quantity-selector">
-                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-                <span class="qty-display">${currentQuantity}</span>
-                <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
-              </div>
-            </div>
-
-            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
-                    data-product-id="${selectionKey}"
-                    data-product-handle="${product.handle || ''}"
-                    data-step-id="${step.id}"
-                    ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? '✓ Added to Bundle' : this.getProductAddButtonText())}
-            </button>
-          `}
-        </div>
-      </div>
-    `;
+    return renderSharedProductCard(
+      {
+        ...product,
+        imageUrl,
+      },
+      currentQuantity,
+      currencyInfo,
+      {
+        variantSelectorHtml,
+        stockBadgeHtml: stockBadge,
+        addButtonText: outOfStock ? 'Out of stock' : this.getProductAddButtonText(),
+        addDisabled,
+        decreaseDisabled: currentQuantity <= 0,
+        increaseDisabled,
+      }
+    );
   }).join('');
 
   this.attachProductEventHandlers(productGrid, stepIndex);
@@ -9829,7 +9816,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
   };
 
   newProductGrid.addEventListener('click', (e) => {
-    if (e.target.classList.contains('qty-btn')) {
+    if (e.target.classList.contains('inline-qty-btn')) {
       e.stopPropagation();
       const productId = e.target.dataset.productId;
       const isIncrease = e.target.classList.contains('qty-increase');
@@ -9901,7 +9888,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
               migratedQty = 0;
             } else if (newQtyAvail !== null && newQtyAvail > 0 && oldQuantity > newQtyAvail) {
               migratedQty = newQtyAvail;
-              ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+              ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
             }
             if (migratedQty > 0) {
               this.selectedProducts[stepIndex][newVariantId] = migratedQty;
@@ -9949,13 +9936,13 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     }
     if (available !== null && available > 0 && quantity > available) {
       quantity = available;
-      ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+      ToastManager.show('Only ' + available + ' in stock — quantity adjusted.');
     }
   }
 
-  if (!this.validateStepCondition(stepIndex, productId, quantity)) {
-    return;
-  }
+    if (!this.validateStepCondition(stepIndex, productId, quantity)) {
+      return;
+    }
 
   const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
   const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
@@ -9964,7 +9951,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     quantity,
   );
   if (!productQuantityCheck.allowed) {
-    ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+    ToastManager.show('Maximum allowed quantity per product is ' + productQuantityCheck.limit + '.');
     return;
   }
 
@@ -10044,7 +10031,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     return;
   }
 
-  const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
+  const productCard = this.container.querySelector('[data-product-id="' + productId + '"]');
   if (!productCard) return;
 
   const contentWrapper = productCard.querySelector('.product-content-wrapper');
@@ -10054,7 +10041,6 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
   const actionContainer = actionWrapper || contentWrapper;
   const existingAddBtn = productCard.querySelector('.product-add-btn');
   const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
-  let selectedOverlay = productCard.querySelector('.selected-overlay');
 
   if (quantity > 0) {
     if (actionWrapper) {
@@ -10077,11 +10063,10 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
 
       const quantityControls = document.createElement('div');
       quantityControls.className = 'inline-quantity-controls';
-      quantityControls.innerHTML = `
-        <button class="inline-qty-btn qty-decrease" data-product-id="${productId}">−</button>
-        <span class="inline-qty-display">${quantity}</span>
-        <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
-      `;
+      quantityControls.innerHTML =
+        '<button class="inline-qty-btn qty-decrease" data-product-id="' + productId + '">−</button>' +
+        '<span class="inline-qty-display">' + quantity + '</span>' +
+        '<button class="inline-qty-btn qty-increase" data-product-id="' + productId + '">+</button>';
       actionContainer.appendChild(quantityControls);
 
       const increaseBtn = quantityControls.querySelector('.qty-increase');
@@ -10106,18 +10091,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
-    if (!selectedOverlay) {
-      selectedOverlay = document.createElement('div');
-      selectedOverlay.className = 'selected-overlay';
-      selectedOverlay.textContent = '✓';
-      productCard.appendChild(selectedOverlay);
-    }
-    if (this.getFullPageDesignPreset?.() === 'DEFAULT') {
-      selectedOverlay.style.removeProperty('display');
-    } else {
-      selectedOverlay.style.display = 'flex';
-    }
-    productCard.classList.add('selected');
+    productCard.classList.add('bw-product-card--selected');
 
   } else {
     if (actionWrapper) {
@@ -10141,10 +10115,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       });
     }
 
-    if (selectedOverlay) {
-      selectedOverlay.style.display = 'none';
-    }
-    productCard.classList.remove('selected');
+    productCard.classList.remove('bw-product-card--selected');
   }
 
   this._refreshSiblingDimState(stepIndex);
@@ -10204,7 +10175,7 @@ validateStepCondition(stepIndex, productId, newQuantity) {
 
   if (!allowed && newQuantity > currentQty) {
     const required = step.conditionValue;
-    ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
+    ToastManager.show('This step allows ' + limitText + ' product' + (required !== 1 ? 's' : '') + ' only.');
     return false;
   }
 
@@ -10307,7 +10278,7 @@ updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
 
   if (!this.selectedBundle?.pricing?.enabled) {
     const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-    modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
+    modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || 'Step ' + (this.currentStepIndex + 1);
     return;
   }
 
@@ -10580,10 +10551,6 @@ generateBundleSessionKey() {
   return Math.random().toString(36).slice(2, 5).toUpperCase();
 },
 
-/**
- * Parses the JSON string from data-tier-config into a TierConfig array.
- * Returns [] on any error — pill bar is simply not shown.
- */
 parseTierConfig(rawJson) {
   try {
     const parsed = JSON.parse(rawJson);
@@ -10598,20 +10565,6 @@ parseTierConfig(rawJson) {
   }
 },
 
-/**
- * Resolves which tier config array to use for pill rendering.
- *
- * Preference order:
- *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
- *     tiers in the admin UI (>= 2 valid entries after mapping).
- *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
- *     source, used as fallback when apiTierConfig is null/undefined.
- *
- * apiTierConfig entries use { label, linkedBundleId } (DB schema).
- * Widget pill entries use { label, bundleId } — this method performs the mapping.
- *
- * Returns [] when fewer than 2 valid tiers exist after filtering.
- */
 resolveTierConfig(apiTierConfig, dataTierConfig) {
   if (apiTierConfig == null) return dataTierConfig;
 
@@ -10629,14 +10582,6 @@ resolveTierConfig(apiTierConfig, dataTierConfig) {
   return mapped.length >= 2 ? mapped : [];
 },
 
-/**
- * Resolves whether to show the step timeline.
- * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
- *
- * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
- * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
- * @returns {boolean}
- */
 resolveShowStepTimeline(apiValue, dataAttrValue) {
   if (apiValue !== null && apiValue !== undefined) return apiValue;
   return dataAttrValue;
@@ -10794,15 +10739,10 @@ applyFullPageDesignPresetMarker() {
   void this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
 },
 
-/** Returns true if the given tier index is the currently active one. */
 isTierActive(tierIndex) {
   return tierIndex === this.activeTierIndex;
 },
 
-/**
- * Inserts the tier pill bar as the first child of the container.
- * No-op when fewer than 2 tiers are configured (backward-compatible).
- */
 };
 
 const fullPageTierFloatingRuntimeMethods = {
@@ -10829,7 +10769,6 @@ initTierPills(tiers) {
   this.elements.tierPillBar = bar;
 },
 
-/** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
 updatePillActiveStates() {
   if (!this.elements.tierPillBar) return;
   this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
@@ -10840,7 +10779,6 @@ updatePillActiveStates() {
   });
 },
 
-/** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
 async switchTier(bundleId, tierIndex) {
   if (tierIndex === this.activeTierIndex) return;
 
@@ -10885,7 +10823,7 @@ async switchTier(bundleId, tierIndex) {
     this.activeTierIndex = tierIndex;
     this.updatePillActiveStates();
   } catch (err) {
-    ToastManager.show(`Failed to load tier: ${err.message}`);
+    ToastManager.show('Failed to load tier: ' + err.message);
 
     this.updatePillActiveStates();
   } finally {

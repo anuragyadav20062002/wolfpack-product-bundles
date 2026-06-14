@@ -329,19 +329,21 @@ _initDefaultProducts() {
   const steps = this.selectedBundle?.steps || [];
   steps.forEach((step, stepIndex) => {
     if (!step.isDefault || !step.defaultVariantId) return;
+    // Canonicalize variant identifiers before matching and storing selection state.
+    const targetId = this.extractId(step.defaultVariantId);
+    if (!targetId) return;
     const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
     const product = allProducts.find(p =>
-      p.variantId === step.defaultVariantId ||
-      p.id === step.defaultVariantId ||
-      p.gid === step.defaultVariantId ||
-      (p.variants || []).some(v => v.id === step.defaultVariantId || v.gid === step.defaultVariantId)
+      this.extractId(p.variantId) === targetId ||
+      this.extractId(p.id) === targetId ||
+      this.extractId(p.gid) === targetId ||
+      (p.variants || []).some(v =>
+        this.extractId(v.id) === targetId || this.extractId(v.gid) === targetId
+      )
     );
     if (product) {
       if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-      // Normalize to numeric ID (strips GID prefix) so the key matches the variantId
-      // produced by processProductsForStep() via extractId().
-      const normalizedId = this.extractId(step.defaultVariantId) || step.defaultVariantId;
-      this.selectedProducts[stepIndex][normalizedId] = 1;
+      this.selectedProducts[stepIndex][targetId] = 1;
     }
   });
 },

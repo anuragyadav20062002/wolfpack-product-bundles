@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.40
- * Built   : 2026-06-13
+ * Version : 3.0.42
+ * Built   : 2026-06-14
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.40';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.42';
 (function() {
   'use strict';
 
@@ -321,18 +321,37 @@ class CurrencyManager {
       'CHF': 'CHF', 'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr',
       'PLN': 'zł', 'CZK': 'Kč', 'HUF': 'Ft', 'RUB': '₽',
       'BRL': 'R$', 'MXN': '$', 'ZAR': 'R', 'SGD': 'S$',
-      'HKD': 'HK$', 'NZD': 'NZ$', 'KRW': '₩', 'THB': '฿'
+      'HKD': 'HK$', 'NZD': 'NZ$', 'KRW': '₩', 'THB': '฿',
+      'PKR': 'Rs.', 'LKR': 'Rs.', 'NPR': 'Rs.',
+      'BDT': '৳', 'NGN': '₦', 'KES': 'KSh', 'GHS': 'GH₵',
+      'EGP': 'E£', 'IDR': 'Rp', 'MYR': 'RM', 'PHP': '₱',
+      'VND': '₫', 'TRY': '₺', 'ILS': '₪', 'TWD': 'NT$',
+      'SAR': 'SR', 'AED': 'AED', 'QAR': 'QR', 'KWD': 'KD',
+      'BHD': 'BD', 'OMR': 'OMR', 'JOD': 'JD', 'LBP': 'L£',
+      'MAD': 'DH', 'TND': 'DT', 'DZD': 'DA',
+      'ARS': 'AR$', 'CLP': 'CLP$', 'COP': 'COL$', 'PEN': 'S/.',
+      'UYU': '$U', 'VES': 'Bs', 'BOB': 'Bs.', 'PYG': '₲',
+      'UAH': '₴', 'BGN': 'лв', 'RON': 'lei', 'HRK': 'kn',
+      'RSD': 'дин', 'ISK': 'kr'
     };
     return symbols[currencyCode] || currencyCode;
+  }
+
+  static normalizeCurrencyFormat(format, code, symbol) {
+    if (!format) return `${symbol}{{amount}}`;
+    if (!code || !symbol || symbol === code) return format;
+    return format.replace(new RegExp(`\\b${code}\\b`, 'g'), symbol);
   }
 
   static getCurrencyInfo() {
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
     const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
-
-    const displayFormat = window.Shopify?.currency?.format
-      || `${displaySymbol}{{amount}}`;
+    const displayFormat = this.normalizeCurrencyFormat(
+      window.Shopify?.currency?.format,
+      customerCurrency.code,
+      displaySymbol
+    );
 
     return {
 
@@ -353,14 +372,6 @@ class CurrencyManager {
     };
   }
 
-  /**
-   * Convert an amount from shop base currency to the customer's display currency,
-   * then format it. Use this everywhere a price is rendered to the customer.
-   *
-   * @param {number} amount  Price in shop base currency cents
-   * @param {object} currencyInfo  Result of getCurrencyInfo()
-   * @returns {string}  Formatted price string in the display currency
-   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -1545,11 +1556,7 @@ class ComponentGenerator {
     };
 
     return `
-      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
-        ${isSelected ? `
-          <div class="selected-overlay">✓</div>
-        ` : ''}
-
+      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
         <div class="product-image bw-product-card__media">
           <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="if (this.src.indexOf('${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}') === -1) this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE_FALLBACK}'">
         </div>
@@ -2286,12 +2293,13 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
+  const hasVariantText = Boolean(variantText);
   const rootClasses = [
     'bw-product-card',
     'product-card',
     `bw-product-card--mode-${escapeAttribute(mode)}`,
     variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
-    isSelected ? 'bw-product-card--selected selected' : '',
+    isSelected ? 'bw-product-card--selected' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
 
@@ -2302,26 +2310,28 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
         ${options.stockBadgeHtml || ''}
       </div>
       <div class="bw-product-card__body product-content-wrapper">
-        <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+          <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
         </div>
-        ${price ? `
-          <div class="bw-product-card__price product-price-row">
-            ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
-            <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
+        <div class="product-card-price-action">
+          ${price ? `
+            <div class="bw-product-card__price product-price-row">
+              ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
+              <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
+            </div>
+          ` : ''}
+          ${options.variantSelectorHtml || ''}
+          <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
+            ${isSelected
+              ? renderQuantityControl({
+                variantId: selectionKey,
+                quantity,
+                decreaseDisabled: options.decreaseDisabled === true,
+                increaseDisabled: options.increaseDisabled === true,
+              })
+              : renderAddButton(selectionKey, options)}
           </div>
-        ` : ''}
-        ${options.variantSelectorHtml || ''}
-        <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
-          ${isSelected
-            ? renderQuantityControl({
-              variantId: selectionKey,
-              quantity,
-              decreaseDisabled: options.decreaseDisabled === true,
-              increaseDisabled: options.increaseDisabled === true,
-            })
-            : renderAddButton(selectionKey, options)}
         </div>
       </div>
     </div>
@@ -2402,13 +2412,6 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
-
-/**
- * Shared selected product row renderer.
- *
- * Renders prepared display data only; selection rules, default-product rules,
- * and free-gift lock state stay in the caller until templates migrate.
- */
 
 const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
 
@@ -4193,7 +4196,7 @@ clearStepSelections(stepIndex) {
   this.updateAddToCartButton();
   this.updateFooterMessaging();
 
-  ToastManager.show(`All selections cleared from this step`);
+  ToastManager.show('All selections cleared from this step');
 },
 
 renderFooter() {
@@ -4528,7 +4531,7 @@ validateStepCondition(stepIndex, productId, newQuantity) {
 
   if (!allowed && newQuantity > currentQty) {
     const required = step.conditionValue;
-    ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
+    ToastManager.show('This step allows ' + limitText + ' product' + (required !== 1 ? 's' : '') + ' only.');
     return false;
   }
 
@@ -6537,7 +6540,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
               migratedQty = 0;
             } else if (newQtyAvail !== null && oldQuantity > newQtyAvail) {
               migratedQty = newQtyAvail;
-              ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+              ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
             }
             if (migratedQty > 0) {
               this.setSelectedQuantity(stepIndex, newVariantId, migratedQty);
@@ -6630,7 +6633,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     }
     if (available !== null && quantity > available) {
       quantity = available;
-      ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+      ToastManager.show('Only ' + available + ' in stock — quantity adjusted.');
     }
   }
 
@@ -6641,7 +6644,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     quantity,
   );
   if (!productQuantityCheck.allowed) {
-    ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+    ToastManager.show('Maximum allowed quantity per product is ' + productQuantityCheck.limit + '.');
     return;
   }
 
@@ -6906,7 +6909,7 @@ const ProductPageCartMethods = {
       ToastManager.show('Bundle added to cart successfully!');
       this._handlePostAddToCartAction(this._getProductPageControls()?.redirect);
     } catch (error) {
-      ToastManager.show(`Failed to add bundle to cart: ${error.message}`);
+      ToastManager.show('Failed to add bundle to cart: ' + error.message);
     } finally {
       this.hideLoadingOverlay();
       this.updateAddToCartButton();

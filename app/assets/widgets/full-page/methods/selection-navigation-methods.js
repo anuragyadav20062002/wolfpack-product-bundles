@@ -50,14 +50,14 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     }
     if (available !== null && available > 0 && quantity > available) {
       quantity = available;
-      ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+      ToastManager.show('Only ' + available + ' in stock — quantity adjusted.');
     }
   }
 
   // Validate step conditions
-  if (!this.validateStepCondition(stepIndex, productId, quantity)) {
-    return;
-  }
+    if (!this.validateStepCondition(stepIndex, productId, quantity)) {
+      return;
+    }
 
   const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
   const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
@@ -66,7 +66,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     quantity,
   );
   if (!productQuantityCheck.allowed) {
-    ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+    ToastManager.show('Maximum allowed quantity per product is ' + productQuantityCheck.limit + '.');
     return;
   }
 
@@ -155,7 +155,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
   }
 
   // Update quantity display without full re-render
-  const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
+  const productCard = this.container.querySelector('[data-product-id="' + productId + '"]');
   if (!productCard) return;
 
   // Find existing action elements
@@ -166,7 +166,6 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
   const actionContainer = actionWrapper || contentWrapper;
   const existingAddBtn = productCard.querySelector('.product-add-btn');
   const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
-  let selectedOverlay = productCard.querySelector('.selected-overlay');
 
   // Toggle between "Add to Bundle" button and quantity controls
   if (quantity > 0) {
@@ -190,11 +189,10 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       // Create quantity controls
       const quantityControls = document.createElement('div');
       quantityControls.className = 'inline-quantity-controls';
-      quantityControls.innerHTML = `
-        <button class="inline-qty-btn qty-decrease" data-product-id="${productId}">−</button>
-        <span class="inline-qty-display">${quantity}</span>
-        <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
-      `;
+      quantityControls.innerHTML =
+        '<button class="inline-qty-btn qty-decrease" data-product-id="' + productId + '">−</button>' +
+        '<span class="inline-qty-display">' + quantity + '</span>' +
+        '<button class="inline-qty-btn qty-increase" data-product-id="' + productId + '">+</button>';
       actionContainer.appendChild(quantityControls);
 
       // Attach event listeners to the new buttons
@@ -220,19 +218,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
-    // Show selected overlay
-    if (!selectedOverlay) {
-      selectedOverlay = document.createElement('div');
-      selectedOverlay.className = 'selected-overlay';
-      selectedOverlay.textContent = '✓';
-      productCard.appendChild(selectedOverlay);
-    }
-    if (this.getFullPageDesignPreset?.() === 'DEFAULT') {
-      selectedOverlay.style.removeProperty('display');
-    } else {
-      selectedOverlay.style.display = 'flex';
-    }
-    productCard.classList.add('selected');
+    productCard.classList.add('bw-product-card--selected');
 
   } else {
     if (actionWrapper) {
@@ -258,11 +244,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       });
     }
 
-    // Hide selected overlay
-    if (selectedOverlay) {
-      selectedOverlay.style.display = 'none';
-    }
-    productCard.classList.remove('selected');
+    productCard.classList.remove('bw-product-card--selected');
   }
 
   // Refresh dimmed state on all sibling cards now that the selection has changed
@@ -331,7 +313,7 @@ validateStepCondition(stepIndex, productId, newQuantity) {
   // Only block and toast on increases — decreases are always permitted.
   if (!allowed && newQuantity > currentQty) {
     const required = step.conditionValue;
-    ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
+    ToastManager.show('This step allows ' + limitText + ' product' + (required !== 1 ? 's' : '') + ' only.');
     return false;
   }
 

@@ -303,7 +303,7 @@ clearStepSelections(stepIndex) {
   this.updateFooterMessaging();
 
   // Show toast notification
-  ToastManager.show(`All selections cleared from this step`);
+  ToastManager.show('All selections cleared from this step');
 },
 
 renderFooter() {

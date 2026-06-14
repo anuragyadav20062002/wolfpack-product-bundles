@@ -396,6 +396,10 @@ findProductByVariantId(step, variantId) {
 isStepCompleted(stepIndex) {
   const step = this.selectedBundle.steps[stepIndex];
   const stepSelections = this.selectedProducts[stepIndex] || {};
+  if (typeof this.validateStep === 'function') {
+    return this.validateStep(stepIndex);
+  }
+
   return ConditionValidator.isStepConditionSatisfied(step, stepSelections);
 },
 

@@ -463,6 +463,12 @@ selectBundle() {
   if (!this.selectedBundle && this.config?.bundleId && this.bundleData?.[this.config.bundleId]?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
     this.selectedBundle = this.bundleData[this.config.bundleId];
   }
+  if (this.selectedBundle) {
+    this.config.showStepTimeline = this.resolveShowStepTimeline(
+      this.selectedBundle.showStepTimeline ?? null,
+      this.config.showStepTimeline
+    );
+  }
 
   // Update message templates from bundle pricing messages
   this.updateMessagesFromBundle();

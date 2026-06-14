@@ -5,6 +5,15 @@
 .product-card-action .product-add-btn {
   margin-top: 0;
   align-self: auto;
+  width: var(
+    --fpb-card-action-size,
+    var(--fpb-card-quantity-selector-height, 35px)
+  );
+  height: var(
+    --fpb-card-action-size,
+    var(--fpb-card-quantity-selector-height, 35px)
+  );
+  line-height: 1;
 }
 
 .product-card-action .inline-quantity-controls {
@@ -17,8 +26,8 @@
 
 @keyframes quantityMorphExpand {
   from {
-    width: 35px;
-    min-width: 35px;
+    width: var(--fpb-card-action-size, 35px);
+    min-width: var(--fpb-card-action-size, 35px);
     border-radius: var(--bundle-add-btn-radius, 99px);
     opacity: 0.92;
   }
@@ -32,8 +41,14 @@
 }
 
 .product-add-btn {
-  width: 35px;
-  height: 35px;
+  width: var(
+    --fpb-card-action-size,
+    var(--fpb-card-quantity-selector-height, 35px)
+  );
+  height: var(
+    --fpb-card-action-size,
+    var(--fpb-card-quantity-selector-height, 35px)
+  );
   flex-shrink: 0;
   box-sizing: border-box;
   background: var(
@@ -44,7 +59,7 @@
   border: none;
   border-radius: var(--bundle-add-btn-radius, 99px);
   padding: 0;
-  font-size: 22px;
+  font-size: var(--fpb-card-action-icon-size, 22px);
   font-weight: 400;
   line-height: 1;
   cursor: pointer;
@@ -101,7 +116,10 @@
 
 .inline-qty-btn {
   width: var(--fpb-card-quantity-button-width, 20px);
-  height: var(--fpb-card-quantity-selector-height, 35px);
+  height: var(
+    --fpb-card-quantity-selector-height,
+    var(--fpb-card-action-size, 35px)
+  );
   background: transparent;
   border: none;
   color: var(--bundle-inline-qty-text, #ffffff);
@@ -126,12 +144,15 @@
 
 .inline-qty-display {
   text-align: center;
-  font-size: 16px;
+  font-size: var(--fpb-inline-qty-font-size, 16px);
   font-weight: 400;
   color: var(--bundle-inline-qty-text, #ffffff);
   font-family: inherit;
   min-width: 0;
-  line-height: var(--fpb-card-quantity-selector-height, 35px);
+  line-height: var(
+    --fpb-card-quantity-selector-height,
+    var(--fpb-card-action-size, 35px)
+  );
 }
 
 @media (max-width: 767px) {

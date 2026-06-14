@@ -197,6 +197,16 @@ describe('Product Page widget selection-key normalization contract', () => {
     expect(source).toContain('if (Object.prototype.hasOwnProperty.call(selectedProducts, normalized))');
   });
 
+  it('normalizes the default variant key before seeding default-step selections', () => {
+    const source = readProductPageWidgetSources();
+
+    expect(source).toContain('const normalizedDefaultVariantId = this.normalizeSelectionKey(step.defaultVariantId);');
+    expect(source).toContain('if (normalizedDefaultVariantId) {');
+    expect(source).toContain('this.setSelectedQuantity(i, normalizedDefaultVariantId, 1);');
+    expect(source).not.toContain('this.setSelectedQuantity(i, step.defaultVariantId');
+    expect(source).not.toContain('this.setSelectedQuantity(i, step.defaultVariantId, 1)');
+  });
+
   it('reads direct default variant quantities through normalized lookup in the summary renderer', () => {
     const source = readProductPageWidgetSources();
 
@@ -211,6 +221,8 @@ describe('Product Page widget selection-key normalization contract', () => {
     expect(source).toContain('if (step?.isDefault && this.normalizeSelectionKey(step.defaultVariantId) === normalizedVariantId) return;');
     expect(source).toContain('const currentQuantity = this.getSelectedQuantity(stepIndex, normalizedVariantId);');
     expect(source).toContain('this.setSelectedQuantity(stepIndex, normalizedVariantId, currentQuantity - 1);');
+    expect(source).not.toContain('step?.isDefault && step.defaultVariantId === normalizedVariantId');
+    expect(source).not.toContain('this.setSelectedQuantity(stepIndex, step.defaultVariantId');
   });
 
   it('normalizes selection IDs when matching selected products for summary/cart payload paths', () => {

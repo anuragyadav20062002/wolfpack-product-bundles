@@ -170,19 +170,32 @@
 }
 
 .full-page-side-panel .side-panel-summary-content {
-  grid-row: 3;
-  grid-column: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   width: 100%;
+  align-self: stretch;
+  flex: 1 1 auto;
+}
+
+.full-page-side-panel .side-panel-summary-content {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
 }
 
 .full-page-side-panel .side-panel-summary-content > .side-panel-discount-message {
   order: 0;
   width: 100%;
   margin: 0 0 8px;
+  text-align: center;
+}
+
+.full-page-side-panel .side-panel-discount-message {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .full-page-side-panel .side-panel-summary-content > :is(
@@ -214,6 +227,19 @@
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
+  max-height: none;
+}
+
+.full-page-side-panel .side-panel-summary-content > :is(
+  .side-panel-discount-message,
+  .fpb-discount-progress.fpb-dp-sidebar,
+  .side-panel-item-count,
+  .side-panel-products,
+  .classic-sidebar-slots,
+  .side-panel-skeleton-slots
+) {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .discount-progress-banner {
@@ -630,7 +656,6 @@
     grid-template-columns:
       65px minmax(0, calc(var(--fpb-mobile-footer-inner-width) - 147px))
       64px;
-    grid-template-rows: 60px;
     gap: 9px;
     width: var(--fpb-mobile-footer-inner-width);
     height: 81px;
@@ -700,6 +725,50 @@
   }
 }
 
+.bundle-widget-full-page .full-page-side-panel,
+.bundle-widget-full-page .layout-sidebar .full-page-side-panel {
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 0;
+}
+
+.bundle-widget-full-page .side-panel-action-container,
+.bundle-widget-full-page .layout-sidebar .side-panel-action-container {
+  padding-top: 12px;
+  margin-top: auto;
+  width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
+}
+
+.bundle-widget-full-page .side-panel-action-container,
+.bundle-widget-full-page .layout-sidebar .side-panel-action-container {
+  padding-top: 12px !important;
+  margin-top: auto !important;
+}
+
+.bundle-widget-full-page .side-panel-action-divider,
+.bundle-widget-full-page .layout-sidebar .side-panel-action-divider {
+  width: 100%;
+  height: 1px;
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  background: var(--bundle-side-panel-divider-color, var(--bundle-side-panel-border, rgba(0, 0, 0, 0.08)));
+  margin: 0 0 12px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .bundle-widget-full-page .side-panel-action-container,
+  .bundle-widget-full-page .layout-sidebar .side-panel-action-container {
+    padding-top: 12px;
+    margin-top: auto;
+  }
+}
+
 @keyframes fpb-mobile-summary-drawer-in {
   from {
     opacity: 0;
@@ -742,5 +811,12 @@
   .fpb-mobile-summary-products-section {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .bundle-widget-full-page .full-page-side-panel,
+  .bundle-widget-full-page .layout-sidebar .full-page-side-panel {
+    display: none !important;
   }
 }

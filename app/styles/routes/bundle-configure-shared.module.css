@@ -1,5 +1,13 @@
 /* Shared configure-page primitives. FPB styles are the source of truth. */
 
+.richHelpImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 4px 0 14px;
+}
+
 .card {
   background: white;
   border-radius: 8px;

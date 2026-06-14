@@ -31,7 +31,7 @@ updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
   // If discount is not enabled, show step name (escaped)
   if (!this.selectedBundle?.pricing?.enabled) {
     const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-    modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
+    modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || 'Step ' + (this.currentStepIndex + 1);
     return;
   }
 
