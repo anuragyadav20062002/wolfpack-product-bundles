@@ -364,7 +364,6 @@ body:has([data-fpb-design-preset]) {
     .sidebar-content
     .product-content-wrapper {
     grid-row: 2 / span 2;
-    display: grid;
     grid-template-columns: minmax(0, 1fr) var(--ih-action-size, 35px);
     grid-template-rows: auto auto;
     gap: 8px 5px;
@@ -645,7 +644,6 @@ body:has([data-fpb-design-preset]) {
     .sidebar-content
     .product-content-wrapper {
     grid-row: 2 / span 2;
-    display: grid;
     grid-template-columns: minmax(0, 1fr) var(--mih-action-size, 35px);
     grid-template-rows: auto auto;
     gap: 8px 5px;

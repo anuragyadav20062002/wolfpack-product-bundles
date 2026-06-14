@@ -71,7 +71,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     }
     if (available !== null && quantity > available) {
       quantity = available;
-      ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+      ToastManager.show('Only ' + available + ' in stock — quantity adjusted.');
     }
   }
 
@@ -82,7 +82,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     quantity,
   );
   if (!productQuantityCheck.allowed) {
-    ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+    ToastManager.show('Maximum allowed quantity per product is ' + productQuantityCheck.limit + '.');
     return;
   }
 

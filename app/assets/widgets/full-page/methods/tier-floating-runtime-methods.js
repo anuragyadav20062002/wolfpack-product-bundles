@@ -107,7 +107,7 @@ async switchTier(bundleId, tierIndex) {
     this.activeTierIndex = tierIndex;
     this.updatePillActiveStates();
   } catch (err) {
-    ToastManager.show(`Failed to load tier: ${err.message}`);
+    ToastManager.show('Failed to load tier: ' + err.message);
     // Restore previous active state styling
     this.updatePillActiveStates();
   } finally {

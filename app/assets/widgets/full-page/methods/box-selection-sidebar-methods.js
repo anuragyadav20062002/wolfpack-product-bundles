@@ -128,7 +128,13 @@ showBoxSelectionValidationMessage() {
   const state = this.getBoxSelectionValidationState();
   if (!state.isEnabled || state.isValid) return;
 
-  ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
+  ToastManager.show(
+    'Select exactly '
+    + state.activeRule.boxQuantity
+    + ' item(s) for '
+    + (state.activeRule.boxLabel || 'this box')
+    + ' before adding to cart.'
+  );
 },
 
 renderBoxSelectionOptions(totalQuantity = 0) {
