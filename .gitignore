@@ -4,6 +4,8 @@ node_modules
 /.cache
 /build
 /app/build
+/public/*.webp
+/public/*.avif
 /public/build/
 /public/_dev
 /app/public/build
