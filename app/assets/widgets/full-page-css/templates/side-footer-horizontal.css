@@ -10,7 +10,7 @@
     --fpb-horizontal-content-secondary-row: clamp(72px, 8.5vw, 78px);
     --fpb-horizontal-price-row-height: clamp(18px, 1.8vw, 21px);
     --fpb-horizontal-action-height: clamp(32px, 2.8vw, 35px);
-    --fpb-horizontal-action-width: clamp(94px, 9vw, 110.5625px);
+    --fpb-horizontal-action-width: clamp(94px, 9vw, 111px);
     --fpb-horizontal-variant-title-row: clamp(22px, 2vw, 28px);
     --fpb-horizontal-variant-value-row: clamp(14px, 1.5vw, 18px);
     --fpb-horizontal-variant-wrap-row: clamp(46px, 4vw, 51px);
@@ -75,15 +75,14 @@
     width: 100%;
     min-width: 0;
     max-width: none;
-    height: var(--fpb-horizontal-card-height, 156px);
+    height: auto;
     display: grid;
     grid-template-columns: var(--fpb-horizontal-card-media-width, 120px)
       minmax(0, 1fr);
-    grid-template-rows: var(--fpb-horizontal-title-row-height, 62px) 0
-      var(--fpb-horizontal-title-row-height, 62px);
+    grid-template-rows: auto auto auto;
     gap: 8px;
     padding: 8px;
-    min-height: 156px;
+    min-height: var(--fpb-horizontal-card-height, 156px);
     border: 0;
     border-radius: 10px;
     box-shadow: none;
@@ -115,7 +114,7 @@
     min-height: var(--fpb-horizontal-card-title-min-height, 140px);
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: var(--fpb-horizontal-title-row-height, 62px) 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
     column-gap: 5px;
     padding: 0;
   }
@@ -123,7 +122,8 @@
   .fpb-h .product-title {
     grid-row: 1;
     grid-column: 1 / -1;
-    height: var(--fpb-horizontal-title-row-height, 62px);
+    height: auto;
+    min-height: 0;
     padding: 0 0 5px;
     font-size: 16px;
     line-height: 22px;
@@ -257,13 +257,12 @@
     width: 100%;
     max-width: none;
     min-width: 0;
-    height: var(--fpb-horizontal-card-height, 156px);
+    height: auto;
     min-height: var(--fpb-horizontal-card-height, 156px);
     display: grid;
     grid-template-columns: var(--fpb-horizontal-card-media-width, 120.59375px)
       minmax(0, 1fr);
-    grid-template-rows: var(--fpb-horizontal-title-row-height, 62px) 0
-      var(--fpb-horizontal-title-row-height, 62px);
+    grid-template-rows: auto auto auto;
     gap: 8px;
     padding: 8px;
     border: 0;
@@ -296,13 +295,12 @@
     grid-row: 1 / span 3;
     display: grid;
     grid-template-columns: minmax(0, 1fr)
-      var(--fpb-horizontal-action-width, 110.5625px);
-    grid-template-rows: var(--fpb-horizontal-title-row-height, 62px)
-      var(--fpb-horizontal-content-secondary-row, 78px);
+      var(--fpb-horizontal-action-width, 111px);
+    grid-template-rows: auto minmax(0, 1fr);
     column-gap: 5px;
     width: 100%;
     min-width: 0;
-    min-height: 140px;
+    min-height: 0;
     padding: 0;
     overflow: visible;
   }
@@ -310,8 +308,7 @@
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant
     > .product-content-wrapper.bw-product-card__body {
-    grid-template-rows: var(--fpb-horizontal-variant-wrap-row, 51px)
-      var(--fpb-horizontal-variant-body-row, 89px);
+    grid-template-rows: auto minmax(0, 1fr);
   }
   .layout-sidebar[data-fpb-design-preset="HORIZONTAL"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
@@ -321,12 +318,12 @@
     grid-column: 1 / -1;
     grid-row: 1;
     display: grid;
-    grid-template-rows: var(--fpb-horizontal-variant-title-row, 28px)
-      var(--fpb-horizontal-variant-value-row, 18px);
+    grid-template-rows: auto auto;
     gap: 5px;
     width: 100%;
-    height: var(--fpb-horizontal-variant-wrap-row, 51px);
-    min-height: var(--fpb-horizontal-variant-wrap-row, 51px);
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -338,7 +335,8 @@
     grid-column: 1 / -1;
     grid-row: 1;
     width: 100%;
-    height: var(--fpb-horizontal-title-row-height, 62px);
+    height: auto;
+    min-height: 0;
     padding: 0 0 5px;
     font-size: 16px;
     line-height: 22px;
@@ -354,8 +352,8 @@
     > .product-title.bw-product-card__title {
     grid-column: 1;
     grid-row: 1;
-    height: var(--fpb-horizontal-variant-title-row, 28px);
-    min-height: var(--fpb-horizontal-variant-title-row, 28px);
+    height: auto;
+    min-height: 0;
     padding: 0 0 5px;
     overflow: hidden;
   }
@@ -367,8 +365,8 @@
     > .product-variant-row.bw-product-card__variant {
     grid-column: 1;
     grid-row: 2;
-    height: var(--fpb-horizontal-variant-value-row, 18px);
-    min-height: var(--fpb-horizontal-variant-value-row, 18px);
+    height: auto;
+    min-height: 0;
     margin: 0;
     padding: 0;
     border-top: 0;
@@ -386,7 +384,6 @@
     grid-column: 1;
     grid-row: 2;
     align-self: end;
-    height: var(--fpb-horizontal-price-row-height, 21px);
     margin: 0 0 8px;
     padding: 0;
     flex-direction: row;
@@ -399,8 +396,8 @@
     .product-card-action {
     grid-column: 2;
     grid-row: 2;
-    width: var(--fpb-horizontal-action-width, 110.5625px);
-    height: var(--fpb-horizontal-action-height, 35px);
+    width: var(--fpb-horizontal-action-width, 111px);
+    height: auto;
     min-height: var(--fpb-horizontal-action-height, 35px);
     margin: 0 0 8px;
     display: flex;
@@ -556,10 +553,9 @@
     display: grid;
     grid-template-columns: var(--fpb-horizontal-card-media-width, 103.8px)
       minmax(0, 1fr);
-    grid-template-rows: var(--fpb-horizontal-title-row-height, 52px) 0
-      var(--fpb-horizontal-title-row-height, 52px);
+    grid-template-rows: auto auto auto;
     min-height: var(--fpb-horizontal-card-height, 136px);
-    height: var(--fpb-horizontal-card-height, 136px);
+    height: auto;
   }
   .fpb-h .product-image {
     width: var(--fpb-horizontal-card-media-width, 103.8px);
@@ -573,8 +569,7 @@
     grid-column: 2;
     grid-row: 1 / span 3;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: var(--fpb-horizontal-title-row-height, 52px)
-      var(--fpb-horizontal-content-title-row, 68px);
+    grid-template-rows: auto minmax(0, 1fr);
     column-gap: 5px;
     min-height: var(--fpb-horizontal-content-media-height, 120px);
     padding: 0;
@@ -582,19 +577,17 @@
   .fpb-h .product-title {
     font-size: 13px;
     line-height: 1.25;
-    height: var(--fpb-horizontal-title-row-height, 52px);
+    height: auto;
+    min-height: 0;
   }
   .fpb-h
     .layout-sidebar[data-fpb-design-preset="HORIZONTAL"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant
     > .product-content-wrapper.bw-product-card__body {
-    grid-template-columns: minmax(0, 1fr) var(--fpb-horizontal-action-width, 110.5625px);
-    grid-template-rows: calc(
-        var(--fpb-horizontal-variant-title-row, 28px)
-        + var(--fpb-horizontal-variant-value-row, 18px)
-      )
-      minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr)
+      var(--fpb-horizontal-action-width, 111px);
+    grid-template-rows: auto minmax(0, 1fr);
   }
   .fpb-h
     .layout-sidebar[data-fpb-design-preset="HORIZONTAL"][data-fpb-card-cta-mode="icon"]
@@ -605,20 +598,11 @@
     grid-column: 1 / -1;
     grid-row: 1;
     display: grid;
-    grid-template-rows: var(--fpb-horizontal-variant-title-row, 28px) var(
-      --fpb-horizontal-variant-value-row,
-      18px
-    );
+    grid-template-rows: auto auto;
     gap: 5px;
     width: 100%;
-    min-height: calc(
-      var(--fpb-horizontal-variant-title-row, 28px)
-      + var(--fpb-horizontal-variant-value-row, 18px)
-    );
-    max-height: calc(
-      var(--fpb-horizontal-variant-title-row, 28px)
-      + var(--fpb-horizontal-variant-value-row, 18px)
-    );
+    min-height: 0 !important;
+    max-height: none !important;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -632,8 +616,8 @@
     > .product-title.bw-product-card__title {
     grid-column: 1;
     grid-row: 1;
-    height: var(--fpb-horizontal-variant-title-row, 28px);
-    min-height: var(--fpb-horizontal-variant-title-row, 28px);
+    height: auto;
+    min-height: 0;
     padding: 0 0 5px;
     overflow: hidden;
   }
@@ -646,8 +630,8 @@
     > .product-variant-row.bw-product-card__variant {
     grid-column: 1;
     grid-row: 2;
-    height: var(--fpb-horizontal-variant-value-row, 18px);
-    min-height: var(--fpb-horizontal-variant-value-row, 18px);
+    height: auto;
+    min-height: 0;
     margin: 0;
     padding: 0;
     border-top: 0;
@@ -663,8 +647,8 @@
     .sidebar-content
     .product-card.bw-product-card--has-variant
     .product-card-action {
-    width: var(--fpb-horizontal-action-width, 110.5625px);
-    min-width: var(--fpb-horizontal-action-width, 110.5625px);
+    width: var(--fpb-horizontal-action-width, 111px);
+    min-width: var(--fpb-horizontal-action-width, 111px);
     justify-self: end;
   }
   .fpb-h .product-price-row {

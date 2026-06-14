@@ -31,13 +31,8 @@
   --compact-mobile-title-row-height: clamp(20px, 7.5vw, 23px);
   --compact-mobile-meta-row-height: clamp(31px, 10vw, 40px);
   --compact-mobile-selected-action-row: clamp(40px, 12vw, 48px);
-  --compact-desktop-card-title-row: clamp(34px, 4.5vw, 39.625px);
-  --compact-desktop-card-value-row: clamp(34px, 4.5vw, 39.640625px);
   --compact-desktop-title-row-height: clamp(44px, 5.5vw, 51px);
-  --compact-desktop-title-expanded-row-height: clamp(31px, 4vw, 38px);
-  --compact-desktop-variant-title-row: clamp(14px, 2vw, 18px);
-  --compact-desktop-variant-value-row: clamp(12px, 1.6vw, 18px);
-  --compact-desktop-action-col-width: clamp(64px, 31%, 74.484375px);
+  --compact-desktop-action-col-width: clamp(56px, 31%, 74px);
   --compact-desktop-content-expanded-controls: clamp(43px, 6vw, 48px);
   --compact-control-row-height: clamp(30px, 2.7vw, 35px);
 }
@@ -95,10 +90,7 @@
     width: 100%;
     min-width: 0;
     max-width: none;
-    height: calc(
-      (100cqw - var(--compact-desktop-track-divider, 30px)) / 3 +
-        var(--compact-card-height-extra, 95.265625px)
-    );
+    height: auto;
     min-height: calc(
       (100cqw - var(--compact-desktop-track-divider, 30px)) / 3 +
         var(--compact-card-height-extra, 95.265625px)
@@ -110,8 +102,8 @@
         (100cqw - var(--compact-desktop-track-divider, 30px)) / 3 -
           var(--compact-image-height-extra, 16px)
       )
-      var(--compact-desktop-card-title-row)
-      var(--compact-desktop-card-value-row);
+      auto
+      auto;
     gap: var(--compact-desktop-grid-inner-gap, 8px);
     padding: 8px;
     border: 0;
@@ -119,13 +111,10 @@
     box-shadow: none;
     background: #fff;
   }
-    .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
+  .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant {
-    height: calc(
-      (100cqw - var(--compact-desktop-track-divider, 30px)) / 3 +
-        var(--compact-card-height-extra, 95.265625px)
-    );
+    height: auto;
     min-height: calc(
       (100cqw - var(--compact-desktop-track-divider, 30px)) / 3 +
         var(--compact-card-height-extra, 95.265625px)
@@ -135,8 +124,8 @@
         (100cqw - var(--compact-desktop-track-divider, 30px)) / 3 -
           var(--compact-image-height-extra, 16px)
       )
-      var(--compact-desktop-title-row-height)
-      var(--compact-desktop-card-value-row);
+      auto
+      auto;
   }
 
   .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
@@ -164,31 +153,25 @@
     display: grid !important;
     grid-template-columns: minmax(0, 1fr)
       var(--compact-desktop-action-col-width) !important;
-    grid-template-rows: var(--compact-desktop-card-title-row)
-      var(--compact-desktop-card-value-row) !important;
+    grid-template-rows: auto auto !important;
     gap: 0 5px !important;
     width: 100% !important;
     min-width: 0 !important;
-    height: calc(
-      var(--compact-desktop-card-title-row) +
-        var(--compact-desktop-card-value-row)
-    ) !important;
+    height: auto !important;
+    min-height: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
     align-items: start !important;
   }
-    .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
+  .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant
     > .product-content-wrapper.bw-product-card__body {
-    grid-template-rows: var(--compact-desktop-title-row-height)
-      var(--compact-desktop-card-value-row) !important;
-    height: calc(
-      var(--compact-desktop-title-row-height) +
-        var(--compact-desktop-card-value-row) + 1px
-    ) !important;
+    grid-template-rows: auto auto !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
-    .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
+  .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant
     > .product-content-wrapper.bw-product-card__body
@@ -196,18 +179,11 @@
     grid-row: 1;
     grid-column: 1 / -1;
     display: grid !important;
-    grid-template-rows: var(--compact-desktop-title-expanded-row-height)
-      var(--compact-desktop-variant-value-row) !important;
+    grid-template-rows: auto auto !important;
     gap: var(--compact-desktop-grid-title-gap, 5px) !important;
     width: 100% !important;
-    height: calc(
-      var(--compact-desktop-title-expanded-row-height) +
-        var(--compact-desktop-variant-value-row)
-    ) !important;
-    min-height: calc(
-      var(--compact-desktop-title-expanded-row-height) +
-        var(--compact-desktop-variant-value-row)
-    ) !important;
+    height: auto !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
@@ -219,8 +195,8 @@
     grid-row: 1;
     grid-column: 1 / -1;
     width: 100% !important;
-    height: var(--compact-desktop-card-title-row) !important;
-    min-height: var(--compact-desktop-card-title-row) !important;
+    height: auto !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     color: var(
@@ -242,8 +218,8 @@
     > .product-title.bw-product-card__title {
     grid-row: 1;
     grid-column: 1;
-    height: var(--compact-desktop-variant-title-row) !important;
-    min-height: var(--compact-desktop-variant-title-row) !important;
+    height: auto !important;
+    min-height: 0 !important;
     padding: 0 0 5px !important;
     overflow: hidden !important;
   }
@@ -255,8 +231,8 @@
     > .product-variant-row.bw-product-card__variant {
     grid-row: 2;
     grid-column: 1;
-    height: var(--compact-desktop-variant-value-row) !important;
-    min-height: var(--compact-desktop-variant-value-row) !important;
+    height: auto !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     border-top: 0 !important;
@@ -274,8 +250,8 @@
     grid-row: 2;
     grid-column: 1;
     width: 100% !important;
-    height: var(--compact-desktop-card-value-row) !important;
-    min-height: var(--compact-desktop-card-value-row) !important;
+    height: auto !important;
+    min-height: 0 !important;
     margin: 0 !important;
     display: flex !important;
     flex-direction: row !important;
@@ -300,7 +276,7 @@
     grid-row: 2;
     grid-column: 2;
     width: var(--compact-desktop-action-col-width) !important;
-    height: var(--compact-control-row-height, 35px) !important;
+    height: auto !important;
     min-height: var(--compact-control-row-height, 35px) !important;
     margin: 0 !important;
     display: flex !important;
@@ -324,9 +300,9 @@
   .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-add-btn {
-    width: var(--compact-control-row-height, 35px) !important;
-    min-width: var(--compact-control-row-height, 35px) !important;
-    height: var(--compact-control-row-height, 35px) !important;
+    width: var(--compact-control-row-height, var(--fpb-card-quantity-selector-height, 35px)) !important;
+    min-width: var(--compact-control-row-height, var(--fpb-card-quantity-selector-height, 35px)) !important;
+    height: var(--compact-control-row-height, var(--fpb-card-quantity-selector-height, 35px)) !important;
     padding: 0 !important;
     border-radius: 5px !important;
     font-size: 0 !important;
@@ -366,14 +342,14 @@
   .layout-sidebar[data-fpb-design-preset="COMPACT"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card {
-    height: var(--compact-mobile-card-height, 245px);
+    height: auto;
     min-height: var(--compact-mobile-card-height, 245px);
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows:
       var(--compact-mobile-image-height, 150px)
-      var(--compact-mobile-title-row-height)
-      var(--compact-mobile-meta-row-height);
+      auto
+      auto;
     gap: var(--compact-desktop-grid-inner-gap, 8px);
     padding: 8px;
     border: 0;
