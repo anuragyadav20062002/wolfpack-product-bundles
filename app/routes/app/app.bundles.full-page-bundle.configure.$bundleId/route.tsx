@@ -27,7 +27,8 @@ import {
 } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
 import { OptimisedImage } from "../../../components/OptimisedImage";
-import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
+import { HelpTooltipImage } from "../../../components/HelpTooltipImage";
+import { HELP_TOOLTIPS, type HelpTooltipKey } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
 import { handleAdminSaveLockedEvent } from "../../../lib/admin-save-lock";
@@ -450,16 +451,21 @@ function normalizeVisibilityCollectionPageTarget(collection: any) {
 function SettingsRow({
   title,
   description,
+  tooltipKey,
   children,
 }: {
   title: string;
   description?: string;
+  tooltipKey?: HelpTooltipKey;
   children: ReactNode;
 }) {
   return (
     <div className={fullPageBundleStyles.settingsRow}>
       <div className={fullPageBundleStyles.settingsRowText}>
-        <p className={fullPageBundleStyles.settingsRowTitle}>{title}</p>
+        <p className={fullPageBundleStyles.settingsRowTitle}>
+          {title}
+          {tooltipKey && <QuestionHelpTooltip tooltipKey={tooltipKey} />}
+        </p>
         {description && <p className={fullPageBundleStyles.settingsRowDescription}>{description}</p>}
       </div>
       <div className={fullPageBundleStyles.settingsRowControl}>
@@ -533,7 +539,7 @@ function RichHelpTooltip({
           "--rich-help-arrow-left": `${tooltipPos.arrowLeft}px`,
         } as React.CSSProperties : undefined}
       >
-        {tooltip.visual && <HelpTooltipVisualBlock visual={tooltip.visual} title={title} />}
+        {tooltip.imageSrc && <HelpTooltipImage src={tooltip.imageSrc} alt={title} />}
         <span className={fullPageBundleStyles.richHelpTitle}>{title}</span>
         <span className={fullPageBundleStyles.richHelpDescription}>{description}</span>
       </span>
@@ -597,22 +603,11 @@ function QuestionHelpTooltip({
           "--rich-help-arrow-left": `${tooltipPos.arrowLeft}px`,
         } as React.CSSProperties : undefined}
       >
-        {tooltip.visual && <span className={fullPageBundleStyles.richHelpImagePlaceholder} />}
+        {tooltip.imageSrc && <HelpTooltipImage src={tooltip.imageSrc} alt={title || tooltip.accessibilityLabel || description} />}
         {title && <span className={fullPageBundleStyles.richHelpTitle}>{title}</span>}
         <span className={fullPageBundleStyles.richHelpDescription}>{description}</span>
       </span>
     </span>
-  );
-}
-
-function HelpTooltipVisualBlock({
-  title,
-}: {
-  visual: HelpTooltipVisual;
-  title: string;
-}) {
-  return (
-    <span className={fullPageBundleStyles.richHelpImagePlaceholder} role="img" aria-label={title} />
   );
 }
 
@@ -4589,6 +4584,7 @@ export default function ConfigureBundleFlow() {
                               Configure this section to enable quantity options.
                             </p>
                           </div>
+                          <QuestionHelpTooltip tooltipKey="bundleQuantityOptions" />
                           <s-switch
                             checked={pricingState.pricingDisplayOptions.bundleQuantityOptions.enabled || undefined}
                             disabled={!bundleQuantityOptionsEligible || undefined}
@@ -4669,6 +4665,7 @@ export default function ConfigureBundleFlow() {
                               Edit the progress bar content and settings.
                             </p>
                           </div>
+                          <QuestionHelpTooltip tooltipKey="discountProgressBar" />
                           <s-switch
                             checked={pricingState.showDiscountProgressBar || undefined}
                             onChange={(e) => pricingState.setShowDiscountProgressBar((e.target as HTMLInputElement).checked)}
@@ -4746,6 +4743,7 @@ export default function ConfigureBundleFlow() {
                               Edit how discount messages appear above the subtotal.
                             </p>
                           </div>
+                          <QuestionHelpTooltip tooltipKey="discountMessaging" />
                           <s-switch
                             checked={pricingState.discountMessagingEnabled || undefined}
                             onChange={(e) => pricingState.setDiscountMessagingEnabled((e.target as HTMLInputElement).checked)}
@@ -5444,6 +5442,7 @@ export default function ConfigureBundleFlow() {
                         <SettingsRow
                           title="Variant Selector"
                           description="Enable variant selection within the product cards instead of the quick look"
+                          tooltipKey="variantSelector"
                         >
                           <s-switch
                             accessibilityLabel="Variant selector"
@@ -5458,6 +5457,7 @@ export default function ConfigureBundleFlow() {
                         <SettingsRow
                           title="Show Text on + Button"
                           description="Replaces the + icon with a text button and moves it below the price."
+                          tooltipKey="showTextOnAddButton"
                         >
                           <s-switch
                             accessibilityLabel="Show text on plus button"
@@ -5587,6 +5587,7 @@ export default function ConfigureBundleFlow() {
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <p style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>Cart line item discount display</p>
+                          <QuestionHelpTooltip tooltipKey="cartLineItemDiscountDisplay" />
                           <s-button variant="secondary" onClick={() => handleSectionChange("discount_pricing")}>
                             Edit Defaults
                           </s-button>
