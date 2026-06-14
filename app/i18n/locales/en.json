@@ -145,6 +145,18 @@
     "productSlots": {
       "title": "Product Slots",
       "description": "Display empty slots on the storefront and use the configured Slot Icon for those empty slots."
+    },
+    "variantSelector": {
+      "title": "Variant Selector",
+      "description": "Show a variant dropdown on each product card so shoppers can pick options without opening quick look."
+    },
+    "showTextOnAddButton": {
+      "title": "Show Text on + Button",
+      "description": "Replace the + icon with a text Add to Cart button placed below the product price."
+    },
+    "cartLineItemDiscountDisplay": {
+      "title": "Cart Line Item Discount Display",
+      "description": "Control how bundle savings appear on the cart line item, including retail price and You Save messaging."
     }
   },
   "common": {

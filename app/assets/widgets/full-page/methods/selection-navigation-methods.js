@@ -50,14 +50,14 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     }
     if (available !== null && available > 0 && quantity > available) {
       quantity = available;
-      ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+      ToastManager.show('Only ' + available + ' in stock — quantity adjusted.');
     }
   }
 
   // Validate step conditions
-  if (!this.validateStepCondition(stepIndex, productId, quantity)) {
-    return;
-  }
+    if (!this.validateStepCondition(stepIndex, productId, quantity)) {
+      return;
+    }
 
   const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
   const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
@@ -66,7 +66,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     quantity,
   );
   if (!productQuantityCheck.allowed) {
-    ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+    ToastManager.show('Maximum allowed quantity per product is ' + productQuantityCheck.limit + '.');
     return;
   }
 
@@ -155,7 +155,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
   }
 
   // Update quantity display without full re-render
-  const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
+  const productCard = this.container.querySelector('[data-product-id="' + productId + '"]');
   if (!productCard) return;
 
   // Find existing action elements
@@ -189,11 +189,10 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       // Create quantity controls
       const quantityControls = document.createElement('div');
       quantityControls.className = 'inline-quantity-controls';
-      quantityControls.innerHTML = `
-        <button class="inline-qty-btn qty-decrease" data-product-id="${productId}">−</button>
-        <span class="inline-qty-display">${quantity}</span>
-        <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
-      `;
+      quantityControls.innerHTML =
+        '<button class="inline-qty-btn qty-decrease" data-product-id="' + productId + '">−</button>' +
+        '<span class="inline-qty-display">' + quantity + '</span>' +
+        '<button class="inline-qty-btn qty-increase" data-product-id="' + productId + '">+</button>';
       actionContainer.appendChild(quantityControls);
 
       // Attach event listeners to the new buttons
@@ -314,7 +313,7 @@ validateStepCondition(stepIndex, productId, newQuantity) {
   // Only block and toast on increases — decreases are always permitted.
   if (!allowed && newQuantity > currentQty) {
     const required = step.conditionValue;
-    ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
+    ToastManager.show('This step allows ' + limitText + ' product' + (required !== 1 ? 's' : '') + ' only.');
     return false;
   }
 

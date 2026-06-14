@@ -2294,7 +2294,6 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
   const hasVariantText = Boolean(variantText);
-  const variantDivider = '<div class="bw-product-card__variant-divider" aria-hidden="true"></div>';
   const rootClasses = [
     'bw-product-card',
     'product-card',
@@ -2313,26 +2312,26 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
       <div class="bw-product-card__body product-content-wrapper">
           <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
-          ${variantDivider}
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
         </div>
-        ${price ? `
-          <div class="bw-product-card__price product-price-row">
-            ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
-            <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
+        <div class="product-card-price-action">
+          ${price ? `
+            <div class="bw-product-card__price product-price-row">
+              ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
+              <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
+            </div>
+          ` : ''}
+          ${options.variantSelectorHtml || ''}
+          <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
+            ${isSelected
+              ? renderQuantityControl({
+                variantId: selectionKey,
+                quantity,
+                decreaseDisabled: options.decreaseDisabled === true,
+                increaseDisabled: options.increaseDisabled === true,
+              })
+              : renderAddButton(selectionKey, options)}
           </div>
-        ` : ''}
-        ${options.variantSelectorHtml || ''}
-        <div class="product-card-divider" aria-hidden="true"></div>
-        <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
-          ${isSelected
-            ? renderQuantityControl({
-              variantId: selectionKey,
-              quantity,
-              decreaseDisabled: options.decreaseDisabled === true,
-              increaseDisabled: options.increaseDisabled === true,
-            })
-            : renderAddButton(selectionKey, options)}
         </div>
       </div>
     </div>
@@ -4197,7 +4196,7 @@ clearStepSelections(stepIndex) {
   this.updateAddToCartButton();
   this.updateFooterMessaging();
 
-  ToastManager.show(`All selections cleared from this step`);
+  ToastManager.show('All selections cleared from this step');
 },
 
 renderFooter() {
@@ -4532,7 +4531,7 @@ validateStepCondition(stepIndex, productId, newQuantity) {
 
   if (!allowed && newQuantity > currentQty) {
     const required = step.conditionValue;
-    ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
+    ToastManager.show('This step allows ' + limitText + ' product' + (required !== 1 ? 's' : '') + ' only.');
     return false;
   }
 
@@ -6541,7 +6540,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
               migratedQty = 0;
             } else if (newQtyAvail !== null && oldQuantity > newQtyAvail) {
               migratedQty = newQtyAvail;
-              ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+              ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
             }
             if (migratedQty > 0) {
               this.setSelectedQuantity(stepIndex, newVariantId, migratedQty);
@@ -6634,7 +6633,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     }
     if (available !== null && quantity > available) {
       quantity = available;
-      ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+      ToastManager.show('Only ' + available + ' in stock — quantity adjusted.');
     }
   }
 
@@ -6645,7 +6644,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     quantity,
   );
   if (!productQuantityCheck.allowed) {
-    ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+    ToastManager.show('Maximum allowed quantity per product is ' + productQuantityCheck.limit + '.');
     return;
   }
 
@@ -6910,7 +6909,7 @@ const ProductPageCartMethods = {
       ToastManager.show('Bundle added to cart successfully!');
       this._handlePostAddToCartAction(this._getProductPageControls()?.redirect);
     } catch (error) {
-      ToastManager.show(`Failed to add bundle to cart: ${error.message}`);
+      ToastManager.show('Failed to add bundle to cart: ' + error.message);
     } finally {
       this.hideLoadingOverlay();
       this.updateAddToCartButton();

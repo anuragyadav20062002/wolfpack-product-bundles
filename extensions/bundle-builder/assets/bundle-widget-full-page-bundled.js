@@ -2294,7 +2294,6 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
   const hasVariantText = Boolean(variantText);
-  const variantDivider = '<div class="bw-product-card__variant-divider" aria-hidden="true"></div>';
   const rootClasses = [
     'bw-product-card',
     'product-card',
@@ -2313,26 +2312,26 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
       <div class="bw-product-card__body product-content-wrapper">
           <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
-          ${variantDivider}
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
         </div>
-        ${price ? `
-          <div class="bw-product-card__price product-price-row">
-            ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
-            <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
+        <div class="product-card-price-action">
+          ${price ? `
+            <div class="bw-product-card__price product-price-row">
+              ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
+              <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
+            </div>
+          ` : ''}
+          ${options.variantSelectorHtml || ''}
+          <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
+            ${isSelected
+              ? renderQuantityControl({
+                variantId: selectionKey,
+                quantity,
+                decreaseDisabled: options.decreaseDisabled === true,
+                increaseDisabled: options.increaseDisabled === true,
+              })
+              : renderAddButton(selectionKey, options)}
           </div>
-        ` : ''}
-        ${options.variantSelectorHtml || ''}
-        <div class="product-card-divider" aria-hidden="true"></div>
-        <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
-          ${isSelected
-            ? renderQuantityControl({
-              variantId: selectionKey,
-              quantity,
-              decreaseDisabled: options.decreaseDisabled === true,
-              increaseDisabled: options.increaseDisabled === true,
-            })
-            : renderAddButton(selectionKey, options)}
         </div>
       </div>
     </div>
@@ -5873,7 +5872,13 @@ showBoxSelectionValidationMessage() {
   const state = this.getBoxSelectionValidationState();
   if (!state.isEnabled || state.isValid) return;
 
-  ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
+  ToastManager.show(
+    'Select exactly '
+    + state.activeRule.boxQuantity
+    + ' item(s) for '
+    + (state.activeRule.boxLabel || 'this box')
+    + ' before adding to cart.'
+  );
 },
 
 renderBoxSelectionOptions(totalQuantity = 0) {
@@ -7533,7 +7538,7 @@ attachProductCardListeners(cardElement, product, stepIndex) {
           migratedQty = 0;
         } else if (newQtyAvail !== null && oldQty > newQtyAvail) {
           migratedQty = newQtyAvail;
-          ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+          ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
         }
         if (migratedQty > 0) {
           this.selectedProducts[stepIndex][newVariantId] = migratedQty;
@@ -8765,7 +8770,7 @@ clearStepSelections(stepIndex) {
   this.renderSteps();
   this.updateFooterMessaging();
 
-  ToastManager.show(`All selections cleared from this step`);
+  ToastManager.show('All selections cleared from this step');
 },
 
 renderFooter() {
@@ -9767,7 +9772,6 @@ renderModalProducts(stepIndex, productsToRender = null) {
         ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
         : '';
 
-      return `
     return renderSharedProductCard(
       {
         ...product,
@@ -9884,7 +9888,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
               migratedQty = 0;
             } else if (newQtyAvail !== null && newQtyAvail > 0 && oldQuantity > newQtyAvail) {
               migratedQty = newQtyAvail;
-              ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+              ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
             }
             if (migratedQty > 0) {
               this.selectedProducts[stepIndex][newVariantId] = migratedQty;
@@ -9932,13 +9936,13 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     }
     if (available !== null && available > 0 && quantity > available) {
       quantity = available;
-      ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+      ToastManager.show('Only ' + available + ' in stock — quantity adjusted.');
     }
   }
 
-  if (!this.validateStepCondition(stepIndex, productId, quantity)) {
-    return;
-  }
+    if (!this.validateStepCondition(stepIndex, productId, quantity)) {
+      return;
+    }
 
   const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
   const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
@@ -9947,7 +9951,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     quantity,
   );
   if (!productQuantityCheck.allowed) {
-    ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+    ToastManager.show('Maximum allowed quantity per product is ' + productQuantityCheck.limit + '.');
     return;
   }
 
@@ -10027,7 +10031,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     return;
   }
 
-  const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
+  const productCard = this.container.querySelector('[data-product-id="' + productId + '"]');
   if (!productCard) return;
 
   const contentWrapper = productCard.querySelector('.product-content-wrapper');
@@ -10059,11 +10063,10 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
 
       const quantityControls = document.createElement('div');
       quantityControls.className = 'inline-quantity-controls';
-      quantityControls.innerHTML = `
-        <button class="inline-qty-btn qty-decrease" data-product-id="${productId}">−</button>
-        <span class="inline-qty-display">${quantity}</span>
-        <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
-      `;
+      quantityControls.innerHTML =
+        '<button class="inline-qty-btn qty-decrease" data-product-id="' + productId + '">−</button>' +
+        '<span class="inline-qty-display">' + quantity + '</span>' +
+        '<button class="inline-qty-btn qty-increase" data-product-id="' + productId + '">+</button>';
       actionContainer.appendChild(quantityControls);
 
       const increaseBtn = quantityControls.querySelector('.qty-increase');
@@ -10172,7 +10175,7 @@ validateStepCondition(stepIndex, productId, newQuantity) {
 
   if (!allowed && newQuantity > currentQty) {
     const required = step.conditionValue;
-    ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
+    ToastManager.show('This step allows ' + limitText + ' product' + (required !== 1 ? 's' : '') + ' only.');
     return false;
   }
 
@@ -10275,7 +10278,7 @@ updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
 
   if (!this.selectedBundle?.pricing?.enabled) {
     const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-    modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
+    modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || 'Step ' + (this.currentStepIndex + 1);
     return;
   }
 
@@ -10820,7 +10823,7 @@ async switchTier(bundleId, tierIndex) {
     this.activeTierIndex = tierIndex;
     this.updatePillActiveStates();
   } catch (err) {
-    ToastManager.show(`Failed to load tier: ${err.message}`);
+    ToastManager.show('Failed to load tier: ' + err.message);
 
     this.updatePillActiveStates();
   } finally {
@@ -10987,6 +10990,20 @@ showErrorUI(_error) {
   `;
 },
 
+/**
+ * Fire-and-forget error report to the server so AppLogger can track widget failures.
+ * Does NOT await — never blocks the render path.
+ */
+
+/**
+ * Background layout refresh — runs after initial render.
+ *
+ * In compact-marker mode, we always fetch the bundle via API before render,
+ * so this refresh path is effectively a no-op for initialized API loads.
+ * It is preserved for legacy cached payload paths and exits early when not needed.
+ *
+ * Fire-and-forget: all errors are silently swallowed.
+ */
 async _scheduleLayoutRefresh() {
   const bundleId = this.container.dataset.bundleId;
   if (!bundleId) return;
@@ -11041,7 +11058,7 @@ _reportError(error) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
       keepalive: true,
-    }).catch(() => {  });
+    }).catch(() => { /* best-effort — ignore if proxy is also down */ });
   } catch (_) {
 
   }
@@ -11068,12 +11085,78 @@ _recordView() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ shop }),
       keepalive: true,
-    }).catch(() => {  });
+    }).catch(() => { /* best-effort */ });
   } catch (_) {
 
   }
 },
 };
+
+/**
+ * Bundle Widget - Full Page Version
+ *
+ * This widget is specifically for full page bundles with horizontal tabs layout.
+ * It imports shared components and utilities from bundle-widget-components.js.
+ *
+ * ============================================================================
+ * ARCHITECTURE ROLE
+ * ============================================================================
+ * This is the THIRD file loaded for FULL PAGE bundles:
+ * 1. bundle-widget.js (loader) - Detects bundle type as 'full_page'
+ * 2. bundle-widget-components.js - Provides shared utilities
+ * 3. THIS FILE (full-page widget) - Implements full page UI/UX
+ *
+ * ============================================================================
+ * WHEN THIS FILE IS LOADED
+ * ============================================================================
+ * This file loads when:
+ * - Container explicitly has data-bundle-type="full_page"
+ *
+ * Example container:
+ * <div id="bundle-builder-app" data-bundle-type="full_page"></div>
+ *
+ * NOTE: This is OPT-IN only. Without the attribute, product-page widget loads instead.
+ *
+ * ============================================================================
+ * UI LAYOUT: HORIZONTAL TABS
+ * ============================================================================
+ * - Steps displayed as horizontal tabs at the top
+ * - All tabs visible simultaneously (overview of all steps)
+ * - Click any tab to jump between steps
+ * - Modal overlay for product selection
+ * - Progress tracked with tab completion indicators
+ * - Best for: Dedicated bundle pages with full horizontal space
+ *
+ * ============================================================================
+ * SHARED CODE IMPORTS
+ * ============================================================================
+ * All business logic is imported from bundle-widget-components.js:
+ * - Currency formatting
+ * - Price calculations
+ * - Discount logic
+ * - Product card rendering
+ * - Toast notifications
+ *
+ * This file ONLY contains:
+ * - Full page specific UI rendering
+ * - Horizontal tabs layout management
+ * - Modal-based product selection
+ * - Event handlers for full page flow
+ *
+ * ============================================================================
+ * UNIFIED DESIGN WITH PRODUCT PAGE WIDGET
+ * ============================================================================
+ * Both widgets:
+ * - Use the same CSS variables (from unified design settings API)
+ * - Import the same utilities (from bundle-widget-components.js)
+ * - Implement the same business logic (pricing, discounts, cart)
+ * - Differ ONLY in UI layout and interaction patterns
+ *
+ * Result: Merchants configure design ONCE, applies to BOTH bundle types
+ *
+ * @version 1.0.0
+ * @author Wolfpack Team
+ */
 
 class BundleWidgetFullPage {
 
