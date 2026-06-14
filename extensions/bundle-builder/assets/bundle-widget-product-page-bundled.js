@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.41
- * Built   : 2026-06-13
+ * Version : 3.0.42
+ * Built   : 2026-06-14
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.41';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.42';
 (function() {
   'use strict';
 
@@ -321,18 +321,37 @@ class CurrencyManager {
       'CHF': 'CHF', 'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr',
       'PLN': 'zł', 'CZK': 'Kč', 'HUF': 'Ft', 'RUB': '₽',
       'BRL': 'R$', 'MXN': '$', 'ZAR': 'R', 'SGD': 'S$',
-      'HKD': 'HK$', 'NZD': 'NZ$', 'KRW': '₩', 'THB': '฿'
+      'HKD': 'HK$', 'NZD': 'NZ$', 'KRW': '₩', 'THB': '฿',
+      'PKR': 'Rs.', 'LKR': 'Rs.', 'NPR': 'Rs.',
+      'BDT': '৳', 'NGN': '₦', 'KES': 'KSh', 'GHS': 'GH₵',
+      'EGP': 'E£', 'IDR': 'Rp', 'MYR': 'RM', 'PHP': '₱',
+      'VND': '₫', 'TRY': '₺', 'ILS': '₪', 'TWD': 'NT$',
+      'SAR': 'SR', 'AED': 'AED', 'QAR': 'QR', 'KWD': 'KD',
+      'BHD': 'BD', 'OMR': 'OMR', 'JOD': 'JD', 'LBP': 'L£',
+      'MAD': 'DH', 'TND': 'DT', 'DZD': 'DA',
+      'ARS': 'AR$', 'CLP': 'CLP$', 'COP': 'COL$', 'PEN': 'S/.',
+      'UYU': '$U', 'VES': 'Bs', 'BOB': 'Bs.', 'PYG': '₲',
+      'UAH': '₴', 'BGN': 'лв', 'RON': 'lei', 'HRK': 'kn',
+      'RSD': 'дин', 'ISK': 'kr'
     };
     return symbols[currencyCode] || currencyCode;
+  }
+
+  static normalizeCurrencyFormat(format, code, symbol) {
+    if (!format) return `${symbol}{{amount}}`;
+    if (!code || !symbol || symbol === code) return format;
+    return format.replace(new RegExp(`\\b${code}\\b`, 'g'), symbol);
   }
 
   static getCurrencyInfo() {
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
     const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
-
-    const displayFormat = window.Shopify?.currency?.format
-      || `${displaySymbol}{{amount}}`;
+    const displayFormat = this.normalizeCurrencyFormat(
+      window.Shopify?.currency?.format,
+      customerCurrency.code,
+      displaySymbol
+    );
 
     return {
 
@@ -353,14 +372,6 @@ class CurrencyManager {
     };
   }
 
-  /**
-   * Convert an amount from shop base currency to the customer's display currency,
-   * then format it. Use this everywhere a price is rendered to the customer.
-   *
-   * @param {number} amount  Price in shop base currency cents
-   * @param {object} currencyInfo  Result of getCurrencyInfo()
-   * @returns {string}  Formatted price string in the display currency
-   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -2283,9 +2294,7 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
   const hasVariantText = Boolean(variantText);
-  const variantDivider = hasVariantText
-    ? '<div class="bw-product-card__variant-divider" aria-hidden="true"></div>'
-    : '';
+  const variantDivider = '<div class="bw-product-card__variant-divider" aria-hidden="true"></div>';
   const rootClasses = [
     'bw-product-card',
     'product-card',
@@ -2314,6 +2323,7 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
           </div>
         ` : ''}
         ${options.variantSelectorHtml || ''}
+        <div class="product-card-divider" aria-hidden="true"></div>
         <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
           ${isSelected
             ? renderQuantityControl({
@@ -2403,13 +2413,6 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
-
-/**
- * Shared selected product row renderer.
- *
- * Renders prepared display data only; selection rules, default-product rules,
- * and free-gift lock state stay in the caller until templates migrate.
- */
 
 const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
 
