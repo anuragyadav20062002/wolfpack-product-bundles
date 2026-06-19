@@ -51,6 +51,22 @@ function bsFindNextIncompleteStep(steps, selectedProducts, validateFn, fromIndex
   return -1;
 }
 
+// Mirrors `shouldAutoAdvanceFullPageStep` in the full-page widget: auto-next is
+// an explicit per-category opt-in via `autoNextStepOnConditionMet`. Removals
+// and step-rule-only configurations never auto-advance.
+export function shouldAutoAdvanceProductPageStep({ quantity = 0, step = null } = {}) {
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  const categoryRuleCategories = categories.filter(category =>
+    Array.isArray(category?.conditions) && category.conditions.length > 0
+  );
+
+  if (!(quantity > 0) || categoryRuleCategories.length === 0) {
+    return false;
+  }
+
+  return categoryRuleCategories.some(category => category.autoNextStepOnConditionMet === true);
+}
+
 export const ProductPageSelectionMethods = {
 updateProductSelection(stepIndex, productId, newQuantity) {
   const selectionKey = this.normalizeSelectionKey(productId);
@@ -105,8 +121,12 @@ updateProductSelection(stepIndex, productId, newQuantity) {
   // the unlock threshold, so the slot card must reflect the current isFreeGiftUnlocked state.
   this._syncFreeGiftSlotCard();
 
-  // Auto-step progression
-  this._autoProgressBottomSheet(stepIndex);
+  // Auto-step progression — gated on the merchant-controlled
+  // `autoNextStepOnConditionMet` flag (set per category in the configure UI).
+  const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  if (shouldAutoAdvanceProductPageStep({ quantity, step: currentStep })) {
+    this._autoProgressBottomSheet(stepIndex);
+  }
   this._maybeAutoAddAfterLastStep();
 },
 
