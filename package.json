@@ -41,7 +41,7 @@
     "test:coverage": "jest --coverage --collectCoverageFrom='app/**/*.{ts,tsx}' --collectCoverageFrom='extensions/**/*.{ts,tsx}'",
     "test:ci": "jest --ci --coverage --watchAll=false",
     "graphify:rebuild": "node scripts/rebuild-graphify.mjs",
-    "pre-deploy": "npm test && npm run build",
+    "pre-deploy": "npm test && npm run build"
   },
   "type": "module",
   "engines": {
