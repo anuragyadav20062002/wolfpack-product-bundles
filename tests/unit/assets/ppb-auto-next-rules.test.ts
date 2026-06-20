@@ -28,8 +28,10 @@ describe('PPB auto-next rule decision', () => {
   it('auto-nexts for category rules when the category flag is enabled', () => {
     expect(shouldAutoAdvanceProductPageStep({
       quantity: 1,
+      productId: '101',
       step: {
         categories: [{
+          products: [{ id: '101' }],
           conditions: [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: '01' }],
           autoNextStepOnConditionMet: true,
         }],
@@ -45,6 +47,27 @@ describe('PPB auto-next rule decision', () => {
           conditions: [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: '01' }],
           autoNextStepOnConditionMet: true,
         }],
+      },
+    })).toBe(false);
+  });
+
+  it('does not auto-next when only a different category opted in', () => {
+    expect(shouldAutoAdvanceProductPageStep({
+      quantity: 1,
+      productId: '101',
+      step: {
+        categories: [
+          {
+            products: [{ id: '101' }],
+            conditions: [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: '01' }],
+            autoNextStepOnConditionMet: false,
+          },
+          {
+            products: [{ id: '202' }],
+            conditions: [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: '01' }],
+            autoNextStepOnConditionMet: true,
+          },
+        ],
       },
     })).toBe(false);
   });

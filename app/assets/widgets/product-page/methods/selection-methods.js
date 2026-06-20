@@ -51,10 +51,40 @@ function bsFindNextIncompleteStep(steps, selectedProducts, validateFn, fromIndex
   return -1;
 }
 
+function normalizeProductPageAutoNextId(value) {
+  if (value === null || value === undefined || value === '') return '';
+  return String(value).split('/').pop();
+}
+
+function collectCategoryAutoNextProductIds(category) {
+  const ids = new Set();
+  const addId = (value) => {
+    const normalized = normalizeProductPageAutoNextId(value);
+    if (normalized) ids.add(normalized);
+  };
+  const addProduct = (product) => {
+    addId(product?.id);
+    addId(product?.productId);
+    addId(product?.graphqlId);
+    addId(product?.variantId);
+    addId(product?.variantGraphqlId);
+    (Array.isArray(product?.variants) ? product.variants : []).forEach(variant => {
+      addId(variant?.id);
+      addId(variant?.variantId);
+      addId(variant?.variantGraphqlId);
+      addId(variant?.admin_graphql_api_id);
+    });
+  };
+
+  (category?.products || []).forEach(addProduct);
+  (category?.selectedProducts || []).forEach(addProduct);
+  return ids;
+}
+
 // Mirrors `shouldAutoAdvanceFullPageStep` in the full-page widget: auto-next is
 // an explicit per-category opt-in via `autoNextStepOnConditionMet`. Removals
 // and step-rule-only configurations never auto-advance.
-export function shouldAutoAdvanceProductPageStep({ quantity = 0, step = null } = {}) {
+export function shouldAutoAdvanceProductPageStep({ quantity = 0, productId = '', step = null } = {}) {
   const categories = Array.isArray(step?.categories) ? step.categories : [];
   const categoryRuleCategories = categories.filter(category =>
     Array.isArray(category?.conditions) && category.conditions.length > 0
@@ -64,7 +94,15 @@ export function shouldAutoAdvanceProductPageStep({ quantity = 0, step = null } =
     return false;
   }
 
-  return categoryRuleCategories.some(category => category.autoNextStepOnConditionMet === true);
+  const selectedProductId = normalizeProductPageAutoNextId(productId);
+  return categoryRuleCategories.some(category => {
+    if (category.autoNextStepOnConditionMet !== true) return false;
+    const categoryProductIds = collectCategoryAutoNextProductIds(category);
+    if (categoryProductIds.size === 0) {
+      return categoryRuleCategories.length === 1;
+    }
+    return categoryProductIds.has(selectedProductId);
+  });
 }
 
 export const ProductPageSelectionMethods = {
@@ -124,7 +162,10 @@ updateProductSelection(stepIndex, productId, newQuantity) {
   // Auto-step progression — gated on the merchant-controlled
   // `autoNextStepOnConditionMet` flag (set per category in the configure UI).
   const currentStep = this.selectedBundle?.steps?.[stepIndex];
-  if (shouldAutoAdvanceProductPageStep({ quantity, step: currentStep })) {
+  const stepProducts = this.stepProductData?.[stepIndex] || [];
+  const selectedProduct = this.findProductBySelectionKey(stepProducts, selectionKey);
+  const selectedProductId = selectedProduct?.parentProductId || selectedProduct?.productId || selectedProduct?.id || selectionKey;
+  if (shouldAutoAdvanceProductPageStep({ quantity, productId: selectedProductId, step: currentStep })) {
     this._autoProgressBottomSheet(stepIndex);
   }
   this._maybeAutoAddAfterLastStep();
