@@ -1,6 +1,7 @@
 import { configureStore, type Middleware } from "@reduxjs/toolkit";
 import type { AppState, UserPreferences } from "../types/state.types";
 import { adminApi } from "./api/adminApi";
+import { adminRouteStateReducer } from "./slices/adminRouteStateSlice";
 import { bundleConfigureReducer } from "./slices/bundleConfigureSlice";
 import { designSettingsReducer } from "./slices/designSettingsSlice";
 import { metaReducer } from "./slices/metaSlice";
@@ -18,6 +19,7 @@ export const rootReducer = {
   preferences: preferencesReducer,
   subscription: subscriptionReducer,
   meta: metaReducer,
+  adminRouteState: adminRouteStateReducer,
   [adminApi.reducerPath]: adminApi.reducer,
 };
 

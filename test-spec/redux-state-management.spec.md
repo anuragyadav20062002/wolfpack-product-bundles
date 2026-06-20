@@ -39,6 +39,13 @@ Move Admin client UI, preferences, design settings, and shared configure draft s
 | 3 | Poll upload status | `fileId` | GET `/app/upload-store-file?fileId=...` | Used by FilePicker |
 | 4 | Ensure product template | product handle + bundle ID | POST `/api/ensure-product-template` JSON | Standalone client mutation only |
 
+### AdminRouteStateSlice
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Dashboard delete modal | `openDashboardDeleteModal(bundleId)`, close | Modal opens with bundle ID, then clears | Replaces local dashboard hook state |
+| 2 | Billing route feedback | initialize from loader, dismiss/show banners | Success/error banners match loader and actions | Replaces local billing hook state |
+| 3 | Cart transform modal and form | open, set fields, close/reset | Modal opens, form values update, close clears | Replaces local cart-transform hook state |
+
 ## Acceptance Criteria
 - [ ] All listed unit tests pass
 - [ ] Existing hook return shapes remain compatible

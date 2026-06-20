@@ -31,6 +31,7 @@ Authenticated Admin routes are wrapped with `ReduxProvider` in `app/routes/app/a
 - `preferencesSlice` — localStorage-backed Admin preferences and recent bundles.
 - `designSettingsSlice` — design settings draft buckets by bundle type.
 - `bundleConfigureSlice` — shared bundle configure draft fields.
+- `adminRouteStateSlice` — route-level Admin UI state for dashboard delete confirmation, billing feedback/cancel state, and cart-transform create form state.
 - `subscriptionSlice` — client subscription cache used by existing hooks.
 - `metaSlice` — initialized/version metadata for hook compatibility.
 
