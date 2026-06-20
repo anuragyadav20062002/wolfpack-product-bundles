@@ -46,6 +46,15 @@ Move Admin client UI, preferences, design settings, and shared configure draft s
 | 2 | Billing route feedback | initialize from loader, dismiss/show banners | Success/error banners match loader and actions | Replaces local billing hook state |
 | 3 | Cart transform modal and form | open, set fields, close/reset | Modal opens, form values update, close clears | Replaces local cart-transform hook state |
 
+### ConfigureRouteStateSlice
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Initialize shared configure route state | bundle product, collections, rule messages | Product, collection, rule-message, navigation defaults are set | Used by FPB and PPB configure hooks |
+| 2 | Configure modal flow | open products/collections/page/widget modals, close | Modal booleans and current step ID update | Replaces modal `useState` in `useBundleConfigurationState` |
+| 3 | Page and product draft data | pages, selected page, product title/status/image | Values are stored and dirty is marked for product edits | Keeps persistence unchanged |
+| 4 | Selected collections and rule messages | replacement and updater-style values | State updates exactly and marks dirty | Supports existing setter call sites |
+| 5 | Navigation and banners | active tab/section, force nav, auto banner, dismissed IDs | Values update without affecting server state | Replaces route navigation `useState` |
+
 ## Acceptance Criteria
 - [ ] All listed unit tests pass
 - [ ] Existing hook return shapes remain compatible

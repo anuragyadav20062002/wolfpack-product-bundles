@@ -3,6 +3,7 @@ import type { AppState, UserPreferences } from "../types/state.types";
 import { adminApi } from "./api/adminApi";
 import { adminRouteStateReducer } from "./slices/adminRouteStateSlice";
 import { bundleConfigureReducer } from "./slices/bundleConfigureSlice";
+import { configureRouteStateReducer } from "./slices/configureRouteStateSlice";
 import { designSettingsReducer } from "./slices/designSettingsSlice";
 import { metaReducer } from "./slices/metaSlice";
 import { defaultPreferencesState, preferencesReducer } from "./slices/preferencesSlice";
@@ -20,6 +21,7 @@ export const rootReducer = {
   subscription: subscriptionReducer,
   meta: metaReducer,
   adminRouteState: adminRouteStateReducer,
+  configureRouteState: configureRouteStateReducer,
   [adminApi.reducerPath]: adminApi.reducer,
 };
 
