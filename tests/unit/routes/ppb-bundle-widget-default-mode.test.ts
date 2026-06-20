@@ -4,7 +4,7 @@ import { join } from "node:path";
 describe("Product Page Bundle Widget default display mode", () => {
   it("defaults to the captured EB Offer Upsell Block state when no saved value exists", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 

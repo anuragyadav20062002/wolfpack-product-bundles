@@ -4,12 +4,12 @@ import path from "node:path";
 import { formatBundleForWidget } from "../../../app/lib/bundle-formatter.server";
 
 const fpbRoute = fs.readFileSync(
-  path.join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx"),
+  path.join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
   "utf8",
 );
 
 const fpbHandler = fs.readFileSync(
-  path.join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts"),
+  path.join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/save-bundle.server.ts"),
   "utf8",
 );
 

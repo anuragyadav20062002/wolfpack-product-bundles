@@ -4,7 +4,7 @@ import { join } from "node:path";
 describe("Full Page Bundle Widget multilingual gate", () => {
   it("disables the Bundle Widget Multi Language action when locales are unavailable", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 

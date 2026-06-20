@@ -5,11 +5,15 @@ const routeSource = readFileSync(
   join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
   "utf8"
 );
+const flowSource = readFileSync(
+  join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
+  "utf8"
+);
 
 describe("PPB Place Widget Theme Editor product context", () => {
-  const selectionStart = routeSource.indexOf("const handlePageSelection = useCallback");
-  const selectionEnd = routeSource.indexOf("  // Sync Bundle modal ref", selectionStart);
-  const selectionSource = routeSource.slice(selectionStart, selectionEnd);
+  const selectionStart = flowSource.indexOf("const handlePageSelection = useCallback");
+  const selectionEnd = flowSource.indexOf("const syncModalRef", selectionStart);
+  const selectionSource = flowSource.slice(selectionStart, selectionEnd);
 
   it("targets the live bundle parent product handle before stored fallback handle", () => {
     expect(selectionSource).toContain("const pageProductHandle = bundleProduct?.handle ?? bundle.shopifyProductHandle");

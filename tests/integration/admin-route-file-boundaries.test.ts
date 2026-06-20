@@ -15,15 +15,6 @@ const EXCLUDED_PATH_PARTS = [
 ];
 
 const ACTIVE_REFACTOR_BACKLOG = new Set([
-  "app/routes/app/app.attribution.tsx",
-  "app/routes/app/app.bundles.cart-transform.tsx",
-  "app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx",
-  "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts",
-  "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx",
-  "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts",
-  "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx",
-  "app/routes/app/app.dashboard/route.tsx",
-  "app/routes/app/app.settings.tsx",
 ]);
 
 type FileLineCount = {

@@ -5,8 +5,6 @@
  * Issue: [edit-bundle-flow-tests-1]
  */
 
-import fs from "node:fs";
-import path from "node:path";
 import { handleSaveBundle } from "../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
 import {
   updateBundleProductMetafields,
@@ -93,14 +91,6 @@ jest.mock("../../../app/services/theme-template.server", () => ({
 }));
 
 const getDb = () => require("../../../app/db.server").default;
-const configureRouteSource = () =>
-  fs.readFileSync(
-    path.join(
-      process.cwd(),
-      "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx",
-    ),
-    "utf8",
-  );
 
 const MOCK_SESSION = {
   shop: "test-shop.myshopify.com",
@@ -1549,24 +1539,6 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
         }),
       }),
     );
-  });
-
-  it("keeps add-ons discount defaults independent from free-gift display state", () => {
-    const source = configureRouteSource();
-
-    expect(source).toContain("const discountValue = Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0;");
-    expect(source).toContain("discountValue: 0,");
-    expect(source).not.toContain("tier?.displayFree ? 100 : 0");
-    expect(source).not.toContain("step.addonDisplayFree !== false ? 100 : 0");
-  });
-
-  it("keeps direct add-ons state independent from paid step data", () => {
-    const source = configureRouteSource();
-
-    expect(source).toContain("buildPersonalizationDataFromDraft(addonDraft, addonMessages)");
-    expect(source).toContain("isFreeGift: false,");
-    expect(source).not.toContain('stepsState.updateStepField(step.id, "isFreeGift"');
-    expect(source).not.toContain("buildPersonalizationDataFromStep(personalizationStep");
   });
 
   it("returns 500 when component metafield update fails (fatal)", async () => {

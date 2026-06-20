@@ -4,7 +4,7 @@ import { join } from "node:path";
 describe("Product Page Bundle Embed copy", () => {
   it("matches captured EB Bundle Embed placement copy", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 
@@ -17,7 +17,7 @@ describe("Product Page Bundle Embed copy", () => {
 
   it("renders the Bundle Embed Multi Language action as visible text", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 
@@ -34,7 +34,7 @@ describe("Product Page Bundle Embed copy", () => {
 
   it("preserves the captured Bundle Embed default title and save payload shape", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 

@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 describe("FPB Add-ons selected products modal picker stack", () => {
   const routeSource = readFileSync(
-    join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx"),
+    join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
     "utf8",
   );
 

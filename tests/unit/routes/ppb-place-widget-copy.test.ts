@@ -4,7 +4,7 @@ import { join } from "node:path";
 describe("Product Page Place Widget copy", () => {
   it("uses the captured EB top-card action text without extra glyphs", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 

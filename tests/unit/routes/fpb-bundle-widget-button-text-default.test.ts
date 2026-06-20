@@ -4,7 +4,7 @@ import { join } from "node:path";
 describe("Full Page Bundle Widget button text default", () => {
   it("defaults to the captured EB widget button text while preserving saved values", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 

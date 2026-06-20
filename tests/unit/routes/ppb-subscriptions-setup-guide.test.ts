@@ -4,7 +4,7 @@ import { join } from "node:path";
 describe("Product Page Bundle Subscriptions setup guide", () => {
   it("makes How to setup reveal sanitized setup guidance", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 
@@ -19,7 +19,7 @@ describe("Product Page Bundle Subscriptions setup guide", () => {
 
   it("renders the recovered plan-management surface after a valid plan lookup", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 

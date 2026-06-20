@@ -4,7 +4,7 @@ import { join } from "node:path";
 describe("Full Page Bundle Settings direct contract", () => {
   it("submits Bundle Cart title and subtitle through bundleTextConfig", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 
@@ -16,7 +16,7 @@ describe("Full Page Bundle Settings direct contract", () => {
 
   it("does not render non-evidenced WPB-only display controls in Bundle Settings", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx"),
+      join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
       "utf8",
     );
 
