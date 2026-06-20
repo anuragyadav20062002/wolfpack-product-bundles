@@ -20,8 +20,8 @@ import { installAdminWebVitalsDiagnostics } from "../../lib/admin-web-vitals-dia
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
-function ensureExpiringOfflineSessionInBackground(shop: string) {
-  void ensureShopHasExpiringOfflineSession(prisma, shop, sessionStorage).catch((error) => {
+function ensureExpiringOfflineSessionInBackground(shop: string, idToken?: string | null) {
+  void ensureShopHasExpiringOfflineSession(prisma, shop, sessionStorage, { idToken }).catch((error) => {
     AppLogger.error("Failed to ensure expiring offline session during app load", {
       component: "app.app",
       shop,
@@ -31,7 +31,8 @@ function ensureExpiringOfflineSessionInBackground(shop: string) {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
-  ensureExpiringOfflineSessionInBackground(session.shop);
+  const idToken = new URL(request.url).searchParams.get("id_token");
+  ensureExpiringOfflineSessionInBackground(session.shop, idToken);
   const locale = await loadShopAdminLocale(session.shop);
   const polarisTranslations = getPolarisLocale(locale);
   const mantleProvider = await buildMantleProviderConfig({

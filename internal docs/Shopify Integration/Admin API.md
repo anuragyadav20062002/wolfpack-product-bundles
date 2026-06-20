@@ -44,6 +44,19 @@ await admin.graphql(/* query */);
 ```
 `unauthenticated.admin(shopDomain)` uses the stored offline session token. Exported from `app/shopify.server.ts:140`.
 
+### Expiring Offline Token Compliance
+
+Shopify requires public apps to use expiring offline access tokens for new apps created on or after 2026-04-01, and for all public apps by 2027-01-01.
+
+Wolfpack's offline token contract:
+- `Session` persists `expires`, `refreshToken`, and `refreshTokenExpiresAt` in Prisma.
+- `CachedSessionStorage.loadSession()` refreshes expiring offline sessions before returning them to `unauthenticated.admin(...)` or app-proxy callers.
+- `app/services/offline-token.server.ts` requests new expiring offline tokens from embedded Admin `id_token` values with `expiring=1`.
+- Existing non-expiring offline tokens are migrated by token exchange with `subject_token_type=urn:shopify:params:oauth:token-type:offline-access-token`, `requested_token_type=urn:shopify:params:oauth:token-type:offline-access-token`, and `expiring=1`.
+- If a refresh token expires or Shopify rejects it with `invalid_grant`/401, the stale session row is dropped so the next merchant app launch can re-acquire an expiring offline token from the browser session ID token.
+
+Do not make background Admin API calls by reading `Session.accessToken` directly from Prisma. Use `unauthenticated.admin(shopDomain)` or `getOfflineSessionForShop(...)` so the refresh/migration path runs first.
+
 ---
 
 ## Embedded Admin Shell Title Bars
