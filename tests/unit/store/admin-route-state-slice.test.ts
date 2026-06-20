@@ -12,6 +12,11 @@ import {
   resetCartTransformForm,
   setCartTransformDescription,
   setCartTransformName,
+  setDashboardBundleFilter,
+  setDashboardBundlesPerPage,
+  setDashboardCurrentPage,
+  setDashboardStatusFilter,
+  setDashboardTypeFilter,
   showBillingErrorBanner,
   showBillingSuccessBanner,
 } from "../../../app/store/slices/adminRouteStateSlice";
@@ -26,6 +31,29 @@ describe("adminRouteStateSlice", () => {
     state = adminRouteStateReducer(state, closeDashboardDeleteModal());
     expect(state.dashboard.deleteModalOpen).toBe(false);
     expect(state.dashboard.bundleToDelete).toBeNull();
+  });
+
+  it("stores dashboard filters and resets pagination on filter changes", () => {
+    let state = adminRouteStateReducer(undefined, setDashboardCurrentPage(3));
+    state = adminRouteStateReducer(state, setDashboardBundleFilter("summer"));
+
+    expect(state.dashboard.bundleFilter).toBe("summer");
+    expect(state.dashboard.currentPage).toBe(1);
+
+    state = adminRouteStateReducer(state, setDashboardCurrentPage(4));
+    state = adminRouteStateReducer(state, setDashboardTypeFilter("full_page"));
+    expect(state.dashboard.typeFilter).toBe("full_page");
+    expect(state.dashboard.currentPage).toBe(1);
+
+    state = adminRouteStateReducer(state, setDashboardCurrentPage(2));
+    state = adminRouteStateReducer(state, setDashboardStatusFilter("active"));
+    expect(state.dashboard.statusFilter).toBe("active");
+    expect(state.dashboard.currentPage).toBe(1);
+
+    state = adminRouteStateReducer(state, setDashboardCurrentPage(5));
+    state = adminRouteStateReducer(state, setDashboardBundlesPerPage(50));
+    expect(state.dashboard.bundlesPerPage).toBe(50);
+    expect(state.dashboard.currentPage).toBe(1);
   });
 
   it("initializes and updates billing modal and banner state", () => {

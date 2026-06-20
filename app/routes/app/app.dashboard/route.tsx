@@ -22,6 +22,14 @@ import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { normalizeAdminLocale } from "../../../i18n/config";
 import { saveShopAdminLocale } from "../../../services/admin-locale.server";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import {
+  setDashboardBundleFilter,
+  setDashboardBundlesPerPage,
+  setDashboardCurrentPage,
+  setDashboardStatusFilter,
+  setDashboardTypeFilter,
+} from "../../../store/slices/adminRouteStateSlice";
 
 import {
   handleCloneBundle,
@@ -443,11 +451,30 @@ export default function Dashboard() {
     return t(`dashboard.bundleType.${bundleType}`, bundleType);
   };
 
-  const [bundleFilter, setBundleFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [bundlesPerPage, setBundlesPerPage] = useState(20);
+  const dispatch = useAppDispatch();
+  const {
+    bundleFilter,
+    typeFilter,
+    statusFilter,
+    currentPage,
+    bundlesPerPage,
+  } = useAppSelector((state) => state.adminRouteState.dashboard);
+  const setBundleFilter = useCallback((value: string) => {
+    dispatch(setDashboardBundleFilter(value));
+  }, [dispatch]);
+  const setTypeFilter = useCallback((value: string) => {
+    dispatch(setDashboardTypeFilter(value));
+  }, [dispatch]);
+  const setStatusFilter = useCallback((value: string) => {
+    dispatch(setDashboardStatusFilter(value));
+  }, [dispatch]);
+  const setBundlesPerPage = useCallback((value: number) => {
+    dispatch(setDashboardBundlesPerPage(value));
+  }, [dispatch]);
+  const setCurrentPage = useCallback((value: number | ((currentPage: number) => number)) => {
+    const nextPage = typeof value === "function" ? value(currentPage) : value;
+    dispatch(setDashboardCurrentPage(nextPage));
+  }, [currentPage, dispatch]);
   const [activeResource, setActiveResource] = useState<string>('bundle-inspirations');
   const [parthImageLoaded, setParthImageLoaded] = useState(false);
 
@@ -519,11 +546,11 @@ export default function Dashboard() {
     if (!el) return;
     const handler = (e: Event) => {
       const val = (e as CustomEvent).detail?.value ?? (e.target as HTMLSelectElement).value ?? '';
-      if (val) { setBundlesPerPage(Number(val)); setCurrentPage(1); }
+      if (val) setBundlesPerPage(Number(val));
     };
     el.addEventListener('change', handler);
     return () => el.removeEventListener('change', handler);
-  }, []);
+  }, [setBundlesPerPage]);
 
   useEffect(() => {
     const el = statusChoiceListRef.current;
@@ -532,13 +559,12 @@ export default function Dashboard() {
       const values = (e.currentTarget as any).values;
       if (Array.isArray(values) && values.length > 0) {
         setStatusFilter(values[0]);
-        setCurrentPage(1);
         statusPopoverRef.current?.hideOverlay?.();
       }
     };
     el.addEventListener('change', handler);
     return () => el.removeEventListener('change', handler);
-  }, []);
+  }, [setStatusFilter]);
 
   useEffect(() => {
     const el = typeChoiceListRef.current;
@@ -547,24 +573,22 @@ export default function Dashboard() {
       const values = (e.currentTarget as any).values;
       if (Array.isArray(values) && values.length > 0) {
         setTypeFilter(values[0]);
-        setCurrentPage(1);
         typePopoverRef.current?.hideOverlay?.();
       }
     };
     el.addEventListener('change', handler);
     return () => el.removeEventListener('change', handler);
-  }, []);
+  }, [setTypeFilter]);
 
   useEffect(() => {
     const el = searchRef.current;
     if (!el) return;
     const handler = (e: Event) => {
       setBundleFilter((e.target as HTMLInputElement).value ?? '');
-      setCurrentPage(1);
     };
     el.addEventListener('input', handler);
     return () => el.removeEventListener('input', handler);
-  }, []);
+  }, [setBundleFilter]);
 
   const handleSyncCollections = useCallback(() => {
     shopify.toast.show(t("dashboard.header.syncCollections"));

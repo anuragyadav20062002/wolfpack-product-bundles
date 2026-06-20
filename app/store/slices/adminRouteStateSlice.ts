@@ -4,6 +4,11 @@ export interface AdminRouteState {
   dashboard: {
     deleteModalOpen: boolean;
     bundleToDelete: string | null;
+    bundleFilter: string;
+    typeFilter: string;
+    statusFilter: string;
+    currentPage: number;
+    bundlesPerPage: number;
   };
   billing: {
     showCancelConfirm: boolean;
@@ -21,6 +26,11 @@ export const defaultAdminRouteState: AdminRouteState = {
   dashboard: {
     deleteModalOpen: false,
     bundleToDelete: null,
+    bundleFilter: "",
+    typeFilter: "all",
+    statusFilter: "all",
+    currentPage: 1,
+    bundlesPerPage: 20,
   },
   billing: {
     showCancelConfirm: false,
@@ -45,6 +55,25 @@ export const adminRouteStateSlice = createSlice({
     closeDashboardDeleteModal(state) {
       state.dashboard.deleteModalOpen = false;
       state.dashboard.bundleToDelete = null;
+    },
+    setDashboardBundleFilter(state, action: PayloadAction<string>) {
+      state.dashboard.bundleFilter = action.payload;
+      state.dashboard.currentPage = 1;
+    },
+    setDashboardTypeFilter(state, action: PayloadAction<string>) {
+      state.dashboard.typeFilter = action.payload;
+      state.dashboard.currentPage = 1;
+    },
+    setDashboardStatusFilter(state, action: PayloadAction<string>) {
+      state.dashboard.statusFilter = action.payload;
+      state.dashboard.currentPage = 1;
+    },
+    setDashboardCurrentPage(state, action: PayloadAction<number>) {
+      state.dashboard.currentPage = action.payload;
+    },
+    setDashboardBundlesPerPage(state, action: PayloadAction<number>) {
+      state.dashboard.bundlesPerPage = action.payload;
+      state.dashboard.currentPage = 1;
     },
     initializeBillingFeedback(
       state,
@@ -105,6 +134,11 @@ export const {
   resetCartTransformForm,
   setCartTransformDescription,
   setCartTransformName,
+  setDashboardBundleFilter,
+  setDashboardBundlesPerPage,
+  setDashboardCurrentPage,
+  setDashboardStatusFilter,
+  setDashboardTypeFilter,
   showBillingErrorBanner,
   showBillingSuccessBanner,
 } = adminRouteStateSlice.actions;

@@ -45,6 +45,7 @@ Move Admin client UI, preferences, design settings, and shared configure draft s
 | 1 | Dashboard delete modal | `openDashboardDeleteModal(bundleId)`, close | Modal opens with bundle ID, then clears | Replaces local dashboard hook state |
 | 2 | Billing route feedback | initialize from loader, dismiss/show banners | Success/error banners match loader and actions | Replaces local billing hook state |
 | 3 | Cart transform modal and form | open, set fields, close/reset | Modal opens, form values update, close clears | Replaces local cart-transform hook state |
+| 4 | Dashboard filters and pagination | search/type/status/per-page/page actions | Filters update, filter/per-page changes reset page to 1 | Replaces dashboard route filter `useState` |
 
 ### ConfigureRouteStateSlice
 | # | Scenario | Input | Expected Output | Notes |
