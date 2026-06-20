@@ -24,4 +24,10 @@ describe("FPB runtime config surface", () => {
     expect(source).not.toContain("showQuantitySelectorInModal");
     expect(modalSource).not.toContain("showQuantitySelectorInModal");
   });
+
+  it("does not expose promo banner crop runtime logic", () => {
+    expect(source).not.toContain("promoBannerBgImageCrop");
+    expect(source).not.toContain("cropRaw");
+    expect(source).not.toContain("crop.width");
+  });
 });

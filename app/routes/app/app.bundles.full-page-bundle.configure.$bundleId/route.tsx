@@ -838,7 +838,6 @@ export default function ConfigureBundleFlow() {
   const loaderData = useLoaderData<LoaderData>();
   const bundle = loaderData.bundle as unknown as import("../../../hooks/useBundleConfigurationState").BundleData & {
     promoBannerBgImage?: string | null;
-    promoBannerBgImageCrop?: string | null;
     loadingGif?: string | null;
     shopifyProductHandle?: string;
   };
@@ -1024,12 +1023,6 @@ export default function ConfigureBundleFlow() {
     bundle.promoBannerBgImage ?? null
   );
   const originalPromoBannerBgImageRef = useRef<string | null>(bundle.promoBannerBgImage ?? null);
-
-  // Promo banner image crop state
-  const [promoBannerBgImageCrop, setPromoBannerBgImageCrop] = useState<string | null>(
-    bundle.promoBannerBgImageCrop ?? null
-  );
-  const originalPromoBannerBgImageCropRef = useRef<string | null>(bundle.promoBannerBgImageCrop ?? null);
 
   // Loading GIF state
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
@@ -1899,7 +1892,6 @@ export default function ConfigureBundleFlow() {
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
       formData.append("promoBannerBgImage", promoBannerBgImage ?? "");
-      formData.append("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
       formData.append("loadingGif", loadingGif ?? "");
       formData.append("floatingBadgeEnabled", String(floatingBadgeEnabled));
       formData.append("floatingBadgeText", floatingBadgeText);
@@ -1972,7 +1964,6 @@ export default function ConfigureBundleFlow() {
     bundleProduct,
     productStatus,
     promoBannerBgImage,
-    promoBannerBgImageCrop,
     loadingGif,
     pageSlug,
     normalizedPageSlug,
@@ -2112,7 +2103,6 @@ export default function ConfigureBundleFlow() {
 
           // Update discard baselines for fields managed outside originalValuesRef
           originalPromoBannerBgImageRef.current = promoBannerBgImage;
-          originalPromoBannerBgImageCropRef.current = promoBannerBgImageCrop;
           originalLoadingGifRef.current = loadingGif;
           originalShowStepTimelineRef.current = showStepTimeline;
           originalFloatingBadgeEnabledRef.current = floatingBadgeEnabled;
@@ -2248,7 +2238,6 @@ export default function ConfigureBundleFlow() {
     setPageSlug(originalPageSlugRef.current);
     setHasManuallyEditedSlug(Boolean(bundle.shopifyPageHandle));
     setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
-    setPromoBannerBgImageCrop(originalPromoBannerBgImageCropRef.current);
     setLoadingGif(originalLoadingGifRef.current);
     setShowStepTimeline(originalShowStepTimelineRef.current);
     setFloatingBadgeEnabled(originalFloatingBadgeEnabledRef.current);
@@ -3822,7 +3811,6 @@ export default function ConfigureBundleFlow() {
                                 markAsDirty();
                               }}
                               label=""
-                              hideCropEditor
                             />
                           )}
                           <s-button
@@ -3976,7 +3964,6 @@ export default function ConfigureBundleFlow() {
                               setShowIconPickerForStep(null);
                             }}
                             label=""
-                            hideCropEditor
                           />
                         </div>
                       )}
@@ -5074,11 +5061,6 @@ export default function ConfigureBundleFlow() {
                         setPromoBannerBgImage(url);
                         markAsDirty();
                       }}
-                      cropValue={promoBannerBgImageCrop}
-                      onCropChange={(crop) => {
-                        setPromoBannerBgImageCrop(crop);
-                        markAsDirty();
-                      }}
                     />
                   </s-stack>
                 </s-section>
@@ -5120,7 +5102,6 @@ export default function ConfigureBundleFlow() {
                             </s-stack>
                             <FilePicker
                               label="Choose tab icon"
-                              hideCropEditor
                               value={(step as any).imageUrl ?? null}
                               onChange={(url) => {
                                 stepsState.updateStepField(step.id, 'imageUrl', url ?? null);
@@ -5138,7 +5119,6 @@ export default function ConfigureBundleFlow() {
                             </s-stack>
                             <FilePicker
                               label="Choose banner image"
-                              hideCropEditor
                               value={(step as any).bannerImageUrl ?? null}
                               onChange={(url) => {
                                 stepsState.updateStepField(step.id, 'bannerImageUrl', url ?? null);
@@ -5190,7 +5170,6 @@ export default function ConfigureBundleFlow() {
                         setLoadingGif(url);
                         markAsDirty();
                       }}
-                      hideCropEditor
                     />
 
                     <s-stack direction="block" gap="small-100">
@@ -5427,7 +5406,6 @@ export default function ConfigureBundleFlow() {
                               }}
                               label="Slot Icon"
                               uploadLabel="No file chosen"
-                              hideCropEditor
                             />
                           )}
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>

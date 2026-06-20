@@ -243,7 +243,6 @@ function buildCreateWizardPricingPayload(input: {
 
 function buildCreateWizardAssetsPayload(input: {
   promoBannerBgImage: string | null;
-  promoBannerBgImageCrop: string | null;
   loadingGif: string | null;
   searchBarEnabled: boolean;
   steps: WizardStepLike[];
@@ -251,7 +250,6 @@ function buildCreateWizardAssetsPayload(input: {
 }) {
   return JSON.stringify({
     promoBannerBgImage: input.promoBannerBgImage ?? "",
-    promoBannerBgImageCrop: input.promoBannerBgImageCrop ?? "",
     loadingGif: input.loadingGif ?? "",
     searchBarEnabled: input.searchBarEnabled,
     stepsFilters: input.steps
@@ -362,7 +360,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       bundleType: bundle.bundleType,
       searchBarEnabled: bundle.searchBarEnabled,
       promoBannerBgImage: bundle.promoBannerBgImage ?? null,
-      promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
       loadingGif: bundle.loadingGif ?? null,
       shopifyProductId: bundle.shopifyProductId,
       shopifyProductHandle: bundle.shopifyProductHandle,
@@ -451,8 +448,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (intent === "saveAssets") {
     const promoBannerBgImage =
       (formData.get("promoBannerBgImage") as string) || null;
-    const promoBannerBgImageCrop =
-      (formData.get("promoBannerBgImageCrop") as string) || null;
     const loadingGif = (formData.get("loadingGif") as string) || null;
     const searchBarEnabled = formData.get("searchBarEnabled") === "true";
     const stepsFiltersJson = formData.get("stepsFilters") as string;
@@ -462,7 +457,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       where: { id: bundleId },
       data: {
         promoBannerBgImage: promoBannerBgImage || null,
-        promoBannerBgImageCrop: promoBannerBgImageCrop || null,
         loadingGif: loadingGif || null,
         searchBarEnabled,
       },
@@ -706,9 +700,6 @@ export default function WizardConfigureStep() {
   const [promoBannerBgImage, setPromoBannerBgImage] = useState<string | null>(
     bundle.promoBannerBgImage ?? null
   );
-  const [promoBannerBgImageCrop, setPromoBannerBgImageCrop] = useState<
-    string | null
-  >(bundle.promoBannerBgImageCrop ?? null);
   const [loadingGif, setLoadingGif] = useState<string | null>(
     bundle.loadingGif ?? null
   );
@@ -745,7 +736,6 @@ export default function WizardConfigureStep() {
   });
   const currentAssetsPayload = buildCreateWizardAssetsPayload({
     promoBannerBgImage,
-    promoBannerBgImageCrop,
     loadingGif,
     searchBarEnabled,
     steps,
@@ -790,7 +780,6 @@ export default function WizardConfigureStep() {
           });
           assetsBaselineRef.current = buildCreateWizardAssetsPayload({
             promoBannerBgImage,
-            promoBannerBgImageCrop,
             loadingGif,
             searchBarEnabled,
             steps: nextSteps,
@@ -1193,7 +1182,6 @@ export default function WizardConfigureStep() {
     const fd = new FormData();
     fd.set("_intent", "saveAssets");
     fd.set("promoBannerBgImage", promoBannerBgImage ?? "");
-    fd.set("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
     fd.set("loadingGif", loadingGif ?? "");
     fd.set("searchBarEnabled", String(searchBarEnabled));
     fd.set(
@@ -1222,7 +1210,6 @@ export default function WizardConfigureStep() {
     progressMessage,
     qualifiedMessage,
     promoBannerBgImage,
-    promoBannerBgImageCrop,
     loadingGif,
     customFields,
   ]);
@@ -1271,7 +1258,6 @@ export default function WizardConfigureStep() {
     } else {
       const saved = JSON.parse(assetsBaselineRef.current || currentAssetsPayload);
       setPromoBannerBgImage(saved.promoBannerBgImage || null);
-      setPromoBannerBgImageCrop(saved.promoBannerBgImageCrop || null);
       setLoadingGif(saved.loadingGif || null);
       setSearchBarEnabled(Boolean(saved.searchBarEnabled));
       setCustomFields(saved.customFields ?? []);
@@ -1599,7 +1585,6 @@ export default function WizardConfigureStep() {
                                   setShowIconPicker(false);
                                 }}
                                 label="Step icon"
-                                hideCropEditor
                               />
                             )}
                           </div>
@@ -2290,8 +2275,6 @@ export default function WizardConfigureStep() {
                   <FilePicker
                     value={promoBannerBgImage}
                     onChange={setPromoBannerBgImage}
-                    cropValue={promoBannerBgImageCrop}
-                    onCropChange={setPromoBannerBgImageCrop}
                     label="Choose background image"
                     hint="Recommended: 1920×400px"
                     uploadLabel="Upload image"
@@ -2311,7 +2294,6 @@ export default function WizardConfigureStep() {
                     label="Choose loading GIF"
                     hint="Recommended: 150×150px"
                     uploadLabel="Upload"
-                    hideCropEditor
                   />
                   <div className={styles.formatChip}>
                     <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" style={{ flexShrink: 0 }}>

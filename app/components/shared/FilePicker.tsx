@@ -15,17 +15,13 @@ import {
   useLazyListStoreFilesQuery,
   useUploadStoreFileMutation,
 } from "../../store/api/adminApi";
-import { ImageCropEditor } from "./ImageCropEditor";
 
 interface FilePickerProps {
   value: string | null;
   onChange: (url: string | null) => void;
-  cropValue?: string | null;
-  onCropChange?: (crop: string | null) => void;
   label?: string;
   hint?: string;
   uploadLabel?: string;
-  hideCropEditor?: boolean;
   autoOpen?: boolean;
   onClose?: () => void;
 }
@@ -122,17 +118,13 @@ function ProgressCircle({ status }: { status: "spinning" | "success" }) {
 export function FilePicker({
   value,
   onChange,
-  cropValue,
-  onCropChange,
   label = "Choose background image",
   hint,
   uploadLabel = "Upload image",
-  hideCropEditor = false,
   autoOpen = false,
   onClose,
 }: FilePickerProps) {
   const [open, setOpen] = useState(false);
-  const [cropEditorOpen, setCropEditorOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [files, setFiles] = useState<StoreFile[]>([]);
   const [search, setSearch] = useState("");
@@ -347,8 +339,7 @@ export function FilePicker({
 
   const handleRemove = useCallback(() => {
     onChange(null);
-    onCropChange?.(null);
-  }, [onChange, onCropChange]);
+  }, [onChange]);
 
   const handleLoadMore = useCallback(() => {
     if (cursor) {
@@ -458,11 +449,6 @@ export function FilePicker({
             <Button variant="plain" size="slim" onClick={handleOpen}>
               Change
             </Button>
-            {!hideCropEditor && (
-              <Button variant="plain" size="slim" onClick={() => setCropEditorOpen(true)}>
-                Adjust Image
-              </Button>
-            )}
             <Button variant="plain" tone="critical" size="slim" icon={XCircleIcon} onClick={handleRemove}>
               Remove
             </Button>
@@ -799,19 +785,6 @@ export function FilePicker({
       >
         {dialogInner}
       </dialog>
-
-      {/* Crop editor */}
-      {!hideCropEditor && cropEditorOpen && value && (
-        <ImageCropEditor
-          imageUrl={value}
-          cropValue={cropValue ?? null}
-          onConfirm={(crop) => {
-            onCropChange?.(crop);
-            setCropEditorOpen(false);
-          }}
-          onClose={() => setCropEditorOpen(false)}
-        />
-      )}
     </BlockStack>
   );
 }

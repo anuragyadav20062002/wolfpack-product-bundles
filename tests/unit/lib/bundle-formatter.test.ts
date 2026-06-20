@@ -10,7 +10,6 @@ const makeBundle = (overrides: Record<string, unknown> = {}) => ({
   fullPageLayout: "FOOTER_BOTTOM",
   shopifyProductId: "gid://shopify/Product/123",
   promoBannerBgImage: null,
-  promoBannerBgImageCrop: null,
   loadingGif: null,
   tierConfig: null,
   showStepTimeline: null,

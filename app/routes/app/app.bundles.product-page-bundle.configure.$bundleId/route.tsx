@@ -3253,7 +3253,6 @@ export default function ConfigureBundleFlow() {
                                 markAsDirty();
                               }}
                               label=""
-                              hideCropEditor
                             />
                           )}
                                           <s-button
@@ -4019,7 +4018,6 @@ export default function ConfigureBundleFlow() {
                       <div className={productPageBundleStyles.visibilityImagePicker}>
                         <FilePicker
                           label="Upload Image"
-                          hideCropEditor
                           value={upsellWidgetImageUrl || null}
                           onChange={(url) => { setUpsellWidgetImageUrl(url ?? ""); markAsDirty(); }}
                         />
@@ -4329,7 +4327,6 @@ export default function ConfigureBundleFlow() {
                             </s-stack>
                             <FilePicker
                               label="Choose banner image"
-                              hideCropEditor
                               value={(step as any).bannerImageUrl ?? null}
                               onChange={(url) => {
                                 stepsState.updateStepField(step.id, 'bannerImageUrl', url ?? null);
@@ -4380,7 +4377,6 @@ export default function ConfigureBundleFlow() {
                         setLoadingGif(url);
                         markAsDirty();
                       }}
-                      hideCropEditor
                     />
 
                     <s-stack direction="block" gap="small-100">
@@ -4909,7 +4905,6 @@ export default function ConfigureBundleFlow() {
                                 markAsDirty();
                               }}
                               label=""
-                              hideCropEditor
                             />
                           )}
                           <s-button

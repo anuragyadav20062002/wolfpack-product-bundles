@@ -43,7 +43,6 @@ export interface BundleData {
   templateName?: string;
   fullPageLayout?: string | null;
   promoBannerBgImage?: string | null;
-  promoBannerBgImageCrop?: string | null;
   loadingGif?: string | null;
   steps: import("../../../types/bundle-configure").BundleStep[];
   pricing?: BundlePricing;

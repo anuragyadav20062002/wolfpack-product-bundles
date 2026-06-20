@@ -19,6 +19,7 @@ Core model. Key fields beyond basics:
 - `status`: `BundleStatus` enum — `active`, `inactive`, `draft`, **`unlisted`** (not in old doc)
 - `fullPageLayout`: `FullPageLayout` enum — `CLASSIC`, `EDITORIAL`, `GRID`
 - `promoBannerBgImage`: promotional banner image URL
+- Promo banner crop data is not part of the schema. The pruned `promoBannerBgImageCrop` column was removed; banners render with the configured image and standard cover/center behavior.
 - `tierConfig`: JSON — tiered pricing configuration
 - `showStepTimeline`: Boolean — step progress indicator
 - `inventorySyncedAt`: DateTime — debounce for inventory sync (skip if < 60s ago)

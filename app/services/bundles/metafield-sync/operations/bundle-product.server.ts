@@ -519,7 +519,6 @@ export async function updateBundleProductMetafields(
       displayOptions: bundleConfiguration.pricing?.displayOptions ?? bundleConfiguration.pricing?.messages?.displayOptions ?? null
     },
     promoBannerBgImage: bundleConfiguration.promoBannerBgImage ?? null,
-    promoBannerBgImageCrop: bundleConfiguration.promoBannerBgImageCrop ?? null,
     bundleBannerDesktopUrl: bundleConfiguration.bundleBannerDesktopUrl ?? null,
     bundleBannerMobileUrl: bundleConfiguration.bundleBannerMobileUrl ?? null,
     loadingGif: bundleConfiguration.loadingGif ?? null,

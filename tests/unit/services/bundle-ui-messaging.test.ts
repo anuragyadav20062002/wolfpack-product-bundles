@@ -61,7 +61,6 @@ function makeBundle(showProgressBar?: boolean) {
       messages: null,
     },
     promoBannerBgImage: null,
-    promoBannerBgImageCrop: null,
     loadingGif: null,
     tierConfig: null,
     showStepTimeline: null,
@@ -104,6 +103,18 @@ function getWrittenMessaging(admin: ReturnType<typeof makeAdmin>): Record<string
   return null;
 }
 
+function getWrittenBundleUiConfig(admin: ReturnType<typeof makeAdmin>): Record<string, unknown> | null {
+  for (const call of (admin.graphql as jest.Mock).mock.calls) {
+    const variables = call[1]?.variables;
+    if (!variables?.metafields) continue;
+    const uiConfig = variables.metafields.find((m: any) => m.key === "bundle_ui_config");
+    if (uiConfig) {
+      return JSON.parse(uiConfig.value);
+    }
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -131,5 +142,19 @@ describe("updateBundleProductMetafields — showDiscountProgressBar", () => {
     await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", bundle);
     const messaging = getWrittenMessaging(admin);
     expect(messaging!.showDiscountProgressBar).toBe(false);
+  });
+
+  it("omits pruned promo banner crop data from bundle_ui_config", async () => {
+    const admin = makeAdmin();
+    const bundle = {
+      ...makeBundle(),
+      promoBannerBgImageCrop: JSON.stringify({ x: 10, y: 20, width: 80 }),
+    };
+
+    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", bundle);
+
+    const uiConfig = getWrittenBundleUiConfig(admin);
+    expect(uiConfig).not.toBeNull();
+    expect(uiConfig).not.toHaveProperty("promoBannerBgImageCrop");
   });
 });

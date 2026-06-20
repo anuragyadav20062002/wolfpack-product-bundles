@@ -6837,24 +6837,6 @@ createPromoBanner() {
     banner.style.setProperty('--fpb-promo-banner-bg-image', `url("${String(bgImageUrl).replace(/"/g, '\\"')}")`);
     banner.style.setProperty('--fpb-promo-banner-bg-size', 'cover');
     banner.style.setProperty('--fpb-promo-banner-bg-position', 'center');
-
-    const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
-    if (cropRaw) {
-      try {
-        const crop = JSON.parse(cropRaw);
-        const cw = crop.width / 100;
-        const ch = cw * (3 / 16);
-        const cx = crop.x / 100;
-        const cy = crop.y / 100;
-        const bgSize = `${(1 / cw) * 100}%`;
-        const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
-        const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
-        banner.style.setProperty('--fpb-promo-banner-bg-size', bgSize);
-        banner.style.setProperty('--fpb-promo-banner-bg-position', `${posX}% ${posY}%`);
-      } catch (_e) {
-
-      }
-    }
   }
 
   return banner;
@@ -10899,7 +10881,7 @@ async switchTier(bundleId, tierIndex) {
 _mergeBundleSettings(settings) {
   if (!settings || !this.selectedBundle) return;
   const keys = [
-    'promoBannerBgImage', 'promoBannerBgImageCrop',
+    'promoBannerBgImage',
     'bundleBannerDesktopUrl', 'bundleBannerMobileUrl', 'loadingGif',
     'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
   ];

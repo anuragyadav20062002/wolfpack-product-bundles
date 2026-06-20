@@ -106,7 +106,6 @@ function makeBundle(steps: any[] = [makeBaseStep()]) {
     showStepTimeline: true,
     tierConfig: null,
     promoBannerBgImage: null,
-    promoBannerBgImageCrop: null,
     steps,
     pricing: null,
   };

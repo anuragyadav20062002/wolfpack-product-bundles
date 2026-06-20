@@ -422,7 +422,6 @@ function buildFullPageBundleMetafieldConfig(bundle: any, overrides: Record<strin
       overrides.shopifyPageHandle as string | null | undefined
     ) ?? bundle.shopifyPageHandle ?? null,
     promoBannerBgImage: bundle.promoBannerBgImage ?? null,
-    promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
     loadingGif: bundle.loadingGif ?? null,
     type: "cart_transform",
     steps: buildFullPageBundleMetafieldSteps(bundle.steps || []),
@@ -567,8 +566,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const fullPageLayout = formData.get("fullPageLayout") as string || FullPageLayout.FOOTER_BOTTOM;
     const promoBannerBgImageRaw = formData.get("promoBannerBgImage") as string;
     const promoBannerBgImage = promoBannerBgImageRaw || null;
-    const promoBannerBgImageCropRaw = formData.get("promoBannerBgImageCrop") as string;
-    const promoBannerBgImageCrop = promoBannerBgImageCropRaw || null;
     const loadingGifRaw = formData.get("loadingGif") as string;
     const loadingGif = loadingGifRaw || null;
     const searchBarEnabled = formData.get("searchBarEnabled") === "true";
@@ -757,7 +754,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         templateName: templateName,
         fullPageLayout: fullPageLayout as any,
         promoBannerBgImage: promoBannerBgImage,
-        promoBannerBgImageCrop: promoBannerBgImageCrop,
         loadingGif: loadingGif,
         showStepTimeline: showStepTimelineParsed,
         floatingBadgeEnabled,

@@ -62,7 +62,6 @@ function makeBundle(stepFilters?: { label: string; collectionHandle: string }[] 
       messages: null,
     },
     promoBannerBgImage: null,
-    promoBannerBgImageCrop: null,
     loadingGif: null,
     tierConfig: null,
     showStepTimeline: null,
