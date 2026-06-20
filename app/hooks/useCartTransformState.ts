@@ -7,7 +7,8 @@
  */
 
 import { useState, useCallback } from "react";
-import { appState as appStateService } from "../services/app.state.service";
+import { useAppDispatch } from "../store/hooks";
+import { closeModal as closeReduxModal, openModal as openReduxModal } from "../store/slices/uiSlice";
 
 // ============================================
 // TYPES
@@ -23,6 +24,7 @@ export interface CreateBundleFormState {
 // ============================================
 
 export function useCartTransformState() {
+  const dispatch = useAppDispatch();
   // Create bundle modal state
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -33,16 +35,16 @@ export function useCartTransformState() {
   // Open create bundle modal
   const openModal = useCallback(() => {
     setModalOpen(true);
-    appStateService.openModal('cartTransform_createBundle');
-  }, []);
+    dispatch(openReduxModal("cartTransform_createBundle"));
+  }, [dispatch]);
 
   // Close create bundle modal and reset form
   const closeModal = useCallback(() => {
     setModalOpen(false);
     setBundleName("");
     setDescription("");
-    appStateService.closeModal('cartTransform_createBundle');
-  }, []);
+    dispatch(closeReduxModal("cartTransform_createBundle"));
+  }, [dispatch]);
 
   // Reset form after successful submission
   const resetForm = useCallback(() => {

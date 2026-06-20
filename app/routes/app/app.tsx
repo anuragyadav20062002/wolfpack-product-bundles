@@ -15,6 +15,7 @@ import { ensureShopHasExpiringOfflineSession } from "../../services/offline-toke
 import { AppLogger } from "../../lib/logger";
 import { loadShopAdminLocale } from "../../services/admin-locale.server";
 import { buildMantleProviderConfig, type MantleProviderConfig } from "../../services/mantle.server";
+import { ReduxProvider } from "../../store/ReduxProvider";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -96,14 +97,16 @@ export default function App() {
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey} i18n={polarisTranslations}>
-      <I18nextProvider i18n={i18n}>
-        <AdminMantleProvider mantleProvider={mantleProvider}>
-          {/* polaris.js deferred so App Bridge (loaded statically from app/root.tsx <head>) initialises first */}
-          <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
-          <AdminNavigation />
-          <Outlet />
-        </AdminMantleProvider>
-      </I18nextProvider>
+      <ReduxProvider>
+        <I18nextProvider i18n={i18n}>
+          <AdminMantleProvider mantleProvider={mantleProvider}>
+            {/* polaris.js deferred so App Bridge (loaded statically from app/root.tsx <head>) initialises first */}
+            <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
+            <AdminNavigation />
+            <Outlet />
+          </AdminMantleProvider>
+        </I18nextProvider>
+      </ReduxProvider>
     </AppProvider>
   );
 }

@@ -46,6 +46,7 @@ import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
+import { useEnsureProductTemplateMutation } from "../../../store/api/adminApi";
 import fullPageBundleStyles from "../../../styles/routes/full-page-bundle-configure.module.css";
 
 // Action handlers - extracted to separate module for better organization
@@ -846,6 +847,7 @@ export default function ConfigureBundleFlow() {
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
   const revalidator = useRevalidator();
+  const [ensureProductTemplate] = useEnsureProductTemplateMutation();
   const isSaveInFlight = fetcher.state !== "idle";
   const saveBarRef = useRef<UISaveBarElement | null>(null);
   const triggerSaveBarIrritation = useCallback(() => {
@@ -2747,11 +2749,10 @@ export default function ConfigureBundleFlow() {
       }
 
       if (template.isBundleContainer && template.bundleProduct) {
-        await fetch('/api/ensure-product-template', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productHandle: template.bundleProduct.handle, bundleId: bundle.id }),
-        }).catch(() => { /* non-fatal */ });
+        await ensureProductTemplate({
+          productHandle: template.bundleProduct.handle,
+          bundleId: bundle.id,
+        }).unwrap().catch(() => { /* non-fatal */ });
       }
 
       setSelectedPage(template);
@@ -2763,7 +2764,7 @@ export default function ConfigureBundleFlow() {
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
       shopify.toast.show(`Failed to open Theme Editor: ${errorMessage}`, { isError: true, duration: 5000 });
     }
-  }, [shop, shopify, bundle.id, apiKey, blockHandle, upsellWidgetDisplayMode]);
+  }, [shop, shopify, bundle.id, apiKey, blockHandle, upsellWidgetDisplayMode, ensureProductTemplate]);
 
   return (
     <>

@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useFetcher } from "@remix-run/react";
 import {
   BlockStack,
   InlineStack,
@@ -11,6 +10,11 @@ import {
 } from "@shopify/polaris";
 import { UploadIcon, XCircleIcon } from "@shopify/polaris-icons";
 import type { StoreFile } from "../../routes/app/app.store-files";
+import {
+  useLazyGetUploadStoreFileStatusQuery,
+  useLazyListStoreFilesQuery,
+  useUploadStoreFileMutation,
+} from "../../store/api/adminApi";
 import { ImageCropEditor } from "./ImageCropEditor";
 
 interface FilePickerProps {
@@ -27,18 +31,6 @@ interface FilePickerProps {
 }
 
 type UploadStatus = "idle" | "uploading" | "polling" | "success" | "timeout" | "error";
-
-interface UploadActionResult {
-  ok: boolean;
-  fileId?: string;
-  error?: string;
-}
-
-interface StatusResult {
-  fileStatus?: string;
-  file?: StoreFile;
-  error?: string;
-}
 
 const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/avif";
 const MAX_BYTES = 20 * 1024 * 1024;
@@ -158,15 +150,11 @@ export function FilePicker({
   const pollCountRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const filesFetcher = useFetcher<{
-    files: StoreFile[];
-    pageInfo: { hasNextPage: boolean; endCursor: string | null };
-  }>();
+  const [loadStoreFiles, filesQuery] = useLazyListStoreFilesQuery();
+  const [uploadStoreFile, uploadResult] = useUploadStoreFileMutation();
+  const [loadUploadStatus, statusQuery] = useLazyGetUploadStoreFileStatusQuery();
 
-  const uploadFetcher = useFetcher<UploadActionResult>();
-  const statusFetcher = useFetcher<StatusResult>();
-
-  const filesLoading = filesFetcher.state === "loading";
+  const filesLoading = filesQuery.isFetching;
   const isBlocked = uploadStatus === "uploading" || uploadStatus === "polling";
 
   // Open/close the native <dialog> so it appears in the browser top layer,
@@ -184,14 +172,14 @@ export function FilePicker({
   // Load initial files when picker opens
   useEffect(() => {
     if (open && files.length === 0) {
-      filesFetcher.load("/app/store-files");
+      void loadStoreFiles();
     }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [files.length, loadStoreFiles, open]);
 
   // Append files-fetcher results
   useEffect(() => {
-    if (filesFetcher.data) {
-      const { files: newFiles, pageInfo } = filesFetcher.data;
+    if (filesQuery.data) {
+      const { files: newFiles, pageInfo } = filesQuery.data;
       setFiles((prev) => {
         const existingIds = new Set(prev.map((f) => f.id));
         const unique = newFiles.filter((f) => !existingIds.has(f.id));
@@ -200,12 +188,12 @@ export function FilePicker({
       setHasNextPage(pageInfo.hasNextPage);
       setCursor(pageInfo.endCursor ?? null);
     }
-  }, [filesFetcher.data]);
+  }, [filesQuery.data]);
 
   // Handle upload action result → transition to polling
   useEffect(() => {
-    if (uploadFetcher.state === "idle" && uploadFetcher.data) {
-      const result = uploadFetcher.data;
+    if (uploadResult.isSuccess && uploadResult.data) {
+      const result = uploadResult.data;
       if (result.ok && result.fileId) {
         setPendingFileId(result.fileId);
         pollCountRef.current = 0;
@@ -217,7 +205,15 @@ export function FilePicker({
         setUploadFromTrigger(false);
       }
     }
-  }, [uploadFetcher.state, uploadFetcher.data]);
+  }, [uploadResult.data, uploadResult.isSuccess]);
+
+  useEffect(() => {
+    if (uploadResult.isError) {
+      setUploadStatus("error");
+      setUploadError("Upload failed. Please try again.");
+      setUploadFromTrigger(false);
+    }
+  }, [uploadResult.isError]);
 
   // Schedule a status poll when in "polling" state
   useEffect(() => {
@@ -232,19 +228,17 @@ export function FilePicker({
 
     const timer = setTimeout(() => {
       pollCountRef.current += 1;
-      statusFetcher.load(
-        `/app/upload-store-file?fileId=${encodeURIComponent(pendingFileId)}`,
-      );
+      void loadUploadStatus(pendingFileId);
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [uploadStatus, pendingFileId, pollTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadUploadStatus, pendingFileId, pollTrigger, uploadStatus]);
 
   // Handle status poll result
   useEffect(() => {
-    if (statusFetcher.state !== "idle" || !statusFetcher.data || uploadStatus !== "polling") return;
+    if (!statusQuery.isSuccess || !statusQuery.data || uploadStatus !== "polling") return;
 
-    const result = statusFetcher.data;
+    const result = statusQuery.data;
 
     if (result.fileStatus === "READY" && result.file) {
       if (uploadFromTrigger) {
@@ -269,7 +263,16 @@ export function FilePicker({
     } else {
       setPollTrigger((n) => n + 1);
     }
-  }, [statusFetcher.state, statusFetcher.data, uploadStatus, uploadFromTrigger, onChange]);
+  }, [statusQuery.data, statusQuery.isSuccess, uploadStatus, uploadFromTrigger, onChange]);
+
+  useEffect(() => {
+    if (statusQuery.isError && uploadStatus === "polling") {
+      setUploadStatus("error");
+      setUploadError("Upload processing failed. Please try again.");
+      setPendingFileId(null);
+      setUploadFromTrigger(false);
+    }
+  }, [statusQuery.isError, uploadStatus]);
 
   // Auto-reset success indicator after a brief delay
   useEffect(() => {
@@ -349,9 +352,9 @@ export function FilePicker({
 
   const handleLoadMore = useCallback(() => {
     if (cursor) {
-      filesFetcher.load(`/app/store-files?cursor=${encodeURIComponent(cursor)}`);
+      void loadStoreFiles({ cursor });
     }
-  }, [cursor, filesFetcher]);
+  }, [cursor, loadStoreFiles]);
 
   const handleUploadClick = useCallback(() => {
     setSizeError(null);
@@ -396,13 +399,9 @@ export function FilePicker({
 
       const form = new FormData();
       form.append("file", file);
-      uploadFetcher.submit(form, {
-        method: "POST",
-        action: "/app/upload-store-file",
-        encType: "multipart/form-data",
-      });
+      void uploadStoreFile(form);
     },
-    [uploadFetcher],
+    [uploadStoreFile],
   );
 
   const filteredFiles = search

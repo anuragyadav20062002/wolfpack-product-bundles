@@ -7,7 +7,8 @@
  */
 
 import { useState, useCallback } from "react";
-import { appState as appStateService } from "../services/app.state.service";
+import { useAppDispatch } from "../store/hooks";
+import { closeModal, openModal } from "../store/slices/uiSlice";
 
 // ============================================
 // TYPES
@@ -23,6 +24,7 @@ export interface BillingLoaderData {
 // ============================================
 
 export function useBillingState(loaderData: BillingLoaderData) {
+  const dispatch = useAppDispatch();
   // Cancel confirmation state
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
@@ -33,14 +35,14 @@ export function useBillingState(loaderData: BillingLoaderData) {
   // Open cancel confirmation
   const openCancelConfirm = useCallback(() => {
     setShowCancelConfirm(true);
-    appStateService.openModal('billing_cancelConfirm');
-  }, []);
+    dispatch(openModal("billing_cancelConfirm"));
+  }, [dispatch]);
 
   // Close cancel confirmation
   const closeCancelConfirm = useCallback(() => {
     setShowCancelConfirm(false);
-    appStateService.closeModal('billing_cancelConfirm');
-  }, []);
+    dispatch(closeModal("billing_cancelConfirm"));
+  }, [dispatch]);
 
   // Dismiss success banner
   const dismissSuccessBanner = useCallback(() => {

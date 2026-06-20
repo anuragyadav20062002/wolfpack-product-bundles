@@ -12,7 +12,8 @@
  */
 
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
-import { appState as appStateService } from "../services/app.state.service";
+import { useAppDispatch } from "../store/hooks";
+import { closeModal, openModal } from "../store/slices/uiSlice";
 import { useBundleForm } from "./useBundleForm";
 import { useBundleSteps } from "./useBundleSteps";
 import { useBundleConditions } from "./useBundleConditions";
@@ -77,6 +78,7 @@ export function useBundleConfigurationState({
   bundleProduct: loadedBundleProduct,
   shopify,
 }: UseBundleConfigurationProps) {
+  const dispatch = useAppDispatch();
   // ===== DIRTY FLAG SYSTEM =====
   const [isDirty, setIsDirty] = useState(false);
   const isResettingRef = useRef(false);
@@ -167,45 +169,45 @@ export function useBundleConfigurationState({
   // Modal handlers
   const openPageSelectionModal = useCallback(() => {
     setIsPageSelectionModalOpen(true);
-    appStateService.openModal('bundleConfig_pageSelection');
-  }, []);
+    dispatch(openModal("bundleConfig_pageSelection"));
+  }, [dispatch]);
 
   const closePageSelectionModal = useCallback(() => {
     setIsPageSelectionModalOpen(false);
-    appStateService.closeModal('bundleConfig_pageSelection');
-  }, []);
+    dispatch(closeModal("bundleConfig_pageSelection"));
+  }, [dispatch]);
 
   const openWidgetInstallModal = useCallback(() => {
     setIsWidgetInstallModalOpen(true);
-    appStateService.openModal('bundleConfig_widgetInstall');
-  }, []);
+    dispatch(openModal("bundleConfig_widgetInstall"));
+  }, [dispatch]);
 
   const closeWidgetInstallModal = useCallback(() => {
     setIsWidgetInstallModalOpen(false);
-    appStateService.closeModal('bundleConfig_widgetInstall');
-  }, []);
+    dispatch(closeModal("bundleConfig_widgetInstall"));
+  }, [dispatch]);
 
   const openProductsModal = useCallback((stepId: string) => {
     setCurrentModalStepId(stepId);
     setIsProductsModalOpen(true);
-    appStateService.openModal('bundleConfig_products');
-  }, []);
+    dispatch(openModal("bundleConfig_products"));
+  }, [dispatch]);
 
   const closeProductsModal = useCallback(() => {
     setIsProductsModalOpen(false);
-    appStateService.closeModal('bundleConfig_products');
-  }, []);
+    dispatch(closeModal("bundleConfig_products"));
+  }, [dispatch]);
 
   const openCollectionsModal = useCallback((stepId: string) => {
     setCurrentModalStepId(stepId);
     setIsCollectionsModalOpen(true);
-    appStateService.openModal('bundleConfig_collections');
-  }, []);
+    dispatch(openModal("bundleConfig_collections"));
+  }, [dispatch]);
 
   const closeCollectionsModal = useCallback(() => {
     setIsCollectionsModalOpen(false);
-    appStateService.closeModal('bundleConfig_collections');
-  }, []);
+    dispatch(closeModal("bundleConfig_collections"));
+  }, [dispatch]);
 
   // ===== LOADING STATES =====
   const [isLoadingPages, setIsLoadingPages] = useState(false);

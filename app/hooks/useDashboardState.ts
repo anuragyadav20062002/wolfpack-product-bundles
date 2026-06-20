@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { appState as appStateService } from "../services/app.state.service";
+import { useAppDispatch } from "../store/hooks";
+import { closeModal, openModal } from "../store/slices/uiSlice";
 
 export interface DeleteModalState {
   isOpen: boolean;
@@ -7,20 +8,21 @@ export interface DeleteModalState {
 }
 
 export function useDashboardState() {
+  const dispatch = useAppDispatch();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [bundleToDelete, setBundleToDelete] = useState<string | null>(null);
 
   const openDeleteModal = useCallback((bundleId: string) => {
     setBundleToDelete(bundleId);
     setDeleteModalOpen(true);
-    appStateService.openModal('dashboard_deleteConfirm');
-  }, []);
+    dispatch(openModal("dashboard_deleteConfirm"));
+  }, [dispatch]);
 
   const closeDeleteModal = useCallback(() => {
     setDeleteModalOpen(false);
     setBundleToDelete(null);
-    appStateService.closeModal('dashboard_deleteConfirm');
-  }, []);
+    dispatch(closeModal("dashboard_deleteConfirm"));
+  }, [dispatch]);
 
   return {
     deleteModalOpen,
