@@ -25,6 +25,7 @@ import { useCartTransformState } from "../../../hooks/useCartTransformState";
 import cartTransformStyles from "../../../styles/routes/cart-transform.module.css";
 import type { action } from "../app.bundles.cart-transform/action.server";
 import type { loader } from "../app.bundles.cart-transform";
+import { formatCartTransformDate } from "./date-format";
 
 export function CartTransformBundles() {
   const { bundles } = useLoaderData<typeof loader>();
@@ -102,7 +103,7 @@ export function CartTransformBundles() {
     </Badge>,
     bundle.steps.length,
     bundle.pricing?.enabled ? "Enabled" : "Disabled",
-    bundle.createdAt ? new Date(bundle.createdAt).toLocaleDateString() : "",
+    formatCartTransformDate(bundle.createdAt),
     <ButtonGroup key={`actions-${bundle.id}`}>
       <Button size="micro" icon={EditIcon} onClick={() => handleEditBundle(bundle.id)} accessibilityLabel={`Edit ${bundle.name}`}>
         Edit
