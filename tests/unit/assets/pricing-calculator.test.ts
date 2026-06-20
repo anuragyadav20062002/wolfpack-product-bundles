@@ -31,11 +31,22 @@ const LTE = 'less_than_or_equal_to';
 // ─── Bundle Builders ──────────────────────────────────────────────────────────
 
 function makeBundle(enabled: boolean, rules: any[]) {
-  return { pricing: { enabled, rules } };
+  return {
+    pricing: {
+      enabled,
+      method: rules[0]?.discountMethod ?? rules[0]?.discount?.method ?? 'percentage_off',
+      rules,
+    },
+  };
 }
 
 function makeQtyRule(operator: string, value: number, method: string, discountValue: number) {
   return {
+    conditionType: 'quantity',
+    conditionOperator: operator,
+    conditionValue: value,
+    discountMethod: method,
+    discountValue,
     condition: { type: 'quantity', operator, value },
     discount:  { method, value: discountValue }
   };
@@ -43,6 +54,11 @@ function makeQtyRule(operator: string, value: number, method: string, discountVa
 
 function makeAmtRule(operator: string, value: number, method: string, discountValue: number) {
   return {
+    conditionType: 'amount',
+    conditionOperator: operator,
+    conditionValue: value,
+    discountMethod: method,
+    discountValue,
     condition: { type: 'amount', operator, value },
     discount:  { method, value: discountValue }
   };
@@ -710,7 +726,7 @@ describe('PricingCalculator.calculateBundleTotal — free gift step exclusion', 
   ];
   const steps = [
     { isFreeGift: false },
-    { isFreeGift: true },
+    { isFreeGift: true, addonDisplayFree: true },
   ];
 
   it('with steps: free gift step is excluded from totalPrice and totalQuantity', () => {
@@ -737,7 +753,10 @@ describe('PricingCalculator.calculateBundleTotal — free gift step exclusion', 
   });
 
   it('all free gift steps: totalPrice = 0, totalQuantity = 0', () => {
-    const allGiftSteps = [{ isFreeGift: true }, { isFreeGift: true }];
+    const allGiftSteps = [
+      { isFreeGift: true, addonDisplayFree: true },
+      { isFreeGift: true, addonDisplayFree: true },
+    ];
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       selectedProducts, stepProductData, allGiftSteps
     );
