@@ -1,4 +1,4 @@
-import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { json, redirect, type ActionFunctionArgs, type HeadersFunction, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,6 +8,34 @@ import { BundleType } from "../../../constants/bundle";
 import { showPolarisModal } from "../_shared/bundle-configure/modal-utils";
 import styles from "./create-bundle.module.css";
 import { OptimisedImage } from "../../../components/OptimisedImage";
+
+export const links: LinksFunction = () => [
+  {
+    rel: "preload",
+    as: "image",
+    href: "/ppb.avif",
+    imageSrcSet: "/ppb.avif 320w",
+    imageSizes: "320px",
+    type: "image/avif",
+    fetchpriority: "high",
+  } as ReturnType<LinksFunction>[number],
+  {
+    rel: "preload",
+    as: "image",
+    href: "/fpb.avif",
+    imageSrcSet: "/fpb.avif 320w",
+    imageSizes: "320px",
+    type: "image/avif",
+    fetchpriority: "high",
+  } as ReturnType<LinksFunction>[number],
+];
+
+export const headers: HeadersFunction = () => ({
+  Link: [
+    "</ppb.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high",
+    "</fpb.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high",
+  ].join(", "),
+});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await requireAdminSession(request);

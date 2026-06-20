@@ -114,17 +114,45 @@ describe("admin root link warnings", () => {
     consoleError.mockRestore();
   });
 
-  it("uses the DOM-safe lowercase fetchpriority attribute for the dashboard image preload", async () => {
-    const { links } = await import("../../../app/routes/app/app.dashboard/route");
-    const [heroPreload] = links();
+  it("preloads first-viewport dashboard images with React-safe responsive image attributes", async () => {
+    const { headers, links } = await import("../../../app/routes/app/app.dashboard/route");
+    const preloads = links();
+    const responseHeaders = headers({} as any) as Record<string, string>;
 
-    expect(heroPreload).toMatchObject({
+    expect(preloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        rel: "preload",
+        as: "image",
+        href: "/Parth.avif",
+        imageSrcSet: "/Parth.avif 120w",
+        imageSizes: "120px",
+        fetchpriority: "high",
+      }),
+      expect.objectContaining({
+        rel: "preload",
+        as: "image",
+        href: "/appEmbed.avif",
+        imageSrcSet: "/appEmbed.avif 420w",
+        imageSizes: "420px",
+        fetchpriority: "high",
+      }),
+    ]));
+    expect(preloads[0]).toMatchObject({
       rel: "preload",
       as: "image",
       href: "/Parth.avif",
+      imageSrcSet: "/Parth.avif 120w",
+      imageSizes: "120px",
       fetchpriority: "high",
     });
-    expect(heroPreload).not.toHaveProperty("fetchPriority");
+    for (const preload of preloads) {
+      expect(preload).not.toHaveProperty("fetchPriority");
+      expect(preload).not.toHaveProperty("imagesrcset");
+      expect(preload).not.toHaveProperty("imagesizes");
+    }
+    expect(responseHeaders.Link).toContain("</appEmbed.avif>; rel=preload; as=image");
+    expect(responseHeaders.Link).toContain("</Parth.avif>; rel=preload; as=image");
+    expect(responseHeaders.Link).toContain("fetchpriority=high");
   });
 
   it("renders OptimisedImage fetch priority without the React DOM prop warning", async () => {

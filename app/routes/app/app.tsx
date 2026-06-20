@@ -16,6 +16,7 @@ import { AppLogger } from "../../lib/logger";
 import { loadShopAdminLocale } from "../../services/admin-locale.server";
 import { buildMantleProviderConfig, type MantleProviderConfig } from "../../services/mantle.server";
 import { ReduxProvider } from "../../store/ReduxProvider";
+import { installAdminWebVitalsDiagnostics } from "../../lib/admin-web-vitals-diagnostics.client";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -94,6 +95,10 @@ export default function App() {
       void i18n.changeLanguage(locale);
     }
   }, [locale]);
+
+  useEffect(() => {
+    return installAdminWebVitalsDiagnostics();
+  }, []);
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey} i18n={polarisTranslations}>

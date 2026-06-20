@@ -1,4 +1,4 @@
-import { defer, json, type ActionFunctionArgs, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
+import { defer, json, type ActionFunctionArgs, type HeadersFunction, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
 import { Await, useFetcher, useNavigate, useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { OptimisedImage } from "../../../components/OptimisedImage";
 import { loaderCache } from "../../../lib/loader-cache.server";
@@ -41,21 +41,37 @@ import type { BundleActionsButtonsProps } from "./types";
 import dashboardStyles from "./dashboard.module.css";
 
 /**
- * Issue: admin-lcp-phase3-images-1 — preload the dashboard hero image via
- * a real `<link rel="preload" as="image">` emitted during HTML parse. This
- * replaces a post-hydration `new Image()` preload that fired only AFTER
- * useEffect — too late for LCP. Pulls the AVIF variant so most browsers
- * fetch ~30 KB instead of the 68 KB JPEG.
+ * Preload first-viewport dashboard images via real
+ * `<link rel="preload" as="image">` tags emitted during HTML parse.
+ * The app embed card image is the measured embedded-app LCP candidate.
  */
 export const links: LinksFunction = () => [
   {
     rel: "preload",
     as: "image",
     href: "/Parth.avif",
+    imageSrcSet: "/Parth.avif 120w",
+    imageSizes: "120px",
+    type: "image/avif",
+    fetchpriority: "high",
+  } as ReturnType<LinksFunction>[number],
+  {
+    rel: "preload",
+    as: "image",
+    href: "/appEmbed.avif",
+    imageSrcSet: "/appEmbed.avif 420w",
+    imageSizes: "420px",
     type: "image/avif",
     fetchpriority: "high",
   } as ReturnType<LinksFunction>[number],
 ];
+
+export const headers: HeadersFunction = () => ({
+  Link: [
+    "</appEmbed.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high",
+    "</Parth.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high",
+  ].join(", "),
+});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Issue: admin-lcp-phase4-loaders-1.
@@ -732,7 +748,8 @@ export default function Dashboard() {
                   className={dashboardStyles.appEmbedImage}
                   width={420}
                   height={140}
-                  loading="lazy"
+                  loading="eager"
+                  fetchPriority="high"
                 />
                 <s-text color="subdued">{t("dashboard.appEmbeds.instruction")}</s-text>
               </s-stack>
