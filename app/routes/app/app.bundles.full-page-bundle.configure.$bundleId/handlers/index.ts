@@ -13,9 +13,12 @@ export {
   handleGetThemeTemplates,
   handleGetCurrentTheme,
   handleEnsureBundleTemplates,
-  handleCheckFullPageTemplate,
   handleValidateWidgetPlacement,
-  handleCreatePreviewPage,
   handleRenamePageSlug,
-  handleUpdateBundleDesignTemplate,
 } from './handlers.server';
+
+export {
+  handleCheckFullPageTemplate,
+  handleCreatePreviewPage,
+  handleUpdateBundleDesignTemplate,
+} from "./page-handlers.server";

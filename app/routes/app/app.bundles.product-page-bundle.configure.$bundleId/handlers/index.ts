@@ -13,8 +13,12 @@ export {
   handleGetThemeTemplates,
   handleGetCurrentTheme,
   handleEnsureBundleTemplates,
-  handleValidateWidgetPlacement,
   handleUpdateBundleDesignTemplate,
-  handleValidateSellingPlanGroups,
-  handleAssignProductTemplate,
 } from './handlers.server';
+
+export {
+  handleAssignProductTemplate,
+  handleValidateWidgetPlacement,
+} from "./widget-placement.server";
+
+export { handleValidateSellingPlanGroups } from "./subscriptions.server";

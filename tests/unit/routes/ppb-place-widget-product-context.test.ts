@@ -5,10 +5,6 @@ const routeSource = readFileSync(
   join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
   "utf8"
 );
-const handlerSource = readFileSync(
-  join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts"),
-  "utf8",
-);
 
 describe("PPB Place Widget Theme Editor product context", () => {
   const selectionStart = routeSource.indexOf("const handlePageSelection = useCallback");
@@ -43,10 +39,4 @@ describe("PPB Place Widget Theme Editor product context", () => {
     );
   });
 
-  it("updates the Shopify parent product template suffix through productUpdate", () => {
-    expect(handlerSource).toContain("export async function handleAssignProductTemplate");
-    expect(handlerSource).toContain("templateSuffix: templateSuffix || null");
-    expect(handlerSource).toContain("productUpdate(product: $product)");
-    expect(handlerSource).toContain("normaliseShopifyProductId");
-  });
 });

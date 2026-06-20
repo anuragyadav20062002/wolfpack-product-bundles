@@ -10,7 +10,6 @@ import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import type { Session } from "@shopify/shopify-api";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
-import { WidgetInstallationService } from "../../../../services/widget-installation.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -56,11 +55,11 @@ import {
 } from "../../../../lib/bundle-product-media.server";
 import { buildGeneratedBundleProductMetadata } from "../../../../lib/bundle-product-data.server";
 import { publishProductToSalesChannels } from "../../../../services/shopify-publications.server";
-import {
-  deriveCommonSellingPlanGroups,
-  extractSellingPlanValidationSources,
-  SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
-} from "../../../../lib/bundle-config/product-page-admin-sections";
+export { handleValidateSellingPlanGroups } from "./subscriptions.server";
+export {
+  handleAssignProductTemplate,
+  handleValidateWidgetPlacement,
+} from "./widget-placement.server";
 
 // Re-export shared handlers so the barrel (index.ts) still works
 export {
@@ -742,165 +741,6 @@ async function updateSyncMetafields(
   }
 
   return bundleConfiguration;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function fetchProductsWithSellingPlanGroups(admin: ShopifyAdmin, productIds: string[]) {
-  const products: Array<{
-    id: string;
-    title: string;
-    sellingPlanGroups: { nodes: Array<{ id: string; name: string }> };
-  }> = [];
-
-  const query = `
-    query ProductsWithSellingPlanGroups($ids: [ID!]!) {
-      nodes(ids: $ids) {
-        ... on Product {
-          id
-          title
-          sellingPlanGroups(first: 50) {
-            nodes {
-              id
-              name
-            }
-          }
-        }
-      }
-    }
-  `;
-
-  for (let index = 0; index < productIds.length; index += 50) {
-    const ids = productIds.slice(index, index + 50);
-    const response = await admin.graphql(query, { variables: { ids } });
-    const data = await response.json() as {
-      data?: {
-        nodes?: Array<{
-          id?: string;
-          title?: string;
-          sellingPlanGroups?: { nodes?: Array<{ id?: string; name?: string }> };
-        } | null>;
-      };
-    };
-
-    for (const product of data.data?.nodes ?? []) {
-      if (!product?.id) continue;
-      products.push({
-        id: product.id,
-        title: product.title ?? "",
-        sellingPlanGroups: {
-          nodes: (product.sellingPlanGroups?.nodes ?? [])
-            .filter((group): group is { id: string; name: string } => (
-              typeof group?.id === "string" && typeof group?.name === "string"
-            )),
-        },
-      });
-    }
-  }
-
-  return products;
-}
-
-async function fetchCollectionProductIds(admin: ShopifyAdmin, collectionIds: string[]) {
-  const products: string[] = [];
-  const seen = new Set<string>();
-
-  const query = `
-    query CollectionProductsForSellingPlanValidation($ids: [ID!]!) {
-      nodes(ids: $ids) {
-        ... on Collection {
-          products(first: 250) {
-            edges {
-              node {
-                id
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-
-  for (let index = 0; index < collectionIds.length; index += 50) {
-    const ids = collectionIds.slice(index, index + 50);
-    const response = await admin.graphql(query, { variables: { ids } });
-    const data = await response.json() as {
-      data?: {
-        nodes?: Array<{
-          id?: string;
-          products?: {
-            edges?: Array<{ node?: { id?: string } }>;
-          };
-        }>;
-      };
-    };
-
-    for (const collection of data.data?.nodes ?? []) {
-      if (!collection) continue;
-      const edges = collection?.products?.edges ?? [];
-      for (const edge of edges) {
-        const productId = edge.node?.id;
-        if (typeof productId !== "string" || productId.trim() === "") continue;
-        if (seen.has(productId)) continue;
-        seen.add(productId);
-        products.push(productId);
-      }
-    }
-  }
-
-  return products;
-}
-
-/**
- * Validate that all product-page bundle products share at least one selling plan group.
- */
-export async function handleValidateSellingPlanGroups(admin: ShopifyAdmin, session: Session, bundleId: string) {
-  const bundle = await db.bundle.findFirst({
-    where: {
-      id: bundleId,
-      shopId: session.shop,
-      bundleType: BundleType.PRODUCT_PAGE,
-    },
-    include: {
-      steps: {
-        include: {
-          StepProduct: true,
-          StepCategory: true,
-        },
-        orderBy: { position: "asc" },
-      },
-    },
-  });
-
-  if (!bundle) {
-    return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
-  }
-
-  const sources = extractSellingPlanValidationSources(bundle);
-  const collectionProductIds = await fetchCollectionProductIds(admin, sources.collectionIds);
-  const allProductIds = Array.from(new Set([...sources.productIds, ...collectionProductIds]));
-  if (allProductIds.length === 0) {
-    return json({
-      success: true,
-      isValid: false,
-      productCount: 0,
-      plans: [],
-      message: SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
-    });
-  }
-
-  const productIds = allProductIds;
-  const products = await fetchProductsWithSellingPlanGroups(admin, productIds);
-  const plans = deriveCommonSellingPlanGroups(products);
-  const isValid = productIds.length > 0 && products.length === productIds.length && plans.length > 0;
-
-  return json({
-    success: true,
-    isValid,
-    productCount: products.length,
-    plans,
-    message: isValid ? null : SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
-  });
 }
 
 /**
@@ -1904,61 +1744,6 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
   }
 }
 
-/**
- * Handle widget placement validation for product page bundles
- */
-export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session: Session, bundleId: string) {
-  try {
-    AppLogger.debug("[WIDGET_PLACEMENT] Validating widget placement", { bundleId });
-
-    // Get bundle data
-    const bundle = await db.bundle.findUnique({
-      where: { id: bundleId, shopId: session.shop }
-    });
-
-    if (!bundle) {
-      return json({
-        success: false,
-        error: ERROR_MESSAGES.BUNDLE_NOT_FOUND
-      }, { status: 404 });
-    }
-
-    // Production-ready widget validation (no theme modifications)
-    const apiKey = process.env.SHOPIFY_API_KEY || '';
-    const result = await WidgetInstallationService.validateProductBundleWidgetSetup(
-      admin,
-      session.shop,
-      apiKey,
-      bundleId,
-      bundle.shopifyProductId || undefined
-    );
-
-    // Return appropriate response based on widget installation status
-    if (result.requiresOneTimeSetup) {
-      return json({
-        success: false,
-        requiresOneTimeSetup: true,
-        installationLink: result.installationLink,
-        message: result.message
-      }, { status: 400 });
-    }
-
-    return json({
-      success: true,
-      productUrl: result.productUrl,
-      configurationLink: result.configurationLink,
-      message: result.message
-    });
-
-  } catch (error) {
-    AppLogger.error("[WIDGET_PLACEMENT] Error validating widget placement:", {}, error as any);
-    return json({
-      success: false,
-      error: (error as Error).message || "Widget placement validation failed"
-    }, { status: 500 });
-  }
-}
-
 export async function handleUpdateBundleDesignTemplate(
   _admin: ShopifyAdmin,
   session: Session,
@@ -1991,57 +1776,4 @@ export async function handleUpdateBundleDesignTemplate(
   }
 
   return json({ success: true });
-}
-
-export async function handleAssignProductTemplate(
-  admin: ShopifyAdmin,
-  _session: Session,
-  _bundleId: string,
-  formData: FormData,
-) {
-  const rawProductId = String(formData.get("productId") ?? "");
-  const templateSuffixValue = formData.get("templateSuffix");
-  const templateSuffix = typeof templateSuffixValue === "string" ? templateSuffixValue.trim() : "";
-  const productId = normaliseShopifyProductId(rawProductId, {
-    title: "Bundle parent product",
-    stepName: "Place Widget",
-  });
-
-  const ASSIGN_PRODUCT_TEMPLATE = `
-    mutation AssignProductTemplate($product: ProductUpdateInput!) {
-      productUpdate(product: $product) {
-        product {
-          id
-          handle
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-  `;
-
-  const response = await admin.graphql(ASSIGN_PRODUCT_TEMPLATE, {
-    variables: {
-      product: {
-        id: productId,
-        templateSuffix: templateSuffix || null,
-      },
-    },
-  });
-  const data = await response.json();
-  const userErrors = data.data?.productUpdate?.userErrors ?? [];
-
-  if (userErrors.length > 0) {
-    const message = userErrors[0]?.message ?? "Failed to assign product template";
-    return json({ success: false, error: message }, { status: 400 });
-  }
-
-  return json({
-    success: true,
-    productId,
-    templateSuffix: templateSuffix || null,
-    handle: data.data?.productUpdate?.product?.handle ?? null,
-  });
 }

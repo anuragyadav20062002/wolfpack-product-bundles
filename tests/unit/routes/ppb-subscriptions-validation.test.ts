@@ -2,7 +2,7 @@
  * Unit tests — PPB subscription validation handler
  */
 
-import { handleValidateSellingPlanGroups } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server";
+import { handleValidateSellingPlanGroups } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/subscriptions.server";
 import { SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE } from "../../../app/lib/bundle-config/product-page-admin-sections";
 
 type ProductRecord = {
