@@ -540,6 +540,7 @@ enum SubscriptionPlan {
 model Shop {
   id                      String         @id @default(uuid())
   shopDomain              String         @unique // e.g., "mystore.myshopify.com"
+  shopifyShopGid          String? // Shopify Shop GID used by App Events
   name                    String? // Store name
   email                   String? // Store contact email
   installedAt             DateTime       @default(now())
@@ -555,7 +556,39 @@ model Shop {
   updatedAt               DateTime       @updatedAt
 
   @@index([shopDomain])
+  @@index([shopifyShopGid])
   @@index([currentSubscriptionId])
+}
+
+model BusinessEvent {
+  id                    String    @id @default(uuid())
+  eventHandle           String
+  shopDomain            String
+  shopifyShopGid        String?
+  bundleId              String?
+  bundleType            String?
+  surface               String?
+  actor                 String?
+  routeFamily           String?
+  correlationId         String?
+  result                String?
+  errorCode             String?
+  attributes            Json      @default("{}")
+  idempotencyKey        String    @unique
+  occurredAt            DateTime  @default(now())
+  shopifyDeliveryStatus String    @default("not_sent")
+  shopifyDeliveredAt    DateTime?
+  shopifyRetryCount     Int       @default(0)
+  shopifyLastError      String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([eventHandle])
+  @@index([shopDomain])
+  @@index([shopifyShopGid])
+  @@index([bundleId])
+  @@index([occurredAt])
+  @@index([shopifyDeliveryStatus])
 }
 
 // Subscription model - tracks app subscriptions

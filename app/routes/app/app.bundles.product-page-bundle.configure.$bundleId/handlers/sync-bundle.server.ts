@@ -22,6 +22,7 @@ import {
   loadShopName,
   syncBundleProductToShopify,
 } from "./product-sync.server";
+import { ensureShopIdentity, recordBusinessEvent } from "../../../../services/app-events.server";
 
 /**
  * Handle hard-reset sync of a product-page bundle:
@@ -33,6 +34,20 @@ export async function handleSyncBundle(
   session: Session,
   bundleId: string,
 ) {
+  const correlationId = `bundle-sync:${bundleId}:${Date.now()}`;
+  const startedAt = Date.now();
+  const shopifyShopGid = await ensureShopIdentity(admin, session.shop);
+  await recordBusinessEvent({
+    eventHandle: "bundle_sync_started",
+    shopDomain: session.shop,
+    shopifyShopGid,
+    bundleId,
+    bundleType: "product_page",
+    surface: "admin",
+    actor: "merchant",
+    routeFamily: "ppb_configure",
+    correlationId,
+  });
   AppLogger.info(
     "[SYNC_BUNDLE] Starting hard-reset sync for product-page bundle",
     { bundleId, shopId: session.shop },
@@ -330,6 +345,23 @@ export async function handleSyncBundle(
       /* swallowed — syncThemeColors handles logging */
     });
 
+    await recordBusinessEvent({
+      eventHandle: "bundle_synced",
+      shopDomain: session.shop,
+      shopifyShopGid,
+      bundleId,
+      bundleType: "product_page",
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "ppb_configure",
+      correlationId,
+      result: "success",
+      attributes: {
+        duration_ms: Date.now() - startedAt,
+        resources_synced: "product,metafields,theme_colors",
+      },
+    });
+
     return json({
       success: true,
       synced: true,
@@ -342,6 +374,23 @@ export async function handleSyncBundle(
       { bundleId },
       error as any,
     );
+    await recordBusinessEvent({
+      eventHandle: "bundle_sync_failed",
+      shopDomain: session.shop,
+      shopifyShopGid,
+      bundleId,
+      bundleType: "product_page",
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "ppb_configure",
+      correlationId,
+      result: "failure",
+      errorCode: "sync_failed",
+      attributes: {
+        error_message_safe: message,
+        duration_ms: Date.now() - startedAt,
+      },
+    });
     return json(
       { success: false, error: `Sync failed: ${message}` },
       { status: 500 },

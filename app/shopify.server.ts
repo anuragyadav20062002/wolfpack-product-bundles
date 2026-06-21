@@ -15,6 +15,7 @@ import { syncThemeColors } from "./services/theme-colors.server";
 import { activateUtmPixel } from "./services/pixel-activation.server";
 import { AppLogger } from "./lib/logger";
 import { ensureShopHasExpiringOfflineSession } from "./services/offline-token.server";
+import { ensureShopIdentity, recordBusinessEvent } from "./services/app-events.server";
 
 const sessionStorage = new CachedSessionStorage(prisma);
 
@@ -34,6 +35,11 @@ const shopify = shopifyApp({
   hooks: {
     afterAuth: async ({ session, admin }) => {
       AppLogger.info("afterAuth hook triggered", { shop: session.shop });
+      const existingShop = await prisma.shop.findUnique({
+        where: { shopDomain: session.shop },
+        select: { id: true, shopifyShopGid: true },
+      });
+      let shopifyShopGid = existingShop?.shopifyShopGid ?? null;
 
       // Create variant-level metafield definitions with storefront access.
       // These enable the Liquid widget to read bundle_ui_config and other metafields.
@@ -46,6 +52,16 @@ const shopify = shopifyApp({
       // Create or get shop record with free plan subscription
       try {
         await BillingService.ensureShop(session.shop, session.shop);
+        shopifyShopGid = await ensureShopIdentity(admin, session.shop);
+        await recordBusinessEvent({
+          eventHandle: existingShop ? "app_reauthorized" : "app_installed",
+          shopDomain: session.shop,
+          shopifyShopGid,
+          surface: "admin",
+          actor: "merchant",
+          routeFamily: "auth",
+          result: "success",
+        });
       } catch (error: any) {
         AppLogger.error("Failed to create shop record", { shop: session.shop }, error);
       }
@@ -110,6 +126,19 @@ const shopify = shopifyApp({
         }
       } catch (error: any) {
         AppLogger.warn("Failed to auto-activate UTM pixel (non-fatal)", { shop: session.shop }, error);
+        await recordBusinessEvent({
+          eventHandle: "pixel_activation_failed",
+          shopDomain: session.shop,
+          shopifyShopGid,
+          surface: "admin",
+          actor: "system",
+          routeFamily: "auth",
+          result: "failure",
+          errorCode: "activation_failed",
+          attributes: {
+            error_message_safe: error instanceof Error ? error.message : "Pixel activation failed",
+          },
+        });
       }
 
       // Automatically activate cart transform for new installations
@@ -117,9 +146,49 @@ const shopify = shopifyApp({
         const result = await CartTransformService.completeSetup(admin, session.shop);
         if (!result.success) {
           AppLogger.warn("Cart transform setup failed (non-critical)", { shop: session.shop, error: result.error });
+          await recordBusinessEvent({
+            eventHandle: "cart_transform_heal_failed",
+            shopDomain: session.shop,
+            shopifyShopGid,
+            surface: "admin",
+            actor: "system",
+            routeFamily: "auth",
+            result: "failure",
+            errorCode: "setup_failed",
+            attributes: {
+              error_message_safe: result.error ?? "Cart transform setup failed",
+            },
+          });
+        } else {
+          await recordBusinessEvent({
+            eventHandle: "cart_transform_enabled",
+            shopDomain: session.shop,
+            shopifyShopGid,
+            surface: "admin",
+            actor: "system",
+            routeFamily: "auth",
+            result: "success",
+            attributes: {
+              cart_transform_id: result.cartTransformId ?? null,
+              already_exists: result.alreadyExists ?? false,
+            },
+          });
         }
       } catch (error: any) {
         AppLogger.error("Error during cart transform setup", { shop: session.shop }, error);
+        await recordBusinessEvent({
+          eventHandle: "cart_transform_heal_failed",
+          shopDomain: session.shop,
+          shopifyShopGid,
+          surface: "admin",
+          actor: "system",
+          routeFamily: "auth",
+          result: "failure",
+          errorCode: "exception",
+          attributes: {
+            error_message_safe: error instanceof Error ? error.message : "Cart transform setup error",
+          },
+        });
       }
 
       try {

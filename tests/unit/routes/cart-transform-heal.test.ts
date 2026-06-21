@@ -23,6 +23,14 @@ jest.mock("../../../app/shopify.server", () => ({
   },
 }));
 
+jest.mock("../../../app/services/app-events.server", () => ({
+  recordBusinessEvent: jest.fn(),
+  ensureShopIdentity: jest.fn().mockResolvedValue("gid://shopify/Shop/1"),
+}));
+
+const mockRecordBusinessEvent = () =>
+  require("../../../app/services/app-events.server").recordBusinessEvent as jest.MockedFunction<any>;
+
 function makeSignedRequest(shop = "test-shop.myshopify.com") {
   const params = new URLSearchParams({
     shop,
@@ -91,6 +99,39 @@ describe("cart transform storefront self-heal route", () => {
       { graphql: expect.any(Function) },
       "test-shop.myshopify.com"
     );
+    expect(mockRecordBusinessEvent()).toHaveBeenCalledWith(expect.objectContaining({
+      eventHandle: "cart_transform_heal_started",
+      shopDomain: "test-shop.myshopify.com",
+      surface: "storefront",
+      actor: "system",
+    }));
+    expect(mockRecordBusinessEvent()).toHaveBeenCalledWith(expect.objectContaining({
+      eventHandle: "cart_transform_healed",
+      shopDomain: "test-shop.myshopify.com",
+      shopifyShopGid: "gid://shopify/Shop/1",
+      result: "success",
+    }));
+  });
+
+  it("records cart_transform_heal_failed when activation fails", async () => {
+    mockActivateForNewInstallation.mockResolvedValueOnce({
+      success: false,
+      error: "Function missing",
+    });
+
+    const response = (await loader({
+      request: makeSignedRequest(),
+      params: {},
+      context: {},
+    } as any)) as Response;
+
+    expect(response.status).toBe(500);
+    expect(mockRecordBusinessEvent()).toHaveBeenCalledWith(expect.objectContaining({
+      eventHandle: "cart_transform_heal_failed",
+      shopDomain: "test-shop.myshopify.com",
+      errorCode: "activation_failed",
+      result: "failure",
+    }));
   });
 
   it("rejects invalid app-proxy signatures before activation", async () => {
