@@ -1379,29 +1379,47 @@
 }
 
 .richHelpTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   white-space: nowrap;
+  color: #6d7175;
+  cursor: default;
+}
+
+.richHelpTrigger:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.richHelpTriggerLabel {
+  color: #202223;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .questionHelpButton {
   display: inline-grid;
   place-items: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   padding: 0;
-  border: 1px solid #9ca3af;
-  border-radius: 50%;
-  background: #ffffff;
+  border: 0;
+  background: transparent;
   color: #6d7175;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
   line-height: 1;
   cursor: default;
 }
 
+.richHelpTrigger > s-icon,
+.questionHelpButton > s-icon {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
 .questionHelpButton:hover,
 .questionHelpButton:focus-visible {
-  border-color: #6d7175;
   color: #202223;
 }
 
@@ -2310,7 +2328,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 48px;
+  min-height: 60px;
   padding: 0 14px 0 16px;
   border: 0;
   background: #f6f6f7;

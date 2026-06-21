@@ -83,16 +83,20 @@ export function RichHelpTooltip({
       onFocus={showTooltip}
       onBlur={hideTooltip}
     >
-      <span className={fullPageBundleStyles.richHelpTrigger}>
-        <s-button
-          icon={icon as any}
-          variant="tertiary"
-          accessibilityLabel={
-            accessibilityLabel || tooltip.accessibilityLabel || label || title
-          }
-        >
-          {label}
-        </s-button>
+      <span
+        className={fullPageBundleStyles.richHelpTrigger}
+        role="img"
+        tabIndex={0}
+        aria-label={
+          accessibilityLabel || tooltip.accessibilityLabel || label || title
+        }
+      >
+        <s-icon type={(icon || "info") as any} />
+        {label && (
+          <span className={fullPageBundleStyles.richHelpTriggerLabel}>
+            {label}
+          </span>
+        )}
       </span>
       <span
         className={`${fullPageBundleStyles.richHelpCard} ${fullPageBundleStyles.richHelpCardFloating}`}
@@ -169,14 +173,13 @@ export function QuestionHelpTooltip({
       onFocus={showTooltip}
       onBlur={hideTooltip}
     >
-      <span className={fullPageBundleStyles.richHelpTrigger}>
-        <s-button
-          variant="tertiary"
-          icon="info"
-          accessibilityLabel={
-            tooltip.accessibilityLabel || title || description
-          }
-        />
+      <span
+        className={fullPageBundleStyles.questionHelpButton}
+        role="img"
+        tabIndex={0}
+        aria-label={tooltip.accessibilityLabel || title || description}
+      >
+        <s-icon type="info" />
       </span>
       <span
         className={`${fullPageBundleStyles.richHelpCard} ${fullPageBundleStyles.richHelpCardFloating}`}
