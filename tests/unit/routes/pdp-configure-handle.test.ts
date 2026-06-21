@@ -172,7 +172,7 @@ describe('handleSyncBundle — shopifyProductHandle persistence', () => {
 
   it('writes shopifyProductHandle = `bundle-{id}` to DB after re-creating the Shopify product', async () => {
     const response = await handleSyncBundle(mockAdmin, mockSession, bundleId);
-    const body = await response.json();
+    const body = await response.json() as any;
 
     expect(body.success).toBe(true);
 
@@ -279,7 +279,7 @@ describe('handleSyncProduct — shopifyProductHandle persistence on first produc
 
   it('writes shopifyProductHandle = `bundle-{id}` to DB when no Shopify product exists', async () => {
     const response = await handleSyncProduct(mockAdmin, mockSession, bundleId, new FormData());
-    const body = await response.json();
+    const body = await response.json() as any;
 
     expect(body.success).toBe(true);
 
@@ -312,7 +312,7 @@ describe('handleSyncProduct — shopifyProductHandle persistence on first produc
 
   it('returns success with productId when product is created', async () => {
     const response = await handleSyncProduct(mockAdmin, mockSession, bundleId, new FormData());
-    const body = await response.json();
+    const body = await response.json() as any;
     expect(body.success).toBe(true);
     expect(body.productId).toBe(newProductId);
   });

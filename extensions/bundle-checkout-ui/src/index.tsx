@@ -9,5 +9,5 @@ import {BundlePricingExtension} from './Checkout';
 // purchase.thank-you.cart-line-item.render-after are registered via shopify.extension.toml.
 // The CLI wraps this default export in shopify.extend() for each declared target.
 export default function extension() {
-  render(<BundlePricingExtension />, document.body);
+  render(BundlePricingExtension({}) as any, document.body);
 }

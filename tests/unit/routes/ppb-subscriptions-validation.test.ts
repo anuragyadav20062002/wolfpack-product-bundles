@@ -127,7 +127,7 @@ describe("PPB subscription validation handler", () => {
     getDb().bundle.findFirst.mockResolvedValue(baseBundle);
 
     const response = await handleValidateSellingPlanGroups(admin, SESSION, "bundle-1");
-    const body = await response.json();
+    const body = await response.json() as any;
 
     expect(response.status).toBe(200);
     expect(body).toEqual({
@@ -165,7 +165,7 @@ describe("PPB subscription validation handler", () => {
     getDb().bundle.findFirst.mockResolvedValue(baseBundle);
 
     const response = await handleValidateSellingPlanGroups(admin, SESSION, "bundle-1");
-    const body = await response.json();
+    const body = await response.json() as any;
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);

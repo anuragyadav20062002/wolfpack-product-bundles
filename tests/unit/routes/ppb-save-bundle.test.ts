@@ -230,7 +230,7 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
       "bundle-1",
       makeFormData()
     );
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.message).toMatch(/saved successfully/i);
   });
@@ -244,7 +244,7 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toMatch(/invalid bundle status/i);
     expect(getDb().bundle.update).not.toHaveBeenCalled();
@@ -455,7 +455,7 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
       makeFormData({ stepsData: JSON.stringify(stepsData) })
     );
     expect(res.status).toBe(500);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error).toMatch(/corrupted browser state/i);
   });
 
@@ -468,7 +468,7 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
       makeFormData()
     );
     expect(res.status).toBe(500);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error).toContain("Prisma error");
   });
 
@@ -775,15 +775,15 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
       showDiscountDisplay: true,
       showDiscountMessaging: true,
       ruleMessages: discountData.ruleMessages,
-      successMessage: discountData.successMessage,
-      successMessageByLocale: discountData.successMessageByLocale,
+      successMessage: (discountData as any).successMessage,
+      successMessageByLocale: (discountData as any).successMessageByLocale,
       displayOptions: discountData.displayOptions,
-      tierTextByRuleId: discountData.tierTextByRuleId,
-      tierTextByLocaleByRuleId: discountData.tierTextByLocaleByRuleId,
+      tierTextByRuleId: (discountData as any).tierTextByRuleId,
+      tierTextByLocaleByRuleId: (discountData as any).tierTextByLocaleByRuleId,
     });
-    expect(updateCall.data.pricing.upsert.create.ruleMessagesByLocale).toEqual(discountData.ruleMessagesByLocale);
+    expect(updateCall.data.pricing.upsert.create.ruleMessagesByLocale).toEqual((discountData as any).ruleMessagesByLocale);
     expect(updateCall.data.pricing.upsert.update.messages).toEqual(updateCall.data.pricing.upsert.create.messages);
-    expect(updateCall.data.pricing.upsert.update.ruleMessagesByLocale).toEqual(discountData.ruleMessagesByLocale);
+    expect(updateCall.data.pricing.upsert.update.ruleMessagesByLocale).toEqual((discountData as any).ruleMessagesByLocale);
   });
 
   it("persists Product Page direct Bundle Visibility config", async () => {
@@ -841,7 +841,7 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
       bundleProduct: JSON.stringify({ id: PRODUCT_ID, handle: "bundle-123" }),
     });
     const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(updateComponentProductMetafields).toHaveBeenCalledWith(
       MOCK_ADMIN,
@@ -878,7 +878,7 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     });
 
     const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
+    const body = await res.json() as any;
 
     expect(body.success).toBe(true);
     expect(MOCK_ADMIN.graphql).toHaveBeenCalledWith(
@@ -931,7 +931,7 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     });
 
     const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
+    const body = await res.json() as any;
 
     expect(body.success).toBe(true);
     expect(getDb().bundle.update).toHaveBeenCalledWith(
@@ -1191,7 +1191,7 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     });
     const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
     expect(res.status).toBe(500);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error).toMatch(/add products/i);
   });
 

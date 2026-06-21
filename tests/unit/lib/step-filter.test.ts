@@ -21,6 +21,7 @@ interface TestProduct {
   id: string;
   parentProductId?: string;
   title: string;
+  [key: string]: unknown;
 }
 
 const PRODUCTS: TestProduct[] = [

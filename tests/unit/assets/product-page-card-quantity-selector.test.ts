@@ -164,7 +164,7 @@ describe('PPB shared card quantity selector state', () => {
     const parent = {
       replaceChild: jest.fn(),
     };
-    productGrid.parentNode = parent;
+    (productGrid as any).parentNode = parent;
     const updates: Array<[number, string, number]> = [];
 
     ProductPageModalMethods.attachProductEventHandlers.call({

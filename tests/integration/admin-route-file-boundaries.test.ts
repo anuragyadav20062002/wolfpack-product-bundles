@@ -15,7 +15,7 @@ const EXCLUDED_PATH_PARTS = [
   "node_modules/",
 ];
 
-const ACTIVE_REFACTOR_BACKLOG = new Set([
+const ACTIVE_REFACTOR_BACKLOG = new Set<string>([
 ]);
 
 const CONFIGURE_ROUTE_FAMILIES = [

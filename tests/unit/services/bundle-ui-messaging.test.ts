@@ -110,7 +110,7 @@ function getWrittenMessaging(admin: ReturnType<typeof makeAdmin>): Record<string
 describe("updateBundleProductMetafields — showDiscountProgressBar", () => {
   it("writes showDiscountProgressBar: false when showProgressBar is false", async () => {
     const admin = makeAdmin();
-    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", makeBundle(false), "shop.myshopify.com");
+    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", makeBundle(false));
     const messaging = getWrittenMessaging(admin);
     expect(messaging).not.toBeNull();
     expect(messaging!.showDiscountProgressBar).toBe(false);
@@ -118,7 +118,7 @@ describe("updateBundleProductMetafields — showDiscountProgressBar", () => {
 
   it("writes showDiscountProgressBar: true when showProgressBar is true", async () => {
     const admin = makeAdmin();
-    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", makeBundle(true), "shop.myshopify.com");
+    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", makeBundle(true));
     const messaging = getWrittenMessaging(admin);
     expect(messaging!.showDiscountProgressBar).toBe(true);
   });

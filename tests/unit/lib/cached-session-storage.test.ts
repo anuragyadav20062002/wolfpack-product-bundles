@@ -48,7 +48,7 @@ function makeRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function makePrisma(row = makeRow()) {
+function makePrisma(row: ReturnType<typeof makeRow> | null = makeRow()) {
   return {
     session: {
       findUnique: jest.fn().mockResolvedValue(row),

@@ -8,6 +8,7 @@
  */
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import type { ValueType } from "recharts/types/component/DefaultTooltipContent";
 import { KpiTile } from "./shared/KpiTile";
 import type { BundleRevenueSummary, TrendPoint } from "../../lib/analytics";
 
@@ -85,7 +86,10 @@ export function RevenueAttribution({ summary, trend, formatRevenue }: RevenueAtt
                 background: "var(--wpb-ink-100)",
                 font: "var(--wpb-micro)",
               }}
-              formatter={(value: number) => [formatRevenue(value), "bundle revenue"]}
+              formatter={(value: ValueType | undefined) => [
+                formatRevenue(Number(value ?? 0)),
+                "bundle revenue",
+              ]}
             />
             <Area
               type="monotone"

@@ -193,7 +193,7 @@ describe("create bundle configure dirty navigation", () => {
     conditions: [],
     filters: [],
     preSelectAll: false,
-    activeTab: "products",
+    activeTab: "products" as const,
   };
 
   it("skips saving an unchanged configuration page after step DB IDs exist", () => {
@@ -252,7 +252,7 @@ describe("create bundle configure dirty navigation", () => {
         baseline,
         current,
         requirePersistedStepIds: true,
-        steps: [{ ...savedStep, name: "Changed Step" }],
+        steps: [{ ...savedStep, name: "Changed Step" } as any],
       })
     ).toBe(true);
   });

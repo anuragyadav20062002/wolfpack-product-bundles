@@ -247,7 +247,7 @@ export function DashboardPage() {
   useEffect(() => {
     if (localeFetcher.state !== "idle" || !localeFetcher.data) return;
     const data = localeFetcher.data;
-    if (data.success && "locale" in data) {
+    if ("success" in data && data.success && "locale" in data) {
       localStorage.setItem("wolfpack-locale", data.locale);
       void i18n.changeLanguage(data.locale);
       setSearchParams(prev => {
@@ -429,7 +429,7 @@ export function DashboardPage() {
                 <div className={dashboardStyles.filterGroup}>
                   {/* Status filter pill */}
                   <s-button id="status-filter-btn" commandFor="status-filter-popover" variant="secondary">
-                    {statusFilter === 'all' ? t("dashboard.filters.status") : t(`dashboard.status.${statusFilter}`, statusFilter)} ▾
+                    {String(statusFilter === 'all' ? t("dashboard.filters.status") : t(`dashboard.status.${statusFilter}`, statusFilter))} ▾
                   </s-button>
                   <s-popover ref={statusPopoverRef} id="status-filter-popover">
                     <s-box padding="base">

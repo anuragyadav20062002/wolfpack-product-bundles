@@ -1,6 +1,7 @@
 import { BUNDLE_STATUS_OPTIONS, STEP_CONDITION_OPERATOR_OPTIONS, STEP_CONDITION_TYPE_OPTIONS } from "../../../constants/bundle";
 import { FilePicker } from "../../../components/shared/FilePicker";
 import { StepSummary } from "./StepSummary";
+import type { ConditionDef, WizardStepState } from "./types";
 import styles from "./wizard-configure.module.css";
 
 type Props = { ctx: any };
@@ -12,7 +13,7 @@ export function ConfigurationStep({ ctx }: Props) {
   <>
     {/* Step chip navigation */}
     <div className={styles.stepNav}>
-      {steps.map((s, i) => (
+      {steps.map((s: WizardStepState, i: number) => (
         <button
           key={s.tempId}
           className={
@@ -111,7 +112,7 @@ export function ConfigurationStep({ ctx }: Props) {
                   <s-button
                     variant="secondary"
                     icon="upload"
-                    onClick={() => setShowIconPicker((v) => !v)}
+                    onClick={() => setShowIconPicker((v: boolean) => !v)}
                   >
                     {showIconPicker ? "Close picker" : "Upload Icon"}
                   </s-button>
@@ -165,7 +166,7 @@ export function ConfigurationStep({ ctx }: Props) {
               </s-text>
 
               <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                {currentStep.StepCategory.map((cat) => {
+                {currentStep.StepCategory.map((cat: WizardStepState["StepCategory"][number]) => {
                   const tabKey = `${currentStep.tempId}__${cat.id}`;
                   const activeTab = categoryActiveTabs[tabKey] ?? 0;
                   return (
@@ -194,7 +195,7 @@ export function ConfigurationStep({ ctx }: Props) {
                         <div className={styles.tabRow} style={{ marginBottom: 8 }}>
                           <button
                             className={activeTab === 0 ? styles.tabActive : styles.tab}
-                            onClick={() => setCategoryActiveTabs((prev) => ({ ...prev, [tabKey]: 0 }))}
+                            onClick={() => setCategoryActiveTabs((prev: Record<string, number>) => ({ ...prev, [tabKey]: 0 }))}
                           >
                             Products
                             {cat.products.length > 0 && (
@@ -203,7 +204,7 @@ export function ConfigurationStep({ ctx }: Props) {
                           </button>
                           <button
                             className={activeTab === 1 ? styles.tabActive : styles.tab}
-                            onClick={() => setCategoryActiveTabs((prev) => ({ ...prev, [tabKey]: 1 }))}
+                            onClick={() => setCategoryActiveTabs((prev: Record<string, number>) => ({ ...prev, [tabKey]: 1 }))}
                           >
                             Collections
                             {cat.collections.length > 0 && (
@@ -279,7 +280,7 @@ export function ConfigurationStep({ ctx }: Props) {
                 </div>
               ) : (
                 <div className={styles.rulesList}>
-                  {currentStep.conditions.map((rule) => (
+                  {currentStep.conditions.map((rule: ConditionDef) => (
                     <div key={rule.id} className={styles.ruleRow}>
                       <s-select
                         label="Type"

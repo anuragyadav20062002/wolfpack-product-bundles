@@ -28,7 +28,7 @@ describe("shop-wide Admin locale persistence", () => {
   });
 
   it("loads the saved shop locale", async () => {
-    mockDb.shop.findUnique.mockResolvedValueOnce({ adminLocale: "fr" } as never);
+    (mockDb.shop.findUnique as jest.Mock).mockResolvedValueOnce({ adminLocale: "fr" });
 
     await expect(loadShopAdminLocale("shop.myshopify.com")).resolves.toBe("fr");
     expect(mockDb.shop.findUnique).toHaveBeenCalledWith({
@@ -38,19 +38,19 @@ describe("shop-wide Admin locale persistence", () => {
   });
 
   it("defaults missing shop locale to English", async () => {
-    mockDb.shop.findUnique.mockResolvedValueOnce({ adminLocale: null } as never);
+    (mockDb.shop.findUnique as jest.Mock).mockResolvedValueOnce({ adminLocale: null });
 
     await expect(loadShopAdminLocale("shop.myshopify.com")).resolves.toBe("en");
   });
 
   it("defaults unsupported saved locale to English", async () => {
-    mockDb.shop.findUnique.mockResolvedValueOnce({ adminLocale: "xx" } as never);
+    (mockDb.shop.findUnique as jest.Mock).mockResolvedValueOnce({ adminLocale: "xx" });
 
     await expect(loadShopAdminLocale("shop.myshopify.com")).resolves.toBe("en");
   });
 
   it("persists a supported locale on the Shop record", async () => {
-    mockDb.shop.upsert.mockResolvedValueOnce({ adminLocale: "fr" } as never);
+    (mockDb.shop.upsert as jest.Mock).mockResolvedValueOnce({ adminLocale: "fr" });
 
     await expect(saveShopAdminLocale("shop.myshopify.com", "fr")).resolves.toBe("fr");
     expect(mockDb.shop.upsert).toHaveBeenCalledWith({

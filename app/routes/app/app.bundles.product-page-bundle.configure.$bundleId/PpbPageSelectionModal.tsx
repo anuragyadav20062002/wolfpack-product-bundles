@@ -87,7 +87,7 @@ export function PpbPageSelectionModal() {
             </div>
             {availablePages.length > 0 ? (
               <div>
-                {availablePages.map((template) => (
+                {availablePages.map((template: { id?: string; handle?: string; title?: string }) => (
                   <button
                     key={template.id ?? template.handle ?? template.title}
                     type="button"

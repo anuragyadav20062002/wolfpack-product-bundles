@@ -51,7 +51,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (typeof bundleName === "string") createFormData.set("bundleName", bundleName);
   if (typeof bundleType === "string") createFormData.set("bundleType", bundleType);
   const result = await handleCreateBundle(admin, session, createFormData);
-  const data = await result.json();
+  const data = (await result.json()) as {
+    error?: string;
+    redirectTo?: string;
+    showFirstLoadTour?: boolean;
+    success?: boolean;
+  };
   if (data.success && data.redirectTo) {
     if (!data.showFirstLoadTour) {
       return redirect(data.redirectTo);

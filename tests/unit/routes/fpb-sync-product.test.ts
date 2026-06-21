@@ -152,7 +152,7 @@ describe("FPB handleSyncProduct", () => {
     getDb().bundle.findUnique.mockResolvedValue(null);
     const res = await handleSyncProduct(makeAdmin(), MOCK_SESSION, "bundle-1", new FormData());
     expect(res.status).toBe(404);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
   });
 
@@ -160,7 +160,7 @@ describe("FPB handleSyncProduct", () => {
     getDb().bundle.findUnique.mockResolvedValue(makeBundle({ description: "A bundle" }));
     const admin = makeAdmin({ ...SHOPIFY_PRODUCT, description: "A bundle" });
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.syncedData.changesDetected).toBe(false);
   });
@@ -169,7 +169,7 @@ describe("FPB handleSyncProduct", () => {
     getDb().bundle.findUnique.mockResolvedValue(makeBundle({ description: "Old description" }));
     const admin = makeAdmin({ ...SHOPIFY_PRODUCT, description: "New description" });
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.syncedData.changesDetected).toBe(true);
     expect(getDb().bundle.update).toHaveBeenCalledWith(
@@ -196,7 +196,7 @@ describe("FPB handleSyncProduct", () => {
     } as any;
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error).toMatch(/Unauthorized/);
   });
 
@@ -204,7 +204,7 @@ describe("FPB handleSyncProduct", () => {
     getDb().bundle.findUnique.mockResolvedValue(makeBundle({ shopifyProductId: null }));
     const admin = makeAdmin();
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.productId).toBe("gid://shopify/Product/NEW");
     expect(getDb().bundle.update).toHaveBeenCalledWith(
@@ -221,7 +221,7 @@ describe("FPB handleSyncProduct", () => {
     const admin = makeAdmin();
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.message).toMatch(/synchronized successfully/i);
   });
 });

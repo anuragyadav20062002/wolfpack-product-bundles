@@ -68,13 +68,16 @@ export function makeStore(preloadedState?: Partial<AppState>) {
   const storedPreferences = loadStoredPreferences();
 
   return configureStore({
-    reducer: rootReducer,
+    reducer: rootReducer as any,
     preloadedState: {
       ...preloadedState,
       preferences: preloadedState?.preferences ?? storedPreferences ?? defaultPreferencesState,
     },
     middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(adminApi.middleware, persistPreferencesMiddleware),
+      getDefaultMiddleware().concat(
+        adminApi.middleware,
+        persistPreferencesMiddleware,
+      ) as any,
   });
 }
 

@@ -1,7 +1,7 @@
 import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { BundleReadinessOverlay } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { CUSTOM_FIELD_TYPE_OPTIONS } from "./wizard-constants";
-import type { CustomFieldDef } from "./types";
+import type { CustomFieldDef, FilterDef, WizardStepState } from "./types";
 import styles from "./wizard-configure.module.css";
 
 type Props = { ctx: any };
@@ -22,7 +22,7 @@ export function WizardOverlays({ ctx }: Props) {
           {currentStep.name || "unnamed step"}
         </p>
 
-        {shopLocales.filter((l) => !l.primary).length === 0 ? (
+        {shopLocales.filter((l: { primary?: boolean }) => !l.primary).length === 0 ? (
           <p style={{ color: "#9ca3af", fontSize: 14 }}>
             No additional locales published in your store. Enable more
             languages in Shopify Settings → Languages.
@@ -42,8 +42,8 @@ export function WizardOverlays({ ctx }: Props) {
                 }
               >
                 {shopLocales
-                  .filter((l) => !l.primary)
-                  .map((l) => (
+                  .filter((l: { primary?: boolean }) => !l.primary)
+                  .map((l: { locale: string; name: string; primary?: boolean }) => (
                     <s-option
                       key={l.locale}
                       value={l.locale}
@@ -120,7 +120,7 @@ export function WizardOverlays({ ctx }: Props) {
             <div className={styles.modalBody}>
               <p className={styles.modalSectionTitle}>Select Step</p>
               <div className={styles.stepNav} style={{ marginBottom: 16 }}>
-                {steps.map((s, i) => (
+                {steps.map((s: WizardStepState, i: number) => (
                   <button
                     key={s.tempId}
                     className={
@@ -163,7 +163,7 @@ export function WizardOverlays({ ctx }: Props) {
               ) : (
                 <div className={styles.rulesList}>
                   {(steps[filtersDrawerStepIdx]?.filters ?? []).map(
-                    (filter) => (
+                    (filter: FilterDef) => (
                       <div key={filter.id} className={styles.filterRow}>
                         <s-text-field
                           label="Tab label"
@@ -278,7 +278,7 @@ export function WizardOverlays({ ctx }: Props) {
                 </div>
               ) : (
                 <div className={styles.rulesList}>
-                  {customFields.map((cf) => (
+                  {customFields.map((cf: CustomFieldDef) => (
                     <div key={cf.id} className={styles.customFieldRow}>
                       <div className={styles.customFieldRowTop}>
                         <s-text-field

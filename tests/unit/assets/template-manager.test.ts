@@ -9,6 +9,8 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { TemplateManager } = require('../../../app/assets/widgets/shared/template-manager.js');
 
+export {};
+
 describe('TemplateManager.getQualificationGap', () => {
   it('GTE uses direct threshold gap', () => {
     expect(TemplateManager.getQualificationGap(2, 3, 'gte', 1)).toBe(1);

@@ -182,7 +182,7 @@ describe("handleUpdateBundleStatus", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     const db = require("../../../app/db.server").default;
-    db.bundle.update.mockResolvedValue(makeBundle("active"));
+    db.bundle.update.mockResolvedValue(makeBundle(BundleStatus.ACTIVE));
   });
 
   it("rejects invalid bundle status values before touching Shopify", async () => {
@@ -196,7 +196,7 @@ describe("handleUpdateBundleStatus", () => {
       "bundle-1",
       makeStatusFormData("nonsense"),
     );
-    const body = await res.json();
+    const body = await res.json() as any;
 
     expect(res.status).toBe(400);
     expect(body.success).toBe(false);

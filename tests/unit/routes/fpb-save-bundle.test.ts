@@ -260,7 +260,7 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
       "bundle-1",
       makeFormData()
     );
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.message).toMatch(/saved successfully/i);
   });
@@ -496,7 +496,7 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
           imageUrl: null,
         },
       ],
-    });
+    } as any);
 
     await handleSaveBundle(
       MOCK_ADMIN,
@@ -537,7 +537,7 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     const fd = makeFormData({ stepsData: JSON.stringify(stepsData) });
     const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
     expect(res.status).toBe(500);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toMatch(/corrupted browser state/i);
   });
@@ -551,7 +551,7 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
       makeFormData()
     );
     expect(res.status).toBe(500);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(false);
     expect(body.error).toContain("DB connection lost");
   });
@@ -910,7 +910,7 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
 
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
 
-    const statusCall = MOCK_ADMIN.graphql.mock.calls.find(([query]) =>
+    const statusCall = MOCK_ADMIN.graphql.mock.calls.find(([query]: [unknown, ...unknown[]]) =>
       String(query).includes("productUpdate")
     );
     expect(statusCall).toBeDefined();
@@ -978,7 +978,7 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
   it("activates bundle parent products through a requiresComponents sequence when Shopify rejects unsupported channels", async () => {
     MOCK_ADMIN.graphql.mockImplementation((query: string, variables: any) => {
       if (String(query).includes("productUpdate") && variables?.variables?.product?.status === "ACTIVE") {
-        const directStatusCalls = MOCK_ADMIN.graphql.mock.calls.filter(([calledQuery]) =>
+        const directStatusCalls = MOCK_ADMIN.graphql.mock.calls.filter(([calledQuery]: [unknown, ...unknown[]]) =>
           String(calledQuery).includes("productUpdate")
         ).length;
 
@@ -1039,8 +1039,8 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
 
     const variantUpdates = MOCK_ADMIN.graphql.mock.calls
-      .filter(([query]) => String(query).includes("productVariantsBulkUpdate"))
-      .map(([, options]) => options.variables.variants[0].requiresComponents);
+      .filter(([query]: [unknown, ...unknown[]]) => String(query).includes("productVariantsBulkUpdate"))
+      .map(([, options]: [unknown, any]) => options.variables.variants[0].requiresComponents);
 
     expect(variantUpdates).toEqual([false, true]);
   });
@@ -1057,7 +1057,7 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     });
     const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
     expect(res.status).toBe(500);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error).toMatch(/add products/i);
   });
 

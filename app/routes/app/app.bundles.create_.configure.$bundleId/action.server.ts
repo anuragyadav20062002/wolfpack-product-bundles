@@ -1,4 +1,5 @@
 import { json, redirect, type ActionFunctionArgs } from "@remix-run/node";
+import { Prisma } from "@prisma/client";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { getBundleWizardConfigurePath } from "../../../lib/bundle-navigation";
@@ -75,7 +76,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
             filters:
               sf.filters && sf.filters.length > 0
                 ? (sf.filters as any)
-                : null,
+                : Prisma.JsonNull,
           },
         });
       }
@@ -97,7 +98,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           required: cf.required,
           position: i,
           options:
-            cf.options && cf.options.length > 0 ? cf.options : null,
+            cf.options && cf.options.length > 0 ? cf.options : Prisma.JsonNull,
         },
       });
     }
@@ -188,8 +189,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           stepId,
           name: cat.name || '',
           sortOrder: cat.sortOrder ?? ci,
-          products: Array.isArray(cat.products) && cat.products.length > 0 ? cat.products : null,
-          collections: Array.isArray(cat.collections) && cat.collections.length > 0 ? cat.collections : null,
+          products: Array.isArray(cat.products) && cat.products.length > 0 ? cat.products : Prisma.JsonNull,
+          collections: Array.isArray(cat.collections) && cat.collections.length > 0 ? cat.collections : Prisma.JsonNull,
         },
       });
     }

@@ -71,7 +71,7 @@ beforeEach(() => {
 
 describe("FPB page handlers", () => {
   it("returns a cached preview URL after refreshing the existing preview page", async () => {
-    mockDb.bundle.findUnique.mockResolvedValue(
+    (mockDb.bundle.findUnique as jest.Mock).mockResolvedValue(
       makeBundle({ shopifyPreviewPageId: "gid://shopify/Page/1" }) as any
     );
     mockGetPreviewPageUrl.mockResolvedValue({ success: true, previewUrl: "https://preview.test" } as any);
@@ -122,7 +122,7 @@ describe("FPB page handlers", () => {
   });
 
   it("persists trimmed FPB design template fields", async () => {
-    mockDb.bundle.update.mockResolvedValue({} as any);
+    (mockDb.bundle.update as jest.Mock).mockResolvedValue({} as any);
     const formData = new FormData();
     formData.set("bundleDesignTemplate", " FBP_SIDE_FOOTER ");
     formData.set("bundleDesignPresetId", " DEFAULT ");

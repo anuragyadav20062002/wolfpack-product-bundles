@@ -43,7 +43,7 @@ beforeEach(() => {
 
 describe("PPB widget placement handlers", () => {
   it("returns one-time setup details when product page widget validation requires setup", async () => {
-    mockDb.bundle.findUnique.mockResolvedValue({
+    (mockDb.bundle.findUnique as jest.Mock).mockResolvedValue({
       id: "bundle-1",
       shopifyProductId: "gid://shopify/Product/1",
     } as any);

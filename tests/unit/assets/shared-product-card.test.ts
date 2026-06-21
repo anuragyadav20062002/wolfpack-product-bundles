@@ -3,6 +3,8 @@ const { renderSharedProductCard } = require('../../../app/assets/widgets/shared/
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { renderQuantityControl } = require('../../../app/assets/widgets/shared/components/quantity-control.js');
 
+export {};
+
 describe('shared product card contract', () => {
   const currencyInfo = {
     display: { format: '${{amount}}' },

@@ -192,7 +192,7 @@ export async function updateProductStandardMetafields(
         case 'priceAdjustment':
           type = 'number_decimal';
           // Numbers must be strings
-          value = typeof value === 'number' ? value.toString() : parseFloat(value || '0').toString();
+          value = typeof value === 'number' ? value.toString() : parseFloat(String(value || '0')).toString();
           break;
         default:
           // For any other metafields, convert to JSON string

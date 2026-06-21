@@ -356,7 +356,7 @@ export function useBundleConfigurationState({
   const setDismissedBanners = useCallback((
     value: Set<string> | ((prev: Set<string>) => Set<string>)
   ) => {
-    const previous = new Set(configureRouteState.dismissedBanners);
+    const previous = new Set<string>(configureRouteState.dismissedBanners);
     const nextValue = typeof value === "function" ? value(previous) : value;
     dispatch(setDismissedConfigureBanners(Array.from(nextValue)));
   }, [configureRouteState.dismissedBanners, dispatch]);

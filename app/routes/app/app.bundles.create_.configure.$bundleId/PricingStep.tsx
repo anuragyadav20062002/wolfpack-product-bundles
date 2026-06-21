@@ -1,5 +1,6 @@
 import { DISCOUNT_METHOD_OPTIONS } from "../../../constants/bundle";
 import { DiscountMethod, amountToCents, centsToAmount, createNewPricingRule } from "../../../types/pricing";
+import type { PricingRule } from "../../../types/pricing";
 import styles from "./wizard-configure.module.css";
 
 type Props = { ctx: any };
@@ -83,7 +84,7 @@ export function PricingStep({ ctx }: Props) {
             {/* Discount Rules */}
               {pricing.discountRules.length > 0 && (
               <div className={styles.rulesList}>
-                {pricing.discountRules.map((rule, index) => (
+                {pricing.discountRules.map((rule: PricingRule, index: number) => (
                   <div key={rule.id} className={styles.discountRuleRow}>
                     <div className={styles.discountRuleHeader}>
                       <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>

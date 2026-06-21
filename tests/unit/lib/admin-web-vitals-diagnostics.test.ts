@@ -59,9 +59,10 @@ describe("admin web vitals diagnostics", () => {
       windowLike: win as any,
       logger,
     });
-    observerCallback?.({
+    const emitLcpEntry = observerCallback as unknown as PerformanceObserverCallback;
+    emitLcpEntry({
       getEntries: () => [{ element }],
-    } as PerformanceObserverEntryList, {} as PerformanceObserver);
+    } as unknown as PerformanceObserverEntryList, {} as PerformanceObserver);
     const callback = onReport.mock.calls[0][0];
     callback({ metrics: [{ name: "LCP", id: "lcp-1", value: 1234 }] });
 
@@ -113,9 +114,10 @@ describe("admin web vitals diagnostics", () => {
       windowLike: win as any,
       logger,
     });
-    observerCallback?.({
+    const emitLcpEntry = observerCallback as unknown as PerformanceObserverCallback;
+    emitLcpEntry({
       getEntries: () => [{ element }],
-    } as PerformanceObserverEntryList, {} as PerformanceObserver);
+    } as unknown as PerformanceObserverEntryList, {} as PerformanceObserver);
     const callback = onReport.mock.calls[0][0];
     callback({ metrics: [{ name: "LCP", id: "lcp-1", value: 2100 }] });
     callback({ metrics: [{ name: "LCP", id: "lcp-2", value: 2700 }] });
@@ -192,7 +194,8 @@ describe("admin web vitals diagnostics", () => {
       windowLike: win as any,
       logger,
     });
-    observerCallback?.({
+    const emitLcpEntry = observerCallback as unknown as PerformanceObserverCallback;
+    emitLcpEntry({
       getEntries: () => [{
         element,
         entryType: "largest-contentful-paint",
@@ -200,7 +203,7 @@ describe("admin web vitals diagnostics", () => {
         loadTime: 1090,
         size: 14400,
       }],
-    } as PerformanceObserverEntryList, {} as PerformanceObserver);
+    } as unknown as PerformanceObserverEntryList, {} as PerformanceObserver);
 
     expect(observe).toHaveBeenCalledWith({ type: "largest-contentful-paint", buffered: true });
     expect(logger).toHaveBeenCalledWith("Admin Browser LCP Candidate", {

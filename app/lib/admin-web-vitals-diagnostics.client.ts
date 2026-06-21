@@ -13,7 +13,8 @@ type ShopifyWebVitals = {
   onReport: (callback: ((report: WebVitalsReport) => void) | null) => Promise<void> | void;
 };
 
-type WindowWithWebVitals = Window & {
+type WindowWithWebVitals = Omit<Window, "shopify"> & {
+  PerformanceObserver?: typeof PerformanceObserver;
   shopify?: {
     webVitals?: ShopifyWebVitals;
   };
@@ -187,7 +188,9 @@ function recordDebugLcpSample({
 }
 
 export function installAdminWebVitalsDiagnostics({
-  windowLike = typeof window === "undefined" ? undefined : window,
+  windowLike = typeof window === "undefined"
+    ? undefined
+    : (window as unknown as WindowWithWebVitals),
   logger = console.info,
 }: DiagnosticsOptions = {}): () => void {
   const webVitals = windowLike?.shopify?.webVitals;
@@ -199,9 +202,11 @@ export function installAdminWebVitalsDiagnostics({
   let latestLcpElement: string | null = null;
   let observer: PerformanceObserver | null = null;
 
-  if ("PerformanceObserver" in windowLike) {
+  const PerformanceObserverCtor = windowLike.PerformanceObserver;
+  if (typeof PerformanceObserverCtor === "function") {
     try {
-      observer = new windowLike.PerformanceObserver((list) => {
+      observer = new PerformanceObserverCtor(
+        (list: PerformanceObserverEntryList) => {
         const entries = list.getEntries();
         const latestEntry = entries[entries.length - 1] as PerformanceEntry & {
           element?: Element;
@@ -218,8 +223,9 @@ export function installAdminWebVitalsDiagnostics({
             size: latestEntry?.size,
           });
         }
-      });
-      observer.observe({ type: "largest-contentful-paint", buffered: true });
+        },
+      );
+      observer?.observe({ type: "largest-contentful-paint", buffered: true });
     } catch {
       observer = null;
     }
