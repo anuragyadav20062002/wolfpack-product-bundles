@@ -5,21 +5,32 @@ export function toNumericShopifyId(id: string | undefined | null): string {
 }
 
 export function toProductGid(product: any): string {
-  return product?.graphqlId || product?.id || (product?.productId ? `gid://shopify/Product/${product.productId}` : "");
+  return (
+    product?.graphqlId ||
+    product?.id ||
+    (product?.productId ? `gid://shopify/Product/${product.productId}` : "")
+  );
 }
 
 export function toVariantGid(variant: any): string {
-  return variant?.variantGraphqlId || variant?.id || (variant?.variantId ? `gid://shopify/ProductVariant/${variant.variantId}` : "");
+  return (
+    variant?.variantGraphqlId ||
+    variant?.id ||
+    (variant?.variantId
+      ? `gid://shopify/ProductVariant/${variant.variantId}`
+      : "")
+  );
 }
 
 export function normalizeAddonPickerProduct(product: any) {
   const productGid = toProductGid(product);
   const variants = Array.isArray(product?.variants) ? product.variants : [];
-  const imageUrl = product?.images?.[0]?.originalSrc
-    || product?.images?.[0]?.url
-    || product?.image?.url
-    || product?.imageUrl
-    || null;
+  const imageUrl =
+    product?.images?.[0]?.originalSrc ||
+    product?.images?.[0]?.url ||
+    product?.image?.url ||
+    product?.imageUrl ||
+    null;
 
   return {
     id: productGid,
@@ -31,13 +42,18 @@ export function normalizeAddonPickerProduct(product: any) {
       return {
         variantId: toNumericShopifyId(variantGid || variant?.variantId),
         variantGraphqlId: variantGid,
-        inventoryQuantity: typeof variant?.inventoryQuantity === "number" ? variant.inventoryQuantity : null,
+        inventoryQuantity:
+          typeof variant?.inventoryQuantity === "number"
+            ? variant.inventoryQuantity
+            : null,
         inventoryPolicy: variant?.inventoryPolicy ?? null,
         price: String(variant?.price ?? "0"),
-        variantTitle: variant?.title || variant?.variantTitle || "Default Title",
+        variantTitle:
+          variant?.title || variant?.variantTitle || "Default Title",
       };
     }),
-    hasOnlyDefaultVariant: product?.hasOnlyDefaultVariant ?? variants.length <= 1,
+    hasOnlyDefaultVariant:
+      product?.hasOnlyDefaultVariant ?? variants.length <= 1,
     images: imageUrl ? [{ originalSrc: imageUrl }] : [],
     title: product?.title || product?.name || "",
     tags: Array.isArray(product?.tags) ? product.tags : [],
@@ -45,10 +61,15 @@ export function normalizeAddonPickerProduct(product: any) {
 }
 
 export function normalizeAddonTier(tier: any, index: number) {
-  const eligibilityType = tier?.eligibilityCondition?.type || tier?.eligibilityType || "QUANTITY";
-  const eligibilityValue = Number(tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1) || 1;
-  const discountType = tier?.discount?.type || tier?.discountType || "PERCENTAGE";
-  const discountValue = Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0;
+  const eligibilityType =
+    tier?.eligibilityCondition?.type || tier?.eligibilityType || "QUANTITY";
+  const eligibilityValue =
+    Number(tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1) ||
+    1;
+  const discountType =
+    tier?.discount?.type || tier?.discountType || "PERCENTAGE";
+  const discountValue =
+    Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0;
 
   return {
     tierId: tier?.tierId || `tier${index + 1}`,
@@ -59,19 +80,22 @@ export function normalizeAddonTier(tier: any, index: number) {
     eligibilityCondition: {
       type: eligibilityType,
       value: eligibilityValue,
-      isValidateEligibilityConditionEnabled: tier?.eligibilityCondition?.isValidateEligibilityConditionEnabled !== false,
+      isValidateEligibilityConditionEnabled:
+        tier?.eligibilityCondition?.isValidateEligibilityConditionEnabled !==
+        false,
     },
     discount: {
       type: discountType,
       value: discountValue,
     },
-    displayVariantsAsIndividualProducts_addons: tier?.displayVariantsAsIndividualProducts_addons === true,
+    displayVariantsAsIndividualProducts_addons:
+      tier?.displayVariantsAsIndividualProducts_addons === true,
     conditions: Array.isArray(tier?.conditions)
       ? tier.conditions.map((condition: any) => ({
-        type: condition?.type || "quantity",
-        condition: condition?.condition || "lessThanOrEqualTo",
-        value: String(condition?.value ?? "1"),
-      }))
+          type: condition?.type || "quantity",
+          condition: condition?.condition || "lessThanOrEqualTo",
+          value: String(condition?.value ?? "1"),
+        }))
       : [],
   };
 }
@@ -104,31 +128,43 @@ export function addonTierToDraft(tier: any, index: number) {
     ...createDefaultAddonDraftTier(index),
     tierId: tier?.tierId || `tier${index + 1}`,
     title: tier?.title || `Tier ${index + 1}`,
-    selectedAddonProducts: Array.isArray(tier?.selectedAddonProducts) ? tier.selectedAddonProducts : [],
-    eligibilityType: tier?.eligibilityCondition?.type || tier?.eligibilityType || "QUANTITY",
-    eligibilityValue: Number(tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1) || 1,
+    selectedAddonProducts: Array.isArray(tier?.selectedAddonProducts)
+      ? tier.selectedAddonProducts
+      : [],
+    eligibilityType:
+      tier?.eligibilityCondition?.type || tier?.eligibilityType || "QUANTITY",
+    eligibilityValue:
+      Number(
+        tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1,
+      ) || 1,
     discountType: tier?.discount?.type || tier?.discountType || "PERCENTAGE",
-    discountValue: Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0,
-    displayVariantsAsIndividualProducts_addons: tier?.displayVariantsAsIndividualProducts_addons === true,
+    discountValue:
+      Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0,
+    displayVariantsAsIndividualProducts_addons:
+      tier?.displayVariantsAsIndividualProducts_addons === true,
     displayFree: false,
     conditions: Array.isArray(tier?.conditions)
       ? tier.conditions.map((condition: any) => ({
-        type: condition?.type || "quantity",
-        condition: condition?.condition || "lessThanOrEqualTo",
-        value: String(condition?.value ?? "1"),
-      }))
+          type: condition?.type || "quantity",
+          condition: condition?.condition || "lessThanOrEqualTo",
+          value: String(condition?.value ?? "1"),
+        }))
       : [],
   };
 }
 
-export function buildAddonDraftFromPersonalizationData(personalizationData: any) {
+export function buildAddonDraftFromPersonalizationData(
+  personalizationData: any,
+) {
   const addonProducts = personalizationData?.addonProducts || {};
-  const tiers = Array.isArray(addonProducts?.tiers) && addonProducts.tiers.length > 0
-    ? addonProducts.tiers.map(addonTierToDraft)
-    : [createDefaultAddonDraftTier()];
+  const tiers =
+    Array.isArray(addonProducts?.tiers) && addonProducts.tiers.length > 0
+      ? addonProducts.tiers.map(addonTierToDraft)
+      : [createDefaultAddonDraftTier()];
 
   return {
-    isPersonalizationEnabled: personalizationData?.isPersonalizationEnabled === true,
+    isPersonalizationEnabled:
+      personalizationData?.isPersonalizationEnabled === true,
     personalizeStepText: personalizationData?.personalizeStepText || "",
     personalizePageSubtext: personalizationData?.personalizePageSubtext || "",
     stepImage: personalizationData?.stepImage || null,
@@ -145,9 +181,10 @@ export function buildPersonalizationDataFromDraft(
 ) {
   if (!addonDraft?.isPersonalizationEnabled) return null;
 
-  const addonTiers = Array.isArray(addonDraft?.addonTiers) && addonDraft.addonTiers.length > 0
-    ? addonDraft.addonTiers
-    : [createDefaultAddonDraftTier()];
+  const addonTiers =
+    Array.isArray(addonDraft?.addonTiers) && addonDraft.addonTiers.length > 0
+      ? addonDraft.addonTiers
+      : [createDefaultAddonDraftTier()];
   const tiers = addonTiers.map(normalizeAddonTier);
 
   const personalizationData: Record<string, any> = {
@@ -162,7 +199,9 @@ export function buildPersonalizationDataFromDraft(
       tiers,
       multiLangData: addonDraft?.addonMultiLangData || {},
       addonsMessaging: {
-        isEnabled: Boolean(addonMessages?.discountText || addonMessages?.successMessage),
+        isEnabled: Boolean(
+          addonMessages?.discountText || addonMessages?.successMessage,
+        ),
         tier1: {
           ineligibleState: addonMessages?.discountText || "",
           eligibleState: addonMessages?.successMessage || "",

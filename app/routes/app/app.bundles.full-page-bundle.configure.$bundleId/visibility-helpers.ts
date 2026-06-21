@@ -19,17 +19,31 @@ export function asVisibilityArray(value: unknown): unknown[] {
 }
 
 export function getVisibilityDisplayTarget(
-  displayConfiguration: Partial<VisibilityDisplayConfiguration> | null | undefined,
+  displayConfiguration:
+    | Partial<VisibilityDisplayConfiguration>
+    | null
+    | undefined,
   allValue: string,
 ): string {
   if (!displayConfiguration) return allValue;
-  if (asVisibilityArray(displayConfiguration.collectionsSelectedData).length > 0 || asVisibilityArray(displayConfiguration.showOnSpecificCollectionPages).length > 0) {
+  if (
+    asVisibilityArray(displayConfiguration.collectionsSelectedData).length >
+      0 ||
+    asVisibilityArray(displayConfiguration.showOnSpecificCollectionPages)
+      .length > 0
+  ) {
     return "specific_collections";
   }
-  if (asVisibilityArray(displayConfiguration.selectedProducts).length > 0 || asVisibilityArray(displayConfiguration.showOnSpecificProductPages).length > 0) {
+  if (
+    asVisibilityArray(displayConfiguration.selectedProducts).length > 0 ||
+    asVisibilityArray(displayConfiguration.showOnSpecificProductPages).length >
+      0
+  ) {
     return "specific_products";
   }
-  return displayConfiguration.showOnAllBundleProducts === false ? "specific_products" : allValue;
+  return displayConfiguration.showOnAllBundleProducts === false
+    ? "specific_products"
+    : allValue;
 }
 
 export function buildVisibilityDisplayConfiguration(
@@ -39,41 +53,77 @@ export function buildVisibilityDisplayConfiguration(
   collectionsSelectedData: unknown[] = [],
   showOnSpecificCollectionPages: unknown[] = [],
 ): VisibilityDisplayConfiguration {
-  const showOnAllBundleProducts = displayOn === "all" || displayOn === "all_products";
-  const productPageTargets = showOnSpecificProductPages.length > 0 ? showOnSpecificProductPages : selectedProducts;
-  const collectionPageTargets = showOnSpecificCollectionPages.length > 0 ? showOnSpecificCollectionPages : collectionsSelectedData;
+  const showOnAllBundleProducts =
+    displayOn === "all" || displayOn === "all_products";
+  const productPageTargets =
+    showOnSpecificProductPages.length > 0
+      ? showOnSpecificProductPages
+      : selectedProducts;
+  const collectionPageTargets =
+    showOnSpecificCollectionPages.length > 0
+      ? showOnSpecificCollectionPages
+      : collectionsSelectedData;
 
   return {
     showOnAllBundleProducts,
-    selectedProducts: displayOn === "specific_products" ? selectedProducts.map((product) => compactVisibilityProductReference(product)) : [],
-    showOnSpecificProductPages: displayOn === "specific_products" ? productPageTargets.map((product) => compactVisibilityProductPageReference(product)) : [],
-    collectionsSelectedData: displayOn === "specific_collections" ? collectionsSelectedData.map((collection) => compactVisibilityCollectionReference(collection)) : [],
-    showOnSpecificCollectionPages: displayOn === "specific_collections" ? collectionPageTargets.map((collection) => compactVisibilityCollectionPageReference(collection)) : [],
+    selectedProducts:
+      displayOn === "specific_products"
+        ? selectedProducts.map((product) =>
+            compactVisibilityProductReference(product),
+          )
+        : [],
+    showOnSpecificProductPages:
+      displayOn === "specific_products"
+        ? productPageTargets.map((product) =>
+            compactVisibilityProductPageReference(product),
+          )
+        : [],
+    collectionsSelectedData:
+      displayOn === "specific_collections"
+        ? collectionsSelectedData.map((collection) =>
+            compactVisibilityCollectionReference(collection),
+          )
+        : [],
+    showOnSpecificCollectionPages:
+      displayOn === "specific_collections"
+        ? collectionPageTargets.map((collection) =>
+            compactVisibilityCollectionPageReference(collection),
+          )
+        : [],
   };
 }
 
 export function getVisibilityResourceId(resource: any): string | null {
-  return resource?.graphqlId
-    ?? resource?.admin_graphql_api_id
-    ?? resource?.storefrontId
-    ?? resource?.id
-    ?? null;
+  return (
+    resource?.graphqlId ??
+    resource?.admin_graphql_api_id ??
+    resource?.storefrontId ??
+    resource?.id ??
+    null
+  );
 }
 
 export function getVisibilityResourceNumericId(resource: any): string {
-  const id = String(resource?.productId ?? resource?.collectionId ?? getVisibilityResourceId(resource) ?? "");
-  return id.includes("/") ? id.split("/").pop() ?? id : id;
+  const id = String(
+    resource?.productId ??
+      resource?.collectionId ??
+      getVisibilityResourceId(resource) ??
+      "",
+  );
+  return id.includes("/") ? (id.split("/").pop() ?? id) : id;
 }
 
 export function getVisibilityImageUrl(resource: any): string | null {
-  return resource?.imageUrl
-    ?? resource?.featuredImage?.url
-    ?? resource?.image?.url
-    ?? resource?.image?.src
-    ?? resource?.images?.[0]?.originalSrc
-    ?? resource?.images?.[0]?.url
-    ?? resource?.images?.[0]?.src
-    ?? null;
+  return (
+    resource?.imageUrl ??
+    resource?.featuredImage?.url ??
+    resource?.image?.url ??
+    resource?.image?.src ??
+    resource?.images?.[0]?.originalSrc ??
+    resource?.images?.[0]?.url ??
+    resource?.images?.[0]?.src ??
+    null
+  );
 }
 
 export function getVisibilityPickerSelection(picked: any): any[] | null {
@@ -122,7 +172,9 @@ export function compactVisibilityProductPageReference(product: any) {
   };
 }
 
-export function normalizeVisibilityProductForDisplayConfiguration(product: any) {
+export function normalizeVisibilityProductForDisplayConfiguration(
+  product: any,
+) {
   return compactVisibilityProductReference(product);
 }
 
@@ -153,7 +205,9 @@ export function compactVisibilityCollectionPageReference(collection: any) {
   };
 }
 
-export function normalizeVisibilityCollectionForDisplayConfiguration(collection: any) {
+export function normalizeVisibilityCollectionForDisplayConfiguration(
+  collection: any,
+) {
   return compactVisibilityCollectionReference(collection);
 }
 

@@ -7,6 +7,10 @@
 
 import type { PricingRule } from "../../../types/pricing";
 import type { BundleStatus } from "../../../constants/bundle";
+import type {
+  ActionResponse,
+  BundleStep,
+} from "../../../types/bundle-configure";
 
 export type {
   StepProduct,
@@ -44,7 +48,7 @@ export interface BundleData {
   fullPageLayout?: string | null;
   promoBannerBgImage?: string | null;
   loadingGif?: string | null;
-  steps: import("../../../types/bundle-configure").BundleStep[];
+  steps: BundleStep[];
   pricing?: BundlePricing;
 }
 
@@ -59,6 +63,6 @@ export interface LoaderData {
   showFirstLoadTour?: boolean;
 }
 
-export interface SaveBundleResponse extends import("../../../types/bundle-configure").ActionResponse {
+export interface SaveBundleResponse extends ActionResponse {
   bundle?: BundleData;
 }

@@ -10,6 +10,7 @@ Keep embedded Admin route refactors behavior-preserving while reducing route and
 |---|---|---|---|---|
 | 1 | Scan Admin route and component TypeScript files | `app/routes/app`, `app/components` | Files over 600 lines are rejected unless explicitly listed in the active refactor backlog | Excludes CSS, generated, bundled, and build outputs |
 | 2 | Refactor backlog remains visible | Known oversized files from the starting inventory | Backlog entries must still exist and remain over the cap until their loop removes them | Prevents silent stale allow-list entries |
+| 3 | Scan active configure route-family files for shortcut flow objects | FPB/PPB configure route families | Files do not contain `sectionFlow` or `flow: any` | Prevents hiding oversized route state behind untyped pass-through props |
 
 ### AdminConfigureActionDispatch
 | # | Scenario | Input | Expected Output | Notes |
@@ -23,5 +24,6 @@ Keep embedded Admin route refactors behavior-preserving while reducing route and
 ## Acceptance Criteria
 - [ ] `npm run test:integration` runs real tests instead of only `.gitkeep`.
 - [ ] Admin route/component file-size guard is active.
+- [ ] Configure route-family readability guard rejects untyped bulk flow props.
 - [ ] Configure action dispatch tests pass before and after handler/module extraction.
 - [ ] Refactor backlog entries are removed from the guard as their files drop under 600 lines.

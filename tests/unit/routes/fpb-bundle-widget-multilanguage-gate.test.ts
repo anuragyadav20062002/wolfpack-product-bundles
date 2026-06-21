@@ -1,12 +1,8 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFpbConfigureRouteFamilySource } from "./fpb-configure-route-source";
 
 describe("Full Page Bundle Widget multilingual gate", () => {
   it("disables the Bundle Widget Multi Language action when locales are unavailable", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
-      "utf8",
-    );
+    const source = readFpbConfigureRouteFamilySource();
 
     const widgetSectionIndex = source.indexOf('data-tour-target="fpb-bundle-widget"');
     const modalIndex = source.indexOf('openMultiLanguageModal("Bundle Widget"', widgetSectionIndex);

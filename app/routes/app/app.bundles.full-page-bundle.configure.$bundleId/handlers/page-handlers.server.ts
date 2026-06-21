@@ -12,7 +12,10 @@ import {
   writeBundleConfigPageMetafield,
 } from "../../../../services/widget-installation/widget-full-page-bundle.server";
 
-export async function handleCheckFullPageTemplate(admin: ShopifyAdmin, session: Session) {
+export async function handleCheckFullPageTemplate(
+  admin: ShopifyAdmin,
+  session: Session,
+) {
   try {
     AppLogger.debug("[TEMPLATE_CHECK] Checking for full-page-bundle template");
 
@@ -34,7 +37,7 @@ export async function handleCheckFullPageTemplate(admin: ShopifyAdmin, session: 
       return json({
         success: false,
         templateExists: false,
-        error: "No active theme found"
+        error: "No active theme found",
       });
     }
 
@@ -49,7 +52,7 @@ export async function handleCheckFullPageTemplate(admin: ShopifyAdmin, session: 
           "X-Shopify-Access-Token": accessToken ?? "",
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!assetsResponse.ok) {
@@ -57,9 +60,10 @@ export async function handleCheckFullPageTemplate(admin: ShopifyAdmin, session: 
     }
 
     const assetsData = await assetsResponse.json();
-    const templateExists = assetsData.assets.some((asset: any) =>
-      asset.key === "templates/page.full-page-bundle.json" ||
-      asset.key === "templates/page.full-page-bundle.liquid"
+    const templateExists = assetsData.assets.some(
+      (asset: any) =>
+        asset.key === "templates/page.full-page-bundle.json" ||
+        asset.key === "templates/page.full-page-bundle.liquid",
     );
 
     AppLogger.debug(`[TEMPLATE_CHECK] Template exists: ${templateExists}`);
@@ -68,55 +72,104 @@ export async function handleCheckFullPageTemplate(admin: ShopifyAdmin, session: 
       success: true,
       templateExists,
       themeName: theme.name,
-      themeId: theme.id
+      themeId: theme.id,
     });
   } catch (error) {
-    AppLogger.error("[TEMPLATE_CHECK] Error checking template:", {}, error as any);
-    return json({
-      success: false,
-      templateExists: false,
-      error: (error as Error).message || "Failed to check template"
-    }, { status: 500 });
+    AppLogger.error(
+      "[TEMPLATE_CHECK] Error checking template:",
+      {},
+      error as any,
+    );
+    return json(
+      {
+        success: false,
+        templateExists: false,
+        error: (error as Error).message || "Failed to check template",
+      },
+      { status: 500 },
+    );
   }
 }
 
-export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Session, bundleId: string) {
+export async function handleCreatePreviewPage(
+  admin: ShopifyAdmin,
+  session: Session,
+  bundleId: string,
+) {
   try {
-    AppLogger.debug("[PREVIEW_PAGE] Creating/retrieving preview page", { bundleId });
+    AppLogger.debug("[PREVIEW_PAGE] Creating/retrieving preview page", {
+      bundleId,
+    });
 
     const bundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
       include: {
-        steps: { include: { StepProduct: true, StepCategory: { orderBy: { sortOrder: "asc" } } }, orderBy: { position: "asc" } },
+        steps: {
+          include: {
+            StepProduct: true,
+            StepCategory: { orderBy: { sortOrder: "asc" } },
+          },
+          orderBy: { position: "asc" },
+        },
         pricing: true,
       },
     });
 
     if (!bundle) {
-      return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
+      return json(
+        { success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND },
+        { status: 404 },
+      );
     }
 
     if (bundle.shopifyPreviewPageId) {
-      const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId, session.shop, bundleId);
+      const urlResult = await getPreviewPageUrl(
+        admin,
+        bundle.shopifyPreviewPageId,
+        session.shop,
+        bundleId,
+      );
 
       if (urlResult.success) {
-        const bodyRefresh = await refreshFullPageBundlePageBody(admin, bundle.shopifyPreviewPageId, bundle.id, session.shop, bundle);
+        const bodyRefresh = await refreshFullPageBundlePageBody(
+          admin,
+          bundle.shopifyPreviewPageId,
+          bundle.id,
+          session.shop,
+          bundle,
+        );
         if (!bodyRefresh.success) {
-          return json({ success: false, error: bodyRefresh.error || "Failed to refresh preview page body" }, { status: 400 });
+          return json(
+            {
+              success: false,
+              error: bodyRefresh.error || "Failed to refresh preview page body",
+            },
+            { status: 400 },
+          );
         }
-        await writeBundleConfigPageMetafield(admin, bundle.shopifyPreviewPageId, bundle);
+        await writeBundleConfigPageMetafield(
+          admin,
+          bundle.shopifyPreviewPageId,
+          bundle,
+        );
 
         AppLogger.info("[PREVIEW_PAGE] Returning existing preview URL", {
           bundleId,
           previewPageId: bundle.shopifyPreviewPageId,
         });
-        return json({ success: true, shareablePreviewUrl: urlResult.previewUrl });
+        return json({
+          success: true,
+          shareablePreviewUrl: urlResult.previewUrl,
+        });
       }
 
-      AppLogger.warn("[PREVIEW_PAGE] Existing draft page not found, recreating", {
-        bundleId,
-        previewPageId: bundle.shopifyPreviewPageId,
-      });
+      AppLogger.warn(
+        "[PREVIEW_PAGE] Existing draft page not found, recreating",
+        {
+          bundleId,
+          previewPageId: bundle.shopifyPreviewPageId,
+        },
+      );
       await db.bundle.update({
         where: { id: bundleId, shopId: session.shop },
         data: { shopifyPreviewPageId: null, shopifyPreviewPageHandle: null },
@@ -131,18 +184,33 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
       bundleId,
       `[Preview] ${bundle.name}`,
       undefined,
-      true
+      true,
     );
 
     if (!result.success) {
-      AppLogger.error("[PREVIEW_PAGE] Draft page creation failed", { bundleId, error: result.error });
+      AppLogger.error("[PREVIEW_PAGE] Draft page creation failed", {
+        bundleId,
+        error: result.error,
+      });
       return json({ success: false, error: result.error }, { status: 400 });
     }
 
     if (result.pageId) {
-      const bodyRefresh = await refreshFullPageBundlePageBody(admin, result.pageId, bundle.id, session.shop, bundle);
+      const bodyRefresh = await refreshFullPageBundlePageBody(
+        admin,
+        result.pageId,
+        bundle.id,
+        session.shop,
+        bundle,
+      );
       if (!bodyRefresh.success) {
-        return json({ success: false, error: bodyRefresh.error || "Failed to refresh preview page body" }, { status: 400 });
+        return json(
+          {
+            success: false,
+            error: bodyRefresh.error || "Failed to refresh preview page body",
+          },
+          { status: 400 },
+        );
       }
     }
 
@@ -164,10 +232,13 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
     return json({ success: true, shareablePreviewUrl: result.pageUrl });
   } catch (error) {
     AppLogger.error("[PREVIEW_PAGE] Unexpected error", {}, error as Error);
-    return json({
-      success: false,
-      error: (error as Error).message || "Failed to create preview page",
-    }, { status: 500 });
+    return json(
+      {
+        success: false,
+        error: (error as Error).message || "Failed to create preview page",
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -175,10 +246,12 @@ export async function handleUpdateBundleDesignTemplate(
   _admin: ShopifyAdmin,
   session: Session,
   bundleId: string,
-  formData: FormData
+  formData: FormData,
 ) {
-  const bundleDesignTemplate = (formData.get("bundleDesignTemplate") as string)?.trim() || null;
-  const bundleDesignPresetId = (formData.get("bundleDesignPresetId") as string)?.trim() || null;
+  const bundleDesignTemplate =
+    (formData.get("bundleDesignTemplate") as string)?.trim() || null;
+  const bundleDesignPresetId =
+    (formData.get("bundleDesignPresetId") as string)?.trim() || null;
 
   await db.bundle.update({
     where: { id: bundleId, shopId: session.shop },

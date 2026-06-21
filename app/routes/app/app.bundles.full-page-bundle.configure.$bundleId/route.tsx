@@ -1,4 +1,8 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import {
+  json,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+} from "@remix-run/node";
 import { AppLogger } from "../../../lib/logger";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
@@ -30,8 +34,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await requireAdminSession(request);
   const { bundleId } = params;
   const url = new URL(request.url);
-  const configureMode = url.searchParams.get("mode") === "create" ? "create" : "edit";
-  const showFirstLoadTour = configureMode === "create" && url.searchParams.get("first_load") === "true";
+  const configureMode =
+    url.searchParams.get("mode") === "create" ? "create" : "edit";
+  const showFirstLoadTour =
+    configureMode === "create" && url.searchParams.get("first_load") === "true";
 
   if (!bundleId) {
     throw new Response(ERROR_MESSAGES.BUNDLE_ID_REQUIRED, { status: 400 });
@@ -48,10 +54,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       steps: {
         include: {
           StepProduct: true,
-          StepCategory: { orderBy: { sortOrder: "asc" } }
-        }
+          StepCategory: { orderBy: { sortOrder: "asc" } },
+        },
       },
-      pricing: true
+      pricing: true,
     },
   });
 
@@ -59,31 +65,31 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     throw new Response(ERROR_MESSAGES.BUNDLE_NOT_FOUND, { status: 404 });
   }
 
-
   // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
   // Per Shopify docs: addAppBlockId={api_key}/{handle}
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
-  const apiKey = process.env.SHOPIFY_API_KEY || '';
+  const apiKey = process.env.SHOPIFY_API_KEY || "";
   // Block handle must match the liquid filename (without .liquid extension)
   // File: extensions/bundle-builder/blocks/bundle-full-page.liquid
-  const blockHandle = 'bundle-full-page';
+  const blockHandle = "bundle-full-page";
 
-  const [bundleProduct, shopLocales, availableBundles, embedData] = await Promise.all([
-    bundle.shopifyProductId
-      ? fetchBundleProduct(admin, bundle.shopifyProductId, bundleId)
-      : Promise.resolve(null),
-    fetchShopLocales(admin),
-    db.bundle.findMany({
-      where: {
-        shopId: session.shop,
-        bundleType: 'full_page',
-        status: { in: ['draft', 'active'] },
-      },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    }),
-    fetchEmbedData(admin, session.shop, apiKey, "bundle-app-embed"),
-  ]);
+  const [bundleProduct, shopLocales, availableBundles, embedData] =
+    await Promise.all([
+      bundle.shopifyProductId
+        ? fetchBundleProduct(admin, bundle.shopifyProductId, bundleId)
+        : Promise.resolve(null),
+      fetchShopLocales(admin),
+      db.bundle.findMany({
+        where: {
+          shopId: session.shop,
+          bundleType: "full_page",
+          status: { in: ["draft", "active"] },
+        },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+      fetchEmbedData(admin, session.shop, apiKey, "bundle-app-embed"),
+    ]);
 
   return json({
     bundle,
@@ -105,27 +111,42 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const { session, admin } = await requireAdminSession(request);
     const { bundleId } = params;
 
-
     if (!session?.shop) {
-      return json({ success: false, error: ERROR_MESSAGES.AUTH_REQUIRED }, { status: 401 });
+      return json(
+        { success: false, error: ERROR_MESSAGES.AUTH_REQUIRED },
+        { status: 401 },
+      );
     }
 
     const formData = await request.formData();
     const intent = formData.get("intent");
 
     if (!bundleId) {
-      return json({ success: false, error: ERROR_MESSAGES.BUNDLE_ID_REQUIRED }, { status: 400 });
+      return json(
+        { success: false, error: ERROR_MESSAGES.BUNDLE_ID_REQUIRED },
+        { status: 400 },
+      );
     }
 
     switch (intent) {
       case "saveBundle":
         return await handleSaveBundle(admin, session, bundleId, formData);
       case "updateBundleStatus":
-        return await handleUpdateBundleStatus(admin, session, bundleId, formData);
+        return await handleUpdateBundleStatus(
+          admin,
+          session,
+          bundleId,
+          formData,
+        );
       case "syncProduct":
         return await handleSyncProduct(admin, session, bundleId, formData);
       case "updateBundleProduct":
-        return await handleUpdateBundleProduct(admin, session, bundleId, formData);
+        return await handleUpdateBundleProduct(
+          admin,
+          session,
+          bundleId,
+          formData,
+        );
       case "getPages":
         return await handleGetPages(admin, session);
       case "getThemeTemplates":
@@ -141,30 +162,48 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           admin,
           session,
           bundleId,
-          String(formData.get("desiredSlug") || "")
+          String(formData.get("desiredSlug") || ""),
         );
       case "renamePageSlug":
         return await handleRenamePageSlug(
           admin,
           session,
           bundleId,
-          String(formData.get("newSlug") || "")
+          String(formData.get("newSlug") || ""),
         );
       case "createPreviewPage":
         return await handleCreatePreviewPage(admin, session, bundleId);
       case "syncBundle":
         return await handleSyncBundle(admin, session, bundleId);
       case "updateBundleDesignTemplate":
-        return await handleUpdateBundleDesignTemplate(admin, session, bundleId, formData);
+        return await handleUpdateBundleDesignTemplate(
+          admin,
+          session,
+          bundleId,
+          formData,
+        );
       default:
-        return json({ success: false, error: ERROR_MESSAGES.UNKNOWN_ACTION }, { status: 400 });
+        return json(
+          { success: false, error: ERROR_MESSAGES.UNKNOWN_ACTION },
+          { status: 400 },
+        );
     }
   } catch (error) {
-    AppLogger.error("Action failed", {
-      component: 'bundle-config',
-      operation: 'action'
-    }, error);
-    return json({ success: false, error: (error as Error).message || "An error occurred" }, { status: 500 });
+    AppLogger.error(
+      "Action failed",
+      {
+        component: "bundle-config",
+        operation: "action",
+      },
+      error,
+    );
+    return json(
+      {
+        success: false,
+        error: (error as Error).message || "An error occurred",
+      },
+      { status: 500 },
+    );
   }
 };
 

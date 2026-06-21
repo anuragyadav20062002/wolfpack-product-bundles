@@ -175,7 +175,7 @@ export function buildVisibilityDisplayConfiguration(
   };
 }
 
-function getVisibilityResourceId(resource: any): string | null {
+export function getVisibilityResourceId(resource: any): string | null {
   return (
     resource?.graphqlId ??
     resource?.admin_graphql_api_id ??

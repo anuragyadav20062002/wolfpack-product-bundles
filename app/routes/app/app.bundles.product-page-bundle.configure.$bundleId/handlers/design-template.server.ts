@@ -9,9 +9,10 @@ export async function handleUpdateBundleDesignTemplate(
   _admin: ShopifyAdmin,
   session: Session,
   bundleId: string,
-  formData: FormData
+  formData: FormData,
 ) {
-  const { bundleDesignTemplate, bundleDesignPresetId } = parseBundleDesignTemplate(formData);
+  const { bundleDesignTemplate, bundleDesignPresetId } =
+    parseBundleDesignTemplate(formData);
 
   const updatedBundle = await db.bundle.update({
     where: { id: bundleId, shopId: session.shop },

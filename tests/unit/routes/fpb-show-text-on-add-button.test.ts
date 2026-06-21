@@ -2,22 +2,29 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { formatBundleForWidget } from "../../../app/lib/bundle-formatter.server";
+import { readFpbConfigureRouteFamilySource } from "./fpb-configure-route-source";
 
-const fpbRoute = fs.readFileSync(
-  path.join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
-  "utf8",
-);
+const fpbRoute = readFpbConfigureRouteFamilySource().replace(/\s+/g, " ");
 
-const fpbHandler = fs.readFileSync(
-  path.join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/save-bundle.server.ts"),
-  "utf8",
-);
+const fpbHandler = fs
+  .readFileSync(
+    path.join(
+      process.cwd(),
+      "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/save-bundle.server.ts",
+    ),
+    "utf8",
+  )
+  .replace(/\s+/g, " ");
 
 describe("FPB Show Text on + Button persistence", () => {
   it("submits and persists the direct showTextOnAddButton field", () => {
     expect(fpbRoute).toContain("(bundle as any).showTextOnAddButton");
-    expect(fpbRoute).toContain('formData.append("showTextOnAddButton", String(showTextOnPlusEnabled))');
-    expect(fpbHandler).toContain('const showTextOnAddButton = formData.get("showTextOnAddButton") === "true"');
+    expect(fpbRoute).toContain(
+      'formData.append( "showTextOnAddButton", String(flow.showTextOnPlusEnabled), )',
+    );
+    expect(fpbHandler).toContain(
+      'const showTextOnAddButton = formData.get("showTextOnAddButton") === "true"',
+    );
     expect(fpbHandler).toContain("showTextOnAddButton,");
   });
 

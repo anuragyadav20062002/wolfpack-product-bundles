@@ -14,7 +14,7 @@ export {
   handleGetCurrentTheme,
   handleEnsureBundleTemplates,
   handleUpdateBundleDesignTemplate,
-} from './handlers.server';
+} from "./handlers.server";
 
 export {
   handleAssignProductTemplate,

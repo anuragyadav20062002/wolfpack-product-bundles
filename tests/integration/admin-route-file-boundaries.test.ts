@@ -17,6 +17,11 @@ const EXCLUDED_PATH_PARTS = [
 const ACTIVE_REFACTOR_BACKLOG = new Set([
 ]);
 
+const CONFIGURE_ROUTE_FAMILIES = [
+  "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId",
+  "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId",
+];
+
 type FileLineCount = {
   relativePath: string;
   lineCount: number;
@@ -68,5 +73,23 @@ describe("Admin route and component file boundaries", () => {
       .filter((relativePath) => (countsByPath.get(relativePath) ?? 0) <= MAX_ADMIN_FILE_LINES);
 
     expect(staleBacklogEntries).toEqual([]);
+  });
+
+  it("keeps configure route-family splits readable instead of hiding bulk state in any-typed flow objects", () => {
+    const configureSources = adminFileLineCounts()
+      .map(({ relativePath }) => relativePath)
+      .filter((relativePath) =>
+        CONFIGURE_ROUTE_FAMILIES.some((family) => relativePath.startsWith(family))
+      )
+      .map((relativePath) => ({
+        relativePath,
+        source: fs.readFileSync(path.join(ROOT_DIR, relativePath), "utf8"),
+      }));
+
+    const flowObjectFiles = configureSources
+      .filter(({ source }) => /\bsectionFlow\b|flow:\s*any/.test(source))
+      .map(({ relativePath }) => relativePath);
+
+    expect(flowObjectFiles).toEqual([]);
   });
 });

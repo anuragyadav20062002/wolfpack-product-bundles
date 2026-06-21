@@ -1,12 +1,8 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readPpbConfigureRouteFamilySource } from "./ppb-configure-route-source";
 
 describe("Product Page Place Widget copy", () => {
   it("uses the captured EB top-card action text without extra glyphs", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
-      "utf8",
-    );
+    const source = readPpbConfigureRouteFamilySource();
 
     expect(source).toContain("Take your bundle live");
     expect(source).toContain("Place on theme");

@@ -7,9 +7,7 @@ import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
 } from "../../../../services/bundles/metafield-sync.server";
-import {
-  calculateBundlePrice,
-} from "../../../../services/bundles/pricing-calculation.server";
+import { calculateBundlePrice } from "../../../../services/bundles/pricing-calculation.server";
 import {
   convertBundleToStandardMetafields,
   updateProductStandardMetafields,
@@ -20,15 +18,25 @@ import { buildBundleProductPlaceholderMediaInput } from "../../../../lib/bundle-
 import { buildGeneratedBundleProductMetadata } from "../../../../lib/bundle-product-data.server";
 import { publishProductToSalesChannels } from "../../../../services/shopify-publications.server";
 import { buildSyncBundleConfiguration } from "./runtime-config.server";
-import { loadShopName, syncBundleProductToShopify } from "./product-sync.server";
+import {
+  loadShopName,
+  syncBundleProductToShopify,
+} from "./product-sync.server";
 
 /**
  * Handle hard-reset sync of a product-page bundle:
  * Archives and deletes the Shopify product, then re-creates it, and re-runs all metafield
  * operations from the current DB state.
  */
-export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bundleId: string) {
-  AppLogger.info('[SYNC_BUNDLE] Starting hard-reset sync for product-page bundle', { bundleId, shopId: session.shop });
+export async function handleSyncBundle(
+  admin: ShopifyAdmin,
+  session: Session,
+  bundleId: string,
+) {
+  AppLogger.info(
+    "[SYNC_BUNDLE] Starting hard-reset sync for product-page bundle",
+    { bundleId, shopId: session.shop },
+  );
 
   try {
     // 1. Load bundle + steps + pricing from DB
@@ -37,24 +45,31 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       include: {
         steps: {
           include: {
-            StepProduct: { orderBy: { position: 'asc' } },
-            StepCategory: { orderBy: { sortOrder: 'asc' } },
+            StepProduct: { orderBy: { position: "asc" } },
+            StepCategory: { orderBy: { sortOrder: "asc" } },
           },
-          orderBy: { position: 'asc' },
+          orderBy: { position: "asc" },
         },
         pricing: true,
       },
     });
 
     if (!bundle) {
-      return json({ success: false, error: 'Bundle not found' }, { status: 404 });
+      return json(
+        { success: false, error: "Bundle not found" },
+        { status: 404 },
+      );
     }
 
     if (!bundle.shopifyProductId) {
-      return json({
-        success: false,
-        error: 'Bundle has no Shopify product — save the bundle first to create a product',
-      }, { status: 400 });
+      return json(
+        {
+          success: false,
+          error:
+            "Bundle has no Shopify product — save the bundle first to create a product",
+        },
+        { status: 400 },
+      );
     }
 
     const oldProductId = bundle.shopifyProductId;
@@ -70,16 +85,25 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     `;
 
     const archiveResponse = await admin.graphql(ARCHIVE_PRODUCT, {
-      variables: { product: { id: oldProductId, status: 'ARCHIVED' } },
+      variables: { product: { id: oldProductId, status: "ARCHIVED" } },
     });
     const archiveData = await archiveResponse.json();
 
     if (archiveData.data?.productUpdate?.userErrors?.length > 0) {
       const err = archiveData.data.productUpdate.userErrors[0];
-      return json({ success: false, error: `Failed to archive Shopify product: ${err.message}` }, { status: 400 });
+      return json(
+        {
+          success: false,
+          error: `Failed to archive Shopify product: ${err.message}`,
+        },
+        { status: 400 },
+      );
     }
 
-    AppLogger.info('[SYNC_BUNDLE] Shopify product archived', { bundleId, productId: oldProductId });
+    AppLogger.info("[SYNC_BUNDLE] Shopify product archived", {
+      bundleId,
+      productId: oldProductId,
+    });
 
     // 3. Delete Shopify product
     const DELETE_PRODUCT = `
@@ -98,10 +122,19 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
 
     if (deleteData.data?.productDelete?.userErrors?.length > 0) {
       const err = deleteData.data.productDelete.userErrors[0];
-      return json({ success: false, error: `Failed to delete Shopify product: ${err.message}` }, { status: 400 });
+      return json(
+        {
+          success: false,
+          error: `Failed to delete Shopify product: ${err.message}`,
+        },
+        { status: 400 },
+      );
     }
 
-    AppLogger.info('[SYNC_BUNDLE] Shopify product deleted', { bundleId, productId: oldProductId });
+    AppLogger.info("[SYNC_BUNDLE] Shopify product deleted", {
+      bundleId,
+      productId: oldProductId,
+    });
 
     // 4. Clear product reference from DB
     await db.bundle.update({
@@ -141,18 +174,21 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       bundleName: bundle.name,
       shopName,
     });
-    const mediaInput = buildBundleProductPlaceholderMediaInput(process.env.SHOPIFY_APP_URL, bundle.name);
+    const mediaInput = buildBundleProductPlaceholderMediaInput(
+      process.env.SHOPIFY_APP_URL,
+      bundle.name,
+    );
     const createResponse = await admin.graphql(CREATE_PRODUCT, {
       variables: {
         product: {
           ...productMetadata,
-          status: 'DRAFT',
+          status: "DRAFT",
           descriptionHtml: buildBundleProductDescriptionHtml({
             bundleName: bundle.name,
             customDescription: bundle.description,
             status: bundle.status,
           }),
-          tags: ['WP-Bundles'],
+          tags: ["WP-Bundles"],
         },
         ...(mediaInput ? { media: mediaInput } : {}),
       },
@@ -171,38 +207,54 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
 
     // Set price and inventory policy on the auto-created default variant
     // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
-    const defaultVariantId = createData.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
+    const defaultVariantId =
+      createData.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
     if (defaultVariantId && newProductId) {
-      await admin.graphql(`
+      await admin.graphql(
+        `
         mutation UpdateBundleVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
           productVariantsBulkUpdate(productId: $productId, variants: $variants) {
             productVariants { id price }
             userErrors { field message }
           }
         }
-      `, {
-        variables: {
-          productId: newProductId,
-          variants: [{
-            id: defaultVariantId,
-            price: bundlePrice,
-            inventoryPolicy: 'CONTINUE'
-          }]
-        }
-      });
+      `,
+        {
+          variables: {
+            productId: newProductId,
+            variants: [
+              {
+                id: defaultVariantId,
+                price: bundlePrice,
+                inventoryPolicy: "CONTINUE",
+              },
+            ],
+          },
+        },
+      );
     }
     if (!newProductId) {
-      throw new Error('Re-created product has no ID');
+      throw new Error("Re-created product has no ID");
     }
 
-    AppLogger.info('[SYNC_BUNDLE] Shopify product re-created', { bundleId, newProductId });
+    AppLogger.info("[SYNC_BUNDLE] Shopify product re-created", {
+      bundleId,
+      newProductId,
+    });
 
     // 6. Update DB with new product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: newProductId, shopifyProductHandle: productHandle },
+      data: {
+        shopifyProductId: newProductId,
+        shopifyProductHandle: productHandle,
+      },
     });
-    await publishProductToSalesChannels(admin, newProductId, "ppb-sync-bundle-recreate");
+    await publishProductToSalesChannels(
+      admin,
+      newProductId,
+      "ppb-sync-bundle-recreate",
+    );
     const productSyncResult = await syncBundleProductToShopify(
       admin,
       newProductId,
@@ -216,7 +268,10 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
         skipMediaSync: true,
       },
     );
-    if (productSyncResult.handle && productSyncResult.handle !== productHandle) {
+    if (
+      productSyncResult.handle &&
+      productSyncResult.handle !== productHandle
+    ) {
       await db.bundle.update({
         where: { id: bundleId },
         data: { shopifyProductHandle: productSyncResult.handle },
@@ -226,39 +281,70 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // 7. Re-run metafield operations from DB-authoritative state, even when pricing is off.
     const bundleConfig = buildSyncBundleConfiguration(bundle, newProductId);
 
-    AppLogger.info('[SYNC_BUNDLE] Re-running metafield operations', { bundleId, newProductId });
+    AppLogger.info("[SYNC_BUNDLE] Re-running metafield operations", {
+      bundleId,
+      newProductId,
+    });
 
-    const [standardResult, componentResult, variantResult] = await Promise.allSettled([
-      (async () => {
-        const { metafields: standardMetafields } = await convertBundleToStandardMetafields(admin, bundleConfig);
-        if (Object.keys(standardMetafields).length > 0) {
-          await updateProductStandardMetafields(admin, newProductId, standardMetafields);
-        }
-      })(),
-      updateComponentProductMetafields(admin, newProductId, bundleConfig),
-      updateBundleProductMetafields(admin, newProductId, bundleConfig),
-    ]);
+    const [standardResult, componentResult, variantResult] =
+      await Promise.allSettled([
+        (async () => {
+          const { metafields: standardMetafields } =
+            await convertBundleToStandardMetafields(admin, bundleConfig);
+          if (Object.keys(standardMetafields).length > 0) {
+            await updateProductStandardMetafields(
+              admin,
+              newProductId,
+              standardMetafields,
+            );
+          }
+        })(),
+        updateComponentProductMetafields(admin, newProductId, bundleConfig),
+        updateBundleProductMetafields(admin, newProductId, bundleConfig),
+      ]);
 
-    if (standardResult.status === 'rejected') {
-      AppLogger.warn('[SYNC_BUNDLE] Standard metafields update failed (non-critical)', { bundleId }, standardResult.reason);
+    if (standardResult.status === "rejected") {
+      AppLogger.warn(
+        "[SYNC_BUNDLE] Standard metafields update failed (non-critical)",
+        { bundleId },
+        standardResult.reason,
+      );
     }
-    if (componentResult.status === 'rejected') {
-      throw new Error(`Failed to update component metafields: ${componentResult.reason}`);
+    if (componentResult.status === "rejected") {
+      throw new Error(
+        `Failed to update component metafields: ${componentResult.reason}`,
+      );
     }
-    if (variantResult.status === 'rejected') {
-      throw new Error(`Failed to update bundle variant metafields: ${variantResult.reason}`);
+    if (variantResult.status === "rejected") {
+      throw new Error(
+        `Failed to update bundle variant metafields: ${variantResult.reason}`,
+      );
     }
 
-    AppLogger.info('[SYNC_BUNDLE] All metafields re-synced successfully', { bundleId });
+    AppLogger.info("[SYNC_BUNDLE] All metafields re-synced successfully", {
+      bundleId,
+    });
 
     // Sync theme colors for bundle widget color inheritance (non-critical, silent fail)
-    syncThemeColors(admin, session.shop).catch(() => { /* swallowed — syncThemeColors handles logging */ });
+    syncThemeColors(admin, session.shop).catch(() => {
+      /* swallowed — syncThemeColors handles logging */
+    });
 
-    return json({ success: true, synced: true, message: 'Bundle synced successfully' });
-
+    return json({
+      success: true,
+      synced: true,
+      message: "Bundle synced successfully",
+    });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Sync failed';
-    AppLogger.error('[SYNC_BUNDLE] Error during sync:', { bundleId }, error as any);
-    return json({ success: false, error: `Sync failed: ${message}` }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Sync failed";
+    AppLogger.error(
+      "[SYNC_BUNDLE] Error during sync:",
+      { bundleId },
+      error as any,
+    );
+    return json(
+      { success: false, error: `Sync failed: ${message}` },
+      { status: 500 },
+    );
   }
 }

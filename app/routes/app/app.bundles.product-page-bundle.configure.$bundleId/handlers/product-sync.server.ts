@@ -20,7 +20,9 @@ type ProductSyncOptions = {
   skipMediaSync?: boolean;
 };
 
-export async function loadShopName(admin: ShopifyAdmin): Promise<string | null> {
+export async function loadShopName(
+  admin: ShopifyAdmin,
+): Promise<string | null> {
   const GET_SHOP_NAME = `
     query GetShopName {
       shop {
@@ -30,12 +32,19 @@ export async function loadShopName(admin: ShopifyAdmin): Promise<string | null> 
   `;
 
   const response = await admin.graphql(GET_SHOP_NAME);
-  const data = await response.json() as { data?: { shop?: { name?: string | null } }; errors?: unknown[] };
+  const data = (await response.json()) as {
+    data?: { shop?: { name?: string | null } };
+    errors?: unknown[];
+  };
 
   if (data.errors?.length) {
-    AppLogger.warn("[PRODUCT_SYNC] Failed to fetch shop name for generated product vendor:", {
-      component: "app.bundles.product-page.configure",
-    }, data.errors);
+    AppLogger.warn(
+      "[PRODUCT_SYNC] Failed to fetch shop name for generated product vendor:",
+      {
+        component: "app.bundles.product-page.configure",
+      },
+      data.errors,
+    );
     return null;
   }
 
@@ -69,12 +78,19 @@ async function loadBundleProductMediaNodes(
   const response = await admin.graphql(GET_BUNDLE_PRODUCT_MEDIA, {
     variables: { id: productId },
   });
-  const data = await response.json() as { data?: { product?: { media?: { nodes?: BundleProductMediaNode[] } } }; errors?: unknown[] };
+  const data = (await response.json()) as {
+    data?: { product?: { media?: { nodes?: BundleProductMediaNode[] } } };
+    errors?: unknown[];
+  };
   if (data.errors?.length) {
-    AppLogger.warn("[PRODUCT_SYNC] Failed to fetch generated product media:", {
-      component: "app.bundles.product-page.configure",
-      productId,
-    }, data.errors);
+    AppLogger.warn(
+      "[PRODUCT_SYNC] Failed to fetch generated product media:",
+      {
+        component: "app.bundles.product-page.configure",
+        productId,
+      },
+      data.errors,
+    );
     return [];
   }
 
@@ -86,7 +102,10 @@ async function addBundleProductPlaceholderMedia(
   productId: string,
   bundleName: string,
 ): Promise<BundleProductMediaNode[]> {
-  const mediaInput = buildBundleProductPlaceholderMediaInput(process.env.SHOPIFY_APP_URL, bundleName);
+  const mediaInput = buildBundleProductPlaceholderMediaInput(
+    process.env.SHOPIFY_APP_URL,
+    bundleName,
+  );
   if (!mediaInput) {
     return [];
   }
@@ -120,17 +139,26 @@ async function addBundleProductPlaceholderMedia(
       media: mediaInput,
     },
   });
-  const data = await response.json() as {
-    data?: { productUpdate?: { product?: { media?: { nodes?: BundleProductMediaNode[] } }; userErrors?: Array<{ field?: string[]; message: string }> } };
+  const data = (await response.json()) as {
+    data?: {
+      productUpdate?: {
+        product?: { media?: { nodes?: BundleProductMediaNode[] } };
+        userErrors?: Array<{ field?: string[]; message: string }>;
+      };
+    };
     errors?: unknown[];
   };
   const userErrors = data.data?.productUpdate?.userErrors || [];
 
   if (data.errors?.length || userErrors.length > 0) {
-    AppLogger.warn("[PRODUCT_SYNC] Failed to add generated product media:", {
-      component: "app.bundles.product-page.configure",
-      productId,
-    }, { errors: data.errors || userErrors });
+    AppLogger.warn(
+      "[PRODUCT_SYNC] Failed to add generated product media:",
+      {
+        component: "app.bundles.product-page.configure",
+        productId,
+      },
+      { errors: data.errors || userErrors },
+    );
     return [];
   }
 
@@ -155,17 +183,29 @@ async function updateBundleProductMediaFiles(
   const response = await admin.graphql(UPDATE_BUNDLE_PRODUCT_MEDIA_FILES, {
     variables: { files },
   });
-  const data = await response.json() as {
-    data?: { fileUpdate?: { userErrors?: Array<{ field?: string[]; message: string; code?: string }> } };
+  const data = (await response.json()) as {
+    data?: {
+      fileUpdate?: {
+        userErrors?: Array<{
+          field?: string[];
+          message: string;
+          code?: string;
+        }>;
+      };
+    };
     errors?: unknown[];
   };
   const userErrors = data.data?.fileUpdate?.userErrors || [];
 
   if (data.errors?.length || userErrors.length > 0) {
-    AppLogger.warn("[PRODUCT_SYNC] Failed to update generated product media files:", {
-      component: "app.bundles.product-page.configure",
-      mediaIds: files.map((file) => file.id),
-    }, { errors: data.errors || userErrors });
+    AppLogger.warn(
+      "[PRODUCT_SYNC] Failed to update generated product media files:",
+      {
+        component: "app.bundles.product-page.configure",
+        mediaIds: files.map((file) => file.id),
+      },
+      { errors: data.errors || userErrors },
+    );
   }
 }
 
@@ -176,19 +216,33 @@ async function syncGeneratedBundleProductMedia(
   knownMediaNodes?: BundleProductMediaNode[],
 ): Promise<void> {
   try {
-    let mediaNodes = knownMediaNodes || await loadBundleProductMediaNodes(admin, productId);
+    let mediaNodes =
+      knownMediaNodes || (await loadBundleProductMediaNodes(admin, productId));
     if (!hasBundleProductPlaceholderMedia(mediaNodes, bundleName)) {
-      const updatedMediaNodes = await addBundleProductPlaceholderMedia(admin, productId, bundleName);
-      mediaNodes = updatedMediaNodes.length > 0 ? updatedMediaNodes : mediaNodes;
+      const updatedMediaNodes = await addBundleProductPlaceholderMedia(
+        admin,
+        productId,
+        bundleName,
+      );
+      mediaNodes =
+        updatedMediaNodes.length > 0 ? updatedMediaNodes : mediaNodes;
     }
 
-    const fileUpdates = buildBundleProductMediaFileUpdates(productId, mediaNodes, bundleName);
+    const fileUpdates = buildBundleProductMediaFileUpdates(
+      productId,
+      mediaNodes,
+      bundleName,
+    );
     await updateBundleProductMediaFiles(admin, fileUpdates);
   } catch (error) {
-    AppLogger.warn("[PRODUCT_SYNC] Generated product media sync failed:", {
-      component: "app.bundles.product-page.configure",
-      productId,
-    }, error as any);
+    AppLogger.warn(
+      "[PRODUCT_SYNC] Generated product media sync failed:",
+      {
+        component: "app.bundles.product-page.configure",
+        productId,
+      },
+      error as any,
+    );
   }
 }
 
@@ -202,16 +256,27 @@ export async function syncBundleProductToShopify(
   bundleId: string,
   options: ProductSyncOptions = {},
 ): Promise<ProductSyncResult> {
-  const shopifyStatus = finalStatus === BundleStatus.UNLISTED ? "ACTIVE" : finalStatus.toUpperCase();
+  const shopifyStatus =
+    finalStatus === BundleStatus.UNLISTED
+      ? "ACTIVE"
+      : finalStatus.toUpperCase();
   const descriptionHtml = buildBundleProductDescriptionHtml({
     bundleName,
     customDescription: bundleDescription,
     status: finalStatus,
   });
-  const shopName = options.shopName !== undefined ? options.shopName : await loadShopName(admin);
-  const productMetadata = buildGeneratedBundleProductMetadata({ bundleName, shopName });
+  const shopName =
+    options.shopName !== undefined
+      ? options.shopName
+      : await loadShopName(admin);
+  const productMetadata = buildGeneratedBundleProductMetadata({
+    bundleName,
+    shopName,
+  });
   const syncResult: ProductSyncResult = {};
-  AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${shopifyProductId}`);
+  AppLogger.debug(
+    `[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${shopifyProductId}`,
+  );
 
   const UPDATE_PRODUCT_STATUS = `
     mutation UpdateProductStatus($product: ProductUpdateInput!) {
@@ -225,35 +290,59 @@ export async function syncBundleProductToShopify(
   try {
     const response = await admin.graphql(UPDATE_PRODUCT_STATUS, {
       variables: {
-          product: {
-            id: shopifyProductId,
-            ...productMetadata,
-            status: shopifyStatus,
-            descriptionHtml,
-          },
+        product: {
+          id: shopifyProductId,
+          ...productMetadata,
+          status: shopifyStatus,
+          descriptionHtml,
+        },
       },
     });
-    const responseData = await response.json() as { data: Record<string, any>; errors?: unknown[] };
+    const responseData = (await response.json()) as {
+      data: Record<string, any>;
+      errors?: unknown[];
+    };
     const statusUserErrors = responseData.data?.productUpdate?.userErrors ?? [];
 
     if (responseData.errors?.length) {
-      AppLogger.error("[PRODUCT_SYNC] GraphQL transport error updating product status:", {
-        component: "app.bundles.product-page.configure", operation: "sync-product-status", productId: shopifyProductId,
-      }, responseData.errors);
+      AppLogger.error(
+        "[PRODUCT_SYNC] GraphQL transport error updating product status:",
+        {
+          component: "app.bundles.product-page.configure",
+          operation: "sync-product-status",
+          productId: shopifyProductId,
+        },
+        responseData.errors,
+      );
     } else if (statusUserErrors.length > 0) {
-      AppLogger.error("[PRODUCT_SYNC] Shopify returned errors while updating product status:", {
-        component: "app.bundles.product-page.configure", operation: "sync-product-status",
-        productId: shopifyProductId, targetStatus: shopifyStatus,
-      }, { errors: statusUserErrors });
+      AppLogger.error(
+        "[PRODUCT_SYNC] Shopify returned errors while updating product status:",
+        {
+          component: "app.bundles.product-page.configure",
+          operation: "sync-product-status",
+          productId: shopifyProductId,
+          targetStatus: shopifyStatus,
+        },
+        { errors: statusUserErrors },
+      );
     } else {
-      syncResult.handle = responseData.data?.productUpdate?.product?.handle ?? null;
-      AppLogger.info("[PRODUCT_SYNC] Successfully synced product status to Shopify", {
-        component: "app.bundles.product-page.configure", productId: shopifyProductId,
-        requestedStatus: shopifyStatus, actualStatus: responseData.data?.productUpdate?.product?.status,
-      });
+      syncResult.handle =
+        responseData.data?.productUpdate?.product?.handle ?? null;
+      AppLogger.info(
+        "[PRODUCT_SYNC] Successfully synced product status to Shopify",
+        {
+          component: "app.bundles.product-page.configure",
+          productId: shopifyProductId,
+          requestedStatus: shopifyStatus,
+          actualStatus: responseData.data?.productUpdate?.product?.status,
+        },
+      );
     }
 
-    if (finalStatus === BundleStatus.UNLISTED && statusUserErrors.length === 0) {
+    if (
+      finalStatus === BundleStatus.UNLISTED &&
+      statusUserErrors.length === 0
+    ) {
       const unlistedResponse = await admin.graphql(UPDATE_PRODUCT_STATUS, {
         variables: {
           product: {
@@ -264,26 +353,47 @@ export async function syncBundleProductToShopify(
           },
         },
       });
-      const unlistedData = await unlistedResponse.json() as { data: Record<string, any>; errors?: unknown[] };
+      const unlistedData = (await unlistedResponse.json()) as {
+        data: Record<string, any>;
+        errors?: unknown[];
+      };
       const unlistedErrors = unlistedData.data?.productUpdate?.userErrors ?? [];
       if (unlistedErrors.length > 0) {
-        AppLogger.warn("[PRODUCT_SYNC] Shopify rejected UNLISTED status:", {
-          component: "app.bundles.product-page.configure",
-          productId: shopifyProductId,
-        }, unlistedErrors);
+        AppLogger.warn(
+          "[PRODUCT_SYNC] Shopify rejected UNLISTED status:",
+          {
+            component: "app.bundles.product-page.configure",
+            productId: shopifyProductId,
+          },
+          unlistedErrors,
+        );
       } else {
-        syncResult.handle = unlistedData.data?.productUpdate?.product?.handle ?? syncResult.handle;
+        syncResult.handle =
+          unlistedData.data?.productUpdate?.product?.handle ??
+          syncResult.handle;
       }
     }
 
     if (!options.skipMediaSync) {
-      await syncGeneratedBundleProductMedia(admin, shopifyProductId, bundleName, options.mediaNodes);
+      await syncGeneratedBundleProductMedia(
+        admin,
+        shopifyProductId,
+        bundleName,
+        options.mediaNodes,
+      );
     }
   } catch (error) {
-    AppLogger.error("[PRODUCT_SYNC] Failed to sync product status (exception):", {
-      component: "app.bundles.product-page.configure", operation: "sync-product-status",
-      productId: shopifyProductId, targetStatus: shopifyStatus, bundleId,
-    }, error as any);
+    AppLogger.error(
+      "[PRODUCT_SYNC] Failed to sync product status (exception):",
+      {
+        component: "app.bundles.product-page.configure",
+        operation: "sync-product-status",
+        productId: shopifyProductId,
+        targetStatus: shopifyStatus,
+        bundleId,
+      },
+      error as any,
+    );
   }
 
   return syncResult;

@@ -7,51 +7,71 @@ import { AppLogger } from "../../../../lib/logger";
 import { normaliseShopifyProductId } from "../../../../services/bundles/bundle-configure-handlers.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
 
-export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session: Session, bundleId: string) {
+export async function handleValidateWidgetPlacement(
+  admin: ShopifyAdmin,
+  session: Session,
+  bundleId: string,
+) {
   try {
-    AppLogger.debug("[WIDGET_PLACEMENT] Validating widget placement", { bundleId });
+    AppLogger.debug("[WIDGET_PLACEMENT] Validating widget placement", {
+      bundleId,
+    });
 
     const bundle = await db.bundle.findUnique({
-      where: { id: bundleId, shopId: session.shop }
+      where: { id: bundleId, shopId: session.shop },
     });
 
     if (!bundle) {
-      return json({
-        success: false,
-        error: ERROR_MESSAGES.BUNDLE_NOT_FOUND
-      }, { status: 404 });
+      return json(
+        {
+          success: false,
+          error: ERROR_MESSAGES.BUNDLE_NOT_FOUND,
+        },
+        { status: 404 },
+      );
     }
 
     const apiKey = process.env.SHOPIFY_API_KEY || "";
-    const result = await WidgetInstallationService.validateProductBundleWidgetSetup(
-      admin,
-      session.shop,
-      apiKey,
-      bundleId,
-      bundle.shopifyProductId || undefined
-    );
+    const result =
+      await WidgetInstallationService.validateProductBundleWidgetSetup(
+        admin,
+        session.shop,
+        apiKey,
+        bundleId,
+        bundle.shopifyProductId || undefined,
+      );
 
     if (result.requiresOneTimeSetup) {
-      return json({
-        success: false,
-        requiresOneTimeSetup: true,
-        installationLink: result.installationLink,
-        message: result.message
-      }, { status: 400 });
+      return json(
+        {
+          success: false,
+          requiresOneTimeSetup: true,
+          installationLink: result.installationLink,
+          message: result.message,
+        },
+        { status: 400 },
+      );
     }
 
     return json({
       success: true,
       productUrl: result.productUrl,
       configurationLink: result.configurationLink,
-      message: result.message
+      message: result.message,
     });
   } catch (error) {
-    AppLogger.error("[WIDGET_PLACEMENT] Error validating widget placement:", {}, error as any);
-    return json({
-      success: false,
-      error: (error as Error).message || "Widget placement validation failed"
-    }, { status: 500 });
+    AppLogger.error(
+      "[WIDGET_PLACEMENT] Error validating widget placement:",
+      {},
+      error as any,
+    );
+    return json(
+      {
+        success: false,
+        error: (error as Error).message || "Widget placement validation failed",
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -63,13 +83,15 @@ export async function handleAssignProductTemplate(
 ) {
   const rawProductId = String(formData.get("productId") ?? "");
   const templateSuffixValue = formData.get("templateSuffix");
-  const templateSuffix = typeof templateSuffixValue === "string" ? templateSuffixValue.trim() : "";
+  const templateSuffix =
+    typeof templateSuffixValue === "string" ? templateSuffixValue.trim() : "";
   const productId = normaliseShopifyProductId(rawProductId, {
     title: "Bundle parent product",
     stepName: "Place Widget",
   });
 
-  const response = await admin.graphql(`
+  const response = await admin.graphql(
+    `
     mutation AssignProductTemplate($product: ProductUpdateInput!) {
       productUpdate(product: $product) {
         product {
@@ -82,19 +104,22 @@ export async function handleAssignProductTemplate(
         }
       }
     }
-  `, {
-    variables: {
-      product: {
-        id: productId,
-        templateSuffix: templateSuffix || null,
+  `,
+    {
+      variables: {
+        product: {
+          id: productId,
+          templateSuffix: templateSuffix || null,
+        },
       },
     },
-  });
+  );
   const data = await response.json();
   const userErrors = data.data?.productUpdate?.userErrors ?? [];
 
   if (userErrors.length > 0) {
-    const message = userErrors[0]?.message ?? "Failed to assign product template";
+    const message =
+      userErrors[0]?.message ?? "Failed to assign product template";
     return json({ success: false, error: message }, { status: 400 });
   }
 

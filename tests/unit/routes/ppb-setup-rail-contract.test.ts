@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readPpbConfigureRouteFamilySource } from "./ppb-configure-route-source";
 
 describe("Product Page Bundle setup rail contract", () => {
   it("uses the recovered setup rail list and exposes captured visibility children", () => {
@@ -7,10 +8,7 @@ describe("Product Page Bundle setup rail contract", () => {
       join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.helpers.tsx"),
       "utf8",
     ).replace(/\s+/g, " ");
-    const flowSource = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
-      "utf8",
-    ).replace(/\s+/g, " ");
+    const flowSource = readPpbConfigureRouteFamilySource().replace(/\s+/g, " ");
 
     expect(helperSource).toContain("PRODUCT_PAGE_SETUP_ITEMS");
     expect(helperSource).toContain("export const bundleSetupItems = PRODUCT_PAGE_SETUP_ITEMS");

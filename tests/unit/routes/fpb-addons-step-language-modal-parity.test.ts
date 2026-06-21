@@ -1,11 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { readFpbConfigureRouteFamilySource } from "./fpb-configure-route-source";
+
 describe("Full Page Add-ons step language modal parity", () => {
-  const routeSource = readFileSync(
-    join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureBundleFlow.tsx"),
-    "utf8",
-  );
+  const routeSource = readFpbConfigureRouteFamilySource();
   const modalSource = readFileSync(
     join(process.cwd(), "app/components/bundle-configure/MultiLanguageTextModal.tsx"),
     "utf8",

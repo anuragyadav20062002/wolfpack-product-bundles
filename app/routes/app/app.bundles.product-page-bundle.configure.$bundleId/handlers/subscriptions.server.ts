@@ -10,7 +10,10 @@ import {
   SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
 } from "../../../../lib/bundle-config/product-page-admin-sections";
 
-async function fetchProductsWithSellingPlanGroups(admin: ShopifyAdmin, productIds: string[]) {
+async function fetchProductsWithSellingPlanGroups(
+  admin: ShopifyAdmin,
+  productIds: string[],
+) {
   const products: Array<{
     id: string;
     title: string;
@@ -37,7 +40,7 @@ async function fetchProductsWithSellingPlanGroups(admin: ShopifyAdmin, productId
   for (let index = 0; index < productIds.length; index += 50) {
     const ids = productIds.slice(index, index + 50);
     const response = await admin.graphql(query, { variables: { ids } });
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       data?: {
         nodes?: Array<{
           id?: string;
@@ -53,10 +56,10 @@ async function fetchProductsWithSellingPlanGroups(admin: ShopifyAdmin, productId
         id: product.id,
         title: product.title ?? "",
         sellingPlanGroups: {
-          nodes: (product.sellingPlanGroups?.nodes ?? [])
-            .filter((group): group is { id: string; name: string } => (
-              typeof group?.id === "string" && typeof group?.name === "string"
-            )),
+          nodes: (product.sellingPlanGroups?.nodes ?? []).filter(
+            (group): group is { id: string; name: string } =>
+              typeof group?.id === "string" && typeof group?.name === "string",
+          ),
         },
       });
     }
@@ -65,7 +68,10 @@ async function fetchProductsWithSellingPlanGroups(admin: ShopifyAdmin, productId
   return products;
 }
 
-async function fetchCollectionProductIds(admin: ShopifyAdmin, collectionIds: string[]) {
+async function fetchCollectionProductIds(
+  admin: ShopifyAdmin,
+  collectionIds: string[],
+) {
   const products: string[] = [];
   const seen = new Set<string>();
 
@@ -88,7 +94,7 @@ async function fetchCollectionProductIds(admin: ShopifyAdmin, collectionIds: str
   for (let index = 0; index < collectionIds.length; index += 50) {
     const ids = collectionIds.slice(index, index + 50);
     const response = await admin.graphql(query, { variables: { ids } });
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       data?: {
         nodes?: Array<{
           id?: string;
@@ -115,7 +121,11 @@ async function fetchCollectionProductIds(admin: ShopifyAdmin, collectionIds: str
   return products;
 }
 
-export async function handleValidateSellingPlanGroups(admin: ShopifyAdmin, session: Session, bundleId: string) {
+export async function handleValidateSellingPlanGroups(
+  admin: ShopifyAdmin,
+  session: Session,
+  bundleId: string,
+) {
   const bundle = await db.bundle.findFirst({
     where: {
       id: bundleId,
@@ -134,12 +144,20 @@ export async function handleValidateSellingPlanGroups(admin: ShopifyAdmin, sessi
   });
 
   if (!bundle) {
-    return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
+    return json(
+      { success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND },
+      { status: 404 },
+    );
   }
 
   const sources = extractSellingPlanValidationSources(bundle);
-  const collectionProductIds = await fetchCollectionProductIds(admin, sources.collectionIds);
-  const allProductIds = Array.from(new Set([...sources.productIds, ...collectionProductIds]));
+  const collectionProductIds = await fetchCollectionProductIds(
+    admin,
+    sources.collectionIds,
+  );
+  const allProductIds = Array.from(
+    new Set([...sources.productIds, ...collectionProductIds]),
+  );
   if (allProductIds.length === 0) {
     return json({
       success: true,
@@ -150,9 +168,15 @@ export async function handleValidateSellingPlanGroups(admin: ShopifyAdmin, sessi
     });
   }
 
-  const products = await fetchProductsWithSellingPlanGroups(admin, allProductIds);
+  const products = await fetchProductsWithSellingPlanGroups(
+    admin,
+    allProductIds,
+  );
   const plans = deriveCommonSellingPlanGroups(products);
-  const isValid = allProductIds.length > 0 && products.length === allProductIds.length && plans.length > 0;
+  const isValid =
+    allProductIds.length > 0 &&
+    products.length === allProductIds.length &&
+    plans.length > 0;
 
   return json({
     success: true,

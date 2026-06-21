@@ -13,7 +13,7 @@ import { useState, useCallback } from "react";
 import { AppLogger } from "../lib/logger";
 import { ERROR_MESSAGES } from "../constants/errors";
 
-const cloneValue = (value: any) => {
+const cloneValue = (value: any): any => {
   if (value === null || typeof value !== "object") {
     return value;
   }
@@ -34,7 +34,7 @@ const cloneArrayObjects = (items?: any[] | null) => {
     return [];
   }
 
-  return items.map((item) => cloneValue(item));
+  return items.map((item: any) => cloneValue(item));
 };
 
 export function buildClonedStepPayload(stepToClone: any, cloneTimestamp: number) {
@@ -94,11 +94,11 @@ export interface SharedBundleHandlersParams {
 
   // External objects
   shopify: any;
-  fetcher: { submit: (data: FormData, options: { method: string }) => void };
+  fetcher: { submit: (data: FormData, options: Record<string, any>) => void };
 
   // Local state setters from the route (not in useBundleConfigurationState)
   setIsSyncModalOpen: (v: boolean) => void;
-  setSlideDir: (v: string) => void;
+  setSlideDir: (v: "forward" | "backward" | null) => void;
   setSlideKey: (fn: (prev: number) => number) => void;
 
   // FPB-only: close the icon picker when navigating between steps
