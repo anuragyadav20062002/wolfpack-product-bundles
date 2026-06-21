@@ -4,6 +4,7 @@ import {
   asVisibilityArray,
   getVisibilityDisplayTarget,
 } from "./visibility-helpers";
+import { resolveFpbTemplateSelection } from "../../../lib/fpb-template-selection";
 import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
 
 export function useConfigureVisibilityTemplateState(
@@ -119,12 +120,13 @@ export function useConfigureVisibilityTemplateState(
   const [bundleLevelCss, setBundleLevelCss] = useState<string>(
     (bundle as any).bundleLevelCss ?? "",
   );
+  const initialTemplateSelection = resolveFpbTemplateSelection(bundle as any);
   const [bundleDesignTemplate, setBundleDesignTemplate] = useState<
     string | null
-  >((bundle as any).bundleDesignTemplate ?? null);
+  >(initialTemplateSelection.bundleDesignTemplate);
   const [bundleDesignPresetId, setBundleDesignPresetId] = useState<
     string | null
-  >((bundle as any).bundleDesignPresetId ?? null);
+  >(initialTemplateSelection.bundleDesignPresetId);
   const [pendingDesignTemplate, setPendingDesignTemplate] = useState<
     string | null
   >(null);
