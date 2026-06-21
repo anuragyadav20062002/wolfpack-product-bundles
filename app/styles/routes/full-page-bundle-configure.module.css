@@ -1773,7 +1773,7 @@
 
 .addonsIconColumn {
   composes: iconColumn from "./bundle-configure-shared.module.css";
-  --addons-icon-control-width: 98px;
+  --addons-icon-control-width: 100px;
   align-items: stretch;
   width: var(--addons-icon-control-width);
 }
@@ -1784,22 +1784,29 @@
   height: 88px;
 }
 
+.addonsReferenceStepCard .addonsIconBox {
+  width: 100px;
+  height: 88px;
+  border: 2px solid #e7e7e7;
+  border-radius: 10px;
+}
+
 .addonsGiftBoxDefault {
   display: block;
-  width: 40px;
-  height: 40px;
+  width: 43px;
+  height: 38px;
   color: #8c9196;
 }
 
 .addonsReplaceButton {
-  width: var(--addons-icon-control-width);
+  width: 98px;
   min-height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 4px 10px;
   border: 1px solid #c9cccf;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #ffffff;
   color: #202223;
   font: inherit;
@@ -1820,7 +1827,7 @@
 }
 
 .addonsMediaFieldGrid {
-  --addons-icon-control-width: 98px;
+  --addons-icon-control-width: 100px;
   grid-template-columns: var(--addons-icon-control-width) minmax(0, 1fr);
   align-items: start;
 }
@@ -2177,6 +2184,12 @@
   border-radius: 8px;
 }
 
+.addonsReferenceStepCard .panelTitle {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 20px;
+}
+
 .addonsHeaderLine {
   display: flex;
   align-items: center;
@@ -2512,7 +2525,7 @@
 
 .addonsReferenceStepCard .addonsMediaFieldGrid {
   grid-template-columns: var(--addons-icon-control-width) minmax(0, 1fr);
-  gap: 10px;
+  gap: 12px;
   align-items: start;
 }
 

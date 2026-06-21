@@ -4234,38 +4234,38 @@ applyPersonalizationAddonProducts() {
 buildAddonStepFromPersonalization() {
   const personalizationData = this.selectedBundle?.personalizationData;
   const addonProducts = personalizationData?.addonProducts;
-  if (personalizationData?.isPersonalizationEnabled !== true || addonProducts?.isEnabled !== true) {
+  if (personalizationData?.isPersonalizationEnabled !== true) {
     return null;
   }
 
-  const tiers = Array.isArray(addonProducts.tiers) ? addonProducts.tiers : [];
+  const addonProductsEnabled = addonProducts?.isEnabled === true;
+  const tiers = addonProductsEnabled && Array.isArray(addonProducts.tiers) ? addonProducts.tiers : [];
   const selectedAddonProducts = tiers.flatMap(tier =>
     Array.isArray(tier?.selectedAddonProducts)
       ? tier.selectedAddonProducts.map(product => this.normalizePersonalizationAddonProduct(product))
       : []
   );
-  if (selectedAddonProducts.length === 0) return null;
-
   const firstTier = tiers[0] || {};
+  const tierDiscount = firstTier?.discount || {};
 
   return {
     id: 'personalization-addons',
-    name: personalizationData.personalizeStepText || addonProducts.title || '',
+    name: personalizationData.personalizeStepText || addonProducts?.title || '',
     position: (this.selectedBundle?.steps?.length || 0) + 1,
     minQuantity: 0,
     maxQuantity: selectedAddonProducts.length,
     enabled: true,
     isFreeGift: true,
-    addonLabel: personalizationData.personalizeStepText || addonProducts.title || '',
-    freeGiftName: addonProducts.title || personalizationData.personalizeStepText || '',
-    addonTitle: addonProducts.title || personalizationData.personalizePageSubtext || '',
+    addonLabel: personalizationData.personalizeStepText || addonProducts?.title || '',
+    freeGiftName: addonProducts?.title || personalizationData.personalizeStepText || '',
+    addonTitle: personalizationData.personalizePageSubtext || addonProducts?.title || '',
     addonIconUrl: personalizationData.stepImage || null,
-    addonDisplayFree: Number(firstTier?.discount?.value || 0) >= 100 && firstTier?.discount?.type === 'PERCENTAGE',
+    addonDisplayFree: !addonProductsEnabled || (Number(tierDiscount.value || 0) >= 100 && tierDiscount.type === 'PERCENTAGE'),
     addonUnlockAfterCompletion: true,
-    addonTiers: tiers,
-    addonEligibilityCondition: firstTier?.eligibilityCondition || null,
-    addonDiscount: firstTier?.discount || null,
-    addonMessaging: addonProducts.addonsMessaging || null,
+    addonTiers: addonProductsEnabled ? tiers : undefined,
+    addonEligibilityCondition: addonProductsEnabled ? (firstTier?.eligibilityCondition || null) : null,
+    addonDiscount: addonProductsEnabled ? (firstTier?.discount || null) : null,
+    addonMessaging: addonProductsEnabled ? (addonProducts.addonsMessaging || null) : null,
     displayVariantsAsIndividual: firstTier?.displayVariantsAsIndividualProducts_addons === true,
     StepProduct: selectedAddonProducts,
     products: selectedAddonProducts,
@@ -8021,6 +8021,10 @@ reRenderFullPage() {
 
 };
 
+function getAddonTiersForStep(step) {
+  return Array.isArray(step?.addonTiers) ? step.addonTiers.filter(Boolean) : [];
+}
+
 const fullPageValidationAddonsMethods = {
 async _sidebarAdvanceToNextStep() {
   const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
@@ -8129,11 +8133,14 @@ bundleHasNoConditions() {
     if (step.isFreeGift) {
       const eligibilityValue = Number(step.addonEligibilityCondition?.value) || 0;
       if (eligibilityValue > 0) return false;
-      const tier = Array.isArray(step.addonTiers) ? step.addonTiers[0] : null;
-      if (tier) {
-        const tierValue = Number(tier.eligibilityCondition?.value) || 0;
-        if (tierValue > 0) return false;
-        if (Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0) return false;
+      const tiers = getAddonTiersForStep(step);
+      if (tiers.length > 0) {
+        return tiers.every(tier => {
+          const tierValue = Number(tier.eligibilityCondition?.value) || 0;
+          if (tierValue > 0) return false;
+          if (Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0) return false;
+          return true;
+        });
       }
       return true;
     }
@@ -8171,8 +8178,55 @@ canNavigateToStep(targetStepIndex) {
   return true;
 },
 
+getAddonTiers(step) {
+  return getAddonTiersForStep(step);
+},
+
+getAddonTierEvaluation(step) {
+  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const directTier = step?.addonEligibilityCondition || step?.addonDiscount
+    ? [{
+        eligibilityCondition: step?.addonEligibilityCondition || {},
+        discount: step?.addonDiscount || {},
+      }]
+    : [];
+  const tiers = getAddonTiersForStep(step);
+  const candidates = tiers.length > 0 ? tiers : directTier;
+  if (candidates.length === 0) {
+    return { tier: null, totalPrice, totalQuantity, currentValue: totalQuantity };
+  }
+
+  const withState = candidates.map((tier, index) => {
+    const condition = tier?.eligibilityCondition || {};
+    const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
+    const conditionValue = Number(condition.value || 0);
+    const threshold = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
+    const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
+    return { tier, index, conditionType, threshold, currentValue, isEligible: currentValue >= threshold };
+  });
+
+  const eligible = withState
+    .filter(candidate => candidate.isEligible)
+    .sort((a, b) => (a.threshold - b.threshold) || (a.index - b.index));
+  const next = withState
+    .filter(candidate => !candidate.isEligible)
+    .sort((a, b) => (a.threshold - b.threshold) || (a.index - b.index));
+  const selected = eligible[eligible.length - 1] || next[0] || withState[0];
+
+  return {
+    tier: selected?.tier || null,
+    totalPrice,
+    totalQuantity,
+    currentValue: selected?.currentValue ?? totalQuantity,
+  };
+},
+
 _getFreeGiftRemainingCount() {
-  if (this.freeGiftStep?.addonEligibilityCondition || Array.isArray(this.freeGiftStep?.addonTiers)) {
+  if (this.freeGiftStep?.addonEligibilityCondition || getAddonTiersForStep(this.freeGiftStep).length > 0) {
     return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
   }
   const steps = this.selectedBundle?.steps || [];
@@ -8187,19 +8241,17 @@ _getFreeGiftRemainingCount() {
 },
 
 getAddonEligibilityState(step) {
-  const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
-  const condition = step?.addonEligibilityCondition || tier?.eligibilityCondition || {};
-  const discount = step?.addonDiscount || tier?.discount || {};
+  const evaluation = typeof this.getAddonTierEvaluation === 'function'
+    ? this.getAddonTierEvaluation(step)
+    : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
+  const tier = evaluation.tier;
+  const condition = tier?.eligibilityCondition || step?.addonEligibilityCondition || {};
+  const discount = tier?.discount || step?.addonDiscount || {};
   const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
   const conditionValue = Number(condition.value || 0);
-  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
-    this.selectedProducts,
-    this.stepProductData,
-    this.selectedBundle?.steps
-  );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const thresholdCents = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
-  const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
+  const currentValue = evaluation.currentValue;
   const remainingRaw = Math.max(0, thresholdCents - currentValue);
   const remainingQuantity = conditionType === 'AMOUNT' ? 0 : remainingRaw;
   const remainingAmount = conditionType === 'AMOUNT' ? remainingRaw : 0;
@@ -8223,8 +8275,11 @@ getAddonEligibilityState(step) {
 },
 
 getAddonLineDiscount(step) {
-  const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
-  const discount = step?.addonDiscount || tier?.discount || {};
+  const evaluation = typeof this.getAddonTierEvaluation === 'function'
+    ? this.getAddonTierEvaluation(step)
+    : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
+  const tier = evaluation.tier;
+  const discount = tier?.discount || step?.addonDiscount || {};
   const type = String(discount.type || '').toUpperCase();
   const value = Number(discount.value || 0);
   if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
