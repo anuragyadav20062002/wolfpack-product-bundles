@@ -10,7 +10,7 @@ Verify the FPB storefront uses the reference step timeline across all four full-
 ### Preset Timeline Eligibility
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | Default preset | `footer_side` + `DEFAULT` | reference step bar renderer enabled | Standard template |
+| 1 | Standard preset | `footer_side` + `STANDARD` | reference step bar renderer enabled | Standard template |
 | 2 | Classic preset | `footer_side` + `CLASSIC` | reference step bar renderer enabled | Same FPB timeline family |
 | 3 | Compact preset | `footer_side` + `COMPACT` | reference step bar renderer enabled | Same FPB timeline family |
 | 4 | Horizontal preset | `footer_side` + `HORIZONTAL` | reference step bar renderer enabled | Same FPB timeline family |

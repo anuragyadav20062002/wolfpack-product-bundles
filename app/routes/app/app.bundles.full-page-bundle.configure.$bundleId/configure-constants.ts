@@ -1,7 +1,7 @@
 import type { HelpTooltipKey } from "../../../constants/help-tooltips";
 
 export const fullPageTemplateOptions = [
-  { presetId: "DEFAULT", label: "Standard Design", image: "/FPB-Standard.png" },
+  { presetId: "STANDARD", label: "Standard Design", image: "/FPB-Standard.png" },
   { presetId: "CLASSIC", label: "Classic Design", image: "/FPB-Classic.png" },
   { presetId: "COMPACT", label: "Compact Design", image: "/FPB-Compact..png" },
   {

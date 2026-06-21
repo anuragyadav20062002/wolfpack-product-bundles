@@ -388,6 +388,6 @@ _syncMobilePortalThemeVars(...elements) {
 
 usesCompactMobileSummaryTray() {
   const preset = this.getFullPageDesignPreset();
-  return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
+  return this.resolveFullPageLayout() === 'footer_side' && (preset === 'STANDARD' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
 },
 };

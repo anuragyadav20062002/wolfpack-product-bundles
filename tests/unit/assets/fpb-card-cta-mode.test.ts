@@ -45,7 +45,7 @@ describe('FPB product card CTA mode', () => {
 
   it('does not collapse Standard icon selected cards into a badge-only state', () => {
     const runtime = makeRuntime({
-      bundleDesignPresetId: 'DEFAULT',
+      bundleDesignPresetId: 'STANDARD',
       showTextOnPlusEnabled: false,
     });
 
@@ -55,11 +55,17 @@ describe('FPB product card CTA mode', () => {
 
   it('does not collapse Standard text selected cards into a badge-only state', () => {
     const runtime = makeRuntime({
-      bundleDesignPresetId: 'DEFAULT',
+      bundleDesignPresetId: 'STANDARD',
       showTextOnPlusEnabled: true,
     });
 
     expect(runtime.resolveFullPageCardCtaMode()).toBe('text');
     expect(runtime.usesSelectedQuantityBadge()).toBe(false);
+  });
+
+  it('falls back to Standard when no preset is present', () => {
+    const runtime = makeRuntime({});
+
+    expect(runtime.getFullPageDesignPreset()).toBe('STANDARD');
   });
 });

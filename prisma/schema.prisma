@@ -141,7 +141,7 @@ model Bundle {
   useSingleStepCategoriesAsBundleSteps Boolean             @default(false)
   // Select Template field names
   bundleDesignTemplate                 String? // "FBP_SIDE_FOOTER" | "PDP_INPAGE" | "PDP_MODAL"
-  bundleDesignPresetId                 String? // "DEFAULT" | "CLASSIC" | "COMPACT" | "HORIZONTAL" | "CASCADE" | "COGNIVE" | "MODAL" | "SIMPLIFIED"
+  bundleDesignPresetId                 String? // "STANDARD" | "CLASSIC" | "COMPACT" | "HORIZONTAL" | "CASCADE" | "COGNIVE" | "MODAL" | "SIMPLIFIED"
   bundleType                           BundleType          @default(product_page)
   fullPageLayout                       FullPageLayout?     @default(footer_bottom)
   status                               BundleStatus        @default(draft)
@@ -678,7 +678,7 @@ model BundleEngagement {
   shopId        String
   bundleId      String
   sessionId     String // client-generated UUID, stable for the browser session
-  presetId      String? // DEFAULT | CLASSIC | COMPACT | HORIZONTAL
+  presetId      String? // STANDARD | CLASSIC | COMPACT | HORIZONTAL
   bundleType    String? // full_page | product_page
   eventName     String // wpb:session-engaged | future engagement event names
   landingPage   String? // pathname + search at the time of engagement

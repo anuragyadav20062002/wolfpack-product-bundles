@@ -6,7 +6,7 @@ import {
 } from "../../../../services/bundles/metafield-sync.server";
 import { parseConditionValue } from "../../../../lib/parse-condition-value";
 import { formatStepCategoryForRuntime } from "../../../../lib/bundle-config/category-runtime";
-import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "../../../../lib/bundle-config/evidence-template-mapping";
+import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "../../../../lib/bundle-config/template-selection";
 import { BundleStatus, BundleType } from "../../../../constants/bundle";
 import { safeJsonParse } from "../../../../services/bundles/bundle-configure-handlers.server";
 

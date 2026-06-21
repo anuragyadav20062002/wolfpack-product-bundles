@@ -2051,17 +2051,19 @@ class VariantSelectorComponent {
  */
 
 const FullPagePreset = (function () {
+  const SUPPORTED_PRESETS = ['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'];
+
   /**
    * Normalize a raw preset id to one of the four supported values.
-   * Accepts STANDARD as an alias for DEFAULT (admin payload uses STANDARD).
+   * STANDARD is the canonical Standard preset and the fallback value.
    */
   function resolvePresetAttr(bundle) {
     const raw =
       (bundle && (bundle.bundleDesignPresetId || bundle.bundleDesignPreset || bundle.templateId)) || '';
-    if (typeof raw !== 'string') return 'DEFAULT';
+    if (typeof raw !== 'string') return 'STANDARD';
     const upper = raw.trim().toUpperCase();
-    if (upper === '' || upper === 'STANDARD') return 'DEFAULT';
-    return upper;
+    if (SUPPORTED_PRESETS.includes(upper)) return upper;
+    return 'STANDARD';
   }
 
   function resolveTemplateAttr(bundle) {
@@ -2085,7 +2087,7 @@ const FullPagePreset = (function () {
     if (normalizedLayout !== 'footer_side') return false;
 
     const preset = resolvePresetAttr({ bundleDesignPresetId: presetId });
-    return ['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
+    return SUPPORTED_PRESETS.includes(preset);
   }
 
   return {
@@ -3602,8 +3604,8 @@ Object.assign(
 
 const FPB_STANDARD_TEMPLATE_CONFIG = {
   id: 'STANDARD',
-  presetId: 'DEFAULT',
-  aliases: ['DEFAULT', 'STANDARD', 'DEFAULT_FBP'],
+  presetId: 'STANDARD',
+  aliases: ['STANDARD'],
   productCard: {
     mode: 'grid',
     columns: {
@@ -3708,13 +3710,10 @@ const FPB_TEMPLATE_CONFIGS = {
 };
 
 function resolveFullPageTemplateConfig({ presetId = '', templateId = '' } = {}) {
-  const rawPreset = String(presetId || templateId || 'DEFAULT').toUpperCase();
-  const normalizedPreset = rawPreset === 'DEFAULT' || rawPreset === 'DEFAULT_FBP'
-    ? 'STANDARD'
-    : rawPreset;
+  const rawPreset = String(presetId || templateId || 'STANDARD').toUpperCase();
 
   return Object.values(FPB_TEMPLATE_CONFIGS).find((config) =>
-    config.id === normalizedPreset
+    config.id === rawPreset
     || config.presetId === rawPreset
     || config.aliases?.includes(rawPreset)
   ) || FPB_TEMPLATE_CONFIGS.STANDARD;
@@ -4925,7 +4924,7 @@ _syncMobilePortalThemeVars(...elements) {
 
 usesCompactMobileSummaryTray() {
   const preset = this.getFullPageDesignPreset();
-  return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
+  return this.resolveFullPageLayout() === 'footer_side' && (preset === 'STANDARD' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
 },
 };
 
@@ -5303,7 +5302,7 @@ usesSelectedQuantityBadge() {
 _isStandardDesktopSidebar(panel) {
   const preset = this.getFullPageDesignPreset();
   return this.resolveFullPageLayout() === 'footer_side'
-    && (preset === 'DEFAULT' || preset === 'CLASSIC')
+    && (preset === 'STANDARD' || preset === 'CLASSIC')
     && !panel?.classList?.contains('fpb-mobile-bottom-sheet');
 },
 
@@ -5713,7 +5712,7 @@ renderSidePanel(panel) {
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'side-panel-btn side-panel-btn-next';
-  const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT' || this.getFullPageDesignPreset() === 'CLASSIC'
+  const nextStepLabel = this.getFullPageDesignPreset() === 'STANDARD' || this.getFullPageDesignPreset() === 'CLASSIC'
     ? this._resolveText('nextButton', 'Next')
     : 'Next Step';
     nextBtn.textContent = (conditionless || isLastStep)
@@ -7303,7 +7302,7 @@ createProductCard(product, stepIndex) {
 
   const designPreset = this.getFullPageDesignPreset();
   let htmlString;
-  if (designPreset === 'DEFAULT' || designPreset === 'CLASSIC' || designPreset === 'COMPACT' || designPreset === 'HORIZONTAL') {
+  if (designPreset === 'STANDARD' || designPreset === 'CLASSIC' || designPreset === 'COMPACT' || designPreset === 'HORIZONTAL') {
     htmlString = renderSharedProductCard(
       product,
       currentQuantity,
@@ -7398,7 +7397,7 @@ createProductCard(product, stepIndex) {
 
 applyStandardExpandedVariantTitle(cardElement, product) {
   const preset = this.getFullPageDesignPreset();
-  if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
+  if (!['STANDARD', 'HORIZONTAL'].includes(preset)) return;
   if (!cardElement) return;
   if (cardElement.querySelector('[data-bw-card-variant-row="true"]')) return;
 
@@ -10682,13 +10681,12 @@ getFullPageDesignPreset(bundle = this.selectedBundle) {
     bundle?.bundleDesignPresetId
     || bundle?.bundleDesignPreset
     || bundle?.templateId
-    || 'DEFAULT';
-  if (typeof rawPresetId !== 'string') return 'DEFAULT';
+    || 'STANDARD';
+  if (typeof rawPresetId !== 'string') return 'STANDARD';
 
   const preset = rawPresetId.trim().toUpperCase();
-  if (preset === 'STANDARD') return 'DEFAULT';
-  if (preset === 'DEFAULT_FBP') return 'DEFAULT';
-  return preset || 'DEFAULT';
+  if (['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset)) return preset;
+  return 'STANDARD';
 },
 
 resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
@@ -10704,10 +10702,10 @@ resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
 },
 
 ensureFullPageTemplateStylesheet(preset) {
-  const presetKey = String(preset || 'DEFAULT').trim().toUpperCase() || 'DEFAULT';
-  const templateKey = presetKey === 'DEFAULT' ? 'STANDARD' : presetKey;
+  const presetKey = String(preset || 'STANDARD').trim().toUpperCase() || 'STANDARD';
+  const templateKey = presetKey;
   const urls = window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ || {};
-  const href = urls[presetKey] || urls[templateKey] || urls.DEFAULT || urls.STANDARD;
+  const href = urls[presetKey] || urls.STANDARD;
 
   if (!href || typeof document === 'undefined') return Promise.resolve();
 
@@ -10797,7 +10795,7 @@ applyFullPageDesignPresetMarker() {
 
   const fullPageTemplate = this.getFullPageTemplate();
   const fullPageDesignPreset = this.getFullPageDesignPreset();
-  const fullPageTabStyle = fullPageDesignPreset === 'DEFAULT' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
+  const fullPageTabStyle = fullPageDesignPreset === 'STANDARD' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
   const presetClass = `fpb-preset-${fullPageDesignPreset.toLowerCase()}`;
 
   this.container.dataset.fpbTemplateType = fullPageTemplate;
@@ -10809,14 +10807,14 @@ applyFullPageDesignPresetMarker() {
   this.elements.stepsContainer.dataset.fpbTabStyle = fullPageTabStyle;
   const cardCtaMode = this.resolveFullPageCardCtaMode();
   this.elements.stepsContainer.dataset.fpbCardCtaMode = cardCtaMode;
-  this.container.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+  this.container.classList.remove('fpb-preset-standard', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
   this.container.classList.add(presetClass);
   this.container.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
-  this.container.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
-  this.elements.stepsContainer.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+  this.container.classList.toggle('fpb-d', fullPageDesignPreset === 'STANDARD');
+  this.elements.stepsContainer.classList.remove('fpb-preset-standard', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
   this.elements.stepsContainer.classList.add(presetClass);
   this.elements.stepsContainer.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
-  this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
+  this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'STANDARD');
   this.elements.stepsContainer.classList.toggle('fpb-i', cardCtaMode === 'icon');
   void this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
 },

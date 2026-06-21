@@ -380,7 +380,7 @@ renderSidePanel(panel) {
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'side-panel-btn side-panel-btn-next';
-  const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT' || this.getFullPageDesignPreset() === 'CLASSIC'
+  const nextStepLabel = this.getFullPageDesignPreset() === 'STANDARD' || this.getFullPageDesignPreset() === 'CLASSIC'
     ? this._resolveText('nextButton', 'Next')
     : 'Next Step';
     nextBtn.textContent = (conditionless || isLastStep)

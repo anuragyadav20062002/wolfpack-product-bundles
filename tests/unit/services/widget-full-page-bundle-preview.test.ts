@@ -59,7 +59,7 @@ function makeBundle(overrides: Record<string, any> = {}) {
     bundleType: 'full_page',
     fullPageLayout: null,
     bundleDesignTemplate: 'FBP_SIDE_FOOTER',
-    bundleDesignPresetId: 'DEFAULT',
+    bundleDesignPresetId: 'STANDARD',
     defaultProductsData: {},
     boxSelection: null,
     bundleUpsellConfig: null,

@@ -5,9 +5,12 @@ const {
 } = require('../../../app/assets/widgets/full-page/templates/registry.js');
 
 describe('FPB template registry resolver', () => {
-  it('maps DEFAULT and STANDARD aliases to Standard', () => {
-    expect(resolveFullPageTemplateConfig({ presetId: 'DEFAULT' }).id).toBe('STANDARD');
+  it('maps STANDARD to Standard', () => {
     expect(resolveFullPageTemplateConfig({ presetId: 'STANDARD' }).id).toBe('STANDARD');
+  });
+
+  it('does not expose DEFAULT or DEFAULT_FBP as Standard aliases', () => {
+    expect(FPB_TEMPLATE_CONFIGS.STANDARD.aliases).toEqual(['STANDARD']);
   });
 
   it('maps CLASSIC, COMPACT, and HORIZONTAL presets', () => {

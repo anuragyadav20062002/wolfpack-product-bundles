@@ -397,7 +397,7 @@ usesSelectedQuantityBadge() {
 _isStandardDesktopSidebar(panel) {
   const preset = this.getFullPageDesignPreset();
   return this.resolveFullPageLayout() === 'footer_side'
-    && (preset === 'DEFAULT' || preset === 'CLASSIC')
+    && (preset === 'STANDARD' || preset === 'CLASSIC')
     && !panel?.classList?.contains('fpb-mobile-bottom-sheet');
 },
 
