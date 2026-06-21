@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.44
- * Built   : 2026-06-20
+ * Version : 3.0.45
+ * Built   : 2026-06-21
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.44';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.45';
 (function() {
   'use strict';
 
@@ -8107,7 +8107,12 @@ async _sidebarAdvanceToNextStep() {
 },
 
 canProceedToNextStep() {
-  return this.isStepCompleted(this.currentStepIndex);
+  if (!this.isStepCompleted(this.currentStepIndex)) return false;
+
+  const steps = this.selectedBundle?.steps || [];
+  const nextStep = steps[this.currentStepIndex + 1];
+  if (nextStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
+  return true;
 },
 
 areBundleConditionsMet() {
@@ -8120,7 +8125,18 @@ areBundleConditionsMet() {
 bundleHasNoConditions() {
   if (!this.selectedBundle?.steps?.length) return false;
   return this.selectedBundle.steps.every(step => {
-    if (step.isFreeGift || step.isDefault) return true;
+    if (step.isDefault) return true;
+    if (step.isFreeGift) {
+      const eligibilityValue = Number(step.addonEligibilityCondition?.value) || 0;
+      if (eligibilityValue > 0) return false;
+      const tier = Array.isArray(step.addonTiers) ? step.addonTiers[0] : null;
+      if (tier) {
+        const tierValue = Number(tier.eligibilityCondition?.value) || 0;
+        if (tierValue > 0) return false;
+        if (Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0) return false;
+      }
+      return true;
+    }
     return !step.conditionType && !step.conditionOperator && step.conditionValue == null;
   });
 },
@@ -10562,10 +10578,6 @@ generateBundleSessionKey() {
   return Math.random().toString(36).slice(2, 5).toUpperCase();
 },
 
-/**
- * Parses the JSON string from data-tier-config into a TierConfig array.
- * Returns [] on any error — pill bar is simply not shown.
- */
 parseTierConfig(rawJson) {
   try {
     const parsed = JSON.parse(rawJson);
@@ -10580,20 +10592,6 @@ parseTierConfig(rawJson) {
   }
 },
 
-/**
- * Resolves which tier config array to use for pill rendering.
- *
- * Preference order:
- *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
- *     tiers in the admin UI (>= 2 valid entries after mapping).
- *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
- *     source, used as fallback when apiTierConfig is null/undefined.
- *
- * apiTierConfig entries use { label, linkedBundleId } (DB schema).
- * Widget pill entries use { label, bundleId } — this method performs the mapping.
- *
- * Returns [] when fewer than 2 valid tiers exist after filtering.
- */
 resolveTierConfig(apiTierConfig, dataTierConfig) {
   if (apiTierConfig == null) return dataTierConfig;
 
@@ -10611,14 +10609,6 @@ resolveTierConfig(apiTierConfig, dataTierConfig) {
   return mapped.length >= 2 ? mapped : [];
 },
 
-/**
- * Resolves whether to show the step timeline.
- * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
- *
- * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
- * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
- * @returns {boolean}
- */
 resolveShowStepTimeline(apiValue, dataAttrValue) {
   if (apiValue !== null && apiValue !== undefined) return apiValue;
   return dataAttrValue;
@@ -10776,15 +10766,10 @@ applyFullPageDesignPresetMarker() {
   void this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
 },
 
-/** Returns true if the given tier index is the currently active one. */
 isTierActive(tierIndex) {
   return tierIndex === this.activeTierIndex;
 },
 
-/**
- * Inserts the tier pill bar as the first child of the container.
- * No-op when fewer than 2 tiers are configured (backward-compatible).
- */
 };
 
 const fullPageTierFloatingRuntimeMethods = {
@@ -10811,7 +10796,6 @@ initTierPills(tiers) {
   this.elements.tierPillBar = bar;
 },
 
-/** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
 updatePillActiveStates() {
   if (!this.elements.tierPillBar) return;
   this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
@@ -10822,7 +10806,6 @@ updatePillActiveStates() {
   });
 },
 
-/** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
 async switchTier(bundleId, tierIndex) {
   if (tierIndex === this.activeTierIndex) return;
 
@@ -11034,20 +11017,6 @@ showErrorUI(_error) {
   `;
 },
 
-/**
- * Fire-and-forget error report to the server so AppLogger can track widget failures.
- * Does NOT await — never blocks the render path.
- */
-
-/**
- * Background layout refresh — runs after initial render.
- *
- * In compact-marker mode, we always fetch the bundle via API before render,
- * so this refresh path is effectively a no-op for initialized API loads.
- * It is preserved for legacy cached payload paths and exits early when not needed.
- *
- * Fire-and-forget: all errors are silently swallowed.
- */
 async _scheduleLayoutRefresh() {
   const bundleId = this.container.dataset.bundleId;
   if (!bundleId) return;
@@ -11102,7 +11071,7 @@ _reportError(error) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
       keepalive: true,
-    }).catch(() => { /* best-effort — ignore if proxy is also down */ });
+    }).catch(() => {  });
   } catch (_) {
 
   }
@@ -11129,78 +11098,12 @@ _recordView() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ shop }),
       keepalive: true,
-    }).catch(() => { /* best-effort */ });
+    }).catch(() => {  });
   } catch (_) {
 
   }
 },
 };
-
-/**
- * Bundle Widget - Full Page Version
- *
- * This widget is specifically for full page bundles with horizontal tabs layout.
- * It imports shared components and utilities from bundle-widget-components.js.
- *
- * ============================================================================
- * ARCHITECTURE ROLE
- * ============================================================================
- * This is the THIRD file loaded for FULL PAGE bundles:
- * 1. bundle-widget.js (loader) - Detects bundle type as 'full_page'
- * 2. bundle-widget-components.js - Provides shared utilities
- * 3. THIS FILE (full-page widget) - Implements full page UI/UX
- *
- * ============================================================================
- * WHEN THIS FILE IS LOADED
- * ============================================================================
- * This file loads when:
- * - Container explicitly has data-bundle-type="full_page"
- *
- * Example container:
- * <div id="bundle-builder-app" data-bundle-type="full_page"></div>
- *
- * NOTE: This is OPT-IN only. Without the attribute, product-page widget loads instead.
- *
- * ============================================================================
- * UI LAYOUT: HORIZONTAL TABS
- * ============================================================================
- * - Steps displayed as horizontal tabs at the top
- * - All tabs visible simultaneously (overview of all steps)
- * - Click any tab to jump between steps
- * - Modal overlay for product selection
- * - Progress tracked with tab completion indicators
- * - Best for: Dedicated bundle pages with full horizontal space
- *
- * ============================================================================
- * SHARED CODE IMPORTS
- * ============================================================================
- * All business logic is imported from bundle-widget-components.js:
- * - Currency formatting
- * - Price calculations
- * - Discount logic
- * - Product card rendering
- * - Toast notifications
- *
- * This file ONLY contains:
- * - Full page specific UI rendering
- * - Horizontal tabs layout management
- * - Modal-based product selection
- * - Event handlers for full page flow
- *
- * ============================================================================
- * UNIFIED DESIGN WITH PRODUCT PAGE WIDGET
- * ============================================================================
- * Both widgets:
- * - Use the same CSS variables (from unified design settings API)
- * - Import the same utilities (from bundle-widget-components.js)
- * - Implement the same business logic (pricing, discounts, cart)
- * - Differ ONLY in UI layout and interaction patterns
- *
- * Result: Merchants configure design ONCE, applies to BOTH bundle types
- *
- * @version 1.0.0
- * @author Wolfpack Team
- */
 
 class BundleWidgetFullPage {
 
