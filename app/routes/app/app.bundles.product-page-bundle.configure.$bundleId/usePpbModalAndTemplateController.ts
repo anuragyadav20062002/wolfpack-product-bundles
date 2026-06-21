@@ -104,8 +104,10 @@ export function usePpbModalAndTemplateController({
       if (!templateState.selectTemplateDialogRef.current) {
         return [];
       }
+      const dialogElement =
+        templateState.selectTemplateDialogRef.current as HTMLElement;
       return Array.from(
-        templateState.selectTemplateDialogRef.current.querySelectorAll<HTMLElement>(
+        dialogElement.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         ),
       ).filter(

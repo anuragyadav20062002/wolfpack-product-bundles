@@ -76,8 +76,9 @@ export function useConfigureTemplatePricingController(
     if (!selectTemplateModalRef.current) {
       return [];
     }
+    const modalElement = selectTemplateModalRef.current as HTMLElement;
     return Array.from(
-      selectTemplateModalRef.current.querySelectorAll<HTMLElement>(
+      modalElement.querySelectorAll<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       ),
     ).filter(

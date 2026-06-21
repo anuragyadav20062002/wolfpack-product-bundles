@@ -91,7 +91,7 @@ export function FpbSyncAndLanguageModals({
             </s-select>
           )}
           {normalizedPricingDisplayOptions.bundleQuantityOptions.options.map(
-            (option, index) => {
+            (option: any, index: number) => {
               const localizedOption =
                 pricingState.pricingDisplayOptions.bundleQuantityOptions
                   .optionsByLocaleByRuleId?.[activeBundleQuantityLocale]?.[
@@ -172,7 +172,7 @@ export function FpbSyncAndLanguageModals({
               Add discount rules to configure tier text.
             </p>
           ) : (
-            pricingState.discountRules.map((rule, index) => (
+            pricingState.discountRules.map((rule: any, index: number) => (
               <div
                 key={rule.id}
                 className={fullPageBundleStyles.discountRuleCard}
@@ -193,7 +193,7 @@ export function FpbSyncAndLanguageModals({
                       }
                       onInput={(e) => {
                         const val = (e.target as HTMLTextAreaElement).value;
-                        setTierTextByLocaleByRuleId((prev) => ({
+                        setTierTextByLocaleByRuleId((prev: any) => ({
                           ...prev,
                           [activeProgressBarLocale]: {
                             ...(prev[activeProgressBarLocale] || {}),
@@ -222,7 +222,7 @@ export function FpbSyncAndLanguageModals({
                       }
                       onInput={(e) => {
                         const val = (e.target as HTMLTextAreaElement).value;
-                        setTierTextByLocaleByRuleId((prev) => ({
+                        setTierTextByLocaleByRuleId((prev: any) => ({
                           ...prev,
                           [activeProgressBarLocale]: {
                             ...(prev[activeProgressBarLocale] || {}),

@@ -54,7 +54,7 @@ export function FpbDefaultProductsSettings({
                   ReturnType<typeof buildDefaultProductEntryFromPicker>
                 > => Boolean(p),
               );
-            setDefaultProductsData((prev) => ({
+            setDefaultProductsData((prev: any) => ({
               isDefaultProductsEnabled: true,
               defaultProductsTitle: prev.defaultProductsTitle ?? "",
               products: defaultProducts,
@@ -79,7 +79,7 @@ export function FpbDefaultProductsSettings({
                   checked={defaultProductsEnabled || undefined}
                   onChange={(e) => {
                     const checked = (e.target as HTMLInputElement).checked;
-                    setDefaultProductsData((prev) => ({
+                    setDefaultProductsData((prev: any) => ({
                       ...prev,
                       isDefaultProductsEnabled: checked,
                       defaultProductsTitle: prev.defaultProductsTitle ?? "",
@@ -116,7 +116,7 @@ export function FpbDefaultProductsSettings({
                     value={defaultProductsData.defaultProductsTitle ?? ""}
                     onInput={(e) => {
                       const value = (e.target as HTMLInputElement).value;
-                      setDefaultProductsData((prev) => ({
+                      setDefaultProductsData((prev: any) => ({
                         ...prev,
                         defaultProductsTitle: value,
                       }));

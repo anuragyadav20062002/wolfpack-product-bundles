@@ -113,7 +113,7 @@ export function FpbAddonReferenceStepCard({
               type="button"
               className={fullPageBundleStyles.addonsReplaceButton}
               onClick={() =>
-                setShowIconPickerForStep((prev) =>
+                setShowIconPickerForStep((prev: string | null) =>
                   prev === "addon-direct" ? null : "addon-direct",
                 )
               }

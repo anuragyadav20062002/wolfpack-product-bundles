@@ -3,6 +3,7 @@ import path from "node:path";
 
 const ROOT_DIR = process.cwd();
 const MAX_ADMIN_FILE_LINES = 600;
+const CONFIGURE_ROUTE_FAMILY_COMFORT_LINES = 500;
 
 const SCAN_ROOTS = ["app/routes/app", "app/components"];
 const EXCLUDED_PATH_PARTS = [
@@ -91,5 +92,17 @@ describe("Admin route and component file boundaries", () => {
       .map(({ relativePath }) => relativePath);
 
     expect(flowObjectFiles).toEqual([]);
+  });
+
+  it("keeps configure route-family files under the comfort cap", () => {
+    const oversizedTargets = adminFileLineCounts()
+      .filter(({ relativePath }) =>
+        CONFIGURE_ROUTE_FAMILIES.some((family) => relativePath.startsWith(family))
+      )
+      .filter(
+        ({ lineCount }) => lineCount > CONFIGURE_ROUTE_FAMILY_COMFORT_LINES
+      );
+
+    expect(oversizedTargets).toEqual([]);
   });
 });

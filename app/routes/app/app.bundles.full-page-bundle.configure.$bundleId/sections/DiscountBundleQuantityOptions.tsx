@@ -85,7 +85,7 @@ export function FpbBundleQuantityOptions({
                   </p>
                 ) : (
                   normalizedPricingDisplayOptions.bundleQuantityOptions.options.map(
-                    (option, index) => (
+                    (option: any, index: number) => (
                       <div
                         key={option.ruleId}
                         className={fullPageBundleStyles.discountRuleCard}

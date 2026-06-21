@@ -118,7 +118,7 @@ export function FpbProgressBarOptions({
                               onInput={(e) => {
                                 const val = (e.target as HTMLInputElement)
                                   .value;
-                                setTierTextByRuleId((prev) => ({
+                                setTierTextByRuleId((prev: Record<string, any>) => ({
                                   ...prev,
                                   [rule.id]: {
                                     tierText: val,
@@ -138,7 +138,7 @@ export function FpbProgressBarOptions({
                               onInput={(e) => {
                                 const val = (e.target as HTMLInputElement)
                                   .value;
-                                setTierTextByRuleId((prev) => ({
+                                setTierTextByRuleId((prev: Record<string, any>) => ({
                                   ...prev,
                                   [rule.id]: {
                                     tierText: prev[rule.id]?.tierText ?? "",

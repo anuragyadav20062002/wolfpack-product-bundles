@@ -1,4 +1,5 @@
 import type { ConfigureBundleFlowContext } from "../useConfigureBundleFlow";
+import { DiscountMethod } from "../../../../types/pricing";
 
 export function FpbDiscountRulesSection({
   flow,
@@ -10,7 +11,6 @@ export function FpbDiscountRulesSection({
     centsToAmount,
     createNewPricingRule,
     DISCOUNT_METHOD_OPTIONS,
-    DiscountMethod,
     fullPageBundleStyles,
     pricingState,
     setGlobalSuccessMessage,

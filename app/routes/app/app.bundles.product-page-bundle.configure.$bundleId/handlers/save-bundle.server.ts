@@ -3,15 +3,6 @@ import type { Session } from "@shopify/shopify-api";
 import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
-import {
-  updateBundleProductMetafields,
-  updateComponentProductMetafields,
-} from "../../../../services/bundles/metafield-sync.server";
-import {
-  convertBundleToStandardMetafields,
-  updateProductStandardMetafields,
-} from "../../../../services/bundles/standard-metafields.server";
-import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { parseConditionValue } from "../../../../lib/parse-condition-value";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
 import { parsePPBBundleVisibility, parsePPBBundleSettings } from "./parsers";
@@ -23,8 +14,7 @@ import {
   normalizePricingDisplayOptions,
   serializeBoxSelectionFromPricingDisplayOptions,
 } from "../../../../lib/pricing-display-options";
-import { buildBundleBaseConfig } from "./runtime-config.server";
-import { syncBundleProductToShopify } from "./product-sync.server";
+import { syncSavedBundleMetafields } from "./save-bundle-metafields.server";
 
 export async function handleSaveBundle(
   admin: ShopifyAdmin,
@@ -79,7 +69,7 @@ export async function handleSaveBundle(
       : null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
-    const stepConditionsData = formData.get("stepConditions")
+    const stepConditionsData: Record<string, any[]> = formData.get("stepConditions")
       ? JSON.parse(formData.get("stepConditions") as string)
       : {};
     const bundleProductData = formData.get("bundleProduct")
@@ -206,7 +196,7 @@ export async function handleSaveBundle(
     };
 
     // Automatically set status to 'active' if bundle has configured steps
-    let finalStatus = bundleStatus as any;
+    let finalStatus = bundleStatus as BundleStatus;
     if (
       bundleStatus === BundleStatus.DRAFT &&
       stepsData &&
@@ -403,180 +393,15 @@ export async function handleSaveBundle(
       },
     });
 
-    // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
-    if (updatedBundle.shopifyProductId) {
-      // Sync product status to Shopify
-      const productSyncResult = await syncBundleProductToShopify(
-        admin,
-        updatedBundle.shopifyProductId,
-        finalStatus,
-        updatedBundle.name,
-        updatedBundle.description,
-        bundleId,
-      );
-      if (
-        productSyncResult.handle &&
-        productSyncResult.handle !== updatedBundle.shopifyProductHandle
-      ) {
-        await db.bundle.update({
-          where: { id: bundleId },
-          data: { shopifyProductHandle: productSyncResult.handle },
-        });
-        updatedBundle.shopifyProductHandle = productSyncResult.handle;
-      }
-
-      // Get the bundle product's first variant ID for cart transform merge operations
-      const bundleParentVariantId = await getBundleProductVariantId(
-        admin,
-        updatedBundle.shopifyProductId,
-      );
-      AppLogger.debug(
-        `[BUNDLE_CONFIG] Bundle parent variant ID: ${bundleParentVariantId}`,
-      );
-
-      const baseConfiguration = buildBundleBaseConfig(
-        updatedBundle,
-        stepsData,
-        stepConditionsData,
-        discountData,
-        bundleParentVariantId,
-      );
-
-      const configSize = JSON.stringify(baseConfiguration).length;
-      AppLogger.debug(
-        "[METAFIELD] Optimized configuration size:",
-        {},
-        `${configSize} chars`,
-      );
-
-      // VALIDATION: Check bundle has steps and products BEFORE attempting metafield updates
-      // This validation must fail the save operation if not met
-      const fullBundleConfig = {
-        ...baseConfiguration,
-        steps: updatedBundle.steps.map((step: any) => {
-          const { timelineIconUrl, ...publicStep } = step;
-          return {
-            ...publicStep,
-            stepImage: timelineIconUrl ?? null,
-          };
-        }),
-      };
-
-      if (!fullBundleConfig.steps || fullBundleConfig.steps.length === 0) {
-        AppLogger.error("[VALIDATION] Cannot save bundle: No steps defined");
-        throw new Error(
-          "Please add at least one step to your bundle before saving",
-        );
-      }
-
-      // Validate at least one step has products (or collections that resolve to products)
-      const hasProducts = fullBundleConfig.steps.some(
-        (step: any) =>
-          (step.StepProduct && step.StepProduct.length > 0) ||
-          (step.products && step.products.length > 0) ||
-          (Array.isArray(step.collections) && step.collections.length > 0) ||
-          (Array.isArray(step.StepCategory) &&
-            step.StepCategory.some(
-              (cat: any) =>
-                (Array.isArray(cat.products) && cat.products.length > 0) ||
-                (Array.isArray(cat.collections) && cat.collections.length > 0),
-            )),
-      );
-
-      if (!hasProducts) {
-        AppLogger.error(
-          "[VALIDATION] Cannot save bundle: No products found in any step",
-        );
-        throw new Error(
-          "Please add products to at least one step before saving",
-        );
-      }
-
-      // Ensure shopifyProductId exists for metafield updates
-      if (!updatedBundle.shopifyProductId) {
-        AppLogger.error(
-          "[VALIDATION] Cannot update metafields: No Shopify product ID",
-        );
-        throw new Error(
-          "Bundle must have a Shopify product ID to update metafields",
-        );
-      }
-
-      // Extract shopifyProductId to a const for TypeScript type narrowing
-      const shopifyProductId = updatedBundle.shopifyProductId;
-
-      // Parallelize independent metafield updates for better performance
-      AppLogger.debug("[METAFIELDS] Updating all metafields in parallel");
-      const [standardResult, componentResult, variantResult] =
-        await Promise.allSettled([
-          // STANDARD METAFIELDS: For Shopify cart transform compatibility (non-critical)
-          (async () => {
-            AppLogger.debug(
-              "[STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product",
-            );
-            const { metafields: standardMetafields, errors: conversionErrors } =
-              await convertBundleToStandardMetafields(admin, baseConfiguration);
-            if (conversionErrors.length > 0) {
-              AppLogger.warn(
-                "[STANDARD_METAFIELD] Some products could not be processed:",
-                conversionErrors,
-              );
-            }
-            if (Object.keys(standardMetafields).length > 0) {
-              await updateProductStandardMetafields(
-                admin,
-                shopifyProductId,
-                standardMetafields,
-              );
-              AppLogger.debug(
-                "[STANDARD_METAFIELD] Standard metafields updated successfully",
-              );
-            } else {
-              AppLogger.debug(
-                "[STANDARD_METAFIELD] No standard metafields to update",
-              );
-            }
-          })(),
-          // COMPONENT METAFIELDS: CRITICAL for cart transform MERGE operation
-          updateComponentProductMetafields(
-            admin,
-            shopifyProductId,
-            fullBundleConfig,
-          ),
-          // BUNDLE VARIANT METAFIELDS: CRITICAL — without this, the widget cannot load on the storefront
-          updateBundleProductMetafields(
-            admin,
-            shopifyProductId,
-            fullBundleConfig,
-          ),
-        ]);
-
-      // Standard metafields: non-critical, warn only
-      if (standardResult.status === "rejected") {
-        AppLogger.warn(
-          "[STANDARD_METAFIELD] Standard metafields update failed (non-critical):",
-          {
-            component: "handlers.server",
-            shopifyProductId,
-          },
-          standardResult.reason,
-        );
-      }
-      // Component metafields: CRITICAL for cart transform — propagate failure
-      if (componentResult.status === "rejected") {
-        throw new Error(
-          `Failed to update component metafields (cart transform will break): ${componentResult.reason}`,
-        );
-      }
-      // Bundle variant metafields: CRITICAL for widget load — propagate failure
-      if (variantResult.status === "rejected") {
-        throw new Error(
-          `Failed to update bundle variant metafields (widget will not load): ${variantResult.reason}`,
-        );
-      }
-
-      AppLogger.debug("[METAFIELDS] All metafields updated successfully");
-    }
+    await syncSavedBundleMetafields({
+      admin,
+      bundleId,
+      finalStatus,
+      updatedBundle,
+      stepsData,
+      stepConditionsData,
+      discountData,
+    });
 
     return json({
       success: true,

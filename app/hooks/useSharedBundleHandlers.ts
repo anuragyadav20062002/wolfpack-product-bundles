@@ -77,7 +77,7 @@ export interface SharedBundleHandlersParams {
   // From useBundleConfigurationState
   stepsState: {
     steps: any[];
-    setSteps: (fn: any) => void;
+    setSteps: (fn: (prev: any[]) => any[]) => void;
     removeStep: (id: string) => void;
     updateStepField: (stepId: string, field: string, value: any) => void;
   };

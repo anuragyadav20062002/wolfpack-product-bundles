@@ -167,7 +167,7 @@ async function addBundleProductPlaceholderMedia(
 
 async function updateBundleProductMediaFiles(
   admin: ShopifyAdmin,
-  files: Array<{ id: string; alt?: string; referencesToRemove?: string[] }>,
+  files: Array<{ id: string; alt?: string | null; referencesToRemove?: string[] }>,
 ): Promise<void> {
   if (files.length === 0) return;
 

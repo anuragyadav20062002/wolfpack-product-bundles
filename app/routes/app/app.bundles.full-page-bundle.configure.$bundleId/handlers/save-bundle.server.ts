@@ -3,10 +3,9 @@ import type { Session } from "@shopify/shopify-api";
 import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
-import { processCss } from "../../../../lib/css-sanitizer";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
 import { normaliseShopifyProductId } from "../../../../services/bundles/bundle-configure-handlers.server";
-import { BundleStatus, FullPageLayout } from "../../../../constants/bundle";
+import { BundleStatus } from "../../../../constants/bundle";
 import { buildStepCategoryCreateInput } from "../../../../lib/bundle-config/category-persistence";
 import {
   normalizePricingDisplayOptions,
@@ -14,7 +13,7 @@ import {
 } from "../../../../lib/pricing-display-options";
 import { parseConditionValue } from "../../../../lib/parse-condition-value";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
-import { parseIndividualSellingPlanSelection } from "./shared.server";
+import { parseFpbSaveBundleForm } from "./save-bundle-form.server";
 import { syncSavedFpbBundleStorefrontState } from "./save-metafields.server";
 
 /**
@@ -41,127 +40,48 @@ export async function handleSaveBundle(
   });
 
   try {
-    // Parse form data
-    const bundleName = formData.get("bundleName") as string;
-    const bundleDescription = formData.get("bundleDescription") as string;
-    const bundleStatus = formData.get("bundleStatus") as string;
-    const templateName = (formData.get("templateName") as string) || null;
-    const fullPageLayout =
-      (formData.get("fullPageLayout") as string) ||
-      FullPageLayout.FOOTER_BOTTOM;
-    const promoBannerBgImageRaw = formData.get("promoBannerBgImage") as string;
-    const promoBannerBgImage = promoBannerBgImageRaw || null;
-    const loadingGifRaw = formData.get("loadingGif") as string;
-    const loadingGif = loadingGifRaw || null;
-    const searchBarEnabled = formData.get("searchBarEnabled") === "true";
-    const showStepTimelineRaw = formData.get("showStepTimeline") as
-      | string
-      | null;
-    // Parse: "true" → true, "false" → false, null/missing → null
-    const showStepTimelineParsed: boolean | null =
-      showStepTimelineRaw === "true"
-        ? true
-        : showStepTimelineRaw === "false"
-          ? false
-          : null;
-    const floatingBadgeEnabled =
-      formData.get("floatingBadgeEnabled") === "true";
-    const floatingBadgeTextRaw =
-      (formData.get("floatingBadgeText") as string) ?? "";
-    const floatingBadgeText = floatingBadgeTextRaw.slice(0, 60);
-    const showProductPrices = formData.get("showProductPrices") !== "false";
-    const showCompareAtPrices = formData.get("showCompareAtPrices") === "true";
-    const cartRedirectToCheckout =
-      formData.get("cartRedirectToCheckout") === "true";
-    const allowQuantityChanges =
-      formData.get("allowQuantityChanges") !== "false";
-    const variantSelectorEnabled =
-      formData.get("variantSelectorEnabled") !== "false";
-    const showTextOnAddButton = formData.get("showTextOnAddButton") === "true";
-    const textOverridesRaw = formData.get("textOverrides") as string | null;
-    const textOverridesByLocaleRaw = formData.get("textOverridesByLocale") as
-      | string
-      | null;
-    const textOverrides = textOverridesRaw
-      ? JSON.parse(textOverridesRaw)
-      : null;
-    const textOverridesByLocale = textOverridesByLocaleRaw
-      ? JSON.parse(textOverridesByLocaleRaw)
-      : null;
-    const bundleTextConfigRaw = formData.get("bundleTextConfig") as
-      | string
-      | null;
-    const bundleTextConfig = bundleTextConfigRaw
-      ? JSON.parse(bundleTextConfigRaw)
-      : null;
-    const personalizationDataRaw = formData.get("personalizationData") as
-      | string
-      | null;
-    const personalizationData = personalizationDataRaw
-      ? JSON.parse(personalizationDataRaw)
-      : null;
-    const bundleUpsellConfigRaw = formData.get("bundleUpsellConfig") as
-      | string
-      | null;
-    const bundleUpsellConfig = bundleUpsellConfigRaw
-      ? JSON.parse(bundleUpsellConfigRaw)
-      : null;
-    const upsellWidgetEnabled = formData.get("upsellWidgetEnabled") === "true";
-    const upsellWidgetDisplayMode =
-      (formData.get("upsellWidgetDisplayMode") as string | null) ?? "block";
-    const upsellWidgetDisplayOn =
-      (formData.get("upsellWidgetDisplayOn") as string | null) ?? "all";
-    const autoSelectBrowsedProduct =
-      formData.get("autoSelectBrowsedProduct") === "true";
-    const bundleBannerDesktopUrlRaw = formData.get("bundleBannerDesktopUrl") as
-      | string
-      | null;
-    const bundleBannerDesktopUrl = bundleBannerDesktopUrlRaw || null;
-    const bundleBannerMobileUrlRaw = formData.get("bundleBannerMobileUrl") as
-      | string
-      | null;
-    const bundleBannerMobileUrl = bundleBannerMobileUrlRaw || null;
-    const bundleLevelCssRaw = formData.get("bundleLevelCss") as string | null;
-    const bundleLevelCssInput =
-      typeof bundleLevelCssRaw === "string" ? bundleLevelCssRaw : "";
-    const { sanitizedCss: sanitizedBundleLevelCss } =
-      processCss(bundleLevelCssInput);
-    const bundleLevelCss = sanitizedBundleLevelCss.trim() || null;
-    const productSlotsEnabled = formData.get("productSlotsEnabled") === "true";
-    const maxQtyPerProductRaw = formData.get("maxQtyPerProduct") as
-      | string
-      | null;
-    const maxQtyPerProduct = maxQtyPerProductRaw
-      ? parseInt(maxQtyPerProductRaw, 10) || null
-      : null;
-    const productSlotIconUrlRaw = formData.get("productSlotIconUrl") as
-      | string
-      | null;
-    const productSlotIconUrl = productSlotIconUrlRaw || null;
-    const validateQuantityPerProductRaw = formData.get(
-      "validateQuantityPerProduct",
-    ) as string | null;
-    const validateQuantityPerProduct = validateQuantityPerProductRaw
-      ? JSON.parse(validateQuantityPerProductRaw)
-      : { isEnabled: false, allowedQuantity: 1 };
-    const individualSellingPlanSelection =
-      parseIndividualSellingPlanSelection(formData);
-    const defaultProductsDataRaw = formData.get("defaultProductsData") as
-      | string
-      | null;
-    const defaultProductsData = defaultProductsDataRaw
-      ? JSON.parse(defaultProductsDataRaw)
-      : null;
-    const quantityValidationEnabled =
-      validateQuantityPerProduct?.isEnabled === true;
-    const stepsData = JSON.parse(formData.get("stepsData") as string);
-    const discountData = JSON.parse(formData.get("discountData") as string);
-    const stepConditionsData = formData.get("stepConditions")
-      ? JSON.parse(formData.get("stepConditions") as string)
-      : {};
-    const bundleProductData = formData.get("bundleProduct")
-      ? JSON.parse(formData.get("bundleProduct") as string)
-      : null;
+    const {
+      allowQuantityChanges,
+      autoSelectBrowsedProduct,
+      bundleBannerDesktopUrl,
+      bundleBannerMobileUrl,
+      bundleDescription,
+      bundleLevelCss,
+      bundleName,
+      bundleProductData,
+      bundleStatus,
+      bundleTextConfig,
+      bundleUpsellConfig,
+      cartRedirectToCheckout,
+      defaultProductsData,
+      discountData,
+      floatingBadgeEnabled,
+      floatingBadgeText,
+      fullPageLayout,
+      individualSellingPlanSelection,
+      loadingGif,
+      maxQtyPerProduct,
+      personalizationData,
+      productSlotIconUrl,
+      productSlotsEnabled,
+      promoBannerBgImage,
+      quantityValidationEnabled,
+      searchBarEnabled,
+      showCompareAtPrices,
+      showProductPrices,
+      showStepTimelineParsed,
+      showTextOnAddButton,
+      stepConditionsData,
+      stepsData,
+      templateName,
+      textOverrides,
+      textOverridesByLocale,
+      upsellWidgetDisplayMode,
+      upsellWidgetDisplayOn,
+      upsellWidgetEnabled,
+      validateQuantityPerProduct,
+      variantSelectorEnabled,
+    } = parseFpbSaveBundleForm(formData);
 
     AppLogger.debug("Parsed form data:", {
       bundleName,

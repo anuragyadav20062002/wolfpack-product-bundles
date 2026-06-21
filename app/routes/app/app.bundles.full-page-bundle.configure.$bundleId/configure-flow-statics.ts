@@ -195,8 +195,8 @@ const configureFlowStaticValues = {
 export function buildConfigureBundleFlowContext(
   flow: ConfigureBundleFlowDraft,
 ): ConfigureBundleFlowContextValue {
-  return {
+  return ({
     ...configureFlowStaticValues,
     ...flow,
-  } as ConfigureBundleFlowContextValue;
+  } as unknown) as ConfigureBundleFlowContextValue;
 }

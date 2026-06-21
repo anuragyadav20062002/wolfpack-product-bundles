@@ -1,31 +1,32 @@
-import fs from "node:fs";
-import path from "node:path";
-
 import { formatBundleForWidget } from "../../../app/lib/bundle-formatter.server";
-import { readFpbConfigureRouteFamilySource } from "./fpb-configure-route-source";
+import { parseFpbSaveBundleForm } from "../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/save-bundle-form.server";
 
-const fpbRoute = readFpbConfigureRouteFamilySource().replace(/\s+/g, " ");
-
-const fpbHandler = fs
-  .readFileSync(
-    path.join(
-      process.cwd(),
-      "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/save-bundle.server.ts",
-    ),
-    "utf8",
-  )
-  .replace(/\s+/g, " ");
+function buildSaveForm(showTextOnAddButton: boolean) {
+  const formData = new FormData();
+  formData.append("bundleName", "Test Bundle");
+  formData.append("bundleDescription", "");
+  formData.append("bundleStatus", "draft");
+  formData.append("showTextOnAddButton", String(showTextOnAddButton));
+  formData.append("stepsData", JSON.stringify([]));
+  formData.append(
+    "discountData",
+    JSON.stringify({
+      discountEnabled: false,
+      discountType: "percentage",
+      discountRules: [],
+    }),
+  );
+  return formData;
+}
 
 describe("FPB Show Text on + Button persistence", () => {
-  it("submits and persists the direct showTextOnAddButton field", () => {
-    expect(fpbRoute).toContain("(bundle as any).showTextOnAddButton");
-    expect(fpbRoute).toContain(
-      'formData.append( "showTextOnAddButton", String(flow.showTextOnPlusEnabled), )',
+  it("parses the direct showTextOnAddButton save field", () => {
+    expect(parseFpbSaveBundleForm(buildSaveForm(true)).showTextOnAddButton).toBe(
+      true,
     );
-    expect(fpbHandler).toContain(
-      'const showTextOnAddButton = formData.get("showTextOnAddButton") === "true"',
-    );
-    expect(fpbHandler).toContain("showTextOnAddButton,");
+    expect(
+      parseFpbSaveBundleForm(buildSaveForm(false)).showTextOnAddButton,
+    ).toBe(false);
   });
 
   it("emits showTextOnAddButton to the storefront payload without requiring button copy", () => {

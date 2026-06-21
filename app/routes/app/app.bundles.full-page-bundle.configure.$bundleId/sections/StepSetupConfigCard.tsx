@@ -96,7 +96,7 @@ export function FpbStepConfigCard({
             )}
             <s-button
               onClick={() =>
-                setShowIconPickerForStep((prev) =>
+                setShowIconPickerForStep((prev: string | null) =>
                   prev === step.id ? null : step.id,
                 )
               }

@@ -96,7 +96,7 @@ export function FpbDiscountMessagingOptions({
                           locale !== primaryLocale &&
                           !ruleMessagesByLocale[locale]
                         ) {
-                          setRuleMessagesByLocale((prev) => ({
+                          setRuleMessagesByLocale((prev: any) => ({
                             ...prev,
                             [locale]: normalizedRuleMessages,
                           }));
@@ -195,7 +195,7 @@ export function FpbDiscountMessagingOptions({
                                 const val = (e.target as HTMLInputElement)
                                   .value;
                                 if (discountMessagingMultiLanguageEnabled) {
-                                  setRuleMessagesByLocale((prev) => ({
+                                  setRuleMessagesByLocale((prev: any) => ({
                                     ...prev,
                                     [activeDiscountLocale]: {
                                       ...(prev[activeDiscountLocale] || {}),
@@ -241,7 +241,7 @@ export function FpbDiscountMessagingOptions({
                         onInput={(e) => {
                           const val = (e.target as HTMLInputElement).value;
                           if (discountMessagingMultiLanguageEnabled) {
-                            setSuccessMessageByLocale((prev) => ({
+                            setSuccessMessageByLocale((prev: Record<string, string>) => ({
                               ...prev,
                               [activeDiscountLocale]: val,
                             }));

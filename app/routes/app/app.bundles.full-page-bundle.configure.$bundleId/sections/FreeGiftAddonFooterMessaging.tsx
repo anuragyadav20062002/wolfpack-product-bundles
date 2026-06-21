@@ -54,7 +54,7 @@ export function FpbAddonFooterMessaging({
             placeholder="Add {{addonsConditionDiff}} more product(s) to claim {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons"
             onInput={(e) => {
               const value = (e.target as HTMLInputElement).value;
-              setRuleMessages((prev) => ({
+              setRuleMessages((prev: Record<string, any>) => ({
                 ...prev,
                 [ADDON_MESSAGE_KEY]: {
                   ...(prev[ADDON_MESSAGE_KEY] || addonMessages),
@@ -71,7 +71,7 @@ export function FpbAddonFooterMessaging({
             placeholder="Congrats you are eligible for {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons"
             onInput={(e) => {
               const value = (e.target as HTMLInputElement).value;
-              setRuleMessages((prev) => ({
+              setRuleMessages((prev: Record<string, any>) => ({
                 ...prev,
                 [ADDON_MESSAGE_KEY]: {
                   ...(prev[ADDON_MESSAGE_KEY] || addonMessages),

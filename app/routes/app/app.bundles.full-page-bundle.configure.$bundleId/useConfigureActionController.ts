@@ -4,19 +4,9 @@ import { validateSlug } from "../../../lib/slug-utils";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
 import { type TourStep } from "../../../components/bundle-configure/tourSteps";
-import {
-  buildVisibilitySelectionIds,
-  getVisibilityPickerSelection,
-  normalizeVisibilityCollectionForDisplayConfiguration,
-  normalizeVisibilityCollectionPageTarget,
-  normalizeVisibilityProductForDisplayConfiguration,
-  normalizeVisibilityProductPageTarget,
-} from "./visibility-helpers";
-import {
-  createDefaultAddonDraftTier,
-  normalizeAddonPickerProduct,
-} from "./addon-helpers";
 import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
+import { useConfigureAddonActionHandlers } from "./useConfigureAddonActionHandlers";
+import { useConfigureVisibilityActionHandlers } from "./useConfigureVisibilityActionHandlers";
 
 export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
   const sharedHandlers = useSharedBundleHandlers({
@@ -39,6 +29,8 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
     setShowIconPickerForStep: flow.setShowIconPickerForStep,
   });
   Object.assign(flow, sharedHandlers);
+  const addonActionHandlers = useConfigureAddonActionHandlers(flow);
+  const visibilityActionHandlers = useConfigureVisibilityActionHandlers(flow);
 
   const promptSaveBarBeforeNavigation = useCallback(() => {
     flow.shopify.toast.show(
@@ -261,87 +253,6 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
     void handlePreviewBundle();
     flow.closeSelectTemplateModal();
   }, [flow, handlePreviewBundle]);
-  const openAddonSelectedProductsModal = useCallback(
-    (tierIndex: number) => {
-      flow.setAddonSelectedProductsTierIndex(tierIndex);
-      flow.setIsAddonSelectedProductsModalOpen(true);
-    },
-    [flow],
-  );
-  const handleAddonSelectedProductRemove = useCallback(
-    (tierIndex: number, productIndex: number) => {
-      const addonTiers = Array.isArray(flow.addonDraft.addonTiers)
-        ? flow.addonDraft.addonTiers
-        : [createDefaultAddonDraftTier()];
-      const updated = addonTiers.map((tier: any, index: number) => {
-        if (index !== tierIndex) return tier;
-        const selectedAddonProducts = Array.isArray(tier.selectedAddonProducts)
-          ? tier.selectedAddonProducts
-          : [];
-        return {
-          ...tier,
-          selectedAddonProducts: selectedAddonProducts.filter(
-            (_: any, selectedIndex: number) => selectedIndex !== productIndex,
-          ),
-        };
-      });
-      flow.updateAddonDraft({ addonTiers: updated });
-    },
-    [flow],
-  );
-  const handleAddonSelectedProductAdd = useCallback(
-    async (
-      tierIndex: number,
-      options?: { reopenSelectedProductsModal?: boolean },
-    ) => {
-      if (options?.reopenSelectedProductsModal) {
-        flow.setAddonSelectedProductsTierIndex(tierIndex);
-        flow.setIsAddonSelectedProductsModalOpen(false);
-        flow.hidePolarisModal(flow.addonSelectedProductsModalRef);
-        await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
-      }
-      const addonTiers = Array.isArray(flow.addonDraft.addonTiers)
-        ? flow.addonDraft.addonTiers
-        : [createDefaultAddonDraftTier()];
-      const currentProducts = Array.isArray(
-        addonTiers[tierIndex]?.selectedAddonProducts,
-      )
-        ? addonTiers[tierIndex].selectedAddonProducts
-        : [];
-      try {
-        const picked = await (flow.shopify as any).resourcePicker({
-          type: "product",
-          multiple: true,
-          selectionIds: currentProducts.map((product: any) => ({
-            id: product.graphqlId || product.id,
-          })),
-        });
-        const selection = Array.isArray(picked) ? picked : picked?.selection;
-        if (!selection) return;
-        const updated = addonTiers.map((tier: any, index: number) =>
-          index === tierIndex
-            ? {
-                ...tier,
-                selectedAddonProducts: selection.map(
-                  normalizeAddonPickerProduct,
-                ),
-              }
-            : tier,
-        );
-        flow.updateAddonDraft({ addonTiers: updated });
-      } finally {
-        if (options?.reopenSelectedProductsModal) {
-          flow.setAddonSelectedProductsTierIndex(tierIndex);
-          flow.setIsAddonSelectedProductsModalOpen(true);
-        }
-      }
-    },
-    [flow],
-  );
-  const handleDisableAddonStepConfirm = useCallback(() => {
-    flow.setIsDisableAddonStepModalOpen(false);
-    flow.updateAddonDraft({ isPersonalizationEnabled: false });
-  }, [flow]);
   const handlePageSelectionBackdropClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
       if (event.currentTarget === event.target) {
@@ -411,93 +322,13 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
       });
     }
   }, [flow, loadAvailablePages]);
-  const openVisibilityProductPicker = useCallback(
-    async (target: "widget" | "embed") => {
-      const currentProducts =
-        target === "widget" ? flow.upsellWidgetSelectedProducts : [];
-      const picked = await (flow.shopify as any).resourcePicker({
-        type: "product",
-        multiple: true,
-        action: "select",
-        selectionIds: buildVisibilitySelectionIds(currentProducts),
-      });
-      const selection = getVisibilityPickerSelection(picked);
-      if (!selection) return;
-      const selectedProducts = selection.map(
-        normalizeVisibilityProductForDisplayConfiguration,
-      );
-      const pageTargets = selectedProducts.map(
-        normalizeVisibilityProductPageTarget,
-      );
-      flow.setUpsellWidgetSelectedProducts(selectedProducts);
-      flow.setUpsellWidgetSpecificProductPages(pageTargets);
-      flow.markAsDirty();
-    },
-    [flow],
-  );
-  const openVisibilityCollectionPicker = useCallback(
-    async (target: "widget" | "embed") => {
-      const currentCollections =
-        target === "widget" ? flow.upsellWidgetCollectionsSelectedData : [];
-      const picked = await (flow.shopify as any).resourcePicker({
-        type: "collection",
-        multiple: true,
-        action: "select",
-        selectionIds: buildVisibilitySelectionIds(currentCollections),
-      });
-      const selection = getVisibilityPickerSelection(picked);
-      if (!selection) return;
-      const collectionsSelectedData = selection.map(
-        normalizeVisibilityCollectionForDisplayConfiguration,
-      );
-      const pageTargets = collectionsSelectedData.map(
-        normalizeVisibilityCollectionPageTarget,
-      );
-      flow.setUpsellWidgetCollectionsSelectedData(collectionsSelectedData);
-      flow.setUpsellWidgetSpecificCollectionPages(pageTargets);
-      flow.markAsDirty();
-    },
-    [flow],
-  );
-  const removeVisibilityProductTarget = useCallback(
-    (target: "widget" | "embed", indexToRemove: number) => {
-      if (target === "widget") {
-        flow.setUpsellWidgetSelectedProducts((prev: unknown[]) =>
-          prev.filter((_, index) => index !== indexToRemove),
-        );
-        flow.setUpsellWidgetSpecificProductPages((prev: unknown[]) =>
-          prev.filter((_, index) => index !== indexToRemove),
-        );
-      }
-      flow.markAsDirty();
-    },
-    [flow],
-  );
-  const removeVisibilityCollectionTarget = useCallback(
-    (target: "widget" | "embed", indexToRemove: number) => {
-      if (target === "widget") {
-        flow.setUpsellWidgetCollectionsSelectedData((prev: unknown[]) =>
-          prev.filter((_, index) => index !== indexToRemove),
-        );
-        flow.setUpsellWidgetSpecificCollectionPages((prev: unknown[]) =>
-          prev.filter((_, index) => index !== indexToRemove),
-        );
-      }
-      flow.markAsDirty();
-    },
-    [flow],
-  );
   Object.assign(flow, {
-    buildVisibilitySelectionIds,
-    createDefaultAddonDraftTier,
+    ...addonActionHandlers,
+    ...visibilityActionHandlers,
     enablePreviewGate,
-    getVisibilityPickerSelection,
     handleAddNewStep,
-    handleAddonSelectedProductAdd,
-    handleAddonSelectedProductRemove,
     handleAddToStorefront,
     handleBackClick,
-    handleDisableAddonStepConfirm,
     handleGuidedTourStepChange,
     handlePageSelectionBackdropClick,
     handlePlaceWidget,
@@ -506,17 +337,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
     handleSectionChange,
     handleTemplatePreview,
     loadAvailablePages,
-    normalizeAddonPickerProduct,
-    normalizeVisibilityCollectionForDisplayConfiguration,
-    normalizeVisibilityCollectionPageTarget,
-    normalizeVisibilityProductForDisplayConfiguration,
-    normalizeVisibilityProductPageTarget,
-    openAddonSelectedProductsModal,
     openProductInAdmin,
-    openVisibilityCollectionPicker,
-    openVisibilityProductPicker,
     promptSaveBarBeforeNavigation,
-    removeVisibilityCollectionTarget,
-    removeVisibilityProductTarget,
   });
 }

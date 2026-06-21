@@ -195,7 +195,7 @@ export function BundleWidgetSection({
                       className={fullPageBundleStyles.visibilitySelectionList}
                     >
                       {upsellWidgetSelectedProducts.map(
-                        (product: any, index) => (
+                        (product: any, index: number) => (
                           <div
                             key={getVisibilityResourceId(product) ?? index}
                             className={
@@ -230,7 +230,7 @@ export function BundleWidgetSection({
                       className={fullPageBundleStyles.visibilitySelectionList}
                     >
                       {upsellWidgetCollectionsSelectedData.map(
-                        (collection: any, index) => (
+                        (collection: any, index: number) => (
                           <div
                             key={getVisibilityResourceId(collection) ?? index}
                             className={
