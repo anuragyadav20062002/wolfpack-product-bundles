@@ -162,7 +162,7 @@ describe('FPB widget action busy state', () => {
       _setWidgetBusy: fullPageRuntimeCartSettingsMethods._setWidgetBusy,
     };
 
-    let releaseAction: (() => void) | null = null;
+    let releaseAction: () => void = () => undefined;
     const running = new Promise<void>((resolve) => {
       releaseAction = resolve;
     });
@@ -244,7 +244,7 @@ describe('FPB widget action busy state', () => {
       _getLandingPageControls: () => ({ checkout: null }),
     };
 
-    let resolveResponse: (() => void) | null = null;
+    let resolveResponse: () => void = () => undefined;
     (global as any).fetch = () => new Promise((resolve) => {
       resolveResponse = () => {
         resolve({

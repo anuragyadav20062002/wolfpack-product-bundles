@@ -2,7 +2,7 @@
  * Unit tests — PPB subscription validation handler
  */
 
-import { handleValidateSellingPlanGroups } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server";
+import { handleValidateSellingPlanGroups } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/subscriptions.server";
 import { SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE } from "../../../app/lib/bundle-config/product-page-admin-sections";
 
 type ProductRecord = {
@@ -127,7 +127,7 @@ describe("PPB subscription validation handler", () => {
     getDb().bundle.findFirst.mockResolvedValue(baseBundle);
 
     const response = await handleValidateSellingPlanGroups(admin, SESSION, "bundle-1");
-    const body = await response.json();
+    const body = await response.json() as any;
 
     expect(response.status).toBe(200);
     expect(body).toEqual({
@@ -165,7 +165,7 @@ describe("PPB subscription validation handler", () => {
     getDb().bundle.findFirst.mockResolvedValue(baseBundle);
 
     const response = await handleValidateSellingPlanGroups(admin, SESSION, "bundle-1");
-    const body = await response.json();
+    const body = await response.json() as any;
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);

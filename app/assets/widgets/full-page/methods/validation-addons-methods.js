@@ -115,7 +115,14 @@ async _sidebarAdvanceToNextStep() {
 },
 
 canProceedToNextStep() {
-  return this.isStepCompleted(this.currentStepIndex);
+  if (!this.isStepCompleted(this.currentStepIndex)) return false;
+  // If the next step is the free-gift step, also enforce the addon threshold.
+  // Otherwise the merchant's `Bundle Product Quantity` / `Bundle Value` rule on
+  // the addon tier is ignored when advancing into the free-gift step.
+  const steps = this.selectedBundle?.steps || [];
+  const nextStep = steps[this.currentStepIndex + 1];
+  if (nextStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
+  return true;
 },
 
 // Helper: Check if all bundle conditions are met
@@ -126,13 +133,26 @@ areBundleConditionsMet() {
   });
 },
 
-// Returns true when every non-free-gift, non-default step has no condition
-// configured at all (conditionType / conditionOperator / conditionValue all absent).
-// In this mode the customer can add to cart at any step without completing all steps.
+// Returns true when no step contributes a gating rule.
+// A free-gift step contributes a rule when it has an addonEligibilityCondition,
+// an addonTier with eligibilityCondition.value > 0, or any selectedAddonProducts —
+// otherwise the footer renders "Add to Cart" on the paid step and bypasses the
+// merchant-configured addon threshold.
 bundleHasNoConditions() {
   if (!this.selectedBundle?.steps?.length) return false;
   return this.selectedBundle.steps.every(step => {
-    if (step.isFreeGift || step.isDefault) return true;
+    if (step.isDefault) return true;
+    if (step.isFreeGift) {
+      const eligibilityValue = Number(step.addonEligibilityCondition?.value) || 0;
+      if (eligibilityValue > 0) return false;
+      const tier = Array.isArray(step.addonTiers) ? step.addonTiers[0] : null;
+      if (tier) {
+        const tierValue = Number(tier.eligibilityCondition?.value) || 0;
+        if (tierValue > 0) return false;
+        if (Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0) return false;
+      }
+      return true;
+    }
     return !step.conditionType && !step.conditionOperator && step.conditionValue == null;
   });
 },

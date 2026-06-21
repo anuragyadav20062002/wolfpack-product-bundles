@@ -22,6 +22,7 @@ contract.
 | 2 | Category-rule mode, flag off  | `{ quantity: 1, step: { categories: [{ conditions: [...], autoNextStepOnConditionMet: false }] } }` | `false` | Merchant explicitly opted out — must not advance. |
 | 3 | Category-rule mode, flag on   | `{ quantity: 1, step: { categories: [{ conditions: [...], autoNextStepOnConditionMet: true  }] } }` | `true`  | Merchant opted in — should advance. |
 | 4 | Removal (quantity === 0)      | `{ quantity: 0, step: { categories: [{ conditions: [...], autoNextStepOnConditionMet: true  }] } }` | `false` | Decreasing quantity must never auto-advance — prevents jumpy UX. |
+| 5 | Mixed category flags, selected product belongs to opted-out category | `{ quantity: 1, productId: "101", step: { categories: [{ products: [{ id: "101" }], autoNextStepOnConditionMet: false }, { products: [{ id: "202" }], autoNextStepOnConditionMet: true }] } }` | `false` | Auto-next is scoped to the category that contains the selected product. |
 
 ## Acceptance Criteria
 - [ ] All listed test cases pass

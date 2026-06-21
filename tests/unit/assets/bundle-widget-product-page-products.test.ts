@@ -39,7 +39,7 @@ function extractId(idString: string | null | undefined): string | null {
   return idString.toString().split('/').pop() ?? null;
 }
 
-function processProductPageProductsForStep(products: StorefrontProduct[], step: WidgetStep) {
+function processProductPageProductsForStep(products: StorefrontProduct[], step: WidgetStep): any[] {
   const normalizeVariant = (variant: StorefrontVariant) => ({
     id: extractId(variant.id),
     title: variant.title,
@@ -51,7 +51,7 @@ function processProductPageProductsForStep(products: StorefrontProduct[], step: 
     image: variant.image || null,
   });
 
-  return products.flatMap(product => {
+  return products.flatMap<any>(product => {
     if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
       const processedVariants = (product.variants || []).map(normalizeVariant);
       const processedOptions = (product.options || []).map(option => (

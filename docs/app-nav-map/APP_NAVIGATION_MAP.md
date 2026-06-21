@@ -4,7 +4,7 @@
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-06-03
+**Last Updated:** 2026-06-21
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -434,6 +434,8 @@ Billing Page
           ├── Set Pricing tab
           └── [Save] → [Sync Bundle tab → Sync Now]
 ```
+
+Note: `/app/bundles/cart-transform` is not a navigable Admin page. The obsolete cart-transform bundle list route was removed; cart-transform support remains backend/API and storefront-function infrastructure.
 
 ### Flow C: Design Customisation
 ```

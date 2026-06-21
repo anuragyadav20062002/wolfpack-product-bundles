@@ -19,8 +19,8 @@ describe("mapTemplateSelection", () => {
     ["classic", "FBP_SIDE_FOOTER", "CLASSIC", null],
     ["compact", "FBP_SIDE_FOOTER", "COMPACT", null],
     ["horizontal", "FBP_SIDE_FOOTER", "HORIZONTAL", null],
-  ] as const)("maps full-page %s", (templateKey, bundleDesignTemplate, bundleDesignPresetId, templateId) => {
-    expect(mapTemplateSelection("full_page", templateKey)).toEqual({
+  ])("maps full-page %s", (templateKey, bundleDesignTemplate, bundleDesignPresetId, templateId) => {
+    expect(mapTemplateSelection("full_page", templateKey as any)).toEqual({
       bundleDesignTemplate,
       bundleDesignPresetId,
       templateId,
@@ -32,8 +32,8 @@ describe("mapTemplateSelection", () => {
     ["product-grid", "PDP_INPAGE", "COGNIVE", "COGNIVE"],
     ["horizontal-slots", "PDP_MODAL", "MODAL", "MODAL"],
     ["vertical-slots", "PDP_MODAL", "SIMPLIFIED", "SIMPLIFIED"],
-  ] as const)("maps product-page %s", (templateKey, bundleDesignTemplate, bundleDesignPresetId, templateId) => {
-    expect(mapTemplateSelection("product_page", templateKey)).toEqual({
+  ])("maps product-page %s", (templateKey, bundleDesignTemplate, bundleDesignPresetId, templateId) => {
+    expect(mapTemplateSelection("product_page", templateKey as any)).toEqual({
       bundleDesignTemplate,
       bundleDesignPresetId,
       templateId,

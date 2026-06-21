@@ -3,6 +3,7 @@ import { AppLogger } from "../../lib/logger";
 import { prisma } from "../../db.server";
 import { sanitizeCss } from "../../lib/css-sanitizer";
 import { generateCSSFromSettings } from "../../lib/css-generators";
+import type { ThemeColors } from "../../lib/css-generators";
 import { BundleType } from "../../constants/bundle";
 
 // auth: public — served via <link> tag in storefront theme; browser request, no session available.
@@ -212,7 +213,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       });
     }
 
-    const themeColors = (designSettings as unknown as Record<string, unknown>)?.themeColors ?? null;
+    const themeColors =
+      ((designSettings as unknown as Record<string, unknown>)?.themeColors ??
+        null) as ThemeColors | null;
     const css = generateCSSFromSettings(finalSettings, bundleTypeForCSS, customCss, themeColors);
 
     // Build a stable ETag from the design settings last-modified time.

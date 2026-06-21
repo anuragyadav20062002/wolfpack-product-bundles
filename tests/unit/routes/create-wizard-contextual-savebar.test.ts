@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const routePath = path.join(
+const wizardPath = path.join(
   process.cwd(),
-  "app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx"
+  "app/routes/app/app.bundles.create_.configure.$bundleId/WizardConfigureStep.tsx"
 );
 
 describe("creation wizard contextual save bar contract", () => {
-  const source = fs.readFileSync(routePath, "utf8");
+  const source = fs.readFileSync(wizardPath, "utf8");
 
   it("renders an App Bridge SaveBar controlled by wizard dirty state", () => {
     expect(source).toContain('import { SaveBar } from "@shopify/app-bridge-react";');

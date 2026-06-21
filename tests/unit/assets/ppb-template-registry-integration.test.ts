@@ -3,6 +3,8 @@ const { cogniveTemplateMethods } = require('../../../app/assets/widgets/product-
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { modalSlotTemplateMethods } = require('../../../app/assets/widgets/product-page/templates/modal-slot-template.js');
 
+export {};
+
 describe('PPB template registry integration', () => {
   it('uses the registry resolver for Cognive/Grid detection', () => {
     class ProductPageWidget {
@@ -16,7 +18,7 @@ describe('PPB template registry integration', () => {
     }
 
     Object.assign(ProductPageWidget.prototype, cogniveTemplateMethods);
-    const widget = new ProductPageWidget();
+    const widget = new ProductPageWidget() as any;
 
     expect(widget._isProductPageGridTemplate()).toBe(true);
     expect(widget._isProductPageCogniveTemplate()).toBe(true);
@@ -24,6 +26,8 @@ describe('PPB template registry integration', () => {
 
   it('uses the registry resolver for modal vertical slot detection', () => {
     class ProductPageWidget {
+      selectedBundle: { renderFilledSlotsAsHorizontalStacked: boolean };
+
       constructor() {
         this.selectedBundle = { renderFilledSlotsAsHorizontalStacked: false };
       }
@@ -38,7 +42,7 @@ describe('PPB template registry integration', () => {
     }
 
     Object.assign(ProductPageWidget.prototype, modalSlotTemplateMethods);
-    const widget = new ProductPageWidget();
+    const widget = new ProductPageWidget() as any;
 
     expect(widget._isProductPageModalSlotTemplate()).toBe(true);
     expect(widget._usesVerticalModalSlotLayout()).toBe(true);

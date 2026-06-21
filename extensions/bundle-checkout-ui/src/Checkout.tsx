@@ -102,7 +102,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
             <s-text type="strong" tone="success">
               {formatMoney(totalSavingsCents)}
             </s-text>
-            <s-text tone="success" type="small">
+            <s-text tone="success">
               ({formatPercent(savingsPercent)}%)
             </s-text>
           </s-stack>

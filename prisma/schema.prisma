@@ -98,7 +98,6 @@ model Bundle {
   shopifyPreviewPageHandle             String? // Handle of draft preview page (for reference and cleanup)
   templateName                         String? // Template name for bundle container (e.g., "cart-transform", "product")
   promoBannerBgImage                   String? // URL of the promo banner background image (full-page bundles only)
-  promoBannerBgImageCrop               String? // JSON {x,y,width} percentages defining the visible crop region
   loadingGif                           String? // URL of the loading GIF shown during bundle load, step transitions, and add-to-cart
   tierConfig                           Json? // Pricing tier pills config: [{ label, linkedBundleId }] (full-page bundles only)
   showStepTimeline                     Boolean? // Admin UI override for step timeline visibility; null = defer to theme editor setting

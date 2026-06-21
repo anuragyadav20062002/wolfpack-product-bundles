@@ -58,7 +58,7 @@ describe('fullPageBoxSelectionSidebarMethods.getSidebarTierCtaContent', () => {
 
     expect(content).toEqual({
       label: 'Box of 5',
-      subtext: 'Bundle for PKR5000.00',
+      subtext: 'Bundle for Rs.5000.00',
     });
   });
 

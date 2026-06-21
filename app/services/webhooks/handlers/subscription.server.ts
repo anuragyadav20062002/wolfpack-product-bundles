@@ -122,11 +122,10 @@ export async function handleSubscriptionUpdate(
     }
 
     // Handle downgrade to free plan
-    const shouldDowngrade = [
-      SubscriptionStatusValue.cancelled,
-      SubscriptionStatusValue.expired,
-      SubscriptionStatusValue.frozen
-    ].includes(mappedStatus);
+    const shouldDowngrade =
+      mappedStatus === SubscriptionStatusValue.cancelled ||
+      mappedStatus === SubscriptionStatusValue.expired ||
+      mappedStatus === SubscriptionStatusValue.frozen;
 
     if (shouldDowngrade && subscription.plan !== "free") {
       AppLogger.info("Downgrading subscription to free plan", {

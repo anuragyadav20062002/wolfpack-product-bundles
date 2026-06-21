@@ -6,13 +6,13 @@
  */
 
 import {
-  BundleStatus,
   handleUpdateBundleStatus,
   handleUpdateBundleProduct,
   normaliseShopifyProductId,
   safeJsonParse,
   getShopifyStatusFromBundleStatus,
 } from "../../../app/services/bundles/bundle-configure-handlers.server";
+import { BundleStatus } from "../../../app/constants/bundle";
 
 // Mock all module-level deps so the file loads cleanly without a real DB.
 jest.mock("../../../app/db.server", () => ({
@@ -181,8 +181,8 @@ describe("handleUpdateBundleStatus", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    const { getDb } = require("../../../app/db.server");
-    getDb().bundle.update.mockResolvedValue(makeBundle("active"));
+    const db = require("../../../app/db.server").default;
+    db.bundle.update.mockResolvedValue(makeBundle(BundleStatus.ACTIVE));
   });
 
   it("rejects invalid bundle status values before touching Shopify", async () => {
@@ -196,7 +196,7 @@ describe("handleUpdateBundleStatus", () => {
       "bundle-1",
       makeStatusFormData("nonsense"),
     );
-    const body = await res.json();
+    const body = await res.json() as any;
 
     expect(res.status).toBe(400);
     expect(body.success).toBe(false);
@@ -234,7 +234,7 @@ describe("handleUpdateBundleStatus", () => {
           product: {
             id: PRODUCT_ID,
             status: "ARCHIVED",
-            descriptionHtml: "Status managed by WPB - Bundle Product",
+            descriptionHtml: "Status managed by WPB",
           },
         },
       }),

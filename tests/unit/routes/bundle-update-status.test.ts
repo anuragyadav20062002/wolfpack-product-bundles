@@ -152,7 +152,7 @@ describe("handleUpdateBundleStatus", () => {
     getDb().bundle.update.mockResolvedValue(bundle);
     const admin = makeAdmin();
     const res = await handleUpdateBundleStatus(admin, MOCK_SESSION, "b1", makeForm("active"));
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.bundle).toMatchObject({ id: "b1" });
   });

@@ -19,7 +19,11 @@ function int(formData: FormData, key: string): number | null {
   return isNaN(parsed) ? null : parsed;
 }
 
-function jsonObject<T extends Record<string, unknown> | null>(formData: FormData, key: string, defaultVal: T): T {
+function jsonObject<T extends Record<string, unknown> | null>(
+  formData: FormData,
+  key: string,
+  defaultVal: T,
+): T {
   const val = formData.get(key);
   if (typeof val !== "string" || val.trim() === "") return defaultVal;
 
@@ -35,7 +39,9 @@ function jsonObject<T extends Record<string, unknown> | null>(formData: FormData
   return defaultVal;
 }
 
-function normalizeSellingPlanSelectionShowFor(value: unknown): "ALL_PRODUCTS" | "OOS_PRODUCTS" {
+function normalizeSellingPlanSelectionShowFor(
+  value: unknown,
+): "ALL_PRODUCTS" | "OOS_PRODUCTS" {
   return value === "OOS_PRODUCTS" ? "OOS_PRODUCTS" : "ALL_PRODUCTS";
 }
 
@@ -46,7 +52,9 @@ function normalizeIndividualSellingPlanSelection(formData: FormData) {
   });
 
   const isEnabled = raw?.isEnabled === true;
-  const showFor = normalizeSellingPlanSelectionShowFor((raw as { showFor?: unknown } | null)?.showFor);
+  const showFor = normalizeSellingPlanSelectionShowFor(
+    (raw as { showFor?: unknown } | null)?.showFor,
+  );
 
   return { isEnabled, showFor };
 }
@@ -60,10 +68,10 @@ export function parseBundleDesignTemplate(formData: FormData) {
 
 export function parsePPBBundleVisibility(formData: FormData) {
   return {
-    upsellWidgetEnabled:         bool(formData, "upsellWidgetEnabled", false),
-    upsellWidgetDisplayMode:     str(formData, "upsellWidgetDisplayMode"),
-    upsellWidgetDisplayOn:       str(formData, "upsellWidgetDisplayOn"),
-    autoSelectBrowsedProduct:    bool(formData, "autoSelectBrowsedProduct", false),
+    upsellWidgetEnabled: bool(formData, "upsellWidgetEnabled", false),
+    upsellWidgetDisplayMode: str(formData, "upsellWidgetDisplayMode"),
+    upsellWidgetDisplayOn: str(formData, "upsellWidgetDisplayOn"),
+    autoSelectBrowsedProduct: bool(formData, "autoSelectBrowsedProduct", false),
   };
 }
 
@@ -77,24 +85,37 @@ export function parsePPBBundleSettings(formData: FormData) {
 
   return {
     preSelectedProductVariantId: str(formData, "preSelectedProductVariantId"),
-    maxQtyPerProduct:            int(formData, "maxQtyPerProduct"),
-    variantSelectorEnabled:      bool(formData, "variantSelectorEnabled", true),
-    showTextOnAddButton:         bool(formData, "showTextOnAddButton", false),
-    bundleCartTitle:             str(formData, "bundleCartTitle"),
-    bundleCartSubtitle:          str(formData, "bundleCartSubtitle"),
-    bundleBannerDesktopUrl:      str(formData, "bundleBannerDesktopUrl"),
-    bundleBannerMobileUrl:       str(formData, "bundleBannerMobileUrl"),
+    maxQtyPerProduct: int(formData, "maxQtyPerProduct"),
+    variantSelectorEnabled: bool(formData, "variantSelectorEnabled", true),
+    showTextOnAddButton: bool(formData, "showTextOnAddButton", false),
+    bundleCartTitle: str(formData, "bundleCartTitle"),
+    bundleCartSubtitle: str(formData, "bundleCartSubtitle"),
+    bundleBannerDesktopUrl: str(formData, "bundleBannerDesktopUrl"),
+    bundleBannerMobileUrl: str(formData, "bundleBannerMobileUrl"),
     bundleLevelCss,
-    defaultProductsData:         jsonObject(formData, "defaultProductsData", {}),
-    boxSelection:                jsonObject(formData, "boxSelection", null),
-    bundleUpsellConfig:          jsonObject(formData, "bundleUpsellConfig", null),
-    bundleTextConfig:            jsonObject(formData, "bundleTextConfig", null),
-    discountDisplayOverride:     jsonObject(formData, "discountDisplayOverride", null),
-    individualSellingPlanSelection: normalizeIndividualSellingPlanSelection(formData),
-    validateQuantityPerProduct: jsonObject(formData, "validateQuantityPerProduct", {
-      isEnabled: false,
-      allowedQuantity: 1,
-    }),
-    useSingleStepCategoriesAsBundleSteps: bool(formData, "useSingleStepCategoriesAsBundleSteps", false),
+    defaultProductsData: jsonObject(formData, "defaultProductsData", {}),
+    boxSelection: jsonObject(formData, "boxSelection", null),
+    bundleUpsellConfig: jsonObject(formData, "bundleUpsellConfig", null),
+    bundleTextConfig: jsonObject(formData, "bundleTextConfig", null),
+    discountDisplayOverride: jsonObject(
+      formData,
+      "discountDisplayOverride",
+      null,
+    ),
+    individualSellingPlanSelection:
+      normalizeIndividualSellingPlanSelection(formData),
+    validateQuantityPerProduct: jsonObject(
+      formData,
+      "validateQuantityPerProduct",
+      {
+        isEnabled: false,
+        allowedQuantity: 1,
+      },
+    ),
+    useSingleStepCategoriesAsBundleSteps: bool(
+      formData,
+      "useSingleStepCategoriesAsBundleSteps",
+      false,
+    ),
   };
 }

@@ -78,7 +78,6 @@ export interface BundleUiConfig {
   pricing: BundleUiPricing | null;
   messaging: BundleUiMessaging;
   promoBannerBgImage?: string | null;
-  promoBannerBgImageCrop?: string | null;
   bundleBannerDesktopUrl?: string | null;
   bundleBannerMobileUrl?: string | null;
   loadingGif?: string | null;

@@ -105,7 +105,7 @@ async function main() {
     await prisma.bundlePricing.update({
       where: { id: row.id },
       data: {
-        rules: migratedRules,
+        rules: migratedRules as any,
       },
     });
 
