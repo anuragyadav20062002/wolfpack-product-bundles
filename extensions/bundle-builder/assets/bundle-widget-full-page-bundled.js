@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.45
- * Built   : 2026-06-21
+ * Version : 3.0.46
+ * Built   : 2026-06-22
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.45';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.46';
 (function() {
   'use strict';
 
@@ -3719,29 +3719,13 @@ function resolveFullPageTemplateConfig({ presetId = '', templateId = '' } = {}) 
   ) || FPB_TEMPLATE_CONFIGS.STANDARD;
 }
 
-const standardTemplateMethods = {
-  ensureStandardPresetRuntimeStyles() {
-    return this.getFullPageDesignPreset() === FPB_STANDARD_TEMPLATE_CONFIG.presetId;
-  },
-};
+const standardTemplateMethods = {};
 
-const classicTemplateMethods = {
-  ensureClassicPresetRuntimeStyles() {
-    return this.getFullPageDesignPreset() === FPB_CLASSIC_TEMPLATE_CONFIG.presetId;
-  },
-};
+const classicTemplateMethods = {};
 
-const compactTemplateMethods = {
-  ensureCompactPresetRuntimeStyles() {
-    return this.getFullPageDesignPreset() === FPB_COMPACT_TEMPLATE_CONFIG.presetId;
-  },
-};
+const compactTemplateMethods = {};
 
-const horizontalTemplateMethods = {
-  ensureHorizontalSidePanelSlotRuntimeStyles() {
-    return this.getFullPageDesignPreset() === FPB_HORIZONTAL_TEMPLATE_CONFIG.presetId;
-  },
-};
+const horizontalTemplateMethods = {};
 
 const buildSharedCartLineDisplayProperties = buildCartLineDisplayProperties;
 const buildSharedCartLineSourceProperties = buildCartLineSourceProperties;
@@ -4605,8 +4589,6 @@ async renderFullPageLayout() {
   this.applyFullPageDesignPresetMarker();
   await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
   this.ensureBundleBannerRuntimeStyles();
-  this.ensureCompactPresetRuntimeStyles();
-  this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
   const contentSection = document.createElement('div');
   contentSection.className = 'full-page-content-section';
@@ -4644,6 +4626,9 @@ async renderFullPageLayout() {
     }
   }
 
+  const categoryRowsBefore = this.createCategorySectionRows(this.currentStepIndex, 'before');
+  if (categoryRowsBefore) contentSection.appendChild(categoryRowsBefore);
+
   const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
   if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
 
@@ -4651,8 +4636,8 @@ async renderFullPageLayout() {
   productGridContainer.className = 'full-page-product-grid-container';
   productGridContainer.innerHTML = this.createProductGridLoadingState();
   contentSection.appendChild(productGridContainer);
-  const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
-  if (categoryRows) contentSection.appendChild(categoryRows);
+  const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
+  if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
 
   this.elements.stepsContainer.appendChild(contentSection);
 
@@ -4687,10 +4672,6 @@ async renderFullPageLayoutWithSidebar() {
   this.applyFullPageDesignPresetMarker();
   await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
   this.ensureBundleBannerRuntimeStyles();
-  this.ensureStandardPresetRuntimeStyles();
-  this.ensureClassicPresetRuntimeStyles();
-  this.ensureCompactPresetRuntimeStyles();
-  this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
   if (this.elements.footer) {
     this.elements.footer.style.display = 'none';
@@ -4729,6 +4710,9 @@ async renderFullPageLayoutWithSidebar() {
     contentSection.appendChild(this.createSearchInput());
   }
 
+  const categoryRowsBefore = this.createCategorySectionRows(this.currentStepIndex, 'before');
+  if (categoryRowsBefore) contentSection.appendChild(categoryRowsBefore);
+
   const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
   if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
 
@@ -4744,8 +4728,8 @@ async renderFullPageLayoutWithSidebar() {
   productGridContainer.className = 'full-page-product-grid-container';
   productGridContainer.innerHTML = this.createProductGridLoadingState();
   contentSection.appendChild(productGridContainer);
-  const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
-  if (categoryRows) contentSection.appendChild(categoryRows);
+  const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
+  if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
 
   twoColWrapper.appendChild(contentSection);
 
@@ -4807,15 +4791,19 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
   this._syncMobilePortalThemeVars(sheet);
   const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
   if (usesCompactMobileSummaryTray) {
+    const preset = this.getFullPageDesignPreset();
+    if (preset) {
+      sheet.classList.add(`fpb-preset-${preset.toLowerCase()}`);
+    }
     sheet.classList.add('fpb-mobile-summary-tray');
-    if (this.getFullPageDesignPreset() === 'CLASSIC') {
+    if (preset === 'CLASSIC') {
       sheet.classList.add('fpb-mobile-classic-footer');
     }
     this.compactMobileSummaryTrayExpanded = wasCompactSummaryExpanded || this.compactMobileSummaryTrayExpanded === true;
     this._populateCompactMobileSummaryTray(sheet);
     sheet.classList.add('is-open');
     document.body.classList.add('fpb-compact-mobile-summary-active');
-    document.body.appendChild(sheet);
+    this._mountCompactMobileSummaryTray(sheet);
     return;
   }
 
@@ -4887,6 +4875,15 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
     backdrop.classList.add('is-open');
     toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9660;';
   }
+},
+
+_mountCompactMobileSummaryTray(sheet) {
+  if (this.container?.parentNode) {
+    this.container.insertAdjacentElement('afterend', sheet);
+    return;
+  }
+
+  document.body.appendChild(sheet);
 },
 
 _populateMobileSheet(sheet) {
@@ -5646,19 +5643,12 @@ renderSidePanel(panel) {
             img.alt = '';
             img.width = 40;
             img.height = 40;
-            img.style.objectFit = 'contain';
+            img.className = 'side-panel-product-slot-icon';
             emptySlot.appendChild(img);
           } else {
             const emptyText = document.createElement('span');
+            emptyText.className = 'side-panel-product-slot-placeholder';
             emptyText.textContent = '+';
-            emptyText.style.display = 'flex';
-            emptyText.style.alignItems = 'center';
-            emptyText.style.justifyContent = 'center';
-            emptyText.style.width = '100%';
-            emptyText.style.height = '100%';
-            emptyText.style.fontSize = '24px';
-            emptyText.style.lineHeight = '1';
-            emptyText.style.fontWeight = '700';
             emptySlot.appendChild(emptyText);
           }
           productsContainer.appendChild(emptySlot);
@@ -6431,7 +6421,7 @@ createStandardStepTimeline() {
     : 0;
   const progressLeft = 100 / (entryCount * 2);
   const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
-  const timelineWidth = Math.min(100, entryCount * 30);
+  const timelineWidth = Math.min(100, entryCount * 20);
 
   timeline.style.setProperty('--standard-timeline-count', String(entryCount));
   timeline.style.setProperty('--standard-timeline-visible-count', String(entryCount));
@@ -6998,7 +6988,31 @@ createActiveCategoryTitle(stepIndex) {
 };
 
 const fullPageProductGridMethods = {
-createCategorySectionRows(stepIndex) {
+scrollActiveCategoryTitleIntoView() {
+  if (this.getFullPageDesignPreset?.() !== 'STANDARD') return;
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      const title = this.elements?.stepsContainer?.querySelector('.fpb-step-category-title');
+      if (!title) return;
+
+      const targetTop = title.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: 'smooth',
+      });
+    });
+  });
+},
+
+activateStepCategory(categoryId) {
+  this.activeCollectionId = categoryId;
+  Promise.resolve(this.reRenderFullPage()).then(() => {
+    this.scrollActiveCategoryTitleIntoView();
+  });
+},
+
+createCategorySectionRows(stepIndex, placement = 'all') {
   if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
     return null;
   }
@@ -7008,7 +7022,13 @@ createCategorySectionRows(stepIndex) {
   if (categoryEntries.length <= 1) return null;
 
   const activeCategoryId = this.getActiveStepCategoryId(step);
-  const inactiveCategoryEntries = categoryEntries.filter(entry => entry.id !== activeCategoryId);
+  const activeCategoryIndex = categoryEntries.findIndex(entry => entry.id === activeCategoryId);
+  const inactiveCategoryEntries = categoryEntries.filter((entry, index) => {
+    if (entry.id === activeCategoryId) return false;
+    if (placement === 'before') return index < activeCategoryIndex;
+    if (placement === 'after') return index > activeCategoryIndex;
+    return true;
+  });
   if (inactiveCategoryEntries.length === 0) return null;
 
   const categoryRowsContainer = document.createElement('div');
@@ -7020,8 +7040,7 @@ createCategorySectionRows(stepIndex) {
     categoryRow.className = 'fpb-category-section-row fpb-category-section-row--collapsed';
     categoryRow.textContent = entry.title;
     categoryRow.addEventListener('click', () => {
-      this.activeCollectionId = entry.id;
-      this.reRenderFullPage();
+      this.activateStepCategory(entry.id);
     });
     categoryRowsContainer.appendChild(categoryRow);
   });
@@ -7091,8 +7110,7 @@ createCategoryTabs(stepIndex) {
     }
     tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
     tab.addEventListener('click', () => {
-      this.activeCollectionId = entry.id;
-      this.reRenderFullPage();
+      this.activateStepCategory(entry.id);
     });
     tabsContainer.appendChild(tab);
   });
@@ -8012,9 +8030,9 @@ isStepCompleted(stepIndex) {
 reRenderFullPage() {
   const layout = this.resolveFullPageLayout();
   if (layout === 'footer_side') {
-    this.renderFullPageLayoutWithSidebar();
+    return this.renderFullPageLayoutWithSidebar();
   } else {
-    this.renderFullPageLayout();
+    return this.renderFullPageLayout();
   }
 },
 
@@ -11312,10 +11330,6 @@ Object.assign(
   fullPageRuntimeCartSettingsMethods,
   fullPageTierFloatingRuntimeMethods,
   bundleLevelCssMethods,
-  standardTemplateMethods,
-  classicTemplateMethods,
-  compactTemplateMethods,
-  horizontalTemplateMethods,
 );
 
 if (document.readyState === 'loading') {

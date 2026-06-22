@@ -46,57 +46,57 @@
   }
 
   .fpb-preset-classic .category-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    height: 40.8px;
-    margin: 0 0 20px;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    grid-template-columns: repeat(2, max-content);
+    grid-template-rows: 50.797px;
+    justify-content: start;
+    gap: 20px;
+    height: 50.797px;
+    margin: 0;
     padding: 0;
     overflow: visible;
   }
 
   .fpb-preset-classic .category-tab {
-    height: 40.8px;
+    height: 50.797px;
     display: grid;
+    grid-template-columns: max-content 0;
+    grid-template-rows: 28.797px;
+    gap: 5px;
     align-items: center;
-    padding: 4px 22px;
-    border-radius: 99px;
-    border-color: var(
-      --bundle-tabs-border-color,
-      var(--bundle-global-primary-button, currentColor)
-    );
-    background: var(
-      --bundle-tabs-inactive-bg-color,
-      var(--bundle-full-page-bg-color)
-    );
-    color: var(
-      --bundle-tabs-inactive-text-color,
-      var(--bundle-global-primary-text, currentColor)
-    );
+    justify-content: start;
+    padding: 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: rgba(18, 18, 18, 0.75);
+    font-family: Assistant, sans-serif;
     font-size: 16px;
     line-height: 28.8px;
-    font-weight: 700;
+    font-weight: 400;
     box-shadow: none;
   }
 
   .fpb-preset-classic .category-tab.active {
-    background: var(
-      --bundle-tabs-active-bg-color,
-      var(--bundle-global-primary-button, currentColor)
-    );
-    color: var(
-      --bundle-tabs-active-text-color,
-      var(--bundle-button-text-color, var(--bundle-full-page-bg-color))
-    );
-    border-color: var(
-      --bundle-tabs-active-bg-color,
-      var(--bundle-global-primary-button, currentColor)
-    );
+    background: transparent;
+    color: #000;
+    border: 0;
   }
 
   .fpb-preset-classic .category-tab::after,
   .fpb-preset-classic .category-tab .tab-indicator {
     display: none;
+  }
+
+  .fpb-preset-classic .category-tab .tab-label {
+    color: inherit;
+    font-family: Assistant, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 28.8px;
+    letter-spacing: 0;
   }
 
   .fpb-preset-classic .sidebar-content .full-page-product-grid-container {

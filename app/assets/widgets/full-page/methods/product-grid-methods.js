@@ -24,7 +24,31 @@ import {
 
 
 export const fullPageProductGridMethods = {
-createCategorySectionRows(stepIndex) {
+scrollActiveCategoryTitleIntoView() {
+  if (this.getFullPageDesignPreset?.() !== 'STANDARD') return;
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      const title = this.elements?.stepsContainer?.querySelector('.fpb-step-category-title');
+      if (!title) return;
+
+      const targetTop = title.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: 'smooth',
+      });
+    });
+  });
+},
+
+activateStepCategory(categoryId) {
+  this.activeCollectionId = categoryId;
+  Promise.resolve(this.reRenderFullPage()).then(() => {
+    this.scrollActiveCategoryTitleIntoView();
+  });
+},
+
+createCategorySectionRows(stepIndex, placement = 'all') {
   if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
     return null;
   }
@@ -34,7 +58,13 @@ createCategorySectionRows(stepIndex) {
   if (categoryEntries.length <= 1) return null;
 
   const activeCategoryId = this.getActiveStepCategoryId(step);
-  const inactiveCategoryEntries = categoryEntries.filter(entry => entry.id !== activeCategoryId);
+  const activeCategoryIndex = categoryEntries.findIndex(entry => entry.id === activeCategoryId);
+  const inactiveCategoryEntries = categoryEntries.filter((entry, index) => {
+    if (entry.id === activeCategoryId) return false;
+    if (placement === 'before') return index < activeCategoryIndex;
+    if (placement === 'after') return index > activeCategoryIndex;
+    return true;
+  });
   if (inactiveCategoryEntries.length === 0) return null;
 
   const categoryRowsContainer = document.createElement('div');
@@ -46,8 +76,7 @@ createCategorySectionRows(stepIndex) {
     categoryRow.className = 'fpb-category-section-row fpb-category-section-row--collapsed';
     categoryRow.textContent = entry.title;
     categoryRow.addEventListener('click', () => {
-      this.activeCollectionId = entry.id;
-      this.reRenderFullPage();
+      this.activateStepCategory(entry.id);
     });
     categoryRowsContainer.appendChild(categoryRow);
   });
@@ -117,8 +146,7 @@ createCategoryTabs(stepIndex) {
     }
     tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
     tab.addEventListener('click', () => {
-      this.activeCollectionId = entry.id;
-      this.reRenderFullPage();
+      this.activateStepCategory(entry.id);
     });
     tabsContainer.appendChild(tab);
   });

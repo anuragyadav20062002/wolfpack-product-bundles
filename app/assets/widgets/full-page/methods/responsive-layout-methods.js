@@ -43,8 +43,6 @@ async renderFullPageLayout() {
   this.applyFullPageDesignPresetMarker();
   await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
   this.ensureBundleBannerRuntimeStyles();
-  this.ensureCompactPresetRuntimeStyles();
-  this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
   // Wrap content in full-page-content-section for proper padding
   const contentSection = document.createElement('div');
@@ -89,6 +87,9 @@ async renderFullPageLayout() {
     }
   }
 
+  const categoryRowsBefore = this.createCategorySectionRows(this.currentStepIndex, 'before');
+  if (categoryRowsBefore) contentSection.appendChild(categoryRowsBefore);
+
   const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
   if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
 
@@ -97,8 +98,8 @@ async renderFullPageLayout() {
   productGridContainer.className = 'full-page-product-grid-container';
   productGridContainer.innerHTML = this.createProductGridLoadingState();
   contentSection.appendChild(productGridContainer);
-  const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
-  if (categoryRows) contentSection.appendChild(categoryRows);
+  const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
+  if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
 
   this.elements.stepsContainer.appendChild(contentSection);
 
@@ -141,10 +142,6 @@ async renderFullPageLayoutWithSidebar() {
   this.applyFullPageDesignPresetMarker();
   await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
   this.ensureBundleBannerRuntimeStyles();
-  this.ensureStandardPresetRuntimeStyles();
-  this.ensureClassicPresetRuntimeStyles();
-  this.ensureCompactPresetRuntimeStyles();
-  this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
   // Hide the bottom footer — sidebar replaces it
   if (this.elements.footer) {
@@ -188,6 +185,9 @@ async renderFullPageLayoutWithSidebar() {
     contentSection.appendChild(this.createSearchInput());
   }
 
+  const categoryRowsBefore = this.createCategorySectionRows(this.currentStepIndex, 'before');
+  if (categoryRowsBefore) contentSection.appendChild(categoryRowsBefore);
+
   const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
   if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
 
@@ -204,8 +204,8 @@ async renderFullPageLayoutWithSidebar() {
   productGridContainer.className = 'full-page-product-grid-container';
   productGridContainer.innerHTML = this.createProductGridLoadingState();
   contentSection.appendChild(productGridContainer);
-  const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
-  if (categoryRows) contentSection.appendChild(categoryRows);
+  const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
+  if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
 
   twoColWrapper.appendChild(contentSection);
 
@@ -271,15 +271,19 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
   this._syncMobilePortalThemeVars(sheet);
   const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
   if (usesCompactMobileSummaryTray) {
+    const preset = this.getFullPageDesignPreset();
+    if (preset) {
+      sheet.classList.add(`fpb-preset-${preset.toLowerCase()}`);
+    }
     sheet.classList.add('fpb-mobile-summary-tray');
-    if (this.getFullPageDesignPreset() === 'CLASSIC') {
+    if (preset === 'CLASSIC') {
       sheet.classList.add('fpb-mobile-classic-footer');
     }
     this.compactMobileSummaryTrayExpanded = wasCompactSummaryExpanded || this.compactMobileSummaryTrayExpanded === true;
     this._populateCompactMobileSummaryTray(sheet);
     sheet.classList.add('is-open');
     document.body.classList.add('fpb-compact-mobile-summary-active');
-    document.body.appendChild(sheet);
+    this._mountCompactMobileSummaryTray(sheet);
     return;
   }
 
@@ -351,6 +355,15 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
     backdrop.classList.add('is-open');
     toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9660;';
   }
+},
+
+_mountCompactMobileSummaryTray(sheet) {
+  if (this.container?.parentNode) {
+    this.container.insertAdjacentElement('afterend', sheet);
+    return;
+  }
+
+  document.body.appendChild(sheet);
 },
 
 _populateMobileSheet(sheet) {

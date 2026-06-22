@@ -311,19 +311,12 @@ renderSidePanel(panel) {
             img.alt = '';
             img.width = 40;
             img.height = 40;
-            img.style.objectFit = 'contain';
+            img.className = 'side-panel-product-slot-icon';
             emptySlot.appendChild(img);
           } else {
             const emptyText = document.createElement('span');
+            emptyText.className = 'side-panel-product-slot-placeholder';
             emptyText.textContent = '+';
-            emptyText.style.display = 'flex';
-            emptyText.style.alignItems = 'center';
-            emptyText.style.justifyContent = 'center';
-            emptyText.style.width = '100%';
-            emptyText.style.height = '100%';
-            emptyText.style.fontSize = '24px';
-            emptyText.style.lineHeight = '1';
-            emptyText.style.fontWeight = '700';
             emptySlot.appendChild(emptyText);
           }
           productsContainer.appendChild(emptySlot);
