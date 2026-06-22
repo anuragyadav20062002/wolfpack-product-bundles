@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { normalizeAddonTierAccordionIndex } from "../../../lib/addon-tier-accordion";
 import {
   buildAddonDraftFromPersonalizationData,
   buildPersonalizationDataFromDraft,
@@ -11,7 +12,9 @@ export function useConfigureAddonState(flow: ConfigureBundleFlowDraft) {
     buildAddonDraftFromPersonalizationData((bundle as any).personalizationData),
   );
   const originalAddonDraftRef = useRef<any>(addonDraft);
-  const [activeAddonTierIndex, setActiveAddonTierIndex] = useState(0);
+  const [activeAddonTierIndex, setActiveAddonTierIndex] = useState<
+    number | null
+  >(0);
   const [addonSelectedProductsTierIndex, setAddonSelectedProductsTierIndex] =
     useState<number | null>(null);
   const [
@@ -32,8 +35,7 @@ export function useConfigureAddonState(flow: ConfigureBundleFlowDraft) {
 
   useEffect(() => {
     setActiveAddonTierIndex((currentIndex) => {
-      if (currentIndex < addonTierCount) return currentIndex;
-      return Math.max(0, addonTierCount - 1);
+      return normalizeAddonTierAccordionIndex(currentIndex, addonTierCount);
     });
   }, [addonTierCount]);
 

@@ -18,8 +18,14 @@ jest.mock("../../../app/lib/logger", () => ({
   },
 }));
 
+jest.mock("../../../app/services/app-events.server", () => ({
+  recordBusinessEvent: jest.fn(),
+}));
+
 const getDb = () => require("../../../app/db.server").default;
 const mockCreateMany = () => getDb().bundleEngagement.createMany as jest.MockedFunction<any>;
+const mockRecordBusinessEvent = () =>
+  require("../../../app/services/app-events.server").recordBusinessEvent as jest.MockedFunction<any>;
 
 function makeSignedRequest(
   body: Record<string, unknown>,
@@ -102,6 +108,15 @@ describe("api.attribution.engagement", () => {
       }],
       skipDuplicates: true,
     });
+    expect(mockRecordBusinessEvent()).toHaveBeenCalledWith(expect.objectContaining({
+      eventHandle: "bundle_engaged",
+      shopDomain: "test-shop.myshopify.com",
+      bundleId: "bundle-123",
+      bundleType: "product_page",
+      surface: "storefront",
+      actor: "buyer",
+      sendToShopify: false,
+    }));
   });
 
   it("rejects unsigned or invalid app-proxy requests", async () => {
@@ -154,6 +169,36 @@ describe("api.attribution.engagement", () => {
     expect(response.status).toBe(400);
     expect(body.error).toContain("Missing or invalid required field");
     expect(mockCreateMany()).not.toHaveBeenCalled();
+    expect(mockRecordBusinessEvent()).toHaveBeenCalledWith(expect.objectContaining({
+      eventHandle: "engagement_failed",
+      shopDomain: "test-shop.myshopify.com",
+      surface: "storefront",
+      actor: "buyer",
+      errorCode: "invalid_payload",
+    }));
+  });
+
+  it("records engagement_failed when persistence fails", async () => {
+    mockCreateMany().mockRejectedValueOnce(new Error("db down"));
+
+    const response = await action({
+      request: makeSignedRequest({
+        shopId: "test-shop.myshopify.com",
+        bundleId: "bundle-123",
+        sessionId: "session-1",
+        eventName: "wpb:session-engaged",
+      }),
+      params: {},
+      context: {},
+    } as any) as Response;
+
+    expect(response.status).toBe(500);
+    expect(mockRecordBusinessEvent()).toHaveBeenCalledWith(expect.objectContaining({
+      eventHandle: "engagement_failed",
+      shopDomain: "test-shop.myshopify.com",
+      bundleId: "bundle-123",
+      errorCode: "persist_failed",
+    }));
   });
 
   it("returns CORS preflight response for OPTIONS requests", async () => {

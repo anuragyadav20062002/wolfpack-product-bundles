@@ -125,7 +125,7 @@ describe("FPB page handlers", () => {
     (mockDb.bundle.update as jest.Mock).mockResolvedValue({} as any);
     const formData = new FormData();
     formData.set("bundleDesignTemplate", " FBP_SIDE_FOOTER ");
-    formData.set("bundleDesignPresetId", " DEFAULT ");
+    formData.set("bundleDesignPresetId", " STANDARD ");
 
     const response = await handleUpdateBundleDesignTemplate(admin, session, "bundle-1", formData);
     const body = await response.json();
@@ -135,7 +135,7 @@ describe("FPB page handlers", () => {
       where: { id: "bundle-1", shopId: "test-shop.myshopify.com" },
       data: {
         bundleDesignTemplate: "FBP_SIDE_FOOTER",
-        bundleDesignPresetId: "DEFAULT",
+        bundleDesignPresetId: "STANDARD",
       },
     });
   });

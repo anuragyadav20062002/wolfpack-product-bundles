@@ -4,6 +4,7 @@ import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { getBundleWizardConfigurePath } from "../../../lib/bundle-navigation";
 import { parseConditionValue } from "../../../lib/parse-condition-value";
+import { recordBusinessEvent } from "../../../services/app-events.server";
 import type { FilterDef, WizardStepState } from "./types";
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -42,6 +43,36 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         showFooter: p.discountMessagingEnabled ?? true,
         showProgressBar: p.showProgressBar ?? true,
         messages: p.messages ?? null,
+      },
+    });
+
+    await recordBusinessEvent({
+      eventHandle: "pricing_configured",
+      shopDomain: session.shop,
+      bundleId,
+      bundleType: bundle.bundleType,
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "create_configure",
+      result: "success",
+      attributes: {
+        pricing_mode: p.discountEnabled ? "enabled" : "disabled",
+        discount_type: p.discountType ?? "percentage_off",
+      },
+    });
+
+    await recordBusinessEvent({
+      eventHandle: "bundle_create_step_completed",
+      shopDomain: session.shop,
+      bundleId,
+      bundleType: bundle.bundleType,
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "create_configure",
+      result: "success",
+      attributes: {
+        step_key: "pricing",
+        step_index: 3,
       },
     });
 
@@ -102,6 +133,21 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         },
       });
     }
+
+    await recordBusinessEvent({
+      eventHandle: "bundle_create_step_completed",
+      shopDomain: session.shop,
+      bundleId,
+      bundleType: bundle.bundleType,
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "create_configure",
+      result: "success",
+      attributes: {
+        step_key: "assets",
+        step_index: 4,
+      },
+    });
 
     return json({
       ok: true,
@@ -195,6 +241,36 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       });
     }
   }
+
+  await recordBusinessEvent({
+    eventHandle: "bundle_saved",
+    shopDomain: session.shop,
+    bundleId,
+    bundleType: bundle.bundleType,
+    surface: "admin",
+    actor: "merchant",
+    routeFamily: "create_configure",
+    result: "success",
+    attributes: {
+      intent: "saveConfig",
+      step_count: savedSteps.length,
+    },
+  });
+
+  await recordBusinessEvent({
+    eventHandle: "bundle_create_step_completed",
+    shopDomain: session.shop,
+    bundleId,
+    bundleType: bundle.bundleType,
+    surface: "admin",
+    actor: "merchant",
+    routeFamily: "create_configure",
+    result: "success",
+    attributes: {
+      step_key: "configuration",
+      step_index: 2,
+    },
+  });
 
   return json({ ok: true, intent: "saveConfig", steps: savedSteps });
 };

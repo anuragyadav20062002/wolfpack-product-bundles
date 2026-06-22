@@ -123,12 +123,13 @@ export function QuestionHelpTooltip({
       onFocus={showTooltip}
       onBlur={hideTooltip}
     >
-      <span className={productPageBundleStyles.richHelpTrigger}>
-        <s-button
-          variant="tertiary"
-          icon="info"
-          accessibilityLabel={title || description}
-        />
+      <span
+        className={productPageBundleStyles.questionHelpButton}
+        role="img"
+        tabIndex={0}
+        aria-label={title || description}
+      >
+        <s-icon type="info" />
       </span>
       <span
         className={`${productPageBundleStyles.richHelpCard} ${productPageBundleStyles.richHelpCardFloating}`}

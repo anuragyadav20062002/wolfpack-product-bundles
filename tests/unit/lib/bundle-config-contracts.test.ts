@@ -4,7 +4,7 @@ import {
   getStorefrontConfigLoadPlan,
   mapTemplateSelection,
   resolveProductPageRenderFilledSlotsAsHorizontalStacked,
-} from "../../../app/lib/bundle-config/evidence-template-mapping";
+} from "../../../app/lib/bundle-config/template-selection";
 import { deriveControlDependencies } from "../../../app/lib/bundle-config/control-dependencies";
 import { buildCategoryContract } from "../../../app/lib/bundle-config/category-contracts";
 import {
@@ -15,7 +15,7 @@ import { serializeCartLineDisplayProperties } from "../../../app/lib/bundle-conf
 
 describe("mapTemplateSelection", () => {
   it.each([
-    ["standard", "FBP_SIDE_FOOTER", "DEFAULT", null],
+    ["standard", "FBP_SIDE_FOOTER", "STANDARD", null],
     ["classic", "FBP_SIDE_FOOTER", "CLASSIC", null],
     ["compact", "FBP_SIDE_FOOTER", "COMPACT", null],
     ["horizontal", "FBP_SIDE_FOOTER", "HORIZONTAL", null],

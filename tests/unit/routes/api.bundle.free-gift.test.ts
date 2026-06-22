@@ -292,7 +292,7 @@ describe('api.bundle.$bundleId.json — bootstrap projection and cache headers',
     });
     expect(data.bundle).toBeUndefined();
     expect(data.bootstrap.bundleDesignTemplate).toBe('FBP_SIDE_FOOTER');
-    expect(data.bootstrap.bundleDesignPresetId).toBe('DEFAULT');
+    expect(data.bootstrap.bundleDesignPresetId).toBe('STANDARD');
   });
 
   it('returns 304 and empty body for fresh cache validators', async () => {

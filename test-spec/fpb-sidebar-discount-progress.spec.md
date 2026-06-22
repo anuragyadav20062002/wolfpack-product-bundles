@@ -8,8 +8,8 @@ Verify FPB summary sidebars render discount messaging plus both simple and step-
 ### SidebarProgress
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | Step-based progress across presets | DEFAULT, CLASSIC, COMPACT, HORIZONTAL with progress type `step_based` | Sidebar renders discount message and `.fpb-dp-step_based.fpb-dp-sidebar` through the shared helper | No CSS/layout assertions |
-| 2 | Simple progress across presets | DEFAULT, CLASSIC, COMPACT, HORIZONTAL with progress type `simple` | Sidebar renders discount message and `.fpb-dp-simple.fpb-dp-sidebar` through the shared helper | No CSS/layout assertions |
+| 1 | Step-based progress across presets | STANDARD, CLASSIC, COMPACT, HORIZONTAL with progress type `step_based` | Sidebar renders discount message and `.fpb-dp-step_based.fpb-dp-sidebar` through the shared helper | No CSS/layout assertions |
+| 2 | Simple progress across presets | STANDARD, CLASSIC, COMPACT, HORIZONTAL with progress type `simple` | Sidebar renders discount message and `.fpb-dp-simple.fpb-dp-sidebar` through the shared helper | No CSS/layout assertions |
 
 ## Acceptance Criteria
 - [x] Discount message renders once above the sidebar progress area.

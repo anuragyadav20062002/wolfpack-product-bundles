@@ -19,6 +19,7 @@ import {
   buildFullPageBundleMetafieldConfig,
   createProductPageRedirect,
 } from "./shared.server";
+import { ensureShopIdentity, recordBusinessEvent } from "../../../../services/app-events.server";
 
 /**
  * Handle hard-reset sync of a full-page bundle:
@@ -30,6 +31,20 @@ export async function handleSyncBundle(
   session: Session,
   bundleId: string,
 ) {
+  const correlationId = `bundle-sync:${bundleId}:${Date.now()}`;
+  const startedAt = Date.now();
+  const shopifyShopGid = await ensureShopIdentity(admin, session.shop);
+  await recordBusinessEvent({
+    eventHandle: "bundle_sync_started",
+    shopDomain: session.shop,
+    shopifyShopGid,
+    bundleId,
+    bundleType: "full_page",
+    surface: "admin",
+    actor: "merchant",
+    routeFamily: "fpb_configure",
+    correlationId,
+  });
   AppLogger.info(
     "[SYNC_BUNDLE] Starting hard-reset sync for full-page bundle",
     { bundleId, shopId: session.shop },
@@ -325,6 +340,23 @@ export async function handleSyncBundle(
       ? `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-app-embed`
       : undefined;
 
+    await recordBusinessEvent({
+      eventHandle: "bundle_synced",
+      shopDomain: session.shop,
+      shopifyShopGid,
+      bundleId,
+      bundleType: "full_page",
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "fpb_configure",
+      correlationId,
+      result: "success",
+      attributes: {
+        duration_ms: Date.now() - startedAt,
+        resources_synced: "page,product,metafields,theme_colors",
+      },
+    });
+
     return json({
       success: true,
       synced: true,
@@ -339,6 +371,23 @@ export async function handleSyncBundle(
       { bundleId },
       error as any,
     );
+    await recordBusinessEvent({
+      eventHandle: "bundle_sync_failed",
+      shopDomain: session.shop,
+      shopifyShopGid,
+      bundleId,
+      bundleType: "full_page",
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "fpb_configure",
+      correlationId,
+      result: "failure",
+      errorCode: "sync_failed",
+      attributes: {
+        error_message_safe: message,
+        duration_ms: Date.now() - startedAt,
+      },
+    });
     return json(
       { success: false, error: `Sync failed: ${message}` },
       { status: 500 },

@@ -1,3 +1,7 @@
+import {
+  getNextAddonTierAccordionIndex,
+  normalizeAddonTierAccordionIndex,
+} from "../../../../lib/addon-tier-accordion";
 import type { ConfigureBundleFlowContext } from "../useConfigureBundleFlow";
 
 export function FpbAddonTierEditor({
@@ -93,11 +97,18 @@ export function FpbAddonTierEditor({
                     role="button"
                     tabIndex={0}
                     aria-expanded={isActiveTier}
-                    onClick={() => setActiveAddonTierIndex(idx)}
+                    onClick={() =>
+                      setActiveAddonTierIndex((currentIndex: number | null) =>
+                        getNextAddonTierAccordionIndex(currentIndex, idx),
+                      )
+                    }
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault();
-                        setActiveAddonTierIndex(idx);
+                        setActiveAddonTierIndex(
+                          (currentIndex: number | null) =>
+                            getNextAddonTierAccordionIndex(currentIndex, idx),
+                        );
                       }
                     }}
                   >
@@ -125,13 +136,11 @@ export function FpbAddonTierEditor({
                               );
                               updateAddonTiers(updated);
                               setActiveAddonTierIndex(
-                                Math.max(
-                                  0,
-                                  Math.min(
-                                    activeAddonTierIndex,
-                                    updated.length - 1,
+                                (currentIndex: number | null) =>
+                                  normalizeAddonTierAccordionIndex(
+                                    currentIndex,
+                                    updated.length,
                                   ),
-                                ),
                               );
                             }
                           }}

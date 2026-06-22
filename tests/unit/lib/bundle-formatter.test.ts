@@ -75,7 +75,7 @@ describe("formatBundleForWidget", () => {
     }) as any);
 
     expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
-    expect(result.bundleDesignPresetId).toBe("DEFAULT");
+    expect(result.bundleDesignPresetId).toBe("STANDARD");
     expect(result.bundleDesignTemplateData).toBeNull();
   });
 
@@ -385,11 +385,11 @@ describe("formatBundleForWidget", () => {
   it("includes full-page design fields without a product-page template data wrapper", () => {
     const result = formatBundleForWidget(makeBundle({
       bundleDesignTemplate: "FBP_SIDE_FOOTER",
-      bundleDesignPresetId: "DEFAULT",
+      bundleDesignPresetId: "STANDARD",
     }) as any);
 
     expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
-    expect(result.bundleDesignPresetId).toBe("DEFAULT");
+    expect(result.bundleDesignPresetId).toBe("STANDARD");
     expect(result.bundleDesignTemplateData).toBeNull();
   });
 

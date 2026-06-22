@@ -88,38 +88,38 @@ applyPersonalizationAddonProducts() {
 buildAddonStepFromPersonalization() {
   const personalizationData = this.selectedBundle?.personalizationData;
   const addonProducts = personalizationData?.addonProducts;
-  if (personalizationData?.isPersonalizationEnabled !== true || addonProducts?.isEnabled !== true) {
+  if (personalizationData?.isPersonalizationEnabled !== true) {
     return null;
   }
 
-  const tiers = Array.isArray(addonProducts.tiers) ? addonProducts.tiers : [];
+  const addonProductsEnabled = addonProducts?.isEnabled === true;
+  const tiers = addonProductsEnabled && Array.isArray(addonProducts.tiers) ? addonProducts.tiers : [];
   const selectedAddonProducts = tiers.flatMap(tier =>
     Array.isArray(tier?.selectedAddonProducts)
       ? tier.selectedAddonProducts.map(product => this.normalizePersonalizationAddonProduct(product))
       : []
   );
-  if (selectedAddonProducts.length === 0) return null;
-
   const firstTier = tiers[0] || {};
+  const tierDiscount = firstTier?.discount || {};
 
   return {
     id: 'personalization-addons',
-    name: personalizationData.personalizeStepText || addonProducts.title || '',
+    name: personalizationData.personalizeStepText || addonProducts?.title || '',
     position: (this.selectedBundle?.steps?.length || 0) + 1,
     minQuantity: 0,
     maxQuantity: selectedAddonProducts.length,
     enabled: true,
     isFreeGift: true,
-    addonLabel: personalizationData.personalizeStepText || addonProducts.title || '',
-    freeGiftName: addonProducts.title || personalizationData.personalizeStepText || '',
-    addonTitle: addonProducts.title || personalizationData.personalizePageSubtext || '',
+    addonLabel: personalizationData.personalizeStepText || addonProducts?.title || '',
+    freeGiftName: addonProducts?.title || personalizationData.personalizeStepText || '',
+    addonTitle: personalizationData.personalizePageSubtext || addonProducts?.title || '',
     addonIconUrl: personalizationData.stepImage || null,
-    addonDisplayFree: Number(firstTier?.discount?.value || 0) >= 100 && firstTier?.discount?.type === 'PERCENTAGE',
+    addonDisplayFree: !addonProductsEnabled || (Number(tierDiscount.value || 0) >= 100 && tierDiscount.type === 'PERCENTAGE'),
     addonUnlockAfterCompletion: true,
-    addonTiers: tiers,
-    addonEligibilityCondition: firstTier?.eligibilityCondition || null,
-    addonDiscount: firstTier?.discount || null,
-    addonMessaging: addonProducts.addonsMessaging || null,
+    addonTiers: addonProductsEnabled ? tiers : undefined,
+    addonEligibilityCondition: addonProductsEnabled ? (firstTier?.eligibilityCondition || null) : null,
+    addonDiscount: addonProductsEnabled ? (firstTier?.discount || null) : null,
+    addonMessaging: addonProductsEnabled ? (addonProducts.addonsMessaging || null) : null,
     displayVariantsAsIndividual: firstTier?.displayVariantsAsIndividualProducts_addons === true,
     StepProduct: selectedAddonProducts,
     products: selectedAddonProducts,

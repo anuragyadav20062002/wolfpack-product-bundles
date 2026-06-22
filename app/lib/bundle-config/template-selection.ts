@@ -6,14 +6,14 @@ export type TemplateKey = FullPageTemplateKey | ProductPageTemplateKey;
 
 export interface TemplateSelection {
   bundleDesignTemplate: "FBP_SIDE_FOOTER" | "PDP_INPAGE" | "PDP_MODAL";
-  bundleDesignPresetId: "DEFAULT" | "CLASSIC" | "COMPACT" | "HORIZONTAL" | "CASCADE" | "COGNIVE" | "MODAL" | "SIMPLIFIED";
+  bundleDesignPresetId: "STANDARD" | "CLASSIC" | "COMPACT" | "HORIZONTAL" | "CASCADE" | "COGNIVE" | "MODAL" | "SIMPLIFIED";
   templateId: "CASCADE" | "COGNIVE" | "MODAL" | "SIMPLIFIED" | null;
 }
 
 const FULL_PAGE_TEMPLATE_MAP: Record<FullPageTemplateKey, TemplateSelection> = {
   standard: {
     bundleDesignTemplate: "FBP_SIDE_FOOTER",
-    bundleDesignPresetId: "DEFAULT",
+    bundleDesignPresetId: "STANDARD",
     templateId: null,
   },
   classic: {

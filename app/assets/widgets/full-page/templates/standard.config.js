@@ -1,7 +1,7 @@
 /**
  * FPB Standard template config.
  *
- * This is the migration contract for the existing DEFAULT/STANDARD preset.
+ * This is the migration contract for the Standard preset.
  * Renderers still use legacy paths until the Standard migration completes.
  */
 
@@ -9,8 +9,8 @@
 
 export const FPB_STANDARD_TEMPLATE_CONFIG = {
   id: 'STANDARD',
-  presetId: 'DEFAULT',
-  aliases: ['DEFAULT', 'STANDARD', 'DEFAULT_FBP'],
+  presetId: 'STANDARD',
+  aliases: ['STANDARD'],
   productCard: {
     mode: 'grid',
     columns: {

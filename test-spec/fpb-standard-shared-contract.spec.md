@@ -8,7 +8,7 @@ Start FPB Standard migration by adding a config contract and shared DOM hooks wi
 ### StandardConfig
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | Alias resolution | Config import | `DEFAULT` and `STANDARD` aliases map to Standard | Compatibility for existing payloads |
+| 1 | Standard identity | Config import | Standard preset id and only alias are `STANDARD` | New app payloads use canonical Standard |
 | 2 | Primitive choices | Config import | Product card grid, summary rows, discount progress | Drives later renderer replacement |
 
 ### ComponentGeneratorProductCard

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.45
- * Built   : 2026-06-21
+ * Version : 3.0.46
+ * Built   : 2026-06-22
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.45';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.46';
 (function() {
   'use strict';
 
@@ -2051,17 +2051,19 @@ class VariantSelectorComponent {
  */
 
 const FullPagePreset = (function () {
+  const SUPPORTED_PRESETS = ['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'];
+
   /**
    * Normalize a raw preset id to one of the four supported values.
-   * Accepts STANDARD as an alias for DEFAULT (admin payload uses STANDARD).
+   * STANDARD is the canonical Standard preset and the fallback value.
    */
   function resolvePresetAttr(bundle) {
     const raw =
       (bundle && (bundle.bundleDesignPresetId || bundle.bundleDesignPreset || bundle.templateId)) || '';
-    if (typeof raw !== 'string') return 'DEFAULT';
+    if (typeof raw !== 'string') return 'STANDARD';
     const upper = raw.trim().toUpperCase();
-    if (upper === '' || upper === 'STANDARD') return 'DEFAULT';
-    return upper;
+    if (SUPPORTED_PRESETS.includes(upper)) return upper;
+    return 'STANDARD';
   }
 
   function resolveTemplateAttr(bundle) {
@@ -2085,7 +2087,7 @@ const FullPagePreset = (function () {
     if (normalizedLayout !== 'footer_side') return false;
 
     const preset = resolvePresetAttr({ bundleDesignPresetId: presetId });
-    return ['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
+    return SUPPORTED_PRESETS.includes(preset);
   }
 
   return {

@@ -55,7 +55,7 @@ createProductCard(product, stepIndex) {
 
   const designPreset = this.getFullPageDesignPreset();
   let htmlString;
-  if (designPreset === 'DEFAULT' || designPreset === 'CLASSIC' || designPreset === 'COMPACT' || designPreset === 'HORIZONTAL') {
+  if (designPreset === 'STANDARD' || designPreset === 'CLASSIC' || designPreset === 'COMPACT' || designPreset === 'HORIZONTAL') {
     htmlString = renderSharedProductCard(
       product,
       currentQuantity,
@@ -154,7 +154,7 @@ createProductCard(product, stepIndex) {
 
 applyStandardExpandedVariantTitle(cardElement, product) {
   const preset = this.getFullPageDesignPreset();
-  if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
+  if (!['STANDARD', 'HORIZONTAL'].includes(preset)) return;
   if (!cardElement) return;
   if (cardElement.querySelector('[data-bw-card-variant-row="true"]')) return;
 

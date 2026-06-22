@@ -46,7 +46,7 @@ Runtime category payloads must be compacted at `app/lib/bundle-config/category-r
 
 ## FPB Preview Cache Contract
 
-Pending Bundle Visibility preview pages render from a generated Shopify page body with inline `data-bundle-config`. The full-page widget only trusts this cached config when the bundle has both `bundleDesignTemplate` and `bundleDesignPresetId`. Therefore `formatBundleForWidget()` must default full-page bundles with empty design fields to Standard Design: `bundleDesignTemplate: "FBP_SIDE_FOOTER"` and `bundleDesignPresetId: "DEFAULT"`. Without those explicit defaults, preview can ignore the fresh inline config and fall back to stale/proxy behavior.
+Pending Bundle Visibility preview pages render from a generated Shopify page body with inline `data-bundle-config`. The full-page widget only trusts this cached config when the bundle has both `bundleDesignTemplate` and `bundleDesignPresetId`. Therefore `formatBundleForWidget()` must default full-page bundles with empty design fields to Standard Design: `bundleDesignTemplate: "FBP_SIDE_FOOTER"` and `bundleDesignPresetId: "STANDARD"`. Without those explicit defaults, preview can ignore the fresh inline config and fall back to stale/proxy behavior.
 
 ## Bundle Details Order Attribution
 

@@ -14,7 +14,7 @@ import { buildPriceAdjustmentConfig } from "../utils/price-adjustment";
 import { collectAddonComponentVariants } from "../utils/addon-components";
 import type { BundleUiConfig, ComponentPricing } from "../types";
 import { BundleStatus, BundleType } from "../../../../constants/bundle";
-import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "../../../../lib/bundle-config/evidence-template-mapping";
+import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "../../../../lib/bundle-config/template-selection";
 import { formatStepCategoriesForRuntime } from "../../../../lib/bundle-config/category-runtime";
 
 async function ensureBundleParentVariantRequiresComponents(

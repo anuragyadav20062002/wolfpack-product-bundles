@@ -11,7 +11,7 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | FPB Standard | full-page, standard | `FBP_SIDE_FOOTER`, `DEFAULT` | Evidence says Standard is `DEFAULT`. |
+| 1 | FPB Standard | full-page, standard | `FBP_SIDE_FOOTER`, `STANDARD` | App canonical Standard preset. |
 | 2 | FPB Classic | full-page, classic | `FBP_SIDE_FOOTER`, `CLASSIC` | |
 | 3 | FPB Compact | full-page, compact | `FBP_SIDE_FOOTER`, `COMPACT` | |
 | 4 | FPB Horizontal | full-page, horizontal | `FBP_SIDE_FOOTER`, `HORIZONTAL` | |
@@ -278,7 +278,7 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 18 | FPB product-card CTA text | Full Page product card unselected state | product add button renders `Add To Box` instead of a circular plus-only affordance | Captured FPB template evidence shows rectangular card CTAs with this text. |
 | 19 | FPB Horizontal mobile card compactness | `FBP_SIDE_FOOTER + HORIZONTAL` on mobile | horizontal product cards use a short image-left/text-right layout with rectangular CTA | Live WPB proof showed the card still too tall after the first Horizontal layout patch. |
 | 20 | FPB direct Add-ons runtime | `personalizationData.addonProducts.isEnabled=true` | Full Page widget derives a non-blocking add-on step from the direct personalization contract and renders the add-on product/tier messaging | Add-ons row is blocked from green until Admin/save/desktop/mobile/cart proof all pass. |
-| 21 | FPB Standard side-footer content structure | `FBP_SIDE_FOOTER + DEFAULT` fixed-amount evidence row with category-backed step | Widget renders direct bundle summary title/subtitle in the content area, omits the search box, category tabs do not include synthetic `All`, first category is active by default, and active category label renders above the product grid | Theme chrome stays a separate blocked app-proxy architecture row. |
+| 21 | FPB Standard side-footer content structure | `FBP_SIDE_FOOTER + STANDARD` fixed-amount evidence row with category-backed step | Widget renders direct bundle summary title/subtitle in the content area, omits the search box, category tabs do not include synthetic `All`, first category is active by default, and active category label renders above the product grid | Theme chrome stays a separate blocked app-proxy architecture row. |
 | 22 | FPB category variant-card gating | category-backed Full Page step with `displayVariantsAsIndividualProducts=false` | Product grid uses the active category flag and does not expand multi-variant products into separate cards unless that flag or the non-category step flag is enabled | Evidence says variants render as separate product cards only when the display-variants control is enabled. |
 | 23 | FPB parent card first available variant | configured product has an unavailable first variant and a later available variant | Full Page parent-card rendering keeps the product and seeds the card/selector from the first available variant | Live proof showed 6 configured products but only 5 rendered cards. |
 | 24 | FPB saved step subtext | category-backed Full Page step has `pageTitle="Choose your jewelry"` | Main content renders the saved step subtext below the timeline/banner area instead of the side-summary title/subtitle | Live fixture persisted `pageTitle` but storefront body omitted it. |

@@ -1379,29 +1379,47 @@
 }
 
 .richHelpTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   white-space: nowrap;
+  color: #6d7175;
+  cursor: default;
+}
+
+.richHelpTrigger:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.richHelpTriggerLabel {
+  color: #202223;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .questionHelpButton {
   display: inline-grid;
   place-items: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   padding: 0;
-  border: 1px solid #9ca3af;
-  border-radius: 50%;
-  background: #ffffff;
+  border: 0;
+  background: transparent;
   color: #6d7175;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
   line-height: 1;
   cursor: default;
 }
 
+.richHelpTrigger > s-icon,
+.questionHelpButton > s-icon {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
 .questionHelpButton:hover,
 .questionHelpButton:focus-visible {
-  border-color: #6d7175;
   color: #202223;
 }
 
@@ -1773,7 +1791,7 @@
 
 .addonsIconColumn {
   composes: iconColumn from "./bundle-configure-shared.module.css";
-  --addons-icon-control-width: 98px;
+  --addons-icon-control-width: 100px;
   align-items: stretch;
   width: var(--addons-icon-control-width);
 }
@@ -1784,22 +1802,29 @@
   height: 88px;
 }
 
+.addonsReferenceStepCard .addonsIconBox {
+  width: 100px;
+  height: 88px;
+  border: 2px solid #e7e7e7;
+  border-radius: 10px;
+}
+
 .addonsGiftBoxDefault {
   display: block;
-  width: 40px;
-  height: 40px;
+  width: 43px;
+  height: 38px;
   color: #8c9196;
 }
 
 .addonsReplaceButton {
-  width: var(--addons-icon-control-width);
+  width: 98px;
   min-height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 4px 10px;
   border: 1px solid #c9cccf;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #ffffff;
   color: #202223;
   font: inherit;
@@ -1820,7 +1845,7 @@
 }
 
 .addonsMediaFieldGrid {
-  --addons-icon-control-width: 98px;
+  --addons-icon-control-width: 100px;
   grid-template-columns: var(--addons-icon-control-width) minmax(0, 1fr);
   align-items: start;
 }
@@ -2177,6 +2202,12 @@
   border-radius: 8px;
 }
 
+.addonsReferenceStepCard .panelTitle {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 20px;
+}
+
 .addonsHeaderLine {
   display: flex;
   align-items: center;
@@ -2297,7 +2328,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 48px;
+  min-height: 60px;
   padding: 0 14px 0 16px;
   border: 0;
   background: #f6f6f7;
@@ -2512,7 +2543,7 @@
 
 .addonsReferenceStepCard .addonsMediaFieldGrid {
   grid-template-columns: var(--addons-icon-control-width) minmax(0, 1fr);
-  gap: 10px;
+  gap: 12px;
   align-items: start;
 }
 

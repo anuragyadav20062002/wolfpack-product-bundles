@@ -20,7 +20,7 @@ Template behavior is resolved through plain config modules and method modules:
 
 - FPB configs: `app/assets/widgets/full-page/templates/{standard,classic,compact,horizontal}.config.js`
 - PPB configs: `app/assets/widgets/product-page/templates/{grid,list,horizontal-slots,vertical-slots}.config.js`
-- Registries normalize legacy EB-compatible identifiers to those target template configs.
+- Registries resolve canonical app template identifiers to those target template configs. FPB Standard is stored and emitted as `STANDARD`.
 
 Template installer/prototype patch functions have been removed. Widget entry files compose exported template method objects in the same central `Object.assign` used for controller method modules.
 
