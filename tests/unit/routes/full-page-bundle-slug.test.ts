@@ -45,6 +45,8 @@ jest.mock('../../../app/services/widget-installation.server', () => ({
 jest.mock('../../../app/services/widget-installation/widget-full-page-bundle.server', () => ({
   renamePageHandle: jest.fn(),
   writeBundleConfigPageMetafield: jest.fn(),
+  publishPreviewPage: jest.fn(),
+  refreshFullPageBundlePageBody: jest.fn().mockResolvedValue({ success: true }),
 }));
 
 jest.mock('../../../app/services/bundles/metafield-sync.server', () => ({

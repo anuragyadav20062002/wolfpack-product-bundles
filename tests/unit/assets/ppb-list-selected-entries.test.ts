@@ -24,7 +24,7 @@ describe('PPB List shared selected product entries selector', () => {
       selectedProducts: [{ variant_a: 1 }],
       stepProductData: [[{ variants: [{ id: 'variant_a', title: 'A' }] }]],
     }, {
-      expandProductsByStep: (products) => products.flatMap((product) => product.variants.map((variant) => ({
+      expandProductsByStep: (products: any[]) => products.flatMap((product: any) => product.variants.map((variant: any) => ({
         ...variant,
         variantId: variant.id,
       }))),

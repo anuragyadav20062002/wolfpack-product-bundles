@@ -12,11 +12,8 @@ import { createHmac } from "node:crypto";
 
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Socket } from "node:net";
-import { WebhookProcessor } from "../../../app/services/webhooks/processor.server";
-import { handleRequest } from "../../../app/services/webhook-worker.server";
-
 // Mock inngest client BEFORE importing the worker
-const mockSend = jest.fn();
+var mockSend = jest.fn();
 jest.mock("../../../app/inngest/client", () => ({
   inngest: { send: mockSend },
 }));
@@ -38,6 +35,9 @@ jest.mock("../../../app/lib/logger", () => ({
     startTimer: jest.fn(() => jest.fn()),
   },
 }));
+
+const { WebhookProcessor } = require("../../../app/services/webhooks/processor.server");
+const { handleRequest } = require("../../../app/services/webhook-worker.server");
 
 const mockProcessPubSub = WebhookProcessor.processPubSubMessage as jest.Mock;
 

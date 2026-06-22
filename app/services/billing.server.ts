@@ -241,7 +241,9 @@ export class BillingService {
       });
 
       // If no active subscription, user is on free plan
-      let activeSubscription = shop.subscriptions[0];
+      let activeSubscription:
+        | (typeof shop.subscriptions)[number]
+        | undefined = shop.subscriptions[0];
 
       // Owner-granted subscriptions (shopifySubscriptionId IS NULL) expire server-side
       // based on currentPeriodEnd. If the period has passed, treat as expired immediately —
@@ -263,7 +265,7 @@ export class BillingService {
           data: { status: "expired" }
         });
 
-        activeSubscription = undefined as typeof activeSubscription;
+        activeSubscription = undefined;
       }
 
       const plan = activeSubscription?.plan ?? "free";
@@ -539,7 +541,8 @@ export class BillingService {
   static async ensureShop(shopDomain: string, shopName?: string, email?: string) {
     try {
       const existingShop = await db.shop.findUnique({
-        where: { shopDomain }
+        where: { shopDomain },
+        include: { subscriptions: true },
       });
 
       if (existingShop) {

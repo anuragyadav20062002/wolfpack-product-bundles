@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.42
- * Built   : 2026-06-14
+ * Version : 3.0.46
+ * Built   : 2026-06-22
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.42';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.46';
 (function() {
   'use strict';
 
@@ -337,6 +337,13 @@ class CurrencyManager {
     return symbols[currencyCode] || currencyCode;
   }
 
+  /**
+   * Ensure the format string uses the proper symbol for the given currency.
+   * If Shopify's format contains the 3-letter currency code (e.g. "PKR {{amount}}"),
+   * replace it with the symbol from our map ("Rs. {{amount}}"). This preserves
+   * the merchant's decimal/thousand-separator placeholder choice
+   * (e.g. {{amount_with_comma_separator}}) while ensuring symbols always render.
+   */
   static normalizeCurrencyFormat(format, code, symbol) {
     if (!format) return `${symbol}{{amount}}`;
     if (!code || !symbol || symbol === code) return format;
@@ -372,6 +379,14 @@ class CurrencyManager {
     };
   }
 
+  /**
+   * Convert an amount from shop base currency to the customer's display currency,
+   * then format it. Use this everywhere a price is rendered to the customer.
+   *
+   * @param {number} amount  Price in shop base currency cents
+   * @param {object} currencyInfo  Result of getCurrencyInfo()
+   * @returns {string}  Formatted price string in the display currency
+   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -2036,17 +2051,19 @@ class VariantSelectorComponent {
  */
 
 const FullPagePreset = (function () {
+  const SUPPORTED_PRESETS = ['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'];
+
   /**
    * Normalize a raw preset id to one of the four supported values.
-   * Accepts STANDARD as an alias for DEFAULT (admin payload uses STANDARD).
+   * STANDARD is the canonical Standard preset and the fallback value.
    */
   function resolvePresetAttr(bundle) {
     const raw =
       (bundle && (bundle.bundleDesignPresetId || bundle.bundleDesignPreset || bundle.templateId)) || '';
-    if (typeof raw !== 'string') return 'DEFAULT';
+    if (typeof raw !== 'string') return 'STANDARD';
     const upper = raw.trim().toUpperCase();
-    if (upper === '' || upper === 'STANDARD') return 'DEFAULT';
-    return upper;
+    if (SUPPORTED_PRESETS.includes(upper)) return upper;
+    return 'STANDARD';
   }
 
   function resolveTemplateAttr(bundle) {
@@ -2070,7 +2087,7 @@ const FullPagePreset = (function () {
     if (normalizedLayout !== 'footer_side') return false;
 
     const preset = resolvePresetAttr({ bundleDesignPresetId: presetId });
-    return ['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
+    return SUPPORTED_PRESETS.includes(preset);
   }
 
   return {
@@ -2412,6 +2429,13 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
+
+/**
+ * Shared selected product row renderer.
+ *
+ * Renders prepared display data only; selection rules, default-product rules,
+ * and free-gift lock state stay in the caller until templates migrate.
+ */
 
 const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
 
@@ -6616,6 +6640,57 @@ function bsFindNextIncompleteStep(steps, selectedProducts, validateFn, fromIndex
   return -1;
 }
 
+function normalizeProductPageAutoNextId(value) {
+  if (value === null || value === undefined || value === '') return '';
+  return String(value).split('/').pop();
+}
+
+function collectCategoryAutoNextProductIds(category) {
+  const ids = new Set();
+  const addId = (value) => {
+    const normalized = normalizeProductPageAutoNextId(value);
+    if (normalized) ids.add(normalized);
+  };
+  const addProduct = (product) => {
+    addId(product?.id);
+    addId(product?.productId);
+    addId(product?.graphqlId);
+    addId(product?.variantId);
+    addId(product?.variantGraphqlId);
+    (Array.isArray(product?.variants) ? product.variants : []).forEach(variant => {
+      addId(variant?.id);
+      addId(variant?.variantId);
+      addId(variant?.variantGraphqlId);
+      addId(variant?.admin_graphql_api_id);
+    });
+  };
+
+  (category?.products || []).forEach(addProduct);
+  (category?.selectedProducts || []).forEach(addProduct);
+  return ids;
+}
+
+function shouldAutoAdvanceProductPageStep({ quantity = 0, productId = '', step = null } = {}) {
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  const categoryRuleCategories = categories.filter(category =>
+    Array.isArray(category?.conditions) && category.conditions.length > 0
+  );
+
+  if (!(quantity > 0) || categoryRuleCategories.length === 0) {
+    return false;
+  }
+
+  const selectedProductId = normalizeProductPageAutoNextId(productId);
+  return categoryRuleCategories.some(category => {
+    if (category.autoNextStepOnConditionMet !== true) return false;
+    const categoryProductIds = collectCategoryAutoNextProductIds(category);
+    if (categoryProductIds.size === 0) {
+      return categoryRuleCategories.length === 1;
+    }
+    return categoryProductIds.has(selectedProductId);
+  });
+}
+
 const ProductPageSelectionMethods = {
 updateProductSelection(stepIndex, productId, newQuantity) {
   const selectionKey = this.normalizeSelectionKey(productId);
@@ -6664,7 +6739,13 @@ updateProductSelection(stepIndex, productId, newQuantity) {
 
   this._syncFreeGiftSlotCard();
 
-  this._autoProgressBottomSheet(stepIndex);
+  const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  const stepProducts = this.stepProductData?.[stepIndex] || [];
+  const selectedProduct = this.findProductBySelectionKey(stepProducts, selectionKey);
+  const selectedProductId = selectedProduct?.parentProductId || selectedProduct?.productId || selectedProduct?.id || selectionKey;
+  if (shouldAutoAdvanceProductPageStep({ quantity, productId: selectedProductId, step: currentStep })) {
+    this._autoProgressBottomSheet(stepIndex);
+  }
   this._maybeAutoAddAfterLastStep();
 },
 

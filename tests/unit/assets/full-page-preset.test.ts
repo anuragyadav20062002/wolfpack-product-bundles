@@ -9,15 +9,20 @@ export {};
 const FullPagePreset = require('../../../app/assets/widgets/shared/full-page-preset.js');
 
 describe('FullPagePreset.resolvePresetAttr', () => {
-  it('returns DEFAULT when bundle has no preset fields', () => {
-    expect(FullPagePreset.resolvePresetAttr({})).toBe('DEFAULT');
-    expect(FullPagePreset.resolvePresetAttr(null)).toBe('DEFAULT');
-    expect(FullPagePreset.resolvePresetAttr(undefined)).toBe('DEFAULT');
+  it('returns STANDARD when bundle has no preset fields', () => {
+    expect(FullPagePreset.resolvePresetAttr({})).toBe('STANDARD');
+    expect(FullPagePreset.resolvePresetAttr(null)).toBe('STANDARD');
+    expect(FullPagePreset.resolvePresetAttr(undefined)).toBe('STANDARD');
   });
 
-  it('maps STANDARD to DEFAULT', () => {
-    expect(FullPagePreset.resolvePresetAttr({ bundleDesignPresetId: 'STANDARD' })).toBe('DEFAULT');
-    expect(FullPagePreset.resolvePresetAttr({ bundleDesignPresetId: 'standard' })).toBe('DEFAULT');
+  it('keeps STANDARD as the canonical Standard preset', () => {
+    expect(FullPagePreset.resolvePresetAttr({ bundleDesignPresetId: 'STANDARD' })).toBe('STANDARD');
+    expect(FullPagePreset.resolvePresetAttr({ bundleDesignPresetId: 'standard' })).toBe('STANDARD');
+  });
+
+  it('falls back to STANDARD for unsupported legacy Standard aliases', () => {
+    expect(FullPagePreset.resolvePresetAttr({ bundleDesignPresetId: 'DEFAULT' })).toBe('STANDARD');
+    expect(FullPagePreset.resolvePresetAttr({ bundleDesignPresetId: 'DEFAULT_FBP' })).toBe('STANDARD');
   });
 
   it('passes through CLASSIC / COMPACT / HORIZONTAL', () => {
@@ -68,10 +73,10 @@ describe('FullPagePreset.markContainer', () => {
     expect(container.dataset.fpbTemplate).toBe('FBP_SIDE_FOOTER');
   });
 
-  it('writes DEFAULT + FBP_SIDE_FOOTER when bundle is empty', () => {
+  it('writes STANDARD + FBP_SIDE_FOOTER when bundle is empty', () => {
     const container = makeContainer();
     FullPagePreset.markContainer(container, {});
-    expect(container.dataset.fpbDesignPreset).toBe('DEFAULT');
+    expect(container.dataset.fpbDesignPreset).toBe('STANDARD');
     expect(container.dataset.fpbTemplate).toBe('FBP_SIDE_FOOTER');
   });
 
@@ -90,7 +95,7 @@ describe('FullPagePreset.markContainer', () => {
 });
 
 describe('FullPagePreset.shouldUseReferenceStepBarTimeline', () => {
-  it.each(['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
+  it.each(['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
     'enables the reference step bar for FPB footer-side preset %s',
     (presetId) => {
       expect(FullPagePreset.shouldUseReferenceStepBarTimeline({
@@ -100,17 +105,17 @@ describe('FullPagePreset.shouldUseReferenceStepBarTimeline', () => {
     },
   );
 
-  it('accepts STANDARD as the DEFAULT preset alias', () => {
+  it('falls back from unsupported DEFAULT to the Standard preset', () => {
     expect(FullPagePreset.shouldUseReferenceStepBarTimeline({
       layout: 'footer_side',
-      presetId: 'STANDARD',
+      presetId: 'DEFAULT',
     })).toBe(true);
   });
 
   it('does not enable the reference step bar outside the footer-side FPB layout', () => {
     expect(FullPagePreset.shouldUseReferenceStepBarTimeline({
       layout: 'footer_bottom',
-      presetId: 'DEFAULT',
+      presetId: 'STANDARD',
     })).toBe(false);
   });
 });

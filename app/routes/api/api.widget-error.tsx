@@ -1,6 +1,7 @@
 import { json } from "@remix-run/node";
 import type { ActionFunction } from "@remix-run/node";
 import { AppLogger } from "../../lib/logger";
+import { recordBusinessEvent } from "../../services/app-events.server";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -43,8 +44,48 @@ export const action: ActionFunction = async ({ request }) => {
       url: body.url,
     }, new Error(body.message ?? "Unknown widget error"));
 
+    await recordBusinessEvent({
+      eventHandle: "widget_runtime_error_reported",
+      shopDomain: sanitizeShopDomain(body.shop),
+      bundleId: sanitizeOptionalString(body.bundleId),
+      bundleType: sanitizeOptionalString(body.bundleType),
+      surface: "storefront",
+      actor: "buyer",
+      result: "failure",
+      errorCode: "widget_runtime_error",
+      attributes: {
+        category: categorizeWidgetError(body.message),
+        message: sanitizeWidgetMessage(body.message),
+      },
+    });
+
     return json({ ok: true }, { headers: CORS_HEADERS });
   } catch {
     return json({ ok: true }, { headers: CORS_HEADERS });
   }
 };
+
+function sanitizeOptionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function sanitizeShopDomain(value: unknown): string {
+  return sanitizeOptionalString(value) ?? "unknown_shop";
+}
+
+function sanitizeWidgetMessage(value: unknown): string {
+  if (typeof value !== "string") return "unknown_widget_error";
+  return value
+    .replace(/https?:\/\/\S+/gi, "[redacted_url]")
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted_email]")
+    .slice(0, 128);
+}
+
+function categorizeWidgetError(value: unknown): string {
+  if (typeof value !== "string") return "unknown";
+  const lower = value.toLowerCase();
+  if (lower.includes("typeerror")) return "type_error";
+  if (lower.includes("network") || lower.includes("fetch")) return "network_error";
+  if (lower.includes("config")) return "config_error";
+  return "runtime_error";
+}

@@ -17,8 +17,14 @@ function makeBundle(discountMethod: string | null, discountValue: number | null)
     steps: [],
     pricing: {
       enabled: true,
+      method: discountMethod,
       rules: [
         {
+          conditionType: 'quantity',
+          conditionOperator: 'gte',
+          conditionValue: 1,
+          discountMethod,
+          discountValue,
           condition: { type: 'quantity', operator: 'gte', value: 1 },
           discount: { method: discountMethod, value: discountValue },
         },

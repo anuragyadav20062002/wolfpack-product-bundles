@@ -1,72 +1,68 @@
-/**
- * React Context for Application State
- *
- * This context wraps the AppStateService singleton and provides
- * React-style hooks for accessing and updating state with automatic
- * component re-renders on state changes.
- *
- * Usage:
- *   // Wrap your app with the provider
- *   <AppStateProvider>
- *     <App />
- *   </AppStateProvider>
- *
- *   // Use hooks in components
- *   const { state, dispatch, ...actions } = useAppState();
- *   const designSettings = useDesignSettings();
- *   const { openModal, closeModal } = useModals();
- */
-
-import React, {
-  createContext,
-  useContext,
-  useCallback,
-  useEffect,
-  useState,
-  useMemo,
-  type ReactNode,
-} from "react";
-import type {
-  AppStateService} from "../services/app.state.service";
+import { createContext, useCallback, useMemo, type ReactNode } from "react";
 import {
-  appState as appStateService,
-} from "../services/app.state.service";
+  useAppStateStandalone,
+  useBundleConfigurationState,
+  useDesignSettingsState,
+  usePreferencesState,
+  useSubscriptionState,
+  useToastState,
+  useUIState,
+} from "../hooks/useAppState";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  addBundleStep,
+  clearBundleConfiguration,
+  markBundleConfigurationDirty,
+  removeBundleStep,
+  setBundleForm,
+  setBundleSteps,
+  setPricingSettings,
+  setSelectedCollections,
+  setStepConditions,
+  updateBundleForm,
+  updateBundleStep,
+  updatePricingSettings,
+} from "../store/slices/bundleConfigureSlice";
+import {
+  markDesignSettingsDirty,
+  setDesignSettings as setDesignSettingsAction,
+  setSelectedBundleType as setSelectedBundleTypeAction,
+  updateDesignSetting as updateDesignSettingAction,
+} from "../store/slices/designSettingsSlice";
+import {
+  addRecentBundle as addRecentBundleAction,
+  setPreferences as setPreferencesAction,
+} from "../store/slices/preferencesSlice";
+import { setSubscription as setSubscriptionAction } from "../store/slices/subscriptionSlice";
+import {
+  closeModal as closeModalAction,
+  openModal as openModalAction,
+  setLoading as setLoadingAction,
+  setNavigation,
+  toggleModal as toggleModalAction,
+} from "../store/slices/uiSlice";
 import type {
   AppState,
-  DesignSettings,
-  DesignSettingsState,
-  UIState,
-  BundleConfigurationState,
   BundleFormData,
   BundleStep,
-  PricingSettings,
-  ConditionRule,
   Collection,
-  UserPreferences,
-  SubscriptionState,
+  ConditionRule,
+  DesignSettings,
   NavigationState,
+  PricingSettings,
   StateAction,
   StateSelector,
+  SubscriptionState,
+  UserPreferences,
 } from "../types/state.types";
 
-// ============================================
-// CONTEXT TYPES
-// ============================================
-
 interface AppStateContextValue {
-  // Full state
   state: AppState;
-
-  // Dispatch for reducer-style updates
   dispatch: (action: StateAction) => void;
-
-  // Design Settings Actions
-  setDesignSettings: (bundleType: 'full_page' | 'product_page', settings: DesignSettings) => void;
+  setDesignSettings: (bundleType: "full_page" | "product_page", settings: DesignSettings) => void;
   updateDesignSetting: <K extends keyof DesignSettings>(key: K, value: DesignSettings[K]) => void;
-  setSelectedBundleType: (bundleType: 'full_page' | 'product_page') => void;
+  setSelectedBundleType: (bundleType: "full_page" | "product_page") => void;
   setDesignSettingsDirty: (isDirty: boolean) => void;
-
-  // UI Actions
   openModal: (modalId: string) => void;
   closeModal: (modalId: string) => void;
   toggleModal: (modalId: string) => void;
@@ -74,8 +70,6 @@ interface AppStateContextValue {
   hideToast: (toastId: string) => void;
   setNavigationState: (navigation: Partial<NavigationState>) => void;
   setLoading: (isLoading: boolean) => void;
-
-  // Bundle Configuration Actions
   setBundleForm: (form: BundleFormData) => void;
   updateBundleForm: <K extends keyof BundleFormData>(key: K, value: BundleFormData[K]) => void;
   setBundleSteps: (steps: BundleStep[]) => void;
@@ -88,202 +82,90 @@ interface AppStateContextValue {
   setSelectedCollections: (stepId: string, collections: Collection[]) => void;
   setBundleConfigurationDirty: (isDirty: boolean) => void;
   clearBundleConfiguration: () => void;
-
-  // Preferences Actions
   setPreferences: (preferences: Partial<UserPreferences>) => void;
   addRecentBundle: (bundleId: string) => void;
-
-  // Subscription Actions
   setSubscription: (subscription: SubscriptionState) => void;
-
-  // Utility Actions
   resetState: () => void;
-
-  // Selectors
   select: <T>(selector: StateSelector<T>) => T;
 }
-
-// ============================================
-// CONTEXT CREATION
-// ============================================
-
-const AppStateContext = createContext<AppStateContextValue | null>(null);
-
-// ============================================
-// PROVIDER COMPONENT
-// ============================================
 
 interface AppStateProviderProps {
   children: ReactNode;
   initialState?: Partial<AppState>;
 }
 
-export function AppStateProvider({ children, initialState }: AppStateProviderProps) {
-  // Local React state that syncs with the service
-  const [state, setState] = useState<AppState>(() => appStateService.getState());
+export const AppStateContext = createContext<AppStateContextValue | null>(null);
 
-  // Subscribe to all state changes from the service
-  useEffect(() => {
-    const unsubscribe = appStateService.subscribeToAll((newState) => {
-      setState({ ...newState });
-    });
-
-    // Apply initial state if provided
-    if (initialState) {
-      if (initialState.designSettings?.fullPage) {
-        appStateService.setDesignSettings('full_page', initialState.designSettings.fullPage);
-      }
-      if (initialState.designSettings?.productPage) {
-        appStateService.setDesignSettings('product_page', initialState.designSettings.productPage);
-      }
-      if (initialState.subscription) {
-        appStateService.setSubscription(initialState.subscription);
-      }
-      if (initialState.preferences) {
-        appStateService.setPreferences(initialState.preferences);
-      }
-    }
-
-    return unsubscribe;
-  }, []);
-
-  // Memoized actions object
-  const actions = useMemo(() => ({
-    // Dispatch
-    dispatch: (action: StateAction) => appStateService.dispatch(action),
-
-    // Design Settings Actions
-    setDesignSettings: (bundleType: 'full_page' | 'product_page', settings: DesignSettings) =>
-      appStateService.setDesignSettings(bundleType, settings),
-    updateDesignSetting: <K extends keyof DesignSettings>(key: K, value: DesignSettings[K]) =>
-      appStateService.updateDesignSetting(key, value),
-    setSelectedBundleType: (bundleType: 'full_page' | 'product_page') =>
-      appStateService.setSelectedBundleType(bundleType),
-    setDesignSettingsDirty: (isDirty: boolean) =>
-      appStateService.setDesignSettingsDirty(isDirty),
-
-    // UI Actions
-    openModal: (modalId: string) => appStateService.openModal(modalId),
-    closeModal: (modalId: string) => appStateService.closeModal(modalId),
-    toggleModal: (modalId: string) => appStateService.toggleModal(modalId),
-    showToast: (message: string, isError?: boolean) => appStateService.showToast(message, isError),
-    hideToast: (toastId: string) => appStateService.hideToast(toastId),
-    setNavigationState: (navigation: Partial<NavigationState>) =>
-      appStateService.setNavigationState(navigation),
-    setLoading: (isLoading: boolean) => appStateService.setLoading(isLoading),
-
-    // Bundle Configuration Actions
-    setBundleForm: (form: BundleFormData) => appStateService.setBundleForm(form),
-    updateBundleForm: <K extends keyof BundleFormData>(key: K, value: BundleFormData[K]) =>
-      appStateService.updateBundleForm(key, value),
-    setBundleSteps: (steps: BundleStep[]) => appStateService.setBundleSteps(steps),
-    addBundleStep: (step: BundleStep) => appStateService.addBundleStep(step),
-    updateBundleStep: (stepId: string, updates: Partial<BundleStep>) =>
-      appStateService.updateBundleStep(stepId, updates),
-    removeBundleStep: (stepId: string) => appStateService.removeBundleStep(stepId),
-    setPricingSettings: (pricing: PricingSettings) => appStateService.setPricingSettings(pricing),
-    updatePricingSettings: (updates: Partial<PricingSettings>) =>
-      appStateService.updatePricingSettings(updates),
-    setStepConditions: (stepId: string, conditions: ConditionRule[]) =>
-      appStateService.setStepConditions(stepId, conditions),
-    setSelectedCollections: (stepId: string, collections: Collection[]) =>
-      appStateService.setSelectedCollections(stepId, collections),
-    setBundleConfigurationDirty: (isDirty: boolean) =>
-      appStateService.setBundleConfigurationDirty(isDirty),
-    clearBundleConfiguration: () => appStateService.clearBundleConfiguration(),
-
-    // Preferences Actions
-    setPreferences: (preferences: Partial<UserPreferences>) =>
-      appStateService.setPreferences(preferences),
-    addRecentBundle: (bundleId: string) => appStateService.addRecentBundle(bundleId),
-
-    // Subscription Actions
-    setSubscription: (subscription: SubscriptionState) =>
-      appStateService.setSubscription(subscription),
-
-    // Utility Actions
-    resetState: () => appStateService.resetState(),
-
-    // Selectors
-    select: <T,>(selector: StateSelector<T>) => appStateService.select(selector),
-  }), []);
-
-  // Combine state and actions for context value
-  const contextValue = useMemo(() => ({
-    state,
-    ...actions,
-  }), [state, actions]);
-
-  return (
-    <AppStateContext.Provider value={contextValue}>
-      {children}
-    </AppStateContext.Provider>
-  );
+export function AppStateProvider({ children }: AppStateProviderProps) {
+  return <>{children}</>;
 }
 
-// ============================================
-// HOOKS
-// ============================================
-
-/**
- * Main hook to access the full app state and actions
- */
 export function useAppState(): AppStateContextValue {
-  const context = useContext(AppStateContext);
-  if (!context) {
-    throw new Error('useAppState must be used within an AppStateProvider');
-  }
-  return context;
+  const { state, dispatch: dispatchStateAction } = useAppStateStandalone();
+  const dispatch = useAppDispatch();
+  const toastState = useToastState();
+
+  const showToast = useCallback((message: string, isError = false) => (
+    toastState.show(message, isError)
+  ), [toastState]);
+
+  return useMemo(() => ({
+    state,
+    dispatch: dispatchStateAction,
+    setDesignSettings: (bundleType: "full_page" | "product_page", settings: DesignSettings) =>
+      dispatch(setDesignSettingsAction({ bundleType, settings })),
+    updateDesignSetting: <K extends keyof DesignSettings>(key: K, value: DesignSettings[K]) =>
+      dispatch(updateDesignSettingAction({ key, value })),
+    setSelectedBundleType: (bundleType: "full_page" | "product_page") =>
+      dispatch(setSelectedBundleTypeAction(bundleType)),
+    setDesignSettingsDirty: (isDirty: boolean) => dispatch(markDesignSettingsDirty(isDirty)),
+    openModal: (modalId: string) => dispatch(openModalAction(modalId)),
+    closeModal: (modalId: string) => dispatch(closeModalAction(modalId)),
+    toggleModal: (modalId: string) => dispatch(toggleModalAction(modalId)),
+    showToast,
+    hideToast: toastState.hide,
+    setNavigationState: (navigation: Partial<NavigationState>) => dispatch(setNavigation(navigation)),
+    setLoading: (isLoading: boolean) => dispatch(setLoadingAction(isLoading)),
+    setBundleForm: (form: BundleFormData) => dispatch(setBundleForm(form)),
+    updateBundleForm: <K extends keyof BundleFormData>(key: K, value: BundleFormData[K]) =>
+      dispatch(updateBundleForm({ key, value })),
+    setBundleSteps: (steps: BundleStep[]) => dispatch(setBundleSteps(steps)),
+    addBundleStep: (step: BundleStep) => dispatch(addBundleStep(step)),
+    updateBundleStep: (stepId: string, updates: Partial<BundleStep>) =>
+      dispatch(updateBundleStep({ stepId, updates })),
+    removeBundleStep: (stepId: string) => dispatch(removeBundleStep(stepId)),
+    setPricingSettings: (pricing: PricingSettings) => dispatch(setPricingSettings(pricing)),
+    updatePricingSettings: (updates: Partial<PricingSettings>) => dispatch(updatePricingSettings(updates)),
+    setStepConditions: (stepId: string, conditions: ConditionRule[]) =>
+      dispatch(setStepConditions({ stepId, conditions })),
+    setSelectedCollections: (stepId: string, collections: Collection[]) =>
+      dispatch(setSelectedCollections({ stepId, collections })),
+    setBundleConfigurationDirty: (isDirty: boolean) => dispatch(markBundleConfigurationDirty(isDirty)),
+    clearBundleConfiguration: () => dispatch(clearBundleConfiguration()),
+    setPreferences: (preferences: Partial<UserPreferences>) => dispatch(setPreferencesAction(preferences)),
+    addRecentBundle: (bundleId: string) => dispatch(addRecentBundleAction(bundleId)),
+    setSubscription: (subscription: SubscriptionState) => dispatch(setSubscriptionAction(subscription)),
+    resetState: () => dispatch(clearBundleConfiguration()),
+    select: <T,>(selector: StateSelector<T>) => selector(state),
+  }), [dispatch, dispatchStateAction, showToast, state, toastState.hide]);
 }
 
-/**
- * Hook to access design settings state
- */
 export function useDesignSettings() {
-  const { state, setDesignSettings, updateDesignSetting, setSelectedBundleType, setDesignSettingsDirty } = useAppState();
-
-  const designSettingsState = state.designSettings;
-  const currentSettings = designSettingsState.selectedBundleType === 'full_page'
-    ? designSettingsState.fullPage
-    : designSettingsState.productPage;
-
+  const designSettings = useDesignSettingsState();
   return {
-    state: designSettingsState,
-    currentSettings,
-    fullPageSettings: designSettingsState.fullPage,
-    productPageSettings: designSettingsState.productPage,
-    selectedBundleType: designSettingsState.selectedBundleType,
-    isDirty: designSettingsState.isDirty,
-    setDesignSettings,
-    updateDesignSetting,
-    setSelectedBundleType,
-    setDesignSettingsDirty,
+    ...designSettings,
+    setDesignSettings: designSettings.setSettings,
+    updateDesignSetting: designSettings.updateSetting,
+    setSelectedBundleType: designSettings.setBundleType,
+    setDesignSettingsDirty: designSettings.markDirty,
   };
 }
 
-/**
- * Hook to access UI state (modals, toasts, navigation)
- */
 export function useUI() {
-  const {
-    state,
-    openModal,
-    closeModal,
-    toggleModal,
-    showToast,
-    hideToast,
-    setNavigationState,
-    setLoading,
-  } = useAppState();
-
-  const uiState = state.ui;
-
+  const uiState = useUIState();
+  const { openModal, closeModal, toggleModal, showToast, hideToast, setNavigationState, setLoading } = useAppState();
   return {
-    state: uiState,
-    modals: uiState.modals,
-    toasts: uiState.toasts,
-    navigation: uiState.navigation,
-    isLoading: uiState.isLoading,
+    ...uiState,
     openModal,
     closeModal,
     toggleModal,
@@ -295,12 +177,8 @@ export function useUI() {
   };
 }
 
-/**
- * Hook to manage modals
- */
 export function useModals() {
   const { state, openModal, closeModal, toggleModal } = useAppState();
-
   return {
     modals: state.ui.modals,
     openModal,
@@ -310,114 +188,57 @@ export function useModals() {
   };
 }
 
-/**
- * Hook to manage toasts
- */
 export function useToasts() {
-  const { state, showToast, hideToast } = useAppState();
-
+  const toastState = useToastState();
   return {
-    toasts: state.ui.toasts,
-    showToast,
-    hideToast,
-    showSuccess: (message: string) => showToast(message, false),
-    showError: (message: string) => showToast(message, true),
+    toasts: toastState.toasts,
+    showToast: toastState.show,
+    hideToast: toastState.hide,
+    showSuccess: toastState.showSuccess,
+    showError: toastState.showError,
   };
 }
 
-/**
- * Hook to access bundle configuration state
- */
 export function useBundleConfiguration() {
-  const {
-    state,
-    setBundleForm,
-    updateBundleForm,
-    setBundleSteps,
-    addBundleStep,
-    updateBundleStep,
-    removeBundleStep,
-    setPricingSettings,
-    updatePricingSettings,
-    setStepConditions,
-    setSelectedCollections,
-    setBundleConfigurationDirty,
-    clearBundleConfiguration,
-  } = useAppState();
-
-  const bundleConfig = state.bundleConfiguration;
-
+  const bundleConfig = useBundleConfigurationState();
   return {
-    state: bundleConfig,
-    form: bundleConfig.form,
-    steps: bundleConfig.steps,
-    pricing: bundleConfig.pricing,
-    stepConditions: bundleConfig.stepConditions,
-    selectedCollections: bundleConfig.selectedCollections,
-    isDirty: bundleConfig.isDirty,
-    isLoading: bundleConfig.isLoading,
-    setBundleForm,
-    updateBundleForm,
-    setBundleSteps,
-    addBundleStep,
-    updateBundleStep,
-    removeBundleStep,
-    setPricingSettings,
-    updatePricingSettings,
-    setStepConditions,
-    setSelectedCollections,
-    setBundleConfigurationDirty,
-    clearBundleConfiguration,
+    ...bundleConfig,
+    setBundleForm: bundleConfig.setForm,
+    updateBundleForm: bundleConfig.updateForm,
+    setBundleSteps: bundleConfig.setSteps,
+    addBundleStep: bundleConfig.addStep,
+    updateBundleStep: bundleConfig.updateStep,
+    removeBundleStep: bundleConfig.removeStep,
+    setPricingSettings: bundleConfig.setPricing,
+    updatePricingSettings: bundleConfig.updatePricing,
+    setBundleConfigurationDirty: bundleConfig.markDirty,
+    clearBundleConfiguration: bundleConfig.clear,
   };
 }
 
-/**
- * Hook to access user preferences
- */
 export function usePreferences() {
-  const { state, setPreferences, addRecentBundle } = useAppState();
-
+  const preferences = usePreferencesState();
   return {
-    preferences: state.preferences,
-    setPreferences,
-    addRecentBundle,
-    recentBundles: state.preferences.recentBundles,
+    preferences: preferences.preferences,
+    setPreferences: preferences.setPreferences,
+    addRecentBundle: preferences.addRecentBundle,
+    recentBundles: preferences.recentBundles,
   };
 }
 
-/**
- * Hook to access subscription state
- */
 export function useSubscription() {
-  const { state, setSubscription } = useAppState();
-
-  return {
-    subscription: state.subscription,
-    setSubscription,
-    isActive: state.subscription?.isActive ?? false,
-    canCreateBundle: state.subscription?.canCreateBundle ?? true,
-    plan: state.subscription?.plan ?? 'free',
-  };
+  return useSubscriptionState();
 }
 
-/**
- * Hook to create a selector that only re-renders when selected value changes
- */
 export function useSelector<T>(selector: StateSelector<T>): T {
-  const { state } = useAppState();
-  return useMemo(() => selector(state), [state, selector]);
+  return useAppSelector((state) => selector({
+    designSettings: state.designSettings,
+    ui: state.ui,
+    bundleConfiguration: state.bundleConfiguration,
+    preferences: state.preferences,
+    subscription: state.subscription,
+    meta: state.meta,
+  }));
 }
 
-/**
- * Hook to access the state service directly (for advanced usage)
- */
-export function useStateService(): AppStateService {
-  return appStateService;
-}
-
-// ============================================
-// EXPORTS
-// ============================================
-
-export { AppStateContext };
 export type { AppStateContextValue, AppStateProviderProps };

@@ -69,3 +69,33 @@ After modifying code files:
 ```bash
 npm run graphify:rebuild
 ```
+
+The npm wrapper must use the same Python runtime as the installed `graphify`
+CLI and git hooks. Prefer the `graphify` executable shebang, then the uv
+tool install, then the older pipx fallback. Do not hardcode only the pipx path:
+older graphify runtimes can miss lock handling, backup behavior, and current
+output conventions.
+
+`graphify-out/GRAPH_REPORT.md`, `graphify-out/graph.json`, and
+`graphify-out/.graphify_python` are tracked. Caches, manifests, lock/temp
+files, dated protected-output backups, and `graph.html` are generated support
+artifacts and should stay ignored.
+
+Keep `graphify-out/` in `.graphifyignore`. Graphify uses `.graphifyignore`
+instead of `.gitignore` when present, so the file must also list normal
+dependency/build directories such as `node_modules/`, `.git/`, and build
+outputs. Do not let graphify ingest its own `GRAPH_REPORT.md` or backup
+folders as source input.
+
+Also keep local agent/editor state out of graphify input: `.claude/`,
+`.codex/`, `.vscode/`, and Obsidian plugin state under
+`Wolfpack: Product Bundles/.obsidian/`.
+
+If ignored, deleted, or generated files were previously scanned, old nodes can
+stay in `graph.json` because code-only rebuilds preserve semantic/document
+nodes. Prune nodes whose `source_file` is outside live graphify detection before
+rebuilding.
+
+If a rebuild warns about invalid `file_type: "concept"` nodes, those are stale
+semantic nodes preserved from an older graphify schema. Normalize them to
+`document` before rebuilding so validation is clean.

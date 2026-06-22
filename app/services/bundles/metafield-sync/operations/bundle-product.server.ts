@@ -14,7 +14,7 @@ import { buildPriceAdjustmentConfig } from "../utils/price-adjustment";
 import { collectAddonComponentVariants } from "../utils/addon-components";
 import type { BundleUiConfig, ComponentPricing } from "../types";
 import { BundleStatus, BundleType } from "../../../../constants/bundle";
-import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "../../../../lib/bundle-config/evidence-template-mapping";
+import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "../../../../lib/bundle-config/template-selection";
 import { formatStepCategoriesForRuntime } from "../../../../lib/bundle-config/category-runtime";
 
 async function ensureBundleParentVariantRequiresComponents(
@@ -519,7 +519,6 @@ export async function updateBundleProductMetafields(
       displayOptions: bundleConfiguration.pricing?.displayOptions ?? bundleConfiguration.pricing?.messages?.displayOptions ?? null
     },
     promoBannerBgImage: bundleConfiguration.promoBannerBgImage ?? null,
-    promoBannerBgImageCrop: bundleConfiguration.promoBannerBgImageCrop ?? null,
     bundleBannerDesktopUrl: bundleConfiguration.bundleBannerDesktopUrl ?? null,
     bundleBannerMobileUrl: bundleConfiguration.bundleBannerMobileUrl ?? null,
     loadingGif: bundleConfiguration.loadingGif ?? null,

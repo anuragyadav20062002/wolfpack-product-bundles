@@ -8,7 +8,7 @@ Lock the Standard Design mobile footer to the live Easy Bundles reference for co
 ### StandardMobileFooter
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | Component relationship | `footer_side` + `DEFAULT` preset on mobile | Widget renders the mobile summary tray as a distinct bottom-sheet/tray element rather than showing the desktop side panel | Confirms implementation model before styling |
+| 1 | Component relationship | `footer_side` + `STANDARD` preset on mobile | Widget renders the mobile summary tray as a distinct bottom-sheet/tray element rather than showing the desktop side panel | Confirms implementation model before styling |
 | 2 | Empty selection state | No products selected | Footer matches EB empty-state layout, labels, badge/count handling, and disabled/enabled CTA behavior | Needs live EB evidence before final assertions |
 | 3 | Selected product state | One or more products selected | Footer count, progress/discount content, CTA label, and price update without layout shift | Selection/removal behavior must be stable |
 | 4 | Step navigation state | Advance from an intermediate step to final/add-on step | Footer action area matches EB button structure and text transitions | Includes back/next/add-to-cart behavior if EB exposes it |

@@ -9,6 +9,8 @@ const { PricingCalculator } = require('../../../app/assets/widgets/shared/pricin
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { TemplateManager } = require('../../../app/assets/widgets/shared/template-manager.js');
 
+export {};
+
 const currencyInfo = {
   calculation: { code: 'USD', symbol: '$', format: '${{amount}}' },
   display: { code: 'USD', symbol: '$', format: '${{amount}}', rate: 1 },

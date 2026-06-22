@@ -22,6 +22,9 @@ import {
   buildCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
 
+function getAddonTiersForStep(step) {
+  return Array.isArray(step?.addonTiers) ? step.addonTiers.filter(Boolean) : [];
+}
 
 export const fullPageValidationAddonsMethods = {
 async _sidebarAdvanceToNextStep() {
@@ -115,7 +118,14 @@ async _sidebarAdvanceToNextStep() {
 },
 
 canProceedToNextStep() {
-  return this.isStepCompleted(this.currentStepIndex);
+  if (!this.isStepCompleted(this.currentStepIndex)) return false;
+  // If the next step is the free-gift step, also enforce the addon threshold.
+  // Otherwise the merchant's `Bundle Product Quantity` / `Bundle Value` rule on
+  // the addon tier is ignored when advancing into the free-gift step.
+  const steps = this.selectedBundle?.steps || [];
+  const nextStep = steps[this.currentStepIndex + 1];
+  if (nextStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
+  return true;
 },
 
 // Helper: Check if all bundle conditions are met
@@ -126,13 +136,29 @@ areBundleConditionsMet() {
   });
 },
 
-// Returns true when every non-free-gift, non-default step has no condition
-// configured at all (conditionType / conditionOperator / conditionValue all absent).
-// In this mode the customer can add to cart at any step without completing all steps.
+// Returns true when no step contributes a gating rule.
+// A free-gift step contributes a rule when it has an addonEligibilityCondition,
+// an addonTier with eligibilityCondition.value > 0, or any selectedAddonProducts —
+// otherwise the footer renders "Add to Cart" on the paid step and bypasses the
+// merchant-configured addon threshold.
 bundleHasNoConditions() {
   if (!this.selectedBundle?.steps?.length) return false;
   return this.selectedBundle.steps.every(step => {
-    if (step.isFreeGift || step.isDefault) return true;
+    if (step.isDefault) return true;
+    if (step.isFreeGift) {
+      const eligibilityValue = Number(step.addonEligibilityCondition?.value) || 0;
+      if (eligibilityValue > 0) return false;
+      const tiers = getAddonTiersForStep(step);
+      if (tiers.length > 0) {
+        return tiers.every(tier => {
+          const tierValue = Number(tier.eligibilityCondition?.value) || 0;
+          if (tierValue > 0) return false;
+          if (Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0) return false;
+          return true;
+        });
+      }
+      return true;
+    }
     return !step.conditionType && !step.conditionOperator && step.conditionValue == null;
   });
 },
@@ -169,8 +195,55 @@ canNavigateToStep(targetStepIndex) {
   return true;
 },
 
+getAddonTiers(step) {
+  return getAddonTiersForStep(step);
+},
+
+getAddonTierEvaluation(step) {
+  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const directTier = step?.addonEligibilityCondition || step?.addonDiscount
+    ? [{
+        eligibilityCondition: step?.addonEligibilityCondition || {},
+        discount: step?.addonDiscount || {},
+      }]
+    : [];
+  const tiers = getAddonTiersForStep(step);
+  const candidates = tiers.length > 0 ? tiers : directTier;
+  if (candidates.length === 0) {
+    return { tier: null, totalPrice, totalQuantity, currentValue: totalQuantity };
+  }
+
+  const withState = candidates.map((tier, index) => {
+    const condition = tier?.eligibilityCondition || {};
+    const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
+    const conditionValue = Number(condition.value || 0);
+    const threshold = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
+    const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
+    return { tier, index, conditionType, threshold, currentValue, isEligible: currentValue >= threshold };
+  });
+
+  const eligible = withState
+    .filter(candidate => candidate.isEligible)
+    .sort((a, b) => (a.threshold - b.threshold) || (a.index - b.index));
+  const next = withState
+    .filter(candidate => !candidate.isEligible)
+    .sort((a, b) => (a.threshold - b.threshold) || (a.index - b.index));
+  const selected = eligible[eligible.length - 1] || next[0] || withState[0];
+
+  return {
+    tier: selected?.tier || null,
+    totalPrice,
+    totalQuantity,
+    currentValue: selected?.currentValue ?? totalQuantity,
+  };
+},
+
 _getFreeGiftRemainingCount() {
-  if (this.freeGiftStep?.addonEligibilityCondition || Array.isArray(this.freeGiftStep?.addonTiers)) {
+  if (this.freeGiftStep?.addonEligibilityCondition || getAddonTiersForStep(this.freeGiftStep).length > 0) {
     return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
   }
   const steps = this.selectedBundle?.steps || [];
@@ -185,19 +258,17 @@ _getFreeGiftRemainingCount() {
 },
 
 getAddonEligibilityState(step) {
-  const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
-  const condition = step?.addonEligibilityCondition || tier?.eligibilityCondition || {};
-  const discount = step?.addonDiscount || tier?.discount || {};
+  const evaluation = typeof this.getAddonTierEvaluation === 'function'
+    ? this.getAddonTierEvaluation(step)
+    : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
+  const tier = evaluation.tier;
+  const condition = tier?.eligibilityCondition || step?.addonEligibilityCondition || {};
+  const discount = tier?.discount || step?.addonDiscount || {};
   const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
   const conditionValue = Number(condition.value || 0);
-  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
-    this.selectedProducts,
-    this.stepProductData,
-    this.selectedBundle?.steps
-  );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const thresholdCents = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
-  const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
+  const currentValue = evaluation.currentValue;
   const remainingRaw = Math.max(0, thresholdCents - currentValue);
   const remainingQuantity = conditionType === 'AMOUNT' ? 0 : remainingRaw;
   const remainingAmount = conditionType === 'AMOUNT' ? remainingRaw : 0;
@@ -221,8 +292,11 @@ getAddonEligibilityState(step) {
 },
 
 getAddonLineDiscount(step) {
-  const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
-  const discount = step?.addonDiscount || tier?.discount || {};
+  const evaluation = typeof this.getAddonTierEvaluation === 'function'
+    ? this.getAddonTierEvaluation(step)
+    : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
+  const tier = evaluation.tier;
+  const discount = tier?.discount || step?.addonDiscount || {};
   const type = String(discount.type || '').toUpperCase();
   const value = Number(discount.value || 0);
   if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;

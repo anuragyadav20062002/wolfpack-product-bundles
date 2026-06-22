@@ -9,7 +9,7 @@ Verify the FPB Classic Design storefront template renders EB-style `FBP_SIDE_FOO
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
 | 1 | Classic Design template contract | `bundle-widget-full-page.js` and generated runtime styles | CLASSIC preset uses EB-matched product area, pill category tabs, product cards, sidebar/footer, and mobile behavior | Test values must come from live EB inspection |
-| 2 | Preset isolation | `bundle-widget-full-page.js` | CLASSIC runtime styles remain scoped and do not override DEFAULT, COMPACT, or HORIZONTAL selectors | Prevents preset regression |
+| 2 | Preset isolation | `bundle-widget-full-page.js` | CLASSIC runtime styles remain scoped and do not override STANDARD, COMPACT, or HORIZONTAL selectors | Prevents preset regression |
 | 3 | Build output contract | `scripts/build-widget-bundles.js` and generated widget assets | Full-page widget bundle includes Classic Design changes after build | Deployable asset parity |
 | 4 | Desktop card geometry | `classic-template.js` runtime CSS | Classic product card content stays inside the measured EB 4-column card and uses the 35px icon add button | Prevents product text/action overflow |
 | 5 | Desktop sidebar behavior | `renderSidePanel()` with CLASSIC preset | Classic uses the EB-style desktop sidebar branch, keeps the four-row summary grid, updates selected rows on add, and restores empty slots on remove | Matches EB sidebar state transitions |

@@ -111,7 +111,7 @@ describe("product page admin sections", () => {
           ],
         },
       },
-    ]);
+    ] as any);
 
     expect(common).toEqual([
       { id: "gid://shopify/SellingPlanGroup/a", name: "Monthly" },

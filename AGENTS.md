@@ -457,6 +457,8 @@ When auditing storefront UI, test **both viewports**:
 
 Before every storefront UI review after source, build, or deploy changes, empty/bypass browser cache and hard reload the storefront in Chrome (Chrome DevTools MCP: `navigate_page` reload with `ignoreCache: true`; also clear Cache Storage via `caches.keys()` when available). Do not trust a normal refresh for storefront parity checks.
 
+Before testing any implemented storefront change in Chrome, always refresh the relevant storefront tab first, then verify the changed behaviour or appearance. Do not test against an already-open tab without refreshing after the implementation/build step.
+
 Required for: "audit the storefront", "check the UI", post-deploy verification, appearance bug reports.
 
 ---

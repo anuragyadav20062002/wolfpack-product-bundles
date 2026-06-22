@@ -64,6 +64,10 @@ jest.mock('../../../app/services/widget-installation.server', () => ({
   },
 }));
 
+jest.mock('../../../app/services/shopify-publications.server', () => ({
+  publishProductToSalesChannels: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('../../../app/services/bundles/bundle-configure-handlers.server', () => ({
   normaliseShopifyProductId: jest.fn((id: string) => id),
   safeJsonParse: jest.fn((val: any, def: any) => {
@@ -121,10 +125,7 @@ describe('handleSyncBundle — shopifyProductHandle persistence', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Archive → success
-    // Delete → success
-    // Create → returns new product
-    // Variant update → success
+    // Archive → delete → shop name lookup → create → variant update → product status sync
     let callCount = 0;
     mockAdmin.graphql.mockImplementation(() => {
       callCount++;
@@ -137,6 +138,10 @@ describe('handleSyncBundle — shopifyProductHandle persistence', () => {
         return Promise.resolve({ json: () => Promise.resolve({ data: { productDelete: { deletedProductId: oldProductId, userErrors: [] } } }) });
       }
       if (callCount === 3) {
+        // Shop name lookup
+        return Promise.resolve({ json: () => Promise.resolve({ data: { shop: { name: 'Wolfpack Store' } } }) });
+      }
+      if (callCount === 4) {
         // Create
         return Promise.resolve({ json: () => Promise.resolve({
           data: {
@@ -153,8 +158,12 @@ describe('handleSyncBundle — shopifyProductHandle persistence', () => {
           },
         })});
       }
-      // Variant price update
-      return Promise.resolve({ json: () => Promise.resolve({ data: { productVariantsBulkUpdate: { productVariants: [{ id: newVariantId }], userErrors: [] } } }) });
+      if (callCount === 5) {
+        // Variant price update
+        return Promise.resolve({ json: () => Promise.resolve({ data: { productVariantsBulkUpdate: { productVariants: [{ id: newVariantId }], userErrors: [] } } }) });
+      }
+      // Product status sync
+      return Promise.resolve({ json: () => Promise.resolve({ data: { productUpdate: { product: { id: newProductId, handle: `bundle-${bundleId}`, status: 'ACTIVE' }, userErrors: [] } } }) });
     });
 
     getDb().bundle.findUnique.mockResolvedValue(makeBundle());
@@ -163,7 +172,7 @@ describe('handleSyncBundle — shopifyProductHandle persistence', () => {
 
   it('writes shopifyProductHandle = `bundle-{id}` to DB after re-creating the Shopify product', async () => {
     const response = await handleSyncBundle(mockAdmin, mockSession, bundleId);
-    const body = await response.json();
+    const body = await response.json() as any;
 
     expect(body.success).toBe(true);
 
@@ -229,11 +238,14 @@ describe('handleSyncProduct — shopifyProductHandle persistence on first produc
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Sequence: productCreate → variantUpdate → (metafields skipped — pricing null)
+    // Sequence: shop name lookup → productCreate → variantUpdate → product status sync
     let graphqlCall = 0;
     mockAdmin.graphql.mockImplementation(() => {
       graphqlCall++;
       if (graphqlCall === 1) {
+        return Promise.resolve({ json: () => Promise.resolve({ data: { shop: { name: 'Wolfpack Store' } } }) });
+      }
+      if (graphqlCall === 2) {
         // CREATE_PRODUCT
         return Promise.resolve({ json: () => Promise.resolve({
           data: {
@@ -250,8 +262,12 @@ describe('handleSyncProduct — shopifyProductHandle persistence on first produc
           },
         })});
       }
-      // UPDATE_VARIANT
-      return Promise.resolve({ json: () => Promise.resolve({ data: { productVariantsBulkUpdate: { productVariants: [], userErrors: [] } } }) });
+      if (graphqlCall === 3) {
+        // UPDATE_VARIANT
+        return Promise.resolve({ json: () => Promise.resolve({ data: { productVariantsBulkUpdate: { productVariants: [], userErrors: [] } } }) });
+      }
+      // Product status sync
+      return Promise.resolve({ json: () => Promise.resolve({ data: { productUpdate: { product: { id: newProductId, handle: `bundle-${bundleId}`, status: 'ACTIVE' }, userErrors: [] } } }) });
     });
 
     // No existing product — triggers creation path. Include steps/pricing as handleSyncProduct includes them.
@@ -263,7 +279,7 @@ describe('handleSyncProduct — shopifyProductHandle persistence on first produc
 
   it('writes shopifyProductHandle = `bundle-{id}` to DB when no Shopify product exists', async () => {
     const response = await handleSyncProduct(mockAdmin, mockSession, bundleId, new FormData());
-    const body = await response.json();
+    const body = await response.json() as any;
 
     expect(body.success).toBe(true);
 
@@ -296,7 +312,7 @@ describe('handleSyncProduct — shopifyProductHandle persistence on first produc
 
   it('returns success with productId when product is created', async () => {
     const response = await handleSyncProduct(mockAdmin, mockSession, bundleId, new FormData());
-    const body = await response.json();
+    const body = await response.json() as any;
     expect(body.success).toBe(true);
     expect(body.productId).toBe(newProductId);
   });

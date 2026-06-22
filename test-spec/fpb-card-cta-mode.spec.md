@@ -14,8 +14,8 @@ Verify storefront product cards resolve their add-button state from the right ru
 | 2 | FPB text-button setting is disabled | `selectedBundle.showTextOnPlusEnabled = false` | `resolveFullPageCardCtaMode()` returns `icon`; `getProductAddButtonText()` returns `+` | Keeps compact icon mode |
 | 3 | Newer direct add-button field is enabled | `selectedBundle.showTextOnAddButton = true` | `resolveFullPageCardCtaMode()` returns `text` | Keeps current direct field support |
 | 4 | FPB Compact selected card | `bundleDesignPresetId = "COMPACT"`, icon CTA mode | `usesSelectedQuantityBadge()` returns `false` | Compact selected cards keep the inline quantity selector, not a badge-only count |
-| 5 | FPB Standard selected icon card | `bundleDesignPresetId = "DEFAULT"`, icon CTA mode | `usesSelectedQuantityBadge()` returns `false` | Icon selected cards keep the inline quantity selector |
-| 6 | FPB Standard selected text card | `bundleDesignPresetId = "DEFAULT"`, text CTA mode | `usesSelectedQuantityBadge()` returns `false` | Text selected cards keep the inline quantity selector |
+| 5 | FPB Standard selected icon card | `bundleDesignPresetId = "STANDARD"`, icon CTA mode | `usesSelectedQuantityBadge()` returns `false` | Icon selected cards keep the inline quantity selector |
+| 6 | FPB Standard selected text card | `bundleDesignPresetId = "STANDARD"`, text CTA mode | `usesSelectedQuantityBadge()` returns `false` | Text selected cards keep the inline quantity selector |
 
 ### FullPageBundleSettingsPersistence
 | # | Scenario | Input | Expected Output | Notes |

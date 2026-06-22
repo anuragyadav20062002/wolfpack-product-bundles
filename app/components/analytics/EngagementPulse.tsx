@@ -8,6 +8,7 @@
  */
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 import { KpiTile } from "./shared/KpiTile";
 import type { EngagementTrendPoint } from "../../lib/analytics";
 
@@ -92,7 +93,10 @@ export function EngagementPulse({
                 background: "var(--wpb-ink-100)",
                 font: "var(--wpb-micro)",
               }}
-              formatter={(value: number, _name: string) => [value.toLocaleString(), "engagements"]}
+              formatter={(value: ValueType | undefined, _name: NameType | undefined) => [
+                Number(value ?? 0).toLocaleString(),
+                "engagements",
+              ]}
             />
             <Area
               type="monotone"

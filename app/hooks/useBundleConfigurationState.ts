@@ -11,8 +11,30 @@
  * Used by both full-page and product-page bundle configuration routes.
  */
 
-import { useState, useCallback, useRef, useMemo, useEffect } from "react";
-import { appState as appStateService } from "../services/app.state.service";
+import { useCallback, useRef, useMemo, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  closeConfigureModal,
+  initializeConfigureRouteState,
+  markConfigureRouteDirty,
+  openConfigureModal,
+  setActiveConfigureSection,
+  setActiveConfigureTabIndex,
+  setAvailablePages as setAvailablePagesAction,
+  setBundleProductDraft,
+  setConfigureForceNavigation,
+  setConfigureLoadingPages,
+  setConfigureProductImageUrl,
+  setConfigureProductStatus,
+  setConfigureProductTitle,
+  setConfigureRuleMessages,
+  setConfigureSelectedCollections,
+  setConfigureSelectedPage,
+  setCurrentConfigureModalStepId,
+  setDismissedConfigureBanners,
+  setShowAutoPlacementBanner as setShowAutoPlacementBannerAction,
+} from "../store/slices/configureRouteStateSlice";
+import { closeModal, openModal } from "../store/slices/uiSlice";
 import { useBundleForm } from "./useBundleForm";
 import { useBundleSteps } from "./useBundleSteps";
 import { useBundleConditions } from "./useBundleConditions";
@@ -77,16 +99,22 @@ export function useBundleConfigurationState({
   bundleProduct: loadedBundleProduct,
   shopify,
 }: UseBundleConfigurationProps) {
+  const dispatch = useAppDispatch();
+  const configureRouteState = useAppSelector((state) => state.configureRouteState);
   // ===== DIRTY FLAG SYSTEM =====
-  const [isDirty, setIsDirty] = useState(false);
+  const isDirty = configureRouteState.isDirty;
   const isResettingRef = useRef(false);
   const lastProcessedFetcherDataRef = useRef<any>(null);
 
   const markAsDirty = useCallback(() => {
     if (!isResettingRef.current) {
-      setIsDirty(true);
+      dispatch(markConfigureRouteDirty(true));
     }
-  }, []);
+  }, [dispatch]);
+
+  const setIsDirty = useCallback((value: boolean) => {
+    dispatch(markConfigureRouteDirty(value));
+  }, [dispatch]);
 
   // ===== CUSTOM HOOKS =====
   // Form state management
@@ -158,81 +186,95 @@ export function useBundleConfigurationState({
   });
 
   // ===== MODAL STATES =====
-  const [isPageSelectionModalOpen, setIsPageSelectionModalOpen] = useState(false);
-  const [isWidgetInstallModalOpen, setIsWidgetInstallModalOpen] = useState(false);
-  const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
-  const [isCollectionsModalOpen, setIsCollectionsModalOpen] = useState(false);
-  const [currentModalStepId, setCurrentModalStepId] = useState<string>('');
+  const isPageSelectionModalOpen = configureRouteState.modals.pageSelection;
+  const isWidgetInstallModalOpen = configureRouteState.modals.widgetInstall;
+  const isProductsModalOpen = configureRouteState.modals.products;
+  const isCollectionsModalOpen = configureRouteState.modals.collections;
+  const currentModalStepId = configureRouteState.currentModalStepId;
+  const setCurrentModalStepId = useCallback((stepId: string) => {
+    dispatch(setCurrentConfigureModalStepId(stepId));
+  }, [dispatch]);
 
   // Modal handlers
   const openPageSelectionModal = useCallback(() => {
-    setIsPageSelectionModalOpen(true);
-    appStateService.openModal('bundleConfig_pageSelection');
-  }, []);
+    dispatch(openConfigureModal({ modal: "pageSelection" }));
+    dispatch(openModal("bundleConfig_pageSelection"));
+  }, [dispatch]);
 
   const closePageSelectionModal = useCallback(() => {
-    setIsPageSelectionModalOpen(false);
-    appStateService.closeModal('bundleConfig_pageSelection');
-  }, []);
+    dispatch(closeConfigureModal("pageSelection"));
+    dispatch(closeModal("bundleConfig_pageSelection"));
+  }, [dispatch]);
 
   const openWidgetInstallModal = useCallback(() => {
-    setIsWidgetInstallModalOpen(true);
-    appStateService.openModal('bundleConfig_widgetInstall');
-  }, []);
+    dispatch(openConfigureModal({ modal: "widgetInstall" }));
+    dispatch(openModal("bundleConfig_widgetInstall"));
+  }, [dispatch]);
 
   const closeWidgetInstallModal = useCallback(() => {
-    setIsWidgetInstallModalOpen(false);
-    appStateService.closeModal('bundleConfig_widgetInstall');
-  }, []);
+    dispatch(closeConfigureModal("widgetInstall"));
+    dispatch(closeModal("bundleConfig_widgetInstall"));
+  }, [dispatch]);
 
   const openProductsModal = useCallback((stepId: string) => {
-    setCurrentModalStepId(stepId);
-    setIsProductsModalOpen(true);
-    appStateService.openModal('bundleConfig_products');
-  }, []);
+    dispatch(openConfigureModal({ modal: "products", stepId }));
+    dispatch(openModal("bundleConfig_products"));
+  }, [dispatch]);
 
   const closeProductsModal = useCallback(() => {
-    setIsProductsModalOpen(false);
-    appStateService.closeModal('bundleConfig_products');
-  }, []);
+    dispatch(closeConfigureModal("products"));
+    dispatch(closeModal("bundleConfig_products"));
+  }, [dispatch]);
 
   const openCollectionsModal = useCallback((stepId: string) => {
-    setCurrentModalStepId(stepId);
-    setIsCollectionsModalOpen(true);
-    appStateService.openModal('bundleConfig_collections');
-  }, []);
+    dispatch(openConfigureModal({ modal: "collections", stepId }));
+    dispatch(openModal("bundleConfig_collections"));
+  }, [dispatch]);
 
   const closeCollectionsModal = useCallback(() => {
-    setIsCollectionsModalOpen(false);
-    appStateService.closeModal('bundleConfig_collections');
-  }, []);
+    dispatch(closeConfigureModal("collections"));
+    dispatch(closeModal("bundleConfig_collections"));
+  }, [dispatch]);
 
   // ===== LOADING STATES =====
-  const [isLoadingPages, setIsLoadingPages] = useState(false);
+  const isLoadingPages = configureRouteState.isLoadingPages;
+  const setIsLoadingPages = useCallback((value: boolean) => {
+    dispatch(setConfigureLoadingPages(value));
+  }, [dispatch]);
 
   // ===== DATA STATES =====
-  const [availablePages, setAvailablePages] = useState<any[]>([]);
-  const [selectedPage, setSelectedPage] = useState<any>(null);
+  const availablePages = configureRouteState.availablePages;
+  const selectedPage = configureRouteState.selectedPage;
+  const setAvailablePages = useCallback((value: any[]) => {
+    dispatch(setAvailablePagesAction(value));
+  }, [dispatch]);
+  const setSelectedPage = useCallback((value: any | null) => {
+    dispatch(setConfigureSelectedPage(value));
+  }, [dispatch]);
 
   // Bundle product state
-  const [bundleProduct, setBundleProductRaw] = useState<any>(loadedBundleProduct || null);
-  const [productStatus, setProductStatusRaw] = useState(loadedBundleProduct?.status || "ACTIVE");
-  const [productTitle, setProductTitle] = useState(loadedBundleProduct?.title || "");
-  const [productImageUrl, setProductImageUrl] = useState(getBundleProductImageUrl(loadedBundleProduct));
+  const bundleProduct = configureRouteState.bundleProduct;
+  const productStatus = configureRouteState.productStatus;
+  const productTitle = configureRouteState.productTitle;
+  const productImageUrl = configureRouteState.productImageUrl;
+  const setProductTitle = useCallback((value: string) => {
+    dispatch(setConfigureProductTitle(value));
+  }, [dispatch]);
+  const setProductImageUrl = useCallback((value: string) => {
+    dispatch(setConfigureProductImageUrl(value));
+  }, [dispatch]);
 
   // Wrapped setters that trigger dirty flag
   const setBundleProduct = useCallback((value: any) => {
-    setBundleProductRaw(value);
-    markAsDirty();
-  }, [markAsDirty]);
+    dispatch(setBundleProductDraft(value));
+  }, [dispatch]);
 
   const setProductStatus = useCallback((value: string) => {
-    setProductStatusRaw(value);
-    markAsDirty();
-  }, [markAsDirty]);
+    dispatch(setConfigureProductStatus(value));
+  }, [dispatch]);
 
   // Collections state
-  const [selectedCollections, setSelectedCollectionsRaw] = useState<Record<string, any[]>>(() => {
+  const initialSelectedCollections = useMemo(() => {
     const collections: Record<string, any[]> = {};
     bundle.steps?.forEach(step => {
       if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
@@ -240,14 +282,15 @@ export function useBundleConfigurationState({
       }
     });
     return collections;
-  });
+  }, [bundle.steps]);
+  const selectedCollections = configureRouteState.selectedCollections;
 
   const setSelectedCollections = useCallback((
     value: Record<string, any[]> | ((prev: Record<string, any[]>) => Record<string, any[]>)
   ) => {
-    setSelectedCollectionsRaw(value);
-    markAsDirty();
-  }, [markAsDirty]);
+    const nextValue = typeof value === "function" ? value(configureRouteState.selectedCollections) : value;
+    dispatch(setConfigureSelectedCollections(nextValue));
+  }, [configureRouteState.selectedCollections, dispatch]);
 
   // Rule messages state
   const initialRuleMessages = useMemo(
@@ -259,25 +302,64 @@ export function useBundleConfigurationState({
     [bundle.pricing?.messages, bundle.pricing?.method, bundle.pricing?.rules]
   );
 
-  const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, { discountText: string; successMessage: string }>>(initialRuleMessages);
+  useEffect(() => {
+    dispatch(initializeConfigureRouteState({
+      bundleProduct: loadedBundleProduct || null,
+      productStatus: loadedBundleProduct?.status || "ACTIVE",
+      productTitle: loadedBundleProduct?.title || "",
+      productImageUrl: getBundleProductImageUrl(loadedBundleProduct),
+      selectedCollections: initialSelectedCollections,
+      ruleMessages: initialRuleMessages,
+    }));
+  }, [
+    bundle.id,
+    dispatch,
+    initialRuleMessages,
+    initialSelectedCollections,
+    loadedBundleProduct,
+  ]);
+
+  const ruleMessages = configureRouteState.ruleMessages;
 
   const setRuleMessages = useCallback((
     value: Record<string, { discountText: string; successMessage: string }> |
     ((prev: Record<string, { discountText: string; successMessage: string }>) =>
       Record<string, { discountText: string; successMessage: string }>)
   ) => {
-    setRuleMessagesRaw(value);
-    markAsDirty();
-  }, [markAsDirty]);
+    const nextValue = typeof value === "function" ? value(configureRouteState.ruleMessages) : value;
+    dispatch(setConfigureRuleMessages(nextValue));
+  }, [configureRouteState.ruleMessages, dispatch]);
 
   // ===== UI STATES =====
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
-  const [activeSection, setActiveSection] = useState('step_setup');
-  const [forceNavigation, setForceNavigation] = useState(false);
+  const activeTabIndex = configureRouteState.activeTabIndex;
+  const activeSection = configureRouteState.activeSection;
+  const forceNavigation = configureRouteState.forceNavigation;
+  const setActiveTabIndex = useCallback((value: number) => {
+    dispatch(setActiveConfigureTabIndex(value));
+  }, [dispatch]);
+  const setActiveSection = useCallback((value: string) => {
+    dispatch(setActiveConfigureSection(value));
+  }, [dispatch]);
+  const setForceNavigation = useCallback((value: boolean) => {
+    dispatch(setConfigureForceNavigation(value));
+  }, [dispatch]);
 
   // Banner states
-  const [showAutoPlacementBanner, setShowAutoPlacementBanner] = useState(false);
-  const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
+  const showAutoPlacementBanner = configureRouteState.showAutoPlacementBanner;
+  const dismissedBanners = useMemo(
+    () => new Set(configureRouteState.dismissedBanners),
+    [configureRouteState.dismissedBanners],
+  );
+  const setShowAutoPlacementBanner = useCallback((value: boolean) => {
+    dispatch(setShowAutoPlacementBannerAction(value));
+  }, [dispatch]);
+  const setDismissedBanners = useCallback((
+    value: Set<string> | ((prev: Set<string>) => Set<string>)
+  ) => {
+    const previous = new Set<string>(configureRouteState.dismissedBanners);
+    const nextValue = typeof value === "function" ? value(previous) : value;
+    dispatch(setDismissedConfigureBanners(Array.from(nextValue)));
+  }, [configureRouteState.dismissedBanners, dispatch]);
 
   // ===== ORIGINAL VALUES REF (for discard) =====
   const originalValuesRef = useRef({
@@ -300,22 +382,6 @@ export function useBundleConfigurationState({
     bundleProduct: loadedBundleProduct || null,
     productStatus: loadedBundleProduct?.status || "ACTIVE",
   });
-
-  const syncLoadedBundleProductStatus = useCallback(() => {
-    setBundleProductRaw(loadedBundleProduct || null);
-    setProductStatusRaw(loadedBundleProduct?.status || "ACTIVE");
-    setProductTitle(loadedBundleProduct?.title || "");
-    setProductImageUrl(getBundleProductImageUrl(loadedBundleProduct));
-    originalValuesRef.current = {
-      ...originalValuesRef.current,
-      bundleProduct: loadedBundleProduct || null,
-      productStatus: loadedBundleProduct?.status || "ACTIVE",
-    };
-  }, [loadedBundleProduct]);
-
-  useEffect(() => {
-    syncLoadedBundleProductStatus();
-  }, [syncLoadedBundleProductStatus]);
 
   // ===== DISCARD HANDLER =====
   const handleDiscard = useCallback(() => {
@@ -374,7 +440,8 @@ export function useBundleConfigurationState({
     setBundleProduct,
     setProductStatus,
     setSelectedCollections,
-    setRuleMessages
+    setRuleMessages,
+    setIsDirty,
   ]);
 
   // ===== MARK AS SAVED =====
@@ -409,7 +476,8 @@ export function useBundleConfigurationState({
     ruleMessages,
     conditionsState.stepConditions,
     bundleProduct,
-    productStatus
+    productStatus,
+    setIsDirty,
   ]);
 
   // ===== RETURN UNIFIED STATE =====

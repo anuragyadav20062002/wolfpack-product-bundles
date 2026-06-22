@@ -14,6 +14,7 @@
 
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
+import { getCachedShopifyShopGid, recordBusinessEvent } from "../../app-events.server";
 import type { WebhookProcessResult } from "../types";
 
 /**
@@ -35,6 +36,20 @@ export async function handleAppUninstalled(
       component: "webhook-processor",
       operation: "handleAppUninstalled",
     }, { shop: shopDomain });
+
+    const shopifyShopGid = await getCachedShopifyShopGid(shopDomain);
+    await recordBusinessEvent({
+      eventHandle: "app_uninstalled",
+      shopDomain,
+      shopifyShopGid,
+      surface: "webhook",
+      actor: "webhook",
+      routeFamily: "lifecycle_webhook",
+      result: "success",
+      attributes: {
+        topic: "APP_UNINSTALLED",
+      },
+    });
 
     // Step 1: Delete all bundles (cascades to steps, step products, pricing)
     const deletedBundles = await db.bundle.deleteMany({

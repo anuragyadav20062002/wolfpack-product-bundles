@@ -1,6 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { modalSlotTemplateMethods } = require('../../../app/assets/widgets/product-page/templates/modal-slot-template.js');
 
+export {};
+
 describe('PPB Vertical Slots shared shell migration', () => {
   let originalDocument: Document | undefined;
 
@@ -15,6 +17,8 @@ describe('PPB Vertical Slots shared shell migration', () => {
 
   it('creates a vertical shared slot wrapper at runtime', () => {
     class ProductPageWidget {
+      selectedBundle: { renderFilledSlotsAsHorizontalStacked: boolean };
+
       constructor() {
         this.selectedBundle = { renderFilledSlotsAsHorizontalStacked: false };
       }
@@ -29,7 +33,7 @@ describe('PPB Vertical Slots shared shell migration', () => {
     }
 
     Object.assign(ProductPageWidget.prototype, modalSlotTemplateMethods);
-    const widget = new ProductPageWidget();
+    const widget = new ProductPageWidget() as any;
     const section = widget._createModalSlotStepSection({ name: 'Choose first item' });
     const grid = section.querySelector('[data-bw-selected-slots="true"]');
 

@@ -33,6 +33,7 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Architecture/Database Schema]] — Authoritative Prisma schema summary
 - [[Architecture/Cart Transform Function]] — TypeScript WASM cart transform (corrected)
 - [[Architecture/Widget Architecture]] — FPB + PDP widgets, load strategy, versioning
+- [[Architecture/State Management]] — Redux Toolkit slices, RTK Query endpoint boundaries, and AppStateService migration rules
 - [[Shopify Integration/Admin API]] — Rate limits, GraphQL patterns, session handling
 - [[Shopify Integration/Cart Transform API]] — Operations, targets, API versions (2025-10)
 - [[Shopify Integration/Checkout UI Extension]] — Preact targets, build rules
@@ -42,4 +43,5 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Features/Bundle Instance Tracking]] — EB `_easyBundle:OfferId`, MERGE dedup, unique titles
 - [[Operations/Deployment]] — Render + Shopify deploy process
 - [[Operations/Build Process]] — Widget bundles, WASM, CSS size limits
+- [[Operations/App Events Taxonomy]] — Shopify App Events taxonomy, flow tracing, feature usage, error events, and `wpb:*` migration boundaries
 - [[Operations/Admin Performance]] — App Bridge Web Vitals source, retired custom telemetry, Admin loader critical path

@@ -127,7 +127,7 @@ function createWidget() {
     activeCollectionId: 'collection-1',
     compactMobileSummaryTrayExpanded: true,
     reRenderFullPage: jest.fn(),
-    _clearCartConfirmationModal: null,
+    _clearCartConfirmationModal: null as FakeElement | null,
     _clearCartConfirmationKeydownHandler: null,
     ...fullPageClearCartConfirmationMethods,
   };

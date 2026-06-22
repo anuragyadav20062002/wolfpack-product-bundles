@@ -35,13 +35,13 @@ describe("parseBundleDesignTemplate", () => {
 
   // --- valid FPB presets ---
 
-  it("parses FPB Standard preset as the audited DEFAULT preset", () => {
+  it("parses FPB Standard preset as STANDARD", () => {
     const result = parseBundleDesignTemplate(makeForm({
       bundleDesignTemplate: "FBP_SIDE_FOOTER",
-      bundleDesignPresetId: "DEFAULT",
+      bundleDesignPresetId: "STANDARD",
     }));
     expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
-    expect(result.bundleDesignPresetId).toBe("DEFAULT");
+    expect(result.bundleDesignPresetId).toBe("STANDARD");
   });
 
   it("parses FPB Classic preset", () => {

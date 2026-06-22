@@ -473,6 +473,8 @@ export async function handleCreateBundle(
         shopId: session.shop,
         bundleType: bundleType as any,
         fullPageLayout: bundleType === BundleType.FULL_PAGE ? FullPageLayout.FOOTER_BOTTOM : null,
+        bundleDesignTemplate: bundleType === BundleType.FULL_PAGE ? "FBP_SIDE_FOOTER" : null,
+        bundleDesignPresetId: bundleType === BundleType.FULL_PAGE ? "STANDARD" : null,
         status: BundleStatus.DRAFT,
         shopifyProductId: shopifyProductId,
         shopifyProductHandle: shopifyProductHandle || null,

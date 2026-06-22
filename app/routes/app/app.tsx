@@ -15,11 +15,13 @@ import { ensureShopHasExpiringOfflineSession } from "../../services/offline-toke
 import { AppLogger } from "../../lib/logger";
 import { loadShopAdminLocale } from "../../services/admin-locale.server";
 import { buildMantleProviderConfig, type MantleProviderConfig } from "../../services/mantle.server";
+import { ReduxProvider } from "../../store/ReduxProvider";
+import { installAdminWebVitalsDiagnostics } from "../../lib/admin-web-vitals-diagnostics.client";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
-function ensureExpiringOfflineSessionInBackground(shop: string) {
-  void ensureShopHasExpiringOfflineSession(prisma, shop, sessionStorage).catch((error) => {
+function ensureExpiringOfflineSessionInBackground(shop: string, idToken?: string | null) {
+  void ensureShopHasExpiringOfflineSession(prisma, shop, sessionStorage, { idToken }).catch((error) => {
     AppLogger.error("Failed to ensure expiring offline session during app load", {
       component: "app.app",
       shop,
@@ -29,7 +31,8 @@ function ensureExpiringOfflineSessionInBackground(shop: string) {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
-  ensureExpiringOfflineSessionInBackground(session.shop);
+  const idToken = new URL(request.url).searchParams.get("id_token");
+  ensureExpiringOfflineSessionInBackground(session.shop, idToken);
   const locale = await loadShopAdminLocale(session.shop);
   const polarisTranslations = getPolarisLocale(locale);
   const mantleProvider = await buildMantleProviderConfig({
@@ -94,16 +97,22 @@ export default function App() {
     }
   }, [locale]);
 
+  useEffect(() => {
+    return installAdminWebVitalsDiagnostics();
+  }, []);
+
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey} i18n={polarisTranslations}>
-      <I18nextProvider i18n={i18n}>
-        <AdminMantleProvider mantleProvider={mantleProvider}>
-          {/* polaris.js deferred so App Bridge (loaded statically from app/root.tsx <head>) initialises first */}
-          <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
-          <AdminNavigation />
-          <Outlet />
-        </AdminMantleProvider>
-      </I18nextProvider>
+      <ReduxProvider>
+        <I18nextProvider i18n={i18n}>
+          <AdminMantleProvider mantleProvider={mantleProvider}>
+            {/* polaris.js deferred so App Bridge (loaded statically from app/root.tsx <head>) initialises first */}
+            <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
+            <AdminNavigation />
+            <Outlet />
+          </AdminMantleProvider>
+        </I18nextProvider>
+      </ReduxProvider>
     </AppProvider>
   );
 }

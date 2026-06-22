@@ -2,10 +2,10 @@
 const { FPB_STANDARD_TEMPLATE_CONFIG } = require('../../../app/assets/widgets/full-page/templates/standard.config.js');
 
 describe('FPB Standard template config contract', () => {
-  it('keeps DEFAULT and STANDARD aliases for current payloads', () => {
+  it('uses STANDARD as the only Standard preset identity', () => {
     expect(FPB_STANDARD_TEMPLATE_CONFIG.id).toBe('STANDARD');
-    expect(FPB_STANDARD_TEMPLATE_CONFIG.presetId).toBe('DEFAULT');
-    expect(FPB_STANDARD_TEMPLATE_CONFIG.aliases).toEqual(expect.arrayContaining(['DEFAULT', 'STANDARD', 'DEFAULT_FBP']));
+    expect(FPB_STANDARD_TEMPLATE_CONFIG.presetId).toBe('STANDARD');
+    expect(FPB_STANDARD_TEMPLATE_CONFIG.aliases).toEqual(['STANDARD']);
   });
 
   it('declares shared primitives for later renderer migration', () => {

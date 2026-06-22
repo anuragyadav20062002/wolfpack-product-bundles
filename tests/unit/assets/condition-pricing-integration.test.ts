@@ -46,11 +46,22 @@ function makeStep2(op1: string, val1: number, op2: string, val2: number) {
 }
 
 function makeBundle(rules: any[]) {
-  return { pricing: { enabled: true, rules } };
+  return {
+    pricing: {
+      enabled: true,
+      method: rules[0]?.discountMethod ?? rules[0]?.discount?.method ?? 'percentage_off',
+      rules,
+    },
+  };
 }
 
 function makeQtyRule(operator: string, value: number, method: string, discountValue: number) {
   return {
+    conditionType: 'quantity',
+    conditionOperator: operator,
+    conditionValue: value,
+    discountMethod: method,
+    discountValue,
     condition: { type: 'quantity', operator, value },
     discount:  { method, value: discountValue },
   };
@@ -58,6 +69,11 @@ function makeQtyRule(operator: string, value: number, method: string, discountVa
 
 function makeAmtRule(operator: string, value: number, method: string, discountValue: number) {
   return {
+    conditionType: 'amount',
+    conditionOperator: operator,
+    conditionValue: value,
+    discountMethod: method,
+    discountValue,
     condition: { type: 'amount', operator, value },
     discount:  { method, value: discountValue },
   };

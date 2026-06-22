@@ -76,7 +76,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (lineItems && lineItems.length > 0) {
       const productIds: string[] = lineItems
         .map((item: any) => item.productId as string | undefined)
-        .filter((id): id is string => Boolean(id));
+        .filter((id: string | undefined): id is string => Boolean(id));
 
       if (productIds.length > 0) {
         // Pass 1: direct match on bundle container product
@@ -84,7 +84,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           where: { shopId, shopifyProductId: { in: productIds } },
           select: { id: true },
         });
-        bundleIds.push(...directBundles.map((b) => b.id));
+        bundleIds.push(...directBundles.map((b: { id: string }) => b.id));
 
         // Pass 2: fallback — match component products through bundle steps
         if (bundleIds.length === 0) {

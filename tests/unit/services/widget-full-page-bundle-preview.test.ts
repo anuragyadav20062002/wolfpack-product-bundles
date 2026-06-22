@@ -59,7 +59,7 @@ function makeBundle(overrides: Record<string, any> = {}) {
     bundleType: 'full_page',
     fullPageLayout: null,
     bundleDesignTemplate: 'FBP_SIDE_FOOTER',
-    bundleDesignPresetId: 'DEFAULT',
+    bundleDesignPresetId: 'STANDARD',
     defaultProductsData: {},
     boxSelection: null,
     bundleUpsellConfig: null,
@@ -197,7 +197,7 @@ describe('createFullPageBundle — isPublished: true (default, regression guard)
     expect(result.success).toBe(true);
     expect(result.pageUrl).toContain(pageHandle);
     // shareablePreviewUrl should not be set for published pages
-    expect(result.shareablePreviewUrl).toBeUndefined();
+    expect((result as any).shareablePreviewUrl).toBeUndefined();
   });
 });
 

@@ -1928,7 +1928,44 @@
 }
 
 .richHelpTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6d7175;
+  cursor: default;
   white-space: nowrap;
+}
+
+.richHelpTrigger:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+}
+
+.questionHelpButton {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  background: transparent;
+  color: #6d7175;
+  cursor: default;
+}
+
+.richHelpTrigger > s-icon,
+.questionHelpButton > s-icon {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.questionHelpButton:hover,
+.questionHelpButton:focus-visible {
+  color: #202223;
+}
+
+.questionHelpButton:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
 }
 
 .richHelpCard {

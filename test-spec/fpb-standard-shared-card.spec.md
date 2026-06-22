@@ -11,10 +11,10 @@ Verify the first FPB Standard migration slice routes Standard product cards thro
 
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | DEFAULT preset card render path | `createProductCard()` source | Shared renderer under `DEFAULT` branch | Keeps blast radius scoped to Standard. |
+| 1 | STANDARD preset card render path | `createProductCard()` source | Shared renderer under `STANDARD` branch | Keeps blast radius scoped to Standard. |
 
 ## Acceptance Criteria
 
-- [ ] DEFAULT product cards use `renderSharedProductCard()`.
+- [ ] STANDARD product cards use `renderSharedProductCard()`.
 - [ ] Shared card receives grid mode.
 - [ ] Merchant add-button text setting is preserved.

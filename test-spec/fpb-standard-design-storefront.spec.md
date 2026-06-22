@@ -2,16 +2,16 @@
 **Spec ID:** fpb-standard-design-storefront  **Issue:** [fpb-standard-design-storefront-parity-1]  **Created:** 2026-06-04
 
 ## Purpose
-Verify the FPB Standard Design storefront template renders EB-style `FBP_SIDE_FOOTER` + `DEFAULT_FBP` layout without regressing other FPB presets.
+Verify the FPB Standard Design storefront template renders the app-canonical `FBP_SIDE_FOOTER` + `STANDARD` layout without regressing other FPB presets.
 
 ## Test Cases
 ### FullPageStandardDesignTemplate
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | Standard Design template contract | `bundle-widget-full-page.js` and `bundle-widget-full-page.css` | DEFAULT preset uses EB-matched product area, category tabs, product cards, sidebar/footer, and mobile behavior | Test values updated from live EB inspection |
-| 2 | Preset isolation | `bundle-widget-full-page.css` | DEFAULT rules remain scoped and do not override CLASSIC, COMPACT, or HORIZONTAL selectors | Prevents preset regression |
+| 1 | Standard Design template contract | `bundle-widget-full-page.js` and `bundle-widget-full-page.css` | STANDARD preset uses matched product area, category tabs, product cards, sidebar/footer, and mobile behavior | Test values updated after Standard preset canonicalization |
+| 2 | Preset isolation | `bundle-widget-full-page.css` | STANDARD rules remain scoped and do not override CLASSIC, COMPACT, or HORIZONTAL selectors | Prevents preset regression |
 | 3 | Build output contract | `scripts/build-widget-bundles.js` and generated widget assets | Full-page widget bundle includes Standard Design changes after build | Deployable asset parity |
-| 4 | Responsive desktop sizing | 1280px viewport | DEFAULT desktop body columns scale to the same EB ratio instead of fixed `993px 447px`; product grid uses three container-responsive columns | Captured from live EB deep audit |
+| 4 | Responsive desktop sizing | 1280px viewport | STANDARD desktop body columns scale to the same target ratio instead of fixed `993px 447px`; product grid uses three container-responsive columns | Captured from live audit |
 | 5 | Standard step timeline contract | `bundle-widget-full-page.js` and Standard runtime styles | Timeline uses a centered grid, 40px image nodes, active 4px black border, inactive 2px `rgb(212,213,214)` border, one absolute 6px progress rail, and EB label typography | Captured from reset live EB Standard storefront on 2026-06-05 |
 | 6 | Standard step timeline responsive contract | Desktop 1280px and mobile 390px viewports | Timeline is 60% width with `16px/28.8px` labels on desktop, near full width with `12px/21.6px` labels on mobile | The same renderer must support arbitrary step counts |
 | 7 | Standard product card/grid contract | `standard-template.js` runtime styles | Desktop card/grid matches EB: 3 responsive columns, 15px gap, 352px cards, 240px image row, 40px title row, 40px action row, 35px icon CTA | Captured from reset live EB Standard storefront on 2026-06-05 |
