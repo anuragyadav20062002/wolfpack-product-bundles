@@ -1,19 +1,21 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readPpbConfigureRouteFamilySource } from "./ppb-configure-route-source";
 
 describe("Product Page Bundle setup rail contract", () => {
   it("uses the recovered setup rail list and exposes captured visibility children", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
+    const helperSource = readFileSync(
+      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/ConfigureBundleFlow.helpers.tsx"),
       "utf8",
-    );
+    ).replace(/\s+/g, " ");
+    const flowSource = readPpbConfigureRouteFamilySource().replace(/\s+/g, " ");
 
-    expect(source).toContain("PRODUCT_PAGE_SETUP_ITEMS");
-    expect(source).toContain("const bundleSetupItems = PRODUCT_PAGE_SETUP_ITEMS");
-    expect(source).toContain('{ id: "bundle_widget", label: "Bundle Widget" }');
-    expect(source).toContain('{ id: "bundle_embed",  label: "Bundle Embed"  }');
-    expect(source).toContain('activeSection === "subscriptions"');
-    expect(source).toContain('data-tour-target="ppb-subscriptions"');
-    expect(source).toContain('activeSection === "bundle_embed"');
+    expect(helperSource).toContain("PRODUCT_PAGE_SETUP_ITEMS");
+    expect(helperSource).toContain("export const bundleSetupItems = PRODUCT_PAGE_SETUP_ITEMS");
+    expect(helperSource).toContain('{ id: "bundle_widget", label: "Bundle Widget" }');
+    expect(helperSource).toContain('{ id: "bundle_embed", label: "Bundle Embed" }');
+    expect(flowSource).toContain('activeSection === "subscriptions"');
+    expect(flowSource).toContain('data-tour-target="ppb-subscriptions"');
+    expect(flowSource).toContain('activeSection === "bundle_embed"');
   });
 });

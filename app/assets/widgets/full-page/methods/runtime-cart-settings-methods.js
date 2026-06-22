@@ -400,13 +400,12 @@ getFullPageDesignPreset(bundle = this.selectedBundle) {
     bundle?.bundleDesignPresetId
     || bundle?.bundleDesignPreset
     || bundle?.templateId
-    || 'DEFAULT';
-  if (typeof rawPresetId !== 'string') return 'DEFAULT';
+    || 'STANDARD';
+  if (typeof rawPresetId !== 'string') return 'STANDARD';
 
   const preset = rawPresetId.trim().toUpperCase();
-  if (preset === 'STANDARD') return 'DEFAULT';
-  if (preset === 'DEFAULT_FBP') return 'DEFAULT';
-  return preset || 'DEFAULT';
+  if (['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset)) return preset;
+  return 'STANDARD';
 },
 
 resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
@@ -422,10 +421,10 @@ resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
 },
 
 ensureFullPageTemplateStylesheet(preset) {
-  const presetKey = String(preset || 'DEFAULT').trim().toUpperCase() || 'DEFAULT';
-  const templateKey = presetKey === 'DEFAULT' ? 'STANDARD' : presetKey;
+  const presetKey = String(preset || 'STANDARD').trim().toUpperCase() || 'STANDARD';
+  const templateKey = presetKey;
   const urls = window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ || {};
-  const href = urls[presetKey] || urls[templateKey] || urls.DEFAULT || urls.STANDARD;
+  const href = urls[presetKey] || urls.STANDARD;
 
   if (!href || typeof document === 'undefined') return Promise.resolve();
 
@@ -515,7 +514,7 @@ applyFullPageDesignPresetMarker() {
 
   const fullPageTemplate = this.getFullPageTemplate();
   const fullPageDesignPreset = this.getFullPageDesignPreset();
-  const fullPageTabStyle = fullPageDesignPreset === 'DEFAULT' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
+  const fullPageTabStyle = fullPageDesignPreset === 'STANDARD' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
   const presetClass = `fpb-preset-${fullPageDesignPreset.toLowerCase()}`;
 
   this.container.dataset.fpbTemplateType = fullPageTemplate;
@@ -527,14 +526,14 @@ applyFullPageDesignPresetMarker() {
   this.elements.stepsContainer.dataset.fpbTabStyle = fullPageTabStyle;
   const cardCtaMode = this.resolveFullPageCardCtaMode();
   this.elements.stepsContainer.dataset.fpbCardCtaMode = cardCtaMode;
-  this.container.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+  this.container.classList.remove('fpb-preset-standard', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
   this.container.classList.add(presetClass);
   this.container.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
-  this.container.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
-  this.elements.stepsContainer.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+  this.container.classList.toggle('fpb-d', fullPageDesignPreset === 'STANDARD');
+  this.elements.stepsContainer.classList.remove('fpb-preset-standard', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
   this.elements.stepsContainer.classList.add(presetClass);
   this.elements.stepsContainer.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
-  this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
+  this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'STANDARD');
   this.elements.stepsContainer.classList.toggle('fpb-i', cardCtaMode === 'icon');
   void this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
 },

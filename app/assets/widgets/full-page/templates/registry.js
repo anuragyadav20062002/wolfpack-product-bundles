@@ -1,7 +1,7 @@
 /**
  * Full-page template registry.
  *
- * Normalizes legacy/full-page preset identifiers to the four FPB target
+ * Resolves full-page preset identifiers to the four FPB target
  * templates while current installer files are still being retired.
  */
 
@@ -20,13 +20,10 @@ export const FPB_TEMPLATE_CONFIGS = {
 };
 
 export function resolveFullPageTemplateConfig({ presetId = '', templateId = '' } = {}) {
-  const rawPreset = String(presetId || templateId || 'DEFAULT').toUpperCase();
-  const normalizedPreset = rawPreset === 'DEFAULT' || rawPreset === 'DEFAULT_FBP'
-    ? 'STANDARD'
-    : rawPreset;
+  const rawPreset = String(presetId || templateId || 'STANDARD').toUpperCase();
 
   return Object.values(FPB_TEMPLATE_CONFIGS).find((config) =>
-    config.id === normalizedPreset
+    config.id === rawPreset
     || config.presetId === rawPreset
     || config.aliases?.includes(rawPreset)
   ) || FPB_TEMPLATE_CONFIGS.STANDARD;

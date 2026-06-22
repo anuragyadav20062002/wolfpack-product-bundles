@@ -121,7 +121,7 @@ async switchTier(bundleId, tierIndex) {
 _mergeBundleSettings(settings) {
   if (!settings || !this.selectedBundle) return;
   const keys = [
-    'promoBannerBgImage', 'promoBannerBgImageCrop',
+    'promoBannerBgImage',
     'bundleBannerDesktopUrl', 'bundleBannerMobileUrl', 'loadingGif',
     'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
   ];

@@ -21,8 +21,9 @@ tests/
 │   │   └── api.bundle-product-manager.test.ts
 │   └── assets/                 # Frontend widget tests
 │       └── bundle-widget.test.ts
-├── integration/                # Integration tests for workflows
-│   └── bundle-workflow.test.ts
+├── integration/                # Integration tests for cross-module contracts
+│   ├── admin-route-file-boundaries.test.ts
+│   └── admin-configure-action-dispatch.test.ts
 └── e2e/                       # End-to-end application tests
     └── complete-bundle-flow.test.ts
 ```
@@ -69,14 +70,11 @@ Tests individual components in isolation with mocked dependencies.
 - `bundle-widget.test.ts`: Frontend bundle widget functionality
 
 ### Integration Tests
-Tests complete workflows across multiple components.
+Tests cross-module contracts that protect refactors and route wiring.
 
-**Bundle Workflow Tests:**
-- Complete bundle creation to cart processing flow
-- Bundle update and synchronization workflows
-- Metafield validation and cleanup integration
-- Error handling and recovery scenarios
-- Performance and scalability testing
+**Admin Route Refactor Tests:**
+- `admin-route-file-boundaries.test.ts`: scans Admin route/component source files and blocks new files above the hard line-count cap while the active refactor backlog is burned down.
+- `admin-configure-action-dispatch.test.ts`: calls real FPB/PPB configure route actions with mocked handlers to verify intent dispatch and unknown-intent responses.
 
 ### End-to-End Tests
 Tests complete application flows from user perspective.

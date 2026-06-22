@@ -62,7 +62,6 @@ function makeBundle(stepFilters?: { label: string; collectionHandle: string }[] 
       messages: null,
     },
     promoBannerBgImage: null,
-    promoBannerBgImageCrop: null,
     loadingGif: null,
     tierConfig: null,
     showStepTimeline: null,
@@ -109,7 +108,7 @@ function getWrittenSteps(admin: ReturnType<typeof makeAdmin>): any[] | null {
 describe("updateBundleProductMetafields — step.filters pass-through", () => {
   it("includes filters: null when step has no filters", async () => {
     const admin = makeAdmin();
-    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", makeBundle(null), "shop.myshopify.com");
+    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", makeBundle(null));
     const steps = getWrittenSteps(admin);
     expect(steps).not.toBeNull();
     expect(steps![0].filters).toBeNull();
@@ -121,7 +120,7 @@ describe("updateBundleProductMetafields — step.filters pass-through", () => {
       { label: "Pants", collectionHandle: "mens-pants" },
     ];
     const admin = makeAdmin();
-    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", makeBundle(filters), "shop.myshopify.com");
+    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", makeBundle(filters));
     const steps = getWrittenSteps(admin);
     expect(steps![0].filters).toEqual(filters);
   });
@@ -130,7 +129,7 @@ describe("updateBundleProductMetafields — step.filters pass-through", () => {
     const admin = makeAdmin();
     const bundle = makeBundle();
     delete (bundle as any).steps[0].filters;
-    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", bundle, "shop.myshopify.com");
+    await updateBundleProductMetafields(admin as any, "gid://shopify/Product/999", bundle);
     const steps = getWrittenSteps(admin);
     expect(steps![0].filters).toBeNull();
   });

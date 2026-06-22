@@ -46,4 +46,12 @@ Runtime category payloads must be compacted at `app/lib/bundle-config/category-r
 
 ## FPB Preview Cache Contract
 
-Pending Bundle Visibility preview pages render from a generated Shopify page body with inline `data-bundle-config`. The full-page widget only trusts this cached config when the bundle has both `bundleDesignTemplate` and `bundleDesignPresetId`. Therefore `formatBundleForWidget()` must default full-page bundles with empty design fields to Standard Design: `bundleDesignTemplate: "FBP_SIDE_FOOTER"` and `bundleDesignPresetId: "DEFAULT"`. Without those explicit defaults, preview can ignore the fresh inline config and fall back to stale/proxy behavior.
+Pending Bundle Visibility preview pages render from a generated Shopify page body with inline `data-bundle-config`. The full-page widget only trusts this cached config when the bundle has both `bundleDesignTemplate` and `bundleDesignPresetId`. Therefore `formatBundleForWidget()` must default full-page bundles with empty design fields to Standard Design: `bundleDesignTemplate: "FBP_SIDE_FOOTER"` and `bundleDesignPresetId: "STANDARD"`. Without those explicit defaults, preview can ignore the fresh inline config and fall back to stale/proxy behavior.
+
+## Bundle Details Order Attribution
+
+The storefront widgets write app-owned cart metafield `bundle_details` through the signed app-proxy route `/apps/product-bundles/api/cart-bundle-details`. The route uses Storefront API `cartMetafieldsSet` without a namespace, so Shopify stores the key in the app-owned namespace (`$app`).
+
+`shopify.app.toml` and `shopify.app.wolfpack-product-bundles-sit.toml` define `[order.metafields.app.bundle_details]` with `capabilities.cart_to_order_copyable = true`. Shopify requires the cart and order metafields to have matching namespace and key before checkout completion can copy the cart value to the order.
+
+This preserves EB-style bundle display metadata on created orders without adding a post-order reconstruction job.

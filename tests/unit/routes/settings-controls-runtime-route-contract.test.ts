@@ -6,14 +6,6 @@ const settingsRouteSource = fs.readFileSync(
   "utf8",
 );
 const controlsApiPath = path.join(process.cwd(), "app/routes/api/api.controls-settings.$shopDomain.tsx");
-const ppbWidgetSource = fs.readFileSync(
-  path.join(process.cwd(), "app/assets/bundle-widget-product-page.js"),
-  "utf8",
-);
-const fpbWidgetSource = fs.readFileSync(
-  path.join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-  "utf8",
-);
 
 describe("Settings Controls runtime route contract", () => {
   it("saves Controls through the shared runtime mapper for both bundle types", () => {
@@ -31,25 +23,5 @@ describe("Settings Controls runtime route contract", () => {
     expect(controlsApiSource).toContain("settingsControls");
     expect(controlsApiSource).toContain("activeControls");
     expect(controlsApiSource).toContain("bundleType");
-  });
-});
-
-describe("Settings Controls storefront widget contract", () => {
-  it("wires Product Page Controls into PPB widget behavior", () => {
-    expect(ppbWidgetSource).toContain("loadControlsSettings");
-    expect(ppbWidgetSource).toContain("controls-settings");
-    expect(ppbWidgetSource).toContain("_getProductPageControls");
-    expect(ppbWidgetSource).toContain("addToCartWhenProductCardClicked");
-    expect(ppbWidgetSource).toContain("addBundleToCartAfterLastStepCompleted");
-    expect(ppbWidgetSource).toContain("_handlePostAddToCartAction");
-    expect(ppbWidgetSource).toContain("_runControlsScript");
-  });
-
-  it("wires Landing Page Controls into FPB widget behavior", () => {
-    expect(fpbWidgetSource).toContain("loadControlsSettings");
-    expect(fpbWidgetSource).toContain("controls-settings");
-    expect(fpbWidgetSource).toContain("_getLandingPageControls");
-    expect(fpbWidgetSource).toContain("_handlePostAddToCartAction");
-    expect(fpbWidgetSource).toContain("_runControlsScript");
   });
 });

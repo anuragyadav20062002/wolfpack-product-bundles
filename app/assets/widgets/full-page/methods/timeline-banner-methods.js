@@ -257,7 +257,7 @@ createStandardStepTimeline() {
     : 0;
   const progressLeft = 100 / (entryCount * 2);
   const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
-  const timelineWidth = Math.min(100, entryCount * 30);
+  const timelineWidth = Math.min(100, entryCount * 20);
 
   timeline.style.setProperty('--standard-timeline-count', String(entryCount));
   timeline.style.setProperty('--standard-timeline-visible-count', String(entryCount));

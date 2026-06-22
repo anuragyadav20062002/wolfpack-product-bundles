@@ -3,6 +3,8 @@ const { createBundleBannerElement } = require('../../../app/assets/widgets/share
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createStepBannerImageElement } = require('../../../app/assets/widgets/shared/components/bundle-banners.js');
 
+export {};
+
 function createFakeDocument() {
   const createElement = (tagName: string) => {
     const element: any = {

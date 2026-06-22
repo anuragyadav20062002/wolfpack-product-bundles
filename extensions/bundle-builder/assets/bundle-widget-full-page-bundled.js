@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.42
- * Built   : 2026-06-14
+ * Version : 3.0.46
+ * Built   : 2026-06-22
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.42';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.46';
 (function() {
   'use strict';
 
@@ -337,6 +337,13 @@ class CurrencyManager {
     return symbols[currencyCode] || currencyCode;
   }
 
+  /**
+   * Ensure the format string uses the proper symbol for the given currency.
+   * If Shopify's format contains the 3-letter currency code (e.g. "PKR {{amount}}"),
+   * replace it with the symbol from our map ("Rs. {{amount}}"). This preserves
+   * the merchant's decimal/thousand-separator placeholder choice
+   * (e.g. {{amount_with_comma_separator}}) while ensuring symbols always render.
+   */
   static normalizeCurrencyFormat(format, code, symbol) {
     if (!format) return `${symbol}{{amount}}`;
     if (!code || !symbol || symbol === code) return format;
@@ -372,6 +379,14 @@ class CurrencyManager {
     };
   }
 
+  /**
+   * Convert an amount from shop base currency to the customer's display currency,
+   * then format it. Use this everywhere a price is rendered to the customer.
+   *
+   * @param {number} amount  Price in shop base currency cents
+   * @param {object} currencyInfo  Result of getCurrencyInfo()
+   * @returns {string}  Formatted price string in the display currency
+   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -2036,17 +2051,19 @@ class VariantSelectorComponent {
  */
 
 const FullPagePreset = (function () {
+  const SUPPORTED_PRESETS = ['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'];
+
   /**
    * Normalize a raw preset id to one of the four supported values.
-   * Accepts STANDARD as an alias for DEFAULT (admin payload uses STANDARD).
+   * STANDARD is the canonical Standard preset and the fallback value.
    */
   function resolvePresetAttr(bundle) {
     const raw =
       (bundle && (bundle.bundleDesignPresetId || bundle.bundleDesignPreset || bundle.templateId)) || '';
-    if (typeof raw !== 'string') return 'DEFAULT';
+    if (typeof raw !== 'string') return 'STANDARD';
     const upper = raw.trim().toUpperCase();
-    if (upper === '' || upper === 'STANDARD') return 'DEFAULT';
-    return upper;
+    if (SUPPORTED_PRESETS.includes(upper)) return upper;
+    return 'STANDARD';
   }
 
   function resolveTemplateAttr(bundle) {
@@ -2070,7 +2087,7 @@ const FullPagePreset = (function () {
     if (normalizedLayout !== 'footer_side') return false;
 
     const preset = resolvePresetAttr({ bundleDesignPresetId: presetId });
-    return ['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
+    return SUPPORTED_PRESETS.includes(preset);
   }
 
   return {
@@ -2412,6 +2429,13 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
+
+/**
+ * Shared selected product row renderer.
+ *
+ * Renders prepared display data only; selection rules, default-product rules,
+ * and free-gift lock state stay in the caller until templates migrate.
+ */
 
 const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
 
@@ -3580,8 +3604,8 @@ Object.assign(
 
 const FPB_STANDARD_TEMPLATE_CONFIG = {
   id: 'STANDARD',
-  presetId: 'DEFAULT',
-  aliases: ['DEFAULT', 'STANDARD', 'DEFAULT_FBP'],
+  presetId: 'STANDARD',
+  aliases: ['STANDARD'],
   productCard: {
     mode: 'grid',
     columns: {
@@ -3686,41 +3710,22 @@ const FPB_TEMPLATE_CONFIGS = {
 };
 
 function resolveFullPageTemplateConfig({ presetId = '', templateId = '' } = {}) {
-  const rawPreset = String(presetId || templateId || 'DEFAULT').toUpperCase();
-  const normalizedPreset = rawPreset === 'DEFAULT' || rawPreset === 'DEFAULT_FBP'
-    ? 'STANDARD'
-    : rawPreset;
+  const rawPreset = String(presetId || templateId || 'STANDARD').toUpperCase();
 
   return Object.values(FPB_TEMPLATE_CONFIGS).find((config) =>
-    config.id === normalizedPreset
+    config.id === rawPreset
     || config.presetId === rawPreset
     || config.aliases?.includes(rawPreset)
   ) || FPB_TEMPLATE_CONFIGS.STANDARD;
 }
 
-const standardTemplateMethods = {
-  ensureStandardPresetRuntimeStyles() {
-    return this.getFullPageDesignPreset() === FPB_STANDARD_TEMPLATE_CONFIG.presetId;
-  },
-};
+const standardTemplateMethods = {};
 
-const classicTemplateMethods = {
-  ensureClassicPresetRuntimeStyles() {
-    return this.getFullPageDesignPreset() === FPB_CLASSIC_TEMPLATE_CONFIG.presetId;
-  },
-};
+const classicTemplateMethods = {};
 
-const compactTemplateMethods = {
-  ensureCompactPresetRuntimeStyles() {
-    return this.getFullPageDesignPreset() === FPB_COMPACT_TEMPLATE_CONFIG.presetId;
-  },
-};
+const compactTemplateMethods = {};
 
-const horizontalTemplateMethods = {
-  ensureHorizontalSidePanelSlotRuntimeStyles() {
-    return this.getFullPageDesignPreset() === FPB_HORIZONTAL_TEMPLATE_CONFIG.presetId;
-  },
-};
+const horizontalTemplateMethods = {};
 
 const buildSharedCartLineDisplayProperties = buildCartLineDisplayProperties;
 const buildSharedCartLineSourceProperties = buildCartLineSourceProperties;
@@ -4212,38 +4217,38 @@ applyPersonalizationAddonProducts() {
 buildAddonStepFromPersonalization() {
   const personalizationData = this.selectedBundle?.personalizationData;
   const addonProducts = personalizationData?.addonProducts;
-  if (personalizationData?.isPersonalizationEnabled !== true || addonProducts?.isEnabled !== true) {
+  if (personalizationData?.isPersonalizationEnabled !== true) {
     return null;
   }
 
-  const tiers = Array.isArray(addonProducts.tiers) ? addonProducts.tiers : [];
+  const addonProductsEnabled = addonProducts?.isEnabled === true;
+  const tiers = addonProductsEnabled && Array.isArray(addonProducts.tiers) ? addonProducts.tiers : [];
   const selectedAddonProducts = tiers.flatMap(tier =>
     Array.isArray(tier?.selectedAddonProducts)
       ? tier.selectedAddonProducts.map(product => this.normalizePersonalizationAddonProduct(product))
       : []
   );
-  if (selectedAddonProducts.length === 0) return null;
-
   const firstTier = tiers[0] || {};
+  const tierDiscount = firstTier?.discount || {};
 
   return {
     id: 'personalization-addons',
-    name: personalizationData.personalizeStepText || addonProducts.title || '',
+    name: personalizationData.personalizeStepText || addonProducts?.title || '',
     position: (this.selectedBundle?.steps?.length || 0) + 1,
     minQuantity: 0,
     maxQuantity: selectedAddonProducts.length,
     enabled: true,
     isFreeGift: true,
-    addonLabel: personalizationData.personalizeStepText || addonProducts.title || '',
-    freeGiftName: addonProducts.title || personalizationData.personalizeStepText || '',
-    addonTitle: addonProducts.title || personalizationData.personalizePageSubtext || '',
+    addonLabel: personalizationData.personalizeStepText || addonProducts?.title || '',
+    freeGiftName: addonProducts?.title || personalizationData.personalizeStepText || '',
+    addonTitle: personalizationData.personalizePageSubtext || addonProducts?.title || '',
     addonIconUrl: personalizationData.stepImage || null,
-    addonDisplayFree: Number(firstTier?.discount?.value || 0) >= 100 && firstTier?.discount?.type === 'PERCENTAGE',
+    addonDisplayFree: !addonProductsEnabled || (Number(tierDiscount.value || 0) >= 100 && tierDiscount.type === 'PERCENTAGE'),
     addonUnlockAfterCompletion: true,
-    addonTiers: tiers,
-    addonEligibilityCondition: firstTier?.eligibilityCondition || null,
-    addonDiscount: firstTier?.discount || null,
-    addonMessaging: addonProducts.addonsMessaging || null,
+    addonTiers: addonProductsEnabled ? tiers : undefined,
+    addonEligibilityCondition: addonProductsEnabled ? (firstTier?.eligibilityCondition || null) : null,
+    addonDiscount: addonProductsEnabled ? (firstTier?.discount || null) : null,
+    addonMessaging: addonProductsEnabled ? (addonProducts.addonsMessaging || null) : null,
     displayVariantsAsIndividual: firstTier?.displayVariantsAsIndividualProducts_addons === true,
     StepProduct: selectedAddonProducts,
     products: selectedAddonProducts,
@@ -4584,8 +4589,6 @@ async renderFullPageLayout() {
   this.applyFullPageDesignPresetMarker();
   await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
   this.ensureBundleBannerRuntimeStyles();
-  this.ensureCompactPresetRuntimeStyles();
-  this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
   const contentSection = document.createElement('div');
   contentSection.className = 'full-page-content-section';
@@ -4623,6 +4626,9 @@ async renderFullPageLayout() {
     }
   }
 
+  const categoryRowsBefore = this.createCategorySectionRows(this.currentStepIndex, 'before');
+  if (categoryRowsBefore) contentSection.appendChild(categoryRowsBefore);
+
   const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
   if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
 
@@ -4630,8 +4636,8 @@ async renderFullPageLayout() {
   productGridContainer.className = 'full-page-product-grid-container';
   productGridContainer.innerHTML = this.createProductGridLoadingState();
   contentSection.appendChild(productGridContainer);
-  const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
-  if (categoryRows) contentSection.appendChild(categoryRows);
+  const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
+  if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
 
   this.elements.stepsContainer.appendChild(contentSection);
 
@@ -4666,10 +4672,6 @@ async renderFullPageLayoutWithSidebar() {
   this.applyFullPageDesignPresetMarker();
   await this.ensureFullPageTemplateStylesheet(this.getFullPageDesignPreset());
   this.ensureBundleBannerRuntimeStyles();
-  this.ensureStandardPresetRuntimeStyles();
-  this.ensureClassicPresetRuntimeStyles();
-  this.ensureCompactPresetRuntimeStyles();
-  this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
   if (this.elements.footer) {
     this.elements.footer.style.display = 'none';
@@ -4708,6 +4710,9 @@ async renderFullPageLayoutWithSidebar() {
     contentSection.appendChild(this.createSearchInput());
   }
 
+  const categoryRowsBefore = this.createCategorySectionRows(this.currentStepIndex, 'before');
+  if (categoryRowsBefore) contentSection.appendChild(categoryRowsBefore);
+
   const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
   if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
 
@@ -4723,8 +4728,8 @@ async renderFullPageLayoutWithSidebar() {
   productGridContainer.className = 'full-page-product-grid-container';
   productGridContainer.innerHTML = this.createProductGridLoadingState();
   contentSection.appendChild(productGridContainer);
-  const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
-  if (categoryRows) contentSection.appendChild(categoryRows);
+  const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
+  if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
 
   twoColWrapper.appendChild(contentSection);
 
@@ -4786,15 +4791,19 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
   this._syncMobilePortalThemeVars(sheet);
   const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
   if (usesCompactMobileSummaryTray) {
+    const preset = this.getFullPageDesignPreset();
+    if (preset) {
+      sheet.classList.add(`fpb-preset-${preset.toLowerCase()}`);
+    }
     sheet.classList.add('fpb-mobile-summary-tray');
-    if (this.getFullPageDesignPreset() === 'CLASSIC') {
+    if (preset === 'CLASSIC') {
       sheet.classList.add('fpb-mobile-classic-footer');
     }
     this.compactMobileSummaryTrayExpanded = wasCompactSummaryExpanded || this.compactMobileSummaryTrayExpanded === true;
     this._populateCompactMobileSummaryTray(sheet);
     sheet.classList.add('is-open');
     document.body.classList.add('fpb-compact-mobile-summary-active');
-    document.body.appendChild(sheet);
+    this._mountCompactMobileSummaryTray(sheet);
     return;
   }
 
@@ -4868,6 +4877,15 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
   }
 },
 
+_mountCompactMobileSummaryTray(sheet) {
+  if (this.container?.parentNode) {
+    this.container.insertAdjacentElement('afterend', sheet);
+    return;
+  }
+
+  document.body.appendChild(sheet);
+},
+
 _populateMobileSheet(sheet) {
   sheet.innerHTML = '';
   this._syncMobilePortalThemeVars(sheet);
@@ -4903,7 +4921,7 @@ _syncMobilePortalThemeVars(...elements) {
 
 usesCompactMobileSummaryTray() {
   const preset = this.getFullPageDesignPreset();
-  return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
+  return this.resolveFullPageLayout() === 'footer_side' && (preset === 'STANDARD' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
 },
 };
 
@@ -5281,7 +5299,7 @@ usesSelectedQuantityBadge() {
 _isStandardDesktopSidebar(panel) {
   const preset = this.getFullPageDesignPreset();
   return this.resolveFullPageLayout() === 'footer_side'
-    && (preset === 'DEFAULT' || preset === 'CLASSIC')
+    && (preset === 'STANDARD' || preset === 'CLASSIC')
     && !panel?.classList?.contains('fpb-mobile-bottom-sheet');
 },
 
@@ -5625,19 +5643,12 @@ renderSidePanel(panel) {
             img.alt = '';
             img.width = 40;
             img.height = 40;
-            img.style.objectFit = 'contain';
+            img.className = 'side-panel-product-slot-icon';
             emptySlot.appendChild(img);
           } else {
             const emptyText = document.createElement('span');
+            emptyText.className = 'side-panel-product-slot-placeholder';
             emptyText.textContent = '+';
-            emptyText.style.display = 'flex';
-            emptyText.style.alignItems = 'center';
-            emptyText.style.justifyContent = 'center';
-            emptyText.style.width = '100%';
-            emptyText.style.height = '100%';
-            emptyText.style.fontSize = '24px';
-            emptyText.style.lineHeight = '1';
-            emptyText.style.fontWeight = '700';
             emptySlot.appendChild(emptyText);
           }
           productsContainer.appendChild(emptySlot);
@@ -5691,7 +5702,7 @@ renderSidePanel(panel) {
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'side-panel-btn side-panel-btn-next';
-  const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT' || this.getFullPageDesignPreset() === 'CLASSIC'
+  const nextStepLabel = this.getFullPageDesignPreset() === 'STANDARD' || this.getFullPageDesignPreset() === 'CLASSIC'
     ? this._resolveText('nextButton', 'Next')
     : 'Next Step';
     nextBtn.textContent = (conditionless || isLastStep)
@@ -6410,7 +6421,7 @@ createStandardStepTimeline() {
     : 0;
   const progressLeft = 100 / (entryCount * 2);
   const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
-  const timelineWidth = Math.min(100, entryCount * 30);
+  const timelineWidth = Math.min(100, entryCount * 20);
 
   timeline.style.setProperty('--standard-timeline-count', String(entryCount));
   timeline.style.setProperty('--standard-timeline-visible-count', String(entryCount));
@@ -6815,24 +6826,6 @@ createPromoBanner() {
     banner.style.setProperty('--fpb-promo-banner-bg-image', `url("${String(bgImageUrl).replace(/"/g, '\\"')}")`);
     banner.style.setProperty('--fpb-promo-banner-bg-size', 'cover');
     banner.style.setProperty('--fpb-promo-banner-bg-position', 'center');
-
-    const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
-    if (cropRaw) {
-      try {
-        const crop = JSON.parse(cropRaw);
-        const cw = crop.width / 100;
-        const ch = cw * (3 / 16);
-        const cx = crop.x / 100;
-        const cy = crop.y / 100;
-        const bgSize = `${(1 / cw) * 100}%`;
-        const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
-        const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
-        banner.style.setProperty('--fpb-promo-banner-bg-size', bgSize);
-        banner.style.setProperty('--fpb-promo-banner-bg-position', `${posX}% ${posY}%`);
-      } catch (_e) {
-
-      }
-    }
   }
 
   return banner;
@@ -6995,7 +6988,31 @@ createActiveCategoryTitle(stepIndex) {
 };
 
 const fullPageProductGridMethods = {
-createCategorySectionRows(stepIndex) {
+scrollActiveCategoryTitleIntoView() {
+  if (this.getFullPageDesignPreset?.() !== 'STANDARD') return;
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      const title = this.elements?.stepsContainer?.querySelector('.fpb-step-category-title');
+      if (!title) return;
+
+      const targetTop = title.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: 'smooth',
+      });
+    });
+  });
+},
+
+activateStepCategory(categoryId) {
+  this.activeCollectionId = categoryId;
+  Promise.resolve(this.reRenderFullPage()).then(() => {
+    this.scrollActiveCategoryTitleIntoView();
+  });
+},
+
+createCategorySectionRows(stepIndex, placement = 'all') {
   if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
     return null;
   }
@@ -7005,7 +7022,13 @@ createCategorySectionRows(stepIndex) {
   if (categoryEntries.length <= 1) return null;
 
   const activeCategoryId = this.getActiveStepCategoryId(step);
-  const inactiveCategoryEntries = categoryEntries.filter(entry => entry.id !== activeCategoryId);
+  const activeCategoryIndex = categoryEntries.findIndex(entry => entry.id === activeCategoryId);
+  const inactiveCategoryEntries = categoryEntries.filter((entry, index) => {
+    if (entry.id === activeCategoryId) return false;
+    if (placement === 'before') return index < activeCategoryIndex;
+    if (placement === 'after') return index > activeCategoryIndex;
+    return true;
+  });
   if (inactiveCategoryEntries.length === 0) return null;
 
   const categoryRowsContainer = document.createElement('div');
@@ -7017,8 +7040,7 @@ createCategorySectionRows(stepIndex) {
     categoryRow.className = 'fpb-category-section-row fpb-category-section-row--collapsed';
     categoryRow.textContent = entry.title;
     categoryRow.addEventListener('click', () => {
-      this.activeCollectionId = entry.id;
-      this.reRenderFullPage();
+      this.activateStepCategory(entry.id);
     });
     categoryRowsContainer.appendChild(categoryRow);
   });
@@ -7088,8 +7110,7 @@ createCategoryTabs(stepIndex) {
     }
     tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
     tab.addEventListener('click', () => {
-      this.activeCollectionId = entry.id;
-      this.reRenderFullPage();
+      this.activateStepCategory(entry.id);
     });
     tabsContainer.appendChild(tab);
   });
@@ -7299,7 +7320,7 @@ createProductCard(product, stepIndex) {
 
   const designPreset = this.getFullPageDesignPreset();
   let htmlString;
-  if (designPreset === 'DEFAULT' || designPreset === 'CLASSIC' || designPreset === 'COMPACT' || designPreset === 'HORIZONTAL') {
+  if (designPreset === 'STANDARD' || designPreset === 'CLASSIC' || designPreset === 'COMPACT' || designPreset === 'HORIZONTAL') {
     htmlString = renderSharedProductCard(
       product,
       currentQuantity,
@@ -7394,7 +7415,7 @@ createProductCard(product, stepIndex) {
 
 applyStandardExpandedVariantTitle(cardElement, product) {
   const preset = this.getFullPageDesignPreset();
-  if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
+  if (!['STANDARD', 'HORIZONTAL'].includes(preset)) return;
   if (!cardElement) return;
   if (cardElement.querySelector('[data-bw-card-variant-row="true"]')) return;
 
@@ -8009,13 +8030,17 @@ isStepCompleted(stepIndex) {
 reRenderFullPage() {
   const layout = this.resolveFullPageLayout();
   if (layout === 'footer_side') {
-    this.renderFullPageLayoutWithSidebar();
+    return this.renderFullPageLayoutWithSidebar();
   } else {
-    this.renderFullPageLayout();
+    return this.renderFullPageLayout();
   }
 },
 
 };
+
+function getAddonTiersForStep(step) {
+  return Array.isArray(step?.addonTiers) ? step.addonTiers.filter(Boolean) : [];
+}
 
 const fullPageValidationAddonsMethods = {
 async _sidebarAdvanceToNextStep() {
@@ -8103,7 +8128,12 @@ async _sidebarAdvanceToNextStep() {
 },
 
 canProceedToNextStep() {
-  return this.isStepCompleted(this.currentStepIndex);
+  if (!this.isStepCompleted(this.currentStepIndex)) return false;
+
+  const steps = this.selectedBundle?.steps || [];
+  const nextStep = steps[this.currentStepIndex + 1];
+  if (nextStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
+  return true;
 },
 
 areBundleConditionsMet() {
@@ -8116,7 +8146,21 @@ areBundleConditionsMet() {
 bundleHasNoConditions() {
   if (!this.selectedBundle?.steps?.length) return false;
   return this.selectedBundle.steps.every(step => {
-    if (step.isFreeGift || step.isDefault) return true;
+    if (step.isDefault) return true;
+    if (step.isFreeGift) {
+      const eligibilityValue = Number(step.addonEligibilityCondition?.value) || 0;
+      if (eligibilityValue > 0) return false;
+      const tiers = getAddonTiersForStep(step);
+      if (tiers.length > 0) {
+        return tiers.every(tier => {
+          const tierValue = Number(tier.eligibilityCondition?.value) || 0;
+          if (tierValue > 0) return false;
+          if (Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0) return false;
+          return true;
+        });
+      }
+      return true;
+    }
     return !step.conditionType && !step.conditionOperator && step.conditionValue == null;
   });
 },
@@ -8151,8 +8195,55 @@ canNavigateToStep(targetStepIndex) {
   return true;
 },
 
+getAddonTiers(step) {
+  return getAddonTiersForStep(step);
+},
+
+getAddonTierEvaluation(step) {
+  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const directTier = step?.addonEligibilityCondition || step?.addonDiscount
+    ? [{
+        eligibilityCondition: step?.addonEligibilityCondition || {},
+        discount: step?.addonDiscount || {},
+      }]
+    : [];
+  const tiers = getAddonTiersForStep(step);
+  const candidates = tiers.length > 0 ? tiers : directTier;
+  if (candidates.length === 0) {
+    return { tier: null, totalPrice, totalQuantity, currentValue: totalQuantity };
+  }
+
+  const withState = candidates.map((tier, index) => {
+    const condition = tier?.eligibilityCondition || {};
+    const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
+    const conditionValue = Number(condition.value || 0);
+    const threshold = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
+    const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
+    return { tier, index, conditionType, threshold, currentValue, isEligible: currentValue >= threshold };
+  });
+
+  const eligible = withState
+    .filter(candidate => candidate.isEligible)
+    .sort((a, b) => (a.threshold - b.threshold) || (a.index - b.index));
+  const next = withState
+    .filter(candidate => !candidate.isEligible)
+    .sort((a, b) => (a.threshold - b.threshold) || (a.index - b.index));
+  const selected = eligible[eligible.length - 1] || next[0] || withState[0];
+
+  return {
+    tier: selected?.tier || null,
+    totalPrice,
+    totalQuantity,
+    currentValue: selected?.currentValue ?? totalQuantity,
+  };
+},
+
 _getFreeGiftRemainingCount() {
-  if (this.freeGiftStep?.addonEligibilityCondition || Array.isArray(this.freeGiftStep?.addonTiers)) {
+  if (this.freeGiftStep?.addonEligibilityCondition || getAddonTiersForStep(this.freeGiftStep).length > 0) {
     return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
   }
   const steps = this.selectedBundle?.steps || [];
@@ -8167,19 +8258,17 @@ _getFreeGiftRemainingCount() {
 },
 
 getAddonEligibilityState(step) {
-  const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
-  const condition = step?.addonEligibilityCondition || tier?.eligibilityCondition || {};
-  const discount = step?.addonDiscount || tier?.discount || {};
+  const evaluation = typeof this.getAddonTierEvaluation === 'function'
+    ? this.getAddonTierEvaluation(step)
+    : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
+  const tier = evaluation.tier;
+  const condition = tier?.eligibilityCondition || step?.addonEligibilityCondition || {};
+  const discount = tier?.discount || step?.addonDiscount || {};
   const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
   const conditionValue = Number(condition.value || 0);
-  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
-    this.selectedProducts,
-    this.stepProductData,
-    this.selectedBundle?.steps
-  );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const thresholdCents = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
-  const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
+  const currentValue = evaluation.currentValue;
   const remainingRaw = Math.max(0, thresholdCents - currentValue);
   const remainingQuantity = conditionType === 'AMOUNT' ? 0 : remainingRaw;
   const remainingAmount = conditionType === 'AMOUNT' ? remainingRaw : 0;
@@ -8203,8 +8292,11 @@ getAddonEligibilityState(step) {
 },
 
 getAddonLineDiscount(step) {
-  const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
-  const discount = step?.addonDiscount || tier?.discount || {};
+  const evaluation = typeof this.getAddonTierEvaluation === 'function'
+    ? this.getAddonTierEvaluation(step)
+    : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
+  const tier = evaluation.tier;
+  const discount = tier?.discount || step?.addonDiscount || {};
   const type = String(discount.type || '').toUpperCase();
   const value = Number(discount.value || 0);
   if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
@@ -9577,6 +9669,13 @@ processProductsForStep(products, step) {
   });
 },
 
+/**
+ * Look up real stock for a variant in a step's product data.
+ * Returns:
+ *   - available: positive numeric remaining stock, or null when uncapped
+ *   - outOfStock: true only when Shopify marks the variant unavailable
+ *   - acceptsBackorder: true when Shopify marks the variant as backorderable
+ */
 isVariantOutOfStock(product) {
   if (!product) {
     return false;
@@ -10600,13 +10699,12 @@ getFullPageDesignPreset(bundle = this.selectedBundle) {
     bundle?.bundleDesignPresetId
     || bundle?.bundleDesignPreset
     || bundle?.templateId
-    || 'DEFAULT';
-  if (typeof rawPresetId !== 'string') return 'DEFAULT';
+    || 'STANDARD';
+  if (typeof rawPresetId !== 'string') return 'STANDARD';
 
   const preset = rawPresetId.trim().toUpperCase();
-  if (preset === 'STANDARD') return 'DEFAULT';
-  if (preset === 'DEFAULT_FBP') return 'DEFAULT';
-  return preset || 'DEFAULT';
+  if (['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset)) return preset;
+  return 'STANDARD';
 },
 
 resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
@@ -10622,10 +10720,10 @@ resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
 },
 
 ensureFullPageTemplateStylesheet(preset) {
-  const presetKey = String(preset || 'DEFAULT').trim().toUpperCase() || 'DEFAULT';
-  const templateKey = presetKey === 'DEFAULT' ? 'STANDARD' : presetKey;
+  const presetKey = String(preset || 'STANDARD').trim().toUpperCase() || 'STANDARD';
+  const templateKey = presetKey;
   const urls = window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ || {};
-  const href = urls[presetKey] || urls[templateKey] || urls.DEFAULT || urls.STANDARD;
+  const href = urls[presetKey] || urls.STANDARD;
 
   if (!href || typeof document === 'undefined') return Promise.resolve();
 
@@ -10715,7 +10813,7 @@ applyFullPageDesignPresetMarker() {
 
   const fullPageTemplate = this.getFullPageTemplate();
   const fullPageDesignPreset = this.getFullPageDesignPreset();
-  const fullPageTabStyle = fullPageDesignPreset === 'DEFAULT' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
+  const fullPageTabStyle = fullPageDesignPreset === 'STANDARD' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
   const presetClass = `fpb-preset-${fullPageDesignPreset.toLowerCase()}`;
 
   this.container.dataset.fpbTemplateType = fullPageTemplate;
@@ -10727,14 +10825,14 @@ applyFullPageDesignPresetMarker() {
   this.elements.stepsContainer.dataset.fpbTabStyle = fullPageTabStyle;
   const cardCtaMode = this.resolveFullPageCardCtaMode();
   this.elements.stepsContainer.dataset.fpbCardCtaMode = cardCtaMode;
-  this.container.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+  this.container.classList.remove('fpb-preset-standard', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
   this.container.classList.add(presetClass);
   this.container.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
-  this.container.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
-  this.elements.stepsContainer.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+  this.container.classList.toggle('fpb-d', fullPageDesignPreset === 'STANDARD');
+  this.elements.stepsContainer.classList.remove('fpb-preset-standard', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
   this.elements.stepsContainer.classList.add(presetClass);
   this.elements.stepsContainer.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
-  this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
+  this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'STANDARD');
   this.elements.stepsContainer.classList.toggle('fpb-i', cardCtaMode === 'icon');
   void this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
 },
@@ -10837,7 +10935,7 @@ async switchTier(bundleId, tierIndex) {
 _mergeBundleSettings(settings) {
   if (!settings || !this.selectedBundle) return;
   const keys = [
-    'promoBannerBgImage', 'promoBannerBgImageCrop',
+    'promoBannerBgImage',
     'bundleBannerDesktopUrl', 'bundleBannerMobileUrl', 'loadingGif',
     'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
   ];
@@ -10990,20 +11088,6 @@ showErrorUI(_error) {
   `;
 },
 
-/**
- * Fire-and-forget error report to the server so AppLogger can track widget failures.
- * Does NOT await — never blocks the render path.
- */
-
-/**
- * Background layout refresh — runs after initial render.
- *
- * In compact-marker mode, we always fetch the bundle via API before render,
- * so this refresh path is effectively a no-op for initialized API loads.
- * It is preserved for legacy cached payload paths and exits early when not needed.
- *
- * Fire-and-forget: all errors are silently swallowed.
- */
 async _scheduleLayoutRefresh() {
   const bundleId = this.container.dataset.bundleId;
   if (!bundleId) return;
@@ -11058,7 +11142,7 @@ _reportError(error) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
       keepalive: true,
-    }).catch(() => { /* best-effort — ignore if proxy is also down */ });
+    }).catch(() => {  });
   } catch (_) {
 
   }
@@ -11085,78 +11169,12 @@ _recordView() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ shop }),
       keepalive: true,
-    }).catch(() => { /* best-effort */ });
+    }).catch(() => {  });
   } catch (_) {
 
   }
 },
 };
-
-/**
- * Bundle Widget - Full Page Version
- *
- * This widget is specifically for full page bundles with horizontal tabs layout.
- * It imports shared components and utilities from bundle-widget-components.js.
- *
- * ============================================================================
- * ARCHITECTURE ROLE
- * ============================================================================
- * This is the THIRD file loaded for FULL PAGE bundles:
- * 1. bundle-widget.js (loader) - Detects bundle type as 'full_page'
- * 2. bundle-widget-components.js - Provides shared utilities
- * 3. THIS FILE (full-page widget) - Implements full page UI/UX
- *
- * ============================================================================
- * WHEN THIS FILE IS LOADED
- * ============================================================================
- * This file loads when:
- * - Container explicitly has data-bundle-type="full_page"
- *
- * Example container:
- * <div id="bundle-builder-app" data-bundle-type="full_page"></div>
- *
- * NOTE: This is OPT-IN only. Without the attribute, product-page widget loads instead.
- *
- * ============================================================================
- * UI LAYOUT: HORIZONTAL TABS
- * ============================================================================
- * - Steps displayed as horizontal tabs at the top
- * - All tabs visible simultaneously (overview of all steps)
- * - Click any tab to jump between steps
- * - Modal overlay for product selection
- * - Progress tracked with tab completion indicators
- * - Best for: Dedicated bundle pages with full horizontal space
- *
- * ============================================================================
- * SHARED CODE IMPORTS
- * ============================================================================
- * All business logic is imported from bundle-widget-components.js:
- * - Currency formatting
- * - Price calculations
- * - Discount logic
- * - Product card rendering
- * - Toast notifications
- *
- * This file ONLY contains:
- * - Full page specific UI rendering
- * - Horizontal tabs layout management
- * - Modal-based product selection
- * - Event handlers for full page flow
- *
- * ============================================================================
- * UNIFIED DESIGN WITH PRODUCT PAGE WIDGET
- * ============================================================================
- * Both widgets:
- * - Use the same CSS variables (from unified design settings API)
- * - Import the same utilities (from bundle-widget-components.js)
- * - Implement the same business logic (pricing, discounts, cart)
- * - Differ ONLY in UI layout and interaction patterns
- *
- * Result: Merchants configure design ONCE, applies to BOTH bundle types
- *
- * @version 1.0.0
- * @author Wolfpack Team
- */
 
 class BundleWidgetFullPage {
 
@@ -11312,10 +11330,6 @@ Object.assign(
   fullPageRuntimeCartSettingsMethods,
   fullPageTierFloatingRuntimeMethods,
   bundleLevelCssMethods,
-  standardTemplateMethods,
-  classicTemplateMethods,
-  compactTemplateMethods,
-  horizontalTemplateMethods,
 );
 
 if (document.readyState === 'loading') {

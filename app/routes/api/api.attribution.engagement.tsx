@@ -19,6 +19,7 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-r
 import db from "../../db.server";
 import { verifyAppProxyRequest } from "../../lib/app-proxy.server";
 import { AppLogger } from "../../lib/logger";
+import { recordBusinessEvent } from "../../services/app-events.server";
 
 type EngagementPayload = {
   shopId?: unknown;
@@ -89,6 +90,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
+  let eventContext: {
+    shopDomain: string;
+    bundleId: string | null;
+    bundleType: string | null;
+  } = {
+    shopDomain: proxyShop,
+    bundleId: null,
+    bundleType: null,
+  };
+
   try {
     const payload = (await request.json()) as EngagementPayload | null;
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
@@ -117,6 +128,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const normalizedLandingPage = sanitizeOptionalString(landingPage);
     const normalizedUserAgent = sanitizeOptionalString(userAgent);
     const normalizedEventName = sanitizeEventName(eventName);
+    eventContext = {
+      shopDomain: normalizedShopId ?? proxyShop,
+      bundleId: normalizedBundleId,
+      bundleType: normalizedBundleType,
+    };
 
     if (
       !normalizedShopId ||
@@ -124,6 +140,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       !normalizedSessionId ||
       !normalizedEventName
     ) {
+      await recordBusinessEvent({
+        eventHandle: "engagement_failed",
+        shopDomain: proxyShop,
+        bundleId: normalizedBundleId,
+        bundleType: normalizedBundleType,
+        surface: "storefront",
+        actor: "buyer",
+        result: "failure",
+        errorCode: "invalid_payload",
+        sendToShopify: false,
+      });
       return json(
         { error: "Missing or invalid required field(s): shopId, bundleId, sessionId, eventName" },
         { status: 400, headers: buildCorsHeaders(request) },
@@ -171,11 +198,37 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       eventName: normalizedEventName,
     });
 
+    await recordBusinessEvent({
+      eventHandle: "bundle_engaged",
+      shopDomain: normalizedShopId,
+      bundleId: normalizedBundleId,
+      bundleType: normalizedBundleType,
+      surface: "storefront",
+      actor: "buyer",
+      result: "success",
+      attributes: {
+        event_name: normalizedEventName,
+        preset_id: normalizedPresetId,
+      },
+      sendToShopify: false,
+    });
+
     return json({ ok: true }, { headers: buildCorsHeaders(request) });
   } catch (error) {
     AppLogger.error("[ENGAGEMENT] Failed to record bundle engagement", {
       component: "api.attribution.engagement",
     }, error);
+    await recordBusinessEvent({
+      eventHandle: "engagement_failed",
+      shopDomain: eventContext.shopDomain,
+      bundleId: eventContext.bundleId,
+      bundleType: eventContext.bundleType,
+      surface: "storefront",
+      actor: "buyer",
+      result: "failure",
+      errorCode: "persist_failed",
+      sendToShopify: false,
+    });
     return json(
       { error: "Failed to record engagement" },
       { status: 500, headers: buildCorsHeaders(request) }

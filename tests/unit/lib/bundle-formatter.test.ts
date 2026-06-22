@@ -10,7 +10,6 @@ const makeBundle = (overrides: Record<string, unknown> = {}) => ({
   fullPageLayout: "FOOTER_BOTTOM",
   shopifyProductId: "gid://shopify/Product/123",
   promoBannerBgImage: null,
-  promoBannerBgImageCrop: null,
   loadingGif: null,
   tierConfig: null,
   showStepTimeline: null,
@@ -76,7 +75,7 @@ describe("formatBundleForWidget", () => {
     }) as any);
 
     expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
-    expect(result.bundleDesignPresetId).toBe("DEFAULT");
+    expect(result.bundleDesignPresetId).toBe("STANDARD");
     expect(result.bundleDesignTemplateData).toBeNull();
   });
 
@@ -240,7 +239,7 @@ describe("formatBundleForWidget", () => {
     }) as any);
 
     expect(result.steps[0].products).toEqual([]);
-    expect(result.steps[0].categories[0].products).toEqual([
+    expect((result.steps[0].categories as any[])[0].products).toEqual([
       expect.objectContaining({
         id: "gid://shopify/Product/9427287703811",
         title: "123Luxury Armor Matte Case",
@@ -386,11 +385,11 @@ describe("formatBundleForWidget", () => {
   it("includes full-page design fields without a product-page template data wrapper", () => {
     const result = formatBundleForWidget(makeBundle({
       bundleDesignTemplate: "FBP_SIDE_FOOTER",
-      bundleDesignPresetId: "DEFAULT",
+      bundleDesignPresetId: "STANDARD",
     }) as any);
 
     expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
-    expect(result.bundleDesignPresetId).toBe("DEFAULT");
+    expect(result.bundleDesignPresetId).toBe("STANDARD");
     expect(result.bundleDesignTemplateData).toBeNull();
   });
 

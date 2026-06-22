@@ -105,7 +105,7 @@ function makeContext(preset: string, progressType: 'simple' | 'step_based') {
     },
     currentStepIndex: 0,
     _isStandardDesktopSidebar: (panel: FakeElement) => {
-      return ['DEFAULT', 'CLASSIC'].includes(preset)
+      return ['STANDARD', 'CLASSIC'].includes(preset)
         && !panel.classList.contains('fpb-mobile-bottom-sheet');
     },
     getDiscountInfoWithSelectedAddonDiscount: (discountInfo: unknown) => discountInfo,
@@ -151,7 +151,7 @@ function makeContext(preset: string, progressType: 'simple' | 'step_based') {
 }
 
 describe('FPB summary sidebar discount progress', () => {
-  it.each(['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
+  it.each(['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
     'renders step-based progress in the %s summary sidebar through the shared helper',
     (preset) => {
       const panel = document.createElement('aside');
@@ -171,7 +171,7 @@ describe('FPB summary sidebar discount progress', () => {
     },
   );
 
-  it.each(['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
+  it.each(['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
     'renders simple progress in the %s summary sidebar through the shared helper',
     (preset) => {
       const panel = document.createElement('aside');

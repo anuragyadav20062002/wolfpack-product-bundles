@@ -26,11 +26,12 @@ describe("settings language runtime", () => {
 
   it("builds an EB-shaped language document and direct storefront runtime", () => {
     const runtime = buildSettingsLanguageRuntime(payload);
+    const englishGeneral = runtime.settingsLanguage.languageData.en.general as Record<string, { value: string }>;
 
     expect(runtime.buttonAddToCartText).toBe("Add To Gift Box");
     expect(runtime.settingsLanguage.languageMode).toBe("MULTIPLE");
-    expect(runtime.settingsLanguage.languageData.en.general.addToBoxButtonText.value).toBe("Add To Gift Box");
-    expect(runtime.settingsLanguage.languageData.en.general.addToCartButtonText.value).toBe("Checkout Bundle");
+    expect(englishGeneral.addToBoxButtonText.value).toBe("Add To Gift Box");
+    expect(englishGeneral.addToCartButtonText.value).toBe("Checkout Bundle");
     expect(runtime.settingsLanguage.languageData.sharedComponents.en.cartAndCheckout.bundleContainsLabel.value).toBe("Bundle Items");
     expect(runtime.settingsLanguage.ppbCustomTextSettings.productCardAddBtnText).toBe("Pick Product");
     expect(runtime.settingsLanguage.ppbCustomTextSettings.addToCartBundleBtnText).toBe("Add Pack");

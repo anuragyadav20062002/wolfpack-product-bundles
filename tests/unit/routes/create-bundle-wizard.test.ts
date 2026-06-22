@@ -1,4 +1,4 @@
-import { action } from "../../../app/routes/app/app.bundles.create/route";
+import { action, headers, links } from "../../../app/routes/app/app.bundles.create/route";
 import { authenticate } from "../../../app/shopify.server";
 import { handleCreateBundle } from "../../../app/routes/app/app.dashboard/handlers/handlers.server";
 
@@ -49,6 +49,33 @@ beforeEach(() => {
 });
 
 describe("app.bundles.create action", () => {
+  it("preloads first-viewport bundle type thumbnails for LCP", () => {
+    const preloads = links();
+    const responseHeaders = headers({} as any) as Record<string, string>;
+
+    expect(preloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        rel: "preload",
+        as: "image",
+        href: "/ppb.avif",
+        imageSrcSet: "/ppb.avif 320w",
+        imageSizes: "320px",
+        fetchpriority: "high",
+      }),
+      expect.objectContaining({
+        rel: "preload",
+        as: "image",
+        href: "/fpb.avif",
+        imageSrcSet: "/fpb.avif 320w",
+        imageSizes: "320px",
+        fetchpriority: "high",
+      }),
+    ]));
+    expect(responseHeaders.Link).toContain("</ppb.avif>; rel=preload; as=image");
+    expect(responseHeaders.Link).toContain("</fpb.avif>; rel=preload; as=image");
+    expect(responseHeaders.Link).toContain("fetchpriority=high");
+  });
+
   it("redirects product-page creates to the edit configure page with first-load signal", async () => {
     mockHandleCreateBundle.mockResolvedValue({
       json: () => ({

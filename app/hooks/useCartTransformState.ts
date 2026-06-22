@@ -6,8 +6,16 @@
  * - Form inputs for bundle creation
  */
 
-import { useState, useCallback } from "react";
-import { appState as appStateService } from "../services/app.state.service";
+import { useCallback } from "react";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  closeCartTransformModal,
+  openCartTransformModal,
+  resetCartTransformForm,
+  setCartTransformDescription,
+  setCartTransformName,
+} from "../store/slices/adminRouteStateSlice";
+import { closeModal as closeReduxModal, openModal as openReduxModal } from "../store/slices/uiSlice";
 
 // ============================================
 // TYPES
@@ -23,32 +31,33 @@ export interface CreateBundleFormState {
 // ============================================
 
 export function useCartTransformState() {
-  // Create bundle modal state
-  const [modalOpen, setModalOpen] = useState(false);
-
-  // Create bundle form state
-  const [bundleName, setBundleName] = useState("");
-  const [description, setDescription] = useState("");
+  const dispatch = useAppDispatch();
+  const { modalOpen, bundleName, description } = useAppSelector((state) => state.adminRouteState.cartTransform);
 
   // Open create bundle modal
   const openModal = useCallback(() => {
-    setModalOpen(true);
-    appStateService.openModal('cartTransform_createBundle');
-  }, []);
+    dispatch(openCartTransformModal());
+    dispatch(openReduxModal("cartTransform_createBundle"));
+  }, [dispatch]);
 
   // Close create bundle modal and reset form
   const closeModal = useCallback(() => {
-    setModalOpen(false);
-    setBundleName("");
-    setDescription("");
-    appStateService.closeModal('cartTransform_createBundle');
-  }, []);
+    dispatch(closeCartTransformModal());
+    dispatch(closeReduxModal("cartTransform_createBundle"));
+  }, [dispatch]);
 
   // Reset form after successful submission
   const resetForm = useCallback(() => {
-    setBundleName("");
-    setDescription("");
-  }, []);
+    dispatch(resetCartTransformForm());
+  }, [dispatch]);
+
+  const setBundleName = useCallback((value: string) => {
+    dispatch(setCartTransformName(value));
+  }, [dispatch]);
+
+  const setDescription = useCallback((value: string) => {
+    dispatch(setCartTransformDescription(value));
+  }, [dispatch]);
 
   // Get form data for submission
   const getFormData = useCallback(() => {

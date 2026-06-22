@@ -408,9 +408,9 @@ isStepCompleted(stepIndex) {
 reRenderFullPage() {
   const layout = this.resolveFullPageLayout();
   if (layout === 'footer_side') {
-    this.renderFullPageLayoutWithSidebar();
+    return this.renderFullPageLayoutWithSidebar();
   } else {
-    this.renderFullPageLayout();
+    return this.renderFullPageLayout();
   }
 },
 

@@ -4,7 +4,8 @@
  * .fpb-preset-classic or CLASSIC root attributes.
  */
 
-[data-fpb-design-preset="CLASSIC"] {
+.fpb-preset-classic,
+[data-bundle-type="full_page"][data-fpb-design-preset="CLASSIC"] {
   width: min(100vw, 1536px);
   max-width: 1536px;
   margin-left: calc(50% - min(50vw, 768px));

@@ -231,7 +231,7 @@ export class CachedSessionStorage {
   }
 
   private rowToSession(row: SessionRow): Session {
-    const sessionParams = [
+    const sessionParamsInput: Array<[string, string | number | boolean | null]> = [
       ["id", row.id],
       ["shop", row.shop],
       ["state", row.state],
@@ -247,7 +247,11 @@ export class CachedSessionStorage {
       ["locale", row.locale],
       ["collaborator", row.collaborator],
       ["emailVerified", row.emailVerified],
-    ].filter((entry): entry is [string, string | number | boolean] => entry[1] !== null);
+    ];
+    const sessionParams = sessionParamsInput.filter(
+      (entry): entry is [string, string | number | boolean] =>
+        entry[1] !== null,
+    );
 
     const session = Session.fromPropertyArray(sessionParams, true);
     const offlineSession = session as SessionWithRefreshFields;

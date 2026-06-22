@@ -13,6 +13,7 @@ import { PLANS } from "../../../constants/plans";
 import { BundleStatus } from "../../../constants/bundle";
 import { SubscriptionStatus as SubscriptionStatusValue } from "../../../constants/subscription";
 import { ERROR_MESSAGES } from "../../../constants/errors";
+import { getCachedShopifyShopGid, recordBusinessEvent } from "../../app-events.server";
 import type { SubscriptionStatus } from "@prisma/client";
 import type { ShopifySubscriptionStatus, WebhookProcessResult } from "../types";
 
@@ -43,6 +44,7 @@ export async function handleSubscriptionUpdate(
   shopDomain: string,
   payload: any
 ): Promise<WebhookProcessResult> {
+  const shopifyShopGid = await getCachedShopifyShopGid(shopDomain);
   try {
     const shopifySubscriptionId = payload.app_subscription?.admin_graphql_api_id;
     const status: ShopifySubscriptionStatus = payload.app_subscription?.status;
@@ -51,6 +53,17 @@ export async function handleSubscriptionUpdate(
     const currentPeriodEnd = payload.app_subscription?.current_period_end;
 
     if (!shopifySubscriptionId) {
+      await recordBusinessEvent({
+        eventHandle: "subscription_webhook_failed",
+        shopDomain,
+        shopifyShopGid,
+        surface: "webhook",
+        actor: "webhook",
+        routeFamily: "billing_webhook",
+        result: "failure",
+        errorCode: "missing_subscription_id",
+        attributes: { topic: "APP_SUBSCRIPTIONS_UPDATE" },
+      });
       return {
         success: false,
         message: "Missing subscription ID in webhook payload",
@@ -69,6 +82,17 @@ export async function handleSubscriptionUpdate(
     });
 
     if (!shop) {
+      await recordBusinessEvent({
+        eventHandle: "subscription_webhook_failed",
+        shopDomain,
+        shopifyShopGid,
+        surface: "webhook",
+        actor: "webhook",
+        routeFamily: "billing_webhook",
+        result: "failure",
+        errorCode: "shop_not_found",
+        attributes: { topic: "APP_SUBSCRIPTIONS_UPDATE" },
+      });
       return {
         success: false,
         message: ERROR_MESSAGES.SHOP_NOT_FOUND,
@@ -122,11 +146,10 @@ export async function handleSubscriptionUpdate(
     }
 
     // Handle downgrade to free plan
-    const shouldDowngrade = [
-      SubscriptionStatusValue.cancelled,
-      SubscriptionStatusValue.expired,
-      SubscriptionStatusValue.frozen
-    ].includes(mappedStatus);
+    const shouldDowngrade =
+      mappedStatus === SubscriptionStatusValue.cancelled ||
+      mappedStatus === SubscriptionStatusValue.expired ||
+      mappedStatus === SubscriptionStatusValue.frozen;
 
     if (shouldDowngrade && subscription.plan !== "free") {
       AppLogger.info("Downgrading subscription to free plan", {
@@ -227,6 +250,20 @@ export async function handleSubscriptionUpdate(
       }
     }
 
+    await recordBusinessEvent({
+      eventHandle: "subscription_webhook_processed",
+      shopDomain,
+      shopifyShopGid,
+      surface: "webhook",
+      actor: "webhook",
+      routeFamily: "billing_webhook",
+      result: "success",
+      attributes: {
+        topic: "APP_SUBSCRIPTIONS_UPDATE",
+        status: mappedStatus,
+      },
+    });
+
     return {
       success: true,
       message: `Subscription updated to ${mappedStatus}`
@@ -238,6 +275,20 @@ export async function handleSubscriptionUpdate(
       operation: "handleSubscriptionUpdate"
     }, error);
 
+    await recordBusinessEvent({
+      eventHandle: "subscription_webhook_failed",
+      shopDomain,
+      shopifyShopGid,
+      surface: "webhook",
+      actor: "webhook",
+      routeFamily: "billing_webhook",
+      result: "failure",
+      errorCode: "exception",
+      attributes: {
+        topic: "APP_SUBSCRIPTIONS_UPDATE",
+        error_message_safe: error instanceof Error ? error.message : "Unknown error",
+      },
+    });
     return {
       success: false,
       message: "Error handling subscription update",
@@ -254,10 +305,22 @@ export async function handleSubscriptionCancelled(
   shopDomain: string,
   payload: any
 ): Promise<WebhookProcessResult> {
+  const shopifyShopGid = await getCachedShopifyShopGid(shopDomain);
   try {
     const shopifySubscriptionId = payload.app_subscription?.admin_graphql_api_id;
 
     if (!shopifySubscriptionId) {
+      await recordBusinessEvent({
+        eventHandle: "subscription_webhook_failed",
+        shopDomain,
+        shopifyShopGid,
+        surface: "webhook",
+        actor: "webhook",
+        routeFamily: "billing_webhook",
+        result: "failure",
+        errorCode: "missing_subscription_id",
+        attributes: { topic: "APP_SUBSCRIPTIONS_CANCELLED" },
+      });
       return {
         success: false,
         message: "Missing subscription ID in webhook payload",
@@ -276,6 +339,17 @@ export async function handleSubscriptionCancelled(
     });
 
     if (!shop) {
+      await recordBusinessEvent({
+        eventHandle: "subscription_webhook_failed",
+        shopDomain,
+        shopifyShopGid,
+        surface: "webhook",
+        actor: "webhook",
+        routeFamily: "billing_webhook",
+        result: "failure",
+        errorCode: "shop_not_found",
+        attributes: { topic: "APP_SUBSCRIPTIONS_CANCELLED" },
+      });
       return {
         success: false,
         message: ERROR_MESSAGES.SHOP_NOT_FOUND,
@@ -406,6 +480,20 @@ export async function handleSubscriptionCancelled(
       operation: "handleSubscriptionCancelled"
     }, { shop: shopDomain, subscriptionId: subscription.id });
 
+    await recordBusinessEvent({
+      eventHandle: "subscription_webhook_processed",
+      shopDomain,
+      shopifyShopGid,
+      surface: "webhook",
+      actor: "webhook",
+      routeFamily: "billing_webhook",
+      result: "success",
+      attributes: {
+        topic: "APP_SUBSCRIPTIONS_CANCELLED",
+        status: "cancelled",
+      },
+    });
+
     return {
       success: true,
       message: "Subscription cancelled and downgraded to free plan"
@@ -417,6 +505,20 @@ export async function handleSubscriptionCancelled(
       operation: "handleSubscriptionCancelled"
     }, error);
 
+    await recordBusinessEvent({
+      eventHandle: "subscription_webhook_failed",
+      shopDomain,
+      shopifyShopGid,
+      surface: "webhook",
+      actor: "webhook",
+      routeFamily: "billing_webhook",
+      result: "failure",
+      errorCode: "exception",
+      attributes: {
+        topic: "APP_SUBSCRIPTIONS_CANCELLED",
+        error_message_safe: error instanceof Error ? error.message : "Unknown error",
+      },
+    });
     return {
       success: false,
       message: "Error handling subscription cancellation",

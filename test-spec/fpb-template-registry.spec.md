@@ -11,7 +11,7 @@ Introduce a full-page template registry that normalizes the four FPB target pres
 
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | Standard aliases | `DEFAULT` or `STANDARD` | `STANDARD` config | Existing DEFAULT runtime attr preserved. |
+| 1 | Standard preset | `STANDARD` | `STANDARD` config | Standard is canonical. |
 | 2 | Other presets | `CLASSIC`, `COMPACT`, `HORIZONTAL` | Matching config | All FPB templates included. |
 | 3 | Config exports | Registry exports | Four target FPB configs | Matches plan scope. |
 | 4 | Build inclusion | Build script | Registry before installers | Keeps resolver available in bundled widget. |

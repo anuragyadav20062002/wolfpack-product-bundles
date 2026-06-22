@@ -2,6 +2,7 @@ import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { BillingService } from "../../services/billing.server";
 import { AppLogger } from "../../lib/logger";
+import { ensureShopIdentity, recordBusinessEvent } from "../../services/app-events.server";
 
 /**
  * API Route: Create Subscription
@@ -20,6 +21,7 @@ import { AppLogger } from "../../lib/logger";
 export async function action({ request }: ActionFunctionArgs) {
   const { admin, session } = await requireAdminSession(request);
   const shopDomain = session.shop;
+  const shopifyShopGid = await ensureShopIdentity(admin, shopDomain);
 
   try {
     const body = await request.json();
@@ -60,6 +62,19 @@ export async function action({ request }: ActionFunctionArgs) {
       operation: "action"
     }, { shop: shopDomain, plan });
 
+    await recordBusinessEvent({
+      eventHandle: "billing_upgrade_started",
+      shopDomain,
+      shopifyShopGid,
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "billing",
+      attributes: {
+        from_plan: "free",
+        to_plan: plan,
+      },
+    });
+
     const result = await BillingService.createSubscription(admin, {
       shopDomain,
       plan,
@@ -68,6 +83,20 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     if (!result.success) {
+      await recordBusinessEvent({
+        eventHandle: "billing_upgrade_failed",
+        shopDomain,
+        shopifyShopGid,
+        surface: "admin",
+        actor: "merchant",
+        routeFamily: "billing",
+        result: "failure",
+        errorCode: "subscription_create_failed",
+        attributes: {
+          to_plan: plan,
+          error_message_safe: result.error ?? "Subscription creation failed",
+        },
+      });
       return json(
         {
           success: false,
@@ -76,6 +105,20 @@ export async function action({ request }: ActionFunctionArgs) {
         { status: 400 }
       );
     }
+
+    await recordBusinessEvent({
+      eventHandle: "billing_upgraded",
+      shopDomain,
+      shopifyShopGid,
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "billing",
+      result: "success",
+      attributes: {
+        from_plan: "free",
+        to_plan: plan,
+      },
+    });
 
     return json({
       success: true,
@@ -88,6 +131,20 @@ export async function action({ request }: ActionFunctionArgs) {
       component: "api.billing.create",
       operation: "action"
     }, error);
+
+    await recordBusinessEvent({
+      eventHandle: "billing_upgrade_failed",
+      shopDomain,
+      shopifyShopGid,
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "billing",
+      result: "failure",
+      errorCode: "exception",
+      attributes: {
+        error_message_safe: error instanceof Error ? error.message : "Unknown error",
+      },
+    });
 
     return json(
       {

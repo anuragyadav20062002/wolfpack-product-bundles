@@ -419,7 +419,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -432,7 +432,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -454,7 +454,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -474,7 +474,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -496,7 +496,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -507,7 +507,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -522,7 +522,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -535,7 +535,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -551,7 +551,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -569,7 +569,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -581,7 +581,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -593,7 +593,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -615,7 +615,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -625,7 +625,7 @@
 }
 
 .layout-sidebar:is(
-    [data-fpb-design-preset="DEFAULT"],
+    [data-fpb-design-preset="STANDARD"],
     [data-fpb-design-preset="CLASSIC"],
     [data-fpb-design-preset="COMPACT"],
     [data-fpb-design-preset="HORIZONTAL"]
@@ -636,7 +636,7 @@
 
 @media (max-width: 767px) {
   .layout-sidebar:is(
-      [data-fpb-design-preset="DEFAULT"],
+      [data-fpb-design-preset="STANDARD"],
       [data-fpb-design-preset="CLASSIC"],
       [data-fpb-design-preset="COMPACT"],
       [data-fpb-design-preset="HORIZONTAL"]
@@ -646,7 +646,7 @@
   }
 
   .layout-sidebar:is(
-      [data-fpb-design-preset="DEFAULT"],
+      [data-fpb-design-preset="STANDARD"],
       [data-fpb-design-preset="CLASSIC"],
       [data-fpb-design-preset="COMPACT"],
       [data-fpb-design-preset="HORIZONTAL"]
@@ -659,7 +659,7 @@
   }
 
   .layout-sidebar:is(
-      [data-fpb-design-preset="DEFAULT"],
+      [data-fpb-design-preset="STANDARD"],
       [data-fpb-design-preset="CLASSIC"],
       [data-fpb-design-preset="COMPACT"],
       [data-fpb-design-preset="HORIZONTAL"]
@@ -670,7 +670,7 @@
   }
 
   .layout-sidebar:is(
-      [data-fpb-design-preset="DEFAULT"],
+      [data-fpb-design-preset="STANDARD"],
       [data-fpb-design-preset="CLASSIC"],
       [data-fpb-design-preset="COMPACT"],
       [data-fpb-design-preset="HORIZONTAL"]
@@ -680,7 +680,7 @@
   }
 
   .layout-sidebar:is(
-      [data-fpb-design-preset="DEFAULT"],
+      [data-fpb-design-preset="STANDARD"],
       [data-fpb-design-preset="CLASSIC"],
       [data-fpb-design-preset="COMPACT"],
       [data-fpb-design-preset="HORIZONTAL"]

@@ -80,10 +80,6 @@ import { ConditionValidator } from './widgets/shared/condition-validator.js';
 import { createDefaultLoadingAnimation } from './widgets/shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from './widgets/shared/loading-overlay.js';
 import { bundleLevelCssMethods } from './widgets/shared/bundle-level-css-methods.js';
-import { standardTemplateMethods } from './widgets/full-page/templates/standard-template.js';
-import { classicTemplateMethods } from './widgets/full-page/templates/classic-template.js';
-import { compactTemplateMethods } from './widgets/full-page/templates/compact-template.js';
-import { horizontalTemplateMethods } from './widgets/full-page/templates/horizontal-template.js';
 import { getDiscountProgressData, getSelectedQuantity, getTimelineEntryState } from './widgets/shared/engine/bundle-selectors.js';
 import { renderDiscountProgress } from './widgets/shared/components/discount-progress.js';
 import {
@@ -317,10 +313,6 @@ Object.assign(
   fullPageRuntimeCartSettingsMethods,
   fullPageTierFloatingRuntimeMethods,
   bundleLevelCssMethods,
-  standardTemplateMethods,
-  classicTemplateMethods,
-  compactTemplateMethods,
-  horizontalTemplateMethods,
 );
 
 // ============================================================================

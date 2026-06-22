@@ -80,7 +80,7 @@ export function buildStaleBundleProductMediaReferenceRemovals(
 
   let placeholderKept = false;
 
-  return (mediaNodes || []).flatMap((mediaNode) => {
+  return (mediaNodes || []).flatMap<{ id: string; referencesToRemove: string[] }>((mediaNode) => {
     if (!mediaNode.id) return [];
 
     if (isBundleProductPlaceholderMedia(mediaNode, bundleName) && !placeholderKept) {
@@ -103,7 +103,7 @@ export function buildBundleProductMediaFileUpdates(
 
   let placeholderKept = false;
 
-  return (mediaNodes || []).flatMap((mediaNode) => {
+  return (mediaNodes || []).flatMap<FileUpdateInput>((mediaNode) => {
     if (!mediaNode.id) return [];
 
     if (isBundleProductPlaceholderMedia(mediaNode, bundleName) && !placeholderKept) {

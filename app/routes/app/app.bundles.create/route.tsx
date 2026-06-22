@@ -1,4 +1,4 @@
-import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { json, redirect, type ActionFunctionArgs, type HeadersFunction, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,6 +8,36 @@ import { BundleType } from "../../../constants/bundle";
 import { showPolarisModal } from "../_shared/bundle-configure/modal-utils";
 import styles from "./create-bundle.module.css";
 import { OptimisedImage } from "../../../components/OptimisedImage";
+import { BillingService } from "../../../services/billing.server";
+import { ensureShopIdentity, recordBusinessEvent } from "../../../services/app-events.server";
+
+export const links: LinksFunction = () => [
+  {
+    rel: "preload",
+    as: "image",
+    href: "/ppb.avif",
+    imageSrcSet: "/ppb.avif 320w",
+    imageSizes: "320px",
+    type: "image/avif",
+    fetchpriority: "high",
+  } as ReturnType<LinksFunction>[number],
+  {
+    rel: "preload",
+    as: "image",
+    href: "/fpb.avif",
+    imageSrcSet: "/fpb.avif 320w",
+    imageSizes: "320px",
+    type: "image/avif",
+    fetchpriority: "high",
+  } as ReturnType<LinksFunction>[number],
+];
+
+export const headers: HeadersFunction = () => ({
+  Link: [
+    "</ppb.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high",
+    "</fpb.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high",
+  ].join(", "),
+});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await requireAdminSession(request);
@@ -16,21 +46,90 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await requireAdminSession(request);
+  const shopifyShopGid = await ensureShopIdentity(admin, session.shop);
   const formData = await request.formData();
   const bundleName = formData.get("bundleName");
   const bundleType = formData.get("bundleType");
   const createFormData = new FormData();
   if (typeof bundleName === "string") createFormData.set("bundleName", bundleName);
   if (typeof bundleType === "string") createFormData.set("bundleType", bundleType);
+  await recordBusinessEvent({
+    eventHandle: "bundle_create_started",
+    shopDomain: session.shop,
+    shopifyShopGid,
+    bundleType: typeof bundleType === "string" ? bundleType : null,
+    surface: "admin",
+    actor: "merchant",
+    routeFamily: "create",
+    attributes: {
+      entry_point: "create_route",
+    },
+  });
+  const subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
+  if (
+    subscriptionInfo &&
+    subscriptionInfo.currentBundleCount >= subscriptionInfo.bundleLimit
+  ) {
+    await recordBusinessEvent({
+      eventHandle: "pricing_limit_hit",
+      shopDomain: session.shop,
+      shopifyShopGid,
+      bundleType: typeof bundleType === "string" ? bundleType : null,
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "create",
+      result: "failure",
+      attributes: {
+        limit_key: "bundles",
+        plan: subscriptionInfo.plan,
+        current_value: subscriptionInfo.currentBundleCount,
+        limit_value: subscriptionInfo.bundleLimit,
+      },
+    });
+  }
   const result = await handleCreateBundle(admin, session, createFormData);
-  const data = await result.json();
+  const data = (await result.json()) as {
+    error?: string;
+    bundleId?: string;
+    redirectTo?: string;
+    showFirstLoadTour?: boolean;
+    success?: boolean;
+  };
   if (data.success && data.redirectTo) {
+    await recordBusinessEvent({
+      eventHandle: "bundle_created",
+      shopDomain: session.shop,
+      shopifyShopGid,
+      bundleId: data.bundleId ?? null,
+      bundleType: typeof bundleType === "string" ? bundleType : null,
+      surface: "admin",
+      actor: "merchant",
+      routeFamily: "create",
+      result: "success",
+      attributes: {
+        template_id: typeof bundleType === "string" ? bundleType : null,
+      },
+    });
     if (!data.showFirstLoadTour) {
       return redirect(data.redirectTo);
     }
     const separator = String(data.redirectTo).includes("?") ? "&" : "?";
     return redirect(`${data.redirectTo}${separator}first_load=true`);
   }
+  await recordBusinessEvent({
+    eventHandle: "bundle_create_failed",
+    shopDomain: session.shop,
+    shopifyShopGid,
+    bundleType: typeof bundleType === "string" ? bundleType : null,
+    surface: "admin",
+    actor: "merchant",
+    routeFamily: "create",
+    result: "failure",
+    errorCode: "create_failed",
+    attributes: {
+      error_message_safe: data.error ?? "Bundle creation failed",
+    },
+  });
   return json(data, { status: result.status });
 };
 

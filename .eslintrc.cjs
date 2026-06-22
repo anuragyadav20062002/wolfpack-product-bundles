@@ -4,11 +4,13 @@ module.exports = {
   // Files not in tsconfig.json cannot be type-checked — exclude from type-aware
   // linting to avoid "file not included in tsconfig" parsing errors.
   // - app/assets/**    : widget source JS bundled for storefront
+  // - app/types/*.generated.d.ts : generated GraphQL operation types
   // - extensions/**/*.js : compiled Shopify extension assets
   // - scripts/**       : Node build scripts
   // - *.config.js      : root-level config files (jest, postcss, tailwind)
   ignorePatterns: [
     "app/assets/**",
+    "app/types/*.generated.d.ts",
     "extensions/**/*.js",
     "scripts/**",
     "tests/__mocks__/*.js",

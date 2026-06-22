@@ -36,4 +36,10 @@ light-quest-455608-i3-fb32f16e0e1a.json
 graphify-out/graph.html
 graphify-out/.graphify_*.json
 graphify-out/.graphify_*.txt
+graphify-out/.graphify_root
+graphify-out/.pending_changes
+graphify-out/.rebuild.lock
+graphify-out/.graph.tmp.json
+graphify-out/manifest.json
+graphify-out/[0-9][0-9][0-9][0-9]-*/
 graphify-out/cache/

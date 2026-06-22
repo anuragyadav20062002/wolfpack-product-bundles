@@ -10,7 +10,7 @@
  */
 
 import { formatStepCategoriesForRuntime } from "./bundle-config/category-runtime";
-import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "./bundle-config/evidence-template-mapping";
+import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "./bundle-config/template-selection";
 
 /** Convert a Shopify GID to its numeric ID for storefront cart operations. */
 function extractNumericId(gid: string): string {
@@ -170,7 +170,7 @@ function resolveBundleDesignTemplate(bundle: any): string | null {
 
 function resolveBundleDesignPresetId(bundle: any): string | null {
   if (bundle.bundleDesignPresetId) return bundle.bundleDesignPresetId;
-  return bundle.bundleType === "full_page" ? "DEFAULT" : null;
+  return bundle.bundleType === "full_page" ? "STANDARD" : null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

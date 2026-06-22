@@ -12,7 +12,7 @@ describe("api.web-vitals tombstone", () => {
   });
 
   it("silently discards stale unauthenticated Web Vitals reports", async () => {
-    let routeModule: { action?: (args: { request: Request; params: unknown; context: unknown }) => Promise<Response> } | null = null;
+    let routeModule: { action?: (args: any) => Promise<Response> } | null = null;
     try {
       routeModule = await import("../../../app/routes/api/api.web-vitals");
     } catch {

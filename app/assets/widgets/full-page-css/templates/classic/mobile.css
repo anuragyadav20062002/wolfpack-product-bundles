@@ -2,12 +2,65 @@
   .fpb-preset-classic
     > :is(.bundle-banners, .category-tabs, .sidebar-layout-wrapper) {
     width: 100%;
-    margin-left: 0;
+    margin-left: calc(10px - ((100vw - 100%) / 2));
     margin-right: 0;
   }
 
   .fpb-preset-classic .sidebar-layout-wrapper .sidebar-content {
     padding: 0 0 120px !important;
+  }
+
+  .fpb-preset-classic > .category-tabs {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    grid-template-columns: repeat(2, max-content);
+    grid-template-rows: 49px;
+    gap: 20px;
+    align-items: stretch;
+    justify-content: start;
+    width: calc(100vw - 20px);
+    height: 49px;
+    margin: 20px 0 15px;
+    padding: 0;
+  }
+
+  .fpb-preset-classic > .category-tabs .category-tab {
+    display: grid;
+    grid-template-columns: max-content 0;
+    grid-template-rows: 27px;
+    gap: 5px;
+    align-items: center;
+    justify-content: start;
+    height: 49px;
+    padding: 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: rgba(18, 18, 18, 0.75);
+    font-family: Assistant, sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 27px;
+  }
+
+  .fpb-preset-classic > .category-tabs .category-tab.active {
+    border: 0;
+    background: transparent;
+    color: #000;
+  }
+
+  .fpb-preset-classic > .category-tabs .category-tab .tab-label {
+    color: inherit;
+    font-family: Assistant, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 27px;
+    letter-spacing: 0;
+  }
+
+  .fpb-preset-classic > .category-tabs .category-tab .tab-indicator {
+    display: none;
   }
 
   .fpb-preset-classic .sidebar-content .full-page-product-grid-container {
@@ -392,6 +445,174 @@
   .fpb-mobile-summary-tray.fpb-mobile-classic-footer.fpb-mobile-summary-tray-expanded {
     grid-template-rows: auto auto;
     height: auto;
+  }
+
+  .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray.fpb-mobile-classic-footer {
+    --fpb-mobile-footer-shell-width: calc(100vw - 20px);
+    --fpb-mobile-footer-inner-width: calc(100vw - 30px);
+    --fpb-mobile-footer-progress-width: calc(
+      var(--fpb-mobile-footer-inner-width) - 50px
+    );
+    display: grid;
+    position: sticky;
+    grid-template-columns: var(--fpb-mobile-footer-inner-width);
+    grid-template-rows: 48.195px 58px;
+    bottom: 0;
+    left: 10px;
+    right: auto;
+    width: var(--fpb-mobile-footer-shell-width);
+    height: 116.195px;
+    min-height: 0;
+    max-height: none;
+    margin-left: calc(10px - ((100vw - 100%) / 2));
+    padding: 5px;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--bundle-side-panel-bg, var(--bundle-full-page-bg-color));
+    overflow: visible;
+    z-index: 9999;
+    transform: none !important;
+    transition:
+      height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: height, grid-template-rows;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-count-badge {
+    cursor: pointer;
+    top: -11.598px;
+    min-width: 46.914px;
+    height: 25.195px;
+    line-height: 25.2px;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-count-badge::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    border: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.2 8.1L10 11.9L13.8 8.1' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+    transform: none;
+    margin: 0;
+    box-sizing: border-box;
+    transition:
+      transform 220ms ease,
+      margin 220ms ease;
+    transform-origin: center;
+  }
+
+  .fpb-mobile-summary-tray.fpb-mobile-classic-footer.fpb-mobile-summary-tray-expanded
+    .fpb-mobile-summary-count-badge::before {
+    transform: rotate(180deg);
+    margin: 0;
+  }
+
+  .fpb-mobile-classic-footer .side-panel-discount-message {
+    display: grid;
+    grid-template-columns: var(--fpb-mobile-footer-inner-width);
+    grid-template-rows: 25.195px 7px;
+    gap: 10px;
+    background: transparent;
+    color: var(
+      --bundle-side-panel-discount-color,
+      var(--bundle-global-primary-text, currentColor)
+    );
+    width: var(--fpb-mobile-footer-inner-width);
+    height: 47.195px;
+    overflow: visible;
+    margin: 1px 0 0;
+    padding: 5px 0 0;
+    border-radius: 0;
+    box-sizing: border-box;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-discount-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--fpb-mobile-footer-inner-width);
+    height: 25.195px;
+    min-height: 25.195px;
+    margin: 0;
+    padding: 0;
+    color: var(
+      --bundle-side-panel-discount-color,
+      var(--bundle-global-primary-text, currentColor)
+    );
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 25.2px;
+    text-align: center;
+  }
+
+  .fpb-mobile-classic-footer
+    .side-panel-discount-message
+    > .fpb-discount-progress.fpb-dp-sidebar {
+    display: grid !important;
+    grid-row: 2;
+    grid-template-columns: var(--fpb-mobile-footer-inner-width);
+    grid-template-rows: 7px;
+    gap: 0;
+    align-items: stretch;
+    width: var(--fpb-mobile-footer-inner-width);
+    height: 7px;
+    min-height: 7px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .fpb-mobile-classic-footer
+    .side-panel-discount-message
+    > .fpb-discount-progress.fpb-dp-sidebar
+    .fpb-discount-step-list,
+  .fpb-mobile-classic-footer
+    .side-panel-discount-message
+    > .fpb-discount-progress.fpb-dp-sidebar
+    .fpb-discount-step-subtitle-list {
+    display: none !important;
+  }
+
+  .fpb-mobile-classic-footer
+    .side-panel-discount-message
+    > .fpb-discount-progress.fpb-dp-sidebar
+    .fpb-dp-track {
+    width: var(--fpb-mobile-footer-inner-width);
+    height: 7px;
+    background: var(--fpb-discount-track-empty, #c1e7c5);
+    border-radius: 25px;
+  }
+
+  .fpb-mobile-classic-footer
+    .side-panel-discount-message
+    > .fpb-discount-progress.fpb-dp-sidebar
+    .fpb-dp-fill {
+    height: 7px;
+    background: var(--fpb-discount-track-filled, #4caf50);
+    border-radius: 0;
+  }
+
+  .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray.fpb-mobile-classic-footer
+    .side-panel-nav {
+    width: var(--fpb-mobile-footer-inner-width);
+    height: 58px;
+    padding: 10px 0;
+    box-sizing: border-box;
+  }
+
+  .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray.fpb-mobile-classic-footer
+    .side-panel-btn-next {
+    width: var(--fpb-mobile-footer-inner-width);
+    height: 38px;
+    border-radius: 5px;
+    padding: 8px;
+    font-size: 14px;
+    line-height: 22px;
+    font-weight: 700;
   }
 
   .fpb-mobile-classic-footer .fpb-mobile-summary-products-section {

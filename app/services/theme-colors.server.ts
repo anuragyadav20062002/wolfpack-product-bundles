@@ -10,6 +10,7 @@
  */
 
 import type { ShopifyAdmin } from "../lib/auth-guards.server";
+import { Prisma } from "@prisma/client";
 import prisma from "../db.server";
 import { AppLogger } from "../lib/logger";
 import { BundleType } from "../constants/bundle";
@@ -140,8 +141,8 @@ export async function syncThemeColors(admin: ShopifyAdmin, shopDomain: string): 
     for (const bundleType of [BundleType.PRODUCT_PAGE, BundleType.FULL_PAGE]) {
       await prisma.designSettings.upsert({
         where: { shopId_bundleType: { shopId: shopDomain, bundleType } },
-        create: { shopId: shopDomain, bundleType, themeColors },
-        update: { themeColors },
+        create: { shopId: shopDomain, bundleType, themeColors: themeColors as unknown as Prisma.InputJsonObject },
+        update: { themeColors: themeColors as unknown as Prisma.InputJsonObject },
       });
     }
 
