@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 3.0.46
- * Built   : 2026-06-22
+ * Built   : 2026-06-23
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -8179,14 +8179,19 @@ get paidSteps() {
 
 get isFreeGiftUnlocked() {
   if (!this.freeGiftStep) return false;
-  if (this.freeGiftStep.addonEligibilityCondition || Array.isArray(this.freeGiftStep.addonTiers)) {
-    return this.getAddonEligibilityState(this.freeGiftStep).isEligible;
-  }
   const steps = this.selectedBundle?.steps || [];
-  return this.paidSteps.every(paidStep => {
+  const paidStepsComplete = this.paidSteps.every(paidStep => {
     const globalIndex = steps.indexOf(paidStep);
     return this.isStepCompleted(globalIndex);
   });
+
+  if (paidStepsComplete) return true;
+
+  if (this.freeGiftStep.addonEligibilityCondition || Array.isArray(this.freeGiftStep.addonTiers)) {
+    return this.getAddonEligibilityState(this.freeGiftStep).isEligible;
+  }
+
+  return false;
 },
 
 canNavigateToStep(targetStepIndex) {
@@ -8243,10 +8248,17 @@ getAddonTierEvaluation(step) {
 },
 
 _getFreeGiftRemainingCount() {
+  const steps = this.selectedBundle?.steps || [];
+  const paidStepsComplete = this.paidSteps.every(paidStep => {
+    const globalIndex = steps.indexOf(paidStep);
+    return this.isStepCompleted(globalIndex);
+  });
+  if (paidStepsComplete) return 0;
+
   if (this.freeGiftStep?.addonEligibilityCondition || getAddonTiersForStep(this.freeGiftStep).length > 0) {
     return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
   }
-  const steps = this.selectedBundle?.steps || [];
+
   const total = this.paidSteps.reduce((sum, s) =>
     sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
   const selected = this.paidSteps.reduce((sum, paidStep) => {
