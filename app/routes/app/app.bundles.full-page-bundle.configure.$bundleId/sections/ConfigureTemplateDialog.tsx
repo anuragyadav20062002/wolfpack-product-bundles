@@ -14,6 +14,7 @@ export function FpbTemplateDialog({
     handleSelectTemplateDialogKeyDown,
     handleTemplateNext,
     handleTemplatePreview,
+    isPreviewBundleLoading,
     isSelectTemplateModalOpen,
     OptimisedImage,
     pendingDesignPresetId,
@@ -444,7 +445,12 @@ export function FpbTemplateDialog({
                   <p className={fullPageBundleStyles.templateReadyText}>
                     Preview it now with your customizations
                   </p>
-                  <s-button variant="secondary" onClick={handleTemplatePreview}>
+                  <s-button
+                    variant="secondary"
+                    loading={isPreviewBundleLoading || undefined}
+                    disabled={isPreviewBundleLoading || undefined}
+                    onClick={handleTemplatePreview}
+                  >
                     Preview bundle
                   </s-button>
                 </div>

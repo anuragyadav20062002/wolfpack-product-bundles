@@ -44,6 +44,11 @@
   flex-wrap: wrap;
 }
 
+.dashboardActions s-tooltip {
+  animation: none !important;
+  transition: none !important;
+}
+
 .languageSelect {
   display: flex;
   align-items: center;
