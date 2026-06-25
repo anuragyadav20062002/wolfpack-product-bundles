@@ -1,5 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 const graphPath = 'graphify-out/graph.json';
 const validFileTypes = new Set(['code', 'document', 'image', 'paper', 'rationale']);
@@ -18,6 +20,26 @@ function getGraphifyPythonFromCli() {
     : shebang;
 
   if (!python || /[^a-zA-Z0-9/_.-]/.test(python)) return '';
+
+  const probe = spawnSync(python, ['-c', 'import graphify'], { stdio: 'ignore' });
+  return probe.status === 0 ? python : '';
+}
+
+function getUvToolDir() {
+  if (process.env.UV_TOOL_DIR) return process.env.UV_TOOL_DIR;
+
+  const result = spawnSync('uv', ['tool', 'dir'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  if (result.status === 0 && result.stdout.trim()) return result.stdout.trim();
+
+  return join(homedir(), '.local', 'share', 'uv', 'tools');
+}
+
+function getGraphifyPythonFromUvTool() {
+  const python = join(getUvToolDir(), 'graphifyy', 'bin', 'python');
+  if (!existsSync(python)) return '';
 
   const probe = spawnSync(python, ['-c', 'import graphify'], { stdio: 'ignore' });
   return probe.status === 0 ? python : '';
@@ -127,12 +149,10 @@ function validateGraphFileTypes() {
   }
 }
 
-const defaultGraphifyPython = '/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python';
-const uvGraphifyPython = '/Users/adityaawasthi/.local/share/uv/tools/graphifyy/bin/python';
 const python = process.env.GRAPHIFY_PYTHON
   || getGraphifyPythonFromCli()
-  || (existsSync(uvGraphifyPython) ? uvGraphifyPython : '')
-  || (existsSync(defaultGraphifyPython) ? defaultGraphifyPython : 'python3');
+  || getGraphifyPythonFromUvTool()
+  || 'python3';
 const detectedSources = getDetectedSources(python);
 
 sanitizeGraph(detectedSources);

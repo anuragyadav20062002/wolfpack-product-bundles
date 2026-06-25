@@ -26,6 +26,18 @@ function getAddonTiersForStep(step) {
   return Array.isArray(step?.addonTiers) ? step.addonTiers.filter(Boolean) : [];
 }
 
+function hasConfiguredAddonRule(step) {
+  if (!step) return false;
+  const eligibilityValue = Number(step.addonEligibilityCondition?.value) || 0;
+  if (eligibilityValue > 0) return true;
+
+  return getAddonTiersForStep(step).some(tier => {
+    const tierValue = Number(tier?.eligibilityCondition?.value) || 0;
+    if (tierValue > 0) return true;
+    return Array.isArray(tier?.selectedAddonProducts) && tier.selectedAddonProducts.length > 0;
+  });
+}
+
 export const fullPageValidationAddonsMethods = {
 async _sidebarAdvanceToNextStep() {
   const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
@@ -185,17 +197,11 @@ get isFreeGiftUnlocked() {
     return this.isStepCompleted(globalIndex);
   });
 
-  // Free gift unlock should primarily follow "all paid steps complete".
-  // Some bundles may also carry addon-tier eligibility metadata; treat that as an
-  // additional unlock mechanism (not a stricter gate) to avoid blocking navigation
-  // when eligibility fields are present but not aligned with paid-step conditions.
-  if (paidStepsComplete) return true;
-
-  if (this.freeGiftStep.addonEligibilityCondition || Array.isArray(this.freeGiftStep.addonTiers)) {
+  if (hasConfiguredAddonRule(this.freeGiftStep)) {
     return this.getAddonEligibilityState(this.freeGiftStep).isEligible;
   }
 
-  return false;
+  return paidStepsComplete;
 },
 
 canNavigateToStep(targetStepIndex) {
@@ -257,11 +263,12 @@ _getFreeGiftRemainingCount() {
     const globalIndex = steps.indexOf(paidStep);
     return this.isStepCompleted(globalIndex);
   });
-  if (paidStepsComplete) return 0;
 
-  if (this.freeGiftStep?.addonEligibilityCondition || getAddonTiersForStep(this.freeGiftStep).length > 0) {
+  if (hasConfiguredAddonRule(this.freeGiftStep)) {
     return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
   }
+
+  if (paidStepsComplete) return 0;
 
   const total = this.paidSteps.reduce((sum, s) =>
     sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);

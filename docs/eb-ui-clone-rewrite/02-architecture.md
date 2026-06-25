@@ -14,9 +14,9 @@ BR/PO context comes from the completed audit in `docs/competitor-analysis/17-eb-
 
 Graph sources:
 - `graphify-out/GRAPH_REPORT.md`
-- `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/graphify path "bundle-widget-full-page.js Widget Source" "Prisma Schema (prisma/schema.prisma)"`
-- `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/graphify path "BundleWidgetProductPage" "Prisma Schema (prisma/schema.prisma)"`
-- `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/graphify path "PDP Bundle Configure Route" "BundleWidgetProductPage"`
+- `graphify path "bundle-widget-full-page.js Widget Source" "Prisma Schema (prisma/schema.prisma)"`
+- `graphify path "BundleWidgetProductPage" "Prisma Schema (prisma/schema.prisma)"`
+- `graphify path "PDP Bundle Configure Route" "BundleWidgetProductPage"`
 
 Findings:
 - God nodes affected: `BundleWidgetFullPage`, `BundleWidgetProductPage`, `bundle-widget-full-page.js Widget Source`, `bundle-widget-full-page.css`, and likely `AppStateService`.
