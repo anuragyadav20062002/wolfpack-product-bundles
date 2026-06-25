@@ -762,6 +762,86 @@ mod tests {
         assert_eq!(attributes.get("You Save").map(String::as_str), Some("$11.00 (10%)"));
     }
 
+    #[test]
+    fn test_merge_applies_free_gift_component_attributes() {
+        let cp = serde_json::json!([{
+            "id": "gid://shopify/ProductVariant/999",
+            "component_reference": { "value": [] },
+            "component_quantities": { "value": [] },
+            "price_adjustment": { "method": "percentage_off", "value": 0.0 }
+        }])
+        .to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "paid-line", "quantity": 1,
+                        "easyBundleOfferId": {{ "value": "bundle-with-free-gift" }},
+                        "easyBundleName": {{ "value": "Free Gift Bundle" }},
+                        "stepType": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": {{ "value": {cp:?} }},
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "Paid Product" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "123.00" }},
+                            "totalAmount": {{ "amount": "123.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "free-gift-line", "quantity": 1,
+                        "easyBundleOfferId": {{ "value": "bundle-with-free-gift" }},
+                        "easyBundleName": {{ "value": "Free Gift Bundle" }},
+                        "stepType": {{ "value": "free_gift" }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/102",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/2", "title": "Free Add-on" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "123.00" }},
+                            "totalAmount": {{ "amount": "123.00" }}
+                        }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+
+        let attributes = merge_attributes(&output);
+        assert_eq!(
+            attributes.get("_bundle_total_retail_cents").map(String::as_str),
+            Some("24600")
+        );
+        assert_eq!(
+            attributes.get("_bundle_total_price_cents").map(String::as_str),
+            Some("12300")
+        );
+        assert_eq!(
+            attributes.get("_bundle_total_savings_cents").map(String::as_str),
+            Some("12300")
+        );
+        assert_eq!(
+            attributes.get("_bundle_discount_percent").map(String::as_str),
+            Some("50.00")
+        );
+    }
+
     // =========================================================================
     // EXPAND OPERATION TESTS
     // =========================================================================

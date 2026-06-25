@@ -87,7 +87,10 @@ export function useConfigureAddonActionHandlers(
   );
   const handleDisableAddonStepConfirm = useCallback(() => {
     flow.setIsDisableAddonStepModalOpen(false);
-    flow.updateAddonDraft({ isPersonalizationEnabled: false });
+    flow.updateAddonDraft({
+      isPersonalizationEnabled: false,
+      addonProductsEnabled: false,
+    });
   }, [flow]);
 
   return {

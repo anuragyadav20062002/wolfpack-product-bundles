@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { BundleActionsButtonsProps } from "./types";
 import dashboardStyles from "./dashboard.module.css";
 
-export const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPreview, bundle }: Omit<BundleActionsButtonsProps, 'moreOpen' | 'onMoreToggle'>) => {
+export const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPreview, isPreviewing = false, bundle }: Omit<BundleActionsButtonsProps, 'moreOpen' | 'onMoreToggle'>) => {
   const { t } = useTranslation();
   return (
     <div className={dashboardStyles.bundleActions}>
@@ -23,6 +23,8 @@ export const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete,
         variant="tertiary"
         interestFor={`tooltip-preview-${bundleId}`}
         onClick={() => onPreview(bundle)}
+        loading={isPreviewing || undefined}
+        disabled={isPreviewing || undefined}
         accessibilityLabel={t("dashboard.actions.previewBundle")}
       />
       <s-tooltip id={`tooltip-preview-${bundleId}`}>

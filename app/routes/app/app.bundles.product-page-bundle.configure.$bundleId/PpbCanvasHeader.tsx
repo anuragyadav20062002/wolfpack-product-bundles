@@ -8,6 +8,7 @@ export function PpbCanvasHeader() {
     fetcher,
     handleBackClick,
     handlePreviewBundle,
+    isPreviewBundleLoading,
     loadedBundleProduct,
     openProductInAdmin,
     parentProductStatusUi,
@@ -55,6 +56,7 @@ export function PpbCanvasHeader() {
             onClick={() => {
               void handlePreviewBundle();
             }}
+            loading={isPreviewBundleLoading || undefined}
             disabled={fetcher.state !== "idle"}
           >
             Preview Bundle

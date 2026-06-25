@@ -133,7 +133,7 @@ Rebuild the Full Page / Landing Page bundle Admin sections for Free Gift & Add O
 
 ### 2026-06-05 03:19 - Final verification and graph rebuild completed
 - Default graph rebuild command failed because `python3` could not import `graphify`.
-- Reran graph rebuild through the local graphify venv: `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`; rebuild completed with 4051 nodes, 6030 edges, and 597 communities.
+- Reran graph rebuild through the local graphify venv: `npm run graphify:rebuild`; rebuild completed with 4051 nodes, 6030 edges, and 597 communities.
 - Fresh focused unit verification passed: `npx jest --selectProjects unit --runTestsByPath tests/unit/routes/fpb-addons-admin-layout.test.ts tests/unit/routes/fpb-save-bundle.test.ts tests/unit/services/bundle-product-metafield.test.ts tests/unit/assets/bundle-widget-full-page-messages.test.ts tests/unit/assets/bundle-widget-full-page-addons.test.ts` (5 suites, 75 tests).
 - Fresh raw widget syntax check passed: `node --check app/assets/bundle-widget-full-page.js`.
 - Fresh modified-file ESLint passed with zero errors: `npx eslint --max-warnings 9999 'app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx' app/assets/bundle-widget-full-page.js tests/unit/routes/fpb-addons-admin-layout.test.ts tests/unit/assets/bundle-widget-full-page-messages.test.ts`; warnings only, 0 errors.

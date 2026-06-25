@@ -22,7 +22,7 @@ Match the FPB Standard Design storefront template UI to the live EB reference. C
 - Bumped `WIDGET_VERSION` to `2.9.64`, rebuilt widget assets, reran focused tests, linted modified code paths, and rebuilt graphify output.
 
 ### 2026-06-05 11:55 - Plan audit gap filled
-- Audited requested plan path `.claude/plans/eb-fpb-standard-design-capture.md`; it was missing from this repo checkout, but the home-level source existed at `/Users/adityaawasthi/.claude/plans/eb-fpb-standard-design-capture.md`.
+- Audited requested plan path `.claude/plans/eb-fpb-standard-design-capture.md`; it was missing from this repo checkout, but the home-level source existed at `.claude/plans/eb-fpb-standard-design-capture.md`.
 - Confirmed the matching Standard Design implementation issue was already completed and the implementation/test plan exists through this issue plus `test-spec/fpb-standard-design-storefront.spec.md`.
 - Filled the repo documentation gap by adding a repo-local plan file and correcting the test spec issue link to this issue ID.
 - Recorded plan audit corrections: FPB Standard must use `bundleDesignPresetId: "DEFAULT"` only, not `STANDARD`; competitor screenshots remain non-commit artifacts unless explicitly approved.
@@ -41,7 +41,7 @@ Match the FPB Standard Design storefront template UI to the live EB reference. C
 - Syntax passed: `node --check app/assets/widgets/full-page/templates/standard-template.js` and `node --check extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js`.
 - Lint passed with 0 errors and 4 warnings: `npx eslint --max-warnings 9999 app/assets/widgets/full-page/templates/standard-template.js tests/unit/assets/bundle-widget-full-page-template-layout.test.ts`.
 - `npm run build:widgets` completed; unrelated Product Page/SDK generated header noise was removed so only the Full Page generated output remains changed.
-- Graphify rebuild completed through `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python`.
+- Graphify rebuild completed through `the local graphify Python runtime`.
 - Browser capture remains blocked: Chrome DevTools MCP `list_pages` timed out twice, so baseline live EB capture has not started.
 - Broader template-layout verification still has non-Standard failures in Horizontal/Classic/Compact and should be handled as separate template drift, not part of this Standard patch.
 
