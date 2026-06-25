@@ -121,51 +121,80 @@ export function FpbAddonTierEditor({
                       }
                     }}
                   >
+                    <span
+                      className={fullPageBundleStyles.addonsTierDragPlaceholder}
+                      aria-hidden="true"
+                    />
                     <h4 className={fullPageBundleStyles.addonsTierTitle}>
                       Tier {idx + 1}
                     </h4>
-                    <span
-                      className={fullPageBundleStyles.addonsTierHeaderActions}
+                    <div
+                      className={fullPageBundleStyles.categoryActions}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
                     >
-                      <span
-                        className={fullPageBundleStyles.addonsTierDeleteButton}
+                      <button
+                        type="button"
+                        className={fullPageBundleStyles.categoryDeleteIconButton}
                         title={`Delete Tier ${idx + 1}`}
-                        role="button"
-                        tabIndex={addonTiers.length <= 1 ? -1 : 0}
-                        aria-disabled={addonTiers.length <= 1}
                         aria-label={`Delete Tier ${idx + 1}`}
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
                           deleteAddonTier(idx);
                         }}
-                        onKeyDown={(event) => {
-                          if (event.key !== "Enter" && event.key !== " ") {
-                            return;
-                          }
-                          event.preventDefault();
-                          event.stopPropagation();
-                          deleteAddonTier(idx);
-                        }}
                       >
-                        <s-button
-                          variant="tertiary"
-                          icon="delete"
-                          tone="critical"
-                          accessibilityLabel={`Delete Tier ${idx + 1}`}
-                          disabled={addonTiers.length <= 1 || undefined}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            deleteAddonTier(idx);
-                          }}
-                        />
-                      </span>
-                      <span
-                        className={fullPageBundleStyles.addonsTierChevron}
-                        aria-hidden="true"
-                      />
-                    </span>
+                        <s-icon type="delete" />
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className={fullPageBundleStyles.categoryChevron}
+                      aria-label={isActiveTier ? "Collapse tier" : "Expand tier"}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setActiveAddonTierIndex(
+                          (currentIndex: number | null) =>
+                            getNextAddonTierAccordionIndex(currentIndex, idx),
+                        );
+                      }}
+                    >
+                      {isActiveTier ? (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 14 14"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M3 9L7 5L11 9"
+                            stroke="currentColor"
+                            strokeWidth="1.75"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 14 14"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M3 5L7 9L11 5"
+                            stroke="currentColor"
+                            strokeWidth="1.75"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </button>
                   </div>
                   {isActiveTier && (
                     <div className={fullPageBundleStyles.addonsTierBody}>

@@ -34,9 +34,9 @@ describe("addon tier accordion state", () => {
     ]);
   });
 
-  it("keeps the only tier when delete is requested", () => {
+  it("deletes the only tier when requested", () => {
     const tiers = [{ id: "tier-1" }];
 
-    expect(deleteAddonTierAtIndex(tiers, 0)).toEqual([{ id: "tier-1" }]);
+    expect(deleteAddonTierAtIndex(tiers, 0)).toEqual([]);
   });
 });

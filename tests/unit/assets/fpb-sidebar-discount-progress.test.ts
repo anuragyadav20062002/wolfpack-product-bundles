@@ -191,3 +191,47 @@ describe('FPB summary sidebar discount progress', () => {
     },
   );
 });
+
+describe('FPB Standard summary sidebar add-ons', () => {
+  it('renders the add-on summary block inside the Standard sidebar summary content', () => {
+    const panel = document.createElement('aside');
+    const context = makeContext('STANDARD', 'simple');
+    let renderTarget: FakeElement | null = null;
+    context._renderFreeGiftSection = (container: FakeElement) => {
+      renderTarget = container;
+      const addon = document.createElement('div');
+      addon.className = 'side-panel-addon-message side-panel-free-gift';
+      addon.textContent = 'Add 1 more product(s) to claim 100% off on Add ons';
+      container.appendChild(addon);
+    };
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    const summaryContent = panel.querySelector('.side-panel-summary-content');
+    const addonMessage = panel.querySelector('.side-panel-addon-message.side-panel-free-gift');
+
+    expect(summaryContent).not.toBeNull();
+    expect(renderTarget).toBe(summaryContent);
+    expect(addonMessage?.textContent).toContain('100% off');
+  });
+
+  it('keeps non-Standard desktop free-gift rendering outside the summary content', () => {
+    const panel = document.createElement('aside');
+    const context = makeContext('COMPACT', 'simple');
+    let renderTarget: FakeElement | null = null;
+    context._renderFreeGiftSection = (container: FakeElement) => {
+      renderTarget = container;
+      const addon = document.createElement('div');
+      addon.className = 'side-panel-addon-message side-panel-free-gift';
+      addon.textContent = 'Add 1 more product(s) to claim 100% off on Add ons';
+      container.appendChild(addon);
+    };
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    const summaryContent = panel.querySelector('.side-panel-summary-content');
+
+    expect(summaryContent).not.toBeNull();
+    expect(renderTarget).toBe(panel);
+  });
+});

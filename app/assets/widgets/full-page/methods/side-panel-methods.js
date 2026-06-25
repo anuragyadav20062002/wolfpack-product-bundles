@@ -58,6 +58,7 @@ renderSidePanel(panel) {
 
   panel.classList.toggle('full-page-side-panel--inline-slots', useInlineSummarySlots);
   panel.classList.toggle('full-page-side-panel--skeleton-list', !useInlineSummarySlots);
+  panel.classList.toggle('full-page-side-panel--has-addon-summary', false);
 
   // Header: "Your Bundle" + Clear
   const header = document.createElement('div');
@@ -150,6 +151,15 @@ renderSidePanel(panel) {
         summaryContent.appendChild(progressBar);
       }
     }
+  }
+
+  if (isStandardDesktopSidebar) {
+    const addonChildCountBefore = summaryContent.children.length;
+    this._renderFreeGiftSection(summaryContent);
+    panel.classList.toggle(
+      'full-page-side-panel--has-addon-summary',
+      summaryContent.children.length > addonChildCountBefore
+    );
   }
 
   // Item count label
