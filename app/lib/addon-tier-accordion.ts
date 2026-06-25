@@ -16,3 +16,9 @@ export function normalizeAddonTierAccordionIndex(
   if (currentIndex < tierCount) return currentIndex;
   return Math.max(0, tierCount - 1);
 }
+
+export function deleteAddonTierAtIndex<T>(tiers: T[], deleteIndex: number): T[] {
+  if (tiers.length <= 1) return tiers;
+  if (deleteIndex < 0 || deleteIndex >= tiers.length) return tiers;
+  return tiers.filter((_, index) => index !== deleteIndex);
+}

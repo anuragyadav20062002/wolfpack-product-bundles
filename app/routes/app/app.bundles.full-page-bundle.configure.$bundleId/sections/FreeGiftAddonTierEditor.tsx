@@ -1,4 +1,5 @@
 import {
+  deleteAddonTierAtIndex,
   getNextAddonTierAccordionIndex,
   normalizeAddonTierAccordionIndex,
 } from "../../../../lib/addon-tier-accordion";
@@ -30,6 +31,14 @@ export function FpbAddonTierEditor({
           : [createDefaultAddonDraftTier()];
         const updateAddonTiers = (updated: any[]) => {
           updateAddonDraft({ addonTiers: updated });
+        };
+        const deleteAddonTier = (tierIndex: number) => {
+          const updated = deleteAddonTierAtIndex(addonTiers, tierIndex);
+          if (updated === addonTiers) return;
+          updateAddonTiers(updated);
+          setActiveAddonTierIndex((currentIndex: number | null) =>
+            normalizeAddonTierAccordionIndex(currentIndex, updated.length),
+          );
         };
         const getAddonConditions = (tier: any) =>
           Array.isArray(tier?.conditions) ? tier.conditions : [];
@@ -121,6 +130,23 @@ export function FpbAddonTierEditor({
                       <span
                         className={fullPageBundleStyles.addonsTierDeleteButton}
                         title={`Delete Tier ${idx + 1}`}
+                        role="button"
+                        tabIndex={addonTiers.length <= 1 ? -1 : 0}
+                        aria-disabled={addonTiers.length <= 1}
+                        aria-label={`Delete Tier ${idx + 1}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          deleteAddonTier(idx);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter" && event.key !== " ") {
+                            return;
+                          }
+                          event.preventDefault();
+                          event.stopPropagation();
+                          deleteAddonTier(idx);
+                        }}
                       >
                         <s-button
                           variant="tertiary"
@@ -129,20 +155,9 @@ export function FpbAddonTierEditor({
                           accessibilityLabel={`Delete Tier ${idx + 1}`}
                           disabled={addonTiers.length <= 1 || undefined}
                           onClick={(event) => {
+                            event.preventDefault();
                             event.stopPropagation();
-                            if (addonTiers.length > 1) {
-                              const updated = addonTiers.filter(
-                                (_, i) => i !== idx,
-                              );
-                              updateAddonTiers(updated);
-                              setActiveAddonTierIndex(
-                                (currentIndex: number | null) =>
-                                  normalizeAddonTierAccordionIndex(
-                                    currentIndex,
-                                    updated.length,
-                                  ),
-                              );
-                            }
+                            deleteAddonTier(idx);
                           }}
                         />
                       </span>

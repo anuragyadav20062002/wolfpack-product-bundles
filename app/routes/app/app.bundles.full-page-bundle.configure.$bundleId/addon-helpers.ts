@@ -63,13 +63,17 @@ export function normalizeAddonPickerProduct(product: any) {
 export function normalizeAddonTier(tier: any, index: number) {
   const eligibilityType =
     tier?.eligibilityCondition?.type || tier?.eligibilityType || "QUANTITY";
-  const eligibilityValue =
+  const eligibilityValue = Math.max(
+    0,
     Number(tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1) ||
-    1;
+      0,
+  );
   const discountType =
     tier?.discount?.type || tier?.discountType || "PERCENTAGE";
-  const discountValue =
-    Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0;
+  const discountValue = Math.min(
+    100,
+    Math.max(0, Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0),
+  );
 
   return {
     tierId: tier?.tierId || `tier${index + 1}`,
@@ -179,7 +183,9 @@ export function buildPersonalizationDataFromDraft(
   addonDraft: any,
   addonMessages: { discountText?: string; successMessage?: string } | null,
 ) {
-  if (!addonDraft?.isPersonalizationEnabled) return null;
+  const isPersonalizationEnabled = addonDraft?.isPersonalizationEnabled === true;
+  const addonProductsEnabled = addonDraft?.addonProductsEnabled === true;
+  if (!isPersonalizationEnabled && !addonProductsEnabled) return null;
 
   const addonTiers =
     Array.isArray(addonDraft?.addonTiers) && addonDraft.addonTiers.length > 0
@@ -188,12 +194,12 @@ export function buildPersonalizationDataFromDraft(
   const tiers = addonTiers.map(normalizeAddonTier);
 
   const personalizationData: Record<string, any> = {
-    isPersonalizationEnabled: true,
+    isPersonalizationEnabled,
     personalizeStepText: addonDraft?.personalizeStepText || "",
     personalizePageSubtext: addonDraft?.personalizePageSubtext || "",
     stepImage: addonDraft?.stepImage || null,
     addonProducts: {
-      isEnabled: addonDraft?.addonProductsEnabled === true,
+      isEnabled: addonProductsEnabled,
       title: addonDraft?.addonProductsTitle || "",
       type: "MULTI_TIER",
       tiers,
