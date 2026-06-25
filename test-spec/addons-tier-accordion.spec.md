@@ -14,7 +14,8 @@ Match EB's Add-Ons with Bundles tier accordion behavior: clicking an expanded ti
 | 4 | Clamp active tier after tier count shrinks | current `2`, count `2` | `1` | Delete keeps a valid active index |
 | 5 | Preserve collapsed state after tier count changes | current `null`, count `2` | `null` | Collapsed stays collapsed |
 | 6 | Delete a tier from a multi-tier list | tiers `[tier-1, tier-2, tier-3]`, delete index `1` | tiers `[tier-1, tier-3]` | Trash action removes the requested tier |
-| 7 | Delete is blocked for the only tier | tiers `[tier-1]`, delete index `0` | unchanged tiers `[tier-1]` | Mirrors disabled UI state |
+| 7 | Delete the only tier | tiers `[tier-1]`, delete index `0` | tiers `[]` | Matches category-style direct delete; save normalization can recreate a default tier if add-ons remain enabled |
+| 8 | Tier header controls match category accordion | Free Gift & Add Ons tier header | Delete uses the Step Setup category delete icon button treatment and chevron uses the same explicit up/down SVG button | Visual parity with category accordion controls |
 
 ## Acceptance Criteria
 - [x] All listed unit tests pass

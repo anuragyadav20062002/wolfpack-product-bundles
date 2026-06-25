@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.50
+ * Version : 3.0.51
  * Built   : 2026-06-25
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.50';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.51';
 (function() {
   'use strict';
 
@@ -5414,6 +5414,7 @@ renderSidePanel(panel) {
 
   panel.classList.toggle('full-page-side-panel--inline-slots', useInlineSummarySlots);
   panel.classList.toggle('full-page-side-panel--skeleton-list', !useInlineSummarySlots);
+  panel.classList.toggle('full-page-side-panel--has-addon-summary', false);
 
   const header = document.createElement('div');
   header.className = 'side-panel-header';
@@ -5503,6 +5504,15 @@ renderSidePanel(panel) {
         summaryContent.appendChild(progressBar);
       }
     }
+  }
+
+  if (isStandardDesktopSidebar) {
+    const addonChildCountBefore = summaryContent.children.length;
+    this._renderFreeGiftSection(summaryContent);
+    panel.classList.toggle(
+      'full-page-side-panel--has-addon-summary',
+      summaryContent.children.length > addonChildCountBefore
+    );
   }
 
   const countLabel = document.createElement('div');
