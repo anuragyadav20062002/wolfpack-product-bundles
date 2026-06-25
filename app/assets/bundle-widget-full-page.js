@@ -90,6 +90,7 @@ import { renderSharedProductCard } from './widgets/shared/components/product-car
 import { renderSelectedProductRow } from './widgets/shared/components/selected-product-row.js';
 import { renderSelectedProductSlots } from './widgets/shared/components/selected-product-slots.js';
 import { renderStepTimelineEntry } from './widgets/shared/components/step-timeline.js';
+import { applyMethodMixins } from './widgets/shared/mixin-descriptors.js';
 import {
   buildCartLineDisplayProperties as buildSharedCartLineDisplayProperties,
   buildCartLineSourceProperties as buildSharedCartLineSourceProperties,
@@ -290,7 +291,7 @@ class BundleWidgetFullPage {
 
 }
 
-Object.assign(
+applyMethodMixins(
   BundleWidgetFullPage.prototype,
   fullPageAnalyticsConfigMethods,
   fullPageInitialRenderMethods,

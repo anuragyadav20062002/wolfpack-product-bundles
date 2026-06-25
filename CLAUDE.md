@@ -354,8 +354,8 @@ If you learn something about Shopify API behaviour, gotchas, data model details,
 3. Check **Surprising Connections** and **Hyperedges** sections.
 
 ```bash
-/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/graphify path "ComponentA" "ComponentB"
-/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/graphify query "what depends on X?"
+graphify path "ComponentA" "ComponentB"
+graphify query "what depends on X?"
 ```
 
 ### Impact Analysis — Mandatory Before Every Change

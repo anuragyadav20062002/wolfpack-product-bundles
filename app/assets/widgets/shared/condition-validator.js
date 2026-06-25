@@ -67,7 +67,7 @@ const ConditionValidator = (function () {
    */
   function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
     // No explicit condition configured → no upper bound; always allow increases
-    if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+    if (!step || !step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       return { allowed: true, limitText: null };
     }
 
@@ -82,7 +82,7 @@ const ConditionValidator = (function () {
     if (!primary.allowed) return primary;
 
     // Secondary condition — AND logic (only when both fields are non-null)
-    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
       const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
       if (!secondary.allowed) return secondary;
     }
@@ -112,6 +112,11 @@ const ConditionValidator = (function () {
     return total;
   }
 
+  function _isPositiveConditionValue(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0;
+  }
+
   function _collectCategoryProductIds(category) {
     const ids = new Set();
     const products = Array.isArray(category && category.products) ? category.products : [];
@@ -133,7 +138,9 @@ const ConditionValidator = (function () {
    * Used by `isStepConditionSatisfied` in category-rule mode.
    */
   function evaluateCategoryRules(category, stepSelections) {
-    const rules = Array.isArray(category && category.conditions) ? category.conditions : [];
+    const rules = Array.isArray(category && category.conditions)
+      ? category.conditions.filter(rule => _isPositiveConditionValue(rule && rule.value))
+      : [];
     if (rules.length === 0) return true;
 
     const productIds = _collectCategoryProductIds(category);
@@ -156,7 +163,10 @@ const ConditionValidator = (function () {
 
   function _isCategoryRuleMode(step) {
     const categories = Array.isArray(step && step.categories) ? step.categories : [];
-    return categories.some(c => Array.isArray(c && c.conditions) && c.conditions.length > 0);
+    return categories.some(c =>
+      Array.isArray(c && c.conditions)
+      && c.conditions.some(rule => _isPositiveConditionValue(rule && rule.value))
+    );
   }
 
   /**
@@ -191,7 +201,7 @@ const ConditionValidator = (function () {
     }
 
     // No explicit condition configured → only enforce minQuantity; no upper bound
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+    if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
@@ -200,7 +210,7 @@ const ConditionValidator = (function () {
     if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
 
     // Secondary condition — AND logic
-    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
       return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
     }
 

@@ -1975,7 +1975,7 @@
   --rich-help-arrow-left: 50%;
   width: min(320px, calc(100vw - 48px));
   padding: 18px;
-  transform: translate(-50%, 8px);
+  transform: translate(-50%, 0);
   border: 1px solid #dfe3e8;
   border-radius: 8px;
   background: #ffffff;
@@ -1984,10 +1984,7 @@
   opacity: 0;
   pointer-events: none;
   text-align: center;
-  transition:
-    opacity 140ms ease,
-    transform 140ms ease,
-    visibility 140ms ease;
+  transition: none;
   visibility: hidden;
   z-index: var(--rich-help-card-layer);
 }

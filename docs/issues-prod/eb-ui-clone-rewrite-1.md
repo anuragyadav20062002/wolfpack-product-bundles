@@ -493,7 +493,7 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 
 ### 2026-05-27 06:17 IST - PPB Bundle Visibility slice verified before commit
 - Verification passed: `npx jest tests/unit/routes/ppb-bundle-visibility-ui-contract.test.ts tests/unit/routes/ppb-save-bundle.test.ts --runInBand` with 38 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, `git diff --check`, and graph rebuild via the graphify pipx venv.
-- The first graph rebuild command using system `python3` failed because the `graphify` module is not installed there; reran successfully with `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python`.
+- The first graph rebuild command using system `python3` failed because the `graphify` module is not installed there; reran successfully with `npm run graphify:rebuild`.
 - Removed a stale test header comment that referenced the docs-only clone issue slug so the code/test competitor-reference scan stays clean.
 - Next: stage the Product Page configure route/CSS, tests, issue log, manifest, test spec, and graph outputs, then commit with the required issue prefix.
 
@@ -928,7 +928,7 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Combined focused Jest suite passed: `npx jest tests/unit/lib/bundle-config-contracts.test.ts tests/unit/routes/select-template.test.ts tests/unit/lib/bundle-formatter.test.ts --runInBand` (47 tests).
 - Modified-file ESLint passed with 0 errors and existing warnings: `npx eslint --max-warnings 9999 ...`.
 - Production build passed: `npm run build`.
-- Graph rebuild completed using the pipx graphify environment after the documented `python3` command could not import `graphify`: `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`.
+- Graph rebuild completed using the pipx graphify environment after the documented `python3` command could not import `graphify`: `npm run graphify:rebuild`.
 - Competitor-reference scan over modified code files passed after neutralizing pre-existing comments in touched files.
 - Next: continue with save/metafield contract tests and live Chrome proof before any manifest row is marked green.
 
@@ -976,7 +976,7 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Added Rust integration coverage for default public `Box`, `Items`, `Retail Price`, `You Save`, and private `_Items` merge attributes, plus the global off-state where public fields are omitted.
 - Wired DCP product-page save to sync `bundleCartLineMessaging` onto the active Rust CartTransform owner metafield, matching by Rust function ID before writing `$app.bundle_cart_line_messaging`.
 - Added storefront cart-add private source data in the PPB widget, FPB widget, and SDK cart builder; later compacted into `_bundle_display_properties` so the Rust function can copy preformatted strings without exceeding Shopify Function input complexity.
-- Verification passed: focused Jest suite (46 tests), full Rust `cargo test`, modified-file ESLint with 0 errors, `npm run build`, `npm run build:widgets`, `npm run build:sdk`, `npm run minify:assets css`, graph rebuild, and code competitor-reference scan. The plain `cargo build --target=wasm32-unknown-unknown --release` failed via the rustup proxy, but the same build passed with explicit `RUSTC=/Users/adityaawasthi/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc`.
+- Verification passed: focused Jest suite (46 tests), full Rust `cargo test`, modified-file ESLint with 0 errors, `npm run build`, `npm run build:widgets`, `npm run build:sdk`, `npm run minify:assets css`, graph rebuild, and code competitor-reference scan. The plain `cargo build --target=wasm32-unknown-unknown --release` failed via the rustup proxy, but the same build passed with explicit `RUSTC="$(rustup which rustc)"`.
 - Next: capture WPB Admin/save/runtime/cart proof for the global cart-line messaging rows, then continue the remaining PPB/FPB Admin and storefront parity slices.
 
 ### 2026-05-26 03:33 IST - Global cart-message DCP UI slice started
@@ -1048,7 +1048,7 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 ### 2026-05-26 23:27 IST - Cart Transform namespace fix ready for SIT deploy
 - Added RED-to-green contract coverage in `tests/unit/extensions/cart-transform-run-query.test.ts` requiring every app-owned component/pricing metafield in `extensions/bundle-cart-transform-rs/src/run.graphql` to specify `namespace: "$app"`.
 - Patched the Cart Transform input query so component metadata, parent references, quantities, price adjustment, component pricing, and owner settings all read from the `$app` namespace used by the metafield definitions/writers.
-- Verified the focused query test and Rust transform suite locally; the plain rustup proxy WASM build failed in this shell, but the explicit stable `RUSTC=/Users/adityaawasthi/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc cargo build --target=wasm32-unknown-unknown --release` path passed.
+- Verified the focused query test and Rust transform suite locally; the plain rustup proxy WASM build failed in this shell, but the explicit stable `RUSTC="$(rustup which rustc)" cargo build --target=wasm32-unknown-unknown --release` path passed.
 - User authorized running `npm run deploy:sit` for this Cart Transform function update. Next: run the focused checks, deploy SIT, then retake live cart proof for single-line merge and configured discount application.
 
 ### 2026-05-26 23:31 IST - Cart Transform SIT deploy completed
@@ -1431,7 +1431,7 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Re-ran the focused metafield test after fixing import order: `npx jest tests/unit/services/bundle-product-metafield.test.ts --runInBand` with 9 tests.
 - Modified-file ESLint passed with 0 errors using `npx eslint --max-warnings 9999 ...`; warnings are existing unsafe-typing warnings plus ignored raw widget assets.
 - `npm run build` passed with existing Vite empty-chunk/dynamic-import warnings only.
-- Rebuilt the graph with `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`; output updated `graphify-out/graph.json` and `graphify-out/GRAPH_REPORT.md` with the existing invalid-file-type extraction warning.
+- Rebuilt the graph with `npm run graphify:rebuild`; output updated `graphify-out/graph.json` and `graphify-out/GRAPH_REPORT.md` with the existing invalid-file-type extraction warning.
 - Code/test competitor-reference scan over the touched implementation files returned no matches for banned competitor identifiers.
 
 ### 2026-05-26 08:16 IST - PPB Default Products direct-contract slice started
@@ -1459,7 +1459,7 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Focused Jest passed: `npx jest tests/unit/lib/default-products-contract.test.ts tests/unit/routes/ppb-bundle-settings.test.ts tests/unit/assets/bundle-widget-product-page-products.test.ts tests/unit/routes/ppb-save-bundle.test.ts tests/unit/services/bundle-product-metafield.test.ts tests/unit/assets/condition-validator.test.ts tests/unit/routes/discount-pricing-ui-contract.test.ts --runInBand` with 7 suites and 163 tests.
 - Modified-file ESLint passed with 0 errors using `npx eslint --max-warnings 9999 ...`; warnings remain within the accepted project warning budget.
 - `npm run build`, `npm run build:widgets`, and `npm run minify:assets css` passed.
-- Rebuilt the graph with `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`; output updated `graphify-out/graph.json` and `graphify-out/GRAPH_REPORT.md` with the existing invalid-file-type extraction warning.
+- Rebuilt the graph with `npm run graphify:rebuild`; output updated `graphify-out/graph.json` and `graphify-out/GRAPH_REPORT.md` with the existing invalid-file-type extraction warning.
 - Exact code/test competitor-reference scan returned no matches for `eb`, `skai`, `skailama`, or `easybundles`.
 
 ### 2026-05-26 08:57 IST - PPB Bundle Summary Text slice started
@@ -1489,7 +1489,7 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Focused Jest passed: `npx jest tests/unit/routes/design-settings-cart-messaging.test.ts tests/unit/lib/design-control-panel-dirty.test.ts tests/unit/services/cart-transform-service.test.ts tests/unit/lib/bundle-config-contracts.test.ts --runInBand` with 4 suites and 43 tests.
 - Modified TS/TSX ESLint passed with 0 errors using `npx eslint --max-warnings 9999 ...`; the CSS module is intentionally not passed to this TS parser and is covered by `npm run build`.
 - `npm run build` passed with the existing Vite empty-chunk/dynamic-import warnings only.
-- Rebuilt the graph with `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`; output updated `graphify-out/graph.json` and `graphify-out/GRAPH_REPORT.md` with the existing invalid-file-type extraction warning.
+- Rebuilt the graph with `npm run graphify:rebuild`; output updated `graphify-out/graph.json` and `graphify-out/GRAPH_REPORT.md` with the existing invalid-file-type extraction warning.
 - Exact code/test competitor-reference scan returned no matches for `eb`, `skai`, `skailama`, or `easybundles`.
 - Live DCP save/network proof remains blocked until Shopify CLI authentication completes; the active interactive CLI login prompt is showing verification code `GGDS-GNZJ`.
 
@@ -1543,7 +1543,7 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Broader local contracts passed: `npx jest tests/unit/lib/bundle-config-contracts.test.ts tests/unit/routes/select-template.test.ts tests/unit/lib/bundle-formatter.test.ts tests/unit/lib/design-control-panel-dirty.test.ts tests/unit/routes/design-settings-cart-messaging.test.ts tests/unit/services/cart-transform-service.test.ts --runInBand` with 6 suites and 70 tests.
 - Modified-file ESLint passed with 0 errors using `npx eslint --max-warnings 9999 ...`; warnings remain accepted project warnings in existing hook/test code.
 - `npm run build` passed with existing Vite empty-chunk/dynamic-import warnings only.
-- Rebuilt graph outputs with `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`; output reported 3502 nodes, 4846 edges, 536 communities and the existing invalid-file-type warning.
+- Rebuilt graph outputs with `npm run graphify:rebuild`; output reported 3502 nodes, 4846 edges, 536 communities and the existing invalid-file-type warning.
 - The previous Shopify CLI code expired; a fresh interactive dev session is now waiting on verification code `ZBVN-DKVH`.
 
 ### 2026-05-26 09:37 IST - Step/category persistence slice started

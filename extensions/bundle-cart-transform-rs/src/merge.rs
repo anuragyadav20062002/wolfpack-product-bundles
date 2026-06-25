@@ -222,44 +222,38 @@ pub fn process_merge_operations(
         // -------------------------------------------------------------------------
         // Step 4: Calculate effective discount percentage.
         // -------------------------------------------------------------------------
-        let base_discount_percentage = if let Some(ref pa) = parent.price_adjustment {
+        let paid_discount_percentage = if let Some(ref pa) = parent.price_adjustment {
             if pa.method == PricingMethod::BuyXGetY {
-                calculate_buy_x_get_y_discount_percentage(
-                    pa,
-                    &paid_unit_prices,
-                    paid_total,
-                    original_total,
-                    paid_quantity,
-                    presentment_currency_rate,
-                )
+                    calculate_buy_x_get_y_discount_percentage(
+                        pa,
+                        &paid_unit_prices,
+                        paid_total,
+                        paid_total,
+                        paid_quantity,
+                        presentment_currency_rate,
+                    )
             } else {
                 calculate_discount_percentage(
                     pa,
                     paid_total,
-                    original_total,
+                    paid_total,
                     total_quantity,
                     paid_quantity,
                     presentment_currency_rate,
                 )
             }
-        } else if free_gift_total > 0.0 && original_total > 0.0 {
-            let raw = (1.0 - paid_total / original_total) * 100.0;
-            if raw.is_finite() {
-                ((raw * 10000.0).round() / 10000.0).clamp(0.0, 100.0)
-            } else {
-                0.0
-            }
         } else {
             0.0
         };
-        let discount_percentage = if selected_addon_discount_amount > 0.0 && original_total > 0.0 {
-            let base_discount_amount = original_total * base_discount_percentage / 100.0;
-            rounded_percentage(
-                (base_discount_amount + selected_addon_discount_amount).min(original_total),
-                original_total,
-            )
+
+        let paid_discount_amount = paid_total * paid_discount_percentage / 100.0;
+        let total_discount_amount =
+            (paid_discount_amount + selected_addon_discount_amount + free_gift_total)
+                .min(original_total);
+        let discount_percentage = if total_discount_amount > 0.0 && original_total > 0.0 {
+            rounded_percentage(total_discount_amount, original_total)
         } else {
-            base_discount_percentage
+            0.0
         };
 
         // -------------------------------------------------------------------------
@@ -285,28 +279,52 @@ pub fn process_merge_operations(
         // Step 6: Build compact component details.
         // Format: [title, qty, retailCents, bundleCents, discountPct, savingsCents]
         // -------------------------------------------------------------------------
-        let original_total_cents = (original_total * 100.0).round() as i64;
-        let discounted_total_cents =
-            (original_total * (1.0 - discount_percentage / 100.0) * 100.0).round() as i64;
-        let savings_cents = original_total_cents - discounted_total_cents;
-
         let mut component_details: Vec<serde_json::Value> = Vec::new();
+        let mut total_retail_cents: i64 = 0;
+        let mut total_bundle_cents: i64 = 0;
         for (i, &idx) in line_indices.iter().enumerate() {
             let line = &lines[idx];
+            let qty = *line.quantity() as i64;
             let retail_cents =
                 (decimal_to_f64(line.cost().amount_per_quantity().amount()) * 100.0).round() as i64;
             let step_type = line.step_type().and_then(|a| a.value()).map(|s| s.as_str());
             let is_free_gift = is_free_gift_line(step_type);
-            let bundle_cents = if is_free_gift {
+            let paid_bundle_cents =
+                (retail_cents as f64 * (1.0 - paid_discount_percentage / 100.0)).round() as i64;
+            let line_total = decimal_to_f64(line.cost().total_amount().amount());
+            let addon_discount = parse_addon_discount(step_type);
+            let addon_discount_cents = if is_addon_line(step_type) {
+                (calculate_selected_addon_discount_amount(
+                    line_total,
+                    addon_discount
+                        .as_ref()
+                        .map(|(discount_type, _)| discount_type.as_str()),
+                    addon_discount
+                        .as_ref()
+                        .map(|(_, discount_value)| discount_value.as_str()),
+                ) * 100.0).round() as i64
+            } else {
+                0
+            };
+            let line_bundle_cents_total = if is_free_gift {
                 0
             } else {
-                (retail_cents as f64 * (1.0 - discount_percentage / 100.0)).round() as i64
+                ((paid_bundle_cents * qty) - addon_discount_cents).max(0)
+            };
+            let bundle_cents = if qty > 0 {
+                (line_bundle_cents_total as f64 / qty as f64).round() as i64
+            } else {
+                0
             };
             let line_pct = if is_free_gift {
                 100.0
+            } else if retail_cents > 0 {
+                rounded_percentage((retail_cents - bundle_cents) as f64, retail_cents as f64)
             } else {
-                discount_percentage
+                0.0
             };
+            total_retail_cents += retail_cents * qty;
+            total_bundle_cents += line_bundle_cents_total;
             let title = match lines[idx].merchandise() {
                 schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
                     truncate(v.product().title(), 25).to_string()
@@ -315,7 +333,7 @@ pub fn process_merge_operations(
             };
             component_details.push(serde_json::json!([
                 title,
-                *line.quantity(),
+                qty,
                 retail_cents,
                 bundle_cents,
                 line_pct,
@@ -323,6 +341,10 @@ pub fn process_merge_operations(
                 ""
             ]));
         }
+
+        let original_total_cents = total_retail_cents;
+        let discounted_total_cents = total_bundle_cents;
+        let savings_cents = original_total_cents - discounted_total_cents;
 
         let components_json = serde_json::to_string(&component_details).unwrap_or_default();
 

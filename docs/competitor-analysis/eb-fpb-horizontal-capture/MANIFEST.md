@@ -2,7 +2,7 @@
 
 **Generated:** 2026-06-06
 **Issue:** fpb-classic-design-parity-1 (Horizontal follow-up)
-**Plan:** `/Users/adityaawasthi/.claude/plans/eb-fpb-horizontal-design-capture.md`
+**Plan:** `.claude/plans/eb-fpb-horizontal-design-capture.md`
 
 ## Status
 

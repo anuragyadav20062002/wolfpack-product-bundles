@@ -561,7 +561,7 @@ All phases complete and tested. Issue tracking system established for future wor
 **Status:** Ready for testing and review
 
 ## Related Documentation
-- `/Users/adityaawasthi/.claude/plans/graceful-marinating-wozniak.md` (Implementation Plan)
+- `.claude/plans/graceful-marinating-wozniak.md` (Implementation Plan)
 - `docs/FULL_PAGE_DESIGN_GAP_ANALYSIS.md` (Gap Analysis)
 - `docs/FULL_PAGE_IMPLEMENTATION_PLAN_2026.md` (Detailed Implementation)
 - `docs/DCP_IMPLEMENTATION_SUMMARY.md` (DCP Architecture)

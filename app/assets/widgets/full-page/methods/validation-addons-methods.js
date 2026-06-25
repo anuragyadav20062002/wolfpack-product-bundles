@@ -26,6 +26,18 @@ function getAddonTiersForStep(step) {
   return Array.isArray(step?.addonTiers) ? step.addonTiers.filter(Boolean) : [];
 }
 
+function hasConfiguredAddonRule(step) {
+  if (!step) return false;
+  const eligibilityValue = Number(step.addonEligibilityCondition?.value) || 0;
+  if (eligibilityValue > 0) return true;
+
+  return getAddonTiersForStep(step).some(tier => {
+    const tierValue = Number(tier?.eligibilityCondition?.value) || 0;
+    if (tierValue > 0) return true;
+    return Array.isArray(tier?.selectedAddonProducts) && tier.selectedAddonProducts.length > 0;
+  });
+}
+
 export const fullPageValidationAddonsMethods = {
 async _sidebarAdvanceToNextStep() {
   const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
@@ -119,12 +131,6 @@ async _sidebarAdvanceToNextStep() {
 
 canProceedToNextStep() {
   if (!this.isStepCompleted(this.currentStepIndex)) return false;
-  // If the next step is the free-gift step, also enforce the addon threshold.
-  // Otherwise the merchant's `Bundle Product Quantity` / `Bundle Value` rule on
-  // the addon tier is ignored when advancing into the free-gift step.
-  const steps = this.selectedBundle?.steps || [];
-  const nextStep = steps[this.currentStepIndex + 1];
-  if (nextStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
   return true;
 },
 
@@ -180,22 +186,10 @@ get paidSteps() {
 get isFreeGiftUnlocked() {
   if (!this.freeGiftStep) return false;
   const steps = this.selectedBundle?.steps || [];
-  const paidStepsComplete = this.paidSteps.every(paidStep => {
+  return this.paidSteps.every(paidStep => {
     const globalIndex = steps.indexOf(paidStep);
     return this.isStepCompleted(globalIndex);
   });
-
-  // Free gift unlock should primarily follow "all paid steps complete".
-  // Some bundles may also carry addon-tier eligibility metadata; treat that as an
-  // additional unlock mechanism (not a stricter gate) to avoid blocking navigation
-  // when eligibility fields are present but not aligned with paid-step conditions.
-  if (paidStepsComplete) return true;
-
-  if (this.freeGiftStep.addonEligibilityCondition || Array.isArray(this.freeGiftStep.addonTiers)) {
-    return this.getAddonEligibilityState(this.freeGiftStep).isEligible;
-  }
-
-  return false;
 },
 
 canNavigateToStep(targetStepIndex) {
@@ -245,6 +239,8 @@ getAddonTierEvaluation(step) {
 
   return {
     tier: selected?.tier || null,
+    tierIndex: selected?.index ?? -1,
+    isEligible: selected?.isEligible === true,
     totalPrice,
     totalQuantity,
     currentValue: selected?.currentValue ?? totalQuantity,
@@ -257,11 +253,12 @@ _getFreeGiftRemainingCount() {
     const globalIndex = steps.indexOf(paidStep);
     return this.isStepCompleted(globalIndex);
   });
-  if (paidStepsComplete) return 0;
 
-  if (this.freeGiftStep?.addonEligibilityCondition || getAddonTiersForStep(this.freeGiftStep).length > 0) {
+  if (hasConfiguredAddonRule(this.freeGiftStep)) {
     return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
   }
+
+  if (paidStepsComplete) return 0;
 
   const total = this.paidSteps.reduce((sum, s) =>
     sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
@@ -291,8 +288,13 @@ getAddonEligibilityState(step) {
   const discountValue = Number(discount.value || 0);
   const discountUnit = discount.type === 'PERCENTAGE' ? '%' : currencyInfo.display.symbol;
 
+  const tierIndex = Number.isInteger(evaluation.tierIndex) ? evaluation.tierIndex : -1;
+  const isEligible = evaluation.isEligible === true || remainingRaw <= 0;
+
   return {
-    isEligible: remainingRaw <= 0,
+    isEligible,
+    tier,
+    tierIndex,
     conditionType,
     remainingQuantity,
     remainingAmount,
@@ -312,6 +314,7 @@ getAddonLineDiscount(step) {
     ? this.getAddonTierEvaluation(step)
     : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
   const tier = evaluation.tier;
+  if (evaluation.isEligible !== true) return null;
   const discount = tier?.discount || step?.addonDiscount || {};
   const type = String(discount.type || '').toUpperCase();
   const value = Number(discount.value || 0);
@@ -392,7 +395,8 @@ getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice) {
 
 renderAddonEligibilityMessage(step, eligibilityState) {
   const messages = step?.addonMessaging || {};
-  const tierMessages = messages.tier1 || {};
+  const tierKey = eligibilityState?.tierIndex >= 0 ? `tier${eligibilityState.tierIndex + 1}` : 'tier1';
+  const tierMessages = messages[tierKey] || messages.tier1 || {};
   const template = eligibilityState.isEligible
     ? tierMessages.eligibleState
     : tierMessages.ineligibleState;
@@ -441,7 +445,9 @@ _initDefaultProducts() {
 // Re-lock free gift if paid items no longer satisfy the unlock condition
 _syncFreeGiftLock() {
   if (!this.freeGiftStep || this.freeGiftStepIndex < 0) return;
-  if (!this.isFreeGiftUnlocked) {
+  const addonEligible = !hasConfiguredAddonRule(this.freeGiftStep)
+    || this.getAddonEligibilityState(this.freeGiftStep).isEligible;
+  if (!this.isFreeGiftUnlocked || !addonEligible) {
     this.selectedProducts[this.freeGiftStepIndex] = {};
   }
 },

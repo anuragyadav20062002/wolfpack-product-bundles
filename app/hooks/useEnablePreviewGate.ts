@@ -63,14 +63,13 @@ export function useEnablePreviewGate(options: UseEnablePreviewGateOptions) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional mount-only trigger
 
-  const requestPreview = useCallback((onProceed: () => void) => {
+  const requestPreview = useCallback((onProceed: () => unknown) => {
     const decision = decideEnablePreviewGate({
       appEmbedEnabled: options.appEmbedEnabled,
       themeEditorUrl: options.themeEditorUrl,
     });
     if (decision.mode === "proceed") {
-      onProceed();
-      return;
+      return onProceed();
     }
     if (decision.mode === "block_with_modal") {
       setOpen(true);

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.46
- * Built   : 2026-06-23
+ * Version : 3.0.51
+ * Built   : 2026-06-25
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.46';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.51';
 (function() {
   'use strict';
 
@@ -35,7 +35,7 @@ const ConditionValidator = (function () {
 
   function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
 
-    if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+    if (!step || !step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       return { allowed: true, limitText: null };
     }
 
@@ -48,7 +48,7 @@ const ConditionValidator = (function () {
     const primary = _evaluateCanUpdate(step.conditionOperator, step.conditionValue, totalAfter);
     if (!primary.allowed) return primary;
 
-    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
       const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
       if (!secondary.allowed) return secondary;
     }
@@ -71,6 +71,11 @@ const ConditionValidator = (function () {
     return total;
   }
 
+  function _isPositiveConditionValue(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0;
+  }
+
   function _collectCategoryProductIds(category) {
     const ids = new Set();
     const products = Array.isArray(category && category.products) ? category.products : [];
@@ -85,7 +90,9 @@ const ConditionValidator = (function () {
   }
 
   function evaluateCategoryRules(category, stepSelections) {
-    const rules = Array.isArray(category && category.conditions) ? category.conditions : [];
+    const rules = Array.isArray(category && category.conditions)
+      ? category.conditions.filter(rule => _isPositiveConditionValue(rule && rule.value))
+      : [];
     if (rules.length === 0) return true;
 
     const productIds = _collectCategoryProductIds(category);
@@ -108,7 +115,10 @@ const ConditionValidator = (function () {
 
   function _isCategoryRuleMode(step) {
     const categories = Array.isArray(step && step.categories) ? step.categories : [];
-    return categories.some(c => Array.isArray(c && c.conditions) && c.conditions.length > 0);
+    return categories.some(c =>
+      Array.isArray(c && c.conditions)
+      && c.conditions.some(rule => _isPositiveConditionValue(rule && rule.value))
+    );
   }
 
   function isStepConditionSatisfied(step, currentSelections) {
@@ -128,14 +138,14 @@ const ConditionValidator = (function () {
       total += qty || 0;
     }
 
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+    if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
 
     if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
 
-    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
       return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
     }
 
@@ -2100,6 +2110,14 @@ const FullPagePreset = (function () {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FullPagePreset;
+}
+
+function applyMethodMixins(target, ...sources) {
+  sources.forEach((source) => {
+    if (!source) return;
+    Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+  });
+  return target;
 }
 
 function shouldRenderInlineVariantSelector({
@@ -5396,6 +5414,7 @@ renderSidePanel(panel) {
 
   panel.classList.toggle('full-page-side-panel--inline-slots', useInlineSummarySlots);
   panel.classList.toggle('full-page-side-panel--skeleton-list', !useInlineSummarySlots);
+  panel.classList.toggle('full-page-side-panel--has-addon-summary', false);
 
   const header = document.createElement('div');
   header.className = 'side-panel-header';
@@ -5485,6 +5504,15 @@ renderSidePanel(panel) {
         summaryContent.appendChild(progressBar);
       }
     }
+  }
+
+  if (isStandardDesktopSidebar) {
+    const addonChildCountBefore = summaryContent.children.length;
+    this._renderFreeGiftSection(summaryContent);
+    panel.classList.toggle(
+      'full-page-side-panel--has-addon-summary',
+      summaryContent.children.length > addonChildCountBefore
+    );
   }
 
   const countLabel = document.createElement('div');
@@ -7506,12 +7534,13 @@ attachProductCardListeners(cardElement, product, stepIndex) {
   if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
 
   const getProductId = () => product.variantId || product.id;
+  const getClickedProductId = (element) => element?.dataset?.productId || getProductId();
 
   cardElement.addEventListener('click', (e) => {
     const btn = e.target.closest('.inline-qty-btn');
     if (!btn) return;
     e.stopPropagation();
-    const productId = getProductId();
+    const productId = getClickedProductId(btn);
     const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
     if (btn.classList.contains('qty-increase')) {
       const { available } = this.getVariantAvailable(stepIndex, productId);
@@ -7529,7 +7558,7 @@ attachProductCardListeners(cardElement, product, stepIndex) {
     const addBtn = e.target.closest('.product-add-btn');
     if (!addBtn) return;
     e.stopPropagation();
-    const productId = getProductId();
+    const productId = getClickedProductId(addBtn);
     const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
     if (currentQty === 0) {
       this.updateProductSelection(stepIndex, productId, 1);
@@ -7896,11 +7925,6 @@ getAllSelectedProductsData() {
   return allProducts;
 },
 
-/**
- * Group selected variants by product for multi-variant display
- * @param {Array} selectedProducts - Array of selected product variants
- * @returns {Array} Array of product groups with their variants
- */
 groupVariantsByProduct(selectedProducts) {
   const productMap = new Map();
 
@@ -7937,10 +7961,6 @@ groupVariantsByProduct(selectedProducts) {
   return Array.from(productMap.values());
 },
 
-/**
- * Show variant breakdown popup for a product with multiple variants
- * @param {Object} productGroup - Product group with multiple variants
- */
 showVariantBreakdown(productGroup) {
   const overlay = document.createElement('div');
   overlay.className = 'variant-breakdown-overlay';
@@ -8042,6 +8062,18 @@ function getAddonTiersForStep(step) {
   return Array.isArray(step?.addonTiers) ? step.addonTiers.filter(Boolean) : [];
 }
 
+function hasConfiguredAddonRule(step) {
+  if (!step) return false;
+  const eligibilityValue = Number(step.addonEligibilityCondition?.value) || 0;
+  if (eligibilityValue > 0) return true;
+
+  return getAddonTiersForStep(step).some(tier => {
+    const tierValue = Number(tier?.eligibilityCondition?.value) || 0;
+    if (tierValue > 0) return true;
+    return Array.isArray(tier?.selectedAddonProducts) && tier.selectedAddonProducts.length > 0;
+  });
+}
+
 const fullPageValidationAddonsMethods = {
 async _sidebarAdvanceToNextStep() {
   const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
@@ -8129,10 +8161,6 @@ async _sidebarAdvanceToNextStep() {
 
 canProceedToNextStep() {
   if (!this.isStepCompleted(this.currentStepIndex)) return false;
-
-  const steps = this.selectedBundle?.steps || [];
-  const nextStep = steps[this.currentStepIndex + 1];
-  if (nextStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
   return true;
 },
 
@@ -8180,18 +8208,10 @@ get paidSteps() {
 get isFreeGiftUnlocked() {
   if (!this.freeGiftStep) return false;
   const steps = this.selectedBundle?.steps || [];
-  const paidStepsComplete = this.paidSteps.every(paidStep => {
+  return this.paidSteps.every(paidStep => {
     const globalIndex = steps.indexOf(paidStep);
     return this.isStepCompleted(globalIndex);
   });
-
-  if (paidStepsComplete) return true;
-
-  if (this.freeGiftStep.addonEligibilityCondition || Array.isArray(this.freeGiftStep.addonTiers)) {
-    return this.getAddonEligibilityState(this.freeGiftStep).isEligible;
-  }
-
-  return false;
 },
 
 canNavigateToStep(targetStepIndex) {
@@ -8241,6 +8261,8 @@ getAddonTierEvaluation(step) {
 
   return {
     tier: selected?.tier || null,
+    tierIndex: selected?.index ?? -1,
+    isEligible: selected?.isEligible === true,
     totalPrice,
     totalQuantity,
     currentValue: selected?.currentValue ?? totalQuantity,
@@ -8253,11 +8275,12 @@ _getFreeGiftRemainingCount() {
     const globalIndex = steps.indexOf(paidStep);
     return this.isStepCompleted(globalIndex);
   });
-  if (paidStepsComplete) return 0;
 
-  if (this.freeGiftStep?.addonEligibilityCondition || getAddonTiersForStep(this.freeGiftStep).length > 0) {
+  if (hasConfiguredAddonRule(this.freeGiftStep)) {
     return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
   }
+
+  if (paidStepsComplete) return 0;
 
   const total = this.paidSteps.reduce((sum, s) =>
     sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
@@ -8287,8 +8310,13 @@ getAddonEligibilityState(step) {
   const discountValue = Number(discount.value || 0);
   const discountUnit = discount.type === 'PERCENTAGE' ? '%' : currencyInfo.display.symbol;
 
+  const tierIndex = Number.isInteger(evaluation.tierIndex) ? evaluation.tierIndex : -1;
+  const isEligible = evaluation.isEligible === true || remainingRaw <= 0;
+
   return {
-    isEligible: remainingRaw <= 0,
+    isEligible,
+    tier,
+    tierIndex,
     conditionType,
     remainingQuantity,
     remainingAmount,
@@ -8308,6 +8336,7 @@ getAddonLineDiscount(step) {
     ? this.getAddonTierEvaluation(step)
     : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
   const tier = evaluation.tier;
+  if (evaluation.isEligible !== true) return null;
   const discount = tier?.discount || step?.addonDiscount || {};
   const type = String(discount.type || '').toUpperCase();
   const value = Number(discount.value || 0);
@@ -8388,7 +8417,8 @@ getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice) {
 
 renderAddonEligibilityMessage(step, eligibilityState) {
   const messages = step?.addonMessaging || {};
-  const tierMessages = messages.tier1 || {};
+  const tierKey = eligibilityState?.tierIndex >= 0 ? `tier${eligibilityState.tierIndex + 1}` : 'tier1';
+  const tierMessages = messages[tierKey] || messages.tier1 || {};
   const template = eligibilityState.isEligible
     ? tierMessages.eligibleState
     : tierMessages.ineligibleState;
@@ -8436,7 +8466,9 @@ _initDefaultProducts() {
 
 _syncFreeGiftLock() {
   if (!this.freeGiftStep || this.freeGiftStepIndex < 0) return;
-  if (!this.isFreeGiftUnlocked) {
+  const addonEligible = !hasConfiguredAddonRule(this.freeGiftStep)
+    || this.getAddonEligibilityState(this.freeGiftStep).isEligible;
+  if (!this.isFreeGiftUnlocked || !addonEligible) {
     this.selectedProducts[this.freeGiftStepIndex] = {};
   }
 },
@@ -9377,10 +9409,28 @@ async loadStepProducts(stepIndex) {
 
   let allProducts = [];
 
-  const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
+  if (step?.isFreeGift && Array.isArray(step.addonTiers)) {
+    const evaluation = typeof this.getAddonTierEvaluation === 'function'
+      ? this.getAddonTierEvaluation(step)
+      : { tier: null, isEligible: false };
+    const activeTier = evaluation?.isEligible === true ? evaluation.tier : null;
+    const activeProducts = Array.isArray(activeTier?.selectedAddonProducts)
+      ? activeTier.selectedAddonProducts
+      : [];
+    allProducts = activeProducts.map(product =>
+      typeof this.normalizePersonalizationAddonProduct === 'function'
+        ? this.normalizePersonalizationAddonProduct(product)
+        : product
+    );
+    step.displayVariantsAsIndividual = activeTier?.displayVariantsAsIndividualProducts_addons === true;
+    const activeDiscount = activeTier?.discount || {};
+    step.addonDisplayFree = activeDiscount.type === 'PERCENTAGE' && Number(activeDiscount.value || 0) >= 100;
+  }
+
+  const hasEnrichedStepProducts = !step?.isFreeGift && Array.isArray(step.StepProduct) && step.StepProduct.length > 0
     && step.StepProduct.some(sp => sp.title && sp.imageUrl);
 
-  const stepProductsAlreadyEnriched = Array.isArray(step.products) && step.products.length > 0
+  const stepProductsAlreadyEnriched = !step?.isFreeGift && Array.isArray(step.products) && step.products.length > 0
     && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
 
   if (stepProductsAlreadyEnriched) {
@@ -9396,7 +9446,7 @@ async loadStepProducts(stepIndex) {
       }))
     }));
     allProducts = allProducts.concat(normalizedProducts);
-  } else {
+  } else if (!step?.isFreeGift) {
     const productIds = this.collectStepProductIds(step);
     if (!hasEnrichedStepProducts && productIds.length > 0) {
       const shop = window.Shopify?.shop || window.location.host;
@@ -9425,7 +9475,7 @@ async loadStepProducts(stepIndex) {
     }
   }
 
-  if (allProducts.length === 0 && Array.isArray(step.categories)) {
+  if (!step?.isFreeGift && allProducts.length === 0 && Array.isArray(step.categories)) {
     const hasRenderableCachedProductData = (product) => Boolean(
       product
       && typeof product === 'object'
@@ -9448,7 +9498,7 @@ async loadStepProducts(stepIndex) {
     });
   }
 
-  if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
+  if (!step?.isFreeGift && step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
 
     const hasEnrichedData = step.StepProduct.some(sp => sp.title && sp.imageUrl && sp.price);
 
@@ -9503,7 +9553,7 @@ async loadStepProducts(stepIndex) {
     }
   }
 
-  const collectionHandles = this.collectStepCollectionHandles(step);
+  const collectionHandles = step?.isFreeGift ? [] : this.collectStepCollectionHandles(step);
   if (collectionHandles.length > 0) {
     const shop = window.Shopify?.shop || window.location.host;
     const apiBaseUrl = this.resolveStorefrontApiBase();
@@ -11319,7 +11369,7 @@ class BundleWidgetFullPage {
 
 }
 
-Object.assign(
+applyMethodMixins(
   BundleWidgetFullPage.prototype,
   fullPageAnalyticsConfigMethods,
   fullPageInitialRenderMethods,

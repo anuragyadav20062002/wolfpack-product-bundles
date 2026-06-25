@@ -40,7 +40,7 @@ The goal is pixel-level storefront UI parity for the configured bundle across de
 ### 2026-06-04 23:03 - Pre-commit checks
 - Ran `git diff --check` successfully.
 - Ran `npm run minify:assets css` successfully after the CSS source edit.
-- Ran graph rebuild with `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`; graphify reported 4042 nodes, 6008 edges, and 596 communities.
+- Ran graph rebuild with `npm run graphify:rebuild`; graphify reported 4042 nodes, 6008 edges, and 596 communities.
 - ESLint is not applicable to the modified source file because this slice changes CSS and Markdown only.
 
 ## Related Documentation
