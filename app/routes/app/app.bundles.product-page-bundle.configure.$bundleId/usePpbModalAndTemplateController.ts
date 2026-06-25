@@ -213,8 +213,18 @@ export function usePpbModalAndTemplateController({
     templateState.templateFetcher.submit(fd, { method: "POST" });
   }, [templateState]);
   const handleTemplatePreview = useCallback(() => {
-    void previewReadiness.handlePreviewBundle();
-    closeSelectTemplateDialog();
+    const previewStarted = previewReadiness.handlePreviewBundle();
+    if (previewStarted instanceof Promise) {
+      void previewStarted.then((started: boolean) => {
+        if (started) {
+          window.setTimeout(closeSelectTemplateDialog, 500);
+        }
+      });
+      return;
+    }
+    if (previewStarted) {
+      window.setTimeout(closeSelectTemplateDialog, 500);
+    }
   }, [closeSelectTemplateDialog, previewReadiness]);
   const handleConfirmDiscard = useCallback(() => {
     closeDiscardModal();

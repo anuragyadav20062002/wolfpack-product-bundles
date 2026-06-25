@@ -1,4 +1,4 @@
-import { useCallback, type MouseEvent } from "react";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { AppLogger } from "../../../lib/logger";
 import { validateSlug } from "../../../lib/slug-utils";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
@@ -9,6 +9,7 @@ import { useConfigureAddonActionHandlers } from "./useConfigureAddonActionHandle
 import { useConfigureVisibilityActionHandlers } from "./useConfigureVisibilityActionHandlers";
 
 export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
+  const [isPreviewBundleLoading, setIsPreviewBundleLoading] = useState(false);
   const sharedHandlers = useSharedBundleHandlers({
     stepsState: flow.stepsState,
     formState: flow.formState,
@@ -59,21 +60,27 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
       flow.isBundleVisibilityPending,
     onSetupVisibility: () => flow.setActiveSection("bundle_visibility"),
   });
+  useEffect(() => {
+    if (!isPreviewBundleLoading || flow.fetcher.state !== "idle") return;
+    const timeout = window.setTimeout(() => setIsPreviewBundleLoading(false), 500);
+    return () => window.clearTimeout(timeout);
+  }, [flow.fetcher.state, isPreviewBundleLoading]);
   const handlePreviewBundle = useCallback(() => {
     if (flow.isDirty) {
       flow.shopify.toast.show(
         "Please save your changes before previewing the bundle",
         { isError: true, duration: 4000 },
       );
-      return;
+      return false;
     }
     const executePreviewBundle = () => {
+      setIsPreviewBundleLoading(true);
       if (flow.bundle.bundleType === "full_page") {
         if (!flow.bundle.shopifyPageHandle) {
           const formData = new FormData();
           formData.append("intent", "createPreviewPage");
           flow.fetcher.submit(formData, { method: "post" });
-          return;
+          return true;
         }
         const shopDomain = flow.shop.includes(".myshopify.com")
           ? flow.shop.replace(".myshopify.com", "")
@@ -83,7 +90,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
         flow.shopify.toast.show("Bundle page opened in new tab", {
           isError: false,
         });
-        return;
+        return true;
       }
       let productUrl = null;
       const productHandle =
@@ -131,12 +138,12 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
           { isError: true, duration: 5000 },
         );
       }
+      return true;
     };
     if (flow.bundle.bundleType === "full_page") {
-      executePreviewBundle();
-      return;
+      return executePreviewBundle();
     }
-    enablePreviewGate.requestPreview(executePreviewBundle);
+    return enablePreviewGate.requestPreview(executePreviewBundle) === true;
   }, [enablePreviewGate, flow]);
   const handleSectionChange = useCallback(
     (section: string) => {
@@ -250,8 +257,10 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
     [flow],
   );
   const handleTemplatePreview = useCallback(() => {
-    void handlePreviewBundle();
-    flow.closeSelectTemplateModal();
+    const previewStarted = handlePreviewBundle();
+    if (previewStarted) {
+      window.setTimeout(flow.closeSelectTemplateModal, 500);
+    }
   }, [flow, handlePreviewBundle]);
   const handlePageSelectionBackdropClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
@@ -333,6 +342,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
     handlePageSelectionBackdropClick,
     handlePlaceWidget,
     handlePreviewBundle,
+    isPreviewBundleLoading,
     handleReadinessItemClick,
     handleSectionChange,
     handleTemplatePreview,
