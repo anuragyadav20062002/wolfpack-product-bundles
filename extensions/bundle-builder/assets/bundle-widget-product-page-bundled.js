@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.46
- * Built   : 2026-06-22
+ * Version : 3.0.51
+ * Built   : 2026-06-25
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.46';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.51';
 (function() {
   'use strict';
 
@@ -35,7 +35,7 @@ const ConditionValidator = (function () {
 
   function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
 
-    if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+    if (!step || !step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       return { allowed: true, limitText: null };
     }
 
@@ -48,7 +48,7 @@ const ConditionValidator = (function () {
     const primary = _evaluateCanUpdate(step.conditionOperator, step.conditionValue, totalAfter);
     if (!primary.allowed) return primary;
 
-    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
       const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
       if (!secondary.allowed) return secondary;
     }
@@ -71,6 +71,11 @@ const ConditionValidator = (function () {
     return total;
   }
 
+  function _isPositiveConditionValue(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0;
+  }
+
   function _collectCategoryProductIds(category) {
     const ids = new Set();
     const products = Array.isArray(category && category.products) ? category.products : [];
@@ -85,7 +90,9 @@ const ConditionValidator = (function () {
   }
 
   function evaluateCategoryRules(category, stepSelections) {
-    const rules = Array.isArray(category && category.conditions) ? category.conditions : [];
+    const rules = Array.isArray(category && category.conditions)
+      ? category.conditions.filter(rule => _isPositiveConditionValue(rule && rule.value))
+      : [];
     if (rules.length === 0) return true;
 
     const productIds = _collectCategoryProductIds(category);
@@ -108,7 +115,10 @@ const ConditionValidator = (function () {
 
   function _isCategoryRuleMode(step) {
     const categories = Array.isArray(step && step.categories) ? step.categories : [];
-    return categories.some(c => Array.isArray(c && c.conditions) && c.conditions.length > 0);
+    return categories.some(c =>
+      Array.isArray(c && c.conditions)
+      && c.conditions.some(rule => _isPositiveConditionValue(rule && rule.value))
+    );
   }
 
   function isStepConditionSatisfied(step, currentSelections) {
@@ -128,14 +138,14 @@ const ConditionValidator = (function () {
       total += qty || 0;
     }
 
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+    if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
 
     if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
 
-    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
       return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
     }
 
@@ -2100,6 +2110,14 @@ const FullPagePreset = (function () {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FullPagePreset;
+}
+
+function applyMethodMixins(target, ...sources) {
+  sources.forEach((source) => {
+    if (!source) return;
+    Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+  });
+  return target;
 }
 
 function shouldRenderInlineVariantSelector({

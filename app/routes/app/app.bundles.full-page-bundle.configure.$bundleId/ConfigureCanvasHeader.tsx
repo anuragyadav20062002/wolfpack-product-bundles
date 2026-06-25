@@ -14,6 +14,7 @@ export function ConfigureCanvasHeader({
     fullPageBundleStyles,
     handleBackClick,
     handlePreviewBundle,
+    isPreviewBundleLoading,
     openProductInAdmin,
     parentProductStatusUi,
     readinessClassName,
@@ -62,6 +63,7 @@ export function ConfigureCanvasHeader({
             onClick={() => {
               void handlePreviewBundle();
             }}
+            loading={isPreviewBundleLoading || undefined}
             disabled={fetcher.state !== "idle"}
           >
             Preview Bundle

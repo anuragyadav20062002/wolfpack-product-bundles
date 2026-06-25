@@ -457,6 +457,31 @@ describe('isStepConditionSatisfied — null / undefined second condition fields'
   });
 });
 
+describe('non-positive condition values', () => {
+  it('treats step rule value 0 as absent for product updates', () => {
+    const step = makeStep(EQ, 0);
+
+    expect(canUpdateQuantity(step, {}, 'A', 1).allowed).toBe(true);
+    expect(isStepConditionSatisfied(step, { A: 1 })).toBe(true);
+  });
+
+  it('ignores category rules with value 0', () => {
+    const step = {
+      minQuantity: 1,
+      categories: [
+        {
+          categoryId: 'cat-1',
+          products: [{ id: 'gid://shopify/Product/9427287703811' }],
+          conditions: [{ type: 'quantity', condition: 'equalTo', value: 0 }],
+        },
+      ],
+    };
+
+    expect(isStepConditionSatisfied(step, { '9427287703811': 1 })).toBe(true);
+    expect(isStepConditionSatisfied(step, {})).toBe(false);
+  });
+});
+
 // ─── OPERATORS export ─────────────────────────────────────────────────────────
 
 describe('OPERATORS constants', () => {

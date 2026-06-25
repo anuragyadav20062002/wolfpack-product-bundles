@@ -245,15 +245,17 @@ attachProductCardListeners(cardElement, product, stepIndex) {
   // Default steps are read-only — no add/remove/quantity interaction allowed
   if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
 
-  // qty controls use product.variantId dynamically so variant changes are reflected
+  // Prefer the clicked control's data key; variant selector updates the DOM before
+  // subsequent quantity clicks, while the captured product object can lag behind.
   const getProductId = () => product.variantId || product.id;
+  const getClickedProductId = (element) => element?.dataset?.productId || getProductId();
 
   // Inline quantity increase/decrease buttons (delegated via card element)
   cardElement.addEventListener('click', (e) => {
     const btn = e.target.closest('.inline-qty-btn');
     if (!btn) return;
     e.stopPropagation();
-    const productId = getProductId();
+    const productId = getClickedProductId(btn);
     const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
     if (btn.classList.contains('qty-increase')) {
       const { available } = this.getVariantAvailable(stepIndex, productId);
@@ -272,7 +274,7 @@ attachProductCardListeners(cardElement, product, stepIndex) {
     const addBtn = e.target.closest('.product-add-btn');
     if (!addBtn) return;
     e.stopPropagation();
-    const productId = getProductId();
+    const productId = getClickedProductId(addBtn);
     const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
     if (currentQty === 0) {
       this.updateProductSelection(stepIndex, productId, 1);

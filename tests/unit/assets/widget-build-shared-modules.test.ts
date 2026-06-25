@@ -11,6 +11,15 @@ describe('widget build shared module list', () => {
     expect(sharedModules).toContain("app/assets/widgets/shared/loading-overlay.js");
   });
 
+  it('inlines the descriptor-preserving mixin helper before widget entry files', () => {
+    const script = fs.readFileSync(path.join(process.cwd(), 'scripts/build-widget-bundles.js'), 'utf8');
+    const sharedModulesStart = script.indexOf('const SHARED_MODULES = [');
+    const sharedModulesEnd = script.indexOf('];', sharedModulesStart);
+    const sharedModules = script.slice(sharedModulesStart, sharedModulesEnd);
+
+    expect(sharedModules).toContain("app/assets/widgets/shared/mixin-descriptors.js");
+  });
+
   it('inlines shared engine modules before widget entry files', () => {
     const script = fs.readFileSync(path.join(process.cwd(), 'scripts/build-widget-bundles.js'), 'utf8');
     const sharedModulesStart = script.indexOf('const WIDGET_SHARED_MODULES = [');

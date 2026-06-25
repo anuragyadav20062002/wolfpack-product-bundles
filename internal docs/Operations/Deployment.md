@@ -48,7 +48,7 @@ npm run deploy:prod
 If the rustup proxy cannot find the `wasm32-unknown-unknown` target in a local shell, the explicit stable compiler path has been verified:
 
 ```bash
-RUSTC=/Users/adityaawasthi/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc cargo build --target=wasm32-unknown-unknown --release
+RUSTC="$(rustup which rustc)" cargo build --target=wasm32-unknown-unknown --release
 ```
 
 ## Prisma Migrations

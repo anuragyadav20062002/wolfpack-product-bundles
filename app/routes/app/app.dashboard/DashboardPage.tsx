@@ -50,6 +50,7 @@ export function DashboardPage() {
   const statusPopoverRef = useRef<any>(null);
   const typePopoverRef = useRef<any>(null);
   const fetcherIntentRef = useRef<string | null>(null);
+  const [previewingBundleId, setPreviewingBundleId] = useState<string | null>(null);
 
   // Hero image preload moved to the `links` export above — it now happens
   // during HTML parse rather than post-hydration, which previously added ~LCP
@@ -82,6 +83,9 @@ export function DashboardPage() {
       }
     } else if (data.error) {
       shopify.toast.show(String(data.error), { isError: true, duration: 5000 });
+    }
+    if (intent === 'createPreviewPage') {
+      setPreviewingBundleId(null);
     }
     fetcherIntentRef.current = null;
   }, [fetcher.state, fetcher.data, navigate, shopify, t]);
@@ -150,7 +154,11 @@ export function DashboardPage() {
   });
 
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
+    const stopPreviewLoadingSoon = () => {
+      window.setTimeout(() => setPreviewingBundleId(null), 500);
+    };
     const executePreviewAction = () => {
+      setPreviewingBundleId(bundle.id);
       const action = decideDashboardPreviewAction({
         bundleType: bundle.bundleType as "full_page" | "product_page",
         bundleId: bundle.id,
@@ -163,6 +171,7 @@ export function DashboardPage() {
 
       if (action.kind === "error") {
         shopify.toast.show(action.toast, { isError: true });
+        stopPreviewLoadingSoon();
         return;
       }
 
@@ -176,6 +185,7 @@ export function DashboardPage() {
       }
 
       window.open(action.url, "_blank", "noopener,noreferrer");
+      stopPreviewLoadingSoon();
     };
 
     if (bundle.bundleType === "full_page") {
@@ -512,6 +522,7 @@ export function DashboardPage() {
                             onClone={handleCloneBundle}
                             onDelete={handleDeleteBundle}
                             onPreview={handlePreviewBundle}
+                            isPreviewing={previewingBundleId === bundle.id}
                           />
                         </span>
                       </div>

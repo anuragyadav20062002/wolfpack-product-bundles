@@ -8,7 +8,7 @@
 
 ## Overview
 
-Phase 2 of the Admin LCP minimisation plan at `/Users/adityaawasthi/.claude/plans/plan-out-how-we-velvet-patterson.md`. Phase 1 (`admin-lcp-measurement-1`) shipped the Web Vitals telemetry + Server-Timing helper + Lighthouse CI; this issue ships the cheap universal wins those measurements unlock. Same scope across all 17 admin routes (the user picked "ALL" during planning).
+Phase 2 of the Admin LCP minimisation plan at `.claude/plans/plan-out-how-we-velvet-patterson.md`. Phase 1 (`admin-lcp-measurement-1`) shipped the Web Vitals telemetry + Server-Timing helper + Lighthouse CI; this issue ships the cheap universal wins those measurements unlock. Same scope across all 17 admin routes (the user picked "ALL" during planning).
 
 Baseline (`docs/perf/baseline-2026-06-07.md`):
 

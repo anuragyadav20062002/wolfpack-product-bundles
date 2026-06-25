@@ -20,11 +20,20 @@ const buildAddonStepFromPersonalization =
 const bundleHasNoConditions = fullPageValidationAddonsMethods.bundleHasNoConditions;
 const getAddonEligibilityState =
   fullPageValidationAddonsMethods.getAddonEligibilityState;
+const getAddonTierEvaluation =
+  fullPageValidationAddonsMethods.getAddonTierEvaluation;
+const getAddonLineDiscount =
+  fullPageValidationAddonsMethods.getAddonLineDiscount;
+const renderAddonEligibilityMessage =
+  fullPageValidationAddonsMethods.renderAddonEligibilityMessage;
 
 if (
   typeof buildAddonStepFromPersonalization !== "function" ||
   typeof bundleHasNoConditions !== "function" ||
-  typeof getAddonEligibilityState !== "function"
+  typeof getAddonEligibilityState !== "function" ||
+  typeof getAddonTierEvaluation !== "function" ||
+  typeof getAddonLineDiscount !== "function" ||
+  typeof renderAddonEligibilityMessage !== "function"
 ) {
   throw new Error("Expected FPB add-on methods missing");
 }
@@ -168,5 +177,103 @@ describe("FPB add-ons / gifting step separation", () => {
 
     expect(state.isEligible).toBe(true);
     expect(state.variables.addonsDiscountValue).toBe("100");
+  });
+
+  it("uses the active tier-specific message when multiple tiers are configured", () => {
+    (global as any).window = {
+      Shopify: { currency: { active: "USD", format: "${{amount}}" } },
+      shopMoneyFormat: "${{amount}}",
+    };
+    const step = {
+      isFreeGift: true,
+      addonMessaging: {
+        tier1: {
+          eligibleState: "Tier 1 gives ##addonsDiscountValue####addonsDiscountValueUnit## off",
+        },
+        tier2: {
+          eligibleState: "Tier 2 gives ##addonsDiscountValue####addonsDiscountValueUnit## off",
+        },
+      },
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 3 },
+          discount: { type: "PERCENTAGE", value: 20 },
+          selectedAddonProducts: [makeProduct()],
+        },
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 6 },
+          discount: { type: "PERCENTAGE", value: 100 },
+          selectedAddonProducts: [makeProduct("gid://shopify/Product/2")],
+        },
+      ],
+    };
+    const ctx = {
+      selectedProducts: [{ paidVariant: 6 }],
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+      selectedBundle: { steps: [{ id: "paid" }, step] },
+    };
+
+    const state = getAddonEligibilityState.call(ctx, step);
+    const message = renderAddonEligibilityMessage.call(ctx, step, state);
+
+    expect(message).toBe("Tier 2 gives 100% off");
+  });
+
+  it("does not return an add-on line discount before the active tier is eligible", () => {
+    (global as any).window = {
+      Shopify: { currency: { active: "USD", format: "${{amount}}" } },
+      shopMoneyFormat: "${{amount}}",
+    };
+    const step = {
+      isFreeGift: true,
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 3 },
+          discount: { type: "PERCENTAGE", value: 20 },
+          selectedAddonProducts: [makeProduct()],
+        },
+      ],
+    };
+
+    expect(
+      getAddonLineDiscount.call(
+        {
+          selectedProducts: [{ paidVariant: 1 }],
+          stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+          selectedBundle: { steps: [{ id: "paid" }, step] },
+        },
+        step,
+      ),
+    ).toBeNull();
+  });
+
+  it("exposes the eligible tier and index from tier evaluation", () => {
+    const step = {
+      isFreeGift: true,
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 3 },
+          discount: { type: "PERCENTAGE", value: 20 },
+        },
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 6 },
+          discount: { type: "PERCENTAGE", value: 100 },
+        },
+      ],
+    };
+
+    expect(
+      getAddonTierEvaluation.call(
+        {
+          selectedProducts: [{ paidVariant: 6 }],
+          stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+          selectedBundle: { steps: [{ id: "paid" }, step] },
+        },
+        step,
+      ),
+    ).toMatchObject({
+      tierIndex: 1,
+      isEligible: true,
+    });
   });
 });

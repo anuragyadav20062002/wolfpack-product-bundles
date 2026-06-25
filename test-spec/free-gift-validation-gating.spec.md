@@ -41,6 +41,11 @@ the addon threshold.
 | 12 | Current step is the free-gift step itself | currentStepIndex = freeGiftStepIndex | `true` if step condition satisfied (free-gift has no own condition → always true) | Last step; ATC path takes over. |
 | 13 | Bundle has no free-gift step, regular flow | only paid steps | delegates to `isStepCompleted` | Existing behavior. |
 
+### `isFreeGiftUnlocked` (validation-addons-methods.js)
+| # | Scenario | Input | Expected | Notes |
+|---|----------|-------|----------|-------|
+| 14 | Paid steps are complete, but configured free-gift add-on threshold is unmet | paid step complete; free-gift tier requires higher quantity | **`false`** | Regression guard: paid-step completion must not bypass merchant add-on threshold. |
+
 ## Acceptance Criteria
 - [ ] All listed test cases pass.
 - [ ] No existing tests in `tests/unit/assets/bundle-widget-free-gift.test.ts` regress.

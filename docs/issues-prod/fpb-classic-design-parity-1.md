@@ -10,7 +10,7 @@
 
 ## Overview
 
-Wolfpack's FPB widget already has the Classic Design preset wired into its dispatcher (`bundle-widget-full-page.js:6466` `getFullPageDesignPreset`) with CSS scoping via `[data-fpb-design-preset=CLASSIC]`, but the `classic-template.js` runtime styles and `side-footer-classic.css` static stylesheet are stubs (~1 KB total). This issue tracks the work to capture EasyBundles' live Classic Design storefront across the full configuration surface (per the plan at `/Users/adityaawasthi/.claude/plans/eb-fpb-classic-design-capture.md`) and implement Wolfpack's Classic template so it renders pixel-equivalent to EB, **without regressing the Standard, Compact, or Horizontal templates**.
+Wolfpack's FPB widget already has the Classic Design preset wired into its dispatcher (`bundle-widget-full-page.js:6466` `getFullPageDesignPreset`) with CSS scoping via `[data-fpb-design-preset=CLASSIC]`, but the `classic-template.js` runtime styles and `side-footer-classic.css` static stylesheet are stubs (~1 KB total). This issue tracks the work to capture EasyBundles' live Classic Design storefront across the full configuration surface (per the plan at `.claude/plans/eb-fpb-classic-design-capture.md`) and implement Wolfpack's Classic template so it renders pixel-equivalent to EB, **without regressing the Standard, Compact, or Horizontal templates**.
 
 ## Constraints / Decisions
 
@@ -48,8 +48,8 @@ Wolfpack's FPB widget already has the Classic Design preset wired into its dispa
 
 ## Related Documentation
 
-- Plan: `/Users/adityaawasthi/.claude/plans/eb-fpb-classic-design-capture.md`
-- Standard sibling plan: `/Users/adityaawasthi/.claude/plans/eb-fpb-standard-design-capture.md`
+- Plan: `.claude/plans/eb-fpb-classic-design-capture.md`
+- Standard sibling plan: `.claude/plans/eb-fpb-standard-design-capture.md`
 - Test spec: `test-spec/fpb-classic-design-storefront.spec.md`
 - EB reference docs: `internal docs/EB Implementation Reference.md`, `internal docs/EB Settings Design Reference.md`
 - Standard capture corpus: `docs/competitor-analysis/eb-fpb-standard-capture/`
