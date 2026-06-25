@@ -2356,6 +2356,15 @@
   justify-content: center;
   min-width: 28px;
   min-height: 28px;
+  color: #bf0711;
+}
+
+.addonsTierDeleteButton s-button {
+  color: #bf0711;
+}
+
+.addonsTierDeleteButton[aria-disabled="true"] {
+  color: #8c9196;
 }
 
 .addonsTierChevron {

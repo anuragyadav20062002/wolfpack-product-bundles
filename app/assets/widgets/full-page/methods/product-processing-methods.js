@@ -34,15 +34,33 @@ async loadStepProducts(stepIndex) {
 
   let allProducts = [];
 
+  if (step?.isFreeGift && Array.isArray(step.addonTiers)) {
+    const evaluation = typeof this.getAddonTierEvaluation === 'function'
+      ? this.getAddonTierEvaluation(step)
+      : { tier: null, isEligible: false };
+    const activeTier = evaluation?.isEligible === true ? evaluation.tier : null;
+    const activeProducts = Array.isArray(activeTier?.selectedAddonProducts)
+      ? activeTier.selectedAddonProducts
+      : [];
+    allProducts = activeProducts.map(product =>
+      typeof this.normalizePersonalizationAddonProduct === 'function'
+        ? this.normalizePersonalizationAddonProduct(product)
+        : product
+    );
+    step.displayVariantsAsIndividual = activeTier?.displayVariantsAsIndividualProducts_addons === true;
+    const activeDiscount = activeTier?.discount || {};
+    step.addonDisplayFree = activeDiscount.type === 'PERCENTAGE' && Number(activeDiscount.value || 0) >= 100;
+  }
+
   // Process explicit products.
   // When loaded from metafield cache (data-bundle-config), step.products already contains
   // full enriched data (images, variants, prices) — use directly, no API call needed.
   // When loaded from the API response, step.StepProduct carries the enriched data and
   // step.products only has stubs, so skip the fetch to avoid a duplicate call.
-  const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
+  const hasEnrichedStepProducts = !step?.isFreeGift && Array.isArray(step.StepProduct) && step.StepProduct.length > 0
     && step.StepProduct.some(sp => sp.title && sp.imageUrl);
 
-  const stepProductsAlreadyEnriched = Array.isArray(step.products) && step.products.length > 0
+  const stepProductsAlreadyEnriched = !step?.isFreeGift && Array.isArray(step.products) && step.products.length > 0
     && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
 
   if (stepProductsAlreadyEnriched) {
@@ -61,7 +79,7 @@ async loadStepProducts(stepIndex) {
       }))
     }));
     allProducts = allProducts.concat(normalizedProducts);
-  } else {
+  } else if (!step?.isFreeGift) {
     const productIds = this.collectStepProductIds(step);
     if (!hasEnrichedStepProducts && productIds.length > 0) {
       const shop = window.Shopify?.shop || window.location.host;
@@ -92,7 +110,7 @@ async loadStepProducts(stepIndex) {
     }
   }
 
-  if (allProducts.length === 0 && Array.isArray(step.categories)) {
+  if (!step?.isFreeGift && allProducts.length === 0 && Array.isArray(step.categories)) {
     const hasRenderableCachedProductData = (product) => Boolean(
       product
       && typeof product === 'object'
@@ -115,7 +133,7 @@ async loadStepProducts(stepIndex) {
     });
   }
 
-  if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
+  if (!step?.isFreeGift && step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
     // Check if StepProduct already has enriched data (for full-page bundles)
     const hasEnrichedData = step.StepProduct.some(sp => sp.title && sp.imageUrl && sp.price);
 
@@ -172,7 +190,7 @@ async loadStepProducts(stepIndex) {
     }
   }
 
-  const collectionHandles = this.collectStepCollectionHandles(step);
+  const collectionHandles = step?.isFreeGift ? [] : this.collectStepCollectionHandles(step);
   if (collectionHandles.length > 0) {
     const shop = window.Shopify?.shop || window.location.host;
     const apiBaseUrl = this.resolveStorefrontApiBase();

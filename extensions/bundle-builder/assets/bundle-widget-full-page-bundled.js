@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.47
+ * Version : 3.0.50
  * Built   : 2026-06-25
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.47';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.50';
 (function() {
   'use strict';
 
@@ -35,7 +35,7 @@ const ConditionValidator = (function () {
 
   function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
 
-    if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+    if (!step || !step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       return { allowed: true, limitText: null };
     }
 
@@ -48,7 +48,7 @@ const ConditionValidator = (function () {
     const primary = _evaluateCanUpdate(step.conditionOperator, step.conditionValue, totalAfter);
     if (!primary.allowed) return primary;
 
-    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
       const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
       if (!secondary.allowed) return secondary;
     }
@@ -71,6 +71,11 @@ const ConditionValidator = (function () {
     return total;
   }
 
+  function _isPositiveConditionValue(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0;
+  }
+
   function _collectCategoryProductIds(category) {
     const ids = new Set();
     const products = Array.isArray(category && category.products) ? category.products : [];
@@ -85,7 +90,9 @@ const ConditionValidator = (function () {
   }
 
   function evaluateCategoryRules(category, stepSelections) {
-    const rules = Array.isArray(category && category.conditions) ? category.conditions : [];
+    const rules = Array.isArray(category && category.conditions)
+      ? category.conditions.filter(rule => _isPositiveConditionValue(rule && rule.value))
+      : [];
     if (rules.length === 0) return true;
 
     const productIds = _collectCategoryProductIds(category);
@@ -108,7 +115,10 @@ const ConditionValidator = (function () {
 
   function _isCategoryRuleMode(step) {
     const categories = Array.isArray(step && step.categories) ? step.categories : [];
-    return categories.some(c => Array.isArray(c && c.conditions) && c.conditions.length > 0);
+    return categories.some(c =>
+      Array.isArray(c && c.conditions)
+      && c.conditions.some(rule => _isPositiveConditionValue(rule && rule.value))
+    );
   }
 
   function isStepConditionSatisfied(step, currentSelections) {
@@ -128,14 +138,14 @@ const ConditionValidator = (function () {
       total += qty || 0;
     }
 
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+    if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
 
     if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
 
-    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+    if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
       return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
     }
 
@@ -2100,6 +2110,14 @@ const FullPagePreset = (function () {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FullPagePreset;
+}
+
+function applyMethodMixins(target, ...sources) {
+  sources.forEach((source) => {
+    if (!source) return;
+    Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+  });
+  return target;
 }
 
 function shouldRenderInlineVariantSelector({
@@ -8133,10 +8151,6 @@ async _sidebarAdvanceToNextStep() {
 
 canProceedToNextStep() {
   if (!this.isStepCompleted(this.currentStepIndex)) return false;
-
-  const steps = this.selectedBundle?.steps || [];
-  const nextStep = steps[this.currentStepIndex + 1];
-  if (nextStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
   return true;
 },
 
@@ -8184,16 +8198,10 @@ get paidSteps() {
 get isFreeGiftUnlocked() {
   if (!this.freeGiftStep) return false;
   const steps = this.selectedBundle?.steps || [];
-  const paidStepsComplete = this.paidSteps.every(paidStep => {
+  return this.paidSteps.every(paidStep => {
     const globalIndex = steps.indexOf(paidStep);
     return this.isStepCompleted(globalIndex);
   });
-
-  if (hasConfiguredAddonRule(this.freeGiftStep)) {
-    return this.getAddonEligibilityState(this.freeGiftStep).isEligible;
-  }
-
-  return paidStepsComplete;
 },
 
 canNavigateToStep(targetStepIndex) {
@@ -8243,6 +8251,8 @@ getAddonTierEvaluation(step) {
 
   return {
     tier: selected?.tier || null,
+    tierIndex: selected?.index ?? -1,
+    isEligible: selected?.isEligible === true,
     totalPrice,
     totalQuantity,
     currentValue: selected?.currentValue ?? totalQuantity,
@@ -8290,8 +8300,13 @@ getAddonEligibilityState(step) {
   const discountValue = Number(discount.value || 0);
   const discountUnit = discount.type === 'PERCENTAGE' ? '%' : currencyInfo.display.symbol;
 
+  const tierIndex = Number.isInteger(evaluation.tierIndex) ? evaluation.tierIndex : -1;
+  const isEligible = evaluation.isEligible === true || remainingRaw <= 0;
+
   return {
-    isEligible: remainingRaw <= 0,
+    isEligible,
+    tier,
+    tierIndex,
     conditionType,
     remainingQuantity,
     remainingAmount,
@@ -8311,6 +8326,7 @@ getAddonLineDiscount(step) {
     ? this.getAddonTierEvaluation(step)
     : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
   const tier = evaluation.tier;
+  if (evaluation.isEligible !== true) return null;
   const discount = tier?.discount || step?.addonDiscount || {};
   const type = String(discount.type || '').toUpperCase();
   const value = Number(discount.value || 0);
@@ -8391,7 +8407,8 @@ getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice) {
 
 renderAddonEligibilityMessage(step, eligibilityState) {
   const messages = step?.addonMessaging || {};
-  const tierMessages = messages.tier1 || {};
+  const tierKey = eligibilityState?.tierIndex >= 0 ? `tier${eligibilityState.tierIndex + 1}` : 'tier1';
+  const tierMessages = messages[tierKey] || messages.tier1 || {};
   const template = eligibilityState.isEligible
     ? tierMessages.eligibleState
     : tierMessages.ineligibleState;
@@ -8439,7 +8456,9 @@ _initDefaultProducts() {
 
 _syncFreeGiftLock() {
   if (!this.freeGiftStep || this.freeGiftStepIndex < 0) return;
-  if (!this.isFreeGiftUnlocked) {
+  const addonEligible = !hasConfiguredAddonRule(this.freeGiftStep)
+    || this.getAddonEligibilityState(this.freeGiftStep).isEligible;
+  if (!this.isFreeGiftUnlocked || !addonEligible) {
     this.selectedProducts[this.freeGiftStepIndex] = {};
   }
 },
@@ -9380,10 +9399,28 @@ async loadStepProducts(stepIndex) {
 
   let allProducts = [];
 
-  const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
+  if (step?.isFreeGift && Array.isArray(step.addonTiers)) {
+    const evaluation = typeof this.getAddonTierEvaluation === 'function'
+      ? this.getAddonTierEvaluation(step)
+      : { tier: null, isEligible: false };
+    const activeTier = evaluation?.isEligible === true ? evaluation.tier : null;
+    const activeProducts = Array.isArray(activeTier?.selectedAddonProducts)
+      ? activeTier.selectedAddonProducts
+      : [];
+    allProducts = activeProducts.map(product =>
+      typeof this.normalizePersonalizationAddonProduct === 'function'
+        ? this.normalizePersonalizationAddonProduct(product)
+        : product
+    );
+    step.displayVariantsAsIndividual = activeTier?.displayVariantsAsIndividualProducts_addons === true;
+    const activeDiscount = activeTier?.discount || {};
+    step.addonDisplayFree = activeDiscount.type === 'PERCENTAGE' && Number(activeDiscount.value || 0) >= 100;
+  }
+
+  const hasEnrichedStepProducts = !step?.isFreeGift && Array.isArray(step.StepProduct) && step.StepProduct.length > 0
     && step.StepProduct.some(sp => sp.title && sp.imageUrl);
 
-  const stepProductsAlreadyEnriched = Array.isArray(step.products) && step.products.length > 0
+  const stepProductsAlreadyEnriched = !step?.isFreeGift && Array.isArray(step.products) && step.products.length > 0
     && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
 
   if (stepProductsAlreadyEnriched) {
@@ -9399,7 +9436,7 @@ async loadStepProducts(stepIndex) {
       }))
     }));
     allProducts = allProducts.concat(normalizedProducts);
-  } else {
+  } else if (!step?.isFreeGift) {
     const productIds = this.collectStepProductIds(step);
     if (!hasEnrichedStepProducts && productIds.length > 0) {
       const shop = window.Shopify?.shop || window.location.host;
@@ -9428,7 +9465,7 @@ async loadStepProducts(stepIndex) {
     }
   }
 
-  if (allProducts.length === 0 && Array.isArray(step.categories)) {
+  if (!step?.isFreeGift && allProducts.length === 0 && Array.isArray(step.categories)) {
     const hasRenderableCachedProductData = (product) => Boolean(
       product
       && typeof product === 'object'
@@ -9451,7 +9488,7 @@ async loadStepProducts(stepIndex) {
     });
   }
 
-  if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
+  if (!step?.isFreeGift && step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
 
     const hasEnrichedData = step.StepProduct.some(sp => sp.title && sp.imageUrl && sp.price);
 
@@ -9506,7 +9543,7 @@ async loadStepProducts(stepIndex) {
     }
   }
 
-  const collectionHandles = this.collectStepCollectionHandles(step);
+  const collectionHandles = step?.isFreeGift ? [] : this.collectStepCollectionHandles(step);
   if (collectionHandles.length > 0) {
     const shop = window.Shopify?.shop || window.location.host;
     const apiBaseUrl = this.resolveStorefrontApiBase();
@@ -10665,10 +10702,6 @@ generateBundleSessionKey() {
   return Math.random().toString(36).slice(2, 5).toUpperCase();
 },
 
-/**
- * Parses the JSON string from data-tier-config into a TierConfig array.
- * Returns [] on any error — pill bar is simply not shown.
- */
 parseTierConfig(rawJson) {
   try {
     const parsed = JSON.parse(rawJson);
@@ -10683,20 +10716,6 @@ parseTierConfig(rawJson) {
   }
 },
 
-/**
- * Resolves which tier config array to use for pill rendering.
- *
- * Preference order:
- *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
- *     tiers in the admin UI (>= 2 valid entries after mapping).
- *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
- *     source, used as fallback when apiTierConfig is null/undefined.
- *
- * apiTierConfig entries use { label, linkedBundleId } (DB schema).
- * Widget pill entries use { label, bundleId } — this method performs the mapping.
- *
- * Returns [] when fewer than 2 valid tiers exist after filtering.
- */
 resolveTierConfig(apiTierConfig, dataTierConfig) {
   if (apiTierConfig == null) return dataTierConfig;
 
@@ -10714,14 +10733,6 @@ resolveTierConfig(apiTierConfig, dataTierConfig) {
   return mapped.length >= 2 ? mapped : [];
 },
 
-/**
- * Resolves whether to show the step timeline.
- * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
- *
- * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
- * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
- * @returns {boolean}
- */
 resolveShowStepTimeline(apiValue, dataAttrValue) {
   if (apiValue !== null && apiValue !== undefined) return apiValue;
   return dataAttrValue;
@@ -10878,15 +10889,10 @@ applyFullPageDesignPresetMarker() {
   void this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
 },
 
-/** Returns true if the given tier index is the currently active one. */
 isTierActive(tierIndex) {
   return tierIndex === this.activeTierIndex;
 },
 
-/**
- * Inserts the tier pill bar as the first child of the container.
- * No-op when fewer than 2 tiers are configured (backward-compatible).
- */
 };
 
 const fullPageTierFloatingRuntimeMethods = {
@@ -10913,7 +10919,6 @@ initTierPills(tiers) {
   this.elements.tierPillBar = bar;
 },
 
-/** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
 updatePillActiveStates() {
   if (!this.elements.tierPillBar) return;
   this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
@@ -10924,7 +10929,6 @@ updatePillActiveStates() {
   });
 },
 
-/** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
 async switchTier(bundleId, tierIndex) {
   if (tierIndex === this.activeTierIndex) return;
 
@@ -11136,20 +11140,6 @@ showErrorUI(_error) {
   `;
 },
 
-/**
- * Fire-and-forget error report to the server so AppLogger can track widget failures.
- * Does NOT await — never blocks the render path.
- */
-
-/**
- * Background layout refresh — runs after initial render.
- *
- * In compact-marker mode, we always fetch the bundle via API before render,
- * so this refresh path is effectively a no-op for initialized API loads.
- * It is preserved for legacy cached payload paths and exits early when not needed.
- *
- * Fire-and-forget: all errors are silently swallowed.
- */
 async _scheduleLayoutRefresh() {
   const bundleId = this.container.dataset.bundleId;
   if (!bundleId) return;
@@ -11204,7 +11194,7 @@ _reportError(error) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
       keepalive: true,
-    }).catch(() => { /* best-effort — ignore if proxy is also down */ });
+    }).catch(() => {  });
   } catch (_) {
 
   }
@@ -11231,78 +11221,12 @@ _recordView() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ shop }),
       keepalive: true,
-    }).catch(() => { /* best-effort */ });
+    }).catch(() => {  });
   } catch (_) {
 
   }
 },
 };
-
-/**
- * Bundle Widget - Full Page Version
- *
- * This widget is specifically for full page bundles with horizontal tabs layout.
- * It imports shared components and utilities from bundle-widget-components.js.
- *
- * ============================================================================
- * ARCHITECTURE ROLE
- * ============================================================================
- * This is the THIRD file loaded for FULL PAGE bundles:
- * 1. bundle-widget.js (loader) - Detects bundle type as 'full_page'
- * 2. bundle-widget-components.js - Provides shared utilities
- * 3. THIS FILE (full-page widget) - Implements full page UI/UX
- *
- * ============================================================================
- * WHEN THIS FILE IS LOADED
- * ============================================================================
- * This file loads when:
- * - Container explicitly has data-bundle-type="full_page"
- *
- * Example container:
- * <div id="bundle-builder-app" data-bundle-type="full_page"></div>
- *
- * NOTE: This is OPT-IN only. Without the attribute, product-page widget loads instead.
- *
- * ============================================================================
- * UI LAYOUT: HORIZONTAL TABS
- * ============================================================================
- * - Steps displayed as horizontal tabs at the top
- * - All tabs visible simultaneously (overview of all steps)
- * - Click any tab to jump between steps
- * - Modal overlay for product selection
- * - Progress tracked with tab completion indicators
- * - Best for: Dedicated bundle pages with full horizontal space
- *
- * ============================================================================
- * SHARED CODE IMPORTS
- * ============================================================================
- * All business logic is imported from bundle-widget-components.js:
- * - Currency formatting
- * - Price calculations
- * - Discount logic
- * - Product card rendering
- * - Toast notifications
- *
- * This file ONLY contains:
- * - Full page specific UI rendering
- * - Horizontal tabs layout management
- * - Modal-based product selection
- * - Event handlers for full page flow
- *
- * ============================================================================
- * UNIFIED DESIGN WITH PRODUCT PAGE WIDGET
- * ============================================================================
- * Both widgets:
- * - Use the same CSS variables (from unified design settings API)
- * - Import the same utilities (from bundle-widget-components.js)
- * - Implement the same business logic (pricing, discounts, cart)
- * - Differ ONLY in UI layout and interaction patterns
- *
- * Result: Merchants configure design ONCE, applies to BOTH bundle types
- *
- * @version 1.0.0
- * @author Wolfpack Team
- */
 
 class BundleWidgetFullPage {
 
@@ -11435,7 +11359,7 @@ class BundleWidgetFullPage {
 
 }
 
-Object.assign(
+applyMethodMixins(
   BundleWidgetFullPage.prototype,
   fullPageAnalyticsConfigMethods,
   fullPageInitialRenderMethods,

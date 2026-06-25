@@ -1,4 +1,5 @@
 import {
+  deleteAddonTierAtIndex,
   getNextAddonTierAccordionIndex,
   normalizeAddonTierAccordionIndex,
 } from "../../../app/lib/addon-tier-accordion";
@@ -22,5 +23,20 @@ describe("addon tier accordion state", () => {
 
   it("preserves collapsed state when the tier count changes", () => {
     expect(normalizeAddonTierAccordionIndex(null, 2)).toBeNull();
+  });
+
+  it("deletes the requested tier from a multi-tier list", () => {
+    const tiers = [{ id: "tier-1" }, { id: "tier-2" }, { id: "tier-3" }];
+
+    expect(deleteAddonTierAtIndex(tiers, 1)).toEqual([
+      { id: "tier-1" },
+      { id: "tier-3" },
+    ]);
+  });
+
+  it("keeps the only tier when delete is requested", () => {
+    const tiers = [{ id: "tier-1" }];
+
+    expect(deleteAddonTierAtIndex(tiers, 0)).toEqual([{ id: "tier-1" }]);
   });
 });

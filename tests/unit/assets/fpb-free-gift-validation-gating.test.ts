@@ -1,11 +1,8 @@
 /**
  * Test Spec: free-gift-validation-gating
  *
- * Verifies the FPB storefront widget's validation gates honour the addon-tier
- * rule on the free-gift step. Without these gates, a Free-Gift bundle with
- * `addonEligibilityCondition` set on the free-gift step shows "Add to Cart"
- * on the paid step and lets the shopper bypass the configured threshold —
- * see loom https://www.loom.com/share/5af3ea258fab462ba5216723d40ec89b.
+ * Verifies the FPB storefront widget keeps paid bundle validation authoritative
+ * while treating the EB-style add-on step as optional.
  */
 
 export {};
@@ -13,6 +10,12 @@ export {};
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageValidationAddonsMethods } =
   require('../../../app/assets/widgets/full-page/methods/validation-addons-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { fullPageSelectionNavigationMethods } =
+  require('../../../app/assets/widgets/full-page/methods/selection-navigation-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { fullPageFooterSelectionMethods } =
+  require('../../../app/assets/widgets/full-page/methods/footer-selection-methods.js');
 
 type Step = {
   isFreeGift?: boolean;
@@ -126,7 +129,7 @@ describe('canProceedToNextStep', () => {
     currentStepIndex: number;
     /** When false, simulate a current paid step that is NOT yet complete. */
     currentStepCompleted: boolean;
-    /** When false, simulate that the addon eligibility threshold is unmet. */
+    /** When false, simulate that prior paid steps are incomplete. */
     freeGiftUnlocked: boolean;
   }): boolean {
     const ctx: Record<string, unknown> = {
@@ -149,7 +152,7 @@ describe('canProceedToNextStep', () => {
     return canProceedToNextStepFn.call(ctx) as boolean;
   }
 
-  it('returns false when on a paid step that is satisfied but the NEXT step is a locked free-gift', () => {
+  it('returns true when on a paid step that is satisfied and the NEXT step is an optional add-on step', () => {
     const steps: Step[] = [
       { minQuantity: 1 },
       {
@@ -169,7 +172,7 @@ describe('canProceedToNextStep', () => {
         currentStepCompleted: true,
         freeGiftUnlocked: false,
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('returns true when on a paid step that is satisfied and free-gift is unlocked', () => {
@@ -230,6 +233,44 @@ describe('canProceedToNextStep', () => {
       }),
     ).toBe(true);
   });
+
+  it('allows navigation to the add-on step when a saved paid step rule has value 0 and min quantity is met', () => {
+    const ctx = Object.assign(
+      Object.create(fullPageValidationAddonsMethods),
+      fullPageSelectionNavigationMethods,
+      fullPageFooterSelectionMethods,
+    ) as Record<string, unknown>;
+    ctx.selectedBundle = {
+      steps: [
+        {
+          conditionType: 'quantity',
+          conditionOperator: 'equal_to',
+          conditionValue: 0,
+          minQuantity: 1,
+        },
+        {
+          isFreeGift: true,
+          addonTiers: [
+            {
+              eligibilityCondition: { type: 'QUANTITY', value: 1 },
+              selectedAddonProducts: [{ id: 'p1' }],
+            },
+          ],
+        },
+      ],
+    };
+    ctx.selectedProducts = [{ v1: 1 }, {}];
+    ctx.stepProductData = [[{ id: 'p1', variantId: 'v1' }], []];
+    ctx.currentStepIndex = 0;
+    ctx.extractId = (value: string) => value;
+
+    expect((ctx.validateStep as (index: number) => boolean)(0)).toBe(true);
+    expect((ctx.isStepCompleted as (index: number) => boolean)(0)).toBe(true);
+    expect(isFreeGiftUnlockedGetter.call(ctx)).toBe(true);
+    expect((ctx.canNavigateToStep as (index: number) => boolean)(1)).toBe(true);
+    expect((ctx.isStepAccessible as (index: number) => boolean)(1)).toBe(true);
+    expect(canProceedToNextStepFn.call(ctx)).toBe(true);
+  });
 });
 
 // ---- isFreeGiftUnlocked -----------------------------------------------------
@@ -250,7 +291,7 @@ describe('isFreeGiftUnlocked', () => {
     return isFreeGiftUnlockedGetter.call(ctx) as boolean;
   }
 
-  it('returns false when paid steps are complete but the free-gift add-on threshold is unmet', () => {
+  it('returns true when paid steps are complete even if the add-on threshold is unmet', () => {
     const steps: Step[] = [
       { minQuantity: 1 },
       {
@@ -269,6 +310,30 @@ describe('isFreeGiftUnlocked', () => {
         steps,
         completedStepIndexes: [0],
         addonEligible: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('returns false when any paid step before the add-on step is incomplete', () => {
+    const steps: Step[] = [
+      { minQuantity: 1 },
+      { minQuantity: 1 },
+      {
+        isFreeGift: true,
+        addonTiers: [
+          {
+            eligibilityCondition: { type: 'QUANTITY', value: 1 },
+            selectedAddonProducts: [],
+          },
+        ],
+      },
+    ];
+
+    expect(
+      callIsUnlocked({
+        steps,
+        completedStepIndexes: [0],
+        addonEligible: true,
       }),
     ).toBe(false);
   });

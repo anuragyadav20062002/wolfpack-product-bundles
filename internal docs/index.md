@@ -20,6 +20,7 @@ This vault contains audited, authoritative documentation for the Wolfpack Produc
 - [[EB Settings Design Reference]] — Settings -> Design pageCustomization save contract, control-to-field mappings, FPB/PPB storefront propagation, stylePresets, and PPB CSS variables
 - [[EB Settings Language Reference]] — Settings -> Language save/read contract, field roots, FPB/PPB storefront globals, and active-locale runtime mappings
 - [[EB Integrations Reference]] — Integrations page UI contract, live quick setup link findings, and WPB supportability notes for Stoq, Zapiet, subscriptions, Judge.me, page builders, and checkout apps
+- [[EB Free Gift Add Ons Behavior Spec]] — FPB Free Gift & Add Ons Admin controls, personalization/add-on tier data contract, storefront eligibility messaging, scenario matrix, and replication requirements
 - [[EB Edit Settings Gap Audit 2026-06-04]] — live edit-page and Settings-page pass covering visibility modal, create tour signal, Settings Design/Language/Controls UI, and Controls runtime wiring gaps
 
 Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`
