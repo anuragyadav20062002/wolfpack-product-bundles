@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.46
- * Built   : 2026-06-23
+ * Version : 3.0.47
+ * Built   : 2026-06-25
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.46';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.47';
 (function() {
   'use strict';
 
@@ -8042,6 +8042,18 @@ function getAddonTiersForStep(step) {
   return Array.isArray(step?.addonTiers) ? step.addonTiers.filter(Boolean) : [];
 }
 
+function hasConfiguredAddonRule(step) {
+  if (!step) return false;
+  const eligibilityValue = Number(step.addonEligibilityCondition?.value) || 0;
+  if (eligibilityValue > 0) return true;
+
+  return getAddonTiersForStep(step).some(tier => {
+    const tierValue = Number(tier?.eligibilityCondition?.value) || 0;
+    if (tierValue > 0) return true;
+    return Array.isArray(tier?.selectedAddonProducts) && tier.selectedAddonProducts.length > 0;
+  });
+}
+
 const fullPageValidationAddonsMethods = {
 async _sidebarAdvanceToNextStep() {
   const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
@@ -8185,13 +8197,11 @@ get isFreeGiftUnlocked() {
     return this.isStepCompleted(globalIndex);
   });
 
-  if (paidStepsComplete) return true;
-
-  if (this.freeGiftStep.addonEligibilityCondition || Array.isArray(this.freeGiftStep.addonTiers)) {
+  if (hasConfiguredAddonRule(this.freeGiftStep)) {
     return this.getAddonEligibilityState(this.freeGiftStep).isEligible;
   }
 
-  return false;
+  return paidStepsComplete;
 },
 
 canNavigateToStep(targetStepIndex) {
@@ -8253,11 +8263,12 @@ _getFreeGiftRemainingCount() {
     const globalIndex = steps.indexOf(paidStep);
     return this.isStepCompleted(globalIndex);
   });
-  if (paidStepsComplete) return 0;
 
-  if (this.freeGiftStep?.addonEligibilityCondition || getAddonTiersForStep(this.freeGiftStep).length > 0) {
+  if (hasConfiguredAddonRule(this.freeGiftStep)) {
     return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
   }
+
+  if (paidStepsComplete) return 0;
 
   const total = this.paidSteps.reduce((sum, s) =>
     sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);

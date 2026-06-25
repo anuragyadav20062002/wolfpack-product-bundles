@@ -8,7 +8,7 @@
 
 ## Overview
 
-Phase 3 of the Admin LCP minimisation plan (`/Users/adityaawasthi/.claude/plans/plan-out-how-we-velvet-patterson.md`). Phase 1 captured measurement; Phase 2 shipped universal wins (font preload, vendor chunks, single-fetch). This phase tackles the image weight — `/public/` was **22 MB** of unoptimised PNGs, including 1.2–1.6 MB template preview screenshots loaded eagerly on the heaviest admin routes.
+Phase 3 of the Admin LCP minimisation plan (`.claude/plans/plan-out-how-we-velvet-patterson.md`). Phase 1 captured measurement; Phase 2 shipped universal wins (font preload, vendor chunks, single-fetch). This phase tackles the image weight — `/public/` was **22 MB** of unoptimised PNGs, including 1.2–1.6 MB template preview screenshots loaded eagerly on the heaviest admin routes.
 
 Baseline (`docs/perf/baseline-2026-06-07.md` § Phase 1):
 

@@ -72,14 +72,14 @@ npm run graphify:rebuild
 
 The npm wrapper must use the same Python runtime as the installed `graphify`
 CLI and git hooks. Prefer the `graphify` executable shebang, then the uv
-tool install, then the older pipx fallback. Do not hardcode only the pipx path:
-older graphify runtimes can miss lock handling, backup behavior, and current
-output conventions.
+`graphifyy` tool install. Do not hardcode a user profile path: local uv and
+pipx installs are machine-specific, and older graphify runtimes can miss lock
+handling, backup behavior, and current output conventions.
 
-`graphify-out/GRAPH_REPORT.md`, `graphify-out/graph.json`, and
-`graphify-out/.graphify_python` are tracked. Caches, manifests, lock/temp
-files, dated protected-output backups, and `graph.html` are generated support
-artifacts and should stay ignored.
+`graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json` are tracked.
+`graphify-out/.graphify_python`, caches, manifests, lock/temp files, dated
+protected-output backups, and `graph.html` are generated support artifacts and
+should stay ignored.
 
 Keep `graphify-out/` in `.graphifyignore`. Graphify uses `.graphifyignore`
 instead of `.gitignore` when present, so the file must also list normal

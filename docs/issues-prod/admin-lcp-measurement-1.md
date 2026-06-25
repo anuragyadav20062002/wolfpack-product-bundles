@@ -8,7 +8,7 @@
 
 ## Overview
 
-Phase 1 of the broader Admin LCP minimisation plan at `/Users/adityaawasthi/.claude/plans/plan-out-how-we-velvet-patterson.md`. Ships **measurement before optimisation** so every later phase has a before/after signal. Without this, "we made it faster" is hand-wavy.
+Phase 1 of the broader Admin LCP minimisation plan at `.claude/plans/plan-out-how-we-velvet-patterson.md`. Ships **measurement before optimisation** so every later phase has a before/after signal. Without this, "we made it faster" is hand-wavy.
 
 > Retired on 2026-06-12: Shopify App Bridge now supplies the embedded Admin Web Vitals signal used for Built for Shopify assessment. The custom `web-vitals` client, `/api/web-vitals` endpoint, and `AdminWebVital` table were removed; keep this issue only as historical context for the Server-Timing work and original baseline.
 

@@ -517,7 +517,7 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js && npx jest tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` passed with 29 tests.
 - Verification: `npm run build:widgets` completed and regenerated FPB/PPB bundled widget assets.
 - Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` completed with 0 errors and warnings only.
-- Graph: default `python3` could not import `graphify`; reran with `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python` and graph rebuild completed.
+- Graph: default `python3` could not import `graphify`; reran with `npm run graphify:rebuild` and graph rebuild completed.
 
 ### 2026-06-02 10:39 - Bundle details cart metafield parity implemented
 - Added Storefront cart read/write scopes to PROD and SIT app configs so delegated Storefront tokens can access cart metafields after deploy/reauthorization.
@@ -547,7 +547,7 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js && npx jest tests/unit/routes/cart-bundle-details.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` passed with 37 tests.
 - Verification: `npm run build:widgets` completed and regenerated FPB/PPB bundled widget assets.
 - Verification: modified-file ESLint completed with 0 errors and warnings only.
-- Graph: `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` completed; graph output changed but remains unstaged with prior graph working-tree drift.
+- Graph: `npm run graphify:rebuild` completed; graph output changed but remains unstaged with prior graph working-tree drift.
 
 ### 2026-06-02 11:18 - Cart `bundle_details` hardening follow-up started
 - Current worktree contains useful post-commit hardening for the EB cart metafield route: widgets now require `{ ok: true }` from the proxy route, and the route creates a Storefront access token on-demand when the offline session lacks one.

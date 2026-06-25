@@ -31,7 +31,15 @@ type Step = {
 
 const bundleHasNoConditionsFn = fullPageValidationAddonsMethods.bundleHasNoConditions;
 const canProceedToNextStepFn = fullPageValidationAddonsMethods.canProceedToNextStep;
-if (typeof bundleHasNoConditionsFn !== 'function' || typeof canProceedToNextStepFn !== 'function') {
+const isFreeGiftUnlockedGetter = Object.getOwnPropertyDescriptor(
+  fullPageValidationAddonsMethods,
+  'isFreeGiftUnlocked',
+)?.get;
+if (
+  typeof bundleHasNoConditionsFn !== 'function' ||
+  typeof canProceedToNextStepFn !== 'function' ||
+  typeof isFreeGiftUnlockedGetter !== 'function'
+) {
   throw new Error('Expected methods missing on validation-addons module');
 }
 
@@ -221,5 +229,47 @@ describe('canProceedToNextStep', () => {
         freeGiftUnlocked: true,
       }),
     ).toBe(true);
+  });
+});
+
+// ---- isFreeGiftUnlocked -----------------------------------------------------
+
+describe('isFreeGiftUnlocked', () => {
+  function callIsUnlocked(args: {
+    steps: Step[];
+    completedStepIndexes: number[];
+    addonEligible: boolean;
+  }): boolean {
+    const ctx = Object.create(fullPageValidationAddonsMethods) as Record<string, unknown>;
+    ctx.selectedBundle = { steps: args.steps };
+    ctx.selectedProducts = {};
+    ctx.stepProductData = [];
+    ctx.isStepCompleted = (idx: number) => args.completedStepIndexes.includes(idx);
+    ctx.getAddonEligibilityState = () => ({ isEligible: args.addonEligible });
+
+    return isFreeGiftUnlockedGetter.call(ctx) as boolean;
+  }
+
+  it('returns false when paid steps are complete but the free-gift add-on threshold is unmet', () => {
+    const steps: Step[] = [
+      { minQuantity: 1 },
+      {
+        isFreeGift: true,
+        addonTiers: [
+          {
+            eligibilityCondition: { type: 'QUANTITY', value: 5 },
+            selectedAddonProducts: [],
+          },
+        ],
+      },
+    ];
+
+    expect(
+      callIsUnlocked({
+        steps,
+        completedStepIndexes: [0],
+        addonEligible: false,
+      }),
+    ).toBe(false);
   });
 });

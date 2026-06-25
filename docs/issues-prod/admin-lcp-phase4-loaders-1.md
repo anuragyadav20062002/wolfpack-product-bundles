@@ -8,7 +8,7 @@
 
 ## Overview
 
-Phase 4 of the Admin LCP minimisation plan (`/Users/adityaawasthi/.claude/plans/plan-out-how-we-velvet-patterson.md`). Phase 1 baseline showed **TTFB 4 104 ms accounted for 93 % of LCP** on `/app/dashboard`. The audits pointed at two specific patterns:
+Phase 4 of the Admin LCP minimisation plan (`.claude/plans/plan-out-how-we-velvet-patterson.md`). Phase 1 baseline showed **TTFB 4 104 ms accounted for 93 % of LCP** on `/app/dashboard`. The audits pointed at two specific patterns:
 
 1. Dashboard loader serialises 4+ independent async calls (`checkAppEmbedEnabled` → `BillingService.getSubscriptionInfo` → proxy-health → shop billingAddress GraphQL).
 2. Attribution loader does 3 separate `db.bundle.findMany` calls for overlapping ID sets.
