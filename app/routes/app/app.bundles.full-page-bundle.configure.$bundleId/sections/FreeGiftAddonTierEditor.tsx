@@ -28,7 +28,7 @@ export function FpbAddonTierEditor({
       {(() => {
         const addonTiers: any[] = Array.isArray(addonDraft.addonTiers)
           ? (addonDraft.addonTiers as any[])
-          : [createDefaultAddonDraftTier()];
+          : [];
         const updateAddonTiers = (updated: any[]) => {
           updateAddonDraft({ addonTiers: updated });
         };
@@ -193,8 +193,8 @@ export function FpbAddonTierEditor({
                             strokeLinejoin="round"
                           />
                         </svg>
-                      )}
-                    </button>
+                          )}
+                        </button>
                   </div>
                   {isActiveTier && (
                     <div className={fullPageBundleStyles.addonsTierBody}>

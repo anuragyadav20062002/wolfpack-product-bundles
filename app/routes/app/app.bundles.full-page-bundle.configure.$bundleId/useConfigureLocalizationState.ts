@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { type MultiLanguageField } from "../../../components/bundle-configure/MultiLanguageTextModal";
 import { ADDON_MESSAGE_KEY } from "./configure-constants";
-import { createDefaultAddonDraftTier } from "./addon-helpers";
 import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
 import type { StepSetupMultiLanguageTarget } from "./visibility-helpers";
 
@@ -202,7 +201,7 @@ export function useConfigureLocalizationState(flow: ConfigureBundleFlowDraft) {
   const openAddonSectionMultiLanguageModal = useCallback(() => {
     const addonTiers = Array.isArray(addonDraft.addonTiers)
       ? addonDraft.addonTiers
-      : [createDefaultAddonDraftTier()];
+      : [];
     setMultiLanguageTarget({ type: "addon-section" });
     setMultiLanguageTitle("Customize Text for Multiple Languages");
     setMultiLanguageLayout("compact");
@@ -229,7 +228,7 @@ export function useConfigureLocalizationState(flow: ConfigureBundleFlowDraft) {
   const openAddonFooterMultiLanguageModal = useCallback(() => {
     const addonTiers = Array.isArray(addonDraft.addonTiers)
       ? addonDraft.addonTiers
-      : [createDefaultAddonDraftTier()];
+      : [];
     const savedAddonMessages =
       (bundle as any).personalizationData?.addonProducts?.addonsMessaging
         ?.tier1 || {};

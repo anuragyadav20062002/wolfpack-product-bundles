@@ -162,9 +162,9 @@ export function buildAddonDraftFromPersonalizationData(
 ) {
   const addonProducts = personalizationData?.addonProducts || {};
   const tiers =
-    Array.isArray(addonProducts?.tiers) && addonProducts.tiers.length > 0
+    Array.isArray(addonProducts?.tiers)
       ? addonProducts.tiers.map(addonTierToDraft)
-      : [createDefaultAddonDraftTier()];
+      : [];
 
   return {
     isPersonalizationEnabled:
@@ -188,9 +188,9 @@ export function buildPersonalizationDataFromDraft(
   if (!isPersonalizationEnabled && !addonProductsEnabled) return null;
 
   const addonTiers =
-    Array.isArray(addonDraft?.addonTiers) && addonDraft.addonTiers.length > 0
+    Array.isArray(addonDraft?.addonTiers)
       ? addonDraft.addonTiers
-      : [createDefaultAddonDraftTier()];
+      : [];
   const tiers = addonTiers.map(normalizeAddonTier);
 
   const personalizationData: Record<string, any> = {

@@ -29,9 +29,7 @@ export function useConfigureAddonState(flow: ConfigureBundleFlowDraft) {
     [markAsDirty],
   );
   const addonTierCount =
-    Array.isArray(addonDraft.addonTiers) && addonDraft.addonTiers.length > 0
-      ? addonDraft.addonTiers.length
-      : 1;
+    Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers.length : 0;
 
   useEffect(() => {
     setActiveAddonTierIndex((currentIndex) => {
