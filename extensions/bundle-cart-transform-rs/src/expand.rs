@@ -79,7 +79,7 @@ pub fn process_expand_operations(
         let discount_percentage = variant
             .price_adjustment()
             .map(|m| m.value().clone())
-            .and_then(|pa_json| serde_json::from_str::<PriceAdjustmentConfig>(&pa_json).ok())
+            .and_then(|pa_json| serde_json::from_str::<PriceAdjustmentConfig>(pa_json.as_str()).ok())
             .map(|pa| {
                 calculate_discount_percentage(
                     &pa,

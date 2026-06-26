@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 3.0.51
- * Built   : 2026-06-25
+ * Built   : 2026-06-26
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -221,6 +221,16 @@ const ConditionValidator = (function () {
     return map[operator] || String(required);
   }
 
+  function _formatStepLimitToast(limitText, required) {
+    const requiredQuantity = Number(required);
+    if (!Number.isFinite(requiredQuantity) || requiredQuantity <= 0) {
+      return 'This step is not configured correctly.';
+    }
+
+    const suffix = requiredQuantity === 1 ? '' : 's';
+    return `This step allows ${limitText} product${suffix} only.`;
+  }
+
   return {
     OPERATORS,
     calculateStepTotalAfterUpdate,
@@ -230,6 +240,7 @@ const ConditionValidator = (function () {
     isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
+    _formatStepLimitToast,
   };
 }());
 
@@ -347,13 +358,6 @@ class CurrencyManager {
     return symbols[currencyCode] || currencyCode;
   }
 
-  /**
-   * Ensure the format string uses the proper symbol for the given currency.
-   * If Shopify's format contains the 3-letter currency code (e.g. "PKR {{amount}}"),
-   * replace it with the symbol from our map ("Rs. {{amount}}"). This preserves
-   * the merchant's decimal/thousand-separator placeholder choice
-   * (e.g. {{amount_with_comma_separator}}) while ensuring symbols always render.
-   */
   static normalizeCurrencyFormat(format, code, symbol) {
     if (!format) return `${symbol}{{amount}}`;
     if (!code || !symbol || symbol === code) return format;
@@ -389,14 +393,6 @@ class CurrencyManager {
     };
   }
 
-  /**
-   * Convert an amount from shop base currency to the customer's display currency,
-   * then format it. Use this everywhere a price is rendered to the customer.
-   *
-   * @param {number} amount  Price in shop base currency cents
-   * @param {object} currencyInfo  Result of getCurrencyInfo()
-   * @returns {string}  Formatted price string in the display currency
-   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -2448,13 +2444,6 @@ function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
 
-/**
- * Shared selected product row renderer.
- *
- * Renders prepared display data only; selection rules, default-product rules,
- * and free-gift lock state stay in the caller until templates migrate.
- */
-
 const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
 
 function renderSelectedProductRow(product = null, options = {}) {
@@ -4246,8 +4235,6 @@ buildAddonStepFromPersonalization() {
       ? tier.selectedAddonProducts.map(product => this.normalizePersonalizationAddonProduct(product))
       : []
   );
-  const firstTier = tiers[0] || {};
-  const tierDiscount = firstTier?.discount || {};
 
   return {
     id: 'personalization-addons',
@@ -4261,13 +4248,13 @@ buildAddonStepFromPersonalization() {
     freeGiftName: addonProducts?.title || personalizationData.personalizeStepText || '',
     addonTitle: personalizationData.personalizePageSubtext || addonProducts?.title || '',
     addonIconUrl: personalizationData.stepImage || null,
-    addonDisplayFree: !addonProductsEnabled || (Number(tierDiscount.value || 0) >= 100 && tierDiscount.type === 'PERCENTAGE'),
+    addonDisplayFree: !addonProductsEnabled,
     addonUnlockAfterCompletion: true,
     addonTiers: addonProductsEnabled ? tiers : undefined,
-    addonEligibilityCondition: addonProductsEnabled ? (firstTier?.eligibilityCondition || null) : null,
-    addonDiscount: addonProductsEnabled ? (firstTier?.discount || null) : null,
+    addonEligibilityCondition: null,
+    addonDiscount: null,
     addonMessaging: addonProductsEnabled ? (addonProducts.addonsMessaging || null) : null,
-    displayVariantsAsIndividual: firstTier?.displayVariantsAsIndividualProducts_addons === true,
+    displayVariantsAsIndividual: false,
     StepProduct: selectedAddonProducts,
     products: selectedAddonProducts,
     collections: [],
@@ -8646,35 +8633,35 @@ getSummarySidebarEmptyStateMode() {
 };
 
 const fullPageStepFooterMethods = {
-buildCartLineSourceProperties(selectedLines) {
-  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-    this.selectedProducts,
-    this.stepProductData,
-    this.selectedBundle?.steps
-  );
-  const discountInfo = PricingCalculator.calculateDiscount(
-    this.selectedBundle,
-    totalPrice,
-    totalQuantity,
-    unitPrices
-  );
-  const currencyInfo = CurrencyManager.getCurrencyInfo();
-  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-  const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
-  const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
+  buildCartLineSourceProperties(selectedLines) {
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      unitPrices
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+    const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
+    const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
 
-  const sourceProperties = buildSharedCartLineSourceProperties({
-    selectedLines,
-    retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
-    discountAmount: discountAmount > 0
-      ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
-      : '',
-    discountPercentage,
-  });
-  const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
+    const sourceProperties = buildSharedCartLineSourceProperties({
+      selectedLines,
+      retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
+      discountAmount: discountAmount > 0
+        ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
+        : '',
+      discountPercentage,
+    });
+    const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
 
-  return this.buildCartLineDisplayProperties(displayProperties);
-},
+    return this.buildCartLineDisplayProperties(displayProperties);
+  },
 
 buildCartLineDisplayProperties(displayProperties) {
   return buildSharedCartLineDisplayProperties(displayProperties, this.getCartLineLabels());
@@ -8697,8 +8684,14 @@ async addBundleToCart(clickedButton = null) {
     const bundleName = this.selectedBundle.name || 'Bundle';
     const sessionKey = this.generateBundleSessionKey();
     const offerId = this.resolveFullPageOfferId();
+    const baseOfferId = `${offerId}_${sessionKey}`;
     const selectedLines = [];
     let itemNumber = 0;
+    const hasAddonStepConfigured = (this.selectedBundle?.steps || []).some((candidateStep) => {
+      const addonEval = this.getAddonTierEvaluation?.(candidateStep);
+      return candidateStep?.isFreeGift === true && candidateStep?.addonDisplayFree !== true && addonEval?.tier;
+    });
+    let hasSelectedAddonLine = false;
 
     this.selectedBundle.steps.forEach((step, stepIndex) => {
       const stepSelections = this.selectedProducts[stepIndex] || {};
@@ -8718,9 +8711,19 @@ async addBundleToCart(clickedButton = null) {
             '_easyBundle:prodQty': String(quantity),
             '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
           };
+          const addonEval = this.getAddonTierEvaluation?.(step) || {};
           const addonDiscount = this.getAddonLineDiscount(step);
-          if (addonDiscount && step?.addonDisplayFree !== true) {
-            properties['_bundle_step_type'] = addonDiscount
+          if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {
+            hasSelectedAddonLine = true;
+            properties._addon_product = 'true';
+            properties._addon_offer_id = baseOfferId;
+            properties._boxProduct = 'addonProduct';
+            if (addonEval?.tier?.tierId) {
+              properties._addonTierId = String(addonEval.tier.tierId);
+            }
+            const addonVariantId = this.extractId(variantId);
+            properties._uniqueGbbItemKey = `${addonVariantId || numericVariantId}_pageId:addonProduct`;
+            properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true
               ? `addon:${addonDiscount.type}:${addonDiscount.value}`
               : 'addon';
           } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
@@ -8752,6 +8755,9 @@ async addBundleToCart(clickedButton = null) {
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
+      if (hasSelectedAddonLine && hasAddonStepConfigured) {
+        item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
+      }
     });
 
     this._setWidgetBusy(true, actionButton);
@@ -9731,13 +9737,6 @@ processProductsForStep(products, step) {
   });
 },
 
-/**
- * Look up real stock for a variant in a step's product data.
- * Returns:
- *   - available: positive numeric remaining stock, or null when uncapped
- *   - outOfStock: true only when Shopify marks the variant unavailable
- *   - acceptsBackorder: true when Shopify marks the variant as backorderable
- */
 isVariantOutOfStock(product) {
   if (!product) {
     return false;
@@ -10335,8 +10334,10 @@ validateStepCondition(stepIndex, productId, newQuantity) {
   );
 
   if (!allowed && newQuantity > currentQty) {
-    const required = step.conditionValue;
-    ToastManager.show('This step allows ' + limitText + ' product' + (required !== 1 ? 's' : '') + ' only.');
+    const toastMessage = typeof ConditionValidator._formatStepLimitToast === 'function'
+      ? ConditionValidator._formatStepLimitToast(limitText, step.conditionValue)
+      : 'This step allows ' + limitText + ' product' + (step.conditionValue !== 1 ? 's' : '') + ' only.';
+    ToastManager.show(toastMessage);
     return false;
   }
 

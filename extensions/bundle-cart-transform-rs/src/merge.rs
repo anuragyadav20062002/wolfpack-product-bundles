@@ -7,7 +7,6 @@ use crate::helpers::{
     is_free_gift_line,
     parse_addon_discount,
     parse_json_or_default,
-    truncate,
 };
 use crate::pricing::{
     calculate_buy_x_get_y_discount_percentage,
@@ -17,7 +16,6 @@ use crate::pricing::{
 };
 use crate::schema;
 use crate::types::{
-    CartLineDisplayProperties,
     CartLineMessagingSettings,
     ComponentParent,
     PricingMethod,
@@ -60,21 +58,6 @@ fn non_empty(value: &Option<String>) -> Option<String> {
         .map(|value| value.trim())
         .filter(|value| !value.is_empty())
         .map(|value| value.to_string())
-}
-
-fn display_properties_for_group(
-    lines: &[schema::run::input::cart::Lines],
-    line_indices: &[usize],
-) -> CartLineDisplayProperties {
-    line_indices
-        .iter()
-        .find_map(|&idx| {
-            lines[idx]
-                .bundle_display_properties()
-                .and_then(|attr| attr.value())
-                .and_then(|value| serde_json::from_str::<CartLineDisplayProperties>(value.as_str()).ok())
-        })
-        .unwrap_or_default()
 }
 
 /// Process all MERGE operations for one cart pass.
@@ -338,8 +321,8 @@ pub fn process_merge_operations(
             total_retail_cents += retail_cents * qty;
             total_bundle_cents += line_bundle_cents_total;
             let title = match lines[idx].merchandise() {
-                schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
-                    truncate(v.title().map_or("", |title| title.as_str()), 25).to_string()
+                schema::run::input::cart::lines::Merchandise::ProductVariant(_) => {
+                    format!("Component {}", i + 1)
                 }
                 _ => format!("Component {}", i + 1),
             };
@@ -415,7 +398,7 @@ pub fn process_merge_operations(
             });
         }
 
-        let source_display_properties = display_properties_for_group(lines, &line_indices);
+        let source_display_properties = crate::types::CartLineDisplayProperties::default();
 
         attributes.push(schema::AttributeOutput {
             key: "_Items".into(),

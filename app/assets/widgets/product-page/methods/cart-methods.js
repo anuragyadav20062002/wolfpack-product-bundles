@@ -130,13 +130,16 @@ export const ProductPageCartMethods = {
         const addonDiscount = this.getAddonLineDiscount(step);
         const isChargeableAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
         const properties = {};
-        if (isChargeableAddonStep && addonEval?.tier) {
-          hasSelectedAddonLine = true;
-          properties._addon_product = 'true';
-          properties._addon_offer_id = baseOfferId;
-          if (addonEval?.tier?.tierId) {
-            properties._addonTierId = String(addonEval.tier.tierId);
-          }
+          if (isChargeableAddonStep && addonEval?.tier) {
+            hasSelectedAddonLine = true;
+            properties._addon_product = 'true';
+            properties._addon_offer_id = baseOfferId;
+            properties._boxProduct = 'addonProduct';
+            if (addonEval?.tier?.tierId) {
+              properties._addonTierId = String(addonEval.tier.tierId);
+            }
+          const addonVariantId = this.extractId(variantId);
+          properties._uniqueGbbItemKey = `${addonVariantId || variantId}_pageId:addonProduct`;
           properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true
             ? `addon:${addonDiscount.type}:${addonDiscount.value}`
             : 'addon';

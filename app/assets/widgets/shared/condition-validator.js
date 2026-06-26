@@ -295,6 +295,16 @@ const ConditionValidator = (function () {
     return map[operator] || String(required);
   }
 
+  function _formatStepLimitToast(limitText, required) {
+    const requiredQuantity = Number(required);
+    if (!Number.isFinite(requiredQuantity) || requiredQuantity <= 0) {
+      return 'This step is not configured correctly.';
+    }
+
+    const suffix = requiredQuantity === 1 ? '' : 's';
+    return `This step allows ${limitText} product${suffix} only.`;
+  }
+
   // ─── Public API ───────────────────────────────────────────────────────────
   return {
     OPERATORS,
@@ -305,6 +315,7 @@ const ConditionValidator = (function () {
     isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
+    _formatStepLimitToast,
   };
 }());
 

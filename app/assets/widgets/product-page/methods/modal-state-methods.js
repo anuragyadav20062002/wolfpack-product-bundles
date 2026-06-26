@@ -75,8 +75,10 @@ validateStepCondition(stepIndex, productId, newQuantity) {
 
   // Only block and toast on increases — decreases are always permitted.
   if (!allowed && newQuantity > currentQty) {
-    const required = step.conditionValue;
-    ToastManager.show('This step allows ' + limitText + ' product' + (required !== 1 ? 's' : '') + ' only.');
+    const toastMessage = typeof ConditionValidator._formatStepLimitToast === 'function'
+      ? ConditionValidator._formatStepLimitToast(limitText, step.conditionValue)
+      : 'This step allows ' + limitText + ' product' + (step.conditionValue !== 1 ? 's' : '') + ' only.';
+    ToastManager.show(toastMessage);
     return false;
   }
 
