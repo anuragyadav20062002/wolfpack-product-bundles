@@ -83,8 +83,8 @@ export function PpbStepRulesList({ step }: { step: any }) {
                 <input
                   type="number"
                   className={productPageBundleStyles.ruleInlineNumber}
-                  min={0}
-                  placeholder="0"
+                  min={1}
+                  placeholder="1"
                   value={rule.value ?? ""}
                   onInput={(e) =>
                     conditionsState.updateConditionRule(

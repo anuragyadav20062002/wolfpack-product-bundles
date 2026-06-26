@@ -1,4 +1,4 @@
-import { BUNDLE_WIDGET } from '../../../bundle-widget-components.js';
+import { BUNDLE_WIDGET, PricingCalculator } from '../../../bundle-widget-components.js';
 
 export const ProductPageSelectionDataMethods = {
 /**
@@ -139,12 +139,72 @@ setSelectedQuantity(stepIndex, variantId, quantity) {
 },
 
 getAddonLineDiscount(step) {
-  const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
+  const tier = this.getAddonTierEvaluation(step).tier;
   const discount = step?.addonDiscount || tier?.discount || {};
   const type = String(discount.type || '').toUpperCase();
   const value = Number(discount.value || 0);
   if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
-  return { type, value: Math.min(100, value) };
+  return {
+    type,
+    value: Math.min(100, value),
+    tierId: tier?.tierId || null,
+  };
+},
+
+getAddonTiers(step) {
+  return Array.isArray(step?.addonTiers) ? step.addonTiers.filter(Boolean) : [];
+},
+
+getAddonTierEvaluation(step) {
+  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const directTier = step?.addonEligibilityCondition || step?.addonDiscount
+    ? [{
+        eligibilityCondition: step?.addonEligibilityCondition || {},
+        discount: step?.addonDiscount || {},
+        tierId: null,
+      }]
+    : [];
+  const tiers = this.getAddonTiers(step);
+  const candidates = tiers.length > 0 ? tiers : directTier;
+  if (candidates.length === 0) {
+    return { tier: null, totalPrice, totalQuantity, currentValue: totalQuantity, tierIndex: -1, isEligible: false };
+  }
+
+  const withState = candidates.map((candidate, index) => {
+    const condition = candidate?.eligibilityCondition || {};
+    const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
+    const conditionValue = Number(condition.value || 0);
+    const threshold = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
+    const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
+    return {
+      tier: candidate,
+      tierIndex: index,
+      conditionType,
+      threshold,
+      currentValue,
+      isEligible: currentValue >= threshold,
+    };
+  });
+
+  const eligible = withState.filter(candidate => candidate.isEligible)
+    .sort((a, b) => (a.threshold - b.threshold) || (a.tierIndex - b.tierIndex));
+  const next = withState
+    .filter(candidate => !candidate.isEligible)
+    .sort((a, b) => (a.threshold - b.threshold) || (a.tierIndex - b.tierIndex));
+  const selected = eligible[eligible.length - 1] || next[0] || withState[0];
+
+  return {
+    tier: selected?.tier || null,
+    tierIndex: selected?.tierIndex ?? -1,
+    isEligible: selected?.isEligible === true,
+    totalPrice,
+    totalQuantity,
+    currentValue: selected?.currentValue ?? totalQuantity,
+  };
 },
 
 getAddonProductSelectionKeys(step) {

@@ -81,8 +81,14 @@ async addBundleToCart(clickedButton = null) {
     const bundleName = this.selectedBundle.name || 'Bundle';
     const sessionKey = this.generateBundleSessionKey();
     const offerId = this.resolveFullPageOfferId();
+    const baseOfferId = `${offerId}_${sessionKey}`;
     const selectedLines = [];
     let itemNumber = 0;
+    const hasAddonStepConfigured = (this.selectedBundle?.steps || []).some((candidateStep) => {
+      const addonEval = this.getAddonTierEvaluation?.(candidateStep);
+      return candidateStep?.isFreeGift === true && candidateStep?.addonDisplayFree !== true && addonEval?.tier;
+    });
+    let hasSelectedAddonLine = false;
 
 
     this.selectedBundle.steps.forEach((step, stepIndex) => {
@@ -105,9 +111,16 @@ async addBundleToCart(clickedButton = null) {
             '_easyBundle:prodQty': String(quantity),
             '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
           };
+          const addonEval = this.getAddonTierEvaluation?.(step) || {};
           const addonDiscount = this.getAddonLineDiscount(step);
-          if (addonDiscount && step?.addonDisplayFree !== true) {
-            properties['_bundle_step_type'] = addonDiscount
+          if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {
+            hasSelectedAddonLine = true;
+            properties._addon_product = 'true';
+            properties._addon_offer_id = baseOfferId;
+            if (addonEval?.tier?.tierId) {
+              properties._addonTierId = String(addonEval.tier.tierId);
+            }
+            properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true
               ? `addon:${addonDiscount.type}:${addonDiscount.value}`
               : 'addon';
           } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
@@ -139,6 +152,9 @@ async addBundleToCart(clickedButton = null) {
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
+      if (hasSelectedAddonLine && hasAddonStepConfigured) {
+        item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
+      }
     });
 
     this._setWidgetBusy(true, actionButton);

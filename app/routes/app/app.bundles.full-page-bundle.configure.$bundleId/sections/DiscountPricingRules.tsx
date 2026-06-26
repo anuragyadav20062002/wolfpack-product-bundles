@@ -24,8 +24,15 @@ export function FpbDiscountRulesSection({
       <s-section>
         <s-stack direction="block" gap="base">
           {/* Q1: Header with s-switch */}
-          <s-stack direction="inline" gap="small">
-            <s-stack direction="block" gap="small-400" inlineSize="100%">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <s-stack direction="block" gap="small-400">
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                 Discount &amp; Pricing
               </h3>
@@ -35,7 +42,6 @@ export function FpbDiscountRulesSection({
             </s-stack>
             <s-switch
               accessibilityLabel="Enable discount pricing"
-              label="Enable"
               checked={pricingState.discountEnabled || undefined}
               onChange={(e) =>
                 pricingState.setDiscountEnabled(
@@ -43,7 +49,7 @@ export function FpbDiscountRulesSection({
                 )
               }
             />
-          </s-stack>
+          </div>
           <s-banner tone="info">
             Tip: Discounts are calculated based on the products in cart, make
             sure to add the &quot;Default Product&quot; quantity or amount while

@@ -300,6 +300,10 @@
   color: #202223;
   font-size: 14px;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.2;
 }
 
 .settingsRowDescription {

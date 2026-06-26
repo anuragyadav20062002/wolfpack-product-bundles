@@ -306,15 +306,18 @@ export function FpbAddonTierEditor({
                                   ? {
                                       ...t,
                                       eligibilityValue:
-                                        Number(
-                                          (e.target as HTMLInputElement).value,
-                                        ) || 0,
+                                        Math.max(
+                                          1,
+                                          Number(
+                                            (e.target as HTMLInputElement).value,
+                                          ) || 1,
+                                        ),
                                     }
                                   : t,
                               );
                               updateAddonTiers(updated);
                             }}
-                            min={0}
+                            min={1}
                           />
                           <s-number-field
                             label="Discount on Add-ons"

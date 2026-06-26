@@ -446,7 +446,10 @@ export async function handleSaveBundle(
       finalStatus: finalStatus as BundleStatus,
       stepConditionsData,
       stepsData,
-      updatedBundle,
+      updatedBundle: {
+        ...updatedBundle,
+        personalizationData,
+      },
     });
 
     // BUNDLE INDEX: No longer needed

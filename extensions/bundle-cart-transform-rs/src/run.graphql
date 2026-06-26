@@ -18,6 +18,9 @@ query Input {
       stepType: attribute(key: "_bundle_step_type") {
         value
       }
+      addonOfferId: attribute(key: "_addon_offer_id") {
+        value
+      }
       bundleDisplayProperties: attribute(key: "_bundle_display_properties") {
         value
       }
@@ -25,6 +28,7 @@ query Input {
         __typename
         ... on ProductVariant {
           id
+          title
 
           # SHOPIFY STANDARD BUNDLE METAFIELDS (Approach 1: Hybrid)
           # These metafields follow Shopify's official bundle architecture
@@ -53,18 +57,10 @@ query Input {
           component_pricing: metafield(namespace: "$app", key: "component_pricing") {
             value
           }
-
-          product {
-            id
-            title
-          }
         }
       }
       cost {
         amountPerQuantity {
-          amount
-        }
-        totalAmount {
           amount
         }
       }

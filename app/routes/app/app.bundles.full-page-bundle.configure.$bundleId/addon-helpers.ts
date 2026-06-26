@@ -63,11 +63,13 @@ export function normalizeAddonPickerProduct(product: any) {
 export function normalizeAddonTier(tier: any, index: number) {
   const eligibilityType =
     tier?.eligibilityCondition?.type || tier?.eligibilityType || "QUANTITY";
-  const eligibilityValue = Math.max(
-    0,
-    Number(tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1) ||
-      0,
-  );
+  const rawEligibilityValue =
+    tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1;
+  const normalizedEligibilityValue = Number(rawEligibilityValue);
+  const eligibilityValue = Number.isFinite(normalizedEligibilityValue) &&
+    normalizedEligibilityValue > 0
+      ? normalizedEligibilityValue
+      : 1;
   const discountType =
     tier?.discount?.type || tier?.discountType || "PERCENTAGE";
   const discountValue = Math.min(

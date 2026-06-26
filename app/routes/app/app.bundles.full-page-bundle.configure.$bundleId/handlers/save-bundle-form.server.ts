@@ -2,6 +2,52 @@ import { FullPageLayout } from "../../../../constants/bundle";
 import { processCss } from "../../../../lib/css-sanitizer";
 import { parseIndividualSellingPlanSelection } from "./shared.server";
 
+function normalizePersonalizationData(personalizationData: any) {
+  if (
+    !personalizationData ||
+    typeof personalizationData !== "object" ||
+    Array.isArray(personalizationData)
+  ) {
+    return personalizationData;
+  }
+
+  const addonProducts = personalizationData.addonProducts;
+  if (!addonProducts || typeof addonProducts !== "object") {
+    return personalizationData;
+  }
+
+  const tiers = Array.isArray(addonProducts.tiers)
+    ? addonProducts.tiers.map((tier: any) => {
+        const parsedValue = Number(
+          tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1,
+        );
+        const normalizedEligibilityValue =
+          Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 1;
+
+        return {
+          ...tier,
+          eligibilityCondition: tier?.eligibilityCondition
+            ? {
+                ...tier.eligibilityCondition,
+                value: normalizedEligibilityValue,
+              }
+            : tier.eligibilityCondition,
+          ...(typeof tier?.eligibilityValue !== "undefined"
+            ? { eligibilityValue: normalizedEligibilityValue }
+            : {}),
+        };
+      })
+    : addonProducts.tiers;
+
+  return {
+    ...personalizationData,
+    addonProducts: {
+      ...addonProducts,
+      tiers,
+    },
+  };
+}
+
 export function parseFpbSaveBundleForm(formData: FormData) {
   const bundleName = formData.get("bundleName") as string;
   const bundleDescription = formData.get("bundleDescription") as string;
@@ -54,7 +100,7 @@ export function parseFpbSaveBundleForm(formData: FormData) {
     | string
     | null;
   const personalizationData = personalizationDataRaw
-    ? JSON.parse(personalizationDataRaw)
+    ? normalizePersonalizationData(JSON.parse(personalizationDataRaw))
     : null;
   const bundleUpsellConfigRaw = formData.get("bundleUpsellConfig") as
     | string
