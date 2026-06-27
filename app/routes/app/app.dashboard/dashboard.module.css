@@ -282,7 +282,7 @@
 
 .bundlesTableHeader {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: minmax(0, 2fr) minmax(18rem, 1.4fr);
   column-gap: 18px;
   row-gap: 0;
   padding: 8px 0;
@@ -345,7 +345,7 @@
 
 .bundleTableRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: minmax(0, 2fr) minmax(18rem, 1.4fr);
   column-gap: 18px;
   align-items: center;
   border-bottom: 1px solid #d8dbe1;
@@ -377,8 +377,8 @@
 
 .bundleMetaGroup {
   display: grid;
-  width: 380px;
-  grid-template-columns: 96px 106px 178px;
+  width: 100%;
+  grid-template-columns: minmax(5rem, 0.95fr) minmax(5.5rem, 0.95fr) minmax(9rem, 1.4fr);
   justify-self: end;
   justify-items: start;
   align-items: center;
