@@ -8,8 +8,8 @@ import { BundleType } from "../../../constants/bundle";
 import { showPolarisModal } from "../_shared/bundle-configure/modal-utils";
 import styles from "./create-bundle.module.css";
 import { OptimisedImage } from "../../../components/OptimisedImage";
-import { BillingService } from "../../../services/billing.server";
 import { ensureShopIdentity, recordBusinessEvent } from "../../../services/app-events.server";
+import { getCachedSubscriptionInfo, getSubscriptionInfoFromCache } from "../../../services/subscription-cache.server";
 import { navigateBackOrFallback } from "../../../lib/navigation";
 
 export const links: LinksFunction = () => [
@@ -66,7 +66,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       entry_point: "create_route",
     },
   });
-  const subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
+  const cachedSubscriptionInfo = getCachedSubscriptionInfo(session.shop);
+  const subscriptionInfo = cachedSubscriptionInfo !== undefined
+    ? cachedSubscriptionInfo
+    : await getSubscriptionInfoFromCache(session.shop);
   if (
     subscriptionInfo &&
     subscriptionInfo.currentBundleCount >= subscriptionInfo.bundleLimit

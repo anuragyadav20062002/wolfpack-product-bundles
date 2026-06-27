@@ -9,6 +9,7 @@ import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-r
 import { useLoaderData, useFetcher, useNavigate } from "@remix-run/react";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { BillingService } from "../../services/billing.server";
+import { getCachedSubscriptionInfo, getSubscriptionInfoFromCache } from "../../services/subscription-cache.server";
 import { BundleAnalyticsService } from "../../services/bundle-analytics.server";
 import { PLANS } from "../../constants/plans";
 import { AppLogger } from "../../lib/logger";
@@ -37,7 +38,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const upgraded = url.searchParams.get("upgraded");
     const error = url.searchParams.get("error");
 
-    const subscriptionInfo = await BillingService.getSubscriptionInfo(shopDomain);
+    const cachedSubscriptionInfo = getCachedSubscriptionInfo(shopDomain);
+    const subscriptionInfo = cachedSubscriptionInfo !== undefined
+      ? cachedSubscriptionInfo
+      : await getSubscriptionInfoFromCache(shopDomain);
 
     if (!subscriptionInfo) {
       throw new Error("Could not retrieve subscription information");

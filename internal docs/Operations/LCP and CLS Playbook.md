@@ -54,6 +54,10 @@ This is a Wolfpack-specific adaptation of internal LCP/CLS notes used as a refer
   - avoid a fresh subscription call when cached homepage subscription data exists.
   - check `getCachedSubscriptionInfo(shopDomain)` from an in-process cache first.
   - fall back to one shared fetch path only when cache miss (`getSubscriptionInfoFromCache`).
+- For shared billing guard/paths:
+  - `app.billing`, `app.bundles.create`, `api.billing.status`, and `subscription-guard.server`
+    use the same cache-first subscription helper so duplicate `BillingService.getSubscriptionInfo`
+    calls are de-duplicated within a short TTL window.
 - Keep both screens behavior-identical for normal navigation while reducing redundant load on route transitions.
 
 ### 3. Stabilize CLS
