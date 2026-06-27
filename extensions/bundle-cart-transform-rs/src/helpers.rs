@@ -55,19 +55,6 @@ pub fn parse_addon_discount(step_type_value: Option<&str>) -> Option<(String, St
     }
 }
 
-/// Truncate a string to at most `max_chars` characters (UTF-8-safe).
-pub fn truncate(s: &str, max_chars: usize) -> &str {
-    if s.len() <= max_chars {
-        s
-    } else {
-        let mut end = max_chars;
-        while !s.is_char_boundary(end) {
-            end -= 1;
-        }
-        &s[..end]
-    }
-}
-
 // ============================================================================
 // TESTS
 // ============================================================================
@@ -120,9 +107,4 @@ mod tests {
     fn ignores_invalid_addon_discount() {
         assert_eq!(parse_addon_discount(Some("addon:PERCENTAGE")), None);
     }
-
-    #[test]
-    fn truncate_short_unchanged() { assert_eq!(truncate("hello", 10), "hello"); }
-    #[test]
-    fn truncate_long()            { assert_eq!(truncate("hello world", 5), "hello"); }
 }
