@@ -20,6 +20,7 @@ import {
   calculateUsagePercentage,
   getProgressBarTone,
 } from "../../utils/pricing";
+import { navigateBackOrFallback } from "../../lib/navigation";
 
 // Import shared billing components
 import {
@@ -210,7 +211,12 @@ export default function BillingPage() {
   return (
     <>
       <ui-title-bar title={t("billing.route.title")}>
-        <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
+        <button
+          variant="breadcrumb"
+          onClick={() =>
+            navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })
+          }
+        >
           {t("billing.route.dashboard")}
         </button>
       </ui-title-bar>

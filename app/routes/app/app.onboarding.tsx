@@ -11,6 +11,7 @@ import { requireAdminSession } from "../../lib/auth-guards.server";
 import { useState, useEffect, useRef } from "react";
 import { AppLogger } from "../../lib/logger";
 import styles from "../../styles/routes/app-index.module.css";
+import { navigateBackOrFallback } from "../../lib/navigation";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await requireAdminSession(request);
@@ -175,13 +176,13 @@ export default function Onboarding() {
               </s-stack>
 
               <s-stack direction="inline" gap="small-100">
-                <s-button
-                  variant="primary"
-                  onClick={() => {
-                    handleStepAction(0);
-                    navigate("/app/dashboard");
-                  }}
-                >
+                  <s-button
+                    variant="primary"
+                    onClick={() => {
+                      handleStepAction(0);
+                      navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true });
+                    }}
+                  >
                   Create Your First Bundle
                 </s-button>
                 {currentStep === 0 && (
@@ -436,7 +437,7 @@ export default function Onboarding() {
                   variant="primary"
                   onClick={() => {
                     handleStepAction(3);
-                    navigate("/app/dashboard");
+                    navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true });
                   }}
                 >
                   Go to Dashboard
@@ -473,7 +474,9 @@ export default function Onboarding() {
                 <s-button href="https://docs.wolfpack-bundles.com" target="_blank">
                   View Documentation
                 </s-button>
-                <s-button onClick={() => navigate("/app/dashboard")}>
+                <s-button onClick={() =>
+                  navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })
+                }>
                   Skip to Dashboard
                 </s-button>
               </div>

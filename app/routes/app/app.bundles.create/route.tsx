@@ -1,5 +1,5 @@
 import { json, redirect, type ActionFunctionArgs, type HeadersFunction, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
-import { Form, useActionData, useNavigation } from "@remix-run/react";
+import { Form, useActionData, useNavigate, useNavigation } from "@remix-run/react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
@@ -10,6 +10,7 @@ import styles from "./create-bundle.module.css";
 import { OptimisedImage } from "../../../components/OptimisedImage";
 import { BillingService } from "../../../services/billing.server";
 import { ensureShopIdentity, recordBusinessEvent } from "../../../services/app-events.server";
+import { navigateBackOrFallback } from "../../../lib/navigation";
 
 export const links: LinksFunction = () => [
   {
@@ -134,6 +135,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function CreateBundleWizard() {
+  const navigate = useNavigate();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const { t } = useTranslation();
@@ -198,7 +200,10 @@ export default function CreateBundleWizard() {
   return (
     <>
       <ui-title-bar title={t("createBundle.title")}>
-        <button variant="breadcrumb" onClick={() => window.history.back()}>
+        <button
+          variant="breadcrumb"
+          onClick={() => navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })}
+        >
           {t("createBundle.dashboard")}
         </button>
       </ui-title-bar>

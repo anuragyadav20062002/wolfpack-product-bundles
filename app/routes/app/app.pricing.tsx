@@ -24,6 +24,7 @@ import {
   ValuePropsSection,
   FAQSection,
 } from "../../components/billing";
+import { navigateBackOrFallback } from "../../lib/navigation";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await requireAdminSession(request);
@@ -166,7 +167,12 @@ export default function PricingPage() {
       />
 
       <ui-title-bar title="Pricing">
-        <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
+        <button
+          variant="breadcrumb"
+          onClick={() =>
+            navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })
+          }
+        >
           Dashboard
         </button>
       </ui-title-bar>

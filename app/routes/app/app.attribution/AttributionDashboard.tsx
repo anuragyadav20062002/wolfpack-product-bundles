@@ -1,5 +1,6 @@
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { PixelStatusCard } from "./PixelStatusCard";
+import { navigateBackOrFallback } from "../../../lib/navigation";
 import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from "react";
 import {
   formatDelta,
@@ -392,7 +393,12 @@ export default function AttributionDashboard() {
   return (
     <>
       <ui-title-bar title="Analytics">
-        <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
+        <button
+          variant="breadcrumb"
+          onClick={() =>
+            navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })
+          }
+        >
           Dashboard
         </button>
       </ui-title-bar>
@@ -519,4 +525,3 @@ export default function AttributionDashboard() {
     </>
   );
 }
-

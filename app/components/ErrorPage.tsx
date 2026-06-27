@@ -1,4 +1,5 @@
-import { isRouteErrorResponse } from "@remix-run/react";
+import { isRouteErrorResponse, useNavigate } from "@remix-run/react";
+import { navigateBackOrFallback } from "../lib/navigation";
 
 interface ErrorPageProps {
   error: unknown;
@@ -137,6 +138,10 @@ function navigateToDashboard() {
 // Main component
 // ---------------------------------------------------------------------------
 export function ErrorPage({ error }: ErrorPageProps) {
+  const navigate = useNavigate();
+  const handleGoBack = () => {
+    navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true });
+  };
   let status = 500;
   let title = FALLBACK_5XX.title;
   let description = FALLBACK_5XX.description;
@@ -220,7 +225,7 @@ export function ErrorPage({ error }: ErrorPageProps) {
             </button>
             <button
               type="button"
-              onClick={() => window.history.back()}
+              onClick={handleGoBack}
               style={styles.btnSecondary}
             >
               Go Back

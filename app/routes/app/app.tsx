@@ -17,6 +17,7 @@ import { loadShopAdminLocale } from "../../services/admin-locale.server";
 import { buildMantleProviderConfig, type MantleProviderConfig } from "../../services/mantle.server";
 import { ReduxProvider } from "../../store/ReduxProvider";
 import { installAdminWebVitalsDiagnostics } from "../../lib/admin-web-vitals-diagnostics.client";
+import { loaderCache } from "../../lib/loader-cache.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -35,14 +36,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   ensureExpiringOfflineSessionInBackground(session.shop, idToken);
   const locale = await loadShopAdminLocale(session.shop);
   const polarisTranslations = getPolarisLocale(locale);
-  const mantleProvider = await buildMantleProviderConfig({
-    appId: process.env.MANTLE_APP_ID,
-    apiKey: process.env.MANTLE_API_KEY,
-    apiUrl: process.env.MANTLE_API_URL,
-    shopDomain: session.shop,
-    accessToken: session.accessToken,
-    admin,
-  });
+  const mantleCacheKey = `mantle-provider:${session.shop}:${session.accessToken}:${
+    process.env.MANTLE_APP_ID || ""
+  }:${process.env.SHOPIFY_API_KEY || ""}:${process.env.MANTLE_API_URL || ""}`;
+  const mantleProvider = await loaderCache.memo(
+    mantleCacheKey,
+    () => buildMantleProviderConfig({
+      appId: process.env.MANTLE_APP_ID,
+      apiKey: process.env.SHOPIFY_API_KEY,
+      apiUrl: process.env.MANTLE_API_URL,
+      shopDomain: session.shop,
+      accessToken: session.accessToken,
+      admin,
+    }),
+    5 * 60_000,
+  );
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
     locale,

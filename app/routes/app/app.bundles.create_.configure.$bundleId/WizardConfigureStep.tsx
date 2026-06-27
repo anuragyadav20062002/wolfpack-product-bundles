@@ -18,6 +18,7 @@ import { PricingStep } from "./PricingStep";
 import { AssetsStep } from "./AssetsStep";
 import { WizardOverlays } from "./WizardOverlays";
 import styles from "./wizard-configure.module.css";
+import { navigateBackOrFallback } from "../../../lib/navigation";
 declare const shopify: { resourcePicker: (opts: { type: string; multiple: boolean; selectionIds?: { id: string }[]; }) => Promise<{ selection: any[] } | null>; toast: { show: (msg: string, opts?: { isError?: boolean }) => void }; saveBar?: { leaveConfirmation?: () => Promise<void> | void }; };
 export default function WizardConfigureStep() {
   const { bundle, readiness, shopLocales, shop, themeEditorUrl } =
@@ -390,7 +391,7 @@ export default function WizardConfigureStep() {
       return;
     }
     if (wizardStep === 1) {
-      window.history.back();
+      navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true });
     } else {
       setWizardStep((prev) => prev - 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -479,7 +480,7 @@ export default function WizardConfigureStep() {
           <button type="reset" disabled={isAnyWizardSaveInFlight}>Discard</button>
         </SaveBar>
       </form>
-      <ui-title-bar title={pageTitle}><button variant="breadcrumb" onClick={() => window.history.back()}>Create Bundle</button></ui-title-bar>
+      <ui-title-bar title={pageTitle}><button variant="breadcrumb" onClick={() => navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })}>Create Bundle</button></ui-title-bar>
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div className={styles.pageHeaderLeft}><s-button variant="tertiary" icon="arrow-left" accessibilityLabel="Back" onClick={handleBack} /><h1 className={styles.pageTitle}>{pageTitle}</h1></div>
