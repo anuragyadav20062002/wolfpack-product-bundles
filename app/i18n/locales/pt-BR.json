@@ -66,9 +66,9 @@
     "pagination": {
       "page": "Página {{current}} de {{total}}",
       "perPageLabel": "Bundles por página",
-      "per10": "10 por página",
-      "per20": "20 por página",
-      "per50": "50 por página",
+      "per10": "10",
+      "per20": "20",
+      "per50": "50",
       "prev": "Página anterior",
       "next": "Próxima página"
     },

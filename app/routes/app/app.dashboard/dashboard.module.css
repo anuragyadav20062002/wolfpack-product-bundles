@@ -394,24 +394,41 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-items: center;
-  gap: 10px;
   padding: 12px 14px;
   border-top: 1px solid #d8dbe1;
   background: #fafafa;
 }
 
-.paginationInfo {
+.paginationControls {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paginationArrow {
+  min-width: 30px;
+}
+
+.paginationPageText {
+  padding: 0 8px;
+  color: #6d7175;
+  white-space: nowrap;
+}
+
+.paginationSpacer {
   justify-self: start;
 }
 
-.paginationActions {
-  justify-self: center;
+.perPageControls {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .perPageSelectWrap {
-  justify-self: end;
-  width: 172px;
+  width: 130px;
 }
 
 .resourcesCard {
