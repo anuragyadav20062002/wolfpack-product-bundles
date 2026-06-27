@@ -84,6 +84,33 @@ This is a Wolfpack-specific adaptation of internal LCP/CLS notes used as a refer
   - and runtime asset paths.
 - If removal is uncertain, keep the file and schedule follow-up verification.
 
+## 2026-06-27 cleanup notes (dead-code pass)
+
+- Completed a low-risk dead-code sweep for LCP/CLS-focused performance work, verified by:
+  - Knip machine output
+  - Cross-file symbol search in `app/` and `tests/`
+  - Excluding route/system contracts, API service barrels, and config contracts
+- Removed only files with confirmed orphaned runtime usage:
+  - `app/components/BundleSetupInstructions.tsx`
+  - `app/components/FeatureGate.tsx`
+  - `app/components/PricingTiersSection.tsx`
+  - `app/components/UpgradePromptBanner.tsx`
+  - `app/components/UpgradePromptBanner.module.css`
+  - `app/contexts/AppStateContext.tsx`
+  - `app/hooks/useAppState.ts`
+  - `app/hooks/useCartTransformState.ts`
+  - `app/lib/preview-css-vars.ts`
+  - `app/lib/bundle-config/product-page-layout-settings.ts`
+  - `app/services/app.state.service.ts`
+  - `app/services/bundles/metafield-sync/operations/index.ts`
+  - `app/services/bundles/metafield-sync/utils/index.ts`
+  - `app/styles/bundle-preview.css`
+  - `app/styles/routes/cart-transform.module.css`
+  - `app/routes/app/app.dashboard/dashboard.css`
+- Left untouched:
+  - route definitions and loaders/actions (`app/routes.ts`, route `route.tsx` files)
+  - `app/services/bundles/metafield-sync.server.ts` and direct barrel export paths
+
 ## What to avoid (important)
 
 - Do not add dynamic imports as a default optimization move.
