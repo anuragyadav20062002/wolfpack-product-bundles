@@ -8,6 +8,7 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useFetcher, useNavigate } from "@remix-run/react";
 import { requireAdminSession } from "../../lib/auth-guards.server";
+import { getCachedSubscriptionInfo, getSubscriptionInfoFromCache } from "../../services/subscription-cache.server";
 import { BillingService } from "../../services/billing.server";
 import { PLANS } from "../../constants/plans";
 import { AppLogger } from "../../lib/logger";
@@ -31,8 +32,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const shopDomain = session.shop;
 
   try {
-    // Get subscription info to show current plan and bundle quota
-    const subscriptionInfo = await BillingService.getSubscriptionInfo(shopDomain);
+    // Reuse cached subscription info from dashboard/bootstrap whenever available.
+    const cachedSubscriptionInfo = getCachedSubscriptionInfo(shopDomain);
+    const subscriptionInfo = cachedSubscriptionInfo !== undefined
+      ? cachedSubscriptionInfo
+      : await getSubscriptionInfoFromCache(shopDomain);
 
     if (!subscriptionInfo) {
       throw new Error("Could not retrieve subscription information");

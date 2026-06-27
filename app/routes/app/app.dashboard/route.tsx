@@ -1,11 +1,10 @@
 import { defer, json, type ActionFunctionArgs, type HeadersFunction, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
-import { loaderCache } from "../../../lib/loader-cache.server";
 import { ServerTiming } from "../../../lib/server-timing.server";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
-import { BillingService } from "../../../services/billing.server";
 import { fetchEmbedData } from "../../../lib/bundle-configure-loader.server";
+import { getSubscriptionInfoFromCache } from "../../../services/subscription-cache.server";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 import { handleCreatePreviewPage } from "../app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
 import { saveShopAdminLocale } from "../../../services/admin-locale.server";
@@ -122,7 +121,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }));
 
   const apiKey = process.env.SHOPIFY_API_KEY || "63077bb0483a6ce08a2d6139b14d170b";
-  const SHORT_TTL_MS = 30_000;
 
   const shopRecord = await timing.track("db.shop", () => db.shop.findUnique({
     where: { shopDomain: session.shop },
@@ -152,21 +150,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
   })();
 
-  // Issue: admin-lcp-phase6-defer-skeletons-1.
   // billing + proxy-health are kicked off concurrently here and surfaced via
   // a deferred `banners` promise so the bundles table can paint without
   // blocking on the 3-second proxy-health abort timeout.
-  const billingPromise = loaderCache.memo(
-    `billing:${session.shop}`,
-    async () => {
-      try { return await BillingService.getSubscriptionInfo(session.shop); }
-      catch (error) {
-        AppLogger.error("Failed to fetch subscription info", { component: "app.dashboard", operation: "get-subscription-info" }, error);
-        return null;
-      }
-    },
-    SHORT_TTL_MS,
-  );
+  const billingPromise = (async () => {
+    try {
+      return await getSubscriptionInfoFromCache(session.shop);
+    } catch (error) {
+      AppLogger.error("Failed to fetch subscription info", { component: "app.dashboard", operation: "get-subscription-info" }, error);
+      return null;
+    }
+  })();
   const proxyHealthPromise = (async () => {
     try {
       const controller = new AbortController();

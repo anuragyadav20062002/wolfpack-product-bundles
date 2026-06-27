@@ -5,26 +5,12 @@
  * Covers: bundle creation → widget install → design → analytics → go live.
  */
 
-import { type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate } from "@remix-run/react";
-import { requireAdminSession } from "../../lib/auth-guards.server";
+import { useNavigate, useRouteLoaderData } from "@remix-run/react";
 import { useState, useEffect, useRef } from "react";
 import { AppLogger } from "../../lib/logger";
 import styles from "../../styles/routes/app-index.module.css";
 import { navigateBackOrFallback } from "../../lib/navigation";
-
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await requireAdminSession(request);
-
-  const apiKey = process.env.SHOPIFY_API_KEY;
-  const blockHandle = "bundle-product-page";
-
-  return {
-    shop: session.shop,
-    apiKey,
-    blockHandle,
-  };
-};
+import { type loader as appLoader } from "./app";
 
 const STEP_TITLES = [
   "Create Your First Bundle",
@@ -34,7 +20,10 @@ const STEP_TITLES = [
 ];
 
 export default function Onboarding() {
-  const { shop, apiKey, blockHandle } = useLoaderData<typeof loader>();
+  const appData = useRouteLoaderData<typeof appLoader>("routes/app/app");
+  const shop = appData?.shop;
+  const apiKey = appData?.apiKey ?? process.env.SHOPIFY_API_KEY;
+  const blockHandle = "bundle-product-page";
   const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -87,6 +76,10 @@ export default function Onboarding() {
       setCurrentStep(stepIndex + 1);
     }
   };
+
+  if (!shop || !apiKey) {
+    return null;
+  }
 
   return (
     <>

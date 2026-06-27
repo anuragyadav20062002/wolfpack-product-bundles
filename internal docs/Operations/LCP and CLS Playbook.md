@@ -44,6 +44,18 @@ This is a Wolfpack-specific adaptation of internal LCP/CLS notes used as a refer
 - On onboarding / pricing-like screens, reuse bootstrap data when fields exist.
 - Add a dedicated API only when a field is genuinely missing and not available from existing bootstrap payload.
 
+### 2a. Route reuse guardrails (deeper code-path pass, 2026-06-27)
+
+- Reuse parent/ancestor loader data for child screens where auth and shop context already exist.
+- For `app.onboarding`:
+  - remove dedicated server loader that only returned `shop`, `apiKey`, and block handle.
+  - read the parent `app` loader payload (`routes/app/app`) directly.
+- For `app.pricing`:
+  - avoid a fresh subscription call when cached homepage subscription data exists.
+  - check `getCachedSubscriptionInfo(shopDomain)` from an in-process cache first.
+  - fall back to one shared fetch path only when cache miss (`getSubscriptionInfoFromCache`).
+- Keep both screens behavior-identical for normal navigation while reducing redundant load on route transitions.
+
 ### 3. Stabilize CLS
 
 - Use loading placeholders that preserve final card/section geometry.
