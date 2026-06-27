@@ -485,9 +485,11 @@ export function DashboardPage() {
               <div className={dashboardStyles.bundlesTableShell}>
                 <div className={dashboardStyles.bundlesTableHeader}>
                   <span>{t("dashboard.table.bundleName")}</span>
-                  <span>{t("dashboard.table.status")}</span>
-                  <span>{t("dashboard.table.type")}</span>
-                  <span>{t("dashboard.table.actions")}</span>
+                  <div className={dashboardStyles.bundleMetaGroup}>
+                    <span>{t("dashboard.table.status")}</span>
+                    <span>{t("dashboard.table.type")}</span>
+                    <span>{t("dashboard.table.actions")}</span>
+                  </div>
                 </div>
 
                 {bundles.length === 0 ? (
@@ -514,21 +516,23 @@ export function DashboardPage() {
                     {pagedBundles.map((bundle) => (
                       <div key={bundle.id} className={dashboardStyles.bundleTableRow}>
                         <span className={dashboardStyles.bundleTableCell}>{bundle.name}</span>
-                        <span className={dashboardStyles.bundleTableCell}>{getStatusDisplay(bundle.status)}</span>
-                        <span className={dashboardStyles.bundleTableCell}>{getBundleTypeDisplay(bundle.bundleType)}</span>
-                        <span className={dashboardStyles.bundleTableCell}>
-                          <BundleActionsButtons
-                            bundleId={bundle.id}
-                            bundleType={bundle.bundleType}
-                            bundle={bundle}
-                            isEditing={editingBundleId === bundle.id}
-                            onEdit={handleEditBundle}
-                            onClone={handleCloneBundle}
-                            onDelete={handleDeleteBundle}
-                            onPreview={handlePreviewBundle}
-                            isPreviewing={previewingBundleId === bundle.id}
-                          />
-                        </span>
+                        <div className={dashboardStyles.bundleMetaGroup}>
+                          <span className={dashboardStyles.bundleTableCell}>{getStatusDisplay(bundle.status)}</span>
+                          <span className={dashboardStyles.bundleTableCell}>{getBundleTypeDisplay(bundle.bundleType)}</span>
+                          <span className={dashboardStyles.bundleTableCell}>
+                            <BundleActionsButtons
+                              bundleId={bundle.id}
+                              bundleType={bundle.bundleType}
+                              bundle={bundle}
+                              isEditing={editingBundleId === bundle.id}
+                              onEdit={handleEditBundle}
+                              onClone={handleCloneBundle}
+                              onDelete={handleDeleteBundle}
+                              onPreview={handlePreviewBundle}
+                              isPreviewing={previewingBundleId === bundle.id}
+                            />
+                          </span>
+                        </div>
                       </div>
                     ))}
 
