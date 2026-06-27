@@ -14,6 +14,7 @@ export interface BundleActionsButtonsProps {
   onDelete: (bundleId: string) => void;
   onPreview: (bundle: any) => void;
   isPreviewing?: boolean;
+  isEditing?: boolean;
   bundle: any;
   moreOpen: boolean;
   onMoreToggle: () => void;

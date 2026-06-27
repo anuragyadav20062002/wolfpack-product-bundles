@@ -16,6 +16,17 @@ describe("Preview Bundle button loading state", () => {
     expect(actionsSource).toContain("loading={isPreviewing || undefined}");
   });
 
+  it("tracks the clicked dashboard edit bundle and passes loading state to the edit row button", () => {
+    const dashboardSource = readRouteFile("app/routes/app/app.dashboard/DashboardPage.tsx");
+    const actionsSource = readRouteFile("app/routes/app/app.dashboard/BundleActionsButtons.tsx");
+
+    expect(dashboardSource).toContain("editingBundleId");
+    expect(dashboardSource).toContain("isEditing={editingBundleId === bundle.id && navigation.state !== \"idle\"}");
+    expect(actionsSource).toContain("isEditing");
+    expect(actionsSource).toContain("loading={isEditing || undefined}");
+    expect(actionsSource).toContain("disabled={isEditing || undefined}");
+  });
+
   it("passes shared FPB preview loading state to header and template-dialog preview buttons", () => {
     const actionControllerSource = readRouteFile(
       "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureActionController.ts",
