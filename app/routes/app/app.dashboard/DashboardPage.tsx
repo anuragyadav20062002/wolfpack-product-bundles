@@ -373,6 +373,12 @@ export function DashboardPage() {
 
   const totalPages = Math.max(1, Math.ceil(filteredBundles.length / bundlesPerPage));
   const effectivePage = Math.min(currentPage, totalPages);
+  const startItem = filteredBundles.length === 0
+    ? 0
+    : (effectivePage - 1) * bundlesPerPage + 1;
+  const endItem = filteredBundles.length === 0
+    ? 0
+    : Math.min(effectivePage * bundlesPerPage, filteredBundles.length);
 
   const pagedBundles = useMemo(() =>
     filteredBundles.slice((effectivePage - 1) * bundlesPerPage, effectivePage * bundlesPerPage),
@@ -540,13 +546,32 @@ export function DashboardPage() {
 
                     {filteredBundles.length > 0 && (
                       <div className={dashboardStyles.paginationBar}>
-                        <s-stack direction="inline" gap="small-100">
-                          <s-button variant="tertiary" disabled={effectivePage <= 1 || undefined} onClick={() => setCurrentPage(p => p - 1)} accessibilityLabel={t("dashboard.pagination.prev")}>‹</s-button>
+                        <s-text size="small" tone="subdued" inline className={dashboardStyles.paginationInfo}>
+                          Showing {startItem}–{endItem} of {filteredBundles.length} bundles
+                        </s-text>
+                        <s-stack direction="inline" gap="small-100" className={dashboardStyles.paginationActions}>
+                          <s-button
+                            variant="tertiary"
+                            icon="arrow-left"
+                            disabled={effectivePage <= 1 || undefined}
+                            onClick={() => setCurrentPage(p => p - 1)}
+                            accessibilityLabel={t("dashboard.pagination.prev")}
+                          />
                           <s-text>{t("dashboard.pagination.page", { current: effectivePage, total: totalPages })}</s-text>
-                          <s-button variant="tertiary" disabled={effectivePage >= totalPages || undefined} onClick={() => setCurrentPage(p => p + 1)} accessibilityLabel={t("dashboard.pagination.next")}>›</s-button>
+                          <s-button
+                            variant="tertiary"
+                            icon="arrow-right"
+                            disabled={effectivePage >= totalPages || undefined}
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            accessibilityLabel={t("dashboard.pagination.next")}
+                          />
                         </s-stack>
                         <div className={dashboardStyles.perPageSelectWrap}>
-                          <s-select ref={perPageSelectRef} label={t("dashboard.pagination.perPageLabel")} value={String(bundlesPerPage)}>
+                          <s-select
+                            ref={perPageSelectRef}
+                            label={t("dashboard.pagination.perPageLabel")}
+                            value={String(bundlesPerPage)}
+                          >
                             <s-option value="10">{t("dashboard.pagination.per10")}</s-option>
                             <s-option value="20">{t("dashboard.pagination.per20")}</s-option>
                             <s-option value="50">{t("dashboard.pagination.per50")}</s-option>
