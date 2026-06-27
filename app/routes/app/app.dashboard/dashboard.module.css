@@ -428,7 +428,14 @@
 }
 
 .perPageSelectWrap {
-  width: 130px;
+  width: fit-content;
+  min-width: 0;
+  display: inline-flex;
+  justify-content: flex-start;
+}
+
+.perPageSelectWrap s-select {
+  width: auto;
 }
 
 .resourcesCard {
