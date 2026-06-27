@@ -1,7 +1,7 @@
 .dashboardPage {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 0 32px 88px;
+  padding: 0 clamp(24px, 3vw, 56px) 88px;
 }
 
 .dashboardLayout {
@@ -617,7 +617,7 @@
 
 @media (max-width: 760px) {
   .dashboardPage {
-    padding-inline: 0;
+    padding-inline: 16px;
   }
 
   .dashboardActions,
