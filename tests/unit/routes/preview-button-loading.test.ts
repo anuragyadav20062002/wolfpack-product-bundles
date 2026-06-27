@@ -21,7 +21,7 @@ describe("Preview Bundle button loading state", () => {
     const actionsSource = readRouteFile("app/routes/app/app.dashboard/BundleActionsButtons.tsx");
 
     expect(dashboardSource).toContain("editingBundleId");
-    expect(dashboardSource).toContain("isEditing={editingBundleId === bundle.id && navigation.state !== \"idle\"}");
+    expect(dashboardSource).toContain("isEditing={editingBundleId === bundle.id}");
     expect(actionsSource).toContain("isEditing");
     expect(actionsSource).toContain("loading={isEditing || undefined}");
     expect(actionsSource).toContain("disabled={isEditing || undefined}");

@@ -1,4 +1,4 @@
-import { Await, useFetcher, useLocation, useNavigation, useNavigate, useLoaderData, useSearchParams } from "@remix-run/react";
+import { Await, useFetcher, useNavigate, useLoaderData, useSearchParams } from "@remix-run/react";
 import { useCallback, useRef, useEffect, useMemo, useState, Suspense } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { useTranslation } from "react-i18next";
@@ -33,8 +33,6 @@ export function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher();
   const localeFetcher = useFetcher<typeof action>();
-  const navigation = useNavigation();
-  const location = useLocation();
   const shopify = useAppBridge();
   const { t, i18n } = useTranslation();
 
@@ -101,7 +99,8 @@ export function DashboardPage() {
 
   const handleEditBundle = useCallback((bundle: typeof bundles[number]) => {
     setEditingBundleId(bundle.id);
-    navigate(getBundleEditPath(bundle.id, bundle.bundleType));
+    const editPath = getBundleEditPath(bundle.id, bundle.bundleType);
+    window.requestAnimationFrame(() => navigate(editPath));
   }, [navigate]);
 
   const handleCloneBundle = useCallback((bundleId: string) => {
@@ -199,12 +198,6 @@ export function DashboardPage() {
 
     enablePreviewGate.requestPreview(executePreviewAction);
   }, [shop, shopify, fetcher, enablePreviewGate, appEmbedEnabled]);
-
-  useEffect(() => {
-    if (editingBundleId && navigation.state === "idle" && location.pathname === "/app/dashboard") {
-      setEditingBundleId(null);
-    }
-  }, [editingBundleId, navigation.state, location.pathname]);
 
   const getStatusDisplay = (status: string) => {
     const tone = STATUS_TONE_MAP[status as keyof typeof STATUS_TONE_MAP] ?? 'info';
@@ -528,7 +521,7 @@ export function DashboardPage() {
                             bundleId={bundle.id}
                             bundleType={bundle.bundleType}
                             bundle={bundle}
-                            isEditing={editingBundleId === bundle.id && navigation.state !== "idle"}
+                            isEditing={editingBundleId === bundle.id}
                             onEdit={handleEditBundle}
                             onClone={handleCloneBundle}
                             onDelete={handleDeleteBundle}
