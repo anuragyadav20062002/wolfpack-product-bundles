@@ -1,5 +1,4 @@
 import { isRouteErrorResponse, useNavigate } from "@remix-run/react";
-import { navigateBackOrFallback } from "../lib/navigation";
 
 interface ErrorPageProps {
   error: unknown;
@@ -119,19 +118,10 @@ function IllustrationLocked() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Dashboard URL helper — preserves Shopify shop/host params so auth works
-// ---------------------------------------------------------------------------
-function navigateToDashboard() {
+function openSupportChat() {
   if (typeof window === "undefined") return;
-  const params = new URLSearchParams(window.location.search);
-  const shop = params.get("shop");
-  const host = params.get("host");
-  const qs = new URLSearchParams();
-  if (shop) qs.set("shop", shop);
-  if (host) qs.set("host", host);
-  const query = qs.toString();
-  window.location.href = `/app/dashboard${query ? `?${query}` : ""}`;
+  window.$crisp = window.$crisp ?? [];
+  window.$crisp.push(["do", "chat:open"]);
 }
 
 // ---------------------------------------------------------------------------
@@ -139,8 +129,8 @@ function navigateToDashboard() {
 // ---------------------------------------------------------------------------
 export function ErrorPage({ error }: ErrorPageProps) {
   const navigate = useNavigate();
-  const handleGoBack = () => {
-    navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true });
+  const handleGoToDashboard = () => {
+    navigate("/app/dashboard", { replace: true });
   };
   let status = 500;
   let title = FALLBACK_5XX.title;
@@ -218,17 +208,17 @@ export function ErrorPage({ error }: ErrorPageProps) {
           <div style={styles.actions}>
             <button
               type="button"
-              onClick={navigateToDashboard}
+              onClick={handleGoToDashboard}
               style={styles.btnPrimary}
             >
               Go to Dashboard
             </button>
             <button
               type="button"
-              onClick={handleGoBack}
+              onClick={openSupportChat}
               style={styles.btnSecondary}
             >
-              Go Back
+              Contact Support
             </button>
           </div>
 
@@ -236,7 +226,11 @@ export function ErrorPage({ error }: ErrorPageProps) {
           <p style={styles.support}>
             Need help?{" "}
             <a
-              href="mailto:wolfpack.shopifyapp@gmail.com"
+              href="#support"
+              onClick={(event) => {
+                event.preventDefault();
+                openSupportChat();
+              }}
               style={styles.supportLink}
             >
               Contact support
@@ -401,3 +395,9 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: "500",
   },
 };
+
+declare global {
+  interface Window {
+    $crisp?: any[];
+  }
+}
