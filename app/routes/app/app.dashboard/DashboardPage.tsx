@@ -541,7 +541,9 @@ export function DashboardPage() {
                       />
                     </div>
                     <s-stack direction="block" gap="small" alignItems="center">
-                      <s-heading>{t("dashboard.emptyState.title")}</s-heading>
+                      <s-button variant="primary" onClick={() => navigate('/app/bundles/create')}>
+                        {t("dashboard.header.createBundle")}
+                      </s-button>
                       <p className={dashboardStyles.emptyBundlesBody}>
                         {t("dashboard.emptyState.body")}
                       </p>

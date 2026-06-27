@@ -10,7 +10,6 @@ import styles from "./create-bundle.module.css";
 import { OptimisedImage } from "../../../components/OptimisedImage";
 import { ensureShopIdentity, recordBusinessEvent } from "../../../services/app-events.server";
 import { getCachedSubscriptionInfo, getSubscriptionInfoFromCache } from "../../../services/subscription-cache.server";
-import { navigateBackOrFallback } from "../../../lib/navigation";
 
 export const links: LinksFunction = () => [
   {
@@ -167,6 +166,10 @@ export default function CreateBundleWizard() {
     if (serverError) showPolarisModal(nameModalRef);
   }, [serverError]);
 
+  const handleBackToDashboard = useCallback(() => {
+    navigate("/app/dashboard", { replace: true });
+  }, [navigate]);
+
   const handleSelectBundleType = useCallback((type: string) => {
     setBundleType(type);
     setBundleTypeError(null);
@@ -205,7 +208,7 @@ export default function CreateBundleWizard() {
       <ui-title-bar title={t("createBundle.title")}>
         <button
           variant="breadcrumb"
-          onClick={() => navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })}
+          onClick={handleBackToDashboard}
         >
           {t("createBundle.dashboard")}
         </button>
@@ -214,6 +217,12 @@ export default function CreateBundleWizard() {
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div className={styles.pageHeaderLeft}>
+            <s-button
+              variant="tertiary"
+              icon="arrow-left"
+              accessibilityLabel={t("createBundle.dashboard")}
+              onClick={handleBackToDashboard}
+            />
             <h1 className={styles.pageTitle}>{t("createBundle.heading")}</h1>
           </div>
           <s-button
