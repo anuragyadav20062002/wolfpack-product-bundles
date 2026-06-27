@@ -1,10 +1,26 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import type { BundleActionsButtonsProps } from "./types";
+import { shouldRenderDashboardActionMenu } from "./dashboard-action-menu-state";
 import dashboardStyles from "./dashboard.module.css";
 
-export const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPreview, isPreviewing = false, isEditing = false, bundle }: Omit<BundleActionsButtonsProps, 'moreOpen' | 'onMoreToggle'>) => {
+export const BundleActionsButtons = memo(({
+  bundleId,
+  onEdit,
+  onClone,
+  onDelete,
+  onPreview,
+  activeActionMenuBundleId,
+  onActionMenuRequest,
+  isPreviewing = false,
+  isEditing = false,
+  bundle,
+}: Omit<BundleActionsButtonsProps, 'moreOpen' | 'onMoreToggle'>) => {
   const { t } = useTranslation();
+  const renderActionMenu = shouldRenderDashboardActionMenu({
+    activeMenuBundleId: activeActionMenuBundleId,
+    bundleId,
+  });
   return (
     <div className={dashboardStyles.bundleActions}>
       <s-button
@@ -39,13 +55,16 @@ export const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete,
         variant="tertiary"
         commandFor={`more-popover-${bundleId}`}
         command="--toggle"
+        onClick={() => onActionMenuRequest(bundleId)}
         accessibilityLabel={t("dashboard.actions.moreActions")}
       />
       <s-popover id={`more-popover-${bundleId}`}>
-        <s-stack direction="block" gap="none">
-          <s-button variant="tertiary" icon="duplicate" onClick={() => onClone(bundleId)}>{t("dashboard.actions.cloneBundle")}</s-button>
-          <s-button variant="tertiary" tone="critical" icon="delete" onClick={() => onDelete(bundleId)}>{t("dashboard.actions.deleteBundle")}</s-button>
-        </s-stack>
+        {renderActionMenu && (
+          <s-stack direction="block" gap="none">
+            <s-button variant="tertiary" icon="duplicate" onClick={() => onClone(bundleId)}>{t("dashboard.actions.cloneBundle")}</s-button>
+            <s-button variant="tertiary" tone="critical" icon="delete" onClick={() => onDelete(bundleId)}>{t("dashboard.actions.deleteBundle")}</s-button>
+          </s-stack>
+        )}
       </s-popover>
     </div>
   );

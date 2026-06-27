@@ -39,15 +39,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const error = url.searchParams.get("error");
 
     const cachedSubscriptionInfo = getCachedSubscriptionInfo(shopDomain);
-    const subscriptionInfo = cachedSubscriptionInfo !== undefined
-      ? cachedSubscriptionInfo
-      : await getSubscriptionInfoFromCache(shopDomain);
+    const subscriptionInfoPromise = cachedSubscriptionInfo !== undefined
+      ? Promise.resolve(cachedSubscriptionInfo)
+      : getSubscriptionInfoFromCache(shopDomain);
+
+    const [subscriptionInfo, quickStats] = await Promise.all([
+      subscriptionInfoPromise,
+      BundleAnalyticsService.getQuickStats(shopDomain),
+    ]);
 
     if (!subscriptionInfo) {
       throw new Error("Could not retrieve subscription information");
     }
-
-    const quickStats = await BundleAnalyticsService.getQuickStats(shopDomain);
 
     return json({
       subscription: {

@@ -3,6 +3,7 @@ type WebVitalsMetric = {
   id: string;
   name: string;
   value: number;
+  [key: string]: unknown;
 };
 
 type WebVitalsReport = {
@@ -21,6 +22,7 @@ type WindowWithWebVitals = Omit<Window, "shopify"> & {
   __wpbAdminWebVitals?: {
     clearLcpSamples: () => void;
     getLcpP75Summary: () => Record<string, LcpP75Summary>;
+    getRecentLcpSamples: () => LcpSample[];
   };
 };
 
@@ -30,9 +32,15 @@ type DiagnosticsOptions = {
 };
 
 type LcpSample = {
+  blockingTime?: number | null;
   element: string | null;
+  candidate?: string | null;
+  candidateResource?: string | null;
+  candidateType?: string;
   id: string;
   route: string;
+  routeLoadId: string;
+  country?: string;
   timestamp: number;
   value: number;
 };
@@ -122,6 +130,55 @@ function writeLcpSamples(windowLike: Pick<Window, "localStorage">, samples: LcpS
   }
 }
 
+function getRouteLoadId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getLcpCandidateType({
+  element,
+  url,
+}: {
+  element?: Element;
+  url?: string;
+}) {
+  if (url) {
+    return "resource";
+  }
+  if (!element) {
+    return "text";
+  }
+  const tag = element.tagName.toLowerCase();
+  if (tag === "img" || tag === "video") return "media";
+  if (["h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "strong", "em", "div"].includes(tag)) {
+    return "text";
+  }
+  return "container";
+}
+
+function getLcpCandidateBlockingTime(entry: {
+  startTime?: number;
+  loadTime?: number;
+  renderTime?: number;
+}) {
+  if (typeof entry.renderTime === "number" && typeof entry.startTime === "number") {
+    return Math.max(0, entry.renderTime - entry.startTime);
+  }
+  if (typeof entry.loadTime === "number" && typeof entry.startTime === "number") {
+    return Math.max(0, entry.loadTime - entry.startTime);
+  }
+  return null;
+}
+
+type LcpBrowserCandidateMetadata = {
+  candidate: string | null;
+  type: string;
+  resource: string | null;
+  blockingTime: number | null;
+  renderTime?: number;
+  loadTime?: number;
+  size?: number;
+};
+
 function buildLcpP75Summary(samples: LcpSample[]): Record<string, LcpP75Summary> {
   const valuesByRoute = new Map<string, number[]>();
   for (const sample of samples) {
@@ -150,27 +207,40 @@ function installDebugConsoleApi(windowLike: WindowWithWebVitals) {
         // Diagnostic-only storage must never affect app behavior.
       }
     },
+    getRecentLcpSamples: () => readLcpSamples(windowLike).slice(-25),
     getLcpP75Summary: () => buildLcpP75Summary(readLcpSamples(windowLike)),
   };
 }
 
 function recordDebugLcpSample({
   element,
+  candidateMetadata,
+  country,
   logger,
   metric,
+  routeLoadId,
   windowLike,
 }: {
   element: string | null;
+  candidateMetadata?: LcpBrowserCandidateMetadata;
+  country?: string;
   logger: (message: string, payload: Record<string, unknown>) => void;
   metric: WebVitalsMetric;
+  routeLoadId: string;
   windowLike: WindowWithWebVitals;
 }) {
   const route = getRouteKey(windowLike);
   const samples = readLcpSamples(windowLike);
   const nextSamples = [...samples, {
+    blockingTime: candidateMetadata?.blockingTime ?? null,
     element,
+    country,
+    candidate: candidateMetadata?.candidate ?? null,
+    candidateResource: candidateMetadata?.resource ?? null,
+    candidateType: candidateMetadata?.type ?? null,
     id: metric.id,
     route,
+    routeLoadId,
     timestamp: Date.now(),
     value: metric.value,
   }];
@@ -181,7 +251,13 @@ function recordDebugLcpSample({
   logger("Admin Web Vitals p75", {
     p75,
     route,
+    routeLoadId,
     sampleCount: routeSamples.length,
+    country,
+    candidate: candidateMetadata?.candidate ?? null,
+    candidateType: candidateMetadata?.type ?? null,
+    candidateResource: candidateMetadata?.resource ?? null,
+    blockingTime: candidateMetadata?.blockingTime ?? null,
     targetPass: p75 !== null && p75 <= LCP_TARGET_MS,
     threshold: LCP_TARGET_MS,
   });
@@ -200,7 +276,14 @@ export function installAdminWebVitalsDiagnostics({
   }
 
   let latestLcpElement: string | null = null;
+  let latestLcpMetadata: LcpBrowserCandidateMetadata = {
+    candidate: null,
+    type: "text",
+    resource: null,
+    blockingTime: null,
+  };
   let observer: PerformanceObserver | null = null;
+  const routeLoadId = getRouteLoadId();
 
   const PerformanceObserverCtor = windowLike.PerformanceObserver;
   if (typeof PerformanceObserverCtor === "function") {
@@ -214,10 +297,23 @@ export function installAdminWebVitalsDiagnostics({
           renderTime?: number;
           size?: number;
         };
-        latestLcpElement = describeLcpElement(latestEntry?.element);
+        const candidate = describeLcpElement(latestEntry?.element);
+        latestLcpElement = candidate;
+        latestLcpMetadata = {
+          candidate,
+          type: getLcpCandidateType({ element: latestEntry?.element, url: latestEntry?.url as string | undefined }),
+          resource: typeof latestEntry?.url === "string" ? latestEntry.url : null,
+          blockingTime: getLcpCandidateBlockingTime(latestEntry),
+          renderTime: latestEntry?.renderTime,
+          loadTime: latestEntry?.loadTime,
+          size: latestEntry?.size,
+        };
         if (isDebugEnabled(windowLike)) {
           logger("Admin Browser LCP Candidate", {
-            element: latestLcpElement,
+            element: latestLcpMetadata.candidate,
+            candidateType: latestLcpMetadata.type,
+            candidateResource: latestLcpMetadata.resource,
+            blockingTime: latestLcpMetadata.blockingTime,
             loadTime: latestEntry?.loadTime,
             renderTime: latestEntry?.renderTime,
             size: latestEntry?.size,
@@ -238,6 +334,11 @@ export function installAdminWebVitalsDiagnostics({
       if (metric.name !== "LCP") continue;
       logger("Admin Web Vitals", {
         country: metric.country,
+        routeLoadId,
+        candidate: latestLcpMetadata.candidate,
+        candidateType: latestLcpMetadata.type,
+        candidateResource: latestLcpMetadata.resource,
+        blockingTime: latestLcpMetadata.blockingTime,
         element: latestLcpElement,
         id: metric.id,
         name: metric.name,
@@ -245,8 +346,11 @@ export function installAdminWebVitalsDiagnostics({
       });
       recordDebugLcpSample({
         element: latestLcpElement,
+        candidateMetadata: latestLcpMetadata,
+        country: metric.country,
         logger,
         metric,
+        routeLoadId,
         windowLike,
       });
     }

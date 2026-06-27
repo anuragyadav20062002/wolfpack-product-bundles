@@ -10,6 +10,8 @@ import { handleCreatePreviewPage } from "../app.bundles.full-page-bundle.configu
 import { saveShopAdminLocale } from "../../../services/admin-locale.server";
 import { handleCloneBundle, handleDeleteBundle } from "./handlers";
 import { DashboardPage } from "./DashboardPage";
+import { getDashboardInitialImagePreloads } from "./dashboard-media-state";
+import { queueDashboardBackgroundTask } from "./dashboard-background-tasks.server";
 
 /**
  * Preload first-viewport dashboard images via real
@@ -17,32 +19,26 @@ import { DashboardPage } from "./DashboardPage";
  * The app embed card image is the measured embedded-app LCP candidate.
  */
 export const links: LinksFunction = () => [
-  {
+  ...getDashboardInitialImagePreloads().map((image) => ({
     rel: "preload",
     as: "image",
-    href: "/Parth.avif",
-    imageSrcSet: "/Parth.avif 120w",
-    imageSizes: "120px",
-    type: "image/avif",
+    href: image.href,
+    imageSrcSet: image.imageSrcSet,
+    imageSizes: image.imageSizes,
+    type: image.type,
     fetchpriority: "high",
-  } as ReturnType<LinksFunction>[number],
-  {
-    rel: "preload",
-    as: "image",
-    href: "/appEmbed.avif",
-    imageSrcSet: "/appEmbed.avif 420w",
-    imageSizes: "420px",
-    type: "image/avif",
-    fetchpriority: "high",
-  } as ReturnType<LinksFunction>[number],
+  } as ReturnType<LinksFunction>[number])),
 ];
 
-export const headers: HeadersFunction = () => ({
-  Link: [
-    "</appEmbed.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high",
-    "</Parth.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high",
-  ].join(", "),
-});
+export const headers: HeadersFunction = () => {
+  const imagePreloads = getDashboardInitialImagePreloads();
+  if (imagePreloads.length === 0) return {};
+  return {
+    Link: imagePreloads
+      .map((image) => `<${image.href}>; rel=preload; as=image; type=${image.type}; fetchpriority=high`)
+      .join(", "),
+  };
+};
 
 const SHOP_EMBED_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -91,7 +87,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const timing = new ServerTiming();
   const { session, admin } = await timing.track("auth", () => requireAdminSession(request));
 
-  const bundles = await timing.track("db.bundles", () => db.bundle.findMany({
+  const bundlesPromise = timing.track("db.bundles", () => db.bundle.findMany({
     where: {
       shopId: session.shop,
       status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT, BundleStatus.UNLISTED] }
@@ -103,6 +99,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     },
     orderBy: { createdAt: "desc" },
   }));
+
+  const shopRecordPromise = timing.track("db.shop", () => db.shop.findUnique({
+    where: { shopDomain: session.shop },
+    select: {
+      appEmbedEnabled: true,
+      appEmbedCheckedAt: true,
+      appEmbedThemeId: true,
+    },
+  }));
+
+  const [bundles, shopRecord] = await Promise.all([bundlesPromise, shopRecordPromise]);
 
   const bundlesNeedingBackfill = bundles.filter(
     b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId && !b.shopifyProductHandle
@@ -122,15 +129,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const apiKey = process.env.SHOPIFY_API_KEY || "63077bb0483a6ce08a2d6139b14d170b";
 
-  const shopRecord = await timing.track("db.shop", () => db.shop.findUnique({
-    where: { shopDomain: session.shop },
-    select: {
-      appEmbedEnabled: true,
-      appEmbedCheckedAt: true,
-      appEmbedThemeId: true,
-    },
-  }));
-
   const appEmbedCacheFresh = Boolean(
     shopRecord?.appEmbedCheckedAt &&
     shopRecord?.appEmbedEnabled !== null &&
@@ -141,14 +139,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ? buildThemeEditorUrl(session.shop, shopRecord.appEmbedThemeId, apiKey)
     : null;
 
-  void (async () => {
+  queueDashboardBackgroundTask(async () => {
     if (appEmbedCacheFresh) return;
     try {
       await fetchEmbedData(admin, session.shop, apiKey);
     } catch (error) {
       AppLogger.error("Failed to refresh app embed cache", { component: "app.dashboard", operation: "refresh-app-embed" }, error);
     }
-  })();
+  });
 
   // billing + proxy-health are kicked off concurrently here and surfaced via
   // a deferred `banners` promise so the bundles table can paint without
@@ -195,7 +193,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const appUrl = process.env.SHOPIFY_APP_URL;
   if (appUrl) {
-    void (async () => {
+    queueDashboardBackgroundTask(async () => {
       try {
         const existingPixelRes = await admin.graphql(`query { webPixel { id settings } }`);
         const existingPixelData = await existingPixelRes.json();
@@ -218,7 +216,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           }
         }
       } catch (_err) { /* Non-critical */ }
-    })();
+    });
   }
 
   return defer({

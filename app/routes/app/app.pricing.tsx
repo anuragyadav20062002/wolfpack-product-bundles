@@ -5,14 +5,14 @@
  * Uses shared billing components from app/components/billing.
  */
 
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useFetcher, useNavigate } from "@remix-run/react";
+import { defer, json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import { Await, useLoaderData, useFetcher, useNavigate } from "@remix-run/react";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { getCachedSubscriptionInfo, getSubscriptionInfoFromCache } from "../../services/subscription-cache.server";
 import { BillingService } from "../../services/billing.server";
 import { PLANS } from "../../constants/plans";
 import { AppLogger } from "../../lib/logger";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import pricingStyles from "../../styles/routes/app-pricing.module.css";
 
 // Import shared billing components
@@ -27,50 +27,56 @@ import {
 } from "../../components/billing";
 import { navigateBackOrFallback } from "../../lib/navigation";
 
+type PricingSubscriptionData = {
+  error?: "Failed to load pricing information";
+  currentPlan: keyof typeof PLANS;
+  currentBundleCount: number;
+  bundleLimit: number;
+  canCreateBundle: boolean;
+};
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await requireAdminSession(request);
   const shopDomain = session.shop;
 
-  try {
+  const subscription = (async () => {
     // Reuse cached subscription info from dashboard/bootstrap whenever available.
-    const cachedSubscriptionInfo = getCachedSubscriptionInfo(shopDomain);
-    const subscriptionInfo = cachedSubscriptionInfo !== undefined
-      ? cachedSubscriptionInfo
-      : await getSubscriptionInfoFromCache(shopDomain);
+    try {
+      const cachedSubscriptionInfo = getCachedSubscriptionInfo(shopDomain);
+      const subscriptionInfo = cachedSubscriptionInfo !== undefined
+        ? cachedSubscriptionInfo
+        : await getSubscriptionInfoFromCache(shopDomain);
 
-    if (!subscriptionInfo) {
-      throw new Error("Could not retrieve subscription information");
-    }
+      if (!subscriptionInfo) {
+        throw new Error("Could not retrieve subscription information");
+      }
 
-    return json({
-      currentPlan: subscriptionInfo.plan,
-      plans: PLANS,
-      subscription: {
+      return {
+        currentPlan: subscriptionInfo.plan,
         currentBundleCount: subscriptionInfo.currentBundleCount,
         bundleLimit: subscriptionInfo.bundleLimit,
         canCreateBundle: subscriptionInfo.canCreateBundle,
-      },
-    });
-  } catch (error) {
-    AppLogger.error("Error loading pricing page", {
-      component: "app.pricing",
-      operation: "loader"
-    }, error);
+      } satisfies PricingSubscriptionData;
+    } catch (error) {
+      AppLogger.error("Error loading pricing page", {
+        component: "app.pricing",
+        operation: "loader"
+      }, error);
 
-    return json(
-      {
-        error: "Failed to load pricing information",
+      return {
+        error: "Failed to load pricing information" as const,
         currentPlan: "free",
-        plans: PLANS,
-        subscription: {
-          currentBundleCount: 0,
-          bundleLimit: PLANS.free.bundleLimit,
-          canCreateBundle: true,
-        },
-      },
-      { status: 500 }
-    );
-  }
+        currentBundleCount: 0,
+        bundleLimit: PLANS.free.bundleLimit,
+        canCreateBundle: true,
+      } satisfies PricingSubscriptionData;
+    }
+  })();
+
+  return defer({
+    plans: PLANS,
+    subscription,
+  });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -120,10 +126,14 @@ export async function action({ request }: ActionFunctionArgs) {
   return json({ error: "Invalid plan" }, { status: 400 });
 }
 
-export default function PricingPage() {
-  const data = useLoaderData<typeof loader>();
+function PricingBody({
+  data,
+  plans,
+}: {
+  data: PricingSubscriptionData;
+  plans: typeof PLANS;
+}) {
   const fetcher = useFetcher<typeof action>();
-  const navigate = useNavigate();
 
   // Upgrade confirmation modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -154,32 +164,22 @@ export default function PricingPage() {
   const isUpgrading = fetcher.state === "submitting";
 
   // Bundle quota data
-  const currentBundleCount = data.subscription?.currentBundleCount || 0;
-  const bundleLimit = data.subscription?.bundleLimit || PLANS.free.bundleLimit;
-  const currentPlanConfig = data.plans[data.currentPlan as keyof typeof data.plans];
+  const currentBundleCount = data.currentBundleCount;
+  const bundleLimit = data.bundleLimit;
+  const currentPlanConfig = plans[data.currentPlan as keyof typeof plans];
 
   return (
     <>
-      {/* Upgrade Confirmation Modal */}
-      <UpgradeConfirmationModal
-        open={showUpgradeModal}
-        isLoading={isUpgrading}
-        currentBundleCount={currentBundleCount}
-        bundleLimit={bundleLimit}
-        onConfirm={handleConfirmUpgrade}
-        onClose={() => setShowUpgradeModal(false)}
-      />
-
-      <ui-title-bar title="Pricing">
-        <button
-          variant="breadcrumb"
-          onClick={() =>
-            navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })
-          }
-        >
-          Dashboard
-        </button>
-      </ui-title-bar>
+      {showUpgradeModal && (
+        <UpgradeConfirmationModal
+          open={showUpgradeModal}
+          isLoading={isUpgrading}
+          currentBundleCount={currentBundleCount}
+          bundleLimit={bundleLimit}
+          onConfirm={handleConfirmUpgrade}
+          onClose={() => setShowUpgradeModal(false)}
+        />
+      )}
 
       <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
         <s-stack direction="block" gap="large">
@@ -207,6 +207,50 @@ export default function PricingPage() {
           <FAQSection />
         </s-stack>
       </div>
+    </>
+  );
+}
+
+function PricingSkeleton() {
+  return (
+    <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
+      <s-stack direction="block" gap="large">
+        <s-section>
+          <s-stack direction="block" gap="base">
+            <div style={{ height: 18, width: 220, background: "#f1f2f3", borderRadius: 4 }} />
+            <div style={{ height: 6, width: "100%", background: "#e3e3e3", borderRadius: 3 }} />
+          </s-stack>
+        </s-section>
+        <div className={pricingStyles.planCardsGrid}>
+          <s-section><div style={{ minHeight: 280, background: "#f6f6f7", borderRadius: 8 }} /></s-section>
+          <s-section><div style={{ minHeight: 280, background: "#f6f6f7", borderRadius: 8 }} /></s-section>
+        </div>
+      </s-stack>
+    </div>
+  );
+}
+
+export default function PricingPage() {
+  const { plans, subscription } = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <ui-title-bar title="Pricing">
+        <button
+          variant="breadcrumb"
+          onClick={() =>
+            navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })
+          }
+        >
+          Dashboard
+        </button>
+      </ui-title-bar>
+      <Suspense fallback={<PricingSkeleton />}>
+        <Await resolve={subscription}>
+          {(data) => <PricingBody data={data} plans={plans} />}
+        </Await>
+      </Suspense>
     </>
   );
 }

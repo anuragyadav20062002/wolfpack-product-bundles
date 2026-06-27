@@ -1,5 +1,5 @@
 import { Await, useFetcher, useNavigate, useLoaderData, useSearchParams } from "@remix-run/react";
-import { useCallback, useRef, useEffect, useMemo, useState, Suspense } from "react";
+import { lazy, useCallback, useRef, useEffect, useMemo, useState, Suspense } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { useTranslation } from "react-i18next";
 import { OptimisedImage } from "../../../components/OptimisedImage";
@@ -8,7 +8,6 @@ import { DashboardBannerSkeleton } from "../../../components/skeletons/Dashboard
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
 import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
-import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { normalizeAdminLocale } from "../../../i18n/config";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
@@ -20,12 +19,25 @@ import {
   setDashboardTypeFilter,
 } from "../../../store/slices/adminRouteStateSlice";
 import type { action, loader } from "./route";
-import { BundleActionsButtons } from "./BundleActionsButtons";
-import { DashboardResourcesCard } from "./DashboardResourcesCard";
 import { DashboardTopCards } from "./DashboardTopCards";
+import {
+  getDashboardMediaState,
+  shouldRenderDashboardResourceCard,
+} from "./dashboard-media-state";
+import {
+  shouldRenderDashboardDeleteModal,
+  shouldRenderDashboardPreviewModal,
+} from "./dashboard-modal-state";
+import { BundleActionsButtons } from "./BundleActionsButtons";
 import dashboardStyles from "./dashboard.module.css";
 
 const STATUS_TONE_MAP = { active: 'success', draft: 'info', unlisted: 'warning' } as const;
+const DashboardResourcesCard = lazy(() =>
+  import("./DashboardResourcesCard").then((module) => ({ default: module.DashboardResourcesCard })),
+);
+const EnablePreviewModal = lazy(() =>
+  import("../../../components/EnablePreviewModal").then((module) => ({ default: module.EnablePreviewModal })),
+);
 
 export function DashboardPage() {
   const { bundles, shop, appUrl, themeEditorUrl, appEmbedEnabled, banners } = useLoaderData<typeof loader>();
@@ -52,14 +64,21 @@ export function DashboardPage() {
   const fetcherIntentRef = useRef<string | null>(null);
   const [previewingBundleId, setPreviewingBundleId] = useState<string | null>(null);
   const [editingBundleId, setEditingBundleId] = useState<string | null>(null);
+  const [activeActionMenuBundleId, setActiveActionMenuBundleId] = useState<string | null>(null);
+  const [hasHydratedDashboardMedia, setHasHydratedDashboardMedia] = useState(false);
+  const [hasMainContentSettled, setHasMainContentSettled] = useState(false);
 
-  // Hero image preload moved to the `links` export above — it now happens
-  // during HTML parse rather than post-hydration, which previously added ~LCP
-  // to the Parth.jpeg paint. Mark loaded immediately so the skeleton swap
-  // happens as soon as the `<img>` mounts. The OptimisedImage's <img>
-  // `onLoad` is still wired below so the skeleton waits for the real bytes.
   useEffect(() => {
-    setParthImageLoaded(true);
+    setHasHydratedDashboardMedia(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window.requestIdleCallback === "function") {
+      const idleId = window.requestIdleCallback(() => setHasMainContentSettled(true), { timeout: 1800 });
+      return () => window.cancelIdleCallback?.(idleId);
+    }
+    const timeoutId = window.setTimeout(() => setHasMainContentSettled(true), 1200);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
@@ -115,8 +134,6 @@ export function DashboardPage() {
 
   const handleDeleteBundle = useCallback((bundleId: string) => {
     openDeleteModal(bundleId);
-    deleteModalRef.current?.showOverlay?.();
-    deleteModalRef.current?.show?.();
   }, [openDeleteModal]);
 
   const handleConfirmDelete = useCallback(() => {
@@ -150,10 +167,20 @@ export function DashboardPage() {
     };
   }, [closeDeleteModal]);
 
+  useEffect(() => {
+    if (!bundleToDelete) return;
+    deleteModalRef.current?.showOverlay?.();
+    deleteModalRef.current?.show?.();
+  }, [bundleToDelete]);
+
   const enablePreviewGate = useEnablePreviewGate({
     appEmbedEnabled,
     themeEditorUrl,
     onSilentBlock: () => shopify.toast.show(t("dashboard.actions.themeEditorUnavailable"), { isError: true }),
+  });
+  const renderDeleteModal = shouldRenderDashboardDeleteModal({ bundleToDelete });
+  const renderPreviewModal = shouldRenderDashboardPreviewModal({
+    isOpen: enablePreviewGate.modalProps.open,
   });
 
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
@@ -233,8 +260,6 @@ export function DashboardPage() {
     dispatch(setDashboardCurrentPage(nextPage));
   }, [currentPage, dispatch]);
   const [activeResource, setActiveResource] = useState<string>('bundle-inspirations');
-  const [parthImageLoaded, setParthImageLoaded] = useState(false);
-
   const languageOptions = useMemo(() => [
     { label: t("dashboard.language.en"), value: "en" },
     { label: t("dashboard.language.fr"), value: "fr" },
@@ -378,21 +403,28 @@ export function DashboardPage() {
     filteredBundles.slice((effectivePage - 1) * bundlesPerPage, effectivePage * bundlesPerPage),
     [filteredBundles, effectivePage, bundlesPerPage]
   );
+  const dashboardMediaState = getDashboardMediaState({
+    isHydrated: hasHydratedDashboardMedia,
+  });
+  const renderResourceCard = shouldRenderDashboardResourceCard({
+    hasMainContentSettled,
+  });
 
   return (
     <>
-      {/* Delete Confirmation Modal */}
-      <s-modal
-        ref={deleteModalRef}
-        id="delete-bundle-modal"
-        heading={t("dashboard.deleteModal.heading")}
-      >
-        <s-button slot="primary-action" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>{t("dashboard.deleteModal.delete")}</s-button>
-        <s-button slot="secondary-actions" onClick={handleCancelDelete}>{t("dashboard.deleteModal.cancel")}</s-button>
-        <s-text color="subdued">
-          {t("dashboard.deleteModal.body")}
-        </s-text>
-      </s-modal>
+      {renderDeleteModal && (
+        <s-modal
+          ref={deleteModalRef}
+          id="delete-bundle-modal"
+          heading={t("dashboard.deleteModal.heading")}
+        >
+          <s-button slot="primary-action" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>{t("dashboard.deleteModal.delete")}</s-button>
+          <s-button slot="secondary-actions" onClick={handleCancelDelete}>{t("dashboard.deleteModal.cancel")}</s-button>
+          <s-text color="subdued">
+            {t("dashboard.deleteModal.body")}
+          </s-text>
+        </s-modal>
+      )}
 
       <div className={dashboardStyles.dashboardPage}>
         <div className={dashboardStyles.dashboardLayout}>
@@ -422,7 +454,7 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* Banners — deferred via admin-lcp-phase6-defer-skeletons-1 */}
+          {/* Banners - deferred with a fixed-height CLS guard. */}
           <Suspense fallback={<DashboardBannerSkeleton />}>
             <Await resolve={banners}>
               {(b) => (
@@ -433,7 +465,11 @@ export function DashboardPage() {
             </Await>
           </Suspense>
 
-          <DashboardTopCards parthImageLoaded={parthImageLoaded} setParthImageLoaded={setParthImageLoaded} handleDirectChat={handleDirectChat} handleAppEmbedCardClick={handleAppEmbedCardClick} />
+          <DashboardTopCards
+            handleDirectChat={handleDirectChat}
+            handleAppEmbedCardClick={handleAppEmbedCardClick}
+            loadAppEmbedImage={dashboardMediaState.loadAppEmbedImage}
+          />
 
           {/* Bundles panel */}
           <s-section padding="none">
@@ -529,6 +565,8 @@ export function DashboardPage() {
                               onClone={handleCloneBundle}
                               onDelete={handleDeleteBundle}
                               onPreview={handlePreviewBundle}
+                              activeActionMenuBundleId={activeActionMenuBundleId}
+                              onActionMenuRequest={setActiveActionMenuBundleId}
                               isPreviewing={previewingBundleId === bundle.id}
                             />
                           </span>
@@ -592,12 +630,24 @@ export function DashboardPage() {
           </s-section>
 
           {/* Resources card */}
-          <DashboardResourcesCard activeResource={activeResource} setActiveResource={setActiveResource} handleDirectChat={handleDirectChat} />
+          {renderResourceCard && (
+            <Suspense fallback={null}>
+              <DashboardResourcesCard
+                activeResource={activeResource}
+                setActiveResource={setActiveResource}
+                handleDirectChat={handleDirectChat}
+              />
+            </Suspense>
+          )}
 
         </div>
       </div>
 
-      <EnablePreviewModal {...enablePreviewGate.modalProps} />
+      {renderPreviewModal && (
+        <Suspense fallback={null}>
+          <EnablePreviewModal {...enablePreviewGate.modalProps} />
+        </Suspense>
+      )}
     </>
   );
 }
