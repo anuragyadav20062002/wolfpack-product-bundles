@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 3.0.51
- * Built   : 2026-06-26
+ * Version : 3.0.65
+ * Built   : 2026-06-28
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.51';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.65';
 (function (window) {
   'use strict';
 
@@ -1391,7 +1391,11 @@ class TemplateManager {
     // Calculate discount-specific values
     let discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
     const dtoDiscountDisplay = this.getRuleDiscountDisplay(bundle, ruleToUse);
-    if (dtoDiscountDisplay?.valueToken && this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse)) {
+    if (
+      dtoDiscountDisplay?.valueToken &&
+      this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse) &&
+      this.canUseSavedDiscountDisplayValue(discountMethod, dtoDiscountDisplay.valueToken, ruleToUse)
+    ) {
       discountData = {
         ...discountData,
         discountText: dtoDiscountDisplay.text,
@@ -1642,6 +1646,36 @@ class TemplateManager {
     }
 
     return false;
+  }
+
+  static canUseSavedDiscountDisplayValue(discountMethod, valueToken, rule = null) {
+    if (valueToken == null) return false;
+    const token = String(valueToken).trim();
+    if (!token) return false;
+
+    const isFixedAmount =
+      discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF ||
+      (
+        discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y &&
+        (rule?.bxyDiscountType || rule?.discountType) === 'fixed_amount'
+      );
+
+    if (isFixedAmount && this.containsPercentageValue(token)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static containsPercentageValue(value) {
+    if (typeof value !== 'string') return false;
+    const percentIndex = value.indexOf('%');
+    if (percentIndex === -1) return false;
+
+    return value
+      .slice(0, percentIndex)
+      .split('')
+      .some(character => character >= '0' && character <= '9');
   }
 
   static getRuleDiscountDisplay(bundle, rule = null) {

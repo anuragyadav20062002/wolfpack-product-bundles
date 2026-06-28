@@ -74,6 +74,7 @@ interface FormattedStep {
   conditionValue: string | null;
   conditionOperator2: string | null;
   conditionValue2: string | null;
+  autoNextStepOnConditionMet: boolean;
   isFreeGift: boolean;
   freeGiftName: string | null;
   isDefault: boolean;
@@ -240,6 +241,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       conditionValue: step.conditionValue ?? null,
       conditionOperator2: step.conditionOperator2 ?? null,
       conditionValue2: step.conditionValue2 ?? null,
+      autoNextStepOnConditionMet: step.autoNextStepOnConditionMet === true,
       isFreeGift: step.isFreeGift ?? false,
       freeGiftName: step.freeGiftName ?? null,
       isDefault: step.isDefault ?? false,

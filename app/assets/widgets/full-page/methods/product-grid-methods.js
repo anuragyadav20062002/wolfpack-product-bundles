@@ -23,6 +23,14 @@ import {
 } from '../../shared/engine/cart-lines.js';
 
 
+export function shouldCategoryTabActivateProducts({
+  designPreset,
+  viewportWidth,
+  hasCategoryEntries,
+}) {
+  return !(designPreset === 'STANDARD' && hasCategoryEntries && viewportWidth < 768);
+}
+
 export const fullPageProductGridMethods = {
 scrollActiveCategoryTitleIntoView() {
   if (this.getFullPageDesignPreset?.() !== 'STANDARD') return;
@@ -146,7 +154,19 @@ createCategoryTabs(stepIndex) {
     }
     tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
     tab.addEventListener('click', () => {
-      this.activateStepCategory(entry.id);
+      if (shouldCategoryTabActivateProducts({
+        designPreset: this.getFullPageDesignPreset?.(),
+        viewportWidth: window.innerWidth,
+        hasCategoryEntries,
+      })) {
+        this.activateStepCategory(entry.id);
+        return;
+      }
+
+      tabsContainer.querySelectorAll('.category-tab').forEach(tabElement => {
+        tabElement.classList.remove('active');
+      });
+      tab.classList.add('active');
     });
     tabsContainer.appendChild(tab);
   });

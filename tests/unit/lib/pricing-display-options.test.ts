@@ -71,6 +71,31 @@ describe("normalizePricingDisplayOptions", () => {
     expect(result.bundleQuantityOptions.options[1].isDefault).toBe(false);
   });
 
+  it("regenerates stale percentage subtext when a rule changes to fixed amount", () => {
+    const result = normalizePricingDisplayOptions({
+      rules: [quantityRule("rule-2", 2, 500)],
+      method: DiscountMethod.FIXED_AMOUNT_OFF,
+      messages: {
+        displayOptions: {
+          bundleQuantityOptions: {
+            enabled: true,
+            defaultRuleId: "rule-2",
+            optionsByRuleId: {
+              "rule-2": { label: "Box of 2", subtext: "500% off" },
+            },
+          },
+        },
+      },
+    });
+
+    expect(result.bundleQuantityOptions.options[0]).toEqual(
+      expect.objectContaining({
+        label: "Box of 2",
+        subtext: "$5.00 off",
+      }),
+    );
+  });
+
   it("preserves localized bundle quantity option labels for the language modal", () => {
     const result = normalizePricingDisplayOptions({
       rules: [quantityRule("rule-2", 2, 10)],

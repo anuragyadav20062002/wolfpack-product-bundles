@@ -22,6 +22,20 @@ import {
   buildCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
 
+export function getMobileBottomBarActionState({
+  conditionlessMobile,
+  hasSelectionMobile,
+  isLastStep,
+  isComplete,
+  boxSelectionValidMobile,
+}) {
+  const shouldAddToCart = conditionlessMobile || isLastStep;
+  const disabled = conditionlessMobile
+    ? (!hasSelectionMobile || !boxSelectionValidMobile)
+    : (isLastStep ? (!isComplete || !boxSelectionValidMobile) : false);
+
+  return { shouldAddToCart, disabled };
+}
 
 export const fullPageResponsiveLayoutMethods = {
 renderProductPageLayout() {
@@ -315,14 +329,21 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
   const conditionlessMobile = this.bundleHasNoConditions();
   const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
   const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
+  const mobileActionState = getMobileBottomBarActionState({
+    conditionlessMobile,
+    hasSelectionMobile,
+    isLastStep,
+    isComplete,
+    boxSelectionValidMobile,
+  });
   const ctaBtn = document.createElement('button');
   ctaBtn.className = 'fpb-mobile-cta-btn';
-  ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
-  if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
+  ctaBtn.textContent = mobileActionState.shouldAddToCart ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
+  if (mobileActionState.disabled) ctaBtn.disabled = true;
   ctaBtn.addEventListener('click', async () => {
     if (this._isWidgetActionBusy) return;
 
-    if (conditionlessMobile || (isLastStep && isComplete)) {
+    if (mobileActionState.shouldAddToCart) {
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
@@ -338,7 +359,7 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
     } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
       ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
     } else {
-      ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
     }
   });
 

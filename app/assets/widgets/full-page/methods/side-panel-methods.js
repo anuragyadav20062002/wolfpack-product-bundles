@@ -422,7 +422,7 @@ renderSidePanel(panel) {
         await this.renderFullPageLayoutWithSidebar();
       }, { actionButton: nextBtn });
     } else {
-      ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
     }
   });
 

@@ -166,6 +166,7 @@ initializeDataStructures() {
 
   // Pre-populate default products (mandatory items like Gift Box)
   this._initDefaultProducts();
+  this._initDirectDefaultProducts();
 
   // Initialize step product data cache
   this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));

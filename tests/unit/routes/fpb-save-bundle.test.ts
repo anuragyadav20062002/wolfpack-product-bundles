@@ -584,6 +584,29 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     expect(updateCall.data.bundleTextConfig).toEqual(bundleTextConfig);
   });
 
+  it("persists step-rule auto-next on full-page steps", async () => {
+    const stepConditions = {
+      "step-1": [{
+        id: "rule-1",
+        type: "quantity",
+        operator: "equal_to",
+        value: "2",
+        autoNext: "true",
+      }],
+    };
+    const fd = makeFormData({ stepConditions: JSON.stringify(stepConditions) });
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.steps.create[0]).toMatchObject({
+      conditionType: "quantity",
+      conditionOperator: "equal_to",
+      conditionValue: 2,
+      autoNextStepOnConditionMet: true,
+    });
+  });
+
   it("saves direct box-selection config from percentage quantity display options", async () => {
     const discountData = makeDiscountData({
       discountEnabled: true,

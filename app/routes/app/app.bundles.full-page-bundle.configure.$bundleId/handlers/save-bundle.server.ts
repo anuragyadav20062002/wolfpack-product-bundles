@@ -347,6 +347,10 @@ export async function handleSaveBundle(
                 conditionValue: parseConditionValue(firstCondition?.value),
                 conditionOperator2: secondCondition?.operator || null,
                 conditionValue2: parseConditionValue(secondCondition?.value),
+                ...(firstCondition?.autoNext === true ||
+                firstCondition?.autoNext === "true"
+                  ? { autoNextStepOnConditionMet: true }
+                  : {}),
                 // Create StepProduct records for selected products
                 StepProduct: {
                   create: (step.StepProduct || []).map(

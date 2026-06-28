@@ -22,6 +22,57 @@ import {
   buildCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
 
+function extractFullPageId(idString) {
+  if (!idString) return null;
+  const gidMatch = idString.toString().match(/gid:\/\/shopify\/\w+\/(\d+)/);
+  if (gidMatch) return gidMatch[1];
+  return idString.toString().split('/').pop();
+}
+
+export function normalizeFullPageDirectDefaultProduct(product) {
+  const variant = Array.isArray(product?.variants) ? product.variants[0] : null;
+  const variantId = extractFullPageId(variant?.variantGraphqlId || variant?.variantId || variant?.id);
+  if (!variantId) return null;
+
+  const imageUrl = product.images?.[0]?.originalSrc
+    || product.images?.[0]?.url
+    || product.imageUrl
+    || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+  const inventoryQuantity = typeof variant?.inventoryQuantity === 'number'
+    ? variant.inventoryQuantity
+    : null;
+  const price = Number.parseFloat(variant?.price || product?.price || '0') * 100;
+  const requiredQuantity = Number(product.requiredQuantity || 1) || 1;
+  const explicitlyUnavailable = variant?.availableForSale === false || variant?.available === false;
+  const available = !explicitlyUnavailable;
+  const quantityAvailable = available && inventoryQuantity === 0 ? null : inventoryQuantity;
+
+  return {
+    id: extractFullPageId(product.graphqlId || product.productId) || product.productId || variantId,
+    title: product.title || '',
+    handle: product.handle || '',
+    imageUrl,
+    price,
+    compareAtPrice: null,
+    variantId,
+    available,
+    quantityAvailable,
+    currentlyNotInStock: false,
+    defaultRequiredQuantity: requiredQuantity,
+    isDirectDefaultProduct: true,
+    variants: [{
+      id: variantId,
+      title: variant?.title || variant?.variantTitle || '',
+      price,
+      compareAtPrice: null,
+      available,
+      quantityAvailable,
+      currentlyNotInStock: false,
+    }],
+    images: imageUrl ? [{ src: imageUrl }] : [],
+    description: '',
+  };
+}
 
 export const fullPageProductProcessingMethods = {
 async loadStepProducts(stepIndex) {
@@ -220,7 +271,10 @@ async loadStepProducts(stepIndex) {
 
   // Process and normalize product data
 
-  const processedProducts = this.processProductsForStep(allProducts, step);
+  const processedProducts = this._mergeDirectDefaultProductsIntoStep(
+    stepIndex,
+    this.processProductsForStep(allProducts, step),
+  );
 
 
   // Remove duplicates
@@ -234,6 +288,85 @@ async loadStepProducts(stepIndex) {
     return true;
   });
 
+},
+
+_getDirectDefaultProductsData() {
+  const data = this.selectedBundle?.defaultProductsData;
+  if (!data || data.isDefaultProductsEnabled !== true || !Array.isArray(data.products)) {
+    return null;
+  }
+  return data;
+},
+
+_getDirectDefaultProductItems() {
+  const data = this._getDirectDefaultProductsData();
+  if (!data) return [];
+  return data.products
+    .map(product => normalizeFullPageDirectDefaultProduct(product))
+    .filter(Boolean);
+},
+
+_initDirectDefaultProducts() {
+  this.directDefaultProducts = this._getDirectDefaultProductItems();
+  if (this.directDefaultProducts.length === 0 || !this.selectedProducts[0]) return;
+
+  this.directDefaultProducts.forEach(product => {
+    this.selectedProducts[0][product.variantId] = product.defaultRequiredQuantity || 1;
+  });
+},
+
+_mergeDirectDefaultProductsIntoStep(stepIndex, products) {
+  if (stepIndex !== 0 || !Array.isArray(this.directDefaultProducts) || this.directDefaultProducts.length === 0) {
+    return products;
+  }
+
+  const directDefaultsByVariant = new Map(
+    this.directDefaultProducts
+      .filter(product => product?.variantId)
+      .map(product => [String(product.variantId), product])
+  );
+  const seenDirectDefaults = new Set();
+  const mergedProducts = products.map(product => {
+    const key = String(product?.variantId || product?.id || '');
+    const directDefault = directDefaultsByVariant.get(key);
+    if (!directDefault) return product;
+
+    seenDirectDefaults.add(key);
+    return {
+      ...product,
+      defaultRequiredQuantity: directDefault.defaultRequiredQuantity,
+      isDirectDefaultProduct: true,
+    };
+  });
+
+  const unmatchedDirectDefaults = this.directDefaultProducts.filter(product => {
+    const key = String(product?.variantId || '');
+    return key && !seenDirectDefaults.has(key);
+  });
+
+  return mergedProducts.concat(unmatchedDirectDefaults);
+},
+
+_getDirectDefaultSelectionQuantities(stepIndex) {
+  if (stepIndex !== 0 || !Array.isArray(this.directDefaultProducts)) return {};
+  return this.directDefaultProducts.reduce((quantities, product) => {
+    if (product?.variantId) {
+      quantities[String(product.variantId)] = product.defaultRequiredQuantity || 1;
+    }
+    return quantities;
+  }, {});
+},
+
+_getStepConditionSelections(stepIndex, selections = this.selectedProducts?.[stepIndex] || {}) {
+  const directDefaults = this._getDirectDefaultSelectionQuantities(stepIndex);
+  if (Object.keys(directDefaults).length === 0) return selections;
+
+  return Object.entries(selections || {}).reduce((filtered, [variantId, quantity]) => {
+    const directDefaultQuantity = Number(directDefaults[String(variantId)] || 0);
+    const conditionQuantity = Math.max(0, Number(quantity || 0) - directDefaultQuantity);
+    if (conditionQuantity > 0) filtered[variantId] = conditionQuantity;
+    return filtered;
+  }, {});
 },
 
 shouldExpandStepProductsDuringLoad(step) {

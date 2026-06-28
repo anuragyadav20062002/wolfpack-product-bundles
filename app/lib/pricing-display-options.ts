@@ -144,6 +144,33 @@ function formatDiscountText(rule: PricingRule, method: DiscountMethod | string, 
   return `${value} off`;
 }
 
+function containsPercentageValue(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const percentIndex = value.indexOf("%");
+  if (percentIndex === -1) return false;
+
+  return value
+    .slice(0, percentIndex)
+    .split("")
+    .some((character) => character >= "0" && character <= "9");
+}
+
+function canUseSavedBundleQuantitySubtext(
+  value: unknown,
+  method: DiscountMethod | string,
+): value is string {
+  if (typeof value !== "string" || value.trim().length === 0) return false;
+
+  if (
+    (method === DiscountMethod.FIXED_AMOUNT_OFF || method === "fixed_amount_off") &&
+    containsPercentageValue(value)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 function getStepQuantityCapacity(steps?: PricingDisplayStep[]): number | null {
   if (!Array.isArray(steps) || steps.length === 0) return null;
 
@@ -241,7 +268,9 @@ export function normalizePricingDisplayOptions({
       ruleId: rule.id,
       quantity,
       label: savedOption.label || `Box of ${quantity}`,
-      subtext: savedOption.subtext || formatDiscountText(rule, method, currencySymbol),
+      subtext: canUseSavedBundleQuantitySubtext(savedOption.subtext, method)
+        ? savedOption.subtext
+        : formatDiscountText(rule, method, currencySymbol),
       isDefault: rule.id === defaultRuleId,
       compatibility: getCompatibility(quantity, steps),
     };

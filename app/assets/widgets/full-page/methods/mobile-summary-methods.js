@@ -297,7 +297,7 @@ _createMobileSummaryActionButton({
   ctaBtn.className = 'side-panel-btn side-panel-btn-next';
   const hasUpcomingAddonStep = this.freeGiftStepIndex > this.currentStepIndex;
   const shouldAdvance = hasUpcomingAddonStep || (!conditionlessMobile && !isLastStep);
-  const shouldAddToCart = !shouldAdvance && (conditionlessMobile || (isLastStep && isComplete));
+  const shouldAddToCart = !shouldAdvance && (conditionlessMobile || isLastStep);
   const actionText = shouldAddToCart
     ? this._resolveText('addToCartButton', 'Add to Cart')
     : this._resolveText('nextButton', 'Next');
@@ -334,7 +334,7 @@ _createMobileSummaryActionButton({
       } else if (!this.canNavigateToStep(targetStepIndex)) {
         ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
       } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+        ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
       }
     }
   });

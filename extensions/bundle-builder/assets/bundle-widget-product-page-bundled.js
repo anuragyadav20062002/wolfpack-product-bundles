@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.51
- * Built   : 2026-06-26
+ * Version : 3.0.65
+ * Built   : 2026-06-28
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.51';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.65';
 (function() {
   'use strict';
 
@@ -358,6 +358,13 @@ class CurrencyManager {
     return symbols[currencyCode] || currencyCode;
   }
 
+  /**
+   * Ensure the format string uses the proper symbol for the given currency.
+   * If Shopify's format contains the 3-letter currency code (e.g. "PKR {{amount}}"),
+   * replace it with the symbol from our map ("Rs. {{amount}}"). This preserves
+   * the merchant's decimal/thousand-separator placeholder choice
+   * (e.g. {{amount_with_comma_separator}}) while ensuring symbols always render.
+   */
   static normalizeCurrencyFormat(format, code, symbol) {
     if (!format) return `${symbol}{{amount}}`;
     if (!code || !symbol || symbol === code) return format;
@@ -393,6 +400,14 @@ class CurrencyManager {
     };
   }
 
+  /**
+   * Convert an amount from shop base currency to the customer's display currency,
+   * then format it. Use this everywhere a price is rendered to the customer.
+   *
+   * @param {number} amount  Price in shop base currency cents
+   * @param {object} currencyInfo  Result of getCurrencyInfo()
+   * @returns {string}  Formatted price string in the display currency
+   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -1185,7 +1200,11 @@ class TemplateManager {
 
     let discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
     const dtoDiscountDisplay = this.getRuleDiscountDisplay(bundle, ruleToUse);
-    if (dtoDiscountDisplay?.valueToken && this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse)) {
+    if (
+      dtoDiscountDisplay?.valueToken &&
+      this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse) &&
+      this.canUseSavedDiscountDisplayValue(discountMethod, dtoDiscountDisplay.valueToken, ruleToUse)
+    ) {
       discountData = {
         ...discountData,
         discountText: dtoDiscountDisplay.text,
@@ -1422,6 +1441,36 @@ class TemplateManager {
     }
 
     return false;
+  }
+
+  static canUseSavedDiscountDisplayValue(discountMethod, valueToken, rule = null) {
+    if (valueToken == null) return false;
+    const token = String(valueToken).trim();
+    if (!token) return false;
+
+    const isFixedAmount =
+      discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF ||
+      (
+        discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y &&
+        (rule?.bxyDiscountType || rule?.discountType) === 'fixed_amount'
+      );
+
+    if (isFixedAmount && this.containsPercentageValue(token)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static containsPercentageValue(value) {
+    if (typeof value !== 'string') return false;
+    const percentIndex = value.indexOf('%');
+    if (percentIndex === -1) return false;
+
+    return value
+      .slice(0, percentIndex)
+      .split('')
+      .some(character => character >= '0' && character <= '9');
   }
 
   static getRuleDiscountDisplay(bundle, rule = null) {
@@ -2443,6 +2492,13 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
+
+/**
+ * Shared selected product row renderer.
+ *
+ * Renders prepared display data only; selection rules, default-product rules,
+ * and free-gift lock state stay in the caller until templates migrate.
+ */
 
 const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
 

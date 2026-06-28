@@ -475,6 +475,7 @@ export async function updateBundleProductMetafields(
       conditionValue: step.conditionValue,
       conditionOperator2: step.conditionOperator2,
       conditionValue2: step.conditionValue2,
+      autoNextStepOnConditionMet: step.autoNextStepOnConditionMet === true,
       // Free gift / add-on step fields — required by widget for tab rendering and cart transform
       isFreeGift: step.isFreeGift || false,
       freeGiftName: step.freeGiftName || null,
