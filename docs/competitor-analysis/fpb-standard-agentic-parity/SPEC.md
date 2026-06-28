@@ -232,9 +232,9 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | pending |
-| EB config | Collection-backed category with category minimum amount rule |
-| WPB config | Mirrored Standard bundle |
+| Status | eb-captured |
+| EB config | Category `Statement Earrings Collection With Extra Long Label` has `Products 3`, `Collections 1` (`Automated Collection`, 28 products), and category rule `Amount` `is greater than or equal to` `100`; Bundle Settings product slots and preselected product were toggled off before save, but live storefront retained the previously selected default item until cart-clear confirmation flow |
+| WPB config | Mirrored through Admin UI: category `Statement Earrings Collection With Extra Long Label` has `Products 3`, `Collections 1` (`Automated Collection`, 28 products), and category rule `Amount` `is greater than or equal to` `100`; save bar cleared in the live admin snapshot |
 | Matrix coverage | Single-step, category tabs, collection-backed category, multiple option variants, all in stock, category min amount, fixed price bundle, add-ons disabled, no defaults, no slots, long labels, mobile banner, cart title/subtitle, desktop wide, reload after selection |
 | Evidence path | `/private/tmp/fpb-standard-agentic-parity/P04-collection-amount-rule/` |
 
@@ -242,6 +242,11 @@ Acceptance:
 - Collection products hydrate by ID list/batch behavior, not cursor pagination assumptions.
 - Long labels do not overlap or hide required controls.
 - Amount-rule progress and blocked/unblocked transitions match EB.
+- EB help and rule references were captured before configuration: `eb-step-setup-help-snapshot.txt`, `eb-step-setup-help-article-snapshot.txt`, and `eb-rules-help-article-snapshot.txt`.
+- EB Admin configured-state proof: `eb-category-amount-rule-configured-snapshot.txt`, `eb-bundle-settings-p04-toggles-off-snapshot.txt`, and `eb-admin-p04-saved-state-snapshot.txt`.
+- EB storefront desktop proof: `eb-storefront-desktop-collection-category-metrics.json` shows collection products and GraphQL hydration calls; `eb-click-exact-add-button-state.json` shows the collection product button changing to quantity `1`, sidebar moving to `2 item(s)`, and the `₹5` discount applying.
+- WPB Admin mirror proof: `wpb-admin-p04-step-setup-configured-before-save-snapshot.txt`, `wpb-admin-before-second-save-snapshot.txt`, and `wpb-admin-after-save-live-check-snapshot.txt` show `Collections 1`, `Automated Collection`, long label, and Statement category `Amount >= 100`.
+- Pending: cache-bypassed WPB storefront desktop/mobile comparison and cart proof. Chrome DevTools MCP timed out on `list_pages` after the WPB Admin save check, so no storefront conclusion is recorded for this row yet.
 
 ### P05 Cloned Step With Step Max
 
@@ -495,7 +500,7 @@ The parity loop is complete when:
 | P01 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P01-multi-category-step-min/` |
 | P02 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P02-auto-next-defaults/` |
 | P03 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P03-category-exact-variants/` |
-| P04 | pending | `/private/tmp/fpb-standard-agentic-parity/P04-collection-amount-rule/` |
+| P04 | eb-captured | `/private/tmp/fpb-standard-agentic-parity/P04-collection-amount-rule/` |
 | P05 | pending | `/private/tmp/fpb-standard-agentic-parity/P05-cloned-step-max/` |
 | P06 | pending | `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/` |
 | P07 | pending | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |
