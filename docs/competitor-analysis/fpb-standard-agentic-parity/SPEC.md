@@ -224,7 +224,8 @@ Acceptance:
 - Product image fade is present in Standard text-mode cards: WPB image animation is `fpb-standard-product-image-fade` with `1.5s` duration, matching EB's fade timing.
 - Product card actions stretch to the card content width; default products still appear in the sidebar summary but the grid card renders `Add To Box`.
 - Standard desktop summary sidebar keeps EB's fixed panel height with product slots enabled: WPB `3.0.65` computes `335.094px` panel height and rows `55px 33.7969px 118.789px 70.5px`, matching EB evidence in `eb-card-sidebar-regression-desktop-metrics.json`.
-- Product-slots-disabled sidebar height remains a required fresh proof item in the next no-slots row before P00/P04-style no-slot coverage can be marked verified.
+- Product-slots-disabled sidebar height now matches the enabled-slots height after Admin UI toggle/save and cache-bypassed storefront reload: WPB `3.0.65` computes `335.094px` panel height and rows `55px 33.7969px 118.789px 70.5px`; evidence is `wpb-sidebar-slots-disabled-3.0.65-desktop.json` and `wpb-sidebar-slots-disabled-3.0.65-desktop.png`.
+- The fixture was restored to Product Slots enabled after the disabled-slots proof; evidence is `wpb-admin-product-slots-restored-snapshot.txt`, `wpb-sidebar-slots-restored-enabled-3.0.65-desktop.json`, and `wpb-sidebar-slots-restored-enabled-3.0.65-desktop.png`.
 - Source fix is built into widget version `3.0.65`; live post-deploy verification is pending SIT deploy and cache-bypassed reload.
 
 ### P04 Collection Category With Amount Rule
