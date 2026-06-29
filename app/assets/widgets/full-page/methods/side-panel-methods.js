@@ -197,7 +197,9 @@ renderSidePanel(panel) {
     productsContainer.classList.toggle('side-panel-products--inline-slots', useInlineSummarySlots);
     productsContainer.classList.toggle('side-panel-products--skeleton-list', !useInlineSummarySlots);
 
-    if (allSelectedProducts.length > 0) {
+    if (isStandardDesktopSidebar && useInlineSummarySlots) {
+      this._renderStandardSidebarSlotTiles(productsContainer, allSelectedProducts);
+    } else if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
         if (isStandardDesktopSidebar) {
           const row = this.createStandardSidebarSelectedRow(item, currencyInfo);
@@ -292,12 +294,6 @@ renderSidePanel(panel) {
 
         productsContainer.appendChild(row);
       });
-      if (isStandardDesktopSidebar && useInlineSummarySlots) {
-        this._renderStandardSidebarEmptySlots(productsContainer, {
-          mode: summaryEmptyStateMode,
-          filledCount: allSelectedProducts.length,
-        });
-      }
     } else if (isStandardDesktopSidebar) {
       this._renderStandardSidebarEmptySlots(productsContainer, {
         mode: summaryEmptyStateMode,
@@ -430,6 +426,42 @@ renderSidePanel(panel) {
   actionSection.appendChild(navSection);
   panel.appendChild(actionDivider);
   panel.appendChild(actionSection);
+},
+
+_renderStandardSidebarSlotTiles(container, allSelectedProducts = []) {
+  const selectedItems = Array.isArray(allSelectedProducts) ? allSelectedProducts : [];
+  const slotCount = Math.max(
+    this.getSummarySidebarMaxItemCount(selectedItems.length),
+    selectedItems.length + 1,
+    2
+  );
+  const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+  const slots = document.createElement('div');
+  slots.className = 'side-panel-inline-slots';
+
+  for (let index = 0; index < slotCount; index += 1) {
+    const item = selectedItems[index];
+    const slot = document.createElement('div');
+    slot.className = item
+      ? 'side-panel-inline-slot side-panel-inline-slot--filled'
+      : 'side-panel-inline-slot side-panel-inline-slot--empty';
+
+    if (item) {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const imgSrc = this._getSelectedProductImageSrc(item);
+      slot.innerHTML = imgSrc
+        ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-inline-slot-image">`
+        : '<div class="side-panel-inline-slot-image-placeholder"></div>';
+    } else {
+      slot.innerHTML = emptyStateIconUrl
+        ? `<img class="side-panel-inline-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
+        : '<span class="side-panel-inline-slot-placeholder">+</span>';
+    }
+
+    slots.appendChild(slot);
+  }
+
+  container.appendChild(slots);
 },
 
 createSidebarTierCta(nextRule) {

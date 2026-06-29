@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.70
+ * Version : 3.0.71
  * Built   : 2026-06-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.70';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.71';
 (function() {
   'use strict';
 
@@ -5214,6 +5214,15 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
   const productsList = document.createElement('div');
   productsList.className = 'fpb-mobile-summary-products-list';
+  const shouldRenderStandardSlotTiles = this._shouldRenderProductSlots()
+    && this.getFullPageDesignPreset() === 'STANDARD';
+
+  if (shouldRenderStandardSlotTiles) {
+    productsList.classList.add('fpb-mobile-summary-products-list--slots');
+    this._renderCompactMobileSummarySlotTiles(productsList, allSelectedProducts, activeStep, totalQuantity);
+    bundleItems.appendChild(productsList);
+    return bundleItems;
+  }
 
   allSelectedProducts.forEach(item => {
     const summaryTitle = this.getSummaryProductDisplayTitle(item);
@@ -5292,6 +5301,38 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
   bundleItems.appendChild(productsList);
   return bundleItems;
+},
+
+_renderCompactMobileSummarySlotTiles(container, allSelectedProducts = [], activeStep = null, totalQuantity = 0) {
+  const selectedItems = Array.isArray(allSelectedProducts) ? allSelectedProducts : [];
+  const slotCount = Math.max(
+    selectedItems.length + 1,
+    activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
+    2
+  );
+  const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+
+  for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
+    const item = selectedItems[slotIndex];
+    const card = document.createElement('div');
+    card.className = item
+      ? 'fpb-mobile-summary-slot-card fpb-mobile-summary-slot-card--filled'
+      : 'fpb-mobile-summary-slot-card fpb-mobile-summary-slot-card--empty';
+
+    if (item) {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const imgSrc = this._getSelectedProductImageSrc(item);
+      card.innerHTML = imgSrc
+        ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="fpb-mobile-summary-slot-image">`
+        : '<div class="fpb-mobile-summary-slot-image-placeholder"></div>';
+    } else {
+      card.innerHTML = emptyStateIconUrl
+        ? `<img class="fpb-mobile-summary-slot-icon-img" src="${emptyStateIconUrl}" alt="">`
+        : '<span class="fpb-mobile-summary-slot-plus">+</span>';
+    }
+
+    container.appendChild(card);
+  }
 },
 
 _createMobileSummaryActionButton({
@@ -5637,7 +5678,9 @@ renderSidePanel(panel) {
     productsContainer.classList.toggle('side-panel-products--inline-slots', useInlineSummarySlots);
     productsContainer.classList.toggle('side-panel-products--skeleton-list', !useInlineSummarySlots);
 
-    if (allSelectedProducts.length > 0) {
+    if (isStandardDesktopSidebar && useInlineSummarySlots) {
+      this._renderStandardSidebarSlotTiles(productsContainer, allSelectedProducts);
+    } else if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
         if (isStandardDesktopSidebar) {
           const row = this.createStandardSidebarSelectedRow(item, currencyInfo);
@@ -5731,12 +5774,6 @@ renderSidePanel(panel) {
 
         productsContainer.appendChild(row);
       });
-      if (isStandardDesktopSidebar && useInlineSummarySlots) {
-        this._renderStandardSidebarEmptySlots(productsContainer, {
-          mode: summaryEmptyStateMode,
-          filledCount: allSelectedProducts.length,
-        });
-      }
     } else if (isStandardDesktopSidebar) {
       this._renderStandardSidebarEmptySlots(productsContainer, {
         mode: summaryEmptyStateMode,
@@ -5866,6 +5903,42 @@ renderSidePanel(panel) {
   actionSection.appendChild(navSection);
   panel.appendChild(actionDivider);
   panel.appendChild(actionSection);
+},
+
+_renderStandardSidebarSlotTiles(container, allSelectedProducts = []) {
+  const selectedItems = Array.isArray(allSelectedProducts) ? allSelectedProducts : [];
+  const slotCount = Math.max(
+    this.getSummarySidebarMaxItemCount(selectedItems.length),
+    selectedItems.length + 1,
+    2
+  );
+  const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+  const slots = document.createElement('div');
+  slots.className = 'side-panel-inline-slots';
+
+  for (let index = 0; index < slotCount; index += 1) {
+    const item = selectedItems[index];
+    const slot = document.createElement('div');
+    slot.className = item
+      ? 'side-panel-inline-slot side-panel-inline-slot--filled'
+      : 'side-panel-inline-slot side-panel-inline-slot--empty';
+
+    if (item) {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const imgSrc = this._getSelectedProductImageSrc(item);
+      slot.innerHTML = imgSrc
+        ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-inline-slot-image">`
+        : '<div class="side-panel-inline-slot-image-placeholder"></div>';
+    } else {
+      slot.innerHTML = emptyStateIconUrl
+        ? `<img class="side-panel-inline-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
+        : '<span class="side-panel-inline-slot-placeholder">+</span>';
+    }
+
+    slots.appendChild(slot);
+  }
+
+  container.appendChild(slots);
 },
 
 createSidebarTierCta(nextRule) {

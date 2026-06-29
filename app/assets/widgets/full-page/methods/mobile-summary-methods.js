@@ -205,6 +205,15 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
   const productsList = document.createElement('div');
   productsList.className = 'fpb-mobile-summary-products-list';
+  const shouldRenderStandardSlotTiles = this._shouldRenderProductSlots()
+    && this.getFullPageDesignPreset() === 'STANDARD';
+
+  if (shouldRenderStandardSlotTiles) {
+    productsList.classList.add('fpb-mobile-summary-products-list--slots');
+    this._renderCompactMobileSummarySlotTiles(productsList, allSelectedProducts, activeStep, totalQuantity);
+    bundleItems.appendChild(productsList);
+    return bundleItems;
+  }
 
   allSelectedProducts.forEach(item => {
     const summaryTitle = this.getSummaryProductDisplayTitle(item);
@@ -283,6 +292,38 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
   bundleItems.appendChild(productsList);
   return bundleItems;
+},
+
+_renderCompactMobileSummarySlotTiles(container, allSelectedProducts = [], activeStep = null, totalQuantity = 0) {
+  const selectedItems = Array.isArray(allSelectedProducts) ? allSelectedProducts : [];
+  const slotCount = Math.max(
+    selectedItems.length + 1,
+    activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
+    2
+  );
+  const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+
+  for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
+    const item = selectedItems[slotIndex];
+    const card = document.createElement('div');
+    card.className = item
+      ? 'fpb-mobile-summary-slot-card fpb-mobile-summary-slot-card--filled'
+      : 'fpb-mobile-summary-slot-card fpb-mobile-summary-slot-card--empty';
+
+    if (item) {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const imgSrc = this._getSelectedProductImageSrc(item);
+      card.innerHTML = imgSrc
+        ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="fpb-mobile-summary-slot-image">`
+        : '<div class="fpb-mobile-summary-slot-image-placeholder"></div>';
+    } else {
+      card.innerHTML = emptyStateIconUrl
+        ? `<img class="fpb-mobile-summary-slot-icon-img" src="${emptyStateIconUrl}" alt="">`
+        : '<span class="fpb-mobile-summary-slot-plus">+</span>';
+    }
+
+    container.appendChild(card);
+  }
 },
 
 _createMobileSummaryActionButton({
