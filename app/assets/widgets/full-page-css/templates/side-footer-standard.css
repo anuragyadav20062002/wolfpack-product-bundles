@@ -294,6 +294,29 @@ body:has([data-fpb-design-preset]) {
   animation: fpb-standard-product-image-fade 1.5s ease;
 }
 
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .sidebar-content
+  .bw-product-card__media {
+  position: relative;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .sidebar-content
+  .fpb-addon-discount-badge {
+  position: absolute;
+  inset-block-start: 0.5rem;
+  inset-inline-start: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999rem;
+  background: #f8e9d9;
+  color: #252525;
+  font-family: Assistant, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
 .layout-sidebar[data-fpb-design-preset="STANDARD"][data-fpb-card-cta-mode="icon"]
   .sidebar-content
   .product-card
@@ -1136,6 +1159,59 @@ body:has([data-fpb-design-preset]) {
     .sidebar-content
     .product-spacer {
     display: none;
+  }
+  .layout-sidebar[data-fpb-design-preset="STANDARD"]:not([data-fpb-card-cta-mode="icon"])
+    .sidebar-content
+    .product-title {
+    color: #252525;
+    font-family: Assistant, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 0;
+    text-align: left;
+  }
+  .layout-sidebar[data-fpb-design-preset="STANDARD"]:not([data-fpb-card-cta-mode="icon"])
+    .sidebar-content
+    .product-card-price-action {
+    border-top: 0.0625rem solid #e3e3e3;
+    padding-top: 0.625rem;
+  }
+  .layout-sidebar[data-fpb-design-preset="STANDARD"]:not([data-fpb-card-cta-mode="icon"])
+    .sidebar-content
+    .product-price-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    color: #252525;
+    font-family: Assistant, sans-serif;
+    line-height: normal;
+    letter-spacing: 0;
+  }
+  .layout-sidebar[data-fpb-design-preset="STANDARD"]:not([data-fpb-card-cta-mode="icon"])
+    .sidebar-content
+    .product-price,
+  .layout-sidebar[data-fpb-design-preset="STANDARD"]:not([data-fpb-card-cta-mode="icon"])
+    .sidebar-content
+    .product-price-strike {
+    font-family: Assistant, sans-serif;
+    font-weight: 700;
+    line-height: normal;
+    letter-spacing: 0;
+  }
+  .layout-sidebar[data-fpb-design-preset="STANDARD"]:not([data-fpb-card-cta-mode="icon"])
+    .sidebar-content
+    .product-price {
+    color: #252525;
+    font-size: 1rem;
+  }
+  .layout-sidebar[data-fpb-design-preset="STANDARD"]:not([data-fpb-card-cta-mode="icon"])
+    .sidebar-content
+    .product-price-strike {
+    color: #8d8d8d;
+    font-size: 0.875rem;
+    text-decoration: line-through;
   }
   .layout-sidebar[data-fpb-design-preset="STANDARD"][data-fpb-card-cta-mode="icon"]
     .sidebar-content

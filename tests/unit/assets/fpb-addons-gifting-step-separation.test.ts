@@ -14,6 +14,9 @@ const { fullPageInitialRenderMethods } =
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageValidationAddonsMethods } =
   require("../../../app/assets/widgets/full-page/methods/validation-addons-methods.js");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { fullPageProductCardFooterMethods } =
+  require("../../../app/assets/widgets/full-page/methods/product-card-footer-methods.js");
 
 const buildAddonStepFromPersonalization =
   fullPageInitialRenderMethods.buildAddonStepFromPersonalization;
@@ -24,8 +27,14 @@ const getAddonTierEvaluation =
   fullPageValidationAddonsMethods.getAddonTierEvaluation;
 const getAddonLineDiscount =
   fullPageValidationAddonsMethods.getAddonLineDiscount;
+const calculateSelectedAddonDiscountAmount =
+  fullPageValidationAddonsMethods.calculateSelectedAddonDiscountAmount;
 const renderAddonEligibilityMessage =
   fullPageValidationAddonsMethods.renderAddonEligibilityMessage;
+const buildPaidAddonProductDisplayData =
+  fullPageProductCardFooterMethods.buildPaidAddonProductDisplayData;
+const getProductCardAddButtonText =
+  fullPageProductCardFooterMethods.getProductCardAddButtonText;
 
 if (
   typeof buildAddonStepFromPersonalization !== "function" ||
@@ -33,7 +42,10 @@ if (
   typeof getAddonEligibilityState !== "function" ||
   typeof getAddonTierEvaluation !== "function" ||
   typeof getAddonLineDiscount !== "function" ||
-  typeof renderAddonEligibilityMessage !== "function"
+  typeof calculateSelectedAddonDiscountAmount !== "function" ||
+  typeof renderAddonEligibilityMessage !== "function" ||
+  typeof buildPaidAddonProductDisplayData !== "function" ||
+  typeof getProductCardAddButtonText !== "function"
 ) {
   throw new Error("Expected FPB add-on methods missing");
 }
@@ -289,6 +301,116 @@ describe("FPB add-ons / gifting step separation", () => {
         step,
       ),
     ).toBeNull();
+  });
+
+  it("does not discount a paid-step line just because it is also an add-on candidate", () => {
+    const addonProduct = makeProduct();
+    const addonStep = {
+      isFreeGift: true,
+      addonDisplayFree: false,
+      StepProduct: [addonProduct],
+      products: [addonProduct],
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 10 },
+          selectedAddonProducts: [addonProduct],
+        },
+      ],
+    };
+    const ctx = {
+      ...fullPageValidationAddonsMethods,
+      selectedProducts: [{ paidVariant: 1 }, {}],
+      stepProductData: [[{ variantId: "paidVariant", price: 82900 }], []],
+      selectedBundle: { steps: [{ id: "paid" }, addonStep] },
+      getAllSelectedProductsData: () => [
+        {
+          stepIndex: 0,
+          variantId: "paidVariant",
+          productId: addonProduct.graphqlId,
+          title: addonProduct.title,
+          parentTitle: addonProduct.title,
+          quantity: 1,
+          price: 82900,
+          isFreeGift: false,
+          addonDisplayFree: false,
+        },
+      ],
+      extractId: (value: unknown) => String(value ?? "").split("/").pop(),
+      getAddonLineDiscount: (step: unknown) => step === addonStep ? { type: "PERCENTAGE", value: 10 } : null,
+    };
+
+    expect(calculateSelectedAddonDiscountAmount.call(ctx)).toBe(0);
+  });
+
+  it("discounts a selected paid add-on line on the add-on step", () => {
+    const addonStep = {
+      isFreeGift: true,
+      addonDisplayFree: false,
+      StepProduct: [makeProduct()],
+      products: [makeProduct()],
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 10 },
+          selectedAddonProducts: [makeProduct()],
+        },
+      ],
+    };
+    const ctx = {
+      ...fullPageValidationAddonsMethods,
+      selectedProducts: [{ paidVariant: 1 }, { addonVariant: 1 }],
+      stepProductData: [[{ variantId: "paidVariant", price: 82900 }], [{ variantId: "addonVariant", price: 82900 }]],
+      selectedBundle: { steps: [{ id: "paid" }, addonStep] },
+      getAllSelectedProductsData: () => [
+        {
+          stepIndex: 1,
+          variantId: "addonVariant",
+          quantity: 1,
+          price: 82900,
+          isFreeGift: true,
+          addonDisplayFree: false,
+        },
+      ],
+      extractId: (value: unknown) => String(value ?? "").split("/").pop(),
+      getAddonLineDiscount: (step: unknown) => step === addonStep ? { type: "PERCENTAGE", value: 10 } : null,
+    };
+
+    expect(calculateSelectedAddonDiscountAmount.call(ctx)).toBe(8290);
+  });
+
+  it("derives paid add-on card display pricing from the active add-on discount", () => {
+    const step = { isFreeGift: true, addonDisplayFree: false };
+    const displayProduct = buildPaidAddonProductDisplayData.call(
+      {
+        getAddonLineDiscount: () => ({ type: "PERCENTAGE", value: 10 }),
+      },
+      { title: "Gift product", price: 82900, compareAtPrice: null },
+      step,
+    );
+
+    expect(displayProduct).toMatchObject({
+      title: "Gift product",
+      price: 74610,
+      compareAtPrice: 82900,
+      addonDiscountBadgeText: "10% off",
+    });
+  });
+
+  it("uses the cart CTA label for paid add-on product cards", () => {
+    const ctx = {
+      _resolveText: (key: string, fallback: string) =>
+        key === "addToCartButton" ? "Add To Cart" : fallback,
+      getProductAddButtonText: () => "Add To Box",
+    };
+
+    expect(
+      getProductCardAddButtonText.call(ctx, {
+        isFreeGift: true,
+        addonDisplayFree: false,
+      }),
+    ).toBe("Add To Cart");
+    expect(getProductCardAddButtonText.call(ctx, {})).toBe("Add To Box");
   });
 
   it("exposes the eligible tier and index from tier evaluation", () => {

@@ -58,16 +58,21 @@ createProductCard(product, stepIndex) {
     : '';
 
   const designPreset = this.getFullPageDesignPreset();
+  const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
+  const stockBadgeHtml = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText
+    ? `<span class="fpb-addon-discount-badge">${ComponentGenerator.escapeHtml(displayProduct.addonDiscountBadgeText)}</span>`
+    : '';
   let htmlString;
   if (designPreset === 'STANDARD' || designPreset === 'CLASSIC' || designPreset === 'COMPACT' || designPreset === 'HORIZONTAL') {
     htmlString = renderSharedProductCard(
-      product,
+      displayProduct,
       currentQuantity,
       currencyInfo,
       {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
-        addButtonText: this.getProductAddButtonText(),
+        addButtonText: this.getProductCardAddButtonText(step),
+        stockBadgeHtml,
       }
     );
   } else {
@@ -78,7 +83,7 @@ createProductCard(product, stepIndex) {
       {
         variantSelectorHtml,
         actionMode: 'expandingQuantity',
-        addButtonText: this.getProductAddButtonText(),
+        addButtonText: this.getProductCardAddButtonText(step),
       }
     );
   }
@@ -88,7 +93,7 @@ createProductCard(product, stepIndex) {
   wrapper.innerHTML = htmlString.trim();
   const cardElement = wrapper.firstChild;
 
-  this.applyStandardExpandedVariantTitle(cardElement, product);
+  this.applyStandardExpandedVariantTitle(cardElement, displayProduct);
 
   // Default (included) step: add "Included" badge and disable interaction controls
   const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
@@ -154,6 +159,38 @@ createProductCard(product, stepIndex) {
   this.attachProductCardListeners(cardElement, product, stepIndex);
 
   return cardElement;
+},
+
+buildPaidAddonProductDisplayData(product, step) {
+  const isPaidAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
+  if (!isPaidAddonStep || typeof this.getAddonLineDiscount !== 'function') return product;
+
+  const addonDiscount = this.getAddonLineDiscount(step);
+  if (!addonDiscount || addonDiscount.type !== 'PERCENTAGE') return product;
+
+  const originalPrice = Number(product?.price || 0);
+  const discountValue = Number(addonDiscount.value || 0);
+  if (!Number.isFinite(originalPrice) || originalPrice <= 0 || !Number.isFinite(discountValue) || discountValue <= 0) {
+    return product;
+  }
+
+  const normalizedDiscountValue = Math.min(100, Math.max(0, discountValue));
+  const discountedPrice = Math.max(0, Math.round(originalPrice * (100 - normalizedDiscountValue) / 100));
+  return {
+    ...product,
+    price: discountedPrice,
+    compareAtPrice: originalPrice,
+    addonDiscountBadgeText: `${normalizedDiscountValue}% off`,
+  };
+},
+
+getProductCardAddButtonText(step) {
+  const isPaidAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
+  if (isPaidAddonStep) {
+    return this._resolveText('addToCartButton', this.config?.addToCartText || 'Add to Cart');
+  }
+
+  return this.getProductAddButtonText();
 },
 
 applyStandardExpandedVariantTitle(cardElement, product) {

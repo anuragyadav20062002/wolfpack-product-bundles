@@ -345,7 +345,7 @@ Notes:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | gap-open |
 | EB config | Add-Ons with Bundles enabled; paid discount tier below free threshold |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Multi-step with add-on/gifting step, multiple categories, manual products, multiple option variants, all in stock, step min, percentage tier, add-ons with paid tier, no defaults, quantity slots, default text, desktop banner, variant selector enabled, cart properties, discount transform proof |
@@ -355,6 +355,10 @@ Acceptance:
 - Add-on qualification copy and paid discount tier match EB.
 - Selected add-on cart line properties and discount proof are captured.
 - Highest eligible base discount and add-on discount do not double-apply.
+- EB desktop add-on-step proof shows the paid add-on card with original price struck through, discounted price, `10% off` badge, title/price divider, and `Add To Cart` card CTA. Evidence: `eb-storefront-desktop-addons-step.png` and `eb-storefront-desktop-addons-step-computed.json`.
+- Source fix is built into widget version `3.0.75`: paid-step totals no longer discount products merely because they are add-on candidates; selected paid add-ons discount only on the add-on step; Standard paid add-on cards derive display compare/current prices from the active tier; mobile text-mode cards use EB-aligned title and price typography with a title/price divider; paid add-on cards use the configured add-to-cart CTA label.
+- WPB dev-tunnel mobile proof after cache clear: `wpb-storefront-final-version.json` confirms version `3.0.75`, `STANDARD`, `390` width, and text CTA mode; `wpb-storefront-final-addon-step-state.json` confirms paid-step footer `Next • $829.00` and add-on card `10% off`, `$829.00`, `$746.10`, `Add To Cart`; `wpb-storefront-mobile-addon-step-final-computed.json` confirms Assistant font, `14px` original price, `16px` discounted price, `700` price weights, line-through original price, and divider border.
+- Remaining P09 work: desktop WPB recapture after Chrome window can be resized, add-on selection cart/network proof, and discount transform proof.
 
 ### P10 Free Add-On Tier Highest Eligible
 
@@ -538,7 +542,7 @@ The parity loop is complete when:
 | P06 | pending | `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/` |
 | P07 | pending | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |
 | P08 | verified | `/private/tmp/fpb-standard-agentic-parity/P08-gifting-step-only/` |
-| P09 | pending | `/private/tmp/fpb-standard-agentic-parity/P09-paid-addon-tier/` |
+| P09 | gap-open | `/private/tmp/fpb-standard-agentic-parity/P09-paid-addon-tier/` |
 | P10 | pending | `/private/tmp/fpb-standard-agentic-parity/P10-free-addon-highest-tier/` |
 | P11 | pending | `/private/tmp/fpb-standard-agentic-parity/P11-empty-category/` |
 | P12 | pending | `/private/tmp/fpb-standard-agentic-parity/P12-category-weight-rule/` |
