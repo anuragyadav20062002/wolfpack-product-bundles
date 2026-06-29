@@ -232,9 +232,9 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | eb-captured |
+| Status | fixed-awaiting-deploy |
 | EB config | Category `Statement Earrings Collection With Extra Long Label` has `Products 3`, `Collections 1` (`Automated Collection`, 28 products), and category rule `Amount` `is greater than or equal to` `100`; Bundle Settings product slots and preselected product were toggled off before save, but live storefront retained the previously selected default item until cart-clear confirmation flow |
-| WPB config | Mirrored through Admin UI: category `Statement Earrings Collection With Extra Long Label` has `Products 3`, `Collections 1` (`Automated Collection`, 28 products), and category rule `Amount` `is greater than or equal to` `100`; save bar cleared in the live admin snapshot |
+| WPB config | Mirrored through Admin UI: category `Statement Earrings Collection With Extra Long Label` has `Products 3`, `Collections 1` (`Automated Collection`, 28 products), category rule `Amount` `is greater than or equal to` `100`, Product Slots off, and Pre Selected Product off; save bar cleared in live admin snapshots |
 | Matrix coverage | Single-step, category tabs, collection-backed category, multiple option variants, all in stock, category min amount, fixed price bundle, add-ons disabled, no defaults, no slots, long labels, mobile banner, cart title/subtitle, desktop wide, reload after selection |
 | Evidence path | `/private/tmp/fpb-standard-agentic-parity/P04-collection-amount-rule/` |
 
@@ -246,7 +246,11 @@ Acceptance:
 - EB Admin configured-state proof: `eb-category-amount-rule-configured-snapshot.txt`, `eb-bundle-settings-p04-toggles-off-snapshot.txt`, and `eb-admin-p04-saved-state-snapshot.txt`.
 - EB storefront desktop proof: `eb-storefront-desktop-collection-category-metrics.json` shows collection products and GraphQL hydration calls; `eb-click-exact-add-button-state.json` shows the collection product button changing to quantity `1`, sidebar moving to `2 item(s)`, and the `₹5` discount applying.
 - WPB Admin mirror proof: `wpb-admin-p04-step-setup-configured-before-save-snapshot.txt`, `wpb-admin-before-second-save-snapshot.txt`, and `wpb-admin-after-save-live-check-snapshot.txt` show `Collections 1`, `Automated Collection`, long label, and Statement category `Amount >= 100`.
-- Pending: cache-bypassed WPB storefront desktop/mobile comparison and cart proof. Chrome DevTools MCP timed out on `list_pages` after the WPB Admin save check, so no storefront conclusion is recorded for this row yet.
+- WPB Bundle Settings mirror proof: `wpb-admin-p04-bundle-settings-toggles-off-saved-snapshot.txt` shows Pre Selected Product off, Product Slots off, Variant Selector on, Show Text on + Button on, and cart title/subtitle retained.
+- WPB cache-bypassed desktop proof before source fix: `wpb-storefront-desktop-initial-snapshot.txt`, `wpb-storefront-desktop-initial.png`, `wpb-storefront-desktop-collection-category-snapshot.txt`, `wpb-storefront-desktop-collection-category.png`, `wpb-storefront-desktop-collection-category-targeted-metrics.json`, and `wpb-storefront-live-bundle-config-category-details.json`.
+- Confirmed gap: live WPB widget `3.0.65` had `step.displayVariantsAsIndividual: true`, but category entries had `displayVariantsAsIndividualProducts: false`; Standard category tabs treated the false category flag as overriding the step flag, so collection products did not render EB-style variant cards such as `Yellow Sofa` `2 Seater`, `3 seater`, and `4 seater`.
+- Source fix is built into widget version `3.0.66`: Standard/FPB category grids now inherit the step-level variant display flag when rendering category tabs, and the collection Storefront API proxy returns variant `compareAtPrice` for sale-card parity.
+- Pending: SIT deploy, cache-bypassed WPB desktop/mobile storefront verification of widget version `3.0.66`, variant-card ordering/count comparison, amount-rule add/cart proof, and final `delta.md`.
 
 ### P05 Cloned Step With Step Max
 

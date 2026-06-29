@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.65
- * Built   : 2026-06-28
+ * Version : 3.0.66
+ * Built   : 2026-06-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.65';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.66';
 (function() {
   'use strict';
 
@@ -7054,8 +7054,11 @@ getActiveStepCategoryEntry(step) {
 },
 
 shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
+  const stepDisplaysVariantsAsIndividual =
+    step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+
   if (activeCategory) {
-    return activeCategory.displayVariantsAsIndividualProducts === true;
+    return activeCategory.displayVariantsAsIndividualProducts === true || stepDisplaysVariantsAsIndividual;
   }
 
   const hasCategoryEntries = this.getStepCategoryTabEntries(step).length > 0;
@@ -7063,7 +7066,7 @@ shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
     return false;
   }
 
-  return step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+  return stepDisplaysVariantsAsIndividual;
 },
 
 createActiveCategoryTitle(stepIndex) {
