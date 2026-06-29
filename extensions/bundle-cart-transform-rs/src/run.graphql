@@ -18,7 +18,7 @@ query Input {
       stepType: attribute(key: "_bundle_step_type") {
         value
       }
-      bundleDisplayProperties: attribute(key: "_bundle_display_properties") {
+      addonOfferId: attribute(key: "_addon_offer_id") {
         value
       }
       merchandise {
@@ -53,18 +53,10 @@ query Input {
           component_pricing: metafield(namespace: "$app", key: "component_pricing") {
             value
           }
-
-          product {
-            id
-            title
-          }
         }
       }
       cost {
         amountPerQuantity {
-          amount
-        }
-        totalAmount {
           amount
         }
       }

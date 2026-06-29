@@ -23,6 +23,16 @@ import {
 } from '../../shared/engine/cart-lines.js';
 
 export function shouldAutoAdvanceFullPageStep({ quantity = 0, step = null } = {}) {
+  if (
+    quantity > 0 &&
+    step?.autoNextStepOnConditionMet === true &&
+    step?.conditionType &&
+    step?.conditionOperator &&
+    Number(step?.conditionValue || 0) > 0
+  ) {
+    return true;
+  }
+
   const categories = Array.isArray(step?.categories) ? step.categories : [];
   const categoryRuleCategories = categories.filter(category =>
     Array.isArray(category?.conditions) && category.conditions.length > 0
@@ -35,7 +45,34 @@ export function shouldAutoAdvanceFullPageStep({ quantity = 0, step = null } = {}
   return categoryRuleCategories.some(category => category.autoNextStepOnConditionMet === true);
 }
 
+export function getFullPageStepConditionValidationMessage(step) {
+  if (!step || step.conditionType !== 'quantity') {
+    return 'Please meet the quantity conditions for the current step before proceeding.';
+  }
+
+  const requiredQuantity = Number(step.conditionValue || 0);
+  if (!Number.isFinite(requiredQuantity) || requiredQuantity <= 0) {
+    return 'Please meet the quantity conditions for the current step before proceeding.';
+  }
+
+  const productLabel = requiredQuantity === 1 ? 'product' : 'products';
+  switch (step.conditionOperator) {
+    case 'equal_to':
+      return `Add exactly ${requiredQuantity} ${productLabel} on this step`;
+    case 'greater_than_or_equal_to':
+      return `Add at least ${requiredQuantity} ${productLabel} on this step`;
+    case 'less_than_or_equal_to':
+      return `Add at most ${requiredQuantity} ${productLabel} on this step`;
+    default:
+      return 'Please meet the quantity conditions for the current step before proceeding.';
+  }
+}
+
 export const fullPageSelectionNavigationMethods = {
+getStepConditionValidationMessage(stepIndex = this.currentStepIndex) {
+  return getFullPageStepConditionValidationMessage(this.selectedBundle?.steps?.[stepIndex]);
+},
+
 updateProductSelection(stepIndex, productId, newQuantity) {
   let quantity = Math.max(0, newQuantity);
 
@@ -302,18 +339,24 @@ validateStepCondition(stepIndex, productId, newQuantity) {
   const step = this.selectedBundle.steps[stepIndex];
   const currentSelections = this.selectedProducts[stepIndex] || {};
   const currentQty = currentSelections[productId] || 0;
+  const conditionSelections = this._getStepConditionSelections(stepIndex, currentSelections);
+  const directDefaultQuantities = this._getDirectDefaultSelectionQuantities(stepIndex);
+  const directDefaultQuantity = Number(directDefaultQuantities[String(productId)] || 0);
+  const conditionNewQuantity = Math.max(0, Number(newQuantity || 0) - directDefaultQuantity);
 
   const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
     step,
-    currentSelections,
+    conditionSelections,
     productId,
-    newQuantity,
+    conditionNewQuantity,
   );
 
   // Only block and toast on increases — decreases are always permitted.
   if (!allowed && newQuantity > currentQty) {
-    const required = step.conditionValue;
-    ToastManager.show('This step allows ' + limitText + ' product' + (required !== 1 ? 's' : '') + ' only.');
+    const toastMessage = typeof ConditionValidator._formatStepLimitToast === 'function'
+      ? ConditionValidator._formatStepLimitToast(limitText, step.conditionValue)
+      : 'This step allows ' + limitText + ' product' + (step.conditionValue !== 1 ? 's' : '') + ' only.';
+    ToastManager.show(toastMessage);
     return false;
   }
 
@@ -323,6 +366,7 @@ validateStepCondition(stepIndex, productId, newQuantity) {
 validateStep(stepIndex) {
   const step = this.selectedBundle.steps[stepIndex];
   const currentSelections = this.selectedProducts[stepIndex] || {};
+  const conditionSelections = this._getStepConditionSelections(stepIndex, currentSelections);
 
   // In category-rule mode, selection keys are numeric variant IDs but
   // category product IDs are numeric product IDs (GID-stripped). Translate
@@ -330,15 +374,20 @@ validateStep(stepIndex) {
   if (ConditionValidator.isCategoryRuleMode(step)) {
     const products = this.stepProductData[stepIndex] || [];
     const translated = {};
-    for (const [selKey, qty] of Object.entries(currentSelections)) {
+    for (const [selKey, qty] of Object.entries(conditionSelections)) {
       const product = products.find(p => (p.variantId || p.id) === selKey);
       const productId = String((product && (product.parentProductId || product.id)) || selKey);
-      translated[productId] = (translated[productId] || 0) + (Number(qty) || 0);
+      const quantity = Number(qty) || 0;
+      const current = translated[productId] || { quantity: 0, amount: 0 };
+      translated[productId] = {
+        quantity: current.quantity + quantity,
+        amount: current.amount + ((Number(product?.price) || 0) * quantity),
+      };
     }
     return ConditionValidator.isStepConditionSatisfied(step, translated);
   }
 
-  return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
+  return ConditionValidator.isStepConditionSatisfied(step, conditionSelections);
 },
 
 isStepAccessible(stepIndex) {

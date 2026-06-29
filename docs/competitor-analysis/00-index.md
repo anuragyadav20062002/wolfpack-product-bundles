@@ -1,8 +1,8 @@
 # EB | Easy Bundle Builder — Competitor Analysis Index
 
-**App:** EB | Easy Bundle Builder (by Skai Lama / GiftKart)  
-**Analysis Date:** 2026-04-24  
-**Method:** Live crawl via Chrome DevTools MCP on a Shopify test store  
+**App:** EB | Easy Bundle Builder (by Skai Lama / GiftKart)
+**Analysis Date:** 2026-04-24
+**Method:** Live crawl via Chrome DevTools MCP on a Shopify test store
 **Store:** `wolfpack-store-test-1.myshopify.com`
 
 ---
@@ -28,6 +28,7 @@
 | [15-single-embed-template-architecture.md](15-single-embed-template-architecture.md) | **How EB-style multi-type, multi-template storefront architecture can work through a single embed/runtime surface** |
 | [16-eb-full-data-flow-investigation.md](16-eb-full-data-flow-investigation.md) | **Primary evidence record — live FPB/PPB Admin + storefront capture (9 phases, all gaps resolved). Distilled reference: `internal docs/EB Implementation Reference.md`** |
 | [17-eb-complete-configure-e2e-audit.md](17-eb-complete-configure-e2e-audit.md) | **Fresh configure-page E2E audit for FPB and PPB: controls, dependencies, help links, save payloads, storefront effects, and template mappings** |
+| [fpb-standard-agentic-parity/SPEC.md](fpb-standard-agentic-parity/SPEC.md) | **Repeatable FPB Standard storefront parity loop: feature matrix, deterministic pairwise run set, stress cases, evidence contract, and verification workflow** |
 
 ## Screenshots
 

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.51
- * Built   : 2026-06-25
+ * Version : 3.0.72
+ * Built   : 2026-06-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.51';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.72';
 (function() {
   'use strict';
 
@@ -66,7 +66,7 @@ const ConditionValidator = (function () {
     let total = 0;
     if (!selections) return total;
     for (const qty of Object.values(selections)) {
-      total += Number(qty) || 0;
+      total += _getSelectionQuantity(qty);
     }
     return total;
   }
@@ -89,6 +89,26 @@ const ConditionValidator = (function () {
     return ids;
   }
 
+  function _getSelectionQuantity(selection) {
+    if (selection && typeof selection === 'object') {
+      return Number(selection.quantity) || 0;
+    }
+    return Number(selection) || 0;
+  }
+
+  function _getSelectionAmount(selection) {
+    if (selection && typeof selection === 'object') {
+      return Number(selection.amount) || 0;
+    }
+    return Number(selection) || 0;
+  }
+
+  function _normalizeAmountRuleValue(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return numeric;
+    return numeric * 100;
+  }
+
   function evaluateCategoryRules(category, stepSelections) {
     const rules = Array.isArray(category && category.conditions)
       ? category.conditions.filter(rule => _isPositiveConditionValue(rule && rule.value))
@@ -97,17 +117,20 @@ const ConditionValidator = (function () {
 
     const productIds = _collectCategoryProductIds(category);
     const selections = stepSelections || {};
-    let categoryTotal = 0;
-    for (const pid of Object.keys(selections)) {
-      if (productIds.has(String(pid))) {
-        categoryTotal += Number(selections[pid]) || 0;
-      }
-    }
-
     for (const rule of rules) {
       const operator = _normalizeOperator(rule && (rule.operator || rule.condition));
-      const value = Number(rule && rule.value);
+      const ruleType = rule && (rule.conditionType || rule.type);
+      const isAmountRule = ruleType === 'amount';
+      const value = isAmountRule ? _normalizeAmountRuleValue(rule && rule.value) : Number(rule && rule.value);
       if (!Number.isFinite(value)) continue;
+      let categoryTotal = 0;
+      for (const pid of Object.keys(selections)) {
+        if (productIds.has(String(pid))) {
+          categoryTotal += isAmountRule
+            ? _getSelectionAmount(selections[pid])
+            : _getSelectionQuantity(selections[pid]);
+        }
+      }
       if (!_evaluateSatisfied(operator, value, categoryTotal)) return false;
     }
     return true;
@@ -135,7 +158,7 @@ const ConditionValidator = (function () {
     const selections = currentSelections || {};
     let total = 0;
     for (const qty of Object.values(selections)) {
-      total += qty || 0;
+      total += _getSelectionQuantity(qty);
     }
 
     if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
@@ -221,6 +244,16 @@ const ConditionValidator = (function () {
     return map[operator] || String(required);
   }
 
+  function _formatStepLimitToast(limitText, required) {
+    const requiredQuantity = Number(required);
+    if (!Number.isFinite(requiredQuantity) || requiredQuantity <= 0) {
+      return 'This step is not configured correctly.';
+    }
+
+    const suffix = requiredQuantity === 1 ? '' : 's';
+    return `This step allows ${limitText} product${suffix} only.`;
+  }
+
   return {
     OPERATORS,
     calculateStepTotalAfterUpdate,
@@ -230,6 +263,7 @@ const ConditionValidator = (function () {
     isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
+    _formatStepLimitToast,
   };
 }());
 
@@ -1189,7 +1223,11 @@ class TemplateManager {
 
     let discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
     const dtoDiscountDisplay = this.getRuleDiscountDisplay(bundle, ruleToUse);
-    if (dtoDiscountDisplay?.valueToken && this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse)) {
+    if (
+      dtoDiscountDisplay?.valueToken &&
+      this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse) &&
+      this.canUseSavedDiscountDisplayValue(discountMethod, dtoDiscountDisplay.valueToken, ruleToUse)
+    ) {
       discountData = {
         ...discountData,
         discountText: dtoDiscountDisplay.text,
@@ -1426,6 +1464,36 @@ class TemplateManager {
     }
 
     return false;
+  }
+
+  static canUseSavedDiscountDisplayValue(discountMethod, valueToken, rule = null) {
+    if (valueToken == null) return false;
+    const token = String(valueToken).trim();
+    if (!token) return false;
+
+    const isFixedAmount =
+      discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF ||
+      (
+        discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y &&
+        (rule?.bxyDiscountType || rule?.discountType) === 'fixed_amount'
+      );
+
+    if (isFixedAmount && this.containsPercentageValue(token)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static containsPercentageValue(value) {
+    if (typeof value !== 'string') return false;
+    const percentIndex = value.indexOf('%');
+    if (percentIndex === -1) return false;
+
+    return value
+      .slice(0, percentIndex)
+      .split('')
+      .some(character => character >= '0' && character <= '9');
   }
 
   static getRuleDiscountDisplay(bundle, rule = null) {
@@ -4246,8 +4314,6 @@ buildAddonStepFromPersonalization() {
       ? tier.selectedAddonProducts.map(product => this.normalizePersonalizationAddonProduct(product))
       : []
   );
-  const firstTier = tiers[0] || {};
-  const tierDiscount = firstTier?.discount || {};
 
   return {
     id: 'personalization-addons',
@@ -4261,13 +4327,13 @@ buildAddonStepFromPersonalization() {
     freeGiftName: addonProducts?.title || personalizationData.personalizeStepText || '',
     addonTitle: personalizationData.personalizePageSubtext || addonProducts?.title || '',
     addonIconUrl: personalizationData.stepImage || null,
-    addonDisplayFree: !addonProductsEnabled || (Number(tierDiscount.value || 0) >= 100 && tierDiscount.type === 'PERCENTAGE'),
+    addonDisplayFree: !addonProductsEnabled,
     addonUnlockAfterCompletion: true,
     addonTiers: addonProductsEnabled ? tiers : undefined,
-    addonEligibilityCondition: addonProductsEnabled ? (firstTier?.eligibilityCondition || null) : null,
-    addonDiscount: addonProductsEnabled ? (firstTier?.discount || null) : null,
+    addonEligibilityCondition: null,
+    addonDiscount: null,
     addonMessaging: addonProductsEnabled ? (addonProducts.addonsMessaging || null) : null,
-    displayVariantsAsIndividual: firstTier?.displayVariantsAsIndividualProducts_addons === true,
+    displayVariantsAsIndividual: false,
     StepProduct: selectedAddonProducts,
     products: selectedAddonProducts,
     collections: [],
@@ -4313,6 +4379,7 @@ initializeDataStructures() {
   this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
 
   this._initDefaultProducts();
+  this._initDirectDefaultProducts();
 
   this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
 },
@@ -4590,6 +4657,21 @@ async renderSteps() {
 
 };
 
+function getMobileBottomBarActionState({
+  conditionlessMobile,
+  hasSelectionMobile,
+  isLastStep,
+  isComplete,
+  boxSelectionValidMobile,
+}) {
+  const shouldAddToCart = conditionlessMobile || isLastStep;
+  const disabled = conditionlessMobile
+    ? (!hasSelectionMobile || !boxSelectionValidMobile)
+    : (isLastStep ? (!isComplete || !boxSelectionValidMobile) : false);
+
+  return { shouldAddToCart, disabled };
+}
+
 const fullPageResponsiveLayoutMethods = {
 renderProductPageLayout() {
   this.selectedBundle.steps.forEach((step, index) => {
@@ -4853,14 +4935,21 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
   const conditionlessMobile = this.bundleHasNoConditions();
   const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
   const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
+  const mobileActionState = getMobileBottomBarActionState({
+    conditionlessMobile,
+    hasSelectionMobile,
+    isLastStep,
+    isComplete,
+    boxSelectionValidMobile,
+  });
   const ctaBtn = document.createElement('button');
   ctaBtn.className = 'fpb-mobile-cta-btn';
-  ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
-  if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
+  ctaBtn.textContent = mobileActionState.shouldAddToCart ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
+  if (mobileActionState.disabled) ctaBtn.disabled = true;
   ctaBtn.addEventListener('click', async () => {
     if (this._isWidgetActionBusy) return;
 
-    if (conditionlessMobile || (isLastStep && isComplete)) {
+    if (mobileActionState.shouldAddToCart) {
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
@@ -4876,7 +4965,7 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
     } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
       ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
     } else {
-      ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
     }
   });
 
@@ -5125,6 +5214,15 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
   const productsList = document.createElement('div');
   productsList.className = 'fpb-mobile-summary-products-list';
+  const shouldRenderStandardSlotTiles = this._shouldRenderProductSlots()
+    && this.getFullPageDesignPreset() === 'STANDARD';
+
+  if (shouldRenderStandardSlotTiles) {
+    productsList.classList.add('fpb-mobile-summary-products-list--slots');
+    this._renderCompactMobileSummarySlotTiles(productsList, allSelectedProducts, activeStep, totalQuantity);
+    bundleItems.appendChild(productsList);
+    return bundleItems;
+  }
 
   allSelectedProducts.forEach(item => {
     const summaryTitle = this.getSummaryProductDisplayTitle(item);
@@ -5205,6 +5303,38 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
   return bundleItems;
 },
 
+_renderCompactMobileSummarySlotTiles(container, allSelectedProducts = [], activeStep = null, totalQuantity = 0) {
+  const selectedItems = Array.isArray(allSelectedProducts) ? allSelectedProducts : [];
+  const slotCount = Math.max(
+    selectedItems.length + 1,
+    activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
+    2
+  );
+  const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+
+  for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
+    const item = selectedItems[slotIndex];
+    const card = document.createElement('div');
+    card.className = item
+      ? 'fpb-mobile-summary-slot-card fpb-mobile-summary-slot-card--filled'
+      : 'fpb-mobile-summary-slot-card fpb-mobile-summary-slot-card--empty';
+
+    if (item) {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const imgSrc = this._getSelectedProductImageSrc(item);
+      card.innerHTML = imgSrc
+        ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="fpb-mobile-summary-slot-image">`
+        : '<div class="fpb-mobile-summary-slot-image-placeholder"></div>';
+    } else {
+      card.innerHTML = emptyStateIconUrl
+        ? `<img class="fpb-mobile-summary-slot-icon-img" src="${emptyStateIconUrl}" alt="">`
+        : '<span class="fpb-mobile-summary-slot-plus">+</span>';
+    }
+
+    container.appendChild(card);
+  }
+},
+
 _createMobileSummaryActionButton({
   finalPrice,
   currencyInfo,
@@ -5217,7 +5347,7 @@ _createMobileSummaryActionButton({
   ctaBtn.className = 'side-panel-btn side-panel-btn-next';
   const hasUpcomingAddonStep = this.freeGiftStepIndex > this.currentStepIndex;
   const shouldAdvance = hasUpcomingAddonStep || (!conditionlessMobile && !isLastStep);
-  const shouldAddToCart = !shouldAdvance && (conditionlessMobile || (isLastStep && isComplete));
+  const shouldAddToCart = !shouldAdvance && (conditionlessMobile || isLastStep);
   const actionText = shouldAddToCart
     ? this._resolveText('addToCartButton', 'Add to Cart')
     : this._resolveText('nextButton', 'Next');
@@ -5254,7 +5384,7 @@ _createMobileSummaryActionButton({
       } else if (!this.canNavigateToStep(targetStepIndex)) {
         ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
       } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+        ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
       }
     }
   });
@@ -5548,7 +5678,9 @@ renderSidePanel(panel) {
     productsContainer.classList.toggle('side-panel-products--inline-slots', useInlineSummarySlots);
     productsContainer.classList.toggle('side-panel-products--skeleton-list', !useInlineSummarySlots);
 
-    if (allSelectedProducts.length > 0) {
+    if (isStandardDesktopSidebar && useInlineSummarySlots) {
+      this._renderStandardSidebarSlotTiles(productsContainer, allSelectedProducts);
+    } else if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
         if (isStandardDesktopSidebar) {
           const row = this.createStandardSidebarSelectedRow(item, currencyInfo);
@@ -5642,12 +5774,6 @@ renderSidePanel(panel) {
 
         productsContainer.appendChild(row);
       });
-      if (isStandardDesktopSidebar && useInlineSummarySlots) {
-        this._renderStandardSidebarEmptySlots(productsContainer, {
-          mode: summaryEmptyStateMode,
-          filledCount: allSelectedProducts.length,
-        });
-      }
     } else if (isStandardDesktopSidebar) {
       this._renderStandardSidebarEmptySlots(productsContainer, {
         mode: summaryEmptyStateMode,
@@ -5723,10 +5849,42 @@ renderSidePanel(panel) {
   const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
   const canProceed = this.canProceedToNextStep();
   const conditionless = this.bundleHasNoConditions();
+  const canReturnToPreviousStep = !conditionless && this.currentStepIndex > 0;
   const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
   const sidebarTierCtaContent = (conditionless || isLastStep)
     ? this.getSidebarTierCtaContent(nextRule)
     : null;
+
+  if (isStandardDesktopSidebar && canReturnToPreviousStep) {
+    navSection.classList.add('side-panel-nav--with-back');
+
+    const backBtn = document.createElement('button');
+    backBtn.className = 'side-panel-btn side-panel-btn-back';
+    backBtn.type = 'button';
+    backBtn.setAttribute('aria-label', this._resolveText('backButton', 'Back'));
+    backBtn.innerHTML = `
+      <svg viewBox="0 0 19 20" aria-hidden="true" focusable="false">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M15.5522 10.1839C15.5522 10.5719 15.2377 10.8865 14.8497 10.8865L5.77346 10.8865L8.32121 13.434C8.59557 13.7083 8.5956 14.1531 8.32126 14.4275C8.04692 14.7018 7.6021 14.7019 7.32774 14.4275L3.58056 10.6807C3.4488 10.549 3.37477 10.3703 3.37477 10.1839C3.37477 9.99761 3.4488 9.81891 3.58056 9.68716L7.32774 5.94036C7.6021 5.66602 8.04692 5.66604 8.32126 5.94041C8.5956 6.21478 8.59557 6.65959 8.32121 6.93393L5.77346 9.48142L14.8497 9.48142C15.2377 9.48142 15.5522 9.79595 15.5522 10.1839Z" fill="currentColor"></path>
+      </svg>
+    `;
+    backBtn.addEventListener('click', async () => {
+      if (this._isWidgetActionBusy || this.currentStepIndex <= 0) return;
+
+      await this._withWidgetActionBusy(async () => {
+        const previousStepIndex = this.currentStepIndex;
+        this.activeCollectionId = null;
+        this.searchQuery = '';
+        this.currentStepIndex--;
+        this._emitStorefrontEvent?.('step-changed', {
+          previousStepIndex,
+          currentStepIndex: this.currentStepIndex,
+          direction: 'back',
+        });
+        await this.renderFullPageLayoutWithSidebar();
+      }, { actionButton: backBtn });
+    });
+    navSection.appendChild(backBtn);
+  }
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'side-panel-btn side-panel-btn-next';
@@ -5769,7 +5927,7 @@ renderSidePanel(panel) {
         await this.renderFullPageLayoutWithSidebar();
       }, { actionButton: nextBtn });
     } else {
-      ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
     }
   });
 
@@ -5777,6 +5935,42 @@ renderSidePanel(panel) {
   actionSection.appendChild(navSection);
   panel.appendChild(actionDivider);
   panel.appendChild(actionSection);
+},
+
+_renderStandardSidebarSlotTiles(container, allSelectedProducts = []) {
+  const selectedItems = Array.isArray(allSelectedProducts) ? allSelectedProducts : [];
+  const slotCount = Math.max(
+    this.getSummarySidebarMaxItemCount(selectedItems.length),
+    selectedItems.length + 1,
+    2
+  );
+  const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+  const slots = document.createElement('div');
+  slots.className = 'side-panel-inline-slots';
+
+  for (let index = 0; index < slotCount; index += 1) {
+    const item = selectedItems[index];
+    const slot = document.createElement('div');
+    slot.className = item
+      ? 'side-panel-inline-slot side-panel-inline-slot--filled'
+      : 'side-panel-inline-slot side-panel-inline-slot--empty';
+
+    if (item) {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const imgSrc = this._getSelectedProductImageSrc(item);
+      slot.innerHTML = imgSrc
+        ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-inline-slot-image">`
+        : '<div class="side-panel-inline-slot-image-placeholder"></div>';
+    } else {
+      slot.innerHTML = emptyStateIconUrl
+        ? `<img class="side-panel-inline-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
+        : '<span class="side-panel-inline-slot-placeholder">+</span>';
+    }
+
+    slots.appendChild(slot);
+  }
+
+  container.appendChild(slots);
 },
 
 createSidebarTierCta(nextRule) {
@@ -6988,8 +7182,11 @@ getActiveStepCategoryEntry(step) {
 },
 
 shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
+  const stepDisplaysVariantsAsIndividual =
+    step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+
   if (activeCategory) {
-    return activeCategory.displayVariantsAsIndividualProducts === true;
+    return activeCategory.displayVariantsAsIndividualProducts === true || stepDisplaysVariantsAsIndividual;
   }
 
   const hasCategoryEntries = this.getStepCategoryTabEntries(step).length > 0;
@@ -6997,7 +7194,7 @@ shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
     return false;
   }
 
-  return step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+  return stepDisplaysVariantsAsIndividual;
 },
 
 createActiveCategoryTitle(stepIndex) {
@@ -7014,6 +7211,14 @@ createActiveCategoryTitle(stepIndex) {
   return title;
 },
 };
+
+function shouldCategoryTabActivateProducts({
+  designPreset,
+  viewportWidth,
+  hasCategoryEntries,
+}) {
+  return !(designPreset === 'STANDARD' && hasCategoryEntries && viewportWidth < 768);
+}
 
 const fullPageProductGridMethods = {
 scrollActiveCategoryTitleIntoView() {
@@ -7138,12 +7343,55 @@ createCategoryTabs(stepIndex) {
     }
     tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
     tab.addEventListener('click', () => {
-      this.activateStepCategory(entry.id);
+      if (shouldCategoryTabActivateProducts({
+        designPreset: this.getFullPageDesignPreset?.(),
+        viewportWidth: window.innerWidth,
+        hasCategoryEntries,
+      })) {
+        this.activateStepCategory(entry.id);
+        return;
+      }
+
+      tabsContainer.querySelectorAll('.category-tab').forEach(tabElement => {
+        tabElement.classList.remove('active');
+      });
+      tab.classList.add('active');
     });
     tabsContainer.appendChild(tab);
   });
 
   return tabsContainer;
+},
+
+orderProductsForActiveCategory(products, activeCategory, stepIndex) {
+  if (!activeCategory) return products;
+
+  const productOrder = new Map();
+  const addProductId = (productId) => {
+    const normalizedProductId = this.extractId(productId) || productId;
+    if (normalizedProductId && !productOrder.has(normalizedProductId)) {
+      productOrder.set(normalizedProductId, productOrder.size);
+    }
+  };
+
+  (activeCategory.productIds || []).forEach(addProductId);
+  (activeCategory.handles || []).forEach(handle => {
+    const collectionProductIds = this.stepCollectionProductIds[`${stepIndex}:${handle}`] || [];
+    collectionProductIds.forEach(addProductId);
+  });
+
+  return products
+    .map((product, index) => {
+      const productId = product.parentProductId || product.id || '';
+      return {
+        product,
+        index,
+        order: productOrder.get(this.extractId(productId) || productId),
+      };
+    })
+    .filter(entry => entry.order !== undefined)
+    .sort((a, b) => a.order - b.order || a.index - b.index)
+    .map(entry => entry.product);
 },
 
 createFullPageProductGrid(stepIndex) {
@@ -7179,6 +7427,7 @@ createFullPageProductGrid(stepIndex) {
           const numericPid = p.parentProductId || p.id || '';
           return allowedProductIds.has(numericPid);
         });
+        products = this.orderProductsForActiveCategory(products, activeCategory, stepIndex);
       }
     } else if (step.collections) {
       const activeCollection = step.collections.find(c => c.id === activeCollectionId);
@@ -7325,7 +7574,11 @@ preloadNextStep() {
 const fullPageProductCardFooterMethods = {
 createProductCard(product, stepIndex) {
   const productId = product.variantId || product.id;
-  const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+  const selectedQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+  const directDefaultQuantity = product?.isDirectDefaultProduct
+    ? Number(product.defaultRequiredQuantity || 1) || 1
+    : 0;
+  const currentQuantity = Math.max(0, selectedQuantity - directDefaultQuantity);
 
   if (!product.imageUrl || product.imageUrl === '') {
     product.imageUrl = product.image?.src ||
@@ -7836,7 +8089,7 @@ _createFooterBar(allSelectedProducts, totalQuantity, totalRequired, totalPrice, 
       this.currentStepIndex++;
       this.renderFullPageLayout();
     } else {
-      ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
     }
   });
 
@@ -8646,35 +8899,35 @@ getSummarySidebarEmptyStateMode() {
 };
 
 const fullPageStepFooterMethods = {
-buildCartLineSourceProperties(selectedLines) {
-  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-    this.selectedProducts,
-    this.stepProductData,
-    this.selectedBundle?.steps
-  );
-  const discountInfo = PricingCalculator.calculateDiscount(
-    this.selectedBundle,
-    totalPrice,
-    totalQuantity,
-    unitPrices
-  );
-  const currencyInfo = CurrencyManager.getCurrencyInfo();
-  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-  const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
-  const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
+  buildCartLineSourceProperties(selectedLines) {
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      unitPrices
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+    const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
+    const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
 
-  const sourceProperties = buildSharedCartLineSourceProperties({
-    selectedLines,
-    retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
-    discountAmount: discountAmount > 0
-      ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
-      : '',
-    discountPercentage,
-  });
-  const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
+    const sourceProperties = buildSharedCartLineSourceProperties({
+      selectedLines,
+      retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
+      discountAmount: discountAmount > 0
+        ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
+        : '',
+      discountPercentage,
+    });
+    const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
 
-  return this.buildCartLineDisplayProperties(displayProperties);
-},
+    return this.buildCartLineDisplayProperties(displayProperties);
+  },
 
 buildCartLineDisplayProperties(displayProperties) {
   return buildSharedCartLineDisplayProperties(displayProperties, this.getCartLineLabels());
@@ -8697,8 +8950,14 @@ async addBundleToCart(clickedButton = null) {
     const bundleName = this.selectedBundle.name || 'Bundle';
     const sessionKey = this.generateBundleSessionKey();
     const offerId = this.resolveFullPageOfferId();
+    const baseOfferId = `${offerId}_${sessionKey}`;
     const selectedLines = [];
     let itemNumber = 0;
+    const hasAddonStepConfigured = (this.selectedBundle?.steps || []).some((candidateStep) => {
+      const addonEval = this.getAddonTierEvaluation?.(candidateStep);
+      return candidateStep?.isFreeGift === true && candidateStep?.addonDisplayFree !== true && addonEval?.tier;
+    });
+    let hasSelectedAddonLine = false;
 
     this.selectedBundle.steps.forEach((step, stepIndex) => {
       const stepSelections = this.selectedProducts[stepIndex] || {};
@@ -8718,9 +8977,19 @@ async addBundleToCart(clickedButton = null) {
             '_easyBundle:prodQty': String(quantity),
             '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
           };
+          const addonEval = this.getAddonTierEvaluation?.(step) || {};
           const addonDiscount = this.getAddonLineDiscount(step);
-          if (addonDiscount && step?.addonDisplayFree !== true) {
-            properties['_bundle_step_type'] = addonDiscount
+          if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {
+            hasSelectedAddonLine = true;
+            properties._addon_product = 'true';
+            properties._addon_offer_id = baseOfferId;
+            properties._boxProduct = 'addonProduct';
+            if (addonEval?.tier?.tierId) {
+              properties._addonTierId = String(addonEval.tier.tierId);
+            }
+            const addonVariantId = this.extractId(variantId);
+            properties._uniqueGbbItemKey = `${addonVariantId || numericVariantId}_pageId:addonProduct`;
+            properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true
               ? `addon:${addonDiscount.type}:${addonDiscount.value}`
               : 'addon';
           } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
@@ -8752,6 +9021,9 @@ async addBundleToCart(clickedButton = null) {
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
+      if (hasSelectedAddonLine && hasAddonStepConfigured) {
+        item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
+      }
     });
 
     this._setWidgetBusy(true, actionButton);
@@ -9399,6 +9671,58 @@ createClearCartConfirmationModal() {
 },
 };
 
+function extractFullPageId(idString) {
+  if (!idString) return null;
+  const gidMatch = idString.toString().match(/gid:\/\/shopify\/\w+\/(\d+)/);
+  if (gidMatch) return gidMatch[1];
+  return idString.toString().split('/').pop();
+}
+
+function normalizeFullPageDirectDefaultProduct(product) {
+  const variant = Array.isArray(product?.variants) ? product.variants[0] : null;
+  const variantId = extractFullPageId(variant?.variantGraphqlId || variant?.variantId || variant?.id);
+  if (!variantId) return null;
+
+  const imageUrl = product.images?.[0]?.originalSrc
+    || product.images?.[0]?.url
+    || product.imageUrl
+    || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+  const inventoryQuantity = typeof variant?.inventoryQuantity === 'number'
+    ? variant.inventoryQuantity
+    : null;
+  const price = Number.parseFloat(variant?.price || product?.price || '0') * 100;
+  const requiredQuantity = Number(product.requiredQuantity || 1) || 1;
+  const explicitlyUnavailable = variant?.availableForSale === false || variant?.available === false;
+  const available = !explicitlyUnavailable;
+  const quantityAvailable = available && inventoryQuantity === 0 ? null : inventoryQuantity;
+
+  return {
+    id: extractFullPageId(product.graphqlId || product.productId) || product.productId || variantId,
+    title: product.title || '',
+    handle: product.handle || '',
+    imageUrl,
+    price,
+    compareAtPrice: null,
+    variantId,
+    available,
+    quantityAvailable,
+    currentlyNotInStock: false,
+    defaultRequiredQuantity: requiredQuantity,
+    isDirectDefaultProduct: true,
+    variants: [{
+      id: variantId,
+      title: variant?.title || variant?.variantTitle || '',
+      price,
+      compareAtPrice: null,
+      available,
+      quantityAvailable,
+      currentlyNotInStock: false,
+    }],
+    images: imageUrl ? [{ src: imageUrl }] : [],
+    description: '',
+  };
+}
+
 const fullPageProductProcessingMethods = {
 async loadStepProducts(stepIndex) {
   const step = this.selectedBundle.steps[stepIndex];
@@ -9580,7 +9904,10 @@ async loadStepProducts(stepIndex) {
     }
   }
 
-  const processedProducts = this.processProductsForStep(allProducts, step);
+  const processedProducts = this._mergeDirectDefaultProductsIntoStep(
+    stepIndex,
+    this.processProductsForStep(allProducts, step),
+  );
 
   const seen = new Set();
   this.stepProductData[stepIndex] = processedProducts.filter(product => {
@@ -9592,6 +9919,85 @@ async loadStepProducts(stepIndex) {
     return true;
   });
 
+},
+
+_getDirectDefaultProductsData() {
+  const data = this.selectedBundle?.defaultProductsData;
+  if (!data || data.isDefaultProductsEnabled !== true || !Array.isArray(data.products)) {
+    return null;
+  }
+  return data;
+},
+
+_getDirectDefaultProductItems() {
+  const data = this._getDirectDefaultProductsData();
+  if (!data) return [];
+  return data.products
+    .map(product => normalizeFullPageDirectDefaultProduct(product))
+    .filter(Boolean);
+},
+
+_initDirectDefaultProducts() {
+  this.directDefaultProducts = this._getDirectDefaultProductItems();
+  if (this.directDefaultProducts.length === 0 || !this.selectedProducts[0]) return;
+
+  this.directDefaultProducts.forEach(product => {
+    this.selectedProducts[0][product.variantId] = product.defaultRequiredQuantity || 1;
+  });
+},
+
+_mergeDirectDefaultProductsIntoStep(stepIndex, products) {
+  if (stepIndex !== 0 || !Array.isArray(this.directDefaultProducts) || this.directDefaultProducts.length === 0) {
+    return products;
+  }
+
+  const directDefaultsByVariant = new Map(
+    this.directDefaultProducts
+      .filter(product => product?.variantId)
+      .map(product => [String(product.variantId), product])
+  );
+  const seenDirectDefaults = new Set();
+  const mergedProducts = products.map(product => {
+    const key = String(product?.variantId || product?.id || '');
+    const directDefault = directDefaultsByVariant.get(key);
+    if (!directDefault) return product;
+
+    seenDirectDefaults.add(key);
+    return {
+      ...product,
+      defaultRequiredQuantity: directDefault.defaultRequiredQuantity,
+      isDirectDefaultProduct: true,
+    };
+  });
+
+  const unmatchedDirectDefaults = this.directDefaultProducts.filter(product => {
+    const key = String(product?.variantId || '');
+    return key && !seenDirectDefaults.has(key);
+  });
+
+  return mergedProducts.concat(unmatchedDirectDefaults);
+},
+
+_getDirectDefaultSelectionQuantities(stepIndex) {
+  if (stepIndex !== 0 || !Array.isArray(this.directDefaultProducts)) return {};
+  return this.directDefaultProducts.reduce((quantities, product) => {
+    if (product?.variantId) {
+      quantities[String(product.variantId)] = product.defaultRequiredQuantity || 1;
+    }
+    return quantities;
+  }, {});
+},
+
+_getStepConditionSelections(stepIndex, selections = this.selectedProducts?.[stepIndex] || {}) {
+  const directDefaults = this._getDirectDefaultSelectionQuantities(stepIndex);
+  if (Object.keys(directDefaults).length === 0) return selections;
+
+  return Object.entries(selections || {}).reduce((filtered, [variantId, quantity]) => {
+    const directDefaultQuantity = Number(directDefaults[String(variantId)] || 0);
+    const conditionQuantity = Math.max(0, Number(quantity || 0) - directDefaultQuantity);
+    if (conditionQuantity > 0) filtered[variantId] = conditionQuantity;
+    return filtered;
+  }, {});
 },
 
 shouldExpandStepProductsDuringLoad(step) {
@@ -10073,6 +10479,16 @@ attachProductEventHandlers(productGrid, stepIndex) {
 };
 
 function shouldAutoAdvanceFullPageStep({ quantity = 0, step = null } = {}) {
+  if (
+    quantity > 0 &&
+    step?.autoNextStepOnConditionMet === true &&
+    step?.conditionType &&
+    step?.conditionOperator &&
+    Number(step?.conditionValue || 0) > 0
+  ) {
+    return true;
+  }
+
   const categories = Array.isArray(step?.categories) ? step.categories : [];
   const categoryRuleCategories = categories.filter(category =>
     Array.isArray(category?.conditions) && category.conditions.length > 0
@@ -10085,7 +10501,34 @@ function shouldAutoAdvanceFullPageStep({ quantity = 0, step = null } = {}) {
   return categoryRuleCategories.some(category => category.autoNextStepOnConditionMet === true);
 }
 
+function getFullPageStepConditionValidationMessage(step) {
+  if (!step || step.conditionType !== 'quantity') {
+    return 'Please meet the quantity conditions for the current step before proceeding.';
+  }
+
+  const requiredQuantity = Number(step.conditionValue || 0);
+  if (!Number.isFinite(requiredQuantity) || requiredQuantity <= 0) {
+    return 'Please meet the quantity conditions for the current step before proceeding.';
+  }
+
+  const productLabel = requiredQuantity === 1 ? 'product' : 'products';
+  switch (step.conditionOperator) {
+    case 'equal_to':
+      return `Add exactly ${requiredQuantity} ${productLabel} on this step`;
+    case 'greater_than_or_equal_to':
+      return `Add at least ${requiredQuantity} ${productLabel} on this step`;
+    case 'less_than_or_equal_to':
+      return `Add at most ${requiredQuantity} ${productLabel} on this step`;
+    default:
+      return 'Please meet the quantity conditions for the current step before proceeding.';
+  }
+}
+
 const fullPageSelectionNavigationMethods = {
+getStepConditionValidationMessage(stepIndex = this.currentStepIndex) {
+  return getFullPageStepConditionValidationMessage(this.selectedBundle?.steps?.[stepIndex]);
+},
+
 updateProductSelection(stepIndex, productId, newQuantity) {
   let quantity = Math.max(0, newQuantity);
 
@@ -10326,17 +10769,23 @@ validateStepCondition(stepIndex, productId, newQuantity) {
   const step = this.selectedBundle.steps[stepIndex];
   const currentSelections = this.selectedProducts[stepIndex] || {};
   const currentQty = currentSelections[productId] || 0;
+  const conditionSelections = this._getStepConditionSelections(stepIndex, currentSelections);
+  const directDefaultQuantities = this._getDirectDefaultSelectionQuantities(stepIndex);
+  const directDefaultQuantity = Number(directDefaultQuantities[String(productId)] || 0);
+  const conditionNewQuantity = Math.max(0, Number(newQuantity || 0) - directDefaultQuantity);
 
   const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
     step,
-    currentSelections,
+    conditionSelections,
     productId,
-    newQuantity,
+    conditionNewQuantity,
   );
 
   if (!allowed && newQuantity > currentQty) {
-    const required = step.conditionValue;
-    ToastManager.show('This step allows ' + limitText + ' product' + (required !== 1 ? 's' : '') + ' only.');
+    const toastMessage = typeof ConditionValidator._formatStepLimitToast === 'function'
+      ? ConditionValidator._formatStepLimitToast(limitText, step.conditionValue)
+      : 'This step allows ' + limitText + ' product' + (step.conditionValue !== 1 ? 's' : '') + ' only.';
+    ToastManager.show(toastMessage);
     return false;
   }
 
@@ -10346,19 +10795,25 @@ validateStepCondition(stepIndex, productId, newQuantity) {
 validateStep(stepIndex) {
   const step = this.selectedBundle.steps[stepIndex];
   const currentSelections = this.selectedProducts[stepIndex] || {};
+  const conditionSelections = this._getStepConditionSelections(stepIndex, currentSelections);
 
   if (ConditionValidator.isCategoryRuleMode(step)) {
     const products = this.stepProductData[stepIndex] || [];
     const translated = {};
-    for (const [selKey, qty] of Object.entries(currentSelections)) {
+    for (const [selKey, qty] of Object.entries(conditionSelections)) {
       const product = products.find(p => (p.variantId || p.id) === selKey);
       const productId = String((product && (product.parentProductId || product.id)) || selKey);
-      translated[productId] = (translated[productId] || 0) + (Number(qty) || 0);
+      const quantity = Number(qty) || 0;
+      const current = translated[productId] || { quantity: 0, amount: 0 };
+      translated[productId] = {
+        quantity: current.quantity + quantity,
+        amount: current.amount + ((Number(product?.price) || 0) * quantity),
+      };
     }
     return ConditionValidator.isStepConditionSatisfied(step, translated);
   }
 
-  return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
+  return ConditionValidator.isStepConditionSatisfied(step, conditionSelections);
 },
 
 isStepAccessible(stepIndex) {
@@ -11110,7 +11565,7 @@ async navigateModal(direction) {
         this.updateModalNavigation();
         this.updateModalFooterMessaging();
       } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+        ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
       }
     } else {
 

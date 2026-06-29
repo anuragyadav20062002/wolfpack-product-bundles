@@ -1,5 +1,5 @@
 import { Await, useFetcher, useNavigate, useLoaderData, useSearchParams } from "@remix-run/react";
-import { useCallback, useRef, useEffect, useMemo, useState, Suspense } from "react";
+import { lazy, useCallback, useRef, useEffect, useMemo, useState, Suspense } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { useTranslation } from "react-i18next";
 import { OptimisedImage } from "../../../components/OptimisedImage";
@@ -8,7 +8,6 @@ import { DashboardBannerSkeleton } from "../../../components/skeletons/Dashboard
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
 import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
-import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { normalizeAdminLocale } from "../../../i18n/config";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
@@ -20,12 +19,25 @@ import {
   setDashboardTypeFilter,
 } from "../../../store/slices/adminRouteStateSlice";
 import type { action, loader } from "./route";
-import { BundleActionsButtons } from "./BundleActionsButtons";
-import { DashboardResourcesCard } from "./DashboardResourcesCard";
 import { DashboardTopCards } from "./DashboardTopCards";
+import {
+  getDashboardMediaState,
+  shouldRenderDashboardResourceCard,
+} from "./dashboard-media-state";
+import {
+  shouldRenderDashboardDeleteModal,
+  shouldRenderDashboardPreviewModal,
+} from "./dashboard-modal-state";
+import { BundleActionsButtons } from "./BundleActionsButtons";
 import dashboardStyles from "./dashboard.module.css";
 
 const STATUS_TONE_MAP = { active: 'success', draft: 'info', unlisted: 'warning' } as const;
+const DashboardResourcesCard = lazy(() =>
+  import("./DashboardResourcesCard").then((module) => ({ default: module.DashboardResourcesCard })),
+);
+const EnablePreviewModal = lazy(() =>
+  import("../../../components/EnablePreviewModal").then((module) => ({ default: module.EnablePreviewModal })),
+);
 
 export function DashboardPage() {
   const { bundles, shop, appUrl, themeEditorUrl, appEmbedEnabled, banners } = useLoaderData<typeof loader>();
@@ -51,14 +63,22 @@ export function DashboardPage() {
   const typePopoverRef = useRef<any>(null);
   const fetcherIntentRef = useRef<string | null>(null);
   const [previewingBundleId, setPreviewingBundleId] = useState<string | null>(null);
+  const [editingBundleId, setEditingBundleId] = useState<string | null>(null);
+  const [activeActionMenuBundleId, setActiveActionMenuBundleId] = useState<string | null>(null);
+  const [hasHydratedDashboardMedia, setHasHydratedDashboardMedia] = useState(false);
+  const [hasMainContentSettled, setHasMainContentSettled] = useState(false);
 
-  // Hero image preload moved to the `links` export above — it now happens
-  // during HTML parse rather than post-hydration, which previously added ~LCP
-  // to the Parth.jpeg paint. Mark loaded immediately so the skeleton swap
-  // happens as soon as the `<img>` mounts. The OptimisedImage's <img>
-  // `onLoad` is still wired below so the skeleton waits for the real bytes.
   useEffect(() => {
-    setParthImageLoaded(true);
+    setHasHydratedDashboardMedia(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window.requestIdleCallback === "function") {
+      const idleId = window.requestIdleCallback(() => setHasMainContentSettled(true), { timeout: 1800 });
+      return () => window.cancelIdleCallback?.(idleId);
+    }
+    const timeoutId = window.setTimeout(() => setHasMainContentSettled(true), 1200);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
@@ -97,7 +117,9 @@ export function DashboardPage() {
   };
 
   const handleEditBundle = useCallback((bundle: typeof bundles[number]) => {
-    navigate(getBundleEditPath(bundle.id, bundle.bundleType));
+    setEditingBundleId(bundle.id);
+    const editPath = getBundleEditPath(bundle.id, bundle.bundleType);
+    window.requestAnimationFrame(() => navigate(editPath));
   }, [navigate]);
 
   const handleCloneBundle = useCallback((bundleId: string) => {
@@ -112,8 +134,6 @@ export function DashboardPage() {
 
   const handleDeleteBundle = useCallback((bundleId: string) => {
     openDeleteModal(bundleId);
-    deleteModalRef.current?.showOverlay?.();
-    deleteModalRef.current?.show?.();
   }, [openDeleteModal]);
 
   const handleConfirmDelete = useCallback(() => {
@@ -147,10 +167,20 @@ export function DashboardPage() {
     };
   }, [closeDeleteModal]);
 
+  useEffect(() => {
+    if (!bundleToDelete) return;
+    deleteModalRef.current?.showOverlay?.();
+    deleteModalRef.current?.show?.();
+  }, [bundleToDelete]);
+
   const enablePreviewGate = useEnablePreviewGate({
     appEmbedEnabled,
     themeEditorUrl,
     onSilentBlock: () => shopify.toast.show(t("dashboard.actions.themeEditorUnavailable"), { isError: true }),
+  });
+  const renderDeleteModal = shouldRenderDashboardDeleteModal({ bundleToDelete });
+  const renderPreviewModal = shouldRenderDashboardPreviewModal({
+    isOpen: enablePreviewGate.modalProps.open,
   });
 
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
@@ -230,8 +260,6 @@ export function DashboardPage() {
     dispatch(setDashboardCurrentPage(nextPage));
   }, [currentPage, dispatch]);
   const [activeResource, setActiveResource] = useState<string>('bundle-inspirations');
-  const [parthImageLoaded, setParthImageLoaded] = useState(false);
-
   const languageOptions = useMemo(() => [
     { label: t("dashboard.language.en"), value: "en" },
     { label: t("dashboard.language.fr"), value: "fr" },
@@ -375,21 +403,28 @@ export function DashboardPage() {
     filteredBundles.slice((effectivePage - 1) * bundlesPerPage, effectivePage * bundlesPerPage),
     [filteredBundles, effectivePage, bundlesPerPage]
   );
+  const dashboardMediaState = getDashboardMediaState({
+    isHydrated: hasHydratedDashboardMedia,
+  });
+  const renderResourceCard = shouldRenderDashboardResourceCard({
+    hasMainContentSettled,
+  });
 
   return (
     <>
-      {/* Delete Confirmation Modal */}
-      <s-modal
-        ref={deleteModalRef}
-        id="delete-bundle-modal"
-        heading={t("dashboard.deleteModal.heading")}
-      >
-        <s-button slot="primary-action" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>{t("dashboard.deleteModal.delete")}</s-button>
-        <s-button slot="secondary-actions" onClick={handleCancelDelete}>{t("dashboard.deleteModal.cancel")}</s-button>
-        <s-text color="subdued">
-          {t("dashboard.deleteModal.body")}
-        </s-text>
-      </s-modal>
+      {renderDeleteModal && (
+        <s-modal
+          ref={deleteModalRef}
+          id="delete-bundle-modal"
+          heading={t("dashboard.deleteModal.heading")}
+        >
+          <s-button slot="primary-action" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>{t("dashboard.deleteModal.delete")}</s-button>
+          <s-button slot="secondary-actions" onClick={handleCancelDelete}>{t("dashboard.deleteModal.cancel")}</s-button>
+          <s-text color="subdued">
+            {t("dashboard.deleteModal.body")}
+          </s-text>
+        </s-modal>
+      )}
 
       <div className={dashboardStyles.dashboardPage}>
         <div className={dashboardStyles.dashboardLayout}>
@@ -419,7 +454,7 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* Banners — deferred via admin-lcp-phase6-defer-skeletons-1 */}
+          {/* Banners - deferred with a fixed-height CLS guard. */}
           <Suspense fallback={<DashboardBannerSkeleton />}>
             <Await resolve={banners}>
               {(b) => (
@@ -430,7 +465,11 @@ export function DashboardPage() {
             </Await>
           </Suspense>
 
-          <DashboardTopCards parthImageLoaded={parthImageLoaded} setParthImageLoaded={setParthImageLoaded} handleDirectChat={handleDirectChat} handleAppEmbedCardClick={handleAppEmbedCardClick} />
+          <DashboardTopCards
+            handleDirectChat={handleDirectChat}
+            handleAppEmbedCardClick={handleAppEmbedCardClick}
+            loadAppEmbedImage={dashboardMediaState.loadAppEmbedImage}
+          />
 
           {/* Bundles panel */}
           <s-section padding="none">
@@ -482,9 +521,11 @@ export function DashboardPage() {
               <div className={dashboardStyles.bundlesTableShell}>
                 <div className={dashboardStyles.bundlesTableHeader}>
                   <span>{t("dashboard.table.bundleName")}</span>
-                  <span>{t("dashboard.table.status")}</span>
-                  <span>{t("dashboard.table.type")}</span>
-                  <span>{t("dashboard.table.actions")}</span>
+                  <div className={dashboardStyles.bundleMetaGroup}>
+                    <span>{t("dashboard.table.status")}</span>
+                    <span>{t("dashboard.table.type")}</span>
+                    <span>{t("dashboard.table.actions")}</span>
+                  </div>
                 </div>
 
                 {bundles.length === 0 ? (
@@ -500,7 +541,9 @@ export function DashboardPage() {
                       />
                     </div>
                     <s-stack direction="block" gap="small" alignItems="center">
-                      <s-heading>{t("dashboard.emptyState.title")}</s-heading>
+                      <s-button variant="primary" onClick={() => navigate('/app/bundles/create')}>
+                        {t("dashboard.header.createBundle")}
+                      </s-button>
                       <p className={dashboardStyles.emptyBundlesBody}>
                         {t("dashboard.emptyState.body")}
                       </p>
@@ -511,20 +554,25 @@ export function DashboardPage() {
                     {pagedBundles.map((bundle) => (
                       <div key={bundle.id} className={dashboardStyles.bundleTableRow}>
                         <span className={dashboardStyles.bundleTableCell}>{bundle.name}</span>
-                        <span className={dashboardStyles.bundleTableCell}>{getStatusDisplay(bundle.status)}</span>
-                        <span className={dashboardStyles.bundleTableCell}>{getBundleTypeDisplay(bundle.bundleType)}</span>
-                        <span className={dashboardStyles.bundleTableCell}>
-                          <BundleActionsButtons
-                            bundleId={bundle.id}
-                            bundleType={bundle.bundleType}
-                            bundle={bundle}
-                            onEdit={handleEditBundle}
-                            onClone={handleCloneBundle}
-                            onDelete={handleDeleteBundle}
-                            onPreview={handlePreviewBundle}
-                            isPreviewing={previewingBundleId === bundle.id}
-                          />
-                        </span>
+                        <div className={dashboardStyles.bundleMetaGroup}>
+                          <span className={dashboardStyles.bundleTableCell}>{getStatusDisplay(bundle.status)}</span>
+                          <span className={dashboardStyles.bundleTableCell}>{getBundleTypeDisplay(bundle.bundleType)}</span>
+                          <span className={dashboardStyles.bundleTableCell}>
+                            <BundleActionsButtons
+                              bundleId={bundle.id}
+                              bundleType={bundle.bundleType}
+                              bundle={bundle}
+                              isEditing={editingBundleId === bundle.id}
+                              onEdit={handleEditBundle}
+                              onClone={handleCloneBundle}
+                              onDelete={handleDeleteBundle}
+                              onPreview={handlePreviewBundle}
+                              activeActionMenuBundleId={activeActionMenuBundleId}
+                              onActionMenuRequest={setActiveActionMenuBundleId}
+                              isPreviewing={previewingBundleId === bundle.id}
+                            />
+                          </span>
+                        </div>
                       </div>
                     ))}
 
@@ -536,17 +584,44 @@ export function DashboardPage() {
 
                     {filteredBundles.length > 0 && (
                       <div className={dashboardStyles.paginationBar}>
-                        <s-stack direction="inline" gap="small-100">
-                          <s-button variant="tertiary" disabled={effectivePage <= 1 || undefined} onClick={() => setCurrentPage(p => p - 1)} accessibilityLabel={t("dashboard.pagination.prev")}>‹</s-button>
-                          <s-text>{t("dashboard.pagination.page", { current: effectivePage, total: totalPages })}</s-text>
-                          <s-button variant="tertiary" disabled={effectivePage >= totalPages || undefined} onClick={() => setCurrentPage(p => p + 1)} accessibilityLabel={t("dashboard.pagination.next")}>›</s-button>
-                        </s-stack>
-                        <div className={dashboardStyles.perPageSelectWrap}>
-                          <s-select ref={perPageSelectRef} label={t("dashboard.pagination.perPageLabel")} value={String(bundlesPerPage)}>
-                            <s-option value="10">{t("dashboard.pagination.per10")}</s-option>
-                            <s-option value="20">{t("dashboard.pagination.per20")}</s-option>
-                            <s-option value="50">{t("dashboard.pagination.per50")}</s-option>
-                          </s-select>
+                        <span className={dashboardStyles.paginationSpacer} />
+                        <div className={dashboardStyles.paginationControls}>
+                          <s-button
+                            className={dashboardStyles.paginationArrow}
+                            variant="tertiary"
+                            disabled={effectivePage <= 1 || undefined}
+                            onClick={() => setCurrentPage(p => p - 1)}
+                            accessibilityLabel={t("dashboard.pagination.prev")}
+                          >
+                            ‹
+                          </s-button>
+                          <s-text size="small" className={dashboardStyles.paginationPageText}>
+                            {t("dashboard.pagination.page", { current: effectivePage, total: totalPages })}
+                          </s-text>
+                          <s-button
+                            className={dashboardStyles.paginationArrow}
+                            variant="tertiary"
+                            disabled={effectivePage >= totalPages || undefined}
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            accessibilityLabel={t("dashboard.pagination.next")}
+                          >
+                            ›
+                          </s-button>
+                        </div>
+                        <div className={dashboardStyles.perPageControls}>
+                          <s-text size="small" tone="subdued">{t("dashboard.pagination.perPageLabel")}</s-text>
+                          <div className={dashboardStyles.perPageSelectWrap}>
+                            <s-select
+                              ref={perPageSelectRef}
+                              label={t("dashboard.pagination.perPageLabel")}
+                              labelAccessibilityVisibility="exclusive"
+                              value={String(bundlesPerPage)}
+                            >
+                              <s-option value="10">{t("dashboard.pagination.per10")}</s-option>
+                              <s-option value="20">{t("dashboard.pagination.per20")}</s-option>
+                              <s-option value="50">{t("dashboard.pagination.per50")}</s-option>
+                            </s-select>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -557,12 +632,24 @@ export function DashboardPage() {
           </s-section>
 
           {/* Resources card */}
-          <DashboardResourcesCard activeResource={activeResource} setActiveResource={setActiveResource} handleDirectChat={handleDirectChat} />
+          {renderResourceCard && (
+            <Suspense fallback={null}>
+              <DashboardResourcesCard
+                activeResource={activeResource}
+                setActiveResource={setActiveResource}
+                handleDirectChat={handleDirectChat}
+              />
+            </Suspense>
+          )}
 
         </div>
       </div>
 
-      <EnablePreviewModal {...enablePreviewGate.modalProps} />
+      {renderPreviewModal && (
+        <Suspense fallback={null}>
+          <EnablePreviewModal {...enablePreviewGate.modalProps} />
+        </Suspense>
+      )}
     </>
   );
 }

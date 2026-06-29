@@ -32,15 +32,6 @@ const componentKeys: Record<string, string[]> = {
     "common.proxyHealth.body",
     "common.actions.reinstallApp",
   ],
-  "app/components/UpgradePromptBanner.tsx": [
-    "common.upgradePrompt.limitReachedTitle",
-    "common.upgradePrompt.limitReachedBody",
-    "common.upgradePrompt.approachingTitle",
-    "common.upgradePrompt.approachingBody",
-    "common.upgradePrompt.usageBody",
-    "common.actions.upgradeNow",
-    "common.actions.viewPlans",
-  ],
   "app/components/bundle-configure/DiscardChangesModal.tsx": [
     "common.discardChanges.title",
     "common.discardChanges.body",

@@ -347,6 +347,10 @@ export async function handleSaveBundle(
                 conditionValue: parseConditionValue(firstCondition?.value),
                 conditionOperator2: secondCondition?.operator || null,
                 conditionValue2: parseConditionValue(secondCondition?.value),
+                ...(firstCondition?.autoNext === true ||
+                firstCondition?.autoNext === "true"
+                  ? { autoNextStepOnConditionMet: true }
+                  : {}),
                 // Create StepProduct records for selected products
                 StepProduct: {
                   create: (step.StepProduct || []).map(
@@ -446,7 +450,10 @@ export async function handleSaveBundle(
       finalStatus: finalStatus as BundleStatus,
       stepConditionsData,
       stepsData,
-      updatedBundle,
+      updatedBundle: {
+        ...updatedBundle,
+        personalizationData,
+      },
     });
 
     // BUNDLE INDEX: No longer needed

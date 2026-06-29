@@ -222,7 +222,7 @@ export function FpbStepRuleModeContent({
                                 className={
                                   fullPageBundleStyles.ruleInlineNumber
                                 }
-                                min={0}
+                                min={1}
                                 value={rule.value ?? ""}
                                 onChange={(e) =>
                                   updateCategoryConditionRule(
@@ -365,8 +365,8 @@ export function FpbStepRuleModeContent({
                       <input
                         type="number"
                         className={fullPageBundleStyles.ruleInlineNumber}
-                        min={0}
-                        placeholder="0"
+                        min={1}
+                        placeholder="1"
                         value={rule.value ?? ""}
                         onInput={(e) =>
                           conditionsState.updateConditionRule(

@@ -97,7 +97,10 @@ export function PpbFreeGiftAddonsSection() {
                       </div>
                       {showIconPickerForStep === `addon-${step.id}` && (
                         <FilePicker
+                          autoOpen
                           value={step.addonIconUrl ?? null}
+                          maxUploadBytes={50 * 1024}
+                          maxUploadErrorMessage="Please upload a file smaller than 50KB"
                           onChange={(url: string | null) => {
                             stepsState.updateStepField(
                               step.id,
@@ -107,6 +110,7 @@ export function PpbFreeGiftAddonsSection() {
                             setShowIconPickerForStep(null);
                             markAsDirty();
                           }}
+                          onClose={() => setShowIconPickerForStep(null)}
                           label=""
                         />
                       )}
@@ -249,10 +253,11 @@ export function PpbFreeGiftAddonsSection() {
                       autocomplete="off"
                     />
                     {(() => {
-                      const addonTiers: { displayFree: boolean }[] =
-                        Array.isArray(step.addonTiers)
-                          ? (step.addonTiers as { displayFree: boolean }[])
-                          : [{ displayFree: step.addonDisplayFree === true }];
+                      const addonTiers: { displayFree: boolean }[] = Array.isArray(
+                        step.addonTiers,
+                      )
+                        ? (step.addonTiers as { displayFree: boolean }[])
+                        : [];
                       const updateAddonTiers = (
                         updated: { displayFree: boolean }[],
                       ) => {
@@ -284,13 +289,10 @@ export function PpbFreeGiftAddonsSection() {
                                 </h4>
                                 <s-button
                                   variant="tertiary"
-                                  disabled={addonTiers.length <= 1 || undefined}
                                   onClick={() => {
-                                    if (addonTiers.length > 1) {
-                                      updateAddonTiers(
-                                        addonTiers.filter((_, i) => i !== idx),
-                                      );
-                                    }
+                                    updateAddonTiers(
+                                      addonTiers.filter((_, i) => i !== idx),
+                                    );
                                   }}
                                 >
                                   Delete
@@ -333,7 +335,9 @@ export function PpbFreeGiftAddonsSection() {
                   </s-stack>
                 </div>
                 {/* Card 3: Footer Messaging */}
-                <div className={productPageBundleStyles.card}>
+                {Array.isArray(step.addonTiers) &&
+                  step.addonTiers.length > 0 && (
+                  <div className={productPageBundleStyles.card}>
                   <div className={productPageBundleStyles.panelHeader}>
                     <h3 className={productPageBundleStyles.panelTitle}>
                       Footer Messaging
@@ -389,7 +393,8 @@ export function PpbFreeGiftAddonsSection() {
                       autocomplete="off"
                     />
                   </s-stack>
-                </div>
+                  </div>
+                )}
               </s-stack>
             </div>
           );

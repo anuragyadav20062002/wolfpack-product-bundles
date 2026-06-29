@@ -5,7 +5,7 @@
  * UTM medium breakdown, and landing page performance analysis.
  */
 
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { defer, json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { getPixelStatus, activateUtmPixel, deactivateUtmPixel } from "../../services/pixel-activation.server";
 import {
@@ -145,12 +145,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 // ─── Loader ──────────────────────────────────────────────────
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin, session } = await requireAdminSession(request);
-  const shopId = session.shop;
-
-  const url = new URL(request.url);
-
+async function loadAttributionDashboardData({
+  admin,
+  shopId,
+  url,
+}: {
+  admin: Awaited<ReturnType<typeof requireAdminSession>>["admin"];
+  shopId: string;
+  url: URL;
+}) {
   const fromParam = url.searchParams.get("from");
   const toParam   = url.searchParams.get("to");
 
@@ -438,7 +441,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ? Math.round((funnelSnapshot.checkedOut / funnelSnapshot.engaged) * 100)
     : null;
 
-  return json({
+  return {
     days,
     from: fromStr,
     to: toStr,
@@ -468,5 +471,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     bundleMatrix,
     topCampaignsRows,
     activityFeed,
+  };
+}
+
+export type AttributionDashboardData = Awaited<ReturnType<typeof loadAttributionDashboardData>>;
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { admin, session } = await requireAdminSession(request);
+  const url = new URL(request.url);
+
+  return defer({
+    analytics: loadAttributionDashboardData({
+      admin,
+      shopId: session.shop,
+      url,
+    }),
   });
 };

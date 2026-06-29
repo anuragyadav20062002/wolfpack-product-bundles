@@ -1365,6 +1365,7 @@
   display: inline-flex;
   align-items: center;
   line-height: 1;
+  vertical-align: middle;
   z-index: var(--rich-help-layer);
 }
 
@@ -1377,6 +1378,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  justify-content: center;
   white-space: nowrap;
   color: #6d7175;
   cursor: default;
@@ -1404,6 +1406,7 @@
   background: transparent;
   color: #6d7175;
   line-height: 1;
+  vertical-align: middle;
   cursor: default;
 }
 

@@ -36,7 +36,7 @@ export function useBundleConditions({ initialStepConditions, onStateChange }: Us
       id: `rule-${Date.now()}`,
       type: 'quantity',
       operator: 'equal_to',
-      value: '0',
+      value: '1',
     };
 
     setStepConditions(prev => ({

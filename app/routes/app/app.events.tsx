@@ -3,6 +3,7 @@ import { useLoaderData, useNavigate } from "@remix-run/react";
 import { authenticate } from "../../shopify.server";
 import { AccordionItem } from "../../components/AccordionItem";
 import { CartPropertyFixContent } from "../../components/CartPropertyFixCard";
+import { navigateBackOrFallback } from "../../lib/navigation";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
@@ -72,7 +73,10 @@ export default function EventsPage() {
   return (
     <>
       <ui-title-bar title="Updates &amp; FAQs">
-        <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
+        <button
+          variant="breadcrumb"
+          onClick={() => navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })}
+        >
           Dashboard
         </button>
       </ui-title-bar>

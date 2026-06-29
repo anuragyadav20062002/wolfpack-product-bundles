@@ -2,6 +2,7 @@ import { json } from "@remix-run/node";
 import { useNavigate } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import styles from "../../styles/routes/app-index.module.css";
+import { navigateBackOrFallback } from "../../lib/navigation";
 
 // This route handles /app → shows the Welcome landing screen for intentional visits,
 // and silently redirects to the dashboard when Shopify's auth flow lands here.
@@ -115,7 +116,9 @@ export default function AppIndex() {
             </button>
             <button
               className={styles.btnSecondary}
-              onClick={() => navigate("/app/dashboard")}
+              onClick={() =>
+                navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })
+              }
             >
               Go to Dashboard →
             </button>

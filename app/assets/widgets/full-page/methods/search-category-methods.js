@@ -395,8 +395,11 @@ getActiveStepCategoryEntry(step) {
 },
 
 shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
+  const stepDisplaysVariantsAsIndividual =
+    step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+
   if (activeCategory) {
-    return activeCategory.displayVariantsAsIndividualProducts === true;
+    return activeCategory.displayVariantsAsIndividualProducts === true || stepDisplaysVariantsAsIndividual;
   }
 
   const hasCategoryEntries = this.getStepCategoryTabEntries(step).length > 0;
@@ -404,7 +407,7 @@ shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
     return false;
   }
 
-  return step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+  return stepDisplaysVariantsAsIndividual;
 },
 
 createActiveCategoryTitle(stepIndex) {

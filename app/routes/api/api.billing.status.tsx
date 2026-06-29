@@ -1,7 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
-import { BillingService } from "../../services/billing.server";
 import { AppLogger } from "../../lib/logger";
+import { getCachedSubscriptionInfo, getSubscriptionInfoFromCache } from "../../services/subscription-cache.server";
 
 /**
  * API Route: Get Subscription Status
@@ -21,7 +21,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
       operation: "loader"
     }, { shop: shopDomain });
 
-    const subscriptionInfo = await BillingService.getSubscriptionInfo(shopDomain);
+    const cachedSubscriptionInfo = getCachedSubscriptionInfo(shopDomain);
+    const subscriptionInfo = cachedSubscriptionInfo !== undefined
+      ? cachedSubscriptionInfo
+      : await getSubscriptionInfoFromCache(shopDomain);
 
     if (!subscriptionInfo) {
       return json(

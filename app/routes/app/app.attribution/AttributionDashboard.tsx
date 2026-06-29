@@ -1,5 +1,6 @@
-import { useLoaderData, useNavigate } from "@remix-run/react";
+import { Await, useLoaderData, useNavigate } from "@remix-run/react";
 import { PixelStatusCard } from "./PixelStatusCard";
+import { navigateBackOrFallback } from "../../../lib/navigation";
 import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from "react";
 import {
   formatDelta,
@@ -16,7 +17,7 @@ import {
 import { LazyEngagementPulse, LazyRevenueAttribution } from "../../../components/analytics/lazy";
 import { ChartCardSkeleton } from "../../../components/skeletons/ChartCardSkeleton";
 import styles from "../../../styles/routes/app-attribution.module.css";
-import type { loader } from "../app.attribution";
+import type { AttributionDashboardData, loader } from "../app.attribution";
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -343,7 +344,28 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
 
 // ─── Main Component ───────────────────────────────────────────
 
-export default function AttributionDashboard() {
+function AttributionDashboardSkeleton() {
+  return (
+    <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <ChartCardSkeleton height={96} label="Loading tracking status" />
+        <ChartCardSkeleton height={180} label="Loading funnel summary" />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+            gap: 16,
+          }}
+        >
+          <ChartCardSkeleton label="Loading engagement chart" />
+          <ChartCardSkeleton label="Loading revenue attribution chart" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AttributionDashboardContent({ data }: { data: AttributionDashboardData }) {
   const {
     days, from, to, prevFrom, prevTo, summary, timeSeries,
     byPlatform, byMedium, byCampaign, byBundle, byLandingPage,
@@ -352,7 +374,7 @@ export default function AttributionDashboard() {
     views,
     funnelSnapshot, engagementTrend, engagedSessions, prevEngagedSessions,
     engagementToOrderPct, bundleMatrix, topCampaignsRows, activityFeed,
-  } = useLoaderData<typeof loader>();
+  } = data;
   const navigate = useNavigate();
   const [isClient, setIsClient] = useState(false);
   useEffect(() => setIsClient(true), []);
@@ -390,14 +412,7 @@ export default function AttributionDashboard() {
   const hasNoData = summary.totalOrders === 0 && summary.prevTotalOrders === 0;
 
   return (
-    <>
-      <ui-title-bar title="Analytics">
-        <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
-          Dashboard
-        </button>
-      </ui-title-bar>
-
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
+    <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
           {/* No data banner */}
@@ -515,8 +530,31 @@ export default function AttributionDashboard() {
           </div>
 
         </div>
-      </div>
-    </>
+    </div>
   );
 }
 
+export default function AttributionDashboard() {
+  const { analytics } = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <ui-title-bar title="Analytics">
+        <button
+          variant="breadcrumb"
+          onClick={() =>
+            navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })
+          }
+        >
+          Dashboard
+        </button>
+      </ui-title-bar>
+      <Suspense fallback={<AttributionDashboardSkeleton />}>
+        <Await resolve={analytics}>
+          {(data) => <AttributionDashboardContent data={data} />}
+        </Await>
+      </Suspense>
+    </>
+  );
+}

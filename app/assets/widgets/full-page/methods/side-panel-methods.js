@@ -197,7 +197,9 @@ renderSidePanel(panel) {
     productsContainer.classList.toggle('side-panel-products--inline-slots', useInlineSummarySlots);
     productsContainer.classList.toggle('side-panel-products--skeleton-list', !useInlineSummarySlots);
 
-    if (allSelectedProducts.length > 0) {
+    if (isStandardDesktopSidebar && useInlineSummarySlots) {
+      this._renderStandardSidebarSlotTiles(productsContainer, allSelectedProducts);
+    } else if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
         if (isStandardDesktopSidebar) {
           const row = this.createStandardSidebarSelectedRow(item, currencyInfo);
@@ -292,12 +294,6 @@ renderSidePanel(panel) {
 
         productsContainer.appendChild(row);
       });
-      if (isStandardDesktopSidebar && useInlineSummarySlots) {
-        this._renderStandardSidebarEmptySlots(productsContainer, {
-          mode: summaryEmptyStateMode,
-          filledCount: allSelectedProducts.length,
-        });
-      }
     } else if (isStandardDesktopSidebar) {
       this._renderStandardSidebarEmptySlots(productsContainer, {
         mode: summaryEmptyStateMode,
@@ -376,10 +372,42 @@ renderSidePanel(panel) {
   const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
   const canProceed = this.canProceedToNextStep();
   const conditionless = this.bundleHasNoConditions();
+  const canReturnToPreviousStep = !conditionless && this.currentStepIndex > 0;
   const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
   const sidebarTierCtaContent = (conditionless || isLastStep)
     ? this.getSidebarTierCtaContent(nextRule)
     : null;
+
+  if (isStandardDesktopSidebar && canReturnToPreviousStep) {
+    navSection.classList.add('side-panel-nav--with-back');
+
+    const backBtn = document.createElement('button');
+    backBtn.className = 'side-panel-btn side-panel-btn-back';
+    backBtn.type = 'button';
+    backBtn.setAttribute('aria-label', this._resolveText('backButton', 'Back'));
+    backBtn.innerHTML = `
+      <svg viewBox="0 0 19 20" aria-hidden="true" focusable="false">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M15.5522 10.1839C15.5522 10.5719 15.2377 10.8865 14.8497 10.8865L5.77346 10.8865L8.32121 13.434C8.59557 13.7083 8.5956 14.1531 8.32126 14.4275C8.04692 14.7018 7.6021 14.7019 7.32774 14.4275L3.58056 10.6807C3.4488 10.549 3.37477 10.3703 3.37477 10.1839C3.37477 9.99761 3.4488 9.81891 3.58056 9.68716L7.32774 5.94036C7.6021 5.66602 8.04692 5.66604 8.32126 5.94041C8.5956 6.21478 8.59557 6.65959 8.32121 6.93393L5.77346 9.48142L14.8497 9.48142C15.2377 9.48142 15.5522 9.79595 15.5522 10.1839Z" fill="currentColor"></path>
+      </svg>
+    `;
+    backBtn.addEventListener('click', async () => {
+      if (this._isWidgetActionBusy || this.currentStepIndex <= 0) return;
+
+      await this._withWidgetActionBusy(async () => {
+        const previousStepIndex = this.currentStepIndex;
+        this.activeCollectionId = null;
+        this.searchQuery = '';
+        this.currentStepIndex--;
+        this._emitStorefrontEvent?.('step-changed', {
+          previousStepIndex,
+          currentStepIndex: this.currentStepIndex,
+          direction: 'back',
+        });
+        await this.renderFullPageLayoutWithSidebar();
+      }, { actionButton: backBtn });
+    });
+    navSection.appendChild(backBtn);
+  }
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'side-panel-btn side-panel-btn-next';
@@ -422,7 +450,7 @@ renderSidePanel(panel) {
         await this.renderFullPageLayoutWithSidebar();
       }, { actionButton: nextBtn });
     } else {
-      ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
     }
   });
 
@@ -430,6 +458,42 @@ renderSidePanel(panel) {
   actionSection.appendChild(navSection);
   panel.appendChild(actionDivider);
   panel.appendChild(actionSection);
+},
+
+_renderStandardSidebarSlotTiles(container, allSelectedProducts = []) {
+  const selectedItems = Array.isArray(allSelectedProducts) ? allSelectedProducts : [];
+  const slotCount = Math.max(
+    this.getSummarySidebarMaxItemCount(selectedItems.length),
+    selectedItems.length + 1,
+    2
+  );
+  const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+  const slots = document.createElement('div');
+  slots.className = 'side-panel-inline-slots';
+
+  for (let index = 0; index < slotCount; index += 1) {
+    const item = selectedItems[index];
+    const slot = document.createElement('div');
+    slot.className = item
+      ? 'side-panel-inline-slot side-panel-inline-slot--filled'
+      : 'side-panel-inline-slot side-panel-inline-slot--empty';
+
+    if (item) {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const imgSrc = this._getSelectedProductImageSrc(item);
+      slot.innerHTML = imgSrc
+        ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-inline-slot-image">`
+        : '<div class="side-panel-inline-slot-image-placeholder"></div>';
+    } else {
+      slot.innerHTML = emptyStateIconUrl
+        ? `<img class="side-panel-inline-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
+        : '<span class="side-panel-inline-slot-placeholder">+</span>';
+    }
+
+    slots.appendChild(slot);
+  }
+
+  container.appendChild(slots);
 },
 
 createSidebarTierCta(nextRule) {

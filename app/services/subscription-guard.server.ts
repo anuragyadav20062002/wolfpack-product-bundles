@@ -6,10 +6,17 @@
  */
 
 import { json } from "@remix-run/node";
-import { BillingService } from "./billing.server";
 import { PLANS } from "../constants/plans";
 import { AppLogger } from "../lib/logger";
 import type { SubscriptionPlan } from "@prisma/client";
+import { getCachedSubscriptionInfo, getSubscriptionInfoFromCache } from "./subscription-cache.server";
+
+async function getSubscriptionInfoWithCache(shopDomain: string) {
+  const cachedSubscriptionInfo = getCachedSubscriptionInfo(shopDomain);
+  return cachedSubscriptionInfo !== undefined
+    ? cachedSubscriptionInfo
+    : await getSubscriptionInfoFromCache(shopDomain);
+}
 
 export interface SubscriptionGuardResult {
   allowed: boolean;
@@ -27,7 +34,7 @@ export class SubscriptionGuard {
    */
   static async checkBundleCreation(shopDomain: string): Promise<SubscriptionGuardResult> {
     try {
-      const info = await BillingService.getSubscriptionInfo(shopDomain);
+      const info = await getSubscriptionInfoWithCache(shopDomain);
 
       if (!info) {
         AppLogger.error("Could not get subscription info", {
@@ -121,7 +128,7 @@ export class SubscriptionGuard {
    * Returns which features are available based on subscription plan
    */
   static async getFeatureAccess(shopDomain: string) {
-    const info = await BillingService.getSubscriptionInfo(shopDomain);
+    const info = await getSubscriptionInfoWithCache(shopDomain);
 
     if (!info) {
       return {
@@ -142,7 +149,7 @@ export class SubscriptionGuard {
    * Check if shop has active paid subscription
    */
   static async hasPaidPlan(shopDomain: string): Promise<boolean> {
-    const info = await BillingService.getSubscriptionInfo(shopDomain);
+    const info = await getSubscriptionInfoWithCache(shopDomain);
     return info?.plan === "grow" && info?.isActive;
   }
 
@@ -150,7 +157,7 @@ export class SubscriptionGuard {
    * Check if shop is on free plan
    */
   static async isFreePlan(shopDomain: string): Promise<boolean> {
-    const info = await BillingService.getSubscriptionInfo(shopDomain);
+    const info = await getSubscriptionInfoWithCache(shopDomain);
     return info?.plan === "free";
   }
 }

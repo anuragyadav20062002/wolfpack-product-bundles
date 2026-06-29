@@ -8,6 +8,7 @@ export function FpbAddonFooterMessaging({
   const {
     ADDON_MESSAGE_KEY,
     bundle,
+    addonDraft,
     fullPageBundleStyles,
     markAsDirty,
     openAddonFooterMultiLanguageModal,
@@ -22,6 +23,12 @@ export function FpbAddonFooterMessaging({
     discountText: savedAddonMessages.ineligibleState || "",
     successMessage: savedAddonMessages.eligibleState || "",
   };
+  const hasAddonTiers =
+    Array.isArray(addonDraft.addonTiers) && addonDraft.addonTiers.length > 0;
+
+  if (!hasAddonTiers) {
+    return null;
+  }
 
   return (
     <>

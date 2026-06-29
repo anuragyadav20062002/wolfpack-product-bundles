@@ -73,12 +73,13 @@ pub fn process_expand_operations(
         // -------------------------------------------------------------------------
         let total_quantity: i64 =
             component_quantities.iter().sum::<i64>() * (*line.quantity() as i64);
-        let original_total = decimal_to_f64(line.cost().total_amount().amount());
+        let original_total = decimal_to_f64(line.cost().amount_per_quantity().amount())
+            * (*line.quantity() as f64);
 
         let discount_percentage = variant
             .price_adjustment()
             .map(|m| m.value().clone())
-            .and_then(|pa_json| serde_json::from_str::<PriceAdjustmentConfig>(&pa_json).ok())
+            .and_then(|pa_json| serde_json::from_str::<PriceAdjustmentConfig>(pa_json.as_str()).ok())
             .map(|pa| {
                 calculate_discount_percentage(
                     &pa,

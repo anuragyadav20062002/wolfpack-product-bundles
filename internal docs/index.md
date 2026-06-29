@@ -46,3 +46,4 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Operations/Build Process]] — Widget bundles, WASM, CSS size limits
 - [[Operations/App Events Taxonomy]] — Shopify App Events taxonomy, flow tracing, feature usage, error events, and `wpb:*` migration boundaries
 - [[Operations/Admin Performance]] — App Bridge Web Vitals source, retired custom telemetry, Admin loader critical path
+- [[Operations/LCP and CLS Playbook]] — Home bootstrap strategy, CLS stabilization order, and Knip-guided dead-code cleanup

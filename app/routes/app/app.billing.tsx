@@ -9,6 +9,7 @@ import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-r
 import { useLoaderData, useFetcher, useNavigate } from "@remix-run/react";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { BillingService } from "../../services/billing.server";
+import { getCachedSubscriptionInfo, getSubscriptionInfoFromCache } from "../../services/subscription-cache.server";
 import { BundleAnalyticsService } from "../../services/bundle-analytics.server";
 import { PLANS } from "../../constants/plans";
 import { AppLogger } from "../../lib/logger";
@@ -20,6 +21,7 @@ import {
   calculateUsagePercentage,
   getProgressBarTone,
 } from "../../utils/pricing";
+import { navigateBackOrFallback } from "../../lib/navigation";
 
 // Import shared billing components
 import {
@@ -36,13 +38,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const upgraded = url.searchParams.get("upgraded");
     const error = url.searchParams.get("error");
 
-    const subscriptionInfo = await BillingService.getSubscriptionInfo(shopDomain);
+    const cachedSubscriptionInfo = getCachedSubscriptionInfo(shopDomain);
+    const subscriptionInfoPromise = cachedSubscriptionInfo !== undefined
+      ? Promise.resolve(cachedSubscriptionInfo)
+      : getSubscriptionInfoFromCache(shopDomain);
+
+    const [subscriptionInfo, quickStats] = await Promise.all([
+      subscriptionInfoPromise,
+      BundleAnalyticsService.getQuickStats(shopDomain),
+    ]);
 
     if (!subscriptionInfo) {
       throw new Error("Could not retrieve subscription information");
     }
-
-    const quickStats = await BundleAnalyticsService.getQuickStats(shopDomain);
 
     return json({
       subscription: {
@@ -210,7 +218,12 @@ export default function BillingPage() {
   return (
     <>
       <ui-title-bar title={t("billing.route.title")}>
-        <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
+        <button
+          variant="breadcrumb"
+          onClick={() =>
+            navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })
+          }
+        >
           {t("billing.route.dashboard")}
         </button>
       </ui-title-bar>

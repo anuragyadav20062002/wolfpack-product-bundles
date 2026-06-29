@@ -1,7 +1,7 @@
 ---
 title: Admin Performance
 type: operations
-last_audited: 2026-06-12
+last_audited: 2026-06-28
 ---
 
 # Admin Performance
@@ -32,8 +32,15 @@ iframe and the app logs `Admin Browser LCP Candidate` from the iframe's own
 When enabled, LCP reports are logged to the browser console as `Admin Web Vitals` with the metric value and latest candidate element selector. This is diagnostic only and does not persist data.
 
 The debug hook also keeps a local, iframe-only p75 sample set in
-`localStorage["wpb:web-vitals-debug:lcp-samples"]`. It does not send data to
-the app server and must not replace Shopify-collected field data for BFS.
+`localStorage["wpb:web-vitals-debug:lcp-samples"]`. Each sample stores:
+
+- `route` and generated `routeLoadId` (single page-load correlation)
+- `id`, `value`, `timestamp`
+- `country` (from Shopify Web Vitals payload)
+- `candidate`, `candidateType`, `candidateResource`, `blockingTime`
+
+This does not send data to the app server and must not replace Shopify-collected
+field data for BFS.
 
 Console helpers:
 
@@ -41,6 +48,15 @@ Console helpers:
 window.__wpbAdminWebVitals.getLcpP75Summary()
 window.__wpbAdminWebVitals.clearLcpSamples()
 ```
+
+Temporary cross-origin verification bridge:
+
+Do not keep the parent-frame `postMessage` verification bridge in committed
+runtime code. It was removed after the local dashboard optimization pass. When a
+future major Admin UI change requires route-level LCP work and DevTools cannot
+read the cross-origin iframe directly, recreate the bridge temporarily in dev/SIT
+using the local console API above as the data source, then remove it before
+shipping.
 
 Use the summary after repeated route loads to prove local p75. A route passes
 the local target only when its p75 is `<= 2500` ms. For field proof, collect
@@ -54,7 +70,7 @@ Measured in the Shopify Admin chrome on `wolfpack-store-test-1` / SIT using
 
 | Route | Iframe LCP candidate / source-audited candidate | Fix status |
 |---|---|---|
-| `/app/dashboard` | Measured: `img[src="/appEmbed.png"]` rendered via `/appEmbed.avif` | Preloaded in route `links()` and HTTP `Link`; eager + high fetch priority |
+| `/app/dashboard` | Current local app candidate: support card content text; historical candidate: app-embed instructional screenshot | Keep only the above-the-fold support avatar preload; render the top cards immediately with the app-embed screenshot loading after hydration; keep the support card outside delayed Polaris custom-element wrappers; defer the lower resources card until the main content has settled; render row action-menu content only after a row menu is opened. |
 | `/app/bundles/create` | Measured: `img[src="/ppb.png"]` rendered via `/ppb.avif` | Preloaded in route `links()` and HTTP `Link`; adjacent `/fpb.avif` also preloaded |
 | `/app/integrations` | Measured: text subtitle (`p._subtitle...`) | No image preload fix; page LCP is text/bootstrap-bound |
 | `/app/events` | Source audit: no first-viewport owned image | No image preload fix |
@@ -87,3 +103,8 @@ Do not recreate custom `/api/web-vitals` telemetry for BFS eligibility. Use Shop
 ## Critical Path Rule
 
 The `/app` layout loader must keep Shopify authentication on the critical path, but non-critical maintenance should not block the initial shell. Offline-session migration runs in the background and logs failures instead of delaying first render.
+
+The `/app/dashboard` loader must also keep non-critical Admin checks off the
+response path. App-embed refresh and web-pixel reconciliation are scheduled as
+post-response background tasks; the first dashboard payload should come from
+the shop, bundle summary, and subscription data needed to render above the fold.

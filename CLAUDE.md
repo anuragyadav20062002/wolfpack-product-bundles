@@ -193,6 +193,25 @@ Do not run dev against the standard PROD `shopify.web.toml` / production Shopify
 
 ---
 
+## 🧪 Admin LCP Debug Bridge Rule
+
+For major Admin UI changes, recreate and use the temporary Admin LCP debug bridge in dev/SIT to optimize route-level LCP before relying on Shopify field data.
+
+Reference implementation and notes:
+- Diagnostics runtime: `app/lib/admin-web-vitals-diagnostics.client.ts`
+- Operating doc: `internal docs/Operations/Admin Performance.md`
+
+Expected dev workflow:
+1. Enable debug mode with `?wpbWebVitalsDebug=1` on the embedded Shopify Admin app URL.
+2. Use the iframe `postMessage` bridge to read route-local samples when cross-origin iframe access blocks direct inspection.
+3. Clear samples before each fresh route pass.
+4. Measure the exact route and LCP candidate after every major Admin UI change.
+5. Treat the bridge as dev/SIT diagnostic tooling only; Shopify Admin field metrics remain the source of truth for Built for Shopify.
+
+Do not keep the bridge in committed runtime code after the measurement cycle. If the bridge has been removed after a prior optimization cycle, recreate it temporarily from the documented pattern before the next major Admin UI performance pass, then remove it again before shipping. Do not recreate app-owned server-side Web Vitals persistence or `/api/web-vitals` telemetry.
+
+---
+
 ## 🔧 Widget Bundle Build Process
 
 **ALWAYS build after modifying these source files:**

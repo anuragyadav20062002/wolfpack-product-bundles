@@ -1919,6 +1919,7 @@
   display: inline-flex;
   align-items: center;
   line-height: 1;
+  vertical-align: middle;
   z-index: var(--rich-help-layer);
 }
 
@@ -1931,6 +1932,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   color: #6d7175;
   cursor: default;
   white-space: nowrap;
@@ -1946,9 +1948,12 @@
   place-items: center;
   width: 18px;
   height: 18px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: #6d7175;
+  line-height: 1;
+  vertical-align: middle;
   cursor: default;
 }
 

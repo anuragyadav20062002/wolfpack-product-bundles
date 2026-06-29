@@ -24,35 +24,35 @@ import {
 
 
 export const fullPageStepFooterMethods = {
-buildCartLineSourceProperties(selectedLines) {
-  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-    this.selectedProducts,
-    this.stepProductData,
-    this.selectedBundle?.steps
-  );
-  const discountInfo = PricingCalculator.calculateDiscount(
-    this.selectedBundle,
-    totalPrice,
-    totalQuantity,
-    unitPrices
-  );
-  const currencyInfo = CurrencyManager.getCurrencyInfo();
-  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-  const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
-  const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
+  buildCartLineSourceProperties(selectedLines) {
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      unitPrices
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+    const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
+    const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
 
-  const sourceProperties = buildSharedCartLineSourceProperties({
-    selectedLines,
-    retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
-    discountAmount: discountAmount > 0
-      ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
-      : '',
-    discountPercentage,
-  });
-  const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
+    const sourceProperties = buildSharedCartLineSourceProperties({
+      selectedLines,
+      retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
+      discountAmount: discountAmount > 0
+        ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
+        : '',
+      discountPercentage,
+    });
+    const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
 
-  return this.buildCartLineDisplayProperties(displayProperties);
-},
+    return this.buildCartLineDisplayProperties(displayProperties);
+  },
 
 buildCartLineDisplayProperties(displayProperties) {
   return buildSharedCartLineDisplayProperties(displayProperties, this.getCartLineLabels());
@@ -81,8 +81,14 @@ async addBundleToCart(clickedButton = null) {
     const bundleName = this.selectedBundle.name || 'Bundle';
     const sessionKey = this.generateBundleSessionKey();
     const offerId = this.resolveFullPageOfferId();
+    const baseOfferId = `${offerId}_${sessionKey}`;
     const selectedLines = [];
     let itemNumber = 0;
+    const hasAddonStepConfigured = (this.selectedBundle?.steps || []).some((candidateStep) => {
+      const addonEval = this.getAddonTierEvaluation?.(candidateStep);
+      return candidateStep?.isFreeGift === true && candidateStep?.addonDisplayFree !== true && addonEval?.tier;
+    });
+    let hasSelectedAddonLine = false;
 
 
     this.selectedBundle.steps.forEach((step, stepIndex) => {
@@ -105,9 +111,19 @@ async addBundleToCart(clickedButton = null) {
             '_easyBundle:prodQty': String(quantity),
             '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
           };
+          const addonEval = this.getAddonTierEvaluation?.(step) || {};
           const addonDiscount = this.getAddonLineDiscount(step);
-          if (addonDiscount && step?.addonDisplayFree !== true) {
-            properties['_bundle_step_type'] = addonDiscount
+          if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {
+            hasSelectedAddonLine = true;
+            properties._addon_product = 'true';
+            properties._addon_offer_id = baseOfferId;
+            properties._boxProduct = 'addonProduct';
+            if (addonEval?.tier?.tierId) {
+              properties._addonTierId = String(addonEval.tier.tierId);
+            }
+            const addonVariantId = this.extractId(variantId);
+            properties._uniqueGbbItemKey = `${addonVariantId || numericVariantId}_pageId:addonProduct`;
+            properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true
               ? `addon:${addonDiscount.type}:${addonDiscount.value}`
               : 'addon';
           } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
@@ -139,6 +155,9 @@ async addBundleToCart(clickedButton = null) {
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
+      if (hasSelectedAddonLine && hasAddonStepConfigured) {
+        item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
+      }
     });
 
     this._setWidgetBusy(true, actionButton);

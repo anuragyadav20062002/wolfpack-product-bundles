@@ -1,5 +1,5 @@
 import { json, redirect, type ActionFunctionArgs, type HeadersFunction, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
-import { Form, useActionData, useNavigation } from "@remix-run/react";
+import { Form, useActionData, useNavigate, useNavigation } from "@remix-run/react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
@@ -8,8 +8,8 @@ import { BundleType } from "../../../constants/bundle";
 import { showPolarisModal } from "../_shared/bundle-configure/modal-utils";
 import styles from "./create-bundle.module.css";
 import { OptimisedImage } from "../../../components/OptimisedImage";
-import { BillingService } from "../../../services/billing.server";
 import { ensureShopIdentity, recordBusinessEvent } from "../../../services/app-events.server";
+import { getCachedSubscriptionInfo, getSubscriptionInfoFromCache } from "../../../services/subscription-cache.server";
 
 export const links: LinksFunction = () => [
   {
@@ -65,7 +65,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       entry_point: "create_route",
     },
   });
-  const subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
+  const cachedSubscriptionInfo = getCachedSubscriptionInfo(session.shop);
+  const subscriptionInfo = cachedSubscriptionInfo !== undefined
+    ? cachedSubscriptionInfo
+    : await getSubscriptionInfoFromCache(session.shop);
   if (
     subscriptionInfo &&
     subscriptionInfo.currentBundleCount >= subscriptionInfo.bundleLimit
@@ -134,6 +137,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function CreateBundleWizard() {
+  const navigate = useNavigate();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const { t } = useTranslation();
@@ -161,6 +165,10 @@ export default function CreateBundleWizard() {
   useEffect(() => {
     if (serverError) showPolarisModal(nameModalRef);
   }, [serverError]);
+
+  const handleBackToDashboard = useCallback(() => {
+    navigate("/app/dashboard", { replace: true });
+  }, [navigate]);
 
   const handleSelectBundleType = useCallback((type: string) => {
     setBundleType(type);
@@ -198,7 +206,10 @@ export default function CreateBundleWizard() {
   return (
     <>
       <ui-title-bar title={t("createBundle.title")}>
-        <button variant="breadcrumb" onClick={() => window.history.back()}>
+        <button
+          variant="breadcrumb"
+          onClick={handleBackToDashboard}
+        >
           {t("createBundle.dashboard")}
         </button>
       </ui-title-bar>
@@ -206,6 +217,12 @@ export default function CreateBundleWizard() {
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div className={styles.pageHeaderLeft}>
+            <s-button
+              variant="tertiary"
+              icon="arrow-left"
+              accessibilityLabel={t("createBundle.dashboard")}
+              onClick={handleBackToDashboard}
+            />
             <h1 className={styles.pageTitle}>{t("createBundle.heading")}</h1>
           </div>
           <s-button

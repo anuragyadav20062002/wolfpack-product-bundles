@@ -198,7 +198,6 @@ export function VisibilityBadge({ isOptimised }: { isOptimised: boolean }) {
       onBlur={hideTooltip}
       tabIndex={0}
       aria-label={`${isOptimised ? "Optimised" : "Pending"} — ${description}`}
-      onClick={(e: React.MouseEvent) => e.stopPropagation()}
     >
       {isOptimised ? "Optimised" : "Pending"}
       <svg

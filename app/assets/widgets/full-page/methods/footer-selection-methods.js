@@ -172,7 +172,7 @@ _createFooterBar(allSelectedProducts, totalQuantity, totalRequired, totalPrice, 
       this.currentStepIndex++;
       this.renderFullPageLayout();
     } else {
-      ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
     }
   });
 

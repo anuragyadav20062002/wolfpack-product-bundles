@@ -31,7 +31,10 @@ function addItem(state, stepId, variantId, qty, ConditionValidator) {
   const currentSelections = state.selections[stepId] || {};
   const check = ConditionValidator.canUpdateQuantity(step, currentSelections, vid, (currentSelections[vid] || 0) + qty);
   if (!check.allowed) {
-    return { success: false, error: 'This step allows ' + check.limitText + ' product' + (step.conditionValue !== 1 ? 's' : '') + '.' };
+    const errorMessage = typeof ConditionValidator._formatStepLimitToast === 'function'
+      ? ConditionValidator._formatStepLimitToast(check.limitText, step.conditionValue)
+      : 'This step allows ' + check.limitText + ' product' + (step.conditionValue !== 1 ? 's' : '') + '.';
+    return { success: false, error: errorMessage };
   }
 
   if (!state.selections[stepId]) state.selections[stepId] = {};
