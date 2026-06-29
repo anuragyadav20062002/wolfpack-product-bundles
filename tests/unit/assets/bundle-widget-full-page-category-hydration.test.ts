@@ -12,6 +12,7 @@ describe('Full Page widget category hydration behavior', () => {
   const shouldDisplayVariantsAsIndividualForProductGrid =
     fullPageSearchCategoryMethods.shouldDisplayVariantsAsIndividualForProductGrid;
   const expandProductsByVariant = fullPageProductGridMethods.expandProductsByVariant;
+  const orderProductsForActiveCategory = fullPageProductGridMethods.orderProductsForActiveCategory;
 
   function categoryContext() {
     return {
@@ -147,6 +148,35 @@ describe('Full Page widget category hydration behavior', () => {
         parentProductId: 'gid://shopify/Product/1',
         variants: null,
       },
+    ]);
+  });
+
+  it('orders active category products before collection products', () => {
+    const products = [
+      { id: 'gid://shopify/Product/10', title: 'Other category product' },
+      { id: 'gid://shopify/Product/30', title: 'Collection second' },
+      { id: 'gid://shopify/Product/20', title: 'Collection first' },
+      { id: 'gid://shopify/Product/2', title: 'Manual second' },
+      { id: 'gid://shopify/Product/1', title: 'Manual first' },
+    ];
+    const activeCategory = {
+      productIds: ['gid://shopify/Product/1', 'gid://shopify/Product/2'],
+      handles: ['automated-collection'],
+    };
+    const context = {
+      extractId: (value: string) => value.match(/(\d+)$/)?.[1] ?? value,
+      stepCollectionProductIds: {
+        '0:automated-collection': ['gid://shopify/Product/20', 'gid://shopify/Product/30'],
+      },
+    };
+
+    const ordered = orderProductsForActiveCategory.call(context, products, activeCategory, 0);
+
+    expect(ordered.map((product: { title: string }) => product.title)).toEqual([
+      'Manual first',
+      'Manual second',
+      'Collection first',
+      'Collection second',
     ]);
   });
 });

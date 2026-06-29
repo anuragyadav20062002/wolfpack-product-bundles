@@ -174,6 +174,37 @@ createCategoryTabs(stepIndex) {
   return tabsContainer;
 },
 
+orderProductsForActiveCategory(products, activeCategory, stepIndex) {
+  if (!activeCategory) return products;
+
+  const productOrder = new Map();
+  const addProductId = (productId) => {
+    const normalizedProductId = this.extractId(productId) || productId;
+    if (normalizedProductId && !productOrder.has(normalizedProductId)) {
+      productOrder.set(normalizedProductId, productOrder.size);
+    }
+  };
+
+  (activeCategory.productIds || []).forEach(addProductId);
+  (activeCategory.handles || []).forEach(handle => {
+    const collectionProductIds = this.stepCollectionProductIds[`${stepIndex}:${handle}`] || [];
+    collectionProductIds.forEach(addProductId);
+  });
+
+  return products
+    .map((product, index) => {
+      const productId = product.parentProductId || product.id || '';
+      return {
+        product,
+        index,
+        order: productOrder.get(this.extractId(productId) || productId),
+      };
+    })
+    .filter(entry => entry.order !== undefined)
+    .sort((a, b) => a.order - b.order || a.index - b.index)
+    .map(entry => entry.product);
+},
+
 // Create horizontal scrollable product grid
 createFullPageProductGrid(stepIndex) {
   const grid = document.createElement('div');
@@ -210,6 +241,7 @@ createFullPageProductGrid(stepIndex) {
           const numericPid = p.parentProductId || p.id || '';
           return allowedProductIds.has(numericPid);
         });
+        products = this.orderProductsForActiveCategory(products, activeCategory, stepIndex);
       }
     } else if (step.collections) {
       const activeCollection = step.collections.find(c => c.id === activeCollectionId);
