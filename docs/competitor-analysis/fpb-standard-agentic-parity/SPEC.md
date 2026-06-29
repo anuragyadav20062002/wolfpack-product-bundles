@@ -345,7 +345,7 @@ Notes:
 
 | Field | Value |
 |---|---|
-| Status | gap-open |
+| Status | partial-live-proof |
 | EB config | Add-Ons with Bundles enabled; paid discount tier below free threshold |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Multi-step with add-on/gifting step, multiple categories, manual products, multiple option variants, all in stock, step min, percentage tier, add-ons with paid tier, no defaults, quantity slots, default text, desktop banner, variant selector enabled, cart properties, discount transform proof |
@@ -360,8 +360,10 @@ Acceptance:
 - WPB dev-tunnel mobile proof after cache clear: `wpb-storefront-final-version.json` confirms version `3.0.75`, `STANDARD`, `390` width, and text CTA mode; `wpb-storefront-final-addon-step-state.json` confirms paid-step footer `Next • $829.00` and add-on card `10% off`, `$829.00`, `$746.10`, `Add To Cart`; `wpb-storefront-mobile-addon-step-final-computed.json` confirms Assistant font, `14px` original price, `16px` discounted price, `700` price weights, line-through original price, and divider border.
 - WPB dev-tunnel cart/network proof after UI interaction: `wpb-cart-proof-ui-sequence.json` shows paid-step footer `Next • $829.00`, add-on-step card `10% off`, `$829.00`, `$746.10`, `Add To Cart`, selected add-on quantity `1`, footer `Add To Cart • $1575.10`, and Shopify cart after add with one bundle parent line. That line contains `_bundle_component_count: 2`, `_bundle_components` with component 1 `82900 -> 82900` and component 2 `82900 -> 74610` at `10.0` discount / `8290` savings, `_bundle_total_retail_cents: 165800`, `_bundle_total_price_cents: 157510`, `_bundle_total_savings_cents: 8290`, `_bundle_discount_percent: 5.00`, and `_addon_offer_id`. Preserved Chrome DevTools network proof is summarized in `wpb-cart-proof-network-summary.md` with `/cart/add.js`, `/cart.js?app=wolfpackProductBundles`, and `/apps/product-bundles/api/cart-bundle-details` all returning `200`.
 - EB one-paid-product cart/network proof after UI interaction: `eb-cart-proof-one-paid-ui-sequence.json` and `eb-cart-proof-one-paid-cart-after-wait.json` show paid-step footer `₹829.00`, add-on card `₹829.00`, `₹746.10`, `Add To Cart`, `10% off`, footer `₹1575.10`, and Shopify cart after bundle preparation with two cart lines. The selected add-on line has properties `Box`, `_addon_product: true`, `_addonTierId: tier68403`, and `_addon_offer_id`, line price/final price `74610`, original line price `82900`, discount title `Add On`, and line-level discount allocation `10.0` percentage / `8290` amount. The parent bundle line has `_EasyBundleId: FBP-1`, `_originalOfferId`, `_addon_offer_id`, `Items: 1 x 14k Dangling Obsidian Earrings`, and line price `82900`. Preserved Chrome DevTools network proof is summarized in `eb-cart-proof-network-summary.md` with `/cart/update.js`, `/apps/gbb/updateFullPageBundleView`, `/api/2025-04/graphql.json`, `/cart/add.js`, and `/cart.js` calls returning `200`.
-- Open P09 cart-format delta: EB uses a separate selected add-on cart line with Shopify line-level discount allocation plus the parent bundle line. Current WPB proof uses one merged parent bundle line with add-on pricing represented in `_bundle_components` and the parent-line total. This is not closed parity.
-- Remaining P09 work: desktop WPB recapture after Chrome window can be resized and cart-format implementation/delta closure.
+- Cart Transform source update: `extensions/bundle-cart-transform-rs/src/merge.rs` now keeps paid add-on lines out of the parent merge, emits a separate `lineUpdate` fixed unit price for the paid add-on discount, and restores parent public cart-line messaging from `_bundle_display_properties`. Rust proof: `cargo test` in `extensions/bundle-cart-transform-rs` passes with `test_merge_keeps_paid_addon_line_separate`.
+- WPB fresh Chrome proof after cart clear/cache clear: `wpb-cart-transform-fresh-ui-sequence.json` shows two cart lines after add. The paid add-on line carries `_addon_product: true`, `_addonTierId: tier1`, `_addon_offer_id`, and `_bundle_step_type: addon:PERCENTAGE:10` at `74610`; the parent bundle line remains separate at `82900` with `_bundle_component_count: 1` and `_addon_offer_id`.
+- Remaining P09 gap: EB reports the add-on discount as Shopify discount allocation/original price (`82900 -> 74610`, title `Add On`), while WPB Cart Transform `lineUpdate` exposes the adjusted line price (`74610`) without a Shopify discount allocation in `/cart.js`.
+- Remaining P09 work: decide whether exact EB discount-allocation parity requires a Discount Function path, plus desktop WPB recapture after Chrome window can be resized.
 
 ### P10 Free Add-On Tier Highest Eligible
 
@@ -545,7 +547,7 @@ The parity loop is complete when:
 | P06 | pending | `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/` |
 | P07 | pending | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |
 | P08 | verified | `/private/tmp/fpb-standard-agentic-parity/P08-gifting-step-only/` |
-| P09 | gap-open | `/private/tmp/fpb-standard-agentic-parity/P09-paid-addon-tier/` |
+| P09 | partial-live-proof | `/private/tmp/fpb-standard-agentic-parity/P09-paid-addon-tier/` |
 | P10 | pending | `/private/tmp/fpb-standard-agentic-parity/P10-free-addon-highest-tier/` |
 | P11 | pending | `/private/tmp/fpb-standard-agentic-parity/P11-empty-category/` |
 | P12 | pending | `/private/tmp/fpb-standard-agentic-parity/P12-category-weight-rule/` |
