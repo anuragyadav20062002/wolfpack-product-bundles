@@ -1916,6 +1916,30 @@ body:has([data-fpb-design-preset]) {
   grid-template-rows: 44px;
   gap: 5px;
 }
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .side-panel-nav--with-back {
+  grid-template-columns: var(--standard-sidebar-back-size, 2.5625rem) minmax(
+      0,
+      1fr
+    );
+}
+.layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-btn-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--standard-sidebar-back-size, 2.5625rem);
+  min-width: 0;
+  min-height: var(--standard-sidebar-back-size, 2.5625rem);
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: var(--standard-sidebar-back-bg, #6d7175);
+  color: var(--standard-sidebar-back-icon, #2c2c2c);
+}
+.layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-btn-back svg {
+  width: var(--standard-sidebar-back-icon-size, 1.5625rem);
+  height: var(--standard-sidebar-back-icon-size, 1.5625rem);
+}
 .layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-btn-next {
   width: 100%;
   min-height: 41px;

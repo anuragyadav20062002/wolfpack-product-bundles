@@ -145,6 +145,17 @@ Use this only when a row requires code changes:
 11. Verify live `window.__BUNDLE_WIDGET_VERSION__`.
 12. Capture desktop/mobile proof and mark the row complete.
 
+## Cross-Row Evidence Notes
+
+### Standard Sidebar Back Arrow
+
+Evidence path: `/private/tmp/fpb-standard-agentic-parity/back-arrow-analysis/`
+
+- EB renders the summary-sidebar back arrow when the current storefront navigation page has a previous navigation item. In the captured two-step bundle, `addProductsPage1` shows only `Next`; `addProductsPage2` shows the back arrow next to `Add To Cart`.
+- EB category switches stay on the same navigation page and do not make the back arrow visible.
+- EB `Free Gift & Add Ons` admin evidence confirms the `Add-Ons and Gifting Step` is a separate storefront navigation step. The implementation reference already documents that this gifting-step toggle alone creates the storefront `Add On` navigation step, so the same non-first-navigation-page back-arrow rule applies there.
+- WPB evidence before the fix showed no `.side-panel-btn-back` on the second Standard step because the sidebar action row only rendered the next/add-to-cart button.
+
 ## Pairwise Run Set
 
 Status values:
