@@ -251,8 +251,10 @@ Acceptance:
 - Confirmed gap: live WPB widget `3.0.65` had `step.displayVariantsAsIndividual: true`, but category entries had `displayVariantsAsIndividualProducts: false`; Standard category tabs treated the false category flag as overriding the step flag, so collection products did not render EB-style variant cards such as `Yellow Sofa` `2 Seater`, `3 seater`, and `4 seater`.
 - Live WPB deploy proof for widget `3.0.66`: `wpb-storefront-live-version-after-deploy-check.json`, `wpb-storefront-3.0.66-desktop-collection-snapshot.txt`, `wpb-storefront-3.0.66-desktop-collection.png`, and `wpb-storefront-3.0.66-desktop-collection-metrics.json` confirm category-backed variant cards now render, including multi-option product variants.
 - Confirmed follow-up gap after `3.0.66`: WPB expanded variants but preserved full step product load order inside the active category; EB renders active category manual products first, followed by attached collection products in collection order.
-- Source fix is built into widget version `3.0.67`: Standard/FPB category grids now inherit the step-level variant display flag when rendering category tabs, the collection Storefront API proxy returns variant `compareAtPrice` for sale-card parity, and active category grids order manual category products before collection products using category membership data.
-- Pending: SIT deploy, cache-bypassed WPB desktop/mobile storefront verification of widget version `3.0.67`, final variant-card ordering/count comparison, amount-rule add/cart proof, and final `delta.md`.
+- Live WPB deploy proof for widget `3.0.67`: `wpb-live-version-check-3067-attempt.json`, `wpb-storefront-3.0.67-desktop-collection-metrics.json`, `wpb-storefront-3.0.67-desktop-collection.png`, and `wpb-storefront-3.0.67-two-category-add-state.json` confirm manual category products render before attached collection products, variant cards remain expanded, and the discount message applies after one Statement product plus one Full-Size product.
+- Confirmed follow-up gap after `3.0.67`: Add To Cart still blocks the completed category-rule state with `Please complete all bundle steps before adding to cart.` because category amount validation was summing selected quantity (`1`) instead of selected amount (`$619.00`) against the configured `Amount >= 100` rule. Evidence: `wpb-storefront-3.0.67-before-cart-click-state.json`, `wpb-storefront-3.0.67-cart-click-result.json`, and `wpb-storefront-3.0.67-after-statement-add-blocked-cart.json`.
+- Source fix is built into widget version `3.0.68`: Standard/FPB category grids inherit the step-level variant display flag when rendering category tabs, the collection Storefront API proxy returns variant `compareAtPrice`, active category grids order manual category products before collection products using category membership data, and category amount rules validate selected product amounts instead of selected quantities.
+- Pending: SIT deploy, cache-bypassed WPB desktop/mobile storefront verification of widget version `3.0.68`, final Add To Cart/network proof, mobile proof, collection catalog/order comparison note, and final `delta.md`.
 
 ### P05 Cloned Step With Step Max
 
@@ -506,7 +508,7 @@ The parity loop is complete when:
 | P01 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P01-multi-category-step-min/` |
 | P02 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P02-auto-next-defaults/` |
 | P03 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P03-category-exact-variants/` |
-| P04 | eb-captured | `/private/tmp/fpb-standard-agentic-parity/P04-collection-amount-rule/` |
+| P04 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P04-collection-amount-rule/` |
 | P05 | pending | `/private/tmp/fpb-standard-agentic-parity/P05-cloned-step-max/` |
 | P06 | pending | `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/` |
 | P07 | pending | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |

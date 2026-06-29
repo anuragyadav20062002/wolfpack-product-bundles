@@ -668,4 +668,22 @@ describe('isStepConditionSatisfied — category mode', () => {
     expect(isStepConditionSatisfied(step, { '9427287703811': 1 })).toBe(true);
     expect(isStepConditionSatisfied(step, { '9427287703811': 0 })).toBe(false);
   });
+
+  it('amount category rule uses selected product amounts, not selected quantity', () => {
+    const step = {
+      categories: [
+        makeCategory('FullSize', ['p1'], [{ type: 'quantity', condition: 'equalTo', value: 1 }]),
+        makeCategory('Statement', ['p2'], [{ type: 'amount', condition: 'greaterThanOrEqualTo', value: 100 }]),
+      ],
+    };
+
+    expect(isStepConditionSatisfied(step, {
+      p1: { quantity: 1, amount: 82900 },
+      p2: { quantity: 1, amount: 6360 },
+    })).toBe(false);
+    expect(isStepConditionSatisfied(step, {
+      p1: { quantity: 1, amount: 82900 },
+      p2: { quantity: 1, amount: 61900 },
+    })).toBe(true);
+  });
 });

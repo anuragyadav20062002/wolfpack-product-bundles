@@ -107,7 +107,7 @@ const ConditionValidator = (function () {
     let total = 0;
     if (!selections) return total;
     for (const qty of Object.values(selections)) {
-      total += Number(qty) || 0;
+      total += _getSelectionQuantity(qty);
     }
     return total;
   }
@@ -131,6 +131,26 @@ const ConditionValidator = (function () {
     return ids;
   }
 
+  function _getSelectionQuantity(selection) {
+    if (selection && typeof selection === 'object') {
+      return Number(selection.quantity) || 0;
+    }
+    return Number(selection) || 0;
+  }
+
+  function _getSelectionAmount(selection) {
+    if (selection && typeof selection === 'object') {
+      return Number(selection.amount) || 0;
+    }
+    return Number(selection) || 0;
+  }
+
+  function _normalizeAmountRuleValue(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return numeric;
+    return numeric * 100;
+  }
+
   /**
    * Evaluate whether a single category's rules are satisfied by the current
    * step selections. Categories with no `conditions` are always satisfied.
@@ -145,17 +165,20 @@ const ConditionValidator = (function () {
 
     const productIds = _collectCategoryProductIds(category);
     const selections = stepSelections || {};
-    let categoryTotal = 0;
-    for (const pid of Object.keys(selections)) {
-      if (productIds.has(String(pid))) {
-        categoryTotal += Number(selections[pid]) || 0;
-      }
-    }
-
     for (const rule of rules) {
       const operator = _normalizeOperator(rule && (rule.operator || rule.condition));
-      const value = Number(rule && rule.value);
+      const ruleType = rule && (rule.conditionType || rule.type);
+      const isAmountRule = ruleType === 'amount';
+      const value = isAmountRule ? _normalizeAmountRuleValue(rule && rule.value) : Number(rule && rule.value);
       if (!Number.isFinite(value)) continue;
+      let categoryTotal = 0;
+      for (const pid of Object.keys(selections)) {
+        if (productIds.has(String(pid))) {
+          categoryTotal += isAmountRule
+            ? _getSelectionAmount(selections[pid])
+            : _getSelectionQuantity(selections[pid]);
+        }
+      }
       if (!_evaluateSatisfied(operator, value, categoryTotal)) return false;
     }
     return true;
@@ -197,7 +220,7 @@ const ConditionValidator = (function () {
     const selections = currentSelections || {};
     let total = 0;
     for (const qty of Object.values(selections)) {
-      total += qty || 0;
+      total += _getSelectionQuantity(qty);
     }
 
     // No explicit condition configured → only enforce minQuantity; no upper bound

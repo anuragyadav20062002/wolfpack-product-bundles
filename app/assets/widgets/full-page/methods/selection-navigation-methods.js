@@ -377,7 +377,12 @@ validateStep(stepIndex) {
     for (const [selKey, qty] of Object.entries(conditionSelections)) {
       const product = products.find(p => (p.variantId || p.id) === selKey);
       const productId = String((product && (product.parentProductId || product.id)) || selKey);
-      translated[productId] = (translated[productId] || 0) + (Number(qty) || 0);
+      const quantity = Number(qty) || 0;
+      const current = translated[productId] || { quantity: 0, amount: 0 };
+      translated[productId] = {
+        quantity: current.quantity + quantity,
+        amount: current.amount + ((Number(product?.price) || 0) * quantity),
+      };
     }
     return ConditionValidator.isStepConditionSatisfied(step, translated);
   }
