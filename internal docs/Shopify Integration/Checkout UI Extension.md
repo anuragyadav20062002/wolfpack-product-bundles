@@ -47,3 +47,14 @@ CDN URL and a response with `ue=()=>null`; no custom checkout pricing labels
 remained in the live response or checkout snapshot. Evidence:
 `/private/tmp/fpb-standard-agentic-parity/checkout-ui/wpb-live-bundle-checkout-ui-after-entrypoint.response.network-response`
 and `wpb-current-checkout-after-entrypoint.snapshot.txt`.
+
+2026-06-29 follow-up proof: live SIT checkout loads the `bundle-checkout-ui`
+dev CDN asset and the fetched script contains none of the removed labels
+(`Bundle Savings`, `Actual Price`, `Bundle Price`, `Retail Price`, `You Save`).
+The expanded mobile order summary shows only native checkout rows: paid add-on
+line at the adjusted price, parent bundle line with `Box` / `Items`, and no app
+panel. This confirms the remaining EB gap is not a Checkout UI extension issue:
+EB's `ADD ON (-...)` row is a native line-level discount allocation, while WPB's
+Cart Transform `lineUpdate` only changes the line price. Evidence:
+`/private/tmp/fpb-standard-agentic-parity/checkout-ui/wpb-current-checkout-extension-script-audit.json`
+and `wpb-current-checkout-expanded.snapshot.txt`.
