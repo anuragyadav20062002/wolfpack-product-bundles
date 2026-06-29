@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-06-21T12:43:28.027Z",
+  "summary": {
+    "totalSuites": 1,
+    "totalTests": 33,
+    "totalPassed": 33,
+    "totalFailed": 0,
+    "totalSkipped": 0,
+    "totalDuration": 1218
+  },
+  "totalDuration": 1219,
+  "suites": [
+    {
+      "suite": "Integration Tests",
+      "passed": 33,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 1218,
+      "commandFailed": false
+    }
+  ],
+  "environment": {
+    "nodeVersion": "v25.1.0",
+    "platform": "darwin",
+    "cwd": "/Users/adityaawasthi/Developer/wolfpack-product-bundles"
+  }
+}

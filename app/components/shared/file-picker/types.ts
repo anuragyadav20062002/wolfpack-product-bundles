@@ -9,6 +9,8 @@ export interface FilePickerProps {
   label?: string;
   hint?: string;
   uploadLabel?: string;
+  maxUploadBytes?: number;
+  maxUploadErrorMessage?: string;
   autoOpen?: boolean;
   onClose?: () => void;
 }

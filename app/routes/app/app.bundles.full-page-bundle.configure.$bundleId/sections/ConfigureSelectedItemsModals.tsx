@@ -13,7 +13,6 @@ export function FpbSelectedItemsModals({
     addonVariablesModalRef,
     bundle,
     collectionsModalRef,
-    createDefaultAddonDraftTier,
     currentModalStepId,
     disableAddonStepModalRef,
     discountVariablesModalRef,
@@ -140,7 +139,7 @@ export function FpbSelectedItemsModals({
         {(() => {
           const addonTiers = Array.isArray(addonDraft.addonTiers)
             ? addonDraft.addonTiers
-            : [createDefaultAddonDraftTier()];
+            : [];
           const tierIndex = addonSelectedProductsTierIndex ?? 0;
           const tier = addonTiers[tierIndex] ?? addonTiers[0];
           const selectedAddonProducts = Array.isArray(

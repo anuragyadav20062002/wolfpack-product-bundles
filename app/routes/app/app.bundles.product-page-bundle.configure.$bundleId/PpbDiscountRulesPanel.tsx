@@ -19,13 +19,17 @@ export function PpbDiscountRulesPanel() {
     <s-section>
       <s-stack direction="block" gap="base">
         <s-stack direction="block" gap="small-400">
-          <s-stack direction="inline" gap="small" alignItems="center">
+          <s-stack
+            direction="inline"
+            gap="small"
+            alignItems="center"
+            style={{ justifyContent: "space-between", width: "100%" }}
+          >
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
               Discount &amp; Pricing
             </h3>
             <s-switch
               accessibilityLabel="Enable discount pricing"
-              label="Enable"
               checked={pricingState.discountEnabled || undefined}
               onChange={(e) =>
                 pricingState.setDiscountEnabled(

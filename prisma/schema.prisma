@@ -180,6 +180,7 @@ model BundleStep {
   conditionValue              Int?
   conditionOperator2          String?
   conditionValue2             Int?
+  autoNextStepOnConditionMet  Boolean        @default(false)
   isFreeGift                  Boolean        @default(false)
   freeGiftName                String?
   addonLabel                  String?

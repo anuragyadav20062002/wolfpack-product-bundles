@@ -59,6 +59,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
                             amount
                             currencyCode
                           }
+                          compareAtPrice {
+                            amount
+                            currencyCode
+                          }
                           availableForSale
                           image {
                             url
@@ -136,6 +140,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
               id: edge.node.id,
               title: edge.node.title,
               price: edge.node.price?.amount || '0',
+              compareAtPrice: edge.node.compareAtPrice?.amount || null,
               available: edge.node.availableForSale,
               image: edge.node.image ? { src: edge.node.image.url } : null
             }))

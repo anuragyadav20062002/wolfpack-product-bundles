@@ -296,6 +296,10 @@ export function buildFpbBaseConfig(
       conditionValue2: parseConditionValue(
         stepConditionsData[step.id]?.[1]?.value,
       ),
+      autoNextStepOnConditionMet:
+        stepConditionsData[step.id]?.[0]?.autoNext === true ||
+        stepConditionsData[step.id]?.[0]?.autoNext === "true" ||
+        step.autoNextStepOnConditionMet === true,
       products: (step.StepProduct || []).map((product: any) => ({
         id: product.id,
         title: product.title || product.name || "Product",

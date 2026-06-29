@@ -22,6 +22,8 @@ export function FilePicker({
   label = "Choose background image",
   hint,
   uploadLabel = "Upload image",
+  maxUploadBytes = MAX_BYTES,
+  maxUploadErrorMessage = "File must be under 20 MB.",
   autoOpen = false,
   onClose,
 }: FilePickerProps) {
@@ -252,8 +254,8 @@ export function FilePicker({
         return;
       }
 
-      if (file.size > MAX_BYTES) {
-        setSizeError("File must be under 20 MB.");
+      if (file.size > maxUploadBytes) {
+        setSizeError(maxUploadErrorMessage);
         setUploadFromTrigger(false);
         return;
       }

@@ -435,8 +435,6 @@ Billing Page
           └── [Save] → [Sync Bundle tab → Sync Now]
 ```
 
-Note: `/app/bundles/cart-transform` is not a navigable Admin page. The obsolete cart-transform bundle list route was removed; cart-transform support remains backend/API and storefront-function infrastructure.
-
 ### Flow C: Design Customisation
 ```
 /app/settings

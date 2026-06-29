@@ -23,6 +23,14 @@ import {
 } from '../../shared/engine/cart-lines.js';
 
 
+export function shouldCategoryTabActivateProducts({
+  designPreset,
+  viewportWidth,
+  hasCategoryEntries,
+}) {
+  return !(designPreset === 'STANDARD' && hasCategoryEntries && viewportWidth < 768);
+}
+
 export const fullPageProductGridMethods = {
 scrollActiveCategoryTitleIntoView() {
   if (this.getFullPageDesignPreset?.() !== 'STANDARD') return;
@@ -146,12 +154,55 @@ createCategoryTabs(stepIndex) {
     }
     tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
     tab.addEventListener('click', () => {
-      this.activateStepCategory(entry.id);
+      if (shouldCategoryTabActivateProducts({
+        designPreset: this.getFullPageDesignPreset?.(),
+        viewportWidth: window.innerWidth,
+        hasCategoryEntries,
+      })) {
+        this.activateStepCategory(entry.id);
+        return;
+      }
+
+      tabsContainer.querySelectorAll('.category-tab').forEach(tabElement => {
+        tabElement.classList.remove('active');
+      });
+      tab.classList.add('active');
     });
     tabsContainer.appendChild(tab);
   });
 
   return tabsContainer;
+},
+
+orderProductsForActiveCategory(products, activeCategory, stepIndex) {
+  if (!activeCategory) return products;
+
+  const productOrder = new Map();
+  const addProductId = (productId) => {
+    const normalizedProductId = this.extractId(productId) || productId;
+    if (normalizedProductId && !productOrder.has(normalizedProductId)) {
+      productOrder.set(normalizedProductId, productOrder.size);
+    }
+  };
+
+  (activeCategory.productIds || []).forEach(addProductId);
+  (activeCategory.handles || []).forEach(handle => {
+    const collectionProductIds = this.stepCollectionProductIds[`${stepIndex}:${handle}`] || [];
+    collectionProductIds.forEach(addProductId);
+  });
+
+  return products
+    .map((product, index) => {
+      const productId = product.parentProductId || product.id || '';
+      return {
+        product,
+        index,
+        order: productOrder.get(this.extractId(productId) || productId),
+      };
+    })
+    .filter(entry => entry.order !== undefined)
+    .sort((a, b) => a.order - b.order || a.index - b.index)
+    .map(entry => entry.product);
 },
 
 // Create horizontal scrollable product grid
@@ -190,6 +241,7 @@ createFullPageProductGrid(stepIndex) {
           const numericPid = p.parentProductId || p.id || '';
           return allowedProductIds.has(numericPid);
         });
+        products = this.orderProductsForActiveCategory(products, activeCategory, stepIndex);
       }
     } else if (step.collections) {
       const activeCollection = step.collections.find(c => c.id === activeCollectionId);

@@ -99,8 +99,6 @@ buildAddonStepFromPersonalization() {
       ? tier.selectedAddonProducts.map(product => this.normalizePersonalizationAddonProduct(product))
       : []
   );
-  const firstTier = tiers[0] || {};
-  const tierDiscount = firstTier?.discount || {};
 
   return {
     id: 'personalization-addons',
@@ -114,13 +112,13 @@ buildAddonStepFromPersonalization() {
     freeGiftName: addonProducts?.title || personalizationData.personalizeStepText || '',
     addonTitle: personalizationData.personalizePageSubtext || addonProducts?.title || '',
     addonIconUrl: personalizationData.stepImage || null,
-    addonDisplayFree: !addonProductsEnabled || (Number(tierDiscount.value || 0) >= 100 && tierDiscount.type === 'PERCENTAGE'),
+    addonDisplayFree: !addonProductsEnabled,
     addonUnlockAfterCompletion: true,
     addonTiers: addonProductsEnabled ? tiers : undefined,
-    addonEligibilityCondition: addonProductsEnabled ? (firstTier?.eligibilityCondition || null) : null,
-    addonDiscount: addonProductsEnabled ? (firstTier?.discount || null) : null,
+    addonEligibilityCondition: null,
+    addonDiscount: null,
     addonMessaging: addonProductsEnabled ? (addonProducts.addonsMessaging || null) : null,
-    displayVariantsAsIndividual: firstTier?.displayVariantsAsIndividualProducts_addons === true,
+    displayVariantsAsIndividual: false,
     StepProduct: selectedAddonProducts,
     products: selectedAddonProducts,
     collections: [],
@@ -168,6 +166,7 @@ initializeDataStructures() {
 
   // Pre-populate default products (mandatory items like Gift Box)
   this._initDefaultProducts();
+  this._initDirectDefaultProducts();
 
   // Initialize step product data cache
   this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));

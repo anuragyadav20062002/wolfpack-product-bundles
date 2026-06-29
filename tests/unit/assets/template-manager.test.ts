@@ -116,4 +116,43 @@ describe('TemplateManager evidence-matched variables', () => {
       variables,
     )).toBe('Success! Your $5.00 discount has been applied to your cart.');
   });
+
+  it('ignores stale percentage display text for fixed amount discounts', () => {
+    const variables = TemplateManager.createDiscountVariables(
+      {
+        name: 'Test Bundle',
+        pricing: {
+          method: 'fixed_amount_off',
+          rules: [{
+            id: 'rule-fixed',
+            conditionType: 'quantity',
+            conditionOperator: 'gte',
+            conditionValue: 2,
+            discountValue: 500,
+          }],
+          messages: {
+            displayOptions: {
+              bundleQuantityOptions: {
+                defaultRuleId: 'rule-fixed',
+                optionsByRuleId: {
+                  'rule-fixed': { label: 'Box of 2', subtext: '500% off' },
+                },
+              },
+            },
+          },
+        },
+      },
+      10000,
+      1,
+      { hasDiscount: false, applicableRule: null, finalPrice: 10000, discountAmount: 0, discountPercentage: 0, qualifiesForDiscount: false },
+      currencyInfo,
+    );
+
+    expect(variables.discountValue).toBe('5.00');
+    expect(variables.discountValueUnit).toBe('$');
+    expect(TemplateManager.replaceVariables(
+      'Add {{discountConditionDiff}} product(s) to save {{discountValueUnit}}{{discountValue}}!',
+      variables,
+    )).toBe('Add 1 product(s) to save $5.00!');
+  });
 });

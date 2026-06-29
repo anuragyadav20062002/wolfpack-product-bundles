@@ -241,7 +241,7 @@ async navigateModal(direction) {
         this.updateModalNavigation();
         this.updateModalFooterMessaging();
       } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+        ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
       }
     } else {
       // Done button clicked on last step

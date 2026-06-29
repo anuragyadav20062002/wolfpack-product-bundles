@@ -24,13 +24,20 @@ export const ProductPageCartMethods = {
         return;
       }
 
-      const cartItems = this.buildCartItems();
+      const offerId = this.resolveProductPageOfferId();
+      const sessionKey = this.generateBundleSessionKey();
+      const bundleName = this.selectedBundle?.name || '';
+      const cartItems = this.buildCartItems(offerId, sessionKey);
 
       this.elements.addToCartButton.disabled = true;
       this.elements.addToCartButton.textContent = this._resolveText('addingToCart', 'Adding to Cart...');
       this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
-      const cartContext = this.buildProductPageCartFormData(cartItems);
+      const cartContext = this.buildProductPageCartFormData(cartItems, {
+        bundleName,
+        offerId,
+        sessionKey,
+      });
       await this.syncBundleDetailsCartMetafield(cartContext.bundleDetailsKey, cartContext.sourceProperties);
 
       const response = await fetch('/cart/add', {
@@ -94,10 +101,16 @@ export const ProductPageCartMethods = {
     });
   },
 
-  buildCartItems() {
+  buildCartItems(offerId = this.resolveProductPageOfferId(), sessionKey = this.generateBundleSessionKey()) {
     const cartItems = [];
     const unavailableProducts = [];
     const selectedLines = [];
+    const baseOfferId = `${String(offerId)}_${String(sessionKey)}`;
+    const hasAddonStepConfigured = (this.selectedBundle?.steps || []).some((step) => {
+      const addonEval = this.getAddonTierEvaluation?.(step);
+      return step?.isFreeGift === true && step?.addonDisplayFree !== true && addonEval?.tier;
+    });
+    let hasSelectedAddonLine = false;
 
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
@@ -113,10 +126,23 @@ export const ProductPageCartMethods = {
         }
 
         const step = this.selectedBundle.steps[stepIndex];
+        const addonEval = this.getAddonTierEvaluation?.(step) || {};
         const addonDiscount = this.getAddonLineDiscount(step);
+        const isChargeableAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
         const properties = {};
-        if (addonDiscount && step?.addonDisplayFree !== true) {
-          properties._bundle_step_type = `addon:${addonDiscount.type}:${addonDiscount.value}`;
+          if (isChargeableAddonStep && addonEval?.tier) {
+            hasSelectedAddonLine = true;
+            properties._addon_product = 'true';
+            properties._addon_offer_id = baseOfferId;
+            properties._boxProduct = 'addonProduct';
+            if (addonEval?.tier?.tierId) {
+              properties._addonTierId = String(addonEval.tier.tierId);
+            }
+          const addonVariantId = this.extractId(variantId);
+          properties._uniqueGbbItemKey = `${addonVariantId || variantId}_pageId:addonProduct`;
+          properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true
+            ? `addon:${addonDiscount.type}:${addonDiscount.value}`
+            : 'addon';
         } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
           properties._bundle_step_type = 'free_gift';
         }
@@ -147,16 +173,19 @@ export const ProductPageCartMethods = {
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
     cartItems.forEach(item => {
       Object.assign(item.properties, sourceProperties);
+      if (hasSelectedAddonLine && hasAddonStepConfigured) {
+        item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
+      }
     });
 
     return cartItems;
   },
 
-  buildProductPageCartFormData(cartItems) {
+  buildProductPageCartFormData(cartItems, { bundleName = '', offerId = '', sessionKey = '' } = {}) {
     return buildProductPageCartFormData(cartItems, {
-      bundleName: this.selectedBundle?.name || '',
-      offerId: this.resolveProductPageOfferId(),
-      sessionKey: this.generateBundleSessionKey(),
+      bundleName,
+      offerId,
+      sessionKey,
     });
   },
 

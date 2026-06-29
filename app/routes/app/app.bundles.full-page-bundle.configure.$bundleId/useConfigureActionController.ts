@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { AppLogger } from "../../../lib/logger";
+import { navigateBackOrFallback } from "../../../lib/navigation";
 import { validateSlug } from "../../../lib/slug-utils";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
@@ -45,7 +46,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
       promptSaveBarBeforeNavigation();
       return;
     }
-    flow.navigate("/app/dashboard");
+    navigateBackOrFallback(flow.navigate, "/app/dashboard", { replaceFallback: true });
   }, [flow, promptSaveBarBeforeNavigation]);
   const enablePreviewGate = useEnablePreviewGate({
     appEmbedEnabled: flow.appEmbedEnabled,
