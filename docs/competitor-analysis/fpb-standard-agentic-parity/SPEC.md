@@ -276,6 +276,7 @@ Notes:
 - WPB mirrored through Chrome DevTools MCP. Desktop proof confirms two-step flow, preserved prior-step selections, and over-max blocking with `This step allows at most 1 product only.`
 - Product cards remain uniform in WPB capture and product image fade is present via `fpb-standard-product-image-fade`.
 - Gap found: Standard desktop summary sidebar height stayed at `20.94375rem` (~335px) while EB measured ~476px with selected products. Source fix sets `--standard-desktop-side-panel-height` to `29.76855rem` and is built into widget version `3.0.69`; live proof is pending SIT deploy and cache-bypassed reload.
+- Follow-up product-card pricing evidence is captured in `/private/tmp/fpb-standard-agentic-parity/product-card-pricing-row/`. EB `Solid Bloom` sale-card proof shows the title divider on the title row, Assistant typography, one-line compare/current pricing, 14px/700 compare price, and 16px/700 current price. Source fix restores those Standard desktop product-card rules in widget version `3.0.70`; live proof is pending SIT deploy and cache-bypassed reload.
 
 ### P06 Out Of Stock Visible
 
