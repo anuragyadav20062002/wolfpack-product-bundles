@@ -260,7 +260,7 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | fixed-awaiting-deploy |
 | EB config | Cloned second step with max quantity rule |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Multi-step, cloned step, manual products, no variants, all in stock, step max, no discount, add-ons disabled, no defaults, over-max blocked, default text, no banner, default settings, desktop sidebar collapsed or compact, mobile tray open, next/back |
@@ -270,6 +270,12 @@ Acceptance:
 - Step clone labels, order, and per-step selected items match EB.
 - Over-max add behavior matches EB without affecting prior step selections.
 - Back navigation preserves selections and sidebar/tray state.
+
+Notes:
+- EB configured and captured with two cloned steps, `Quantity <= 1` step rules, no discount, no default/preselected products, product slots disabled, variant selector on, and plus-button text on.
+- WPB mirrored through Chrome DevTools MCP. Desktop proof confirms two-step flow, preserved prior-step selections, and over-max blocking with `This step allows at most 1 product only.`
+- Product cards remain uniform in WPB capture and product image fade is present via `fpb-standard-product-image-fade`.
+- Gap found: Standard desktop summary sidebar height stayed at `20.94375rem` (~335px) while EB measured ~476px with selected products. Source fix sets `--standard-desktop-side-panel-height` to `29.76855rem` and is built into widget version `3.0.69`; live proof is pending SIT deploy and cache-bypassed reload.
 
 ### P06 Out Of Stock Visible
 
@@ -509,7 +515,7 @@ The parity loop is complete when:
 | P02 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P02-auto-next-defaults/` |
 | P03 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P03-category-exact-variants/` |
 | P04 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P04-collection-amount-rule/` |
-| P05 | pending | `/private/tmp/fpb-standard-agentic-parity/P05-cloned-step-max/` |
+| P05 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P05-cloned-step-max/` |
 | P06 | pending | `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/` |
 | P07 | pending | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |
 | P08 | pending | `/private/tmp/fpb-standard-agentic-parity/P08-gifting-step-only/` |
