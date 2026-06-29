@@ -13,6 +13,7 @@ describe('Full Page widget category hydration behavior', () => {
     fullPageSearchCategoryMethods.shouldDisplayVariantsAsIndividualForProductGrid;
   const expandProductsByVariant = fullPageProductGridMethods.expandProductsByVariant;
   const orderProductsForActiveCategory = fullPageProductGridMethods.orderProductsForActiveCategory;
+  const getNoProductsAvailableMessage = fullPageProductGridMethods.getNoProductsAvailableMessage;
 
   function categoryContext() {
     return {
@@ -178,5 +179,19 @@ describe('Full Page widget category hydration behavior', () => {
       'Collection first',
       'Collection second',
     ]);
+  });
+
+  it('resolves empty-product copy from FPB runtime language settings', () => {
+    const overridden = getNoProductsAvailableMessage.call({
+      _resolveText: (key: string, fallback: string) => (
+        key === 'noProductsAvailable' ? 'Nothing available' : fallback
+      ),
+    });
+    const defaulted = getNoProductsAvailableMessage.call({
+      _resolveText: (_key: string, fallback: string) => fallback,
+    });
+
+    expect(overridden).toBe('Nothing available');
+    expect(defaulted).toBe('No Products Available');
   });
 });

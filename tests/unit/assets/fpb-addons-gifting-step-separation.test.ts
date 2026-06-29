@@ -397,6 +397,24 @@ describe("FPB add-ons / gifting step separation", () => {
     });
   });
 
+  it("derives 100% add-on card display pricing from the active add-on discount", () => {
+    const step = { isFreeGift: true, addonDisplayFree: true };
+    const displayProduct = buildPaidAddonProductDisplayData.call(
+      {
+        getAddonLineDiscount: () => ({ type: "PERCENTAGE", value: 100 }),
+      },
+      { title: "Gift product", price: 82900, compareAtPrice: null },
+      step,
+    );
+
+    expect(displayProduct).toMatchObject({
+      title: "Gift product",
+      price: 0,
+      compareAtPrice: 82900,
+      addonDiscountBadgeText: "100% off",
+    });
+  });
+
   it("uses the cart CTA label for paid add-on product cards", () => {
     const ctx = {
       _resolveText: (key: string, fallback: string) =>

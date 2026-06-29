@@ -157,6 +157,15 @@ Evidence path: `/private/tmp/fpb-standard-agentic-parity/back-arrow-analysis/`
 - WPB evidence before the fix showed no `.side-panel-btn-back` on the second Standard step because the sidebar action row only rendered the next/add-to-cart button.
 - Current P08 evidence confirms the same rule for the add-on/gifting step: EB and WPB show Back on `addProductsPage2` and on `personalizationPage` / `Add On`, and neither app shows Back for category switches inside `addProductsPage1`.
 
+### Standard Step Timeline Entries
+
+Evidence path: `/private/tmp/fpb-standard-agentic-parity/step-timeline-all-configs/`
+
+- EB desktop and mobile evidence for the current multi-step + add-on Standard bundle shows three timeline entries: `Choose Full-Size Products`, `Choose Full-Size Products_copy`, and `Add On`.
+- EB does not promote multi-category tabs into separate timeline nodes; category switching stays inside the active product step.
+- WPB pre-fix desktop/mobile evidence rendered extra `Multiple Categories` nodes, which changed desktop spacing and forced mobile pagination at five entries.
+- Source fix in widget version `3.0.81` suppresses synthetic multi-category timeline entries for the Standard preset only; non-Standard timeline eligibility remains unchanged.
+
 ## Pairwise Run Set
 
 Status values:
@@ -370,6 +379,8 @@ Acceptance:
 - Checkout UI follow-up proof: `/private/tmp/fpb-standard-agentic-parity/checkout-ui/wpb-current-checkout-extension-script-audit.json` confirms the live SIT checkout still loads `bundle-checkout-ui` but the fetched dev CDN script contains none of the removed custom panel labels. `/private/tmp/fpb-standard-agentic-parity/checkout-ui/wpb-current-checkout-expanded.snapshot.txt` shows the expanded WPB mobile order summary has only native checkout output: separate paid add-on line at `$746.10`, parent bundle line at `$829.00`, `Box: 1`, and parent `Items`; no app-rendered savings panel is present.
 - Remaining P09 gap: EB reports the add-on discount as Shopify discount allocation/original price (`82900 -> 74610`, title `Add On`), while WPB Cart Transform `lineUpdate` exposes the adjusted line price (`74610`) without a Shopify discount allocation in `/cart.js`.
 - Remaining P09 work: implement or explicitly scope a Discount Function path for exact EB discount-allocation parity, because Checkout UI is already inert and Cart Transform `lineUpdate` cannot emit the native `ADD ON (-...)` reduction row; also recapture desktop WPB checkout after a fresh paid add-on cart is built.
+- Current add-on product-card badge proof is captured in `/private/tmp/fpb-standard-agentic-parity/addon-card-discount-badges/current/`. EB desktop/mobile partial-discount cards render the add-on discount as a right-edge blue ribbon with white `10% off` text; evidence: `eb-desktop-partial-addon-step.png`, `eb-desktop-partial-addon-computed.json`, `eb-mobile-partial-addon-step.png`, and `eb-mobile-partial-addon-computed.json`. WPB version `3.0.84` renders the same Standard ribbon treatment for partial tiers; evidence: `wpb-mobile-postfix-partial-addon-step.png`, `wpb-mobile-postfix-partial-addon-computed.json`, and restored-fixture proof `wpb-mobile-restored-10-proof.json`.
+- Source fix built into widget version `3.0.84`: Standard add-on discount badges inherit EB-aligned ribbon typography spacing, and 100% add-on tiers expose `100% off` display data instead of falling through to a generic free-gift badge. Temporary UI-switched WPB 100% proof is captured in `wpb-desktop-100-addon-step.png`, `wpb-desktop-100-addon-computed.json`, `wpb-mobile-100-addon-step.png`, and `wpb-mobile-100-addon-computed.json`; both viewports show the blue right-edge `100% off` badge, original price struck through, discounted price `$0.00`, and no generic `.fpb-free-badge`. The Admin tier was restored to `10%` after this proof. Fresh EB storefront bundle `2` did not render during this pass, so current live EB 100% card proof still belongs to P10/S02 follow-up.
 
 ### P10 Free Add-On Tier Highest Eligible
 
@@ -386,6 +397,11 @@ Acceptance:
 - Free add-on cart proof matches EB pricing and cart metadata behavior.
 - Multi-language labels and custom slot icons render without layout spillover.
 
+Notes:
+- Current EB bundle `2` proof is captured in `/private/tmp/fpb-standard-agentic-parity/P10-free-addon-highest-tier/`. Direct storefront loads at `page=addProductsPage1` and EB's lowercase `page=addproductspage1` both render the theme header/footer with an empty bundle body. Runtime evidence in `eb-bundle2-empty-runtime.json` shows EB scripts loaded, `window.gbb` present, and `gbbAddonProducts.state.isEnabled=false`; console proof shows `Cannot read properties of null (reading 'personalizationData')`. The open EB Admin tab is a Shopify `Update data access` grant screen for customer/order/metaobject access; it was inspected but not approved autonomously.
+- Existing durable EB reference evidence in `internal docs/EB Free Gift Add Ons Behavior Spec.md` still proves the `100%` tier contract: eligible message says `100% off`, the add-on step card can be selected, and the Shopify add-on cart line is discounted to free with `_addon_product`, `_addonTierId`, and `_addon_offer_id`.
+- Current WPB behavior proof: `tests/unit/assets/fpb-addons-gifting-step-separation.test.ts` passes and covers highest eligible tier selection, active tier-specific messages, no line discount before eligibility, selected add-on discount math, and `100% off` add-on card display data. Temporary UI-switched WPB Standard storefront proof for a single 100% tier is captured in `/private/tmp/fpb-standard-agentic-parity/addon-card-discount-badges/current/`; live multi-tier P10 fixture capture remains pending because the EB live fixture is currently stale and the mirrored multi-tier/free-tier Admin setup has not been created.
+
 ### P11 Empty Category
 
 | Field | Value |
@@ -400,6 +416,9 @@ Acceptance:
 - Empty category message/state matches EB.
 - Switching away from and back to the empty category preserves selected products in non-empty categories.
 - No fabricated fallback merchant-facing copy is introduced.
+
+Notes:
+- Existing EB implementation evidence says empty FPB steps/categories render `No Products Available`. Source fix built into widget version `3.0.78`: full-page product grids now resolve the empty-product message from FPB runtime language settings via `noProductsAvailable` and fall back to the EB default `No Products Available` instead of the prior local sentence `No products available in this step.` Live EB/WPB fixture capture remains pending.
 
 ### P12 Category Weight Rule
 
@@ -430,6 +449,13 @@ Acceptance:
 - Mobile text wraps or truncates the same way EB does without overlapping controls.
 - Progress and tray state remain visible and actionable.
 - Low inventory/tracked state does not displace primary selection controls.
+
+Notes:
+- Current mobile product-card evidence is captured in `/private/tmp/fpb-standard-agentic-parity/mobile-product-cards-current/`. EB `eb-mobile-product-card.png` and `eb-mobile-product-card-runtime.json` show two-column Standard cards with compact media, Assistant bold title, title divider, left-aligned 14px/700 pricing, full-width 35px card CTA, and `gbbFade` image animation at `1.5s`.
+- Source fix built into widget version `3.0.79`: Standard mobile text-CTA product cards now use scoped responsive card media sizing, EB-style title weight/divider, left-aligned pricing rows, full-width CTA/quantity action area, and keep `fpb-standard-product-image-fade` at `1.5s`. WPB dev-tunnel proof after cache clear is `wpb-mobile-card-final-compact-3.0.79.json` and `wpb-mobile-card-final-compact-3.0.79.png`.
+- Hover/click-state evidence is captured in `/private/tmp/fpb-standard-agentic-parity/product-card-interactions/`. EB single-image cards keep hover visually inert in the measured DOM state, keep selected cards borderless, and switch the CTA area to a full-width black quantity control. Source fix built into widget version `3.0.80`: Standard cards cancel the shared hover lift/shadow, mobile selected text-CTA cards stay borderless with unchanged dimensions, and selected quantity controls use full action width with Assistant bold text. WPB proof after cache clear is `wpb-mobile-selected-final-3.0.80.json` / `.png` plus desktop selected proof `wpb-desktop-selected-hoverrule-postfix-3.0.79.json` and loaded CSS proof `wpb-loaded-css-hover-rule.json`.
+- Multi-image product coverage needs a dedicated fixture row: this baseline EB/WPB bundle currently renders only single-image products (`images.length === 1` for every active category product). Matching multi-image products exist in both stores, including `14k Dangling Pendant Earrings` and `18k Dangling Pendant Earrings`; use those in the next EB/WPB mirrored fixture before implementing carousel-arrow parity.
+- Current P13 mobile offset proof is captured in `/private/tmp/fpb-standard-agentic-parity/P13-mobile-long-content/`. EB mobile `eb-mobile-current-geometry.json` shows no theme page title between the header and bundle body; first product cards start at about `y=401.78`. WPB pre-fix `wpb-mobile-current-geometry.json` showed a theme H1 above the widget and first product cards at about `y=487.59`, pushing first-row CTAs toward the sticky summary footer. Source fix built into widget version `3.0.83`: the Standard stylesheet hides only the theme `.text-block` containing the page H1 when that same section contains a Standard FPB widget. WPB post-fix proof `wpb-mobile-postfix-3.0.83-geometry.json` shows the H1 no longer appears in the accessibility snapshot, first product cards start at about `y=391.59`, and first-row CTAs end at about `y=665.78` in a `390x844` viewport.
 
 ## Stress Run Set
 

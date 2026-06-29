@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.77
+ * Version : 3.0.84
  * Built   : 2026-06-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.77';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.84';
 (function() {
   'use strict';
 
@@ -6464,6 +6464,7 @@ ensureTimelinePagingStyles() {
 
 shouldRenderMultipleCategoryTimelineEntry(step) {
   if (!step || step.isFreeGift === true) return false;
+  if (this.getFullPageDesignPreset?.() === 'STANDARD') return false;
   return this.getStepCategoryTabEntries(step).length > 1;
 },
 
@@ -7284,6 +7285,14 @@ createCategorySectionRows(stepIndex, placement = 'all') {
   return categoryRowsContainer;
 },
 
+getNoProductsAvailableMessage() {
+  if (typeof this._resolveText === 'function') {
+    return this._resolveText('noProductsAvailable', 'No Products Available');
+  }
+
+  return 'No Products Available';
+},
+
 createCategoryTabs(stepIndex) {
   if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
     return null;
@@ -7468,7 +7477,7 @@ createFullPageProductGrid(stepIndex) {
 
     const message = this.searchQuery
       ? `No products match "${ComponentGenerator.escapeHtml(this.searchQuery)}"`
-      : 'No products available in this step.';
+      : ComponentGenerator.escapeHtml(this.getNoProductsAvailableMessage());
     grid.innerHTML = `<p class="no-products">${message}</p>`;
     return grid;
   }
@@ -7604,7 +7613,8 @@ createProductCard(product, stepIndex) {
 
   const designPreset = this.getFullPageDesignPreset();
   const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
-  const stockBadgeHtml = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText
+  const hasStandardAddonDiscountBadge = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText;
+  const stockBadgeHtml = hasStandardAddonDiscountBadge
     ? `<span class="fpb-addon-discount-badge">${ComponentGenerator.escapeHtml(displayProduct.addonDiscountBadgeText)}</span>`
     : '';
   let htmlString;
@@ -7666,7 +7676,7 @@ createProductCard(product, stepIndex) {
     }
   }
 
-  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true) {
+  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true && !hasStandardAddonDiscountBadge) {
     const imgEl = cardElement.querySelector('.product-image, .product-img, img');
     if (imgEl && imgEl.parentElement) {
       imgEl.parentElement.classList.add('fpb-card-image-wrapper');
@@ -7703,8 +7713,8 @@ createProductCard(product, stepIndex) {
 },
 
 buildPaidAddonProductDisplayData(product, step) {
-  const isPaidAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
-  if (!isPaidAddonStep || typeof this.getAddonLineDiscount !== 'function') return product;
+  const isAddonDiscountStep = step?.isFreeGift === true;
+  if (!isAddonDiscountStep || typeof this.getAddonLineDiscount !== 'function') return product;
 
   const addonDiscount = this.getAddonLineDiscount(step);
   if (!addonDiscount || addonDiscount.type !== 'PERCENTAGE') return product;

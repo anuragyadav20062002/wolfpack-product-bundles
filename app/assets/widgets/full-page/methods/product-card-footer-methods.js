@@ -59,7 +59,8 @@ createProductCard(product, stepIndex) {
 
   const designPreset = this.getFullPageDesignPreset();
   const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
-  const stockBadgeHtml = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText
+  const hasStandardAddonDiscountBadge = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText;
+  const stockBadgeHtml = hasStandardAddonDiscountBadge
     ? `<span class="fpb-addon-discount-badge">${ComponentGenerator.escapeHtml(displayProduct.addonDiscountBadgeText)}</span>`
     : '';
   let htmlString;
@@ -124,7 +125,7 @@ createProductCard(product, stepIndex) {
   }
 
   // Free gift step: add "Free" badge and override price display to $0.00
-  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true) {
+  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true && !hasStandardAddonDiscountBadge) {
     const imgEl = cardElement.querySelector('.product-image, .product-img, img');
     if (imgEl && imgEl.parentElement) {
       imgEl.parentElement.classList.add('fpb-card-image-wrapper');
@@ -162,8 +163,8 @@ createProductCard(product, stepIndex) {
 },
 
 buildPaidAddonProductDisplayData(product, step) {
-  const isPaidAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
-  if (!isPaidAddonStep || typeof this.getAddonLineDiscount !== 'function') return product;
+  const isAddonDiscountStep = step?.isFreeGift === true;
+  if (!isAddonDiscountStep || typeof this.getAddonLineDiscount !== 'function') return product;
 
   const addonDiscount = this.getAddonLineDiscount(step);
   if (!addonDiscount || addonDiscount.type !== 'PERCENTAGE') return product;
