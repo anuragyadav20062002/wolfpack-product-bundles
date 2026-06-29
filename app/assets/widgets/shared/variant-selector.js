@@ -176,6 +176,7 @@ class VariantSelectorComponent {
     // Mutate product
     product.variantId = newVariant.id;
     product.price = newVariant.price;
+    product.available = newVariant.available === true;
     product.quantityAvailable = typeof newVariant.quantityAvailable === 'number' ? newVariant.quantityAvailable : null;
     product.currentlyNotInStock = newVariant.currentlyNotInStock === true;
 
@@ -242,6 +243,7 @@ class VariantSelectorComponent {
         const oldVariantId = product.variantId;
         product.variantId = candidate.id;
         product.price = candidate.price;
+        product.available = candidate.available === true;
         product.quantityAvailable = typeof candidate.quantityAvailable === 'number' ? candidate.quantityAvailable : null;
         product.currentlyNotInStock = candidate.currentlyNotInStock === true;
         // Update the pill text

@@ -339,7 +339,7 @@ attachProductCardListeners(cardElement, product, stepIndex) {
         }
         // Clamp against new variant's stock
         const newQtyAvail = product.quantityAvailable; // already updated by component
-        const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+        const newOOS = this.isVariantOutOfStock(product);
         let migratedQty = oldQty;
         if (newOOS) {
           ToastManager.show('Selected variant is out of stock — selection cleared.');

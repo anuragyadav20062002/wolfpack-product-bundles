@@ -306,6 +306,10 @@ Acceptance:
 - Invalid default selection resolves the same way EB resolves it.
 - Missing image fallback does not affect product selection or cart blocking.
 
+Notes:
+- EB Settings > Additional Configurations inventory help confirms product-level inventory tracking is global, zero-stock tracked products are hidden, and untracked out-of-stock products may remain visible but must be blocked at cart add. Evidence: `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/eb-additional-configurations.snapshot.txt` and `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/eb-inventory-help.snapshot.txt`.
+- Source guard added in widget version `3.0.77`: the shared inline variant selector now carries the selected variant `available` flag onto the product model, and the FPB Standard card migration path uses `isVariantOutOfStock(product)` instead of checking `quantityAvailable === 0`. This prevents unavailable fallback variants from preserving stale available state. Live EB/WPB fixture capture is still pending.
+
 ### P07 Out Of Stock Blocked With Inventory Tracking
 
 | Field | Value |

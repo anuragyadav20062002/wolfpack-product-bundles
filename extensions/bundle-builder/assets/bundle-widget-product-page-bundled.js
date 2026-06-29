@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.76
+ * Version : 3.0.77
  * Built   : 2026-06-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.76';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.77';
 (function() {
   'use strict';
 
@@ -2001,6 +2001,7 @@ class VariantSelectorComponent {
 
     product.variantId = newVariant.id;
     product.price = newVariant.price;
+    product.available = newVariant.available === true;
     product.quantityAvailable = typeof newVariant.quantityAvailable === 'number' ? newVariant.quantityAvailable : null;
     product.currentlyNotInStock = newVariant.currentlyNotInStock === true;
 
@@ -2066,6 +2067,7 @@ class VariantSelectorComponent {
         const oldVariantId = product.variantId;
         product.variantId = candidate.id;
         product.price = candidate.price;
+        product.available = candidate.available === true;
         product.quantityAvailable = typeof candidate.quantityAvailable === 'number' ? candidate.quantityAvailable : null;
         product.currentlyNotInStock = candidate.currentlyNotInStock === true;
 
