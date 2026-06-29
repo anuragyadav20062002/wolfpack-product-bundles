@@ -155,6 +155,7 @@ Evidence path: `/private/tmp/fpb-standard-agentic-parity/back-arrow-analysis/`
 - EB category switches stay on the same navigation page and do not make the back arrow visible.
 - EB `Free Gift & Add Ons` admin evidence confirms the `Add-Ons and Gifting Step` is a separate storefront navigation step. The implementation reference already documents that this gifting-step toggle alone creates the storefront `Add On` navigation step, so the same non-first-navigation-page back-arrow rule applies there.
 - WPB evidence before the fix showed no `.side-panel-btn-back` on the second Standard step because the sidebar action row only rendered the next/add-to-cart button.
+- Current P08 evidence confirms the same rule for the add-on/gifting step: EB and WPB show Back on `addProductsPage2` and on `personalizationPage` / `Add On`, and neither app shows Back for category switches inside `addProductsPage1`.
 
 ## Pairwise Run Set
 
@@ -170,7 +171,7 @@ Status values:
 
 | Field | Value |
 |---|---|
-| Status | fixed-awaiting-deploy |
+| Status | verified |
 | EB config | Captured EB Standard bundle `Daily Essentials`, bundle ID `1`, `FBP_SIDE_FOOTER` + `DEFAULT_FBP` |
 | WPB config | Captured Wolfpack Standard bundle `Daily Essentials`, bundle ID `cmqwx0k3u0000v08brgbhh6aa`, `FBP_SIDE_FOOTER` + `STANDARD` |
 | Matrix coverage | Single-step, one category, manual products, no variants, all in stock, step min 4, discount/progress copy for one 100% off item at threshold, add-ons disabled, no defaults, no slots, default text, no banner, default settings, desktop sidebar open, mobile summary tray, add to cart blocked before min, desktop/mobile first load and after one add |
@@ -324,7 +325,7 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | fixed-awaiting-deploy |
 | EB config | Add-Ons and Gifting Step enabled; Add-Ons with Bundles disabled |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Multi-step with add-on/gifting step, one category, manual products, no variants, all in stock, no rule, no discount, gifting step only, no defaults, no slots, edited bundle summary title/subtitle, no banner, personalization or message controls, next/back, mobile final-step cart state |
@@ -334,6 +335,11 @@ Acceptance:
 - Gifting/add-on navigation step appears when the gifting-step toggle alone is enabled.
 - No add-on discount tier behavior appears when Add-Ons with Bundles is disabled.
 - Back/final-step behavior matches EB desktop and mobile.
+
+Notes:
+- EB desktop proof: `eb-desktop-initial-runtime.json`, `eb-desktop-page2-runtime.json`, `eb-desktop-final-addon-runtime.json`, and `eb-addon-final-live-desktop-controls.json` show the empty `Add On` navigation step and icon Back on non-first navigation pages.
+- WPB desktop proof before source fix: `wpb-runtime-config-after-gifting-save.json` and `wpb-bundle-json-response.network-response` show `isPersonalizationEnabled: true`, `addonProducts.isEnabled: false`, and no tiers, while widget `3.0.72` still rendered `Congrats! You're eligible for a FREE Add On!`.
+- Source fix built into widget version `3.0.73`: gifting-only steps keep the `Add On` navigation step but suppress add-on/free-gift eligibility messaging until Add-Ons with Bundles is enabled. Dev-tunnel proof is captured in `wpb-dev-tunnel-post-reload-state.json`, `wpb-dev-tunnel-desktop-flow-states.json`, `wpb-dev-tunnel-mobile-flow-states.json`, and `wpb-dev-tunnel-mobile-final.png`.
 
 ### P09 Paid Add-On Tier
 
@@ -531,7 +537,7 @@ The parity loop is complete when:
 | P05 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P05-cloned-step-max/` |
 | P06 | pending | `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/` |
 | P07 | pending | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |
-| P08 | pending | `/private/tmp/fpb-standard-agentic-parity/P08-gifting-step-only/` |
+| P08 | verified | `/private/tmp/fpb-standard-agentic-parity/P08-gifting-step-only/` |
 | P09 | pending | `/private/tmp/fpb-standard-agentic-parity/P09-paid-addon-tier/` |
 | P10 | pending | `/private/tmp/fpb-standard-agentic-parity/P10-free-addon-highest-tier/` |
 | P11 | pending | `/private/tmp/fpb-standard-agentic-parity/P11-empty-category/` |

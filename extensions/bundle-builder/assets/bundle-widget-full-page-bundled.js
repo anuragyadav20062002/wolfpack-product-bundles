@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.72
+ * Version : 3.0.73
  * Built   : 2026-06-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.72';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.73';
 (function() {
   'use strict';
 
@@ -4327,7 +4327,8 @@ buildAddonStepFromPersonalization() {
     freeGiftName: addonProducts?.title || personalizationData.personalizeStepText || '',
     addonTitle: personalizationData.personalizePageSubtext || addonProducts?.title || '',
     addonIconUrl: personalizationData.stepImage || null,
-    addonDisplayFree: !addonProductsEnabled,
+    addonDisplayFree: false,
+    addonProductsEnabled,
     addonUnlockAfterCompletion: true,
     addonTiers: addonProductsEnabled ? tiers : undefined,
     addonEligibilityCondition: null,
@@ -8729,6 +8730,7 @@ _syncFreeGiftLock() {
 _renderFreeGiftSection(container) {
   const step = this.freeGiftStep;
   if (!step) return;
+  if (step.addonProductsEnabled === false) return;
 
   const section = document.createElement('div');
   const giftName = this._escapeHTML(step.freeGiftName || 'gift');

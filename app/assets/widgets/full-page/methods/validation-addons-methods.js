@@ -456,6 +456,7 @@ _syncFreeGiftLock() {
 _renderFreeGiftSection(container) {
   const step = this.freeGiftStep;
   if (!step) return;
+  if (step.addonProductsEnabled === false) return;
 
   const section = document.createElement('div');
   const giftName = this._escapeHTML(step.freeGiftName || 'gift');

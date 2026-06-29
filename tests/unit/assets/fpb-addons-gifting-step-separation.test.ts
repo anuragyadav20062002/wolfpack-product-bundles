@@ -92,13 +92,57 @@ describe("FPB add-ons / gifting step separation", () => {
       addonTitle: "Choose a gift",
       addonIconUrl: "https://cdn.example/icon.png",
       addonUnlockAfterCompletion: true,
-      addonDisplayFree: true,
+      addonDisplayFree: false,
+      addonProductsEnabled: false,
     });
     expect(step.StepProduct).toEqual([]);
     expect(step.products).toEqual([]);
     expect(step.addonTiers).toBeUndefined();
     expect(step.addonEligibilityCondition).toBeNull();
     expect(step.addonDiscount).toBeNull();
+  });
+
+  it("does not render free gift eligibility messaging for a gifting-only step", () => {
+    const step = buildStep({
+      isPersonalizationEnabled: true,
+      personalizeStepText: "Add On",
+      addonProducts: {
+        isEnabled: false,
+        title: "Add ON",
+        tiers: [],
+      },
+    });
+    const originalDocument = (global as any).document;
+    (global as any).document = {
+      createElement: () => ({
+        className: "",
+        innerHTML: "",
+      }),
+    };
+    const container = {
+      children: [] as Array<{ className?: string; innerHTML?: string }>,
+      appendChild(child: { className?: string; innerHTML?: string }) {
+        this.children.push(child);
+      },
+      get textContent() {
+        return this.children.map((child) => child.innerHTML || "").join("");
+      },
+    };
+
+    try {
+      fullPageValidationAddonsMethods._renderFreeGiftSection.call(
+        {
+          freeGiftStep: step,
+          _escapeHTML: (value: unknown) => String(value ?? ""),
+          isFreeGiftUnlocked: true,
+        },
+        container,
+      );
+    } finally {
+      (global as any).document = originalDocument;
+    }
+
+    expect(container.textContent).toBe("");
   });
 
   it("does not create the gifting step when only Add-Ons with Bundles is enabled", () => {
