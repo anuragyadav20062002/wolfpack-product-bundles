@@ -39,3 +39,11 @@ The `export` field behaviour differs between JS function extensions (which use n
 shows parent/add-on details rendered by native checkout line properties and
 discount rows. The extension target may stay registered, but checkout parity
 metadata belongs in storefront cart properties and Cart Transform output.
+
+2026-06-29 dev-preview gotcha: local source and built output can be inert while
+the active checkout still loads an older `version/dev-*` extension CDN URL. After
+changing the entry point to render `null` directly, Chrome proof showed a new dev
+CDN URL and a response with `ue=()=>null`; no custom checkout pricing labels
+remained in the live response or checkout snapshot. Evidence:
+`/private/tmp/fpb-standard-agentic-parity/checkout-ui/wpb-live-bundle-checkout-ui-after-entrypoint.response.network-response`
+and `wpb-current-checkout-after-entrypoint.snapshot.txt`.
