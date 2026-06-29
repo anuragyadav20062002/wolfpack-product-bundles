@@ -1,7 +1,7 @@
 .dashboardPage {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 0 32px 88px;
+  padding: 0 clamp(80px, 10vw, 160px) 88px;
 }
 
 .dashboardLayout {
@@ -81,7 +81,7 @@
   align-items: stretch;
 }
 
-.topCardsGrid s-section {
+.topCardSection {
   height: 100%;
 }
 
@@ -90,6 +90,10 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e3e3e3;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
   overflow: hidden;
 }
 
@@ -132,40 +136,12 @@
   overflow: hidden;
 }
 
-.supportAvatarSkeleton {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: linear-gradient(90deg, #eeeeee 25%, #f7f7f7 37%, #eeeeee 63%);
-  background-size: 400% 100%;
-  animation: shimmer 1.2s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 100% 0;
-  }
-  100% {
-    background-position: 0 0;
-  }
-}
-
 .supportAvatarImage {
   width: 70px;
   height: 70px;
   object-fit: cover;
   object-position: center 44%;
   transform: scale(1.3);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.supportAvatarImageLoaded {
-  opacity: 1;
 }
 
 .supportContent {
@@ -269,11 +245,6 @@
   flex-wrap: wrap;
 }
 
-.perPageSelectWrap {
-  width: 160px;
-  flex-shrink: 0;
-}
-
 .searchField {
   width: min(100%, 220px);
 }
@@ -287,8 +258,9 @@
 
 .bundlesTableHeader {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 0;
+  grid-template-columns: minmax(0, 2fr) minmax(18rem, 1.4fr);
+  column-gap: 18px;
+  row-gap: 0;
   padding: 8px 0;
   border-bottom: 1px solid #d8dbe1;
   background: #fafafa;
@@ -304,6 +276,7 @@
 
 .bundlesTableHeader span:first-child {
   padding-left: 12px;
+  padding-right: 12px;
 }
 
 .bundlesTableHeader span:last-child {
@@ -348,7 +321,8 @@
 
 .bundleTableRow {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(18rem, 1.4fr);
+  column-gap: 18px;
   align-items: center;
   border-bottom: 1px solid #d8dbe1;
 }
@@ -368,12 +342,24 @@
 
 .bundleTableCell:first-child {
   padding-left: 12px;
+  padding-right: 12px;
   font-weight: 500;
 }
 
 .bundleTableCell:last-child {
   padding-right: 12px;
   overflow: visible;
+}
+
+.bundleMetaGroup {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(5rem, 0.95fr) minmax(5.5rem, 0.95fr) minmax(9rem, 1.4fr);
+  justify-self: end;
+  justify-items: start;
+  align-items: center;
+  column-gap: 12px;
+  padding-right: 12px;
 }
 
 .bundleActions {
@@ -396,12 +382,51 @@
 }
 
 .paginationBar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border-top: 1px solid #d8dbe1;
+  background: #fafafa;
+}
+
+.paginationControls {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paginationArrow {
+  min-width: 30px;
+}
+
+.paginationPageText {
+  padding: 0 8px;
+  color: #6d7175;
+  white-space: nowrap;
+}
+
+.paginationSpacer {
+  justify-self: start;
+}
+
+.perPageControls {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.perPageSelectWrap {
+  width: fit-content;
+  min-width: 0;
+  display: inline-flex;
+  justify-content: flex-start;
+}
+
+.perPageSelectWrap s-select {
+  width: auto;
 }
 
 .resourcesCard {
@@ -617,7 +642,7 @@
 
 @media (max-width: 760px) {
   .dashboardPage {
-    padding-inline: 0;
+    padding-inline: 40px;
   }
 
   .dashboardActions,
@@ -646,9 +671,10 @@
   }
 
   .bundlesTableHeader {
-    grid-template-columns: 1.4fr 0.8fr 0.8fr 0.8fr;
+    grid-template-columns: minmax(0, 1fr) auto;
     padding-inline: 14px;
     font-size: 12px;
+    column-gap: 14px;
   }
 
   .resourcesList {

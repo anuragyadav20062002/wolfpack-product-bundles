@@ -28,7 +28,11 @@ import {
 export const fullPageProductCardFooterMethods = {
 createProductCard(product, stepIndex) {
   const productId = product.variantId || product.id;
-  const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+  const selectedQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+  const directDefaultQuantity = product?.isDirectDefaultProduct
+    ? Number(product.defaultRequiredQuantity || 1) || 1
+    : 0;
+  const currentQuantity = Math.max(0, selectedQuantity - directDefaultQuantity);
 
 
   // Ensure product has an image URL (use multiple fallbacks)

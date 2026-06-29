@@ -73,6 +73,25 @@ describe("FPB add-on personalization helpers", () => {
     });
   });
 
+  it("normalizes invalid zero eligibility thresholds to 1", () => {
+    expect(
+      normalizeAddonTier(
+        {
+          eligibilityType: "QUANTITY",
+          eligibilityValue: 0,
+          discountType: "PERCENTAGE",
+          discountValue: 0,
+        },
+        0,
+      ),
+    ).toMatchObject({
+      eligibilityCondition: {
+        type: "QUANTITY",
+        value: 1,
+      },
+    });
+  });
+
   it("hydrates add-on drafts from the direct EB-style personalization contract", () => {
     const draft = buildAddonDraftFromPersonalizationData({
       isPersonalizationEnabled: true,

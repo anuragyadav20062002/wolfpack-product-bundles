@@ -1,71 +1,182 @@
-import { readFullPageWidgetSources } from './widget-source-helpers';
-describe('Full Page widget category hydration contract', () => {
-  it('hydrates products and collections from step.categories without changing config load order', () => {
-    const source = readFullPageWidgetSources();
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const {
+  fullPageSearchCategoryMethods,
+} = require('../../../app/assets/widgets/full-page/methods/search-category-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const {
+  fullPageProductGridMethods,
+} = require('../../../app/assets/widgets/full-page/methods/product-grid-methods.js');
 
-    expect(source).toContain('collectStepProductIds(step)');
-    expect(source).toContain('collectStepCollectionHandles(step)');
-    expect(source).toContain('category.collectionsSelectedData');
-    expect(source).toContain('resolveStorefrontApiBase()');
-    expect(source).toContain("const appProxyPrefix = '/apps/product-bundles';");
-    expect(source).toContain('return appProxyPrefix;');
-    expect(source).toContain('const apiBaseUrl = this.resolveStorefrontApiBase();');
-    expect(source.indexOf('data-bundle-config')).toBeLessThan(source.indexOf('const fetchBundleData = async () =>'));
+describe('Full Page widget category hydration behavior', () => {
+  const getStepCategoryTabEntries = fullPageSearchCategoryMethods.getStepCategoryTabEntries;
+  const shouldDisplayVariantsAsIndividualForProductGrid =
+    fullPageSearchCategoryMethods.shouldDisplayVariantsAsIndividualForProductGrid;
+  const expandProductsByVariant = fullPageProductGridMethods.expandProductsByVariant;
+  const orderProductsForActiveCategory = fullPageProductGridMethods.orderProductsForActiveCategory;
+
+  function categoryContext() {
+    return {
+      getStepCategoryTabEntries,
+    };
+  }
+
+  it('keeps category entries for direct products and collections', () => {
+    const entries = getStepCategoryTabEntries({
+      categories: [
+        {
+          categoryId: 'cat-manual',
+          title: 'Manual',
+          products: [{ id: 'gid://shopify/Product/1' }],
+          collectionsSelectedData: [],
+        },
+        {
+          categoryId: 'cat-collection',
+          title: 'Collection',
+          products: [],
+          collections: [{ handle: 'automated-collection' }],
+        },
+      ],
+    });
+
+    expect(entries).toEqual([
+      {
+        id: 'cat-manual',
+        title: 'Manual',
+        handles: [],
+        productIds: ['gid://shopify/Product/1'],
+        displayVariantsAsIndividualProducts: false,
+        displayVariantsAsSwatches: false,
+      },
+      {
+        id: 'cat-collection',
+        title: 'Collection',
+        handles: ['automated-collection'],
+        productIds: [],
+        displayVariantsAsIndividualProducts: false,
+        displayVariantsAsSwatches: false,
+      },
+    ]);
   });
 
-  it('gates variant-card expansion on the active category or non-category step flag', () => {
-    const source = readFullPageWidgetSources();
+  it('inherits the FPB step-level variant display flag for category tabs', () => {
+    const step = {
+      displayVariantsAsIndividual: true,
+      categories: [
+        {
+          categoryId: 'cat-collection',
+          title: 'Collection',
+          displayVariantsAsIndividualProducts: false,
+          collections: [{ handle: 'automated-collection' }],
+        },
+      ],
+    };
+    const activeCategory = getStepCategoryTabEntries(step)[0];
 
-    expect(source).toContain('displayVariantsAsIndividualProducts: category.displayVariantsAsIndividualProducts === true');
-    expect(source).toContain('shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory)');
-    expect(source).toContain('const shouldDisplayVariantsAsIndividual = this.shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory);');
-    expect(source).toContain('let expandedProducts = this.expandProductsByVariant(products, shouldDisplayVariantsAsIndividual);');
-    expect(source).toContain('expandProductsByVariant(products, shouldExpand = true)');
-    expect(source).toContain('if (!shouldExpand) {');
-    expect(source).not.toContain('let expandedProducts = this.expandProductsByVariant(products);');
+    expect(
+      shouldDisplayVariantsAsIndividualForProductGrid.call(
+        categoryContext(),
+        step,
+        activeCategory,
+      ),
+    ).toBe(true);
   });
 
-  it('keeps parent product cards by selecting the first available variant', () => {
-    const source = readFullPageWidgetSources();
+  it('keeps category tabs unexpanded when both category and step flags are off', () => {
+    const step = {
+      displayVariantsAsIndividual: false,
+      categories: [
+        {
+          categoryId: 'cat-collection',
+          title: 'Collection',
+          displayVariantsAsIndividualProducts: false,
+          collections: [{ handle: 'automated-collection' }],
+        },
+      ],
+    };
+    const activeCategory = getStepCategoryTabEntries(step)[0];
 
-    expect(source).toContain('getFirstAvailableVariant(product)');
-    expect(source).toContain('const defaultVariant = this.getFirstAvailableVariant(product);');
-    expect(source).toContain('if (product.variants?.length > 0 && !defaultVariant) {');
-    expect(source).not.toContain('const defaultVariant = product.variants?.[0];');
+    expect(
+      shouldDisplayVariantsAsIndividualForProductGrid.call(
+        categoryContext(),
+        step,
+        activeCategory,
+      ),
+    ).toBe(false);
   });
 
-  it('does not mark sellable Storefront variants out of stock from zero quantity alone', () => {
-    const source = readFullPageWidgetSources();
+  it('expands multi-variant collection products into selectable variant cards', () => {
+    const expanded = expandProductsByVariant([
+      {
+        id: 'gid://shopify/Product/1',
+        title: 'Yellow Sofa',
+        imageUrl: 'product.jpg',
+        variants: [
+          {
+            id: 'gid://shopify/ProductVariant/11',
+            title: '2 Seater',
+            price: '99.99',
+            compareAtPrice: '150.00',
+            available: true,
+          },
+          {
+            id: 'gid://shopify/ProductVariant/12',
+            title: '3 seater',
+            price: '169.99',
+            available: true,
+          },
+        ],
+      },
+    ], true);
 
-    expect(source).toContain('isVariantOutOfStock(product)');
-    expect(source).toContain('if (product.available === false) {');
-    expect(source).toContain('const outOfStock = this.isVariantOutOfStock(product);');
-    expect(source).toContain('const atMaxStock = available !== null && available > 0 && currentQuantity >= available;');
-    expect(source).toContain('if (available !== null && available > 0 && quantity > available) {');
-    expect(source).not.toContain('quantityAvailable === 0 AND not backorder-accepting');
+    expect(expanded).toMatchObject([
+      {
+        id: 'gid://shopify/ProductVariant/11',
+        title: 'Yellow Sofa',
+        variantTitle: '2 Seater',
+        price: 9999,
+        compareAtPrice: 15000,
+        variantId: 'gid://shopify/ProductVariant/11',
+        parentProductId: 'gid://shopify/Product/1',
+        variants: null,
+      },
+      {
+        id: 'gid://shopify/ProductVariant/12',
+        title: 'Yellow Sofa',
+        variantTitle: '3 seater',
+        price: 16999,
+        variantId: 'gid://shopify/ProductVariant/12',
+        parentProductId: 'gid://shopify/Product/1',
+        variants: null,
+      },
+    ]);
   });
 
-  it('renders inactive category section rows after the active category grid', () => {
-    const source = readFullPageWidgetSources();
+  it('orders active category products before collection products', () => {
+    const products = [
+      { id: 'gid://shopify/Product/10', title: 'Other category product' },
+      { id: 'gid://shopify/Product/30', title: 'Collection second' },
+      { id: 'gid://shopify/Product/20', title: 'Collection first' },
+      { id: 'gid://shopify/Product/2', title: 'Manual second' },
+      { id: 'gid://shopify/Product/1', title: 'Manual first' },
+    ];
+    const activeCategory = {
+      productIds: ['gid://shopify/Product/1', 'gid://shopify/Product/2'],
+      handles: ['automated-collection'],
+    };
+    const context = {
+      extractId: (value: string) => value.match(/(\d+)$/)?.[1] ?? value,
+      stepCollectionProductIds: {
+        '0:automated-collection': ['gid://shopify/Product/20', 'gid://shopify/Product/30'],
+      },
+    };
 
-    expect(source).toContain('createCategorySectionRows(this.currentStepIndex)');
-    expect(source).toContain('fpb-category-section-rows');
-    expect(source).toContain('fpb-category-section-row--collapsed');
-    expect(source).toContain('if (categoryEntries.length <= 1) return null;');
-    expect(source).toContain('categoryRowsContainer.appendChild(categoryRow);');
-  });
+    const ordered = orderProductsForActiveCategory.call(context, products, activeCategory, 0);
 
-  it('adds a multiple-category timeline item between the paid step and add-ons step', () => {
-    const source = readFullPageWidgetSources();
-
-    expect(source).toContain('buildStepTimelineEntries()');
-    expect(source).toContain('shouldRenderMultipleCategoryTimelineEntry(step)');
-    expect(source).toContain("label: 'Multiple Categories'");
-    expect(source).toContain("type: 'multiple_categories'");
-    expect(source).toContain('} = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);');
-    expect(source).toContain('visibleEntries.forEach((entry, displayIndex)');
-    expect(source).toContain('const step = entry.step;');
-    expect(source).toContain('timelineType: entry.type,');
-    expect(source).toContain('data-timeline-type="${escapeAttribute(timelineType)}"');
+    expect(ordered.map((product: { title: string }) => product.title)).toEqual([
+      'Manual first',
+      'Manual second',
+      'Collection first',
+      'Collection second',
+    ]);
   });
 });

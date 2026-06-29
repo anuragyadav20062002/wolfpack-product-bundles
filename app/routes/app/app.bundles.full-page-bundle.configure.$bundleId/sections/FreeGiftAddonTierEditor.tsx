@@ -28,7 +28,7 @@ export function FpbAddonTierEditor({
       {(() => {
         const addonTiers: any[] = Array.isArray(addonDraft.addonTiers)
           ? (addonDraft.addonTiers as any[])
-          : [createDefaultAddonDraftTier()];
+          : [];
         const updateAddonTiers = (updated: any[]) => {
           updateAddonDraft({ addonTiers: updated });
         };
@@ -193,8 +193,8 @@ export function FpbAddonTierEditor({
                             strokeLinejoin="round"
                           />
                         </svg>
-                      )}
-                    </button>
+                          )}
+                        </button>
                   </div>
                   {isActiveTier && (
                     <div className={fullPageBundleStyles.addonsTierBody}>
@@ -306,15 +306,18 @@ export function FpbAddonTierEditor({
                                   ? {
                                       ...t,
                                       eligibilityValue:
-                                        Number(
-                                          (e.target as HTMLInputElement).value,
-                                        ) || 0,
+                                        Math.max(
+                                          1,
+                                          Number(
+                                            (e.target as HTMLInputElement).value,
+                                          ) || 1,
+                                        ),
                                     }
                                   : t,
                               );
                               updateAddonTiers(updated);
                             }}
-                            min={0}
+                            min={1}
                           />
                           <s-number-field
                             label="Discount on Add-ons"

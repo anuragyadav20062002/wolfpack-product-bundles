@@ -7,7 +7,6 @@ use crate::helpers::{
     is_free_gift_line,
     parse_addon_discount,
     parse_json_or_default,
-    truncate,
 };
 use crate::pricing::{
     calculate_buy_x_get_y_discount_percentage,
@@ -17,7 +16,6 @@ use crate::pricing::{
 };
 use crate::schema;
 use crate::types::{
-    CartLineDisplayProperties,
     CartLineMessagingSettings,
     ComponentParent,
     PricingMethod,
@@ -60,21 +58,6 @@ fn non_empty(value: &Option<String>) -> Option<String> {
         .map(|value| value.trim())
         .filter(|value| !value.is_empty())
         .map(|value| value.to_string())
-}
-
-fn display_properties_for_group(
-    lines: &[schema::run::input::cart::Lines],
-    line_indices: &[usize],
-) -> CartLineDisplayProperties {
-    line_indices
-        .iter()
-        .find_map(|&idx| {
-            lines[idx]
-                .bundle_display_properties()
-                .and_then(|attr| attr.value())
-                .and_then(|value| serde_json::from_str::<CartLineDisplayProperties>(value.as_str()).ok())
-        })
-        .unwrap_or_default()
 }
 
 /// Process all MERGE operations for one cart pass.
@@ -143,6 +126,7 @@ pub fn process_merge_operations(
     // Step 2: Build one MERGE operation per bundle group.
     // -------------------------------------------------------------------------
     for (_, line_indices) in &bundle_groups {
+        let mut bundle_addon_offer_id: Option<String> = None;
         // Find first line with component_parents metafield value.
         let component_parents_json: Option<String> =
             line_indices
@@ -190,11 +174,22 @@ pub fn process_merge_operations(
 
         for &idx in line_indices {
             let line = &lines[idx];
-            let line_total = decimal_to_f64(line.cost().total_amount().amount());
             let qty = *line.quantity() as i64;
             let unit_price = decimal_to_f64(line.cost().amount_per_quantity().amount());
+            let line_total = unit_price * (qty as f64);
             total_quantity += qty;
             let step_type = line.step_type().and_then(|a| a.value()).map(|s| s.as_str());
+            if bundle_addon_offer_id.is_none() {
+                if let Some(value) = line
+                    .addon_offer_id()
+                    .and_then(|a| a.value())
+                {
+                    let normalized = value.trim();
+                    if !normalized.is_empty() {
+                        bundle_addon_offer_id = Some(normalized.to_string());
+                    }
+                }
+            }
             if is_free_gift_line(step_type) {
                 free_gift_total += line_total;
             } else {
@@ -291,7 +286,7 @@ pub fn process_merge_operations(
             let is_free_gift = is_free_gift_line(step_type);
             let paid_bundle_cents =
                 (retail_cents as f64 * (1.0 - paid_discount_percentage / 100.0)).round() as i64;
-            let line_total = decimal_to_f64(line.cost().total_amount().amount());
+            let line_total = decimal_to_f64(line.cost().amount_per_quantity().amount()) * (qty as f64);
             let addon_discount = parse_addon_discount(step_type);
             let addon_discount_cents = if is_addon_line(step_type) {
                 (calculate_selected_addon_discount_amount(
@@ -326,8 +321,8 @@ pub fn process_merge_operations(
             total_retail_cents += retail_cents * qty;
             total_bundle_cents += line_bundle_cents_total;
             let title = match lines[idx].merchandise() {
-                schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
-                    truncate(v.product().title(), 25).to_string()
+                schema::run::input::cart::lines::Merchandise::ProductVariant(_) => {
+                    format!("Component {}", i + 1)
                 }
                 _ => format!("Component {}", i + 1),
             };
@@ -396,8 +391,14 @@ pub fn process_merge_operations(
                 value: format!("{:.2}", discount_percentage),
             },
         ];
+        if let Some(addon_offer_id) = bundle_addon_offer_id {
+            attributes.push(schema::AttributeOutput {
+                key: "_addon_offer_id".into(),
+                value: addon_offer_id,
+            });
+        }
 
-        let source_display_properties = display_properties_for_group(lines, &line_indices);
+        let source_display_properties = crate::types::CartLineDisplayProperties::default();
 
         attributes.push(schema::AttributeOutput {
             key: "_Items".into(),

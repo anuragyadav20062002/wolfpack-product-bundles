@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { AppLogger } from "../../../lib/logger";
+import { navigateBackOrFallback } from "../../../lib/navigation";
 import productPageBundleStyles from "../../../styles/routes/product-page-bundle-configure.module.css";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { pickPpbPreviewUrl } from "../../../lib/ppb-preview-url";
@@ -277,7 +278,7 @@ export function usePpbPreviewReadinessHandlers({
       void (base.shopify as any).saveBar?.leaveConfirmation?.();
       return;
     }
-    base.navigate("/app/dashboard");
+    navigateBackOrFallback(base.navigate, "/app/dashboard", { replaceFallback: true });
   }, [base]);
   const handleReadinessItemClick = useCallback(
     (key: string) => {

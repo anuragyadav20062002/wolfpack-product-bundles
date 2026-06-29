@@ -19,7 +19,7 @@ export function useConfigureAddonActionHandlers(
     (tierIndex: number, productIndex: number) => {
       const addonTiers = Array.isArray(flow.addonDraft.addonTiers)
         ? flow.addonDraft.addonTiers
-        : [createDefaultAddonDraftTier()];
+        : [];
       const updated = addonTiers.map((tier: any, index: number) => {
         if (index !== tierIndex) return tier;
         const selectedAddonProducts = Array.isArray(tier.selectedAddonProducts)
@@ -47,9 +47,9 @@ export function useConfigureAddonActionHandlers(
         flow.hidePolarisModal(flow.addonSelectedProductsModalRef);
         await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
       }
-      const addonTiers = Array.isArray(flow.addonDraft.addonTiers)
-        ? flow.addonDraft.addonTiers
-        : [createDefaultAddonDraftTier()];
+    const addonTiers = Array.isArray(flow.addonDraft.addonTiers)
+      ? flow.addonDraft.addonTiers
+      : [];
       const currentProducts = Array.isArray(
         addonTiers[tierIndex]?.selectedAddonProducts,
       )

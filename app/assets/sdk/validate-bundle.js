@@ -25,7 +25,10 @@ function validateStep(stepId, state, ConditionValidator) {
     return { valid: false, message: 'Selection requirements not met for this step.' };
   }
 
-  var condVal = step.conditionValue;
+  var condVal = Number(step.conditionValue);
+  if (!Number.isFinite(condVal) || condVal < 1) {
+    condVal = 1;
+  }
   var op = step.conditionOperator || 'equal_to';
   var opLabels = {
     'equal_to': 'exactly ' + condVal,

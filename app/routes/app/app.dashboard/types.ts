@@ -13,7 +13,10 @@ export interface BundleActionsButtonsProps {
   onClone: (bundleId: string) => void;
   onDelete: (bundleId: string) => void;
   onPreview: (bundle: any) => void;
+  activeActionMenuBundleId: string | null;
+  onActionMenuRequest: (bundleId: string) => void;
   isPreviewing?: boolean;
+  isEditing?: boolean;
   bundle: any;
   moreOpen: boolean;
   onMoreToggle: () => void;

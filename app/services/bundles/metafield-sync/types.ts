@@ -108,6 +108,7 @@ export interface BundleUiStep {
   conditionValue?: string;
   conditionOperator2?: string;
   conditionValue2?: string;
+  autoNextStepOnConditionMet?: boolean;
   /** If true, this step is a free gift / add-on step. */
   isFreeGift?: boolean;
   /** Legacy display name for the free gift. Superseded by addonLabel. */

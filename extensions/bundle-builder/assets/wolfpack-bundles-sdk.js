@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 3.0.51
- * Built   : 2026-06-25
+ * Version : 3.0.72
+ * Built   : 2026-06-29
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.51';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.72';
 (function (window) {
   'use strict';
 
@@ -121,7 +121,7 @@ const ConditionValidator = (function () {
     let total = 0;
     if (!selections) return total;
     for (const qty of Object.values(selections)) {
-      total += Number(qty) || 0;
+      total += _getSelectionQuantity(qty);
     }
     return total;
   }
@@ -145,6 +145,26 @@ const ConditionValidator = (function () {
     return ids;
   }
 
+  function _getSelectionQuantity(selection) {
+    if (selection && typeof selection === 'object') {
+      return Number(selection.quantity) || 0;
+    }
+    return Number(selection) || 0;
+  }
+
+  function _getSelectionAmount(selection) {
+    if (selection && typeof selection === 'object') {
+      return Number(selection.amount) || 0;
+    }
+    return Number(selection) || 0;
+  }
+
+  function _normalizeAmountRuleValue(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return numeric;
+    return numeric * 100;
+  }
+
   /**
    * Evaluate whether a single category's rules are satisfied by the current
    * step selections. Categories with no `conditions` are always satisfied.
@@ -159,17 +179,20 @@ const ConditionValidator = (function () {
 
     const productIds = _collectCategoryProductIds(category);
     const selections = stepSelections || {};
-    let categoryTotal = 0;
-    for (const pid of Object.keys(selections)) {
-      if (productIds.has(String(pid))) {
-        categoryTotal += Number(selections[pid]) || 0;
-      }
-    }
-
     for (const rule of rules) {
       const operator = _normalizeOperator(rule && (rule.operator || rule.condition));
-      const value = Number(rule && rule.value);
+      const ruleType = rule && (rule.conditionType || rule.type);
+      const isAmountRule = ruleType === 'amount';
+      const value = isAmountRule ? _normalizeAmountRuleValue(rule && rule.value) : Number(rule && rule.value);
       if (!Number.isFinite(value)) continue;
+      let categoryTotal = 0;
+      for (const pid of Object.keys(selections)) {
+        if (productIds.has(String(pid))) {
+          categoryTotal += isAmountRule
+            ? _getSelectionAmount(selections[pid])
+            : _getSelectionQuantity(selections[pid]);
+        }
+      }
       if (!_evaluateSatisfied(operator, value, categoryTotal)) return false;
     }
     return true;
@@ -211,7 +234,7 @@ const ConditionValidator = (function () {
     const selections = currentSelections || {};
     let total = 0;
     for (const qty of Object.values(selections)) {
-      total += qty || 0;
+      total += _getSelectionQuantity(qty);
     }
 
     // No explicit condition configured → only enforce minQuantity; no upper bound
@@ -309,6 +332,16 @@ const ConditionValidator = (function () {
     return map[operator] || String(required);
   }
 
+  function _formatStepLimitToast(limitText, required) {
+    const requiredQuantity = Number(required);
+    if (!Number.isFinite(requiredQuantity) || requiredQuantity <= 0) {
+      return 'This step is not configured correctly.';
+    }
+
+    const suffix = requiredQuantity === 1 ? '' : 's';
+    return `This step allows ${limitText} product${suffix} only.`;
+  }
+
   // ─── Public API ───────────────────────────────────────────────────────────
   return {
     OPERATORS,
@@ -319,6 +352,7 @@ const ConditionValidator = (function () {
     isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
+    _formatStepLimitToast,
   };
 }());
 
@@ -1380,7 +1414,11 @@ class TemplateManager {
     // Calculate discount-specific values
     let discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
     const dtoDiscountDisplay = this.getRuleDiscountDisplay(bundle, ruleToUse);
-    if (dtoDiscountDisplay?.valueToken && this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse)) {
+    if (
+      dtoDiscountDisplay?.valueToken &&
+      this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse) &&
+      this.canUseSavedDiscountDisplayValue(discountMethod, dtoDiscountDisplay.valueToken, ruleToUse)
+    ) {
       discountData = {
         ...discountData,
         discountText: dtoDiscountDisplay.text,
@@ -1631,6 +1669,36 @@ class TemplateManager {
     }
 
     return false;
+  }
+
+  static canUseSavedDiscountDisplayValue(discountMethod, valueToken, rule = null) {
+    if (valueToken == null) return false;
+    const token = String(valueToken).trim();
+    if (!token) return false;
+
+    const isFixedAmount =
+      discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF ||
+      (
+        discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y &&
+        (rule?.bxyDiscountType || rule?.discountType) === 'fixed_amount'
+      );
+
+    if (isFixedAmount && this.containsPercentageValue(token)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static containsPercentageValue(value) {
+    if (typeof value !== 'string') return false;
+    const percentIndex = value.indexOf('%');
+    if (percentIndex === -1) return false;
+
+    return value
+      .slice(0, percentIndex)
+      .split('')
+      .some(character => character >= '0' && character <= '9');
   }
 
   static getRuleDiscountDisplay(bundle, rule = null) {
@@ -2460,7 +2528,10 @@ function addItem(state, stepId, variantId, qty, ConditionValidator) {
   const currentSelections = state.selections[stepId] || {};
   const check = ConditionValidator.canUpdateQuantity(step, currentSelections, vid, (currentSelections[vid] || 0) + qty);
   if (!check.allowed) {
-    return { success: false, error: 'This step allows ' + check.limitText + ' product' + (step.conditionValue !== 1 ? 's' : '') + '.' };
+    const errorMessage = typeof ConditionValidator._formatStepLimitToast === 'function'
+      ? ConditionValidator._formatStepLimitToast(check.limitText, step.conditionValue)
+      : 'This step allows ' + check.limitText + ' product' + (step.conditionValue !== 1 ? 's' : '') + '.';
+    return { success: false, error: errorMessage };
   }
 
   if (!state.selections[stepId]) state.selections[stepId] = {};
@@ -2835,7 +2906,10 @@ function validateStep(stepId, state, ConditionValidator) {
     return { valid: false, message: 'Selection requirements not met for this step.' };
   }
 
-  var condVal = step.conditionValue;
+  var condVal = Number(step.conditionValue);
+  if (!Number.isFinite(condVal) || condVal < 1) {
+    condVal = 1;
+  }
   var op = step.conditionOperator || 'equal_to';
   var opLabels = {
     'equal_to': 'exactly ' + condVal,

@@ -1,4 +1,5 @@
 import { PLANS } from "../../constants/plans";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 export interface GrowPlanCardProps {
@@ -13,6 +14,11 @@ export function GrowPlanCard({
   onSelectPlan,
 }: GrowPlanCardProps) {
   const { t } = useTranslation();
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   return (
     <div style={{ position: "relative" }}>
@@ -88,9 +94,9 @@ export function GrowPlanCard({
           <div style={{ marginTop: "auto", paddingTop: "1.5rem" }}>
             <s-button
               variant="primary"
-              disabled={isCurrentPlan || undefined}
+              disabled={(isHydrated && isCurrentPlan) || undefined}
               loading={isUpgrading || undefined}
-              onClick={onSelectPlan}
+              onClick={isCurrentPlan ? undefined : onSelectPlan}
               inlineSize="fill"
             >
               {isCurrentPlan ? t("billing.cards.currentPlan") : t("billing.cards.upgradeToGrow")}

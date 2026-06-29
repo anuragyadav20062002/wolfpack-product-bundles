@@ -1,4 +1,5 @@
 import { PLANS } from "../../constants/plans";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 export interface FreePlanCardProps {
@@ -7,6 +8,11 @@ export interface FreePlanCardProps {
 
 export function FreePlanCard({ isCurrentPlan }: FreePlanCardProps) {
   const { t } = useTranslation();
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   return (
     <s-section>
@@ -43,7 +49,11 @@ export function FreePlanCard({ isCurrentPlan }: FreePlanCardProps) {
         </s-stack>
 
         <div style={{ marginTop: "auto", paddingTop: "1.5rem" }}>
-          <s-button variant={isCurrentPlan ? "secondary" : "primary"} disabled inlineSize="fill">
+          <s-button
+            variant={isCurrentPlan ? "secondary" : "primary"}
+            disabled={isHydrated || undefined}
+            inlineSize="fill"
+          >
               {isCurrentPlan ? t("billing.cards.currentPlan") : t("billing.cards.freePlan")}
           </s-button>
         </div>

@@ -10,27 +10,32 @@ import { SettingsRoute } from "./app.settings/SettingsRoute";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await requireAdminSession(request);
-  const settings = await prisma.designSettings.findUnique({
-    where: { shopId_bundleType: { shopId: session.shop, bundleType: "product_page" } },
-  });
-  const previewBundles = await prisma.bundle.findMany({
-    where: {
-      shopId: session.shop,
-      OR: [
-        { shopifyProductHandle: { not: null } },
-        { shopifyPageHandle: { not: null } },
-      ],
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 12,
-    select: {
-      id: true,
-      name: true,
-      bundleType: true,
-      shopifyProductHandle: true,
-      shopifyPageHandle: true,
-    },
-  });
+  const [settings, previewBundles] = await Promise.all([
+    prisma.designSettings.findUnique({
+      where: { shopId_bundleType: { shopId: session.shop, bundleType: "product_page" } },
+      select: {
+        generalSettings: true,
+      },
+    }),
+    prisma.bundle.findMany({
+      where: {
+        shopId: session.shop,
+        OR: [
+          { shopifyProductHandle: { not: null } },
+          { shopifyPageHandle: { not: null } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 12,
+      select: {
+        id: true,
+        name: true,
+        bundleType: true,
+        shopifyProductHandle: true,
+        shopifyPageHandle: true,
+      },
+    }),
+  ]);
   const generalSettings = settings?.generalSettings && typeof settings.generalSettings === "object"
     ? settings.generalSettings as Record<string, unknown>
     : {};

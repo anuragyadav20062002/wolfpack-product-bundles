@@ -1,20 +1,22 @@
-import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import { OptimisedImage } from "../../../components/OptimisedImage";
 import dashboardStyles from "./dashboard.module.css";
 
 type DashboardTopCardsProps = {
-  parthImageLoaded: boolean;
-  setParthImageLoaded: Dispatch<SetStateAction<boolean>>;
   handleDirectChat: () => void;
   handleAppEmbedCardClick: () => void;
+  loadAppEmbedImage: boolean;
 };
 
-export function DashboardTopCards({ parthImageLoaded, setParthImageLoaded, handleDirectChat, handleAppEmbedCardClick }: DashboardTopCardsProps) {
+export function DashboardTopCards({
+  handleDirectChat,
+  handleAppEmbedCardClick,
+  loadAppEmbedImage,
+}: DashboardTopCardsProps) {
   const { t } = useTranslation();
   return (
   <div className={dashboardStyles.topCardsGrid}>
-    <s-section padding="none">
+    <div className={dashboardStyles.topCardSection}>
       <div className={dashboardStyles.supportCard}>
         <div className={dashboardStyles.supportCardHero}>
           <p className={dashboardStyles.supportCardHeroTitle}>{t("dashboard.support.heroTitle")}</p>
@@ -22,20 +24,14 @@ export function DashboardTopCards({ parthImageLoaded, setParthImageLoaded, handl
         </div>
         <div className={dashboardStyles.supportCardBody}>
           <div className={dashboardStyles.supportAvatarWrap}>
-            {!parthImageLoaded && (
-              <div className={dashboardStyles.supportAvatarSkeleton}>
-                <s-spinner accessibilityLabel={t("dashboard.support.imageLoading")} />
-              </div>
-            )}
             <OptimisedImage
               src="/Parth.jpeg"
               alt={t("dashboard.support.imageAlt")}
-              className={`${dashboardStyles.supportAvatarImage} ${parthImageLoaded ? dashboardStyles.supportAvatarImageLoaded : ""}`}
+              className={dashboardStyles.supportAvatarImage}
               width={120}
               height={120}
               loading="eager"
               fetchPriority="high"
-              onLoad={() => setParthImageLoaded(true)}
             />
           </div>
           <div className={dashboardStyles.supportContent}>
@@ -54,23 +50,31 @@ export function DashboardTopCards({ parthImageLoaded, setParthImageLoaded, handl
           </div>
         </div>
       </div>
-    </s-section>
+    </div>
 
-    <button type="button" className={dashboardStyles.appEmbedCard} onClick={handleAppEmbedCardClick}>
+    <button
+      type="button"
+      className={dashboardStyles.appEmbedCard}
+      onClick={handleAppEmbedCardClick}
+    >
       <s-stack direction="block" gap="base">
         <div className={dashboardStyles.appEmbedCardHeader}>
           <s-heading>{t("dashboard.appEmbeds.headingMain")} <span className={dashboardStyles.appEmbedHeadingHint}>{t("dashboard.appEmbeds.headingHint")}</span></s-heading>
           <s-icon type="external" color="subdued" />
         </div>
-        <OptimisedImage
-          src="/appEmbed.png"
-          alt={t("dashboard.appEmbeds.headingMain")}
-          className={dashboardStyles.appEmbedImage}
-          width={420}
-          height={140}
-          loading="eager"
-          fetchPriority="high"
-        />
+        {loadAppEmbedImage ? (
+          <OptimisedImage
+            src="/appEmbed.png"
+            alt={t("dashboard.appEmbeds.headingMain")}
+            className={dashboardStyles.appEmbedImage}
+            width={420}
+            height={140}
+            loading="lazy"
+            fetchPriority="low"
+          />
+        ) : (
+          <div className={dashboardStyles.appEmbedImage} aria-hidden="true" />
+        )}
         <s-text color="subdued">{t("dashboard.appEmbeds.instruction")}</s-text>
       </s-stack>
     </button>

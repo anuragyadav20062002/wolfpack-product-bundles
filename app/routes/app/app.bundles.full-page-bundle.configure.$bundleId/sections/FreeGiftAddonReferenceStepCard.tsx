@@ -109,19 +109,13 @@ export function FpbAddonReferenceStepCard({
                 )}
               </div>
             </div>
-            <button
-              type="button"
-              className={fullPageBundleStyles.addonsReplaceButton}
-              onClick={() =>
-                setShowIconPickerForStep((prev: string | null) =>
-                  prev === "addon-direct" ? null : "addon-direct",
-                )
-              }
-            >
-              {showIconPickerForStep === "addon-direct"
-                ? "Close picker"
-                : "Replace"}
-            </button>
+          <button
+            type="button"
+            className={fullPageBundleStyles.addonsReplaceButton}
+            onClick={() => setShowIconPickerForStep("addon-direct")}
+          >
+            Replace
+          </button>
           </div>
           <div className={fullPageBundleStyles.addonsStepTextGroup}>
             <div className={fullPageBundleStyles.addonsStepNameGroup}>
@@ -154,11 +148,15 @@ export function FpbAddonReferenceStepCard({
         {showIconPickerForStep === "addon-direct" && (
           <div className={fullPageBundleStyles.addonsIconPickerRow}>
             <FilePicker
+              autoOpen
               value={addonDraft.stepImage ?? null}
+              maxUploadBytes={50 * 1024}
+              maxUploadErrorMessage="Please upload a file smaller than 50KB"
               onChange={(url: string | null) => {
                 updateAddonDraft({ stepImage: url });
                 setShowIconPickerForStep(null);
               }}
+              onClose={() => setShowIconPickerForStep(null)}
               label=""
             />
           </div>

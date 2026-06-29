@@ -1,16 +1,17 @@
 import { defer, json, type ActionFunctionArgs, type HeadersFunction, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
-import { loaderCache } from "../../../lib/loader-cache.server";
 import { ServerTiming } from "../../../lib/server-timing.server";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
-import { BillingService } from "../../../services/billing.server";
-import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
+import { fetchEmbedData } from "../../../lib/bundle-configure-loader.server";
+import { getSubscriptionInfoFromCache } from "../../../services/subscription-cache.server";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 import { handleCreatePreviewPage } from "../app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
 import { saveShopAdminLocale } from "../../../services/admin-locale.server";
 import { handleCloneBundle, handleDeleteBundle } from "./handlers";
 import { DashboardPage } from "./DashboardPage";
+import { getDashboardInitialImagePreloads } from "./dashboard-media-state";
+import { queueDashboardBackgroundTask } from "./dashboard-background-tasks.server";
 
 /**
  * Preload first-viewport dashboard images via real
@@ -18,43 +19,75 @@ import { DashboardPage } from "./DashboardPage";
  * The app embed card image is the measured embedded-app LCP candidate.
  */
 export const links: LinksFunction = () => [
-  {
+  ...getDashboardInitialImagePreloads().map((image) => ({
     rel: "preload",
     as: "image",
-    href: "/Parth.avif",
-    imageSrcSet: "/Parth.avif 120w",
-    imageSizes: "120px",
-    type: "image/avif",
+    href: image.href,
+    imageSrcSet: image.imageSrcSet,
+    imageSizes: image.imageSizes,
+    type: image.type,
     fetchpriority: "high",
-  } as ReturnType<LinksFunction>[number],
-  {
-    rel: "preload",
-    as: "image",
-    href: "/appEmbed.avif",
-    imageSrcSet: "/appEmbed.avif 420w",
-    imageSizes: "420px",
-    type: "image/avif",
-    fetchpriority: "high",
-  } as ReturnType<LinksFunction>[number],
+  } as ReturnType<LinksFunction>[number])),
 ];
 
-export const headers: HeadersFunction = () => ({
-  Link: [
-    "</appEmbed.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high",
-    "</Parth.avif>; rel=preload; as=image; type=image/avif; fetchpriority=high",
-  ].join(", "),
-});
+export const headers: HeadersFunction = () => {
+  const imagePreloads = getDashboardInitialImagePreloads();
+  if (imagePreloads.length === 0) return {};
+  return {
+    Link: imagePreloads
+      .map((image) => `<${image.href}>; rel=preload; as=image; type=${image.type}; fetchpriority=high`)
+      .join(", "),
+  };
+};
+
+const SHOP_EMBED_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function buildThemeEditorUrl(shop: string, themeGid: string, apiKey: string): string {
+  const themeNumericId = themeGid.split("/").pop();
+  return `https://${shop}/admin/themes/${themeNumericId}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-app-embed`;
+}
+
+function queueProductHandleBackfill(
+  admin: any,
+  shopifyProductIds: string[],
+  bundlesNeedingBackfill: Array<{ id: string; shopifyProductId: string | null; shopifyProductHandle: string | null; }>,
+) {
+  if (!shopifyProductIds.length) return;
+  void (async () => {
+    try {
+      const GET_PRODUCTS = `query GetProductHandles($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id handle } } }`;
+      const response = await admin.graphql(GET_PRODUCTS, { variables: { ids: shopifyProductIds } });
+      const data = await response.json();
+      if (!data?.data?.nodes) return;
+
+      const updates: Promise<unknown>[] = [];
+      for (const node of data.data.nodes) {
+        if (!node?.id || !node?.handle) continue;
+        const bundleToUpdate = bundlesNeedingBackfill.find(b => b.shopifyProductId === node.id);
+        if (!bundleToUpdate) continue;
+        updates.push(
+          db.bundle.update({
+            where: { id: bundleToUpdate.id },
+            data: { shopifyProductHandle: node.handle },
+          }),
+        );
+      }
+      if (updates.length > 0) await Promise.all(updates);
+    } catch (error) {
+      AppLogger.error("Failed to backfill product handles", { component: "app.dashboard", operation: "backfill-product-handles" }, error);
+    }
+  })();
+}
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Issue: admin-lcp-phase4-loaders-1.
   // Was: sequential awaits for bundles -> embed-check -> billing -> proxy-health -> shop-graphql.
-  // Now: bundles first (required for the rest), then Promise.all the four independent
-  // calls. embed-check + billing + shop-graphql additionally cached via loaderCache so
-  // back-to-back admin navigations re-use the same result within 30 s.
+  // Now: bundles first (required for the rest), then async work for optional metadata
+  // backfill. billing + proxy-health are non-blocking and deferred where possible.
   const timing = new ServerTiming();
   const { session, admin } = await timing.track("auth", () => requireAdminSession(request));
 
-  const bundles = await timing.track("db.bundles", () => db.bundle.findMany({
+  const bundlesPromise = timing.track("db.bundles", () => db.bundle.findMany({
     where: {
       shopId: session.shop,
       status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT, BundleStatus.UNLISTED] }
@@ -67,33 +100,26 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     orderBy: { createdAt: "desc" },
   }));
 
+  const shopRecordPromise = timing.track("db.shop", () => db.shop.findUnique({
+    where: { shopDomain: session.shop },
+    select: {
+      appEmbedEnabled: true,
+      appEmbedCheckedAt: true,
+      appEmbedThemeId: true,
+    },
+  }));
+
+  const [bundles, shopRecord] = await Promise.all([bundlesPromise, shopRecordPromise]);
+
   const bundlesNeedingBackfill = bundles.filter(
     b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId && !b.shopifyProductHandle
   );
 
   if (bundlesNeedingBackfill.length > 0) {
-    try {
-      const productIds = bundlesNeedingBackfill.map(b => b.shopifyProductId).filter(Boolean);
-      const GET_PRODUCTS = `query GetProductHandles($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id handle } } }`;
-      const response = await timing.track("graphql.product-handles", () => admin.graphql(GET_PRODUCTS, { variables: { ids: productIds } }));
-      const data = await response.json();
-      if (data.data?.nodes) {
-        // Parallelise the per-bundle DB updates instead of awaiting each in series.
-        const updates: Promise<unknown>[] = [];
-        for (const node of data.data.nodes) {
-          if (node?.id && node?.handle) {
-            const bundleToUpdate = bundlesNeedingBackfill.find(b => b.shopifyProductId === node.id);
-            if (bundleToUpdate) {
-              bundleToUpdate.shopifyProductHandle = node.handle;
-              updates.push(db.bundle.update({ where: { id: bundleToUpdate.id }, data: { shopifyProductHandle: node.handle } }));
-            }
-          }
-        }
-        if (updates.length > 0) await timing.track("db.backfill-updates", () => Promise.all(updates));
-      }
-    } catch (error) {
-      AppLogger.error("Failed to backfill product handles", { component: "app.dashboard", operation: "backfill-product-handles" }, error);
-    }
+    const productIds = bundlesNeedingBackfill
+      .map((bundle) => bundle.shopifyProductId)
+      .filter(Boolean) as string[];
+    queueProductHandleBackfill(admin, productIds, bundlesNeedingBackfill);
   }
 
   const bundlesWithPreview = bundles.map(bundle => ({
@@ -102,26 +128,37 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }));
 
   const apiKey = process.env.SHOPIFY_API_KEY || "63077bb0483a6ce08a2d6139b14d170b";
-  const SHORT_TTL_MS = 30_000;
 
-  // Issue: admin-lcp-phase6-defer-skeletons-1.
-  // embed-check stays eager — its outputs (`themeEditorUrl`, `appEmbedEnabled`)
-  // are consumed inside `useCallback` click handlers that must be wired at
-  // first render. Cached for ~30 s so its actual cost is usually <30 ms.
+  const appEmbedCacheFresh = Boolean(
+    shopRecord?.appEmbedCheckedAt &&
+    shopRecord?.appEmbedEnabled !== null &&
+    Date.now() - shopRecord.appEmbedCheckedAt.getTime() < SHOP_EMBED_CACHE_TTL_MS,
+  );
+
+  const cachedThemeEditorUrl = shopRecord?.appEmbedThemeId
+    ? buildThemeEditorUrl(session.shop, shopRecord.appEmbedThemeId, apiKey)
+    : null;
+
+  queueDashboardBackgroundTask(async () => {
+    if (appEmbedCacheFresh) return;
+    try {
+      await fetchEmbedData(admin, session.shop, apiKey);
+    } catch (error) {
+      AppLogger.error("Failed to refresh app embed cache", { component: "app.dashboard", operation: "refresh-app-embed" }, error);
+    }
+  });
+
   // billing + proxy-health are kicked off concurrently here and surfaced via
   // a deferred `banners` promise so the bundles table can paint without
   // blocking on the 3-second proxy-health abort timeout.
-  const billingPromise = loaderCache.memo(
-    `billing:${session.shop}`,
-    async () => {
-      try { return await BillingService.getSubscriptionInfo(session.shop); }
-      catch (error) {
-        AppLogger.error("Failed to fetch subscription info", { component: "app.dashboard", operation: "get-subscription-info" }, error);
-        return null;
-      }
-    },
-    SHORT_TTL_MS,
-  );
+  const billingPromise = (async () => {
+    try {
+      return await getSubscriptionInfoFromCache(session.shop);
+    } catch (error) {
+      AppLogger.error("Failed to fetch subscription info", { component: "app.dashboard", operation: "get-subscription-info" }, error);
+      return null;
+    }
+  })();
   const proxyHealthPromise = (async () => {
     try {
       const controller = new AbortController();
@@ -139,12 +176,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return true;
   })();
 
-  const embedCheck = await timing.track("embed-check", () => loaderCache.memo(
-    `embed-check:${session.shop}`,
-    () => checkAppEmbedEnabled(admin, session.shop, { blockHandles: ["bundle-app-embed"] }),
-    SHORT_TTL_MS,
-  ));
-
   const banners = (async () => {
     const [subscriptionInfo, proxyHealthy] = await Promise.all([billingPromise, proxyHealthPromise]);
     return {
@@ -157,15 +188,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       proxyHealthy,
     };
   })();
-
-  const themeEditorUrl = embedCheck.themeId
-    ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-app-embed`
-    : null;
-  const appEmbedEnabled = embedCheck.enabled;
+  const appEmbedEnabled = shopRecord?.appEmbedEnabled ?? false;
+  const themeEditorUrl = cachedThemeEditorUrl;
 
   const appUrl = process.env.SHOPIFY_APP_URL;
   if (appUrl) {
-    void (async () => {
+    queueDashboardBackgroundTask(async () => {
       try {
         const existingPixelRes = await admin.graphql(`query { webPixel { id settings } }`);
         const existingPixelData = await existingPixelRes.json();
@@ -188,7 +216,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           }
         }
       } catch (_err) { /* Non-critical */ }
-    })();
+    });
   }
 
   return defer({

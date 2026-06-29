@@ -66,13 +66,16 @@ describe("admin web vitals diagnostics", () => {
     const callback = onReport.mock.calls[0][0];
     callback({ metrics: [{ name: "LCP", id: "lcp-1", value: 1234 }] });
 
-    expect(logger).toHaveBeenCalledWith("Admin Web Vitals", {
+    expect(logger).toHaveBeenCalledWith("Admin Web Vitals", expect.objectContaining({
       country: undefined,
       element: "img#support-avatar[src=\"/Parth.jpeg\"]",
+      candidate: "img#support-avatar[src=\"/Parth.jpeg\"]",
+      candidateType: "media",
       id: "lcp-1",
       name: "LCP",
       value: 1234,
-    });
+      routeLoadId: expect.any(String),
+    }));
     cleanup();
     expect(disconnect).toHaveBeenCalled();
   });
@@ -123,20 +126,20 @@ describe("admin web vitals diagnostics", () => {
     callback({ metrics: [{ name: "LCP", id: "lcp-2", value: 2700 }] });
 
     expect(win.localStorage.setItem).toHaveBeenCalled();
-    expect(logger).toHaveBeenCalledWith("Admin Web Vitals p75", {
+    expect(logger).toHaveBeenCalledWith("Admin Web Vitals p75", expect.objectContaining({
       p75: 2100,
       route: "/app/dashboard",
       sampleCount: 1,
       targetPass: true,
       threshold: 2500,
-    });
-    expect(logger).toHaveBeenCalledWith("Admin Web Vitals p75", {
+    }));
+    expect(logger).toHaveBeenCalledWith("Admin Web Vitals p75", expect.objectContaining({
       p75: 2700,
       route: "/app/dashboard",
       sampleCount: 2,
       targetPass: false,
       threshold: 2500,
-    });
+    }));
     expect((win as any).__wpbAdminWebVitals.getLcpP75Summary()).toEqual({
       "/app/dashboard": {
         p75: 2700,
@@ -166,6 +169,26 @@ describe("admin web vitals diagnostics", () => {
     callback({ metrics: [{ name: "LCP", id: "lcp-1", value: 2100 }] });
 
     expect(setItem).not.toHaveBeenCalled();
+  });
+
+  it("does not install a parent-frame debug bridge in committed runtime code", () => {
+    const win = {
+      addEventListener: jest.fn(),
+      location: {
+        pathname: "/app/billing",
+        search: "?embedded=1&wpbWebVitalsDebug=1",
+      },
+      localStorage: {
+        getItem: jest.fn(() => null),
+      },
+      shopify: {
+        webVitals: { onReport: jest.fn() },
+      },
+    };
+
+    installAdminWebVitalsDiagnostics({ windowLike: win as any });
+
+    expect(win.addEventListener).not.toHaveBeenCalledWith("message", expect.any(Function));
   });
 
   it("logs browser LCP candidates from the iframe when debug is enabled by URL", () => {
@@ -199,6 +222,7 @@ describe("admin web vitals diagnostics", () => {
       getEntries: () => [{
         element,
         entryType: "largest-contentful-paint",
+        startTime: 1090,
         renderTime: 1120,
         loadTime: 1090,
         size: 14400,
@@ -206,12 +230,14 @@ describe("admin web vitals diagnostics", () => {
     } as unknown as PerformanceObserverEntryList, {} as PerformanceObserver);
 
     expect(observe).toHaveBeenCalledWith({ type: "largest-contentful-paint", buffered: true });
-    expect(logger).toHaveBeenCalledWith("Admin Browser LCP Candidate", {
+    expect(logger).toHaveBeenCalledWith("Admin Browser LCP Candidate", expect.objectContaining({
       element: "img[src=\"/Parth.avif\"]",
+      candidateType: "media",
       loadTime: 1090,
       renderTime: 1120,
       size: 14400,
-    });
+      blockingTime: 30,
+    }));
   });
 
   it("describes an LCP element with stable tag, id, class, and src details", () => {
