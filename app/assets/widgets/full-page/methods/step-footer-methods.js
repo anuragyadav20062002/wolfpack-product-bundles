@@ -18,8 +18,8 @@ import { renderSelectedProductRow } from '../../shared/components/selected-produ
 import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
 import { renderStepTimelineEntry } from '../../shared/components/step-timeline.js';
 import {
-  buildCartLineDisplayProperties,
-  buildCartLineSourceProperties,
+  buildCartLineDisplayProperties as buildSharedCartLineDisplayProperties,
+  buildCartLineSourceProperties as buildSharedCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
 
 
@@ -41,7 +41,7 @@ export const fullPageStepFooterMethods = {
     const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
     const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
 
-    const sourceProperties = buildSharedCartLineSourceProperties({
+    return buildSharedCartLineSourceProperties({
       selectedLines,
       retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
       discountAmount: discountAmount > 0
@@ -49,9 +49,6 @@ export const fullPageStepFooterMethods = {
         : '',
       discountPercentage,
     });
-    const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
-
-    return this.buildCartLineDisplayProperties(displayProperties);
   },
 
 buildCartLineDisplayProperties(displayProperties) {
@@ -115,6 +112,7 @@ async addBundleToCart(clickedButton = null) {
           const addonDiscount = this.getAddonLineDiscount(step);
           if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {
             hasSelectedAddonLine = true;
+            properties.Box = '1';
             properties._addon_product = 'true';
             properties._addon_offer_id = baseOfferId;
             properties._boxProduct = 'addonProduct';

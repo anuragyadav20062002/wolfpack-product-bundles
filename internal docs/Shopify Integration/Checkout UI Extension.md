@@ -1,7 +1,7 @@
 ---
 title: Checkout UI Extension
 type: shopify-integration
-audited: 2026-04-16
+audited: 2026-06-29
 sources: extensions/bundle-checkout-ui/, CLAUDE.md memory
 ---
 
@@ -9,7 +9,10 @@ sources: extensions/bundle-checkout-ui/, CLAUDE.md memory
 
 ## Overview
 
-Preact-based extension that renders per-line-item bundle details in checkout and thank-you pages.
+Preact-based extension registered on checkout and thank-you cart-line targets.
+For EB-style FPB parity, the extension intentionally renders nothing: Shopify
+native line properties and native discount allocations own the visible checkout
+display.
 
 ## Targets
 
@@ -30,3 +33,9 @@ Note: Order status page uses `customer-account` extensions (separate app type), 
 ## Key Gotcha
 
 The `export` field behaviour differs between JS function extensions (which use named exports) and Preact UI extensions (which require default export). Don't confuse the two when editing extension configs.
+
+2026-06-29 parity note: do not reintroduce the custom `Bundle Savings` /
+`Actual Price` / `Bundle Price` panel for FPB Standard. Live EB checkout proof
+shows parent/add-on details rendered by native checkout line properties and
+discount rows. The extension target may stay registered, but checkout parity
+metadata belongs in storefront cart properties and Cart Transform output.

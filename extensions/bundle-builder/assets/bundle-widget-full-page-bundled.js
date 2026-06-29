@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.75
+ * Version : 3.0.76
  * Built   : 2026-06-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.75';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.76';
 (function() {
   'use strict';
 
@@ -8950,7 +8950,7 @@ const fullPageStepFooterMethods = {
     const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
     const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
 
-    const sourceProperties = buildSharedCartLineSourceProperties({
+    return buildSharedCartLineSourceProperties({
       selectedLines,
       retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
       discountAmount: discountAmount > 0
@@ -8958,9 +8958,6 @@ const fullPageStepFooterMethods = {
         : '',
       discountPercentage,
     });
-    const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
-
-    return this.buildCartLineDisplayProperties(displayProperties);
   },
 
 buildCartLineDisplayProperties(displayProperties) {
@@ -9015,6 +9012,7 @@ async addBundleToCart(clickedButton = null) {
           const addonDiscount = this.getAddonLineDiscount(step);
           if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {
             hasSelectedAddonLine = true;
+            properties.Box = '1';
             properties._addon_product = 'true';
             properties._addon_offer_id = baseOfferId;
             properties._boxProduct = 'addonProduct';
