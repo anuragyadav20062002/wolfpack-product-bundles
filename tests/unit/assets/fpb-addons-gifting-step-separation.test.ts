@@ -1,7 +1,7 @@
 /**
  * Unit Tests: FPB add-ons / gifting step separation
  *
- * EB exposes two separate controls:
+ * The reference bundle exposes two separate controls:
  * - Add-Ons and Gifting Step creates the storefront step/tab.
  * - Add-Ons with Bundles attaches tiered add-on products/discounts to that step.
  */
@@ -278,6 +278,50 @@ describe("FPB add-ons / gifting step separation", () => {
     const message = renderAddonEligibilityMessage.call(ctx, step, state);
 
     expect(message).toBe("Tier 2 gives 100% off");
+  });
+
+  it("derives default add-on tier messages when saved templates are empty", () => {
+    (global as any).window = {
+      Shopify: { currency: { active: "USD", format: "${{amount}}" } },
+      shopMoneyFormat: "${{amount}}",
+    };
+    const step = {
+      isFreeGift: true,
+      addonMessaging: {
+        isEnabled: false,
+        tier1: {
+          ineligibleState: "",
+          eligibleState: "",
+        },
+      },
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 2 },
+          discount: { type: "PERCENTAGE", value: 10 },
+          selectedAddonProducts: [makeProduct()],
+        },
+      ],
+    };
+    const baseCtx = {
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+      selectedBundle: { steps: [{ id: "paid" }, step] },
+    };
+
+    const ineligibleState = getAddonEligibilityState.call(
+      { ...baseCtx, selectedProducts: [{ paidVariant: 1 }] },
+      step,
+    );
+    expect(renderAddonEligibilityMessage.call(baseCtx, step, ineligibleState)).toBe(
+      "Add 1 more product(s) to claim 10% off on Add ons",
+    );
+
+    const eligibleState = getAddonEligibilityState.call(
+      { ...baseCtx, selectedProducts: [{ paidVariant: 2 }] },
+      step,
+    );
+    expect(renderAddonEligibilityMessage.call(baseCtx, step, eligibleState)).toBe(
+      "Congrats you are eligible for 10% off on Add ons",
+    );
   });
 
   it("does not return an add-on line discount before the active tier is eligible", () => {

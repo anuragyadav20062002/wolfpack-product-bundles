@@ -801,7 +801,10 @@ body:has([data-fpb-design-preset]) {
     background: #000;
     color: #fff;
     font-family: Assistant, sans-serif;
+    font-size: 1rem;
     font-weight: 700;
+    line-height: 1.8;
+    letter-spacing: 0.0375rem;
     box-shadow: none;
   }
 
@@ -2467,50 +2470,156 @@ body:has([data-fpb-design-preset]) {
   display: none;
 }
 
-.layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-addon-title {
-  grid-row: 2;
-  grid-column: 1;
-  align-self: start;
-  justify-self: center;
-  margin: 0;
-  padding: 0;
-  color: #000;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 22px;
-  text-align: center;
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .full-page-side-panel.full-page-side-panel--has-addon-summary,
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .full-page-side-panel.full-page-side-panel--inline-slots.full-page-side-panel--has-addon-summary {
+  grid-template-rows: 3.4375rem minmax(0, 1fr) auto 4.40625rem;
 }
 
-.layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-addon-message {
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .full-page-side-panel--has-addon-summary
+  .side-panel-item-count {
   grid-row: 2;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .full-page-side-panel--has-addon-summary
+  .side-panel-products {
+  grid-row: 2;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-addon-summary {
+  grid-row: 3;
   grid-column: 1;
-  align-self: end;
-  justify-self: stretch;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  margin: 0;
+  align-self: start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 0.625rem;
+  margin: 0.625rem 0 0;
   padding: 0;
   background: transparent;
   border: 0;
+  border-radius: 0;
   color: #000;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 20px;
-  text-align: center;
+  font-family: Assistant, sans-serif;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-addon-title {
+  margin: 0;
+  padding: 0;
+  color: #000;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.8;
+  text-align: start;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-addon-message {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0.125rem solid #d9d9d9;
+  border-radius: 0.5rem;
+  color: #000;
+  overflow: hidden;
+  min-height: 5.149375rem;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .side-panel-addon-tier-message-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1.671875rem;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.625rem;
+  min-height: 3.149375rem;
 }
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
   .side-panel-addon-message
   .side-panel-free-gift-icon {
-  display: none;
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: 1.671875rem;
+  height: 1.5625rem;
+  overflow: visible;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .side-panel-addon-message
+  .side-panel-free-gift-icon::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0.125rem;
+  width: 1.25rem;
+  height: 1rem;
+  border-radius: 0.1875rem;
+  background: #4a4a4a;
+  transform: translateX(-50%);
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .side-panel-addon-message
+  .side-panel-free-gift-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0.0625rem;
+  width: 0.8125rem;
+  height: 0.75rem;
+  border: 0.1875rem solid #4a4a4a;
+  border-bottom: 0;
+  border-radius: 0.8125rem 0.8125rem 0 0;
+  transform: translateX(-50%);
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .side-panel-addon-message--eligible
+  .side-panel-free-gift-icon::before {
+  top: 50%;
+  bottom: auto;
+  width: 2rem;
+  height: 2rem;
+  border: 0.1875rem solid #55bd47;
+  border-radius: 50%;
+  background: transparent;
+  transform: translate(-50%, -50%);
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .side-panel-addon-message--eligible
+  .side-panel-free-gift-icon::after {
+  top: 0.45rem;
+  left: 0.5rem;
+  width: 0.75rem;
+  height: 0.375rem;
+  border: 0;
+  border-left: 0.1875rem solid #55bd47;
+  border-bottom: 0.1875rem solid #55bd47;
+  border-radius: 0;
+  transform: rotate(-45deg);
 }
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
   .side-panel-addon-message
   .side-panel-free-gift-text {
   display: block;
+  min-width: 0;
+  color: #000;
+  font-family: Assistant, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.8;
+  text-align: start;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .side-panel-addon-tier-bottom-bar {
+  height: 0.5rem;
 }
 
 /* paged timeline */
