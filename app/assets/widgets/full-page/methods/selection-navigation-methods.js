@@ -382,6 +382,7 @@ validateStep(stepIndex) {
       translated[productId] = {
         quantity: current.quantity + quantity,
         amount: current.amount + ((Number(product?.price) || 0) * quantity),
+        weight: (current.weight || 0) + ((Number(product?.weight) || 0) * quantity),
       };
     }
     return ConditionValidator.isStepConditionSatisfied(step, translated);

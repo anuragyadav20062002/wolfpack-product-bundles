@@ -14,6 +14,7 @@ Validate that storefront component lines group for Cart Transform using EB `_eas
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
 | 1 | Two component lines share EB OfferId base | `MIX-894502_K1K_1`, `MIX-894502_K1K_2` | One merge operation | EB base key is `{offerId}_{sessionKey}` |
+| 2 | Paid add-on line shares FPB OfferId base | Paid component lines plus `_bundle_step_type=addon:PERCENTAGE:10` add-on line | Paid lines merge into the parent bundle; paid add-on remains a separate discounted line update | EB P09 cart proof keeps add-on as a separate line |
 
 ### StorefrontWidgetSource
 | # | Scenario | Input | Expected Output | Notes |

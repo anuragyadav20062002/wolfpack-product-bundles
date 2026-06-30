@@ -18,18 +18,32 @@ import { renderSelectedProductRow } from '../../shared/components/selected-produ
 import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
 import { renderStepTimelineEntry } from '../../shared/components/step-timeline.js';
 import {
-  buildCartLineDisplayProperties,
-  buildCartLineSourceProperties,
+  buildCartLineDisplayProperties as buildSharedCartLineDisplayProperties,
+  buildCartLineSourceProperties as buildSharedCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
 
 
 export const fullPageStepFooterMethods = {
   buildCartLineSourceProperties(selectedLines) {
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
+    const parentSelectedLines = selectedLines.filter((line) => {
+      const step = line?.step;
+      return !(step?.isFreeGift === true && step?.addonDisplayFree !== true);
+    });
+    const totalPrice = parentSelectedLines.reduce((sum, line) => {
+      const quantity = Number(line?.quantity || 0);
+      const price = Number(line?.product?.price || 0);
+      return sum + (price * quantity);
+    }, 0);
+    const totalQuantity = parentSelectedLines.reduce(
+      (sum, line) => sum + Number(line?.quantity || 0),
+      0
     );
+    const unitPrices = [];
+    parentSelectedLines.forEach((line) => {
+      const quantity = Number(line?.quantity || 0);
+      const price = Number(line?.product?.price || 0);
+      for (let i = 0; i < quantity; i += 1) unitPrices.push(price);
+    });
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
@@ -37,21 +51,18 @@ export const fullPageStepFooterMethods = {
       unitPrices
     );
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-    const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
-    const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
+    const discountAmount = Math.max(0, Number(discountInfo.discountAmount || 0));
+    const discountPercentage = Number(discountInfo.discountPercentage || 0)
+      || (totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0);
 
-    const sourceProperties = buildSharedCartLineSourceProperties({
-      selectedLines,
+    return buildSharedCartLineSourceProperties({
+      selectedLines: parentSelectedLines,
       retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
       discountAmount: discountAmount > 0
         ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
         : '',
       discountPercentage,
     });
-    const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
-
-    return this.buildCartLineDisplayProperties(displayProperties);
   },
 
 buildCartLineDisplayProperties(displayProperties) {
@@ -115,6 +126,7 @@ async addBundleToCart(clickedButton = null) {
           const addonDiscount = this.getAddonLineDiscount(step);
           if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {
             hasSelectedAddonLine = true;
+            properties.Box = '1';
             properties._addon_product = 'true';
             properties._addon_offer_id = baseOfferId;
             properties._boxProduct = 'addonProduct';
@@ -142,7 +154,7 @@ async addBundleToCart(clickedButton = null) {
           }
 
           items.push(cartItem);
-          selectedLines.push({ product, quantity });
+          selectedLines.push({ product, quantity, step });
         }
       });
     });

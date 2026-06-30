@@ -70,38 +70,6 @@ pub fn rounded_percentage(discount_amount: f64, original_total: f64) -> f64 {
     }
 }
 
-pub fn calculate_selected_addon_discount_amount(
-    line_total: f64,
-    discount_type: Option<&str>,
-    discount_value: Option<&str>,
-) -> f64 {
-    if line_total <= 0.0 {
-        return 0.0;
-    }
-
-    let Some(discount_type) = discount_type else {
-        return 0.0;
-    };
-    let Some(discount_value) = discount_value else {
-        return 0.0;
-    };
-
-    let normalized_type = discount_type.trim().to_ascii_uppercase();
-    if normalized_type != "PERCENTAGE" {
-        return 0.0;
-    }
-
-    let pct = discount_value
-        .trim()
-        .parse::<f64>()
-        .ok()
-        .filter(|value| value.is_finite())
-        .unwrap_or(0.0)
-        .clamp(0.0, 100.0);
-
-    line_total * pct / 100.0
-}
-
 pub fn calculate_buy_x_get_y_discount_percentage(
     price_adjustment: &PriceAdjustmentConfig,
     paid_unit_prices: &[f64],
@@ -341,16 +309,6 @@ mod tests {
         };
         let pct = calculate_discount_percentage(&cfg, 20.0, 20.0, 2, 2, 1.0);
         assert_eq!(pct, 0.0);
-    }
-
-    #[test]
-    fn selected_addon_percentage_discount_amount() {
-        let amount = calculate_selected_addon_discount_amount(
-            60.0,
-            Some("PERCENTAGE"),
-            Some("10"),
-        );
-        assert!((amount - 6.0).abs() < 0.001);
     }
 
     /// fixed_amount_off: $10 off (1000 cents) from $50 total, rate=1.0

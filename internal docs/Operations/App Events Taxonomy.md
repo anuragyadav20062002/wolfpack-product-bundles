@@ -184,6 +184,8 @@ Most storefront runtime events are customer-side and can be high volume. They sh
 | `cart_transform_heal_failed` | App Events + internal | Repair fails. | `error_code`, `failed_stage` |
 | `cart_transform_function_error` | App Events + internal | Function execution/logging path surfaces an error. | `error_code`, `bundle_type` |
 | `cart_transform_merge_skipped` | Internal, sampled App Events only | Function intentionally skips a merge. | High volume; use carefully. |
+| `addon_discount_function_enabled` | App Events + internal | Add-on Discount Function automatic app discount becomes active for a shop. | `discount_id`, `function_id`, `already_exists` |
+| `addon_discount_function_failed` | App Events + internal | Add-on Discount Function setup fails. | `error_code`, `error_message_safe` |
 | `checkout_extension_rendered` | Internal, sampled App Events only | Checkout extension renders. | High volume; sampled App Events only. |
 | `checkout_extension_render_failed` | App Events + internal | Checkout extension fails to render or initialize. | `error_code`, `extension_target` |
 

@@ -1,113 +1,122 @@
-/**
- * Bundle Checkout UI Extension - Flex Bundles Style
- *
- * Displays aggregate bundle savings on cart line items in checkout.
- *
- * Targets (static - auto-render on each cart line):
- * - purchase.checkout.cart-line-item.render-after
- * - purchase.thank-you.cart-line-item.render-after
- *
- * Reads attributes set by Cart Transform:
- * - _is_bundle_parent: "true" (bundle parent item)
- * - _bundle_total_retail_cents: Total retail price in cents
- * - _bundle_total_price_cents: Total bundle price in cents
- * - _bundle_total_savings_cents: Total savings in cents
- */
-
 import type {FunctionComponent} from 'preact';
 
+type CheckoutAttribute = {
+  key: string;
+  value: string;
+};
+
+type CheckoutMoney = {
+  amount?: number | string;
+  currencyCode?: string;
+};
+
+type CheckoutDiscountAllocation = {
+  discountedAmount?: CheckoutMoney;
+};
+
+type CheckoutLine = {
+  attributes?: CheckoutAttribute[];
+  discountAllocations?: CheckoutDiscountAllocation[];
+};
+
+const BUNDLE_TOTAL_SAVINGS_ATTRIBUTE = '_bundle_total_savings_cents';
+
+function readSignalValue<T>(signal: {value?: T} | T | undefined, fallback: T): T {
+  if (!signal || typeof signal !== 'object' || !('value' in signal)) {
+    return (signal as T) ?? fallback;
+  }
+
+  return signal.value ?? fallback;
+}
+
+function sumDiscountAllocations(allocations: CheckoutDiscountAllocation[] = []) {
+  return allocations.reduce((sum, allocation) => {
+    const amount = Number(allocation.discountedAmount?.amount);
+    return Number.isFinite(amount) && amount > 0 ? sum + amount : sum;
+  }, 0);
+}
+
+function getLineAttributeValue(attributes: CheckoutAttribute[] = [], key: string) {
+  return attributes.find((attribute) => attribute.key === key)?.value;
+}
+
+function getBundleAttributeSavings(line: CheckoutLine) {
+  const cents = Number(getLineAttributeValue(line.attributes, BUNDLE_TOTAL_SAVINGS_ATTRIBUTE));
+  return Number.isFinite(cents) && cents > 0 ? cents / 100 : 0;
+}
+
+function getCurrencyCode(
+  lines: CheckoutLine[],
+  discountAllocations: CheckoutDiscountAllocation[],
+  totalAmount?: CheckoutMoney,
+) {
+  return (
+    totalAmount?.currencyCode
+    ?? lines
+      .flatMap((line) => line.discountAllocations ?? [])
+      .find((allocation) => allocation.discountedAmount?.currencyCode)
+      ?.discountedAmount?.currencyCode
+    ?? discountAllocations.find((allocation) => allocation.discountedAmount?.currencyCode)
+      ?.discountedAmount?.currencyCode
+    ?? 'USD'
+  );
+}
+
+export function calculateCheckoutTotalSavings({
+  lines = [],
+  discountAllocations = [],
+}: {
+  lines?: CheckoutLine[];
+  discountAllocations?: CheckoutDiscountAllocation[];
+} = {}) {
+  const lineSavings = lines.reduce((sum, line) => {
+    const nativeSavings = sumDiscountAllocations(line.discountAllocations);
+    const bundleSavings = getBundleAttributeSavings(line);
+    return sum + Math.max(nativeSavings, bundleSavings);
+  }, 0);
+
+  return lineSavings > 0 ? lineSavings : sumDiscountAllocations(discountAllocations);
+}
+
+export function formatCheckoutMoney(amount: number, currencyCode = 'USD') {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: currencyCode,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+/**
+ * EB-style cart-line checkout display is handled by Shopify native line
+ * properties and discount allocations. This target intentionally renders
+ * nothing so it cannot duplicate native checkout rows.
+ */
 export const BundlePricingExtension: FunctionComponent = () => {
-  // Access cart line via Preact shopify global signal
-  const lineItem = shopify.target.value;
-  const currency = shopify.cost.totalAmount.value?.currencyCode ?? 'USD';
+  return null;
+};
 
-  if (!lineItem) {
+export const TotalSavingsExtension: FunctionComponent = () => {
+  const checkout = globalThis.shopify as {
+    lines?: {value?: CheckoutLine[]};
+    discountAllocations?: {value?: CheckoutDiscountAllocation[]};
+    cost?: {totalAmount?: {value?: CheckoutMoney}};
+  } | undefined;
+  const lines = readSignalValue(checkout?.lines, []);
+  const discountAllocations = readSignalValue(checkout?.discountAllocations, []);
+  const totalAmount = readSignalValue(checkout?.cost?.totalAmount, undefined);
+  const totalSavings = calculateCheckoutTotalSavings({lines, discountAllocations});
+
+  if (totalSavings <= 0) {
     return null;
   }
 
-  const attributes = lineItem.attributes ?? [];
-
-  const getAttr = (key: string): string | undefined => {
-    return attributes.find((attr: {key: string; value?: string}) => attr.key === key)?.value;
-  };
-
-  const isBundleParent = getAttr('_is_bundle_parent') === 'true';
-
-  if (!isBundleParent) {
-    return null;
-  }
-
-  const formatMoney = (cents: number) => {
-    const safeCents = Number.isFinite(cents) ? cents : 0;
-    const amount = safeCents / 100;
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency,
-      currencyDisplay: 'narrowSymbol',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
-
-  const formatPercent = (pct: number): string => {
-    if (!Number.isFinite(pct)) return '0';
-    return pct.toFixed(pct % 1 === 0 ? 0 : 2);
-  };
-
-  const safeInt = (val: string | undefined): number => {
-    const n = parseInt(val ?? '0', 10);
-    return Number.isFinite(n) ? n : 0;
-  };
-
-  const calculateSavingsPercent = (savingsCents: number, retailCents: number): number => {
-    if (retailCents <= 0 || savingsCents <= 0) return 0;
-    return (savingsCents / retailCents) * 100;
-  };
-
-  const totalRetailCents = safeInt(getAttr('_bundle_total_retail_cents'));
-  const totalBundleCents = safeInt(getAttr('_bundle_total_price_cents'));
-  const totalSavingsCents = safeInt(getAttr('_bundle_total_savings_cents'));
-  const hasDiscount = totalSavingsCents > 0 && totalRetailCents > 0;
-
-  if (!hasDiscount) {
-    return null;
-  }
-
-  const savingsPercent = calculateSavingsPercent(totalSavingsCents, totalRetailCents);
+  const currencyCode = getCurrencyCode(lines, discountAllocations, totalAmount);
 
   return (
-    <s-stack direction="block" gap="small-200">
-      <s-divider />
-
-      <s-stack direction="block" gap="small-100">
-        <s-text type="strong">Bundle Savings</s-text>
-
-        <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-          <s-text>Actual Price:</s-text>
-          <s-text type="strong" color="subdued">
-            {formatMoney(totalRetailCents)}
-          </s-text>
-        </s-stack>
-
-        <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-          <s-text>Bundle Price:</s-text>
-          <s-text type="strong">
-            {formatMoney(totalBundleCents)}
-          </s-text>
-        </s-stack>
-
-        <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-          <s-text>Savings:</s-text>
-          <s-stack direction="inline" gap="small-100" alignItems="center">
-            <s-text type="strong" tone="success">
-              {formatMoney(totalSavingsCents)}
-            </s-text>
-            <s-text tone="success">
-              ({formatPercent(savingsPercent)}%)
-            </s-text>
-          </s-stack>
-        </s-stack>
-      </s-stack>
-    </s-stack>
+    <s-grid gridTemplateColumns="1fr auto" gap="base">
+      <s-text type="strong">TOTAL SAVINGS</s-text>
+      <s-text type="strong">{formatCheckoutMoney(totalSavings, currencyCode)}</s-text>
+    </s-grid>
   );
 };

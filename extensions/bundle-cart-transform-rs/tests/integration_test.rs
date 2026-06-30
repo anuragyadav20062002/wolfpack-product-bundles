@@ -333,22 +333,17 @@ mod tests {
             _ => panic!("expected Merge operation"),
         };
         assert_eq!(merge.cart_lines.len(), 2);
-        assert!(
-            merge
-                .cart_lines
-                .iter()
-                .all(|line| line.cart_line_id != "message-line")
-        );
+        assert!(merge
+            .cart_lines
+            .iter()
+            .all(|line| line.cart_line_id != "message-line"));
 
-        let retail_total = merge
-            .attributes
-            .as_ref()
-            .and_then(|attrs| {
-                attrs
-                    .iter()
-                    .find(|attr| attr.key == "_bundle_total_retail_cents")
-                    .map(|attr| attr.value.as_str())
-            });
+        let retail_total = merge.attributes.as_ref().and_then(|attrs| {
+            attrs
+                .iter()
+                .find(|attr| attr.key == "_bundle_total_retail_cents")
+                .map(|attr| attr.value.as_str())
+        });
         assert_eq!(retail_total, Some("5000"));
     }
 
@@ -434,9 +429,18 @@ mod tests {
         assert_eq!(pct.as_deref(), Some("33.3333"));
 
         let attributes = merge_attributes(&output);
-        assert_eq!(attributes.get("Items").map(String::as_str), Some("3 x Widget"));
-        assert_eq!(attributes.get("Retail Price").map(String::as_str), Some("$30.00"));
-        assert_eq!(attributes.get("You Save").map(String::as_str), Some("$10.00 (33.33%)"));
+        assert_eq!(
+            attributes.get("Items").map(String::as_str),
+            Some("3 x Widget")
+        );
+        assert_eq!(
+            attributes.get("Retail Price").map(String::as_str),
+            Some("$30.00")
+        );
+        assert_eq!(
+            attributes.get("You Save").map(String::as_str),
+            Some("$10.00 (33.33%)")
+        );
     }
 
     #[test]
@@ -453,8 +457,14 @@ mod tests {
             attributes.get("Items").map(String::as_str),
             Some("1 x 18k Bloom Earrings, 2 x 18k Pedal Ring - 6 (6)")
         );
-        assert_eq!(attributes.get("Retail Price").map(String::as_str), Some("₹50"));
-        assert_eq!(attributes.get("You Save").map(String::as_str), Some("₹10 (20%)"));
+        assert_eq!(
+            attributes.get("Retail Price").map(String::as_str),
+            Some("₹50")
+        );
+        assert_eq!(
+            attributes.get("You Save").map(String::as_str),
+            Some("₹10 (20%)")
+        );
     }
 
     #[test]
@@ -641,29 +651,23 @@ mod tests {
     }
 
     #[test]
-    fn test_merge_applies_selected_addon_discount_attributes() {
+    fn test_merge_keeps_paid_addon_line_separate() {
         let cp = serde_json::json!([{
             "id": "gid://shopify/ProductVariant/999",
             "component_reference": {
                 "value": [
                     "gid://shopify/ProductVariant/101",
-                    "gid://shopify/ProductVariant/102",
-                    "gid://shopify/ProductVariant/103"
+                    "gid://shopify/ProductVariant/102"
                 ]
             },
-            "component_quantities": { "value": [1, 1, 1] },
-            "price_adjustment": { "method": "fixed_amount_off", "value": 500.0 }
+            "component_quantities": { "value": [1, 1] },
+            "price_adjustment": { "method": "percentage_off", "value": 0.0 }
         }])
         .to_string();
         let display_properties = serde_json::json!({
             "box": "1",
-            "items": "1 x Widget A, 1 x Widget B, 1 x Add-on",
-            "retailPrice": "$110.00",
-            "youSave": {
-                "amount": "$11.00",
-                "percentage": "10%",
-                "amountPercentage": "$11.00 (10%)"
-            }
+            "items": "1 x Widget A, 1 x Widget B",
+            "retailPrice": "$50.00"
         })
         .to_string();
 
@@ -739,27 +743,48 @@ mod tests {
             run_function_with_input(cart_transform_run, &input).expect("should not error");
         assert_eq!(output.operations.len(), 1);
 
-        let merge = match &output.operations[0] {
-            schema::CartOperation::LinesMerge(m) => m,
-            _ => panic!("expected Merge operation"),
-        };
-        let pct = merge
-            .price
-            .as_ref()
-            .and_then(|p| p.percentage_decrease.as_ref())
-            .map(|v| v.value.to_string());
-        assert_eq!(pct.as_deref(), Some("10.0"));
+        let merge = output
+            .operations
+            .iter()
+            .find_map(|operation| match operation {
+                schema::CartOperation::LinesMerge(m) => Some(m),
+                _ => None,
+            })
+            .expect("expected paid bundle lines to merge");
+        let merged_line_ids: Vec<&str> = merge
+            .cart_lines
+            .iter()
+            .map(|line| line.cart_line_id.as_str())
+            .collect();
+        assert_eq!(merged_line_ids, vec!["line1", "line2"]);
 
-        let attributes = merge_attributes(&output);
+        let attributes: HashMap<String, String> = merge
+            .attributes
+            .as_ref()
+            .expect("merge attributes should be present")
+            .iter()
+            .map(|attr| (attr.key.clone(), attr.value.clone()))
+            .collect();
         assert_eq!(
-            attributes.get("_bundle_total_savings_cents").map(String::as_str),
-            Some("1100")
+            attributes
+                .get("_bundle_component_count")
+                .map(String::as_str),
+            Some("2")
         );
         assert_eq!(
-            attributes.get("_bundle_discount_percent").map(String::as_str),
-            Some("10.00")
+            attributes
+                .get("_bundle_total_retail_cents")
+                .map(String::as_str),
+            Some("5000")
         );
-        assert_eq!(attributes.get("You Save").map(String::as_str), Some("$11.00 (10%)"));
+
+        let line_update = output.operations.iter().find(|operation| {
+            matches!(operation, schema::CartOperation::LineUpdate(_))
+        });
+        assert!(
+            line_update.is_none(),
+            "paid add-on discounting is handled by the Discount Function"
+        );
     }
 
     #[test]
@@ -825,19 +850,27 @@ mod tests {
 
         let attributes = merge_attributes(&output);
         assert_eq!(
-            attributes.get("_bundle_total_retail_cents").map(String::as_str),
+            attributes
+                .get("_bundle_total_retail_cents")
+                .map(String::as_str),
             Some("24600")
         );
         assert_eq!(
-            attributes.get("_bundle_total_price_cents").map(String::as_str),
+            attributes
+                .get("_bundle_total_price_cents")
+                .map(String::as_str),
             Some("12300")
         );
         assert_eq!(
-            attributes.get("_bundle_total_savings_cents").map(String::as_str),
+            attributes
+                .get("_bundle_total_savings_cents")
+                .map(String::as_str),
             Some("12300")
         );
         assert_eq!(
-            attributes.get("_bundle_discount_percent").map(String::as_str),
+            attributes
+                .get("_bundle_discount_percent")
+                .map(String::as_str),
             Some("50.00")
         );
     }
