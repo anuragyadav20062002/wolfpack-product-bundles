@@ -186,6 +186,8 @@ Live saved-payload evidence from the 2026-06-25 restore pass confirmed the `orig
 - With `Discount Based on` set to `Bundle Value`, EB changes the threshold field label from `Quantity` to `Amount`, prefixes it with the shop currency symbol, and changes the default ineligible template to `Add product(s) worth at least {{addonsConditionDiff}} {{currencyUnit}} more to claim {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons`. Storefront locked state rendered `Add product(s) worth at least 1.00 ₹ more to claim 010% off on Add ons` for the temporary `10%` test after the field had been saved with a leading zero; after one paid product was selected, the eligible message rendered `Congrats you are eligible for 010% off on Add ons`.
 - Under the amount-based `10%` test, direct navigation to `personalizationPage` after paid selections rendered the add-on tier card with original `₹829.00`, discounted `₹746.10`, and `010% off` because of the leading-zero persistence noted above. The price math still used a 10% discount.
 - Desktop footer/sidebar shows the add-on title and ineligible/eligible message in `.gbbAddonsMessagingContainer`.
+- The desktop add-on title/message section is removed once the shopper is on the add-on step itself; the add-on step shows tier products and the normal bundle summary only.
+- Summary product removal is step-local in the tested EB Standard flow. Products from other steps keep a disabled-looking trash affordance; clicking it shows `Remove This Product From <Step Name>` instead of removing the item. Add-on/free-gift removal should follow the same step-name rule.
 - Mobile baseline at `390x844` retained the `Add On` navigation label in runtime state and the DOM contained `.gbbAddonsMessagingContainer` with `Add ON Add 1 more product(s) to claim 100% off on Add ons`. The compressed visible footer text prioritized `Add 2 product(s) to save 5%! Next • ₹0.00 0`, so add-on-message visibility is template-sensitive on mobile.
 
 ## Scenario Matrix
@@ -221,6 +223,8 @@ Live saved-payload evidence from the 2026-06-25 restore pass confirmed the `orig
 - Normalize numeric Admin inputs before persisting. EB itself can persist string values with leading zeros if the field is manipulated poorly; storefront message interpolation renders those leading zeros literally even when discount math still behaves numerically.
 - Treat add-ons as optional until merchant rules prove otherwise. Eligibility unlocks the offer and messaging; it does not auto-add an add-on.
 - Paid step/category validation remains authoritative. Add-on eligibility must not bypass unmet paid-step rules.
+- Hide add-on eligibility/sidebar summary messaging on the add-on step; show it only while the shopper is still on paid product steps before the add-on offer surface.
+- Gate summary item removal by current step. Do not remove a selected product from a different step; show `Remove This Product From <Step Name>` instead.
 - Use the active tier for variable interpolation in footer/sidebar messages.
 - Keep add-on products separate from normal paid step products in runtime and cart semantics. Runtime marks add-ons with `_boxProduct: "addonProduct"`; Shopify cart marks them with `_addon_product: true`, `_addonTierId`, and `_addon_offer_id`.
 - Implement add-on discounts as line-level Shopify discounts against the separate add-on line. The parent bundle line keeps the paid bundle contents and includes `_addon_offer_id` tying the paid bundle to the add-on offer.

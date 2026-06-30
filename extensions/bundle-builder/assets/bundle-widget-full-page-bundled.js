@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.107
+ * Version : 3.0.108
  * Built   : 2026-06-30
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.107';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.108';
 (function() {
   'use strict';
 
@@ -5619,18 +5619,15 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
     if (!item.isDefault) {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'fpb-mobile-summary-product-remove';
+      const removalState = this.getSummaryProductRemovalState(item);
+      if (!removalState.canRemove) {
+        removeBtn.classList.add('fpb-mobile-summary-product-remove--disabled');
+        removeBtn.setAttribute('aria-disabled', 'true');
+        removeBtn.title = removalState.blockedMessage;
+      }
       removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
       removeBtn.addEventListener('click', () => {
-        const stepIndex = item.stepIndex;
-        const productId = item.variantId || item.productId || item.id;
-        const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
-        this.updateProductSelection(stepIndex, productId, 0);
-        const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
-        ToastManager.showWithUndo(
-          `Removed "${truncated}"`,
-          () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-          5000
-        );
+        this.removeSummarySelectedProduct(item, summaryTitle);
       });
       row.querySelector('.fpb-mobile-summary-product-action')?.appendChild(removeBtn);
     }
@@ -6004,7 +6001,9 @@ renderSidePanel(panel) {
 
   if (isStandardDesktopSidebar) {
     const addonChildCountBefore = summaryContent.children.length;
-    this._renderFreeGiftSection(summaryContent);
+    if (activeStep?.isFreeGift !== true) {
+      this._renderFreeGiftSection(summaryContent);
+    }
     panel.classList.toggle(
       'full-page-side-panel--has-addon-summary',
       summaryContent.children.length > addonChildCountBefore
@@ -6052,18 +6051,15 @@ renderSidePanel(panel) {
           const row = this.createStandardSidebarSelectedRow(item, currencyInfo);
           const removeBtn = row?.querySelector('[data-action="remove-selected-product"]');
           if (removeBtn) {
+            const removalState = this.getSummaryProductRemovalState(item);
+            if (!removalState.canRemove) {
+              removeBtn.classList.add('bw-selected-row__remove--disabled');
+              removeBtn.setAttribute('aria-disabled', 'true');
+              removeBtn.title = removalState.blockedMessage;
+            }
             removeBtn.addEventListener('click', () => {
-              const stepIndex = item.stepIndex;
-              const productId = item.variantId || item.productId || item.id;
-              const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
               const summaryTitle = this.getSummaryProductDisplayTitle(item);
-              this.updateProductSelection(stepIndex, productId, 0);
-              const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
-              ToastManager.showWithUndo(
-                `Removed "${truncated}"`,
-                () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-                5000
-              );
+              this.removeSummarySelectedProduct(item, summaryTitle);
             });
           }
           if (row) productsContainer.appendChild(row);
@@ -6118,18 +6114,15 @@ renderSidePanel(panel) {
           removeBtn.className = 'side-panel-product-remove';
           removeBtn.type = 'button';
           removeBtn.setAttribute('aria-label', `Delete ${summaryTitle || 'product'}`);
+          const removalState = this.getSummaryProductRemovalState(item);
+          if (!removalState.canRemove) {
+            removeBtn.classList.add('side-panel-product-remove--disabled');
+            removeBtn.setAttribute('aria-disabled', 'true');
+            removeBtn.title = removalState.blockedMessage;
+          }
           removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" aria-hidden="true" focusable="false"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
           removeBtn.addEventListener('click', () => {
-            const stepIndex = item.stepIndex;
-            const productId = item.variantId || item.productId || item.id;
-            const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
-            this.updateProductSelection(stepIndex, productId, 0);
-            const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
-            ToastManager.showWithUndo(
-              `Removed "${truncated}"`,
-              () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-              5000
-            );
+            this.removeSummarySelectedProduct(item, summaryTitle);
           });
           if (isStandardDesktopSidebar) {
             row.querySelector('.side-panel-product-action')?.appendChild(removeBtn);
@@ -6187,7 +6180,7 @@ renderSidePanel(panel) {
 
   panel.appendChild(summaryContent);
 
-  if (!isClassicDesktopSidebar && !isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
+  if (!isClassicDesktopSidebar && !isStandardDesktopSidebar && activeStep?.isFreeGift !== true) this._renderFreeGiftSection(panel);
 
   const totalSection = document.createElement('div');
   totalSection.className = 'side-panel-total';
@@ -6363,6 +6356,46 @@ createSidebarTierCta(nextRule) {
   }
 
   return cta;
+},
+
+getSummaryProductRemovalState(item = {}) {
+  const itemStepIndex = Number(item?.stepIndex);
+  const currentStepIndex = Number(this.currentStepIndex || 0);
+  const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+  const targetStep = Number.isFinite(itemStepIndex) ? steps[itemStepIndex] : null;
+  const rawStepName = targetStep?.name
+    || targetStep?.addonLabel
+    || targetStep?.freeGiftName
+    || (Number.isFinite(itemStepIndex) ? `Step ${itemStepIndex + 1}` : 'This Step');
+  const targetStepName = String(rawStepName || '').trim() || 'This Step';
+  const canRemove = Number.isFinite(itemStepIndex) && itemStepIndex === currentStepIndex;
+
+  return {
+    canRemove,
+    targetStepName,
+    blockedMessage: canRemove ? '' : `Remove This Product From ${targetStepName}`,
+  };
+},
+
+removeSummarySelectedProduct(item = {}, summaryTitle = '') {
+  const removalState = this.getSummaryProductRemovalState(item);
+  if (!removalState.canRemove) {
+    ToastManager.show(removalState.blockedMessage);
+    return false;
+  }
+
+  const stepIndex = item.stepIndex;
+  const productId = item.variantId || item.productId || item.id;
+  const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
+  this.updateProductSelection(stepIndex, productId, 0);
+  const displayTitle = summaryTitle || item.title || 'Product';
+  const truncated = displayTitle.length > 25 ? displayTitle.substring(0, 25) + '...' : displayTitle;
+  ToastManager.showWithUndo(
+    `Removed "${truncated}"`,
+    () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+    5000
+  );
+  return true;
 },
 };
 
