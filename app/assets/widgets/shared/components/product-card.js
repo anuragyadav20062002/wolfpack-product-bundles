@@ -18,7 +18,9 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
   const mode = options.mode || 'grid';
   const variantText = getVariantDisplayText(product);
   const title = getDisplayTitle(product, variantText);
-  const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
+  const imageUrls = getProductImageUrls(product);
+  const imageUrl = imageUrls[0] || DEFAULT_PLACEHOLDER_IMAGE;
+  const hasMultipleImages = imageUrls.length > 1;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
   const variantSelectorBeforePrice = options.variantSelectorPlacement === 'beforePrice';
@@ -32,9 +34,14 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
   ].filter(Boolean).join(' ');
 
   return `
-    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}">
-      <div class="bw-product-card__media product-image">
+    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}" data-bw-card-image-count="${imageUrls.length}" data-bw-card-image-index="0"${hasMultipleImages ? ' data-bw-card-has-multiple-images="true"' : ''}>
+      <div class="bw-product-card__media product-image" data-bw-product-media="true">
         <img class="bw-product-card__image" src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(title)}" loading="lazy">
+        ${hasMultipleImages ? renderImageNavButton('prev') : ''}
+        ${hasMultipleImages ? renderImageNavButton('next') : ''}
+        <span class="bw-product-card__image-overlay product-image-overlay" aria-hidden="true">
+          <span class="bw-product-card__magnifier"></span>
+        </span>
         ${options.stockBadgeHtml || ''}
       </div>
       <div class="bw-product-card__body product-content-wrapper">
@@ -65,6 +72,21 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
       </div>
     </div>
   `;
+}
+
+export function getProductImageUrls(product = {}) {
+  const urls = [];
+  const addUrl = (value) => {
+    const url = normalizeImageUrl(value);
+    if (url && !urls.includes(url)) urls.push(url);
+  };
+
+  addUrl(product.imageUrl);
+  addUrl(product.image);
+  addUrl(product.featuredImage);
+  (Array.isArray(product.images) ? product.images : []).forEach(addUrl);
+
+  return urls.length > 0 ? urls : [DEFAULT_PLACEHOLDER_IMAGE];
 }
 
 function getDisplayTitle(product, variantText) {
@@ -119,6 +141,22 @@ function renderAddButton(selectionKey, options) {
       ${escapeHtml(text)}
     </button>
   `;
+}
+
+function renderImageNavButton(direction) {
+  const label = direction === 'prev' ? 'Previous image' : 'Next image';
+  const symbol = direction === 'prev' ? '&#10094;' : '&#10095;';
+  return `
+    <button type="button" class="bw-product-card__image-nav bw-product-card__image-nav--${direction}" data-bw-image-nav="${direction}" aria-label="${label}">
+      ${symbol}
+    </button>
+  `;
+}
+
+function normalizeImageUrl(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return value.url || value.src || value.originalSrc || value.transformedSrc || '';
 }
 
 function formatPrice(value, currencyInfo) {

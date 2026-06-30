@@ -13,7 +13,7 @@ import { hideLoadingOverlayElement, markLoadingOverlayVisible } from '../../shar
 import { getDiscountProgressData, getSelectedQuantity, getTimelineEntryState } from '../../shared/engine/bundle-selectors.js';
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { createBundleBannerElement, createStepBannerImageElement } from '../../shared/components/bundle-banners.js';
-import { renderSharedProductCard } from '../../shared/components/product-card.js';
+import { getProductImageUrls, renderSharedProductCard } from '../../shared/components/product-card.js';
 import { renderSelectedProductRow } from '../../shared/components/selected-product-row.js';
 import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
 import { renderStepTimelineEntry } from '../../shared/components/step-timeline.js';
@@ -297,12 +297,44 @@ getSummaryVariantFromDisplayTitle(displayTitle) {
 // Attach event listeners to product card
 attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
   // Default steps are read-only — no add/remove/quantity interaction allowed
-  if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
+  const step = (this.selectedBundle?.steps || [])[stepIndex];
+  if (step?.isDefault) return;
 
   // Prefer the clicked control's data key; variant selector updates the DOM before
   // subsequent quantity clicks, while the captured product object can lag behind.
   const getProductId = () => product.variantId || product.id;
   const getClickedProductId = (element) => element?.dataset?.productId || getProductId();
+
+  cardElement.addEventListener('click', (e) => {
+    const imageNav = e.target.closest('.bw-product-card__image-nav');
+    if (imageNav) {
+      e.preventDefault();
+      e.stopPropagation();
+      const imageUrls = getProductImageUrls(product);
+      if (imageUrls.length <= 1) return;
+
+      const currentIndex = Number(cardElement.dataset.bwCardImageIndex || 0);
+      const direction = imageNav.dataset.bwImageNav === 'prev' ? -1 : 1;
+      const nextIndex = (currentIndex + direction + imageUrls.length) % imageUrls.length;
+      const imageEl = cardElement.querySelector('.bw-product-card__image');
+      if (imageEl) {
+        imageEl.src = imageUrls[nextIndex];
+      }
+      cardElement.dataset.bwCardImageIndex = String(nextIndex);
+      return;
+    }
+
+    if (!e.target.closest('.product-image, .product-title')) return;
+    e.stopPropagation();
+
+    if (!this.productModal && window.BundleProductModal) {
+      this.productModal = new window.BundleProductModal(this);
+    }
+    if (!this.productModal) return;
+
+    const initialImageIndex = Number(cardElement.dataset.bwCardImageIndex || 0);
+    this.productModal.open(product, step, { initialImageIndex });
+  });
 
   // Inline quantity increase/decrease buttons (delegated via card element)
   cardElement.addEventListener('click', (e) => {
@@ -336,7 +368,6 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
   });
 
   // Inline variant selector (VariantSelectorComponent button group + panels)
-  const step = (this.selectedBundle?.steps || [])[stepIndex];
   const displayVariantsAsIndividualProducts =
     typeof options.displayVariantsAsIndividualProducts === 'boolean'
       ? options.displayVariantsAsIndividualProducts
@@ -416,6 +447,8 @@ updateProductCardVariantDisplay(cardElement, product, step) {
   const imageEl = cardElement.querySelector('.bw-product-card__image, .product-image img, img');
   if (imageEl && product.imageUrl) {
     imageEl.src = product.imageUrl;
+    cardElement.dataset.bwCardImageIndex = '0';
+    cardElement.dataset.bwCardImageCount = String(getProductImageUrls(product).length);
   }
 },
 
