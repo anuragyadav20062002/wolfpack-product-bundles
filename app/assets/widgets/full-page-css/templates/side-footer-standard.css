@@ -1387,6 +1387,16 @@ body:has([data-fpb-design-preset]) {
     margin: 0 0 20px;
     padding: 0;
   }
+  body.fpb-compact-mobile-summary-active
+    .layout-sidebar[data-fpb-design-preset="STANDARD"][data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .full-page-product-grid {
+    padding-block-end: calc(
+      var(--standard-mobile-footer-summary-row, 2.0625rem)
+      + var(--standard-mobile-footer-action-row, 3.625rem)
+      + 1rem
+    );
+  }
   .layout-sidebar[data-fpb-design-preset="STANDARD"][data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card {
