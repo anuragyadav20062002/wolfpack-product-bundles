@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.72
- * Built   : 2026-06-29
+ * Version : 3.0.92
+ * Built   : 2026-06-30
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.72';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.92';
 (function() {
   'use strict';
 
@@ -103,6 +103,13 @@ const ConditionValidator = (function () {
     return Number(selection) || 0;
   }
 
+  function _getSelectionWeight(selection) {
+    if (selection && typeof selection === 'object') {
+      return Number(selection.weight) || 0;
+    }
+    return Number(selection) || 0;
+  }
+
   function _normalizeAmountRuleValue(value) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return numeric;
@@ -121,14 +128,19 @@ const ConditionValidator = (function () {
       const operator = _normalizeOperator(rule && (rule.operator || rule.condition));
       const ruleType = rule && (rule.conditionType || rule.type);
       const isAmountRule = ruleType === 'amount';
+      const isWeightRule = ruleType === 'weight';
       const value = isAmountRule ? _normalizeAmountRuleValue(rule && rule.value) : Number(rule && rule.value);
       if (!Number.isFinite(value)) continue;
       let categoryTotal = 0;
       for (const pid of Object.keys(selections)) {
         if (productIds.has(String(pid))) {
-          categoryTotal += isAmountRule
-            ? _getSelectionAmount(selections[pid])
-            : _getSelectionQuantity(selections[pid]);
+          if (isAmountRule) {
+            categoryTotal += _getSelectionAmount(selections[pid]);
+          } else if (isWeightRule) {
+            categoryTotal += _getSelectionWeight(selections[pid]);
+          } else {
+            categoryTotal += _getSelectionQuantity(selections[pid]);
+          }
         }
       }
       if (!_evaluateSatisfied(operator, value, categoryTotal)) return false;
@@ -1908,6 +1920,97 @@ class VariantSelectorComponent {
     return `<div class="vs-wrapper" data-vs-product-id="${productId}"><div class="vs-btn-group">${btnGroupHtml}${overflowHtml}</div>${secondaryHtml}</div>`;
   }
 
+  static renderDropdownHtml(product, primaryOptionName, options = {}) {
+    const variants = product.variants || [];
+    const optionNames = product.options || [];
+
+    if (variants.length <= 1 || optionNames.length === 0) return '';
+
+    const primaryIdx = VariantSelectorComponent._primaryIdx(optionNames, primaryOptionName);
+    const selectedLabel = options.placeholder || '';
+    const productId = product.id || product.variantId;
+
+    const optionHtml = variants.map((variant) => {
+      const primaryValue = variant[`option${primaryIdx}`] || variant.title || '';
+      const value = optionNames.length > 1 && variant.title ? variant.title : primaryValue;
+      const imageUrl = VariantSelectorComponent._variantImageUrl(variant);
+      const isAvailable = variant.available !== false;
+      return `
+        <li class="vs-option" data-variant-id="${VariantSelectorComponent._esc(variant.id)}" data-primary-value="${VariantSelectorComponent._esc(value)}" ${!isAvailable ? 'aria-disabled="true"' : ''}>
+          ${imageUrl ? `<img class="vs-option-image" src="${VariantSelectorComponent._esc(imageUrl)}" alt="">` : ''}
+          <span class="vs-option-label">${VariantSelectorComponent._esc(value)}</span>
+        </li>
+      `;
+    }).join('');
+
+    return `
+      <div class="vs-wrapper vs-wrapper--standard" data-vs-product-id="${VariantSelectorComponent._esc(productId)}" data-vs-primary-idx="${primaryIdx}" data-vs-placeholder="${VariantSelectorComponent._esc(selectedLabel)}">
+        <button type="button" class="vs-selected" aria-expanded="false">
+          <span class="vs-selected-label">${VariantSelectorComponent._esc(selectedLabel)}</span>
+          <span class="vs-selected-icon" aria-hidden="true">
+            <svg viewBox="0 0 20 20" focusable="false">
+              <path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </span>
+        </button>
+        <ul class="vs-options" hidden>
+          ${optionHtml}
+        </ul>
+      </div>
+    `;
+  }
+
+  static renderStandardMobileDrawerHtml(product, options = {}) {
+    const variants = product.variants || [];
+    const optionNames = product.options || [];
+    const primaryIdx = options.primaryIdx || VariantSelectorComponent._primaryIdx(optionNames, options.primaryOptionName);
+    const selectedVariant = variants.find(v => String(v.id) === String(product.variantId)) || variants[0] || product;
+    const productImageUrl = VariantSelectorComponent._variantImageUrl(selectedVariant) || product.imageUrl || '';
+    const productTitle = product.title || selectedVariant.productTitle || '';
+    const placeholder = options.placeholder || '';
+    const formatPrice = typeof options.formatPrice === 'function'
+      ? options.formatPrice
+      : (value) => VariantSelectorComponent.formatDrawerPrice(value);
+    const productPrice = selectedVariant.price ?? product.price ?? 0;
+
+    const optionHtml = variants.map((variant) => {
+      const label = VariantSelectorComponent.getStandardVariantLabel(variant, optionNames, primaryIdx);
+      const imageUrl = VariantSelectorComponent._variantImageUrl(variant) || productImageUrl;
+      const isAvailable = variant.available !== false;
+      const isSelected = String(variant.id) === String(selectedVariant.id);
+      return `
+        <button type="button" class="vs-mobile-option${isSelected ? ' vs-mobile-option--selected' : ''}" data-variant-id="${VariantSelectorComponent._esc(variant.id)}" aria-disabled="${isAvailable ? 'false' : 'true'}">
+          ${imageUrl ? `<img class="vs-mobile-option-image" src="${VariantSelectorComponent._esc(imageUrl)}" alt="">` : '<span class="vs-mobile-option-image vs-mobile-option-image--empty" aria-hidden="true"></span>'}
+          <span class="vs-mobile-option-label">${VariantSelectorComponent._esc(label)}</span>
+          <span class="vs-mobile-option-price">${VariantSelectorComponent._esc(formatPrice(variant.price ?? 0))}</span>
+        </button>
+      `;
+    }).join('');
+
+    return `
+      <div class="vs-mobile-drawer vs-mobile-drawer--standard" data-vs-mobile-drawer>
+        <div class="vs-mobile-drawer-sheet" role="dialog" aria-modal="true">
+          <button type="button" class="vs-mobile-drawer-close" data-vs-mobile-close aria-label="Close">
+            <span aria-hidden="true">x</span>
+          </button>
+          <div class="vs-mobile-drawer-header">
+            ${productImageUrl ? `<img class="vs-mobile-drawer-product-image" src="${VariantSelectorComponent._esc(productImageUrl)}" alt="">` : ''}
+            <div class="vs-mobile-drawer-product-info">
+              <p class="vs-mobile-drawer-product-title">${VariantSelectorComponent._esc(productTitle)}</p>
+              <p class="vs-mobile-drawer-product-price">${VariantSelectorComponent._esc(formatPrice(productPrice))}</p>
+            </div>
+          </div>
+          <div class="vs-mobile-drawer-body">
+            <div class="vs-mobile-drawer-title">${VariantSelectorComponent._esc(placeholder)}</div>
+            <div class="vs-mobile-options">
+              ${optionHtml}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   static attachListeners(cardEl, product, onVariantChange) {
     cardEl.addEventListener('click', (e) => {
       const btn = e.target.closest('.vs-btn, .vs-secondary-pill');
@@ -1929,6 +2032,20 @@ class VariantSelectorComponent {
         const val = btn.dataset.primaryValue;
         VariantSelectorComponent._selectPrimary(cardEl, product, primaryOptIdx, val, onVariantChange);
       }
+    });
+
+    cardEl.addEventListener('click', (e) => {
+      const selected = e.target.closest('.vs-selected');
+      if (selected) {
+        e.stopPropagation();
+        VariantSelectorComponent.handleStandardSelectorClick(selected, cardEl, product, onVariantChange);
+        return;
+      }
+
+      const option = e.target.closest('.vs-option');
+      if (!option || option.getAttribute('aria-disabled') === 'true') return;
+      e.stopPropagation();
+      VariantSelectorComponent._selectStandardOption(cardEl, product, option, onVariantChange);
     });
   }
 
@@ -2001,6 +2118,9 @@ class VariantSelectorComponent {
 
     product.variantId = newVariant.id;
     product.price = newVariant.price;
+    product.compareAtPrice = newVariant.compareAtPrice || null;
+    product.imageUrl = VariantSelectorComponent._variantImageUrl(newVariant) || product.imageUrl;
+    product.available = newVariant.available === true;
     product.quantityAvailable = typeof newVariant.quantityAvailable === 'number' ? newVariant.quantityAvailable : null;
     product.currentlyNotInStock = newVariant.currentlyNotInStock === true;
 
@@ -2066,6 +2186,9 @@ class VariantSelectorComponent {
         const oldVariantId = product.variantId;
         product.variantId = candidate.id;
         product.price = candidate.price;
+        product.compareAtPrice = candidate.compareAtPrice || null;
+        product.imageUrl = VariantSelectorComponent._variantImageUrl(candidate) || product.imageUrl;
+        product.available = candidate.available === true;
         product.quantityAvailable = typeof candidate.quantityAvailable === 'number' ? candidate.quantityAvailable : null;
         product.currentlyNotInStock = candidate.currentlyNotInStock === true;
 
@@ -2087,6 +2210,153 @@ class VariantSelectorComponent {
     panel.className = ['vs-panel', extraClass].filter(Boolean).join(' ');
     panel.dataset.vsPanel = '1';
     return panel;
+  }
+
+  static handleStandardSelectorClick(selected, cardEl, product, onVariantChange) {
+    if (VariantSelectorComponent.isMobileViewport()) {
+      VariantSelectorComponent.openStandardMobileDrawer(selected, cardEl, product, onVariantChange);
+      return;
+    }
+
+    VariantSelectorComponent._toggleStandardDropdown(selected, cardEl);
+  }
+
+  static isMobileViewport() {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia?.('(max-width: 767px)').matches || window.innerWidth <= 767;
+  }
+
+  static openStandardMobileDrawer(selected, cardEl, product, onVariantChange) {
+    const wrapper = selected.closest('.vs-wrapper--standard');
+    if (!wrapper || typeof document === 'undefined') return;
+
+    VariantSelectorComponent.closeStandardMobileDrawer();
+
+    const panel = wrapper.querySelector('.vs-options');
+    const primaryIdx = parseInt(wrapper.dataset.vsPrimaryIdx || '1', 10);
+    const placeholder = wrapper.dataset.vsPlaceholder || selected.querySelector('.vs-selected-label')?.textContent?.trim() || '';
+
+    document.body.insertAdjacentHTML('beforeend', VariantSelectorComponent.renderStandardMobileDrawerHtml(product, {
+      placeholder,
+      primaryIdx,
+    }));
+    selected.setAttribute('aria-expanded', 'true');
+
+    const drawer = document.body.querySelector('[data-vs-mobile-drawer]');
+    if (!drawer) return;
+
+    const close = () => {
+      VariantSelectorComponent.closeStandardMobileDrawer();
+      selected.setAttribute('aria-expanded', 'false');
+    };
+
+    drawer.addEventListener('click', (event) => {
+      const closeTarget = event.target.closest('[data-vs-mobile-close]');
+      if (closeTarget || event.target === drawer) {
+        event.stopPropagation();
+        close();
+        return;
+      }
+
+      const optionButton = event.target.closest('.vs-mobile-option');
+      if (!optionButton) return;
+
+      event.stopPropagation();
+      if (optionButton.getAttribute('aria-disabled') === 'true') return;
+
+      const sourceOption = Array.from(panel?.querySelectorAll('.vs-option') || [])
+        .find(option => String(option.dataset.variantId) === String(optionButton.dataset.variantId));
+      if (sourceOption) {
+        VariantSelectorComponent._selectStandardOption(cardEl, product, sourceOption, onVariantChange);
+      }
+      close();
+    });
+  }
+
+  static closeStandardMobileDrawer() {
+    if (typeof document === 'undefined') return;
+    document.querySelector('[data-vs-mobile-drawer]')?.remove();
+  }
+
+  static getStandardVariantLabel(variant, optionNames, primaryIdx) {
+    const primaryValue = variant[`option${primaryIdx}`] || variant.title || '';
+    return optionNames.length > 1 && variant.title ? variant.title : primaryValue;
+  }
+
+  static formatDrawerPrice(value) {
+    if (typeof CurrencyManager !== 'undefined') {
+      return CurrencyManager.convertAndFormat(value || 0, CurrencyManager.getCurrencyInfo());
+    }
+
+    return String(value || 0);
+  }
+
+  static _toggleStandardDropdown(selected, cardEl) {
+    const wrapper = selected.closest('.vs-wrapper--standard');
+    const panel = wrapper?.querySelector('.vs-options');
+    if (!wrapper || !panel) return;
+
+    const willOpen = panel.hidden === true;
+    cardEl.querySelectorAll('.vs-wrapper--standard .vs-options').forEach((otherPanel) => {
+      if (otherPanel !== panel) {
+        otherPanel.hidden = true;
+        otherPanel.closest('.vs-wrapper--standard')?.querySelector('.vs-selected')?.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    panel.hidden = !willOpen;
+    selected.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    if (willOpen) {
+      VariantSelectorComponent._bindStandardOutsideClose(panel, selected);
+    }
+  }
+
+  static _selectStandardOption(cardEl, product, option, onVariantChange) {
+    const wrapper = option.closest('.vs-wrapper--standard');
+    const selected = wrapper?.querySelector('.vs-selected');
+    const panel = wrapper?.querySelector('.vs-options');
+    const variantId = option.dataset.variantId;
+    const candidate = (product.variants || []).find(v => String(v.id) === String(variantId));
+    if (!candidate) return;
+
+    const oldVariantId = product.variantId;
+    product.variantId = candidate.id;
+    product.price = candidate.price;
+    product.compareAtPrice = candidate.compareAtPrice || null;
+    product.imageUrl = VariantSelectorComponent._variantImageUrl(candidate) || product.imageUrl;
+    product.available = candidate.available === true;
+    product.quantityAvailable = typeof candidate.quantityAvailable === 'number' ? candidate.quantityAvailable : null;
+    product.currentlyNotInStock = candidate.currentlyNotInStock === true;
+
+    if (selected) {
+      const label = selected.querySelector('.vs-selected-label');
+      if (label) label.textContent = option.dataset.primaryValue || option.textContent.trim();
+      selected.setAttribute('aria-expanded', 'false');
+    }
+    if (panel) panel.hidden = true;
+
+    onVariantChange(candidate.id, oldVariantId);
+  }
+
+  static _bindStandardOutsideClose(panel, selected) {
+    setTimeout(() => {
+      const close = (e) => {
+        if (!panel.contains(e.target) && !selected.contains(e.target)) {
+          panel.hidden = true;
+          selected.setAttribute('aria-expanded', 'false');
+          document.removeEventListener('click', close);
+        }
+      };
+      document.addEventListener('click', close);
+    }, 0);
+  }
+
+  static _variantImageUrl(variant) {
+    return variant?.image?.src
+      || variant?.image?.url
+      || (typeof variant?.image === 'string' ? variant.image : null)
+      || variant?.imageUrl
+      || null;
   }
 
   static _makeTile(label, isSelected, isOos) {
@@ -2396,7 +2666,7 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
-  const hasVariantText = Boolean(variantText);
+  const variantSelectorBeforePrice = options.variantSelectorPlacement === 'beforePrice';
   const rootClasses = [
     'bw-product-card',
     'product-card',
@@ -2418,13 +2688,14 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
         </div>
         <div class="product-card-price-action">
+          ${variantSelectorBeforePrice ? options.variantSelectorHtml || '' : ''}
           ${price ? `
             <div class="bw-product-card__price product-price-row">
               ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
               <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
             </div>
           ` : ''}
-          ${options.variantSelectorHtml || ''}
+          ${variantSelectorBeforePrice ? '' : options.variantSelectorHtml || ''}
           <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
             ${isSelected
               ? renderQuantityControl({
@@ -4327,7 +4598,8 @@ buildAddonStepFromPersonalization() {
     freeGiftName: addonProducts?.title || personalizationData.personalizeStepText || '',
     addonTitle: personalizationData.personalizePageSubtext || addonProducts?.title || '',
     addonIconUrl: personalizationData.stepImage || null,
-    addonDisplayFree: !addonProductsEnabled,
+    addonDisplayFree: false,
+    addonProductsEnabled,
     addonUnlockAfterCompletion: true,
     addonTiers: addonProductsEnabled ? tiers : undefined,
     addonEligibilityCondition: null,
@@ -5075,6 +5347,11 @@ _populateCompactMobileSummaryTray(sheet) {
   sheet.appendChild(countBadge);
 
   sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
+  sheet.classList.toggle(
+    'fpb-mobile-summary-tray--slots',
+    this.getFullPageDesignPreset() === 'STANDARD' && this._shouldRenderProductSlots()
+  );
+  sheet.classList.remove('fpb-mobile-summary-tray--has-discount-summary');
 
   if (this.selectedBundle?.pricing?.enabled) {
     const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
@@ -5118,6 +5395,7 @@ _populateCompactMobileSummaryTray(sheet) {
     }
 
     if (discountBlock.childElementCount > 0) {
+      sheet.classList.add('fpb-mobile-summary-tray--has-discount-summary');
       sheet.appendChild(discountBlock);
     }
   }
@@ -6461,6 +6739,7 @@ ensureTimelinePagingStyles() {
 
 shouldRenderMultipleCategoryTimelineEntry(step) {
   if (!step || step.isFreeGift === true) return false;
+  if (this.getFullPageDesignPreset?.() === 'STANDARD') return false;
   return this.getStepCategoryTabEntries(step).length > 1;
 },
 
@@ -7186,7 +7465,7 @@ shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
     step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
 
   if (activeCategory) {
-    return activeCategory.displayVariantsAsIndividualProducts === true || stepDisplaysVariantsAsIndividual;
+    return activeCategory.displayVariantsAsIndividualProducts === true;
   }
 
   const hasCategoryEntries = this.getStepCategoryTabEntries(step).length > 0;
@@ -7279,6 +7558,14 @@ createCategorySectionRows(stepIndex, placement = 'all') {
   });
 
   return categoryRowsContainer;
+},
+
+getNoProductsAvailableMessage() {
+  if (typeof this._resolveText === 'function') {
+    return this._resolveText('noProductsAvailable', 'No Products Available');
+  }
+
+  return 'No Products Available';
 },
 
 createCategoryTabs(stepIndex) {
@@ -7465,7 +7752,7 @@ createFullPageProductGrid(stepIndex) {
 
     const message = this.searchQuery
       ? `No products match "${ComponentGenerator.escapeHtml(this.searchQuery)}"`
-      : 'No products available in this step.';
+      : ComponentGenerator.escapeHtml(this.getNoProductsAvailableMessage());
     grid.innerHTML = `<p class="no-products">${message}</p>`;
     return grid;
   }
@@ -7475,7 +7762,9 @@ createFullPageProductGrid(stepIndex) {
   const isStepAtCapacity = !capacityCheck.allowed;
 
   expandedProducts.forEach(product => {
-    const productCard = this.createProductCard(product, stepIndex);
+    const productCard = this.createProductCard(product, stepIndex, {
+      displayVariantsAsIndividualProducts: shouldDisplayVariantsAsIndividual,
+    });
     const productId = product.variantId || product.id;
     const currentQty = stepSelections[productId] || 0;
 
@@ -7572,7 +7861,7 @@ preloadNextStep() {
 };
 
 const fullPageProductCardFooterMethods = {
-createProductCard(product, stepIndex) {
+createProductCard(product, stepIndex, options = {}) {
   const productId = product.variantId || product.id;
   const selectedQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
   const directDefaultQuantity = product?.isDirectDefaultProduct
@@ -7591,25 +7880,41 @@ createProductCard(product, stepIndex) {
 
   const step = (this.selectedBundle?.steps || [])[stepIndex];
   const primaryOptionName = step?.primaryVariantOption || null;
-  const variantSelectorHtml = shouldRenderInlineVariantSelector({
+  const displayVariantsAsIndividualProducts =
+    typeof options.displayVariantsAsIndividualProducts === 'boolean'
+      ? options.displayVariantsAsIndividualProducts
+      : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+  const designPreset = this.getFullPageDesignPreset();
+  const shouldRenderVariantSelector = shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
-    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
-  })
-    ? VariantSelectorComponent.renderHtml(product, primaryOptionName)
+    displayVariantsAsIndividualProducts,
+  });
+  const variantSelectorHtml = shouldRenderVariantSelector
+    ? designPreset === 'STANDARD'
+      ? VariantSelectorComponent.renderDropdownHtml(product, primaryOptionName, {
+        placeholder: this._resolveText('chooseOptionsButton', 'Choose Options'),
+      })
+      : VariantSelectorComponent.renderHtml(product, primaryOptionName)
     : '';
 
-  const designPreset = this.getFullPageDesignPreset();
+  const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
+  const hasStandardAddonDiscountBadge = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText;
+  const stockBadgeHtml = hasStandardAddonDiscountBadge
+    ? `<span class="fpb-addon-discount-badge">${ComponentGenerator.escapeHtml(displayProduct.addonDiscountBadgeText)}</span>`
+    : '';
   let htmlString;
   if (designPreset === 'STANDARD' || designPreset === 'CLASSIC' || designPreset === 'COMPACT' || designPreset === 'HORIZONTAL') {
     htmlString = renderSharedProductCard(
-      product,
+      displayProduct,
       currentQuantity,
       currencyInfo,
       {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
-        addButtonText: this.getProductAddButtonText(),
+        addButtonText: this.getProductCardAddButtonText(step),
+        stockBadgeHtml,
+        variantSelectorPlacement: designPreset === 'STANDARD' ? 'beforePrice' : undefined,
       }
     );
   } else {
@@ -7620,7 +7925,7 @@ createProductCard(product, stepIndex) {
       {
         variantSelectorHtml,
         actionMode: 'expandingQuantity',
-        addButtonText: this.getProductAddButtonText(),
+        addButtonText: this.getProductCardAddButtonText(step),
       }
     );
   }
@@ -7629,7 +7934,7 @@ createProductCard(product, stepIndex) {
   wrapper.innerHTML = htmlString.trim();
   const cardElement = wrapper.firstChild;
 
-  this.applyStandardExpandedVariantTitle(cardElement, product);
+  this.applyStandardExpandedVariantTitle(cardElement, displayProduct);
 
   const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
   if (currentStepData?.isDefault) {
@@ -7658,7 +7963,7 @@ createProductCard(product, stepIndex) {
     }
   }
 
-  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true) {
+  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true && !hasStandardAddonDiscountBadge) {
     const imgEl = cardElement.querySelector('.product-image, .product-img, img');
     if (imgEl && imgEl.parentElement) {
       imgEl.parentElement.classList.add('fpb-card-image-wrapper');
@@ -7689,9 +7994,43 @@ createProductCard(product, stepIndex) {
     }
   }
 
-  this.attachProductCardListeners(cardElement, product, stepIndex);
+  this.attachProductCardListeners(cardElement, product, stepIndex, {
+    displayVariantsAsIndividualProducts,
+  });
 
   return cardElement;
+},
+
+buildPaidAddonProductDisplayData(product, step) {
+  const isAddonDiscountStep = step?.isFreeGift === true;
+  if (!isAddonDiscountStep || typeof this.getAddonLineDiscount !== 'function') return product;
+
+  const addonDiscount = this.getAddonLineDiscount(step);
+  if (!addonDiscount || addonDiscount.type !== 'PERCENTAGE') return product;
+
+  const originalPrice = Number(product?.price || 0);
+  const discountValue = Number(addonDiscount.value || 0);
+  if (!Number.isFinite(originalPrice) || originalPrice <= 0 || !Number.isFinite(discountValue) || discountValue <= 0) {
+    return product;
+  }
+
+  const normalizedDiscountValue = Math.min(100, Math.max(0, discountValue));
+  const discountedPrice = Math.max(0, Math.round(originalPrice * (100 - normalizedDiscountValue) / 100));
+  return {
+    ...product,
+    price: discountedPrice,
+    compareAtPrice: originalPrice,
+    addonDiscountBadgeText: `${normalizedDiscountValue}% off`,
+  };
+},
+
+getProductCardAddButtonText(step) {
+  const isPaidAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
+  if (isPaidAddonStep) {
+    return this._resolveText('addToCartButton', this.config?.addToCartText || 'Add to Cart');
+  }
+
+  return this.getProductAddButtonText();
 },
 
 applyStandardExpandedVariantTitle(cardElement, product) {
@@ -7782,7 +8121,7 @@ getSummaryVariantFromDisplayTitle(displayTitle) {
   return variantCandidate || '';
 },
 
-attachProductCardListeners(cardElement, product, stepIndex) {
+attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
 
   if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
 
@@ -7819,10 +8158,14 @@ attachProductCardListeners(cardElement, product, stepIndex) {
   });
 
   const step = (this.selectedBundle?.steps || [])[stepIndex];
+  const displayVariantsAsIndividualProducts =
+    typeof options.displayVariantsAsIndividualProducts === 'boolean'
+      ? options.displayVariantsAsIndividualProducts
+      : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
   if (shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
-    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
+    displayVariantsAsIndividualProducts,
   })) {
     VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
       const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
@@ -7834,7 +8177,7 @@ attachProductCardListeners(cardElement, product, stepIndex) {
         }
 
         const newQtyAvail = product.quantityAvailable;
-        const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+        const newOOS = this.isVariantOutOfStock(product);
         let migratedQty = oldQty;
         if (newOOS) {
           ToastManager.show('Selected variant is out of stock — selection cleared.');
@@ -7852,14 +8195,47 @@ attachProductCardListeners(cardElement, product, stepIndex) {
       }
 
       cardElement.dataset.productId = newVariantId;
+      cardElement.dataset.currentSelectedVariantId = newVariantId;
       cardElement.querySelectorAll('[data-product-id]').forEach(el => {
         if (el !== cardElement) el.dataset.productId = newVariantId;
       });
+      this.updateProductCardVariantDisplay(cardElement, product, step);
 
       this.updateFooterMessaging?.();
       this.updateStepTimeline?.();
       this._refreshSiblingDimState?.(stepIndex);
     });
+  }
+},
+
+updateProductCardVariantDisplay(cardElement, product, step) {
+  if (!cardElement || !product) return;
+
+  const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const priceEl = cardElement.querySelector('.product-price');
+  if (priceEl) {
+    priceEl.textContent = CurrencyManager.convertAndFormat(displayProduct.price || 0, currencyInfo);
+  }
+
+  const priceRow = cardElement.querySelector('.product-price-row');
+  let compareEl = cardElement.querySelector('.product-price-strike');
+  if (displayProduct.compareAtPrice) {
+    if (!compareEl && priceRow && priceEl) {
+      compareEl = document.createElement('span');
+      compareEl.className = 'bw-product-card__compare-price product-price-strike';
+      priceRow.insertBefore(compareEl, priceEl);
+    }
+    if (compareEl) {
+      compareEl.textContent = CurrencyManager.convertAndFormat(displayProduct.compareAtPrice, currencyInfo);
+    }
+  } else if (compareEl) {
+    compareEl.remove();
+  }
+
+  const imageEl = cardElement.querySelector('.bw-product-card__image, .product-image img, img');
+  if (imageEl && product.imageUrl) {
+    imageEl.src = product.imageUrl;
   }
 },
 
@@ -8632,14 +9008,9 @@ calculateSelectedAddonDiscountAmount() {
   const steps = this.selectedBundle?.steps || [];
   const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));
   const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);
-  const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);
   return this.getAllSelectedProductsData().reduce((total, item) => {
     const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
-    const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))
-      || chargeableAddonProductKeys.has(String(this.extractId(item.productId) || item.productId))
-      || chargeableAddonProductKeys.has(String(item.title || ''))
-      || chargeableAddonProductKeys.has(String(item.parentTitle || ''));
-    if (!isChargeableAddonItem && !isChargeableAddonProduct) return total;
+    if (!isChargeableAddonItem) return total;
     const step = steps[item.stepIndex];
     const addonDiscount = this.getAddonLineDiscount(step) || this.getAddonLineDiscount(chargeableAddonStep);
     if (!addonDiscount) return total;
@@ -8675,13 +9046,28 @@ renderAddonEligibilityMessage(step, eligibilityState) {
   const template = eligibilityState.isEligible
     ? tierMessages.eligibleState
     : tierMessages.ineligibleState;
-  if (!template) return '';
+  const defaultMessage = typeof this.getDefaultAddonTierMessage === 'function'
+    ? this.getDefaultAddonTierMessage(eligibilityState)
+    : fullPageValidationAddonsMethods.getDefaultAddonTierMessage(eligibilityState);
+  const messageTemplate = template || defaultMessage;
+  if (!messageTemplate) return '';
 
   return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
     return message
       .replaceAll(`##${key}##`, value)
       .replaceAll(`{{${key}}}`, value);
-  }, template);
+  }, messageTemplate);
+},
+
+getDefaultAddonTierMessage(eligibilityState) {
+  if (!eligibilityState) return '';
+  if (eligibilityState.isEligible) {
+    return 'Congrats you are eligible for ##addonsDiscountValue####addonsDiscountValueUnit## off on Add ons';
+  }
+  if (eligibilityState.conditionType === 'AMOUNT') {
+    return 'Add product(s) worth at least ##addonsConditionDiff## ##currencyUnit## more to claim ##addonsDiscountValue####addonsDiscountValueUnit## off on Add ons';
+  }
+  return 'Add ##addonsConditionDiff## more product(s) to claim ##addonsDiscountValue####addonsDiscountValueUnit## off on Add ons';
 },
 
 renderAddonSectionTitle(step) {
@@ -8689,9 +9075,37 @@ renderAddonSectionTitle(step) {
   if (typeof title !== 'string' || !title.trim()) return null;
 
   const titleEl = document.createElement('div');
-  titleEl.className = 'side-panel-item-count side-panel-addon-title';
+  titleEl.className = 'side-panel-addon-title';
   titleEl.textContent = title.trim();
   return titleEl;
+},
+
+createAddonTierMessageElement(message, isEligible) {
+  const messageCard = document.createElement('div');
+  messageCard.className = isEligible
+    ? 'side-panel-addon-message side-panel-addon-message--eligible'
+    : 'side-panel-addon-message';
+  messageCard.dataset.addonTierEligible = isEligible ? 'true' : 'false';
+
+  const messageRow = document.createElement('div');
+  messageRow.className = 'side-panel-addon-tier-message-container';
+
+  const text = document.createElement('span');
+  text.className = 'side-panel-free-gift-text';
+  text.textContent = message;
+
+  const icon = document.createElement('span');
+  icon.className = 'side-panel-free-gift-icon';
+  icon.setAttribute('aria-hidden', 'true');
+
+  const bottomBar = document.createElement('div');
+  bottomBar.className = 'side-panel-addon-tier-bottom-bar';
+
+  messageRow.appendChild(text);
+  messageRow.appendChild(icon);
+  messageCard.appendChild(messageRow);
+  messageCard.appendChild(bottomBar);
+  return messageCard;
 },
 
 _initDefaultProducts() {
@@ -8729,6 +9143,7 @@ _syncFreeGiftLock() {
 _renderFreeGiftSection(container) {
   const step = this.freeGiftStep;
   if (!step) return;
+  if (step.addonProductsEnabled === false) return;
 
   const section = document.createElement('div');
   const giftName = this._escapeHTML(step.freeGiftName || 'gift');
@@ -8740,15 +9155,14 @@ _renderFreeGiftSection(container) {
     if (!message) return;
 
     const title = this.renderAddonSectionTitle(step);
-    if (title) container.appendChild(title);
-
     section.className = eligibilityState.isEligible
-      ? 'side-panel-addon-message side-panel-free-gift unlocked'
-      : 'side-panel-addon-message side-panel-free-gift';
-    section.innerHTML = `
-      <span class="side-panel-free-gift-icon">${eligibilityState.isEligible ? '✓' : '!'}</span>
-      <span class="side-panel-free-gift-text">${this._escapeHTML(message)}</span>
-    `;
+      ? 'side-panel-addon-summary side-panel-free-gift unlocked'
+      : 'side-panel-addon-summary side-panel-free-gift';
+    if (title) section.appendChild(title);
+    const createMessageElement = typeof this.createAddonTierMessageElement === 'function'
+      ? this.createAddonTierMessageElement
+      : fullPageValidationAddonsMethods.createAddonTierMessageElement;
+    section.appendChild(createMessageElement(message, eligibilityState.isEligible));
     container.appendChild(section);
     return;
   }
@@ -8900,11 +9314,25 @@ getSummarySidebarEmptyStateMode() {
 
 const fullPageStepFooterMethods = {
   buildCartLineSourceProperties(selectedLines) {
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
+    const parentSelectedLines = selectedLines.filter((line) => {
+      const step = line?.step;
+      return !(step?.isFreeGift === true && step?.addonDisplayFree !== true);
+    });
+    const totalPrice = parentSelectedLines.reduce((sum, line) => {
+      const quantity = Number(line?.quantity || 0);
+      const price = Number(line?.product?.price || 0);
+      return sum + (price * quantity);
+    }, 0);
+    const totalQuantity = parentSelectedLines.reduce(
+      (sum, line) => sum + Number(line?.quantity || 0),
+      0
     );
+    const unitPrices = [];
+    parentSelectedLines.forEach((line) => {
+      const quantity = Number(line?.quantity || 0);
+      const price = Number(line?.product?.price || 0);
+      for (let i = 0; i < quantity; i += 1) unitPrices.push(price);
+    });
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
@@ -8912,21 +9340,18 @@ const fullPageStepFooterMethods = {
       unitPrices
     );
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-    const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
-    const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
+    const discountAmount = Math.max(0, Number(discountInfo.discountAmount || 0));
+    const discountPercentage = Number(discountInfo.discountPercentage || 0)
+      || (totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0);
 
-    const sourceProperties = buildSharedCartLineSourceProperties({
-      selectedLines,
+    return buildSharedCartLineSourceProperties({
+      selectedLines: parentSelectedLines,
       retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
       discountAmount: discountAmount > 0
         ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
         : '',
       discountPercentage,
     });
-    const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
-
-    return this.buildCartLineDisplayProperties(displayProperties);
   },
 
 buildCartLineDisplayProperties(displayProperties) {
@@ -8981,6 +9406,7 @@ async addBundleToCart(clickedButton = null) {
           const addonDiscount = this.getAddonLineDiscount(step);
           if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {
             hasSelectedAddonLine = true;
+            properties.Box = '1';
             properties._addon_product = 'true';
             properties._addon_offer_id = baseOfferId;
             properties._boxProduct = 'addonProduct';
@@ -9008,7 +9434,7 @@ async addBundleToCart(clickedButton = null) {
           }
 
           items.push(cartItem);
-          selectedLines.push({ product, quantity });
+          selectedLines.push({ product, quantity, step });
         }
       });
     });
@@ -9678,6 +10104,71 @@ function extractFullPageId(idString) {
   return idString.toString().split('/').pop();
 }
 
+function collectProductSelectionKeys(product) {
+  const keys = new Set();
+  const addKey = (value) => {
+    if (value === null || value === undefined || value === '') return;
+    const normalized = extractFullPageId(value) || value;
+    keys.add(String(normalized));
+  };
+
+  addKey(product?.id);
+  addKey(product?.productId);
+  addKey(product?.graphqlId);
+  addKey(product?.variantId);
+  addKey(product?.variantGraphqlId);
+  (Array.isArray(product?.variants) ? product.variants : []).forEach(variant => {
+    addKey(variant?.id);
+    addKey(variant?.variantId);
+    addKey(variant?.variantGraphqlId);
+    addKey(variant?.admin_graphql_api_id);
+  });
+
+  return keys;
+}
+
+function pruneStepSelectionsToProducts(selectedProducts, stepIndex, products) {
+  const selections = selectedProducts?.[stepIndex];
+  if (!selections) return;
+
+  const allowedKeys = new Set();
+  products.forEach(product => {
+    collectProductSelectionKeys(product).forEach(key => allowedKeys.add(key));
+  });
+
+  Object.keys(selections).forEach(key => {
+    if (!allowedKeys.has(String(key))) {
+      delete selections[key];
+    }
+  });
+}
+
+function normalizeWeightToGrams(weight, unit) {
+  const numeric = Number(weight);
+  if (!Number.isFinite(numeric) || numeric <= 0) return 0;
+
+  switch (String(unit || '').toUpperCase()) {
+    case 'KILOGRAMS':
+    case 'KILOGRAM':
+    case 'KG':
+      return numeric * 1000;
+    case 'POUNDS':
+    case 'POUND':
+    case 'LB':
+    case 'LBS':
+      return numeric * 453.59237;
+    case 'OUNCES':
+    case 'OUNCE':
+    case 'OZ':
+      return numeric * 28.349523125;
+    case 'GRAMS':
+    case 'GRAM':
+    case 'G':
+    default:
+      return numeric;
+  }
+}
+
 function normalizeFullPageDirectDefaultProduct(product) {
   const variant = Array.isArray(product?.variants) ? product.variants[0] : null;
   const variantId = extractFullPageId(variant?.variantGraphqlId || variant?.variantId || variant?.id);
@@ -9746,6 +10237,9 @@ async loadStepProducts(stepIndex) {
         ? this.normalizePersonalizationAddonProduct(product)
         : product
     );
+    step.StepProduct = allProducts;
+    step.products = allProducts;
+    step.maxQuantity = allProducts.length;
     step.displayVariantsAsIndividual = activeTier?.displayVariantsAsIndividualProducts_addons === true;
     const activeDiscount = activeTier?.discount || {};
     step.addonDisplayFree = activeDiscount.type === 'PERCENTAGE' && Number(activeDiscount.value || 0) >= 100;
@@ -9919,6 +10413,11 @@ async loadStepProducts(stepIndex) {
     return true;
   });
 
+  if (step?.isFreeGift && Array.isArray(step.addonTiers)) {
+    step.maxQuantity = this.stepProductData[stepIndex].length;
+    pruneStepSelectionsToProducts(this.selectedProducts, stepIndex, this.stepProductData[stepIndex]);
+  }
+
 },
 
 _getDirectDefaultProductsData() {
@@ -10038,6 +10537,8 @@ processProductsForStep(products, step) {
     available: v.available === true,
     quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
     currentlyNotInStock: v.currentlyNotInStock === true,
+    weight: normalizeWeightToGrams(v.weight, v.weightUnit),
+    weightUnit: 'GRAMS',
     option1: v.option1 || null,
     option2: v.option2 || null,
     option3: v.option3 || null,
@@ -10079,6 +10580,8 @@ processProductsForStep(products, step) {
             available: variant.available === true,
             quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
             currentlyNotInStock: variant.currentlyNotInStock === true,
+            weight: normalizeWeightToGrams(variant.weight, variant.weightUnit),
+            weightUnit: 'GRAMS',
             sellingPlanAllocations: variant.sellingPlanAllocations || [],
 
             parentProductId: this.extractId(product.id),
@@ -10126,6 +10629,8 @@ processProductsForStep(products, step) {
         available: defaultVariant?.available === true,
         quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
         currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
+        weight: normalizeWeightToGrams(defaultVariant?.weight, defaultVariant?.weightUnit),
+        weightUnit: 'GRAMS',
 
         variants: processedVariants,
         options: processedOptions,
@@ -10808,6 +11313,7 @@ validateStep(stepIndex) {
       translated[productId] = {
         quantity: current.quantity + quantity,
         amount: current.amount + ((Number(product?.price) || 0) * quantity),
+        weight: (current.weight || 0) + ((Number(product?.weight) || 0) * quantity),
       };
     }
     return ConditionValidator.isStepConditionSatisfied(step, translated);

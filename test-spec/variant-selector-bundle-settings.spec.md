@@ -21,6 +21,12 @@ Verify the bundle-level Variant Selector setting is saved and emitted separately
 | 3 | Expanded variant card suppresses inline selector | toggle on, expanded variant card | `false` | Each card already represents a variant |
 | 4 | Single-variant product suppresses inline selector | toggle on, one variant | `false` | No variant choice needed |
 
+### FullPageCategoryVariantSelector
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Category checkbox off keeps multi-variant product grouped | category-backed FPB step with `displayVariantsAsIndividualProducts=false` and stale step-level display flag true | product grid does not expand variants into separate cards | EB stores the checkbox per category; grouped card can render the variant selector |
+| 2 | Category checkbox on expands multi-variant product | active category with `displayVariantsAsIndividualProducts=true` | product grid expands variants as individual cards | Expanded cards suppress the inline selector |
+
 ## Acceptance Criteria
 - [ ] All listed test cases pass.
 - [ ] Tests verify behavior/output, not CSS or visual placement.

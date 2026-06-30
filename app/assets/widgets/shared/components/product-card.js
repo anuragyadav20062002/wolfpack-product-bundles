@@ -21,7 +21,7 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
   const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
-  const hasVariantText = Boolean(variantText);
+  const variantSelectorBeforePrice = options.variantSelectorPlacement === 'beforePrice';
   const rootClasses = [
     'bw-product-card',
     'product-card',
@@ -43,13 +43,14 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
         </div>
         <div class="product-card-price-action">
+          ${variantSelectorBeforePrice ? options.variantSelectorHtml || '' : ''}
           ${price ? `
             <div class="bw-product-card__price product-price-row">
               ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
               <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
             </div>
           ` : ''}
-          ${options.variantSelectorHtml || ''}
+          ${variantSelectorBeforePrice ? '' : options.variantSelectorHtml || ''}
           <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
             ${isSelected
               ? renderQuantityControl({

@@ -70,6 +70,7 @@ ensureTimelinePagingStyles() {
 
 shouldRenderMultipleCategoryTimelineEntry(step) {
   if (!step || step.isFreeGift === true) return false;
+  if (this.getFullPageDesignPreset?.() === 'STANDARD') return false;
   return this.getStepCategoryTabEntries(step).length > 1;
 },
 

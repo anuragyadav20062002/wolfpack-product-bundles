@@ -2,6 +2,9 @@ import { readFullPageWidgetSources } from './widget-source-helpers';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PricingCalculator } = require("../../../app/assets/widgets/shared/pricing-calculator.js");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { fullPageStepFooterMethods } =
+  require("../../../app/assets/widgets/full-page/methods/step-footer-methods.js");
 
 describe("Full Page widget direct Add-ons contract", () => {
   it("derives an add-on step from direct personalizationData", () => {
@@ -45,33 +48,40 @@ describe("Full Page widget direct Add-ons contract", () => {
     const source = readFullPageWidgetSources();
 
     expect(source).toContain("getAddonLineDiscount(step)");
-    expect(source).toContain("if (addonDiscount && step?.addonDisplayFree !== true) {");
-    expect(source).toContain("properties['_bundle_step_type'] = addonDiscount");
+    expect(source).toContain("if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {");
+    expect(source).toContain("properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true");
     expect(source).toContain("`addon:${addonDiscount.type}:${addonDiscount.value}`");
     expect(source).toContain(": 'addon';");
   });
 
-  it("includes selected add-on discount savings in cart display properties", () => {
-    const source = readFullPageWidgetSources();
+  it("keeps selected add-on discount savings out of parent cart display properties", () => {
+    const originalWindow = (global as any).window;
+    const paidStep = { id: "paid-step" };
+    const paidAddonStep = { id: "addon-step", isFreeGift: true, addonDisplayFree: false };
 
-    expect(source).toContain("calculateSelectedAddonDiscountAmount()");
-    expect(source).toContain("getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice)");
-    expect(source).toContain("const combinedDiscountAmount = Math.min(totalPrice, baseDiscountAmount + addonDiscountAmount);");
-    expect(source).toContain("discountPercentage: totalPrice > 0 ? (combinedDiscountAmount / totalPrice) * 100 : 0,");
-    expect(source).toContain("const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);");
-    expect(source).toContain("return this.getAllSelectedProductsData().reduce((total, item) => {");
-    expect(source).toContain("const step = steps[item.stepIndex];");
-    expect(source).toContain("const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));");
-    expect(source).toContain("const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);");
-    expect(source).toContain("const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);");
-    expect(source).toContain("getAddonProductSelectionKeys(step)");
-    expect(source).toContain("chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))");
-    expect(source).toContain("const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);");
-    expect(source).toContain("const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))");
-    expect(source).toContain("if (!isChargeableAddonItem && !isChargeableAddonProduct) return total;");
-    expect(source).not.toContain("const discountPercentage = discountInfo.discountPercentage\n      ||");
-    expect(source).toContain("const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;");
-    expect(source).toContain("if (!addonDiscount) return total;");
+    try {
+      (global as any).window = {
+        Shopify: { currency: { active: "USD", format: ["$", "{{amount}}"].join("") } },
+      };
+
+      const sourceProperties = fullPageStepFooterMethods.buildCartLineSourceProperties.call(
+        {
+          selectedBundle: { pricing: { enabled: false, rules: [] } },
+        },
+        [
+          { product: { title: "Paid product", price: 10000 }, quantity: 1, step: paidStep },
+          { product: { title: "Paid add-on", price: 6000 }, quantity: 1, step: paidAddonStep },
+        ],
+      );
+
+      expect(JSON.parse(sourceProperties._bundle_display_properties)).toEqual({
+        box: "1",
+        items: "1 x Paid product",
+        retailPrice: "$100.00",
+      });
+    } finally {
+      (global as any).window = originalWindow;
+    }
   });
 
   it("uses combined base plus selected add-on discount for visible Full Page totals", () => {

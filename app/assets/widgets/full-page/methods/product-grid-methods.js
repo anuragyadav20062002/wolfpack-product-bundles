@@ -92,6 +92,14 @@ createCategorySectionRows(stepIndex, placement = 'all') {
   return categoryRowsContainer;
 },
 
+getNoProductsAvailableMessage() {
+  if (typeof this._resolveText === 'function') {
+    return this._resolveText('noProductsAvailable', 'No Products Available');
+  }
+
+  return 'No Products Available';
+},
+
 createCategoryTabs(stepIndex) {
   if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
     return null;
@@ -281,7 +289,7 @@ createFullPageProductGrid(stepIndex) {
     // Show appropriate message based on whether there's a search query
     const message = this.searchQuery
       ? `No products match "${ComponentGenerator.escapeHtml(this.searchQuery)}"`
-      : 'No products available in this step.';
+      : ComponentGenerator.escapeHtml(this.getNoProductsAvailableMessage());
     grid.innerHTML = `<p class="no-products">${message}</p>`;
     return grid;
   }
@@ -295,7 +303,9 @@ createFullPageProductGrid(stepIndex) {
 
   // Create product cards using ComponentGenerator
   expandedProducts.forEach(product => {
-    const productCard = this.createProductCard(product, stepIndex);
+    const productCard = this.createProductCard(product, stepIndex, {
+      displayVariantsAsIndividualProducts: shouldDisplayVariantsAsIndividual,
+    });
     const productId = product.variantId || product.id;
     const currentQty = stepSelections[productId] || 0;
     // Dim unselected cards when step quota is full

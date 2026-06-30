@@ -1,7 +1,7 @@
 /**
  * Unit Tests: FPB add-ons / gifting step separation
  *
- * EB exposes two separate controls:
+ * The reference bundle exposes two separate controls:
  * - Add-Ons and Gifting Step creates the storefront step/tab.
  * - Add-Ons with Bundles attaches tiered add-on products/discounts to that step.
  */
@@ -14,6 +14,12 @@ const { fullPageInitialRenderMethods } =
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageValidationAddonsMethods } =
   require("../../../app/assets/widgets/full-page/methods/validation-addons-methods.js");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { fullPageProductCardFooterMethods } =
+  require("../../../app/assets/widgets/full-page/methods/product-card-footer-methods.js");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { fullPageProductProcessingMethods } =
+  require("../../../app/assets/widgets/full-page/methods/product-processing-methods.js");
 
 const buildAddonStepFromPersonalization =
   fullPageInitialRenderMethods.buildAddonStepFromPersonalization;
@@ -24,8 +30,15 @@ const getAddonTierEvaluation =
   fullPageValidationAddonsMethods.getAddonTierEvaluation;
 const getAddonLineDiscount =
   fullPageValidationAddonsMethods.getAddonLineDiscount;
+const calculateSelectedAddonDiscountAmount =
+  fullPageValidationAddonsMethods.calculateSelectedAddonDiscountAmount;
 const renderAddonEligibilityMessage =
   fullPageValidationAddonsMethods.renderAddonEligibilityMessage;
+const buildPaidAddonProductDisplayData =
+  fullPageProductCardFooterMethods.buildPaidAddonProductDisplayData;
+const getProductCardAddButtonText =
+  fullPageProductCardFooterMethods.getProductCardAddButtonText;
+const loadStepProducts = fullPageProductProcessingMethods.loadStepProducts;
 
 if (
   typeof buildAddonStepFromPersonalization !== "function" ||
@@ -33,7 +46,11 @@ if (
   typeof getAddonEligibilityState !== "function" ||
   typeof getAddonTierEvaluation !== "function" ||
   typeof getAddonLineDiscount !== "function" ||
-  typeof renderAddonEligibilityMessage !== "function"
+  typeof calculateSelectedAddonDiscountAmount !== "function" ||
+  typeof renderAddonEligibilityMessage !== "function" ||
+  typeof buildPaidAddonProductDisplayData !== "function" ||
+  typeof getProductCardAddButtonText !== "function" ||
+  typeof loadStepProducts !== "function"
 ) {
   throw new Error("Expected FPB add-on methods missing");
 }
@@ -92,13 +109,57 @@ describe("FPB add-ons / gifting step separation", () => {
       addonTitle: "Choose a gift",
       addonIconUrl: "https://cdn.example/icon.png",
       addonUnlockAfterCompletion: true,
-      addonDisplayFree: true,
+      addonDisplayFree: false,
+      addonProductsEnabled: false,
     });
     expect(step.StepProduct).toEqual([]);
     expect(step.products).toEqual([]);
     expect(step.addonTiers).toBeUndefined();
     expect(step.addonEligibilityCondition).toBeNull();
     expect(step.addonDiscount).toBeNull();
+  });
+
+  it("does not render free gift eligibility messaging for a gifting-only step", () => {
+    const step = buildStep({
+      isPersonalizationEnabled: true,
+      personalizeStepText: "Add On",
+      addonProducts: {
+        isEnabled: false,
+        title: "Add ON",
+        tiers: [],
+      },
+    });
+    const originalDocument = (global as any).document;
+    (global as any).document = {
+      createElement: () => ({
+        className: "",
+        innerHTML: "",
+      }),
+    };
+    const container = {
+      children: [] as Array<{ className?: string; innerHTML?: string }>,
+      appendChild(child: { className?: string; innerHTML?: string }) {
+        this.children.push(child);
+      },
+      get textContent() {
+        return this.children.map((child) => child.innerHTML || "").join("");
+      },
+    };
+
+    try {
+      fullPageValidationAddonsMethods._renderFreeGiftSection.call(
+        {
+          freeGiftStep: step,
+          _escapeHTML: (value: unknown) => String(value ?? ""),
+          isFreeGiftUnlocked: true,
+        },
+        container,
+      );
+    } finally {
+      (global as any).document = originalDocument;
+    }
+
+    expect(container.textContent).toBe("");
   });
 
   it("does not create the gifting step when only Add-Ons with Bundles is enabled", () => {
@@ -219,6 +280,50 @@ describe("FPB add-ons / gifting step separation", () => {
     expect(message).toBe("Tier 2 gives 100% off");
   });
 
+  it("derives default add-on tier messages when saved templates are empty", () => {
+    (global as any).window = {
+      Shopify: { currency: { active: "USD", format: "${{amount}}" } },
+      shopMoneyFormat: "${{amount}}",
+    };
+    const step = {
+      isFreeGift: true,
+      addonMessaging: {
+        isEnabled: false,
+        tier1: {
+          ineligibleState: "",
+          eligibleState: "",
+        },
+      },
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 2 },
+          discount: { type: "PERCENTAGE", value: 10 },
+          selectedAddonProducts: [makeProduct()],
+        },
+      ],
+    };
+    const baseCtx = {
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+      selectedBundle: { steps: [{ id: "paid" }, step] },
+    };
+
+    const ineligibleState = getAddonEligibilityState.call(
+      { ...baseCtx, selectedProducts: [{ paidVariant: 1 }] },
+      step,
+    );
+    expect(renderAddonEligibilityMessage.call(baseCtx, step, ineligibleState)).toBe(
+      "Add 1 more product(s) to claim 10% off on Add ons",
+    );
+
+    const eligibleState = getAddonEligibilityState.call(
+      { ...baseCtx, selectedProducts: [{ paidVariant: 2 }] },
+      step,
+    );
+    expect(renderAddonEligibilityMessage.call(baseCtx, step, eligibleState)).toBe(
+      "Congrats you are eligible for 10% off on Add ons",
+    );
+  });
+
   it("does not return an add-on line discount before the active tier is eligible", () => {
     (global as any).window = {
       Shopify: { currency: { active: "USD", format: "${{amount}}" } },
@@ -245,6 +350,134 @@ describe("FPB add-ons / gifting step separation", () => {
         step,
       ),
     ).toBeNull();
+  });
+
+  it("does not discount a paid-step line just because it is also an add-on candidate", () => {
+    const addonProduct = makeProduct();
+    const addonStep = {
+      isFreeGift: true,
+      addonDisplayFree: false,
+      StepProduct: [addonProduct],
+      products: [addonProduct],
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 10 },
+          selectedAddonProducts: [addonProduct],
+        },
+      ],
+    };
+    const ctx = {
+      ...fullPageValidationAddonsMethods,
+      selectedProducts: [{ paidVariant: 1 }, {}],
+      stepProductData: [[{ variantId: "paidVariant", price: 82900 }], []],
+      selectedBundle: { steps: [{ id: "paid" }, addonStep] },
+      getAllSelectedProductsData: () => [
+        {
+          stepIndex: 0,
+          variantId: "paidVariant",
+          productId: addonProduct.graphqlId,
+          title: addonProduct.title,
+          parentTitle: addonProduct.title,
+          quantity: 1,
+          price: 82900,
+          isFreeGift: false,
+          addonDisplayFree: false,
+        },
+      ],
+      extractId: (value: unknown) => String(value ?? "").split("/").pop(),
+      getAddonLineDiscount: (step: unknown) => step === addonStep ? { type: "PERCENTAGE", value: 10 } : null,
+    };
+
+    expect(calculateSelectedAddonDiscountAmount.call(ctx)).toBe(0);
+  });
+
+  it("discounts a selected paid add-on line on the add-on step", () => {
+    const addonStep = {
+      isFreeGift: true,
+      addonDisplayFree: false,
+      StepProduct: [makeProduct()],
+      products: [makeProduct()],
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 10 },
+          selectedAddonProducts: [makeProduct()],
+        },
+      ],
+    };
+    const ctx = {
+      ...fullPageValidationAddonsMethods,
+      selectedProducts: [{ paidVariant: 1 }, { addonVariant: 1 }],
+      stepProductData: [[{ variantId: "paidVariant", price: 82900 }], [{ variantId: "addonVariant", price: 82900 }]],
+      selectedBundle: { steps: [{ id: "paid" }, addonStep] },
+      getAllSelectedProductsData: () => [
+        {
+          stepIndex: 1,
+          variantId: "addonVariant",
+          quantity: 1,
+          price: 82900,
+          isFreeGift: true,
+          addonDisplayFree: false,
+        },
+      ],
+      extractId: (value: unknown) => String(value ?? "").split("/").pop(),
+      getAddonLineDiscount: (step: unknown) => step === addonStep ? { type: "PERCENTAGE", value: 10 } : null,
+    };
+
+    expect(calculateSelectedAddonDiscountAmount.call(ctx)).toBe(8290);
+  });
+
+  it("derives paid add-on card display pricing from the active add-on discount", () => {
+    const step = { isFreeGift: true, addonDisplayFree: false };
+    const displayProduct = buildPaidAddonProductDisplayData.call(
+      {
+        getAddonLineDiscount: () => ({ type: "PERCENTAGE", value: 10 }),
+      },
+      { title: "Gift product", price: 82900, compareAtPrice: null },
+      step,
+    );
+
+    expect(displayProduct).toMatchObject({
+      title: "Gift product",
+      price: 74610,
+      compareAtPrice: 82900,
+      addonDiscountBadgeText: "10% off",
+    });
+  });
+
+  it("derives 100% add-on card display pricing from the active add-on discount", () => {
+    const step = { isFreeGift: true, addonDisplayFree: true };
+    const displayProduct = buildPaidAddonProductDisplayData.call(
+      {
+        getAddonLineDiscount: () => ({ type: "PERCENTAGE", value: 100 }),
+      },
+      { title: "Gift product", price: 82900, compareAtPrice: null },
+      step,
+    );
+
+    expect(displayProduct).toMatchObject({
+      title: "Gift product",
+      price: 0,
+      compareAtPrice: 82900,
+      addonDiscountBadgeText: "100% off",
+    });
+  });
+
+  it("uses the cart CTA label for paid add-on product cards", () => {
+    const ctx = {
+      _resolveText: (key: string, fallback: string) =>
+        key === "addToCartButton" ? "Add To Cart" : fallback,
+      getProductAddButtonText: () => "Add To Box",
+    };
+
+    expect(
+      getProductCardAddButtonText.call(ctx, {
+        isFreeGift: true,
+        addonDisplayFree: false,
+      }),
+    ).toBe("Add To Cart");
+    expect(getProductCardAddButtonText.call(ctx, {})).toBe("Add To Box");
   });
 
   it("exposes the eligible tier and index from tier evaluation", () => {
@@ -275,5 +508,53 @@ describe("FPB add-ons / gifting step separation", () => {
       tierIndex: 1,
       isEligible: true,
     });
+  });
+
+  it("loads products and selection capacity from the active add-on tier only", async () => {
+    const tierOneProduct = {
+      ...makeProduct("gid://shopify/Product/1"),
+      variants: [{ variantGraphqlId: "gid://shopify/ProductVariant/11", price: "10.00" }],
+    };
+    const tierTwoProduct = {
+      ...makeProduct("gid://shopify/Product/2"),
+      variants: [{ variantGraphqlId: "gid://shopify/ProductVariant/22", price: "20.00" }],
+    };
+    const addonStep = {
+      isFreeGift: true,
+      maxQuantity: 2,
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 20 },
+          selectedAddonProducts: [tierOneProduct],
+        },
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 2 },
+          discount: { type: "PERCENTAGE", value: 100 },
+          selectedAddonProducts: [tierTwoProduct],
+        },
+      ],
+    };
+    const ctx = {
+      ...fullPageValidationAddonsMethods,
+      ...fullPageInitialRenderMethods,
+      ...fullPageProductProcessingMethods,
+      selectedProducts: [{ paidVariant: 2 }, { "11": 1 }],
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }], []],
+      selectedBundle: { steps: [{ id: "paid" }, addonStep] },
+      directDefaultProducts: [],
+      stepCollectionProductIds: {},
+      processProductsForStep: (_products: unknown[], _step: unknown) => [
+        { variantId: "22", id: "2", price: 2000 },
+      ],
+      _mergeDirectDefaultProductsIntoStep: (_stepIndex: number, products: unknown[]) => products,
+      collectStepCollectionHandles: () => [],
+    };
+
+    await loadStepProducts.call(ctx, 1);
+
+    expect(addonStep.maxQuantity).toBe(1);
+    expect(ctx.stepProductData[1]).toEqual([{ variantId: "22", id: "2", price: 2000 }]);
+    expect(ctx.selectedProducts[1]).toEqual({});
   });
 });

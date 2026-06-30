@@ -13,6 +13,7 @@ describe('Full Page widget category hydration behavior', () => {
     fullPageSearchCategoryMethods.shouldDisplayVariantsAsIndividualForProductGrid;
   const expandProductsByVariant = fullPageProductGridMethods.expandProductsByVariant;
   const orderProductsForActiveCategory = fullPageProductGridMethods.orderProductsForActiveCategory;
+  const getNoProductsAvailableMessage = fullPageProductGridMethods.getNoProductsAvailableMessage;
 
   function categoryContext() {
     return {
@@ -58,7 +59,7 @@ describe('Full Page widget category hydration behavior', () => {
     ]);
   });
 
-  it('inherits the FPB step-level variant display flag for category tabs', () => {
+  it('uses the active category variant display flag for category tabs', () => {
     const step = {
       displayVariantsAsIndividual: true,
       categories: [
@@ -66,6 +67,29 @@ describe('Full Page widget category hydration behavior', () => {
           categoryId: 'cat-collection',
           title: 'Collection',
           displayVariantsAsIndividualProducts: false,
+          collections: [{ handle: 'automated-collection' }],
+        },
+      ],
+    };
+    const activeCategory = getStepCategoryTabEntries(step)[0];
+
+    expect(
+      shouldDisplayVariantsAsIndividualForProductGrid.call(
+        categoryContext(),
+        step,
+        activeCategory,
+      ),
+    ).toBe(false);
+  });
+
+  it('expands category tab products only when the active category display flag is on', () => {
+    const step = {
+      displayVariantsAsIndividual: false,
+      categories: [
+        {
+          categoryId: 'cat-collection',
+          title: 'Collection',
+          displayVariantsAsIndividualProducts: true,
           collections: [{ handle: 'automated-collection' }],
         },
       ],
@@ -178,5 +202,19 @@ describe('Full Page widget category hydration behavior', () => {
       'Collection first',
       'Collection second',
     ]);
+  });
+
+  it('resolves empty-product copy from FPB runtime language settings', () => {
+    const overridden = getNoProductsAvailableMessage.call({
+      _resolveText: (key: string, fallback: string) => (
+        key === 'noProductsAvailable' ? 'Nothing available' : fallback
+      ),
+    });
+    const defaulted = getNoProductsAvailableMessage.call({
+      _resolveText: (_key: string, fallback: string) => fallback,
+    });
+
+    expect(overridden).toBe('Nothing available');
+    expect(defaulted).toBe('No Products Available');
   });
 });

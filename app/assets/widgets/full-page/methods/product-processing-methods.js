@@ -29,6 +29,71 @@ function extractFullPageId(idString) {
   return idString.toString().split('/').pop();
 }
 
+function collectProductSelectionKeys(product) {
+  const keys = new Set();
+  const addKey = (value) => {
+    if (value === null || value === undefined || value === '') return;
+    const normalized = extractFullPageId(value) || value;
+    keys.add(String(normalized));
+  };
+
+  addKey(product?.id);
+  addKey(product?.productId);
+  addKey(product?.graphqlId);
+  addKey(product?.variantId);
+  addKey(product?.variantGraphqlId);
+  (Array.isArray(product?.variants) ? product.variants : []).forEach(variant => {
+    addKey(variant?.id);
+    addKey(variant?.variantId);
+    addKey(variant?.variantGraphqlId);
+    addKey(variant?.admin_graphql_api_id);
+  });
+
+  return keys;
+}
+
+function pruneStepSelectionsToProducts(selectedProducts, stepIndex, products) {
+  const selections = selectedProducts?.[stepIndex];
+  if (!selections) return;
+
+  const allowedKeys = new Set();
+  products.forEach(product => {
+    collectProductSelectionKeys(product).forEach(key => allowedKeys.add(key));
+  });
+
+  Object.keys(selections).forEach(key => {
+    if (!allowedKeys.has(String(key))) {
+      delete selections[key];
+    }
+  });
+}
+
+function normalizeWeightToGrams(weight, unit) {
+  const numeric = Number(weight);
+  if (!Number.isFinite(numeric) || numeric <= 0) return 0;
+
+  switch (String(unit || '').toUpperCase()) {
+    case 'KILOGRAMS':
+    case 'KILOGRAM':
+    case 'KG':
+      return numeric * 1000;
+    case 'POUNDS':
+    case 'POUND':
+    case 'LB':
+    case 'LBS':
+      return numeric * 453.59237;
+    case 'OUNCES':
+    case 'OUNCE':
+    case 'OZ':
+      return numeric * 28.349523125;
+    case 'GRAMS':
+    case 'GRAM':
+    case 'G':
+    default:
+      return numeric;
+  }
+}
+
 export function normalizeFullPageDirectDefaultProduct(product) {
   const variant = Array.isArray(product?.variants) ? product.variants[0] : null;
   const variantId = extractFullPageId(variant?.variantGraphqlId || variant?.variantId || variant?.id);
@@ -98,6 +163,9 @@ async loadStepProducts(stepIndex) {
         ? this.normalizePersonalizationAddonProduct(product)
         : product
     );
+    step.StepProduct = allProducts;
+    step.products = allProducts;
+    step.maxQuantity = allProducts.length;
     step.displayVariantsAsIndividual = activeTier?.displayVariantsAsIndividualProducts_addons === true;
     const activeDiscount = activeTier?.discount || {};
     step.addonDisplayFree = activeDiscount.type === 'PERCENTAGE' && Number(activeDiscount.value || 0) >= 100;
@@ -288,6 +356,11 @@ async loadStepProducts(stepIndex) {
     return true;
   });
 
+  if (step?.isFreeGift && Array.isArray(step.addonTiers)) {
+    step.maxQuantity = this.stepProductData[stepIndex].length;
+    pruneStepSelectionsToProducts(this.selectedProducts, stepIndex, this.stepProductData[stepIndex]);
+  }
+
 },
 
 _getDirectDefaultProductsData() {
@@ -410,6 +483,8 @@ processProductsForStep(products, step) {
     available: v.available === true,
     quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
     currentlyNotInStock: v.currentlyNotInStock === true,
+    weight: normalizeWeightToGrams(v.weight, v.weightUnit),
+    weightUnit: 'GRAMS',
     option1: v.option1 || null,
     option2: v.option2 || null,
     option3: v.option3 || null,
@@ -453,6 +528,8 @@ processProductsForStep(products, step) {
             available: variant.available === true,
             quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
             currentlyNotInStock: variant.currentlyNotInStock === true,
+            weight: normalizeWeightToGrams(variant.weight, variant.weightUnit),
+            weightUnit: 'GRAMS',
             sellingPlanAllocations: variant.sellingPlanAllocations || [],
             // Preserve parent product data for variant selection in modal
             parentProductId: this.extractId(product.id),
@@ -504,6 +581,8 @@ processProductsForStep(products, step) {
         available: defaultVariant?.available === true,
         quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
         currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
+        weight: normalizeWeightToGrams(defaultVariant?.weight, defaultVariant?.weightUnit),
+        weightUnit: 'GRAMS',
         // Preserve variants and options for variant selection in modal
         variants: processedVariants,
         options: processedOptions,
