@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 3.0.90
+ * Version : 3.0.91
  * Built   : 2026-06-30
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.90';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.91';
 (function (window) {
   'use strict';
 

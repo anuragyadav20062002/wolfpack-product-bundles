@@ -165,6 +165,8 @@ Evidence path: `/private/tmp/fpb-standard-agentic-parity/step-timeline-all-confi
 - EB does not promote multi-category tabs into separate timeline nodes; category switching stays inside the active product step.
 - WPB pre-fix desktop/mobile evidence rendered extra `Multiple Categories` nodes, which changed desktop spacing and forced mobile pagination at five entries.
 - Source fix in widget version `3.0.81` suppresses synthetic multi-category timeline entries for the Standard preset only; non-Standard timeline eligibility remains unchanged.
+- EB desktop/mobile icon evidence shows 40px circular step containers, active icon image 24px, inactive icon image 28px, hidden container overflow, and unrounded icon images.
+- Source fix in widget version `3.0.91` resets the Standard timeline icon image radius/object-fit and aligns the circle overflow. Evidence path: `/private/tmp/fpb-standard-agentic-parity/step-timeline/`.
 
 ## Pairwise Run Set
 
