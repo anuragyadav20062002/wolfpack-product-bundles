@@ -787,6 +787,18 @@ Per-product attributes: `productid="{numericId}"` `firstvariantid="{numericVaria
 
 Per-category attribute: `categoryid="{categoryId}"`
 
+### FPB Standard Variant Selector UI
+
+For Standard Design (`FBP_SIDE_FOOTER` + `DEFAULT_FBP`), grouped variant products render an inline `Choose Options` dropdown on desktop when variants are not displayed as individual products.
+
+Observed desktop behavior:
+- The selected row uses the EB Standard card dropdown style: one row tall, `1.5px` light border, `5px` radius, Assistant text, and option rows with product images where available.
+- Long option lists use a short scrolling dropdown viewport with a `max-height` transition when opening and closing.
+- The dropdown paints above later product cards in the grid when expanded.
+- The scrollbar is a narrow WebKit scrollbar: `3px` width, transparent scrollbar background, `#f1f1f1` track, and `#f6f6f6` thumb.
+
+Evidence: `/private/tmp/fpb-standard-agentic-parity/variant-selector-dropdown-clipping/eb-long-dropdown-reference.json` and `eb-scrollbar-pseudo-reference.json`.
+
 ### PPB Global Namespace
 
 | Global | Purpose |
