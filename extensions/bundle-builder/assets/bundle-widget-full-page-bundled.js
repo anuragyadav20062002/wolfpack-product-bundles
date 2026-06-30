@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.104
+ * Version : 3.0.105
  * Built   : 2026-06-30
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.104';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.105';
 (function() {
   'use strict';
 
@@ -2689,6 +2689,7 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
         </span>
         ${options.stockBadgeHtml || ''}
       </div>
+      ${options.cardBadgeHtml || ''}
       <div class="bw-product-card__body product-content-wrapper">
           <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
@@ -8000,7 +8001,7 @@ createProductCard(product, stepIndex, options = {}) {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         addButtonText: this.getProductCardAddButtonText(step),
-        stockBadgeHtml,
+        cardBadgeHtml: stockBadgeHtml,
         variantSelectorPlacement: designPreset === 'STANDARD' ? 'beforePrice' : undefined,
       }
     );

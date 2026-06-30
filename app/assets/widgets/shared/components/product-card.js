@@ -44,6 +44,7 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
         </span>
         ${options.stockBadgeHtml || ''}
       </div>
+      ${options.cardBadgeHtml || ''}
       <div class="bw-product-card__body product-content-wrapper">
           <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>

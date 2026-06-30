@@ -82,7 +82,7 @@ createProductCard(product, stepIndex, options = {}) {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         addButtonText: this.getProductCardAddButtonText(step),
-        stockBadgeHtml,
+        cardBadgeHtml: stockBadgeHtml,
         variantSelectorPlacement: designPreset === 'STANDARD' ? 'beforePrice' : undefined,
       }
     );
