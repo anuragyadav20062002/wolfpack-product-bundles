@@ -325,6 +325,13 @@ body:has([data-fpb-design-preset]) {
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
   .sidebar-content
+  .product-card:has(> .fpb-addon-discount-badge)
+  .bw-product-card__image-overlay {
+  justify-content: flex-start;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .sidebar-content
   .product-card
   .bw-product-card__magnifier {
   position: relative;
