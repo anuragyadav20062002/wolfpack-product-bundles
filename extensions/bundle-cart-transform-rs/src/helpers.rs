@@ -44,17 +44,6 @@ pub fn is_addon_line(step_type_value: Option<&str>) -> bool {
         .unwrap_or(false)
 }
 
-pub fn parse_addon_discount(step_type_value: Option<&str>) -> Option<(String, String)> {
-    let value = step_type_value?;
-    let mut parts = value.split(':');
-    match (parts.next(), parts.next(), parts.next(), parts.next()) {
-        (Some("addon"), Some(discount_type), Some(discount_value), None) => {
-            Some((discount_type.to_string(), discount_value.to_string()))
-        }
-        _ => None,
-    }
-}
-
 // ============================================================================
 // TESTS
 // ============================================================================
@@ -96,15 +85,4 @@ mod tests {
     fn is_addon_with_discount_true() { assert!(is_addon_line(Some("addon:PERCENTAGE:10"))); }
     #[test]
     fn is_addon_false()     { assert!(!is_addon_line(Some("free_gift"))); }
-    #[test]
-    fn parses_addon_discount() {
-        assert_eq!(
-            parse_addon_discount(Some("addon:PERCENTAGE:10")),
-            Some(("PERCENTAGE".to_string(), "10".to_string()))
-        );
-    }
-    #[test]
-    fn ignores_invalid_addon_discount() {
-        assert_eq!(parse_addon_discount(Some("addon:PERCENTAGE")), None);
-    }
 }

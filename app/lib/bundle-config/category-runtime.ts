@@ -75,10 +75,13 @@ function compactVariants(value: unknown): Record<string, unknown>[] {
 
       const source = variant as Record<string, unknown>;
       const compact: Record<string, unknown> = {};
-      for (const key of ["id", "variantId", "variantGraphqlId", "graphqlId", "title", "price", "compareAtPrice"]) {
+      for (const key of ["id", "variantId", "variantGraphqlId", "graphqlId", "title", "price", "compareAtPrice", "weight"]) {
         const fieldValue = source[key];
         if (typeof fieldValue === "string" && fieldValue.trim()) compact[key] = fieldValue;
         if (typeof fieldValue === "number" && Number.isFinite(fieldValue)) compact[key] = fieldValue;
+      }
+      if (typeof source.weightUnit === "string" && source.weightUnit.trim()) {
+        compact.weightUnit = source.weightUnit;
       }
 
       if (source.available === true || source.availableForSale === true) compact.available = true;
@@ -152,11 +155,14 @@ function compactProductReference(
     }
   }
 
-  for (const key of ["price", "compareAtPrice"]) {
+  for (const key of ["price", "compareAtPrice", "weight"]) {
     const fieldValue = mergedProduct[key];
     if (typeof fieldValue === "number" || (typeof fieldValue === "string" && fieldValue.trim())) {
       reference[key] = fieldValue;
     }
+  }
+  if (typeof mergedProduct.weightUnit === "string" && mergedProduct.weightUnit.trim()) {
+    reference.weightUnit = mergedProduct.weightUnit;
   }
 
   const images = compactImages(mergedProduct.images);

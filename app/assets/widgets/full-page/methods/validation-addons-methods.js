@@ -357,14 +357,9 @@ calculateSelectedAddonDiscountAmount() {
   const steps = this.selectedBundle?.steps || [];
   const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));
   const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);
-  const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);
   return this.getAllSelectedProductsData().reduce((total, item) => {
     const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
-    const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))
-      || chargeableAddonProductKeys.has(String(this.extractId(item.productId) || item.productId))
-      || chargeableAddonProductKeys.has(String(item.title || ''))
-      || chargeableAddonProductKeys.has(String(item.parentTitle || ''));
-    if (!isChargeableAddonItem && !isChargeableAddonProduct) return total;
+    if (!isChargeableAddonItem) return total;
     const step = steps[item.stepIndex];
     const addonDiscount = this.getAddonLineDiscount(step) || this.getAddonLineDiscount(chargeableAddonStep);
     if (!addonDiscount) return total;
@@ -400,13 +395,28 @@ renderAddonEligibilityMessage(step, eligibilityState) {
   const template = eligibilityState.isEligible
     ? tierMessages.eligibleState
     : tierMessages.ineligibleState;
-  if (!template) return '';
+  const defaultMessage = typeof this.getDefaultAddonTierMessage === 'function'
+    ? this.getDefaultAddonTierMessage(eligibilityState)
+    : fullPageValidationAddonsMethods.getDefaultAddonTierMessage(eligibilityState);
+  const messageTemplate = template || defaultMessage;
+  if (!messageTemplate) return '';
 
   return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
     return message
       .replaceAll(`##${key}##`, value)
       .replaceAll(`{{${key}}}`, value);
-  }, template);
+  }, messageTemplate);
+},
+
+getDefaultAddonTierMessage(eligibilityState) {
+  if (!eligibilityState) return '';
+  if (eligibilityState.isEligible) {
+    return 'Congrats you are eligible for ##addonsDiscountValue####addonsDiscountValueUnit## off on Add ons';
+  }
+  if (eligibilityState.conditionType === 'AMOUNT') {
+    return 'Add product(s) worth at least ##addonsConditionDiff## ##currencyUnit## more to claim ##addonsDiscountValue####addonsDiscountValueUnit## off on Add ons';
+  }
+  return 'Add ##addonsConditionDiff## more product(s) to claim ##addonsDiscountValue####addonsDiscountValueUnit## off on Add ons';
 },
 
 renderAddonSectionTitle(step) {
@@ -414,9 +424,37 @@ renderAddonSectionTitle(step) {
   if (typeof title !== 'string' || !title.trim()) return null;
 
   const titleEl = document.createElement('div');
-  titleEl.className = 'side-panel-item-count side-panel-addon-title';
+  titleEl.className = 'side-panel-addon-title';
   titleEl.textContent = title.trim();
   return titleEl;
+},
+
+createAddonTierMessageElement(message, isEligible) {
+  const messageCard = document.createElement('div');
+  messageCard.className = isEligible
+    ? 'side-panel-addon-message side-panel-addon-message--eligible'
+    : 'side-panel-addon-message';
+  messageCard.dataset.addonTierEligible = isEligible ? 'true' : 'false';
+
+  const messageRow = document.createElement('div');
+  messageRow.className = 'side-panel-addon-tier-message-container';
+
+  const text = document.createElement('span');
+  text.className = 'side-panel-free-gift-text';
+  text.textContent = message;
+
+  const icon = document.createElement('span');
+  icon.className = 'side-panel-free-gift-icon';
+  icon.setAttribute('aria-hidden', 'true');
+
+  const bottomBar = document.createElement('div');
+  bottomBar.className = 'side-panel-addon-tier-bottom-bar';
+
+  messageRow.appendChild(text);
+  messageRow.appendChild(icon);
+  messageCard.appendChild(messageRow);
+  messageCard.appendChild(bottomBar);
+  return messageCard;
 },
 
 _initDefaultProducts() {
@@ -456,6 +494,7 @@ _syncFreeGiftLock() {
 _renderFreeGiftSection(container) {
   const step = this.freeGiftStep;
   if (!step) return;
+  if (step.addonProductsEnabled === false) return;
 
   const section = document.createElement('div');
   const giftName = this._escapeHTML(step.freeGiftName || 'gift');
@@ -467,15 +506,14 @@ _renderFreeGiftSection(container) {
     if (!message) return;
 
     const title = this.renderAddonSectionTitle(step);
-    if (title) container.appendChild(title);
-
     section.className = eligibilityState.isEligible
-      ? 'side-panel-addon-message side-panel-free-gift unlocked'
-      : 'side-panel-addon-message side-panel-free-gift';
-    section.innerHTML = `
-      <span class="side-panel-free-gift-icon">${eligibilityState.isEligible ? '✓' : '!'}</span>
-      <span class="side-panel-free-gift-text">${this._escapeHTML(message)}</span>
-    `;
+      ? 'side-panel-addon-summary side-panel-free-gift unlocked'
+      : 'side-panel-addon-summary side-panel-free-gift';
+    if (title) section.appendChild(title);
+    const createMessageElement = typeof this.createAddonTierMessageElement === 'function'
+      ? this.createAddonTierMessageElement
+      : fullPageValidationAddonsMethods.createAddonTierMessageElement;
+    section.appendChild(createMessageElement(message, eligibilityState.isEligible));
     container.appendChild(section);
     return;
   }

@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 3.0.72
- * Built   : 2026-06-29
+ * Version : 3.0.92
+ * Built   : 2026-06-30
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.72';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.92';
 (function (window) {
   'use strict';
 
@@ -159,6 +159,13 @@ const ConditionValidator = (function () {
     return Number(selection) || 0;
   }
 
+  function _getSelectionWeight(selection) {
+    if (selection && typeof selection === 'object') {
+      return Number(selection.weight) || 0;
+    }
+    return Number(selection) || 0;
+  }
+
   function _normalizeAmountRuleValue(value) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return numeric;
@@ -183,14 +190,19 @@ const ConditionValidator = (function () {
       const operator = _normalizeOperator(rule && (rule.operator || rule.condition));
       const ruleType = rule && (rule.conditionType || rule.type);
       const isAmountRule = ruleType === 'amount';
+      const isWeightRule = ruleType === 'weight';
       const value = isAmountRule ? _normalizeAmountRuleValue(rule && rule.value) : Number(rule && rule.value);
       if (!Number.isFinite(value)) continue;
       let categoryTotal = 0;
       for (const pid of Object.keys(selections)) {
         if (productIds.has(String(pid))) {
-          categoryTotal += isAmountRule
-            ? _getSelectionAmount(selections[pid])
-            : _getSelectionQuantity(selections[pid]);
+          if (isAmountRule) {
+            categoryTotal += _getSelectionAmount(selections[pid]);
+          } else if (isWeightRule) {
+            categoryTotal += _getSelectionWeight(selections[pid]);
+          } else {
+            categoryTotal += _getSelectionQuantity(selections[pid]);
+          }
         }
       }
       if (!_evaluateSatisfied(operator, value, categoryTotal)) return false;
@@ -2193,6 +2205,97 @@ class VariantSelectorComponent {
     return `<div class="vs-wrapper" data-vs-product-id="${productId}"><div class="vs-btn-group">${btnGroupHtml}${overflowHtml}</div>${secondaryHtml}</div>`;
   }
 
+  static renderDropdownHtml(product, primaryOptionName, options = {}) {
+    const variants = product.variants || [];
+    const optionNames = product.options || [];
+
+    if (variants.length <= 1 || optionNames.length === 0) return '';
+
+    const primaryIdx = VariantSelectorComponent._primaryIdx(optionNames, primaryOptionName);
+    const selectedLabel = options.placeholder || '';
+    const productId = product.id || product.variantId;
+
+    const optionHtml = variants.map((variant) => {
+      const primaryValue = variant[`option${primaryIdx}`] || variant.title || '';
+      const value = optionNames.length > 1 && variant.title ? variant.title : primaryValue;
+      const imageUrl = VariantSelectorComponent._variantImageUrl(variant);
+      const isAvailable = variant.available !== false;
+      return `
+        <li class="vs-option" data-variant-id="${VariantSelectorComponent._esc(variant.id)}" data-primary-value="${VariantSelectorComponent._esc(value)}" ${!isAvailable ? 'aria-disabled="true"' : ''}>
+          ${imageUrl ? `<img class="vs-option-image" src="${VariantSelectorComponent._esc(imageUrl)}" alt="">` : ''}
+          <span class="vs-option-label">${VariantSelectorComponent._esc(value)}</span>
+        </li>
+      `;
+    }).join('');
+
+    return `
+      <div class="vs-wrapper vs-wrapper--standard" data-vs-product-id="${VariantSelectorComponent._esc(productId)}" data-vs-primary-idx="${primaryIdx}" data-vs-placeholder="${VariantSelectorComponent._esc(selectedLabel)}">
+        <button type="button" class="vs-selected" aria-expanded="false">
+          <span class="vs-selected-label">${VariantSelectorComponent._esc(selectedLabel)}</span>
+          <span class="vs-selected-icon" aria-hidden="true">
+            <svg viewBox="0 0 20 20" focusable="false">
+              <path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </span>
+        </button>
+        <ul class="vs-options" hidden>
+          ${optionHtml}
+        </ul>
+      </div>
+    `;
+  }
+
+  static renderStandardMobileDrawerHtml(product, options = {}) {
+    const variants = product.variants || [];
+    const optionNames = product.options || [];
+    const primaryIdx = options.primaryIdx || VariantSelectorComponent._primaryIdx(optionNames, options.primaryOptionName);
+    const selectedVariant = variants.find(v => String(v.id) === String(product.variantId)) || variants[0] || product;
+    const productImageUrl = VariantSelectorComponent._variantImageUrl(selectedVariant) || product.imageUrl || '';
+    const productTitle = product.title || selectedVariant.productTitle || '';
+    const placeholder = options.placeholder || '';
+    const formatPrice = typeof options.formatPrice === 'function'
+      ? options.formatPrice
+      : (value) => VariantSelectorComponent.formatDrawerPrice(value);
+    const productPrice = selectedVariant.price ?? product.price ?? 0;
+
+    const optionHtml = variants.map((variant) => {
+      const label = VariantSelectorComponent.getStandardVariantLabel(variant, optionNames, primaryIdx);
+      const imageUrl = VariantSelectorComponent._variantImageUrl(variant) || productImageUrl;
+      const isAvailable = variant.available !== false;
+      const isSelected = String(variant.id) === String(selectedVariant.id);
+      return `
+        <button type="button" class="vs-mobile-option${isSelected ? ' vs-mobile-option--selected' : ''}" data-variant-id="${VariantSelectorComponent._esc(variant.id)}" aria-disabled="${isAvailable ? 'false' : 'true'}">
+          ${imageUrl ? `<img class="vs-mobile-option-image" src="${VariantSelectorComponent._esc(imageUrl)}" alt="">` : '<span class="vs-mobile-option-image vs-mobile-option-image--empty" aria-hidden="true"></span>'}
+          <span class="vs-mobile-option-label">${VariantSelectorComponent._esc(label)}</span>
+          <span class="vs-mobile-option-price">${VariantSelectorComponent._esc(formatPrice(variant.price ?? 0))}</span>
+        </button>
+      `;
+    }).join('');
+
+    return `
+      <div class="vs-mobile-drawer vs-mobile-drawer--standard" data-vs-mobile-drawer>
+        <div class="vs-mobile-drawer-sheet" role="dialog" aria-modal="true">
+          <button type="button" class="vs-mobile-drawer-close" data-vs-mobile-close aria-label="Close">
+            <span aria-hidden="true">x</span>
+          </button>
+          <div class="vs-mobile-drawer-header">
+            ${productImageUrl ? `<img class="vs-mobile-drawer-product-image" src="${VariantSelectorComponent._esc(productImageUrl)}" alt="">` : ''}
+            <div class="vs-mobile-drawer-product-info">
+              <p class="vs-mobile-drawer-product-title">${VariantSelectorComponent._esc(productTitle)}</p>
+              <p class="vs-mobile-drawer-product-price">${VariantSelectorComponent._esc(formatPrice(productPrice))}</p>
+            </div>
+          </div>
+          <div class="vs-mobile-drawer-body">
+            <div class="vs-mobile-drawer-title">${VariantSelectorComponent._esc(placeholder)}</div>
+            <div class="vs-mobile-options">
+              ${optionHtml}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   /**
    * Attach event listeners for the variant selector on a card element.
    * Must be called after the card HTML is in the DOM.
@@ -2222,6 +2325,20 @@ class VariantSelectorComponent {
         const val = btn.dataset.primaryValue;
         VariantSelectorComponent._selectPrimary(cardEl, product, primaryOptIdx, val, onVariantChange);
       }
+    });
+
+    cardEl.addEventListener('click', (e) => {
+      const selected = e.target.closest('.vs-selected');
+      if (selected) {
+        e.stopPropagation();
+        VariantSelectorComponent.handleStandardSelectorClick(selected, cardEl, product, onVariantChange);
+        return;
+      }
+
+      const option = e.target.closest('.vs-option');
+      if (!option || option.getAttribute('aria-disabled') === 'true') return;
+      e.stopPropagation();
+      VariantSelectorComponent._selectStandardOption(cardEl, product, option, onVariantChange);
     });
   }
 
@@ -2298,6 +2415,9 @@ class VariantSelectorComponent {
     // Mutate product
     product.variantId = newVariant.id;
     product.price = newVariant.price;
+    product.compareAtPrice = newVariant.compareAtPrice || null;
+    product.imageUrl = VariantSelectorComponent._variantImageUrl(newVariant) || product.imageUrl;
+    product.available = newVariant.available === true;
     product.quantityAvailable = typeof newVariant.quantityAvailable === 'number' ? newVariant.quantityAvailable : null;
     product.currentlyNotInStock = newVariant.currentlyNotInStock === true;
 
@@ -2364,6 +2484,9 @@ class VariantSelectorComponent {
         const oldVariantId = product.variantId;
         product.variantId = candidate.id;
         product.price = candidate.price;
+        product.compareAtPrice = candidate.compareAtPrice || null;
+        product.imageUrl = VariantSelectorComponent._variantImageUrl(candidate) || product.imageUrl;
+        product.available = candidate.available === true;
         product.quantityAvailable = typeof candidate.quantityAvailable === 'number' ? candidate.quantityAvailable : null;
         product.currentlyNotInStock = candidate.currentlyNotInStock === true;
         // Update the pill text
@@ -2385,6 +2508,153 @@ class VariantSelectorComponent {
     panel.className = ['vs-panel', extraClass].filter(Boolean).join(' ');
     panel.dataset.vsPanel = '1';
     return panel;
+  }
+
+  static handleStandardSelectorClick(selected, cardEl, product, onVariantChange) {
+    if (VariantSelectorComponent.isMobileViewport()) {
+      VariantSelectorComponent.openStandardMobileDrawer(selected, cardEl, product, onVariantChange);
+      return;
+    }
+
+    VariantSelectorComponent._toggleStandardDropdown(selected, cardEl);
+  }
+
+  static isMobileViewport() {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia?.('(max-width: 767px)').matches || window.innerWidth <= 767;
+  }
+
+  static openStandardMobileDrawer(selected, cardEl, product, onVariantChange) {
+    const wrapper = selected.closest('.vs-wrapper--standard');
+    if (!wrapper || typeof document === 'undefined') return;
+
+    VariantSelectorComponent.closeStandardMobileDrawer();
+
+    const panel = wrapper.querySelector('.vs-options');
+    const primaryIdx = parseInt(wrapper.dataset.vsPrimaryIdx || '1', 10);
+    const placeholder = wrapper.dataset.vsPlaceholder || selected.querySelector('.vs-selected-label')?.textContent?.trim() || '';
+
+    document.body.insertAdjacentHTML('beforeend', VariantSelectorComponent.renderStandardMobileDrawerHtml(product, {
+      placeholder,
+      primaryIdx,
+    }));
+    selected.setAttribute('aria-expanded', 'true');
+
+    const drawer = document.body.querySelector('[data-vs-mobile-drawer]');
+    if (!drawer) return;
+
+    const close = () => {
+      VariantSelectorComponent.closeStandardMobileDrawer();
+      selected.setAttribute('aria-expanded', 'false');
+    };
+
+    drawer.addEventListener('click', (event) => {
+      const closeTarget = event.target.closest('[data-vs-mobile-close]');
+      if (closeTarget || event.target === drawer) {
+        event.stopPropagation();
+        close();
+        return;
+      }
+
+      const optionButton = event.target.closest('.vs-mobile-option');
+      if (!optionButton) return;
+
+      event.stopPropagation();
+      if (optionButton.getAttribute('aria-disabled') === 'true') return;
+
+      const sourceOption = Array.from(panel?.querySelectorAll('.vs-option') || [])
+        .find(option => String(option.dataset.variantId) === String(optionButton.dataset.variantId));
+      if (sourceOption) {
+        VariantSelectorComponent._selectStandardOption(cardEl, product, sourceOption, onVariantChange);
+      }
+      close();
+    });
+  }
+
+  static closeStandardMobileDrawer() {
+    if (typeof document === 'undefined') return;
+    document.querySelector('[data-vs-mobile-drawer]')?.remove();
+  }
+
+  static getStandardVariantLabel(variant, optionNames, primaryIdx) {
+    const primaryValue = variant[`option${primaryIdx}`] || variant.title || '';
+    return optionNames.length > 1 && variant.title ? variant.title : primaryValue;
+  }
+
+  static formatDrawerPrice(value) {
+    if (typeof CurrencyManager !== 'undefined') {
+      return CurrencyManager.convertAndFormat(value || 0, CurrencyManager.getCurrencyInfo());
+    }
+
+    return String(value || 0);
+  }
+
+  static _toggleStandardDropdown(selected, cardEl) {
+    const wrapper = selected.closest('.vs-wrapper--standard');
+    const panel = wrapper?.querySelector('.vs-options');
+    if (!wrapper || !panel) return;
+
+    const willOpen = panel.hidden === true;
+    cardEl.querySelectorAll('.vs-wrapper--standard .vs-options').forEach((otherPanel) => {
+      if (otherPanel !== panel) {
+        otherPanel.hidden = true;
+        otherPanel.closest('.vs-wrapper--standard')?.querySelector('.vs-selected')?.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    panel.hidden = !willOpen;
+    selected.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    if (willOpen) {
+      VariantSelectorComponent._bindStandardOutsideClose(panel, selected);
+    }
+  }
+
+  static _selectStandardOption(cardEl, product, option, onVariantChange) {
+    const wrapper = option.closest('.vs-wrapper--standard');
+    const selected = wrapper?.querySelector('.vs-selected');
+    const panel = wrapper?.querySelector('.vs-options');
+    const variantId = option.dataset.variantId;
+    const candidate = (product.variants || []).find(v => String(v.id) === String(variantId));
+    if (!candidate) return;
+
+    const oldVariantId = product.variantId;
+    product.variantId = candidate.id;
+    product.price = candidate.price;
+    product.compareAtPrice = candidate.compareAtPrice || null;
+    product.imageUrl = VariantSelectorComponent._variantImageUrl(candidate) || product.imageUrl;
+    product.available = candidate.available === true;
+    product.quantityAvailable = typeof candidate.quantityAvailable === 'number' ? candidate.quantityAvailable : null;
+    product.currentlyNotInStock = candidate.currentlyNotInStock === true;
+
+    if (selected) {
+      const label = selected.querySelector('.vs-selected-label');
+      if (label) label.textContent = option.dataset.primaryValue || option.textContent.trim();
+      selected.setAttribute('aria-expanded', 'false');
+    }
+    if (panel) panel.hidden = true;
+
+    onVariantChange(candidate.id, oldVariantId);
+  }
+
+  static _bindStandardOutsideClose(panel, selected) {
+    setTimeout(() => {
+      const close = (e) => {
+        if (!panel.contains(e.target) && !selected.contains(e.target)) {
+          panel.hidden = true;
+          selected.setAttribute('aria-expanded', 'false');
+          document.removeEventListener('click', close);
+        }
+      };
+      document.addEventListener('click', close);
+    }, 0);
+  }
+
+  static _variantImageUrl(variant) {
+    return variant?.image?.src
+      || variant?.image?.url
+      || (typeof variant?.image === 'string' ? variant.image : null)
+      || variant?.imageUrl
+      || null;
   }
 
   static _makeTile(label, isSelected, isOos) {

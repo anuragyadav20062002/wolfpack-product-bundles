@@ -50,11 +50,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
                     featuredImage {
                       url
                     }
+                    options {
+                      name
+                      values
+                    }
                     variants(first: 100) {
                       edges {
                         node {
                           id
                           title
+                          selectedOptions {
+                            name
+                            value
+                          }
                           price {
                             amount
                             currencyCode
@@ -63,6 +71,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
                             amount
                             currencyCode
                           }
+                          weight
+                          weightUnit
                           availableForSale
                           image {
                             url
@@ -136,11 +146,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
             title: product.title,
             handle: product.handle,
             imageUrl: product.featuredImage?.url || '',
+            options: (product.options || []).map((option: any) => ({
+              name: option.name,
+              values: Array.isArray(option.values) ? option.values : [],
+            })),
             variants: (product.variants?.edges || []).map((edge: any) => ({
               id: edge.node.id,
               title: edge.node.title,
+              option1: edge.node.selectedOptions?.[0]?.value ?? null,
+              option2: edge.node.selectedOptions?.[1]?.value ?? null,
+              option3: edge.node.selectedOptions?.[2]?.value ?? null,
               price: edge.node.price?.amount || '0',
               compareAtPrice: edge.node.compareAtPrice?.amount || null,
+              weight: edge.node.weight ?? 0,
+              weightUnit: edge.node.weightUnit ?? 'GRAMS',
               available: edge.node.availableForSale,
               image: edge.node.image ? { src: edge.node.image.url } : null
             }))

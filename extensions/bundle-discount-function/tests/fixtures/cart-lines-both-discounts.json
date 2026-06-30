@@ -1,0 +1,84 @@
+{
+  "payload": {
+    "export": "cart_lines_discounts_generate_run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/paid",
+            "stepType": null
+          },
+          {
+            "id": "gid://shopify/CartLine/addon-partial",
+            "stepType": {
+              "value": "addon:PERCENTAGE:10"
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/addon-free",
+            "stepType": {
+              "value": "addon:PERCENTAGE:100"
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/malformed-addon",
+            "stepType": {
+              "value": "addon:PERCENTAGE"
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": ["PRODUCT"]
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "productDiscountsAdd": {
+            "candidates": [
+              {
+                "associatedDiscountCode": null,
+                "message": "Add On",
+                "prerequisites": null,
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/addon-partial",
+                      "quantity": null
+                    }
+                  }
+                ],
+                "value": {
+                  "percentage": {
+                    "value": "10.0"
+                  }
+                }
+              },
+              {
+                "associatedDiscountCode": null,
+                "message": "Add On",
+                "prerequisites": null,
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/addon-free",
+                      "quantity": null
+                    }
+                  }
+                ],
+                "value": {
+                  "percentage": {
+                    "value": "100.0"
+                  }
+                }
+              }
+            ],
+            "selectionStrategy": "ALL"
+          }
+        }
+      ]
+    }
+  }
+}

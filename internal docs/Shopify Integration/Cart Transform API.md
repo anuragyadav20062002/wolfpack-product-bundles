@@ -51,6 +51,32 @@ metafield(namespace: "$app", key: "component_parents") {
 
 Do not query app-owned component/pricing metafields by key only. The app writers define and write `component_parents`, `component_reference`, `component_quantities`, `price_adjustment`, and `component_pricing` under `$app`; omitting the namespace makes the transform see null metadata and prevents `linesMerge` plus price adjustments from running.
 
+## Checkout Discount Allocation Boundary
+
+`lineUpdate` can set an adjusted fixed unit price, title, or image for a cart
+line, but it does not create a named Shopify discount allocation row in cart or
+checkout output. For FPB paid add-ons this means Cart Transform can make the
+selected add-on charge `74610` instead of `82900`, but checkout will not show an
+EB-style native `ADD ON (-...)` discount row or original/discounted price labels
+from that operation alone.
+
+Exact EB parity for paid add-on checkout reductions requires a Discount Function
+path that emits a product discount candidate/message for the selected add-on
+line; otherwise Checkout UI must stay inert and Cart Transform remains only the
+price-adjustment source.
+
+2026-06-30 implementation note: `extensions/bundle-discount-function` provides
+the product Discount Function query and Rust logic for `_bundle_step_type`
+values such as `addon:PERCENTAGE:10` and emits product discount candidates with
+message `Add On`. `AddOnDiscountFunctionService` creates the matching automatic
+app discount with EB-aligned settings: `discountClasses: ["PRODUCT"]` and
+`combinesWith.orderDiscounts/productDiscounts: true`,
+`combinesWith.shippingDiscounts: false`. The app config must request both
+`read_discounts` and `write_discounts`; Shopify schema validation reports both
+scopes for the activation flow. Cart Transform no longer emits a paid add-on
+`lineUpdate` fixed unit price for selected add-on lines, otherwise the selected
+add-on can be discounted twice once the Discount Function is active.
+
 ## See Also
 - [[Architecture/Cart Transform Function]] — full implementation reference
 - [[Features/Bundle Instance Tracking]]

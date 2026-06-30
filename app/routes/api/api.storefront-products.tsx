@@ -41,6 +41,8 @@ function mapStorefrontVariant(edge: any) {
       ? edge.node.quantityAvailable
       : null,
     currentlyNotInStock: edge.node.currentlyNotInStock === true,
+    weight: edge.node.weight ?? 0,
+    weightUnit: edge.node.weightUnit ?? 'GRAMS',
     image: edge.node.image ? { src: edge.node.image.url } : null
   };
 }
@@ -71,6 +73,8 @@ async function fetchAllVariants(
                 id title availableForSale${inventoryFields}
                 price { amount currencyCode }
                 compareAtPrice { amount currencyCode }
+                weight
+                weightUnit
                 image { url }
                 sellingPlanAllocations(first: 100) {
                   edges {
@@ -95,6 +99,8 @@ async function fetchAllVariants(
                 id title availableForSale${inventoryFields}
                 price { amount currencyCode }
                 compareAtPrice { amount currencyCode }
+                weight
+                weightUnit
                 image { url }
                 sellingPlanAllocations(first: 100) {
                   edges {

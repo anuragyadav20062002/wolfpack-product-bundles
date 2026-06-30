@@ -26,7 +26,7 @@ import {
 
 
 export const fullPageProductCardFooterMethods = {
-createProductCard(product, stepIndex) {
+createProductCard(product, stepIndex, options = {}) {
   const productId = product.variantId || product.id;
   const selectedQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
   const directDefaultQuantity = product?.isDirectDefaultProduct
@@ -49,25 +49,41 @@ createProductCard(product, stepIndex) {
   // Build inline variant selector using the step's merchant-configured primary option
   const step = (this.selectedBundle?.steps || [])[stepIndex];
   const primaryOptionName = step?.primaryVariantOption || null;
-  const variantSelectorHtml = shouldRenderInlineVariantSelector({
+  const displayVariantsAsIndividualProducts =
+    typeof options.displayVariantsAsIndividualProducts === 'boolean'
+      ? options.displayVariantsAsIndividualProducts
+      : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+  const designPreset = this.getFullPageDesignPreset();
+  const shouldRenderVariantSelector = shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
-    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
-  })
-    ? VariantSelectorComponent.renderHtml(product, primaryOptionName)
+    displayVariantsAsIndividualProducts,
+  });
+  const variantSelectorHtml = shouldRenderVariantSelector
+    ? designPreset === 'STANDARD'
+      ? VariantSelectorComponent.renderDropdownHtml(product, primaryOptionName, {
+        placeholder: this._resolveText('chooseOptionsButton', 'Choose Options'),
+      })
+      : VariantSelectorComponent.renderHtml(product, primaryOptionName)
     : '';
 
-  const designPreset = this.getFullPageDesignPreset();
+  const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
+  const hasStandardAddonDiscountBadge = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText;
+  const stockBadgeHtml = hasStandardAddonDiscountBadge
+    ? `<span class="fpb-addon-discount-badge">${ComponentGenerator.escapeHtml(displayProduct.addonDiscountBadgeText)}</span>`
+    : '';
   let htmlString;
   if (designPreset === 'STANDARD' || designPreset === 'CLASSIC' || designPreset === 'COMPACT' || designPreset === 'HORIZONTAL') {
     htmlString = renderSharedProductCard(
-      product,
+      displayProduct,
       currentQuantity,
       currencyInfo,
       {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
-        addButtonText: this.getProductAddButtonText(),
+        addButtonText: this.getProductCardAddButtonText(step),
+        stockBadgeHtml,
+        variantSelectorPlacement: designPreset === 'STANDARD' ? 'beforePrice' : undefined,
       }
     );
   } else {
@@ -78,7 +94,7 @@ createProductCard(product, stepIndex) {
       {
         variantSelectorHtml,
         actionMode: 'expandingQuantity',
-        addButtonText: this.getProductAddButtonText(),
+        addButtonText: this.getProductCardAddButtonText(step),
       }
     );
   }
@@ -88,7 +104,7 @@ createProductCard(product, stepIndex) {
   wrapper.innerHTML = htmlString.trim();
   const cardElement = wrapper.firstChild;
 
-  this.applyStandardExpandedVariantTitle(cardElement, product);
+  this.applyStandardExpandedVariantTitle(cardElement, displayProduct);
 
   // Default (included) step: add "Included" badge and disable interaction controls
   const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
@@ -119,7 +135,7 @@ createProductCard(product, stepIndex) {
   }
 
   // Free gift step: add "Free" badge and override price display to $0.00
-  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true) {
+  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true && !hasStandardAddonDiscountBadge) {
     const imgEl = cardElement.querySelector('.product-image, .product-img, img');
     if (imgEl && imgEl.parentElement) {
       imgEl.parentElement.classList.add('fpb-card-image-wrapper');
@@ -151,9 +167,43 @@ createProductCard(product, stepIndex) {
   }
 
   // Attach event listeners for full-page specific interactions
-  this.attachProductCardListeners(cardElement, product, stepIndex);
+  this.attachProductCardListeners(cardElement, product, stepIndex, {
+    displayVariantsAsIndividualProducts,
+  });
 
   return cardElement;
+},
+
+buildPaidAddonProductDisplayData(product, step) {
+  const isAddonDiscountStep = step?.isFreeGift === true;
+  if (!isAddonDiscountStep || typeof this.getAddonLineDiscount !== 'function') return product;
+
+  const addonDiscount = this.getAddonLineDiscount(step);
+  if (!addonDiscount || addonDiscount.type !== 'PERCENTAGE') return product;
+
+  const originalPrice = Number(product?.price || 0);
+  const discountValue = Number(addonDiscount.value || 0);
+  if (!Number.isFinite(originalPrice) || originalPrice <= 0 || !Number.isFinite(discountValue) || discountValue <= 0) {
+    return product;
+  }
+
+  const normalizedDiscountValue = Math.min(100, Math.max(0, discountValue));
+  const discountedPrice = Math.max(0, Math.round(originalPrice * (100 - normalizedDiscountValue) / 100));
+  return {
+    ...product,
+    price: discountedPrice,
+    compareAtPrice: originalPrice,
+    addonDiscountBadgeText: `${normalizedDiscountValue}% off`,
+  };
+},
+
+getProductCardAddButtonText(step) {
+  const isPaidAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
+  if (isPaidAddonStep) {
+    return this._resolveText('addToCartButton', this.config?.addToCartText || 'Add to Cart');
+  }
+
+  return this.getProductAddButtonText();
 },
 
 applyStandardExpandedVariantTitle(cardElement, product) {
@@ -245,7 +295,7 @@ getSummaryVariantFromDisplayTitle(displayTitle) {
 },
 
 // Attach event listeners to product card
-attachProductCardListeners(cardElement, product, stepIndex) {
+attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
   // Default steps are read-only — no add/remove/quantity interaction allowed
   if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
 
@@ -287,10 +337,14 @@ attachProductCardListeners(cardElement, product, stepIndex) {
 
   // Inline variant selector (VariantSelectorComponent button group + panels)
   const step = (this.selectedBundle?.steps || [])[stepIndex];
+  const displayVariantsAsIndividualProducts =
+    typeof options.displayVariantsAsIndividualProducts === 'boolean'
+      ? options.displayVariantsAsIndividualProducts
+      : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
   if (shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
-    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
+    displayVariantsAsIndividualProducts,
   })) {
     VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
       const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
@@ -302,7 +356,7 @@ attachProductCardListeners(cardElement, product, stepIndex) {
         }
         // Clamp against new variant's stock
         const newQtyAvail = product.quantityAvailable; // already updated by component
-        const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+        const newOOS = this.isVariantOutOfStock(product);
         let migratedQty = oldQty;
         if (newOOS) {
           ToastManager.show('Selected variant is out of stock — selection cleared.');
@@ -321,14 +375,47 @@ attachProductCardListeners(cardElement, product, stepIndex) {
 
       // Update data-product-id on card + action buttons so subsequent clicks use correct ID
       cardElement.dataset.productId = newVariantId;
+      cardElement.dataset.currentSelectedVariantId = newVariantId;
       cardElement.querySelectorAll('[data-product-id]').forEach(el => {
         if (el !== cardElement) el.dataset.productId = newVariantId;
       });
+      this.updateProductCardVariantDisplay(cardElement, product, step);
 
       this.updateFooterMessaging?.();
       this.updateStepTimeline?.();
       this._refreshSiblingDimState?.(stepIndex);
     });
+  }
+},
+
+updateProductCardVariantDisplay(cardElement, product, step) {
+  if (!cardElement || !product) return;
+
+  const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const priceEl = cardElement.querySelector('.product-price');
+  if (priceEl) {
+    priceEl.textContent = CurrencyManager.convertAndFormat(displayProduct.price || 0, currencyInfo);
+  }
+
+  const priceRow = cardElement.querySelector('.product-price-row');
+  let compareEl = cardElement.querySelector('.product-price-strike');
+  if (displayProduct.compareAtPrice) {
+    if (!compareEl && priceRow && priceEl) {
+      compareEl = document.createElement('span');
+      compareEl.className = 'bw-product-card__compare-price product-price-strike';
+      priceRow.insertBefore(compareEl, priceEl);
+    }
+    if (compareEl) {
+      compareEl.textContent = CurrencyManager.convertAndFormat(displayProduct.compareAtPrice, currencyInfo);
+    }
+  } else if (compareEl) {
+    compareEl.remove();
+  }
+
+  const imageEl = cardElement.querySelector('.bw-product-card__image, .product-image img, img');
+  if (imageEl && product.imageUrl) {
+    imageEl.src = product.imageUrl;
   }
 },
 

@@ -2,24 +2,14 @@ use shopify_function::scalars::Decimal;
 use std::collections::HashMap;
 
 use crate::helpers::{
-    decimal_to_f64,
-    is_addon_line,
-    is_free_gift_line,
-    parse_addon_discount,
-    parse_json_or_default,
+    decimal_to_f64, is_addon_line, is_free_gift_line, parse_json_or_default,
 };
 use crate::pricing::{
-    calculate_buy_x_get_y_discount_percentage,
-    calculate_discount_percentage,
-    calculate_selected_addon_discount_amount,
+    calculate_buy_x_get_y_discount_percentage, calculate_discount_percentage,
     rounded_percentage,
 };
 use crate::schema;
-use crate::types::{
-    CartLineMessagingSettings,
-    ComponentParent,
-    PricingMethod,
-};
+use crate::types::{CartLineMessagingSettings, ComponentParent, PricingMethod};
 
 fn parent_match_count(parent: &ComponentParent, group_variant_ids: &[String]) -> usize {
     let Some(component_reference) = &parent.component_reference else {
@@ -127,9 +117,36 @@ pub fn process_merge_operations(
     // -------------------------------------------------------------------------
     for (_, line_indices) in &bundle_groups {
         let mut bundle_addon_offer_id: Option<String> = None;
+        let merge_line_indices: Vec<usize> = line_indices
+            .iter()
+            .copied()
+            .filter(|&idx| {
+                let step_type = lines[idx]
+                    .step_type()
+                    .and_then(|a| a.value())
+                    .map(|s| s.as_str());
+                !is_addon_line(step_type)
+            })
+            .collect();
+        let addon_line_indices: Vec<usize> = line_indices
+            .iter()
+            .copied()
+            .filter(|&idx| {
+                let step_type = lines[idx]
+                    .step_type()
+                    .and_then(|a| a.value())
+                    .map(|s| s.as_str());
+                is_addon_line(step_type)
+            })
+            .collect();
+
+        if merge_line_indices.is_empty() {
+            continue;
+        }
+
         // Find first line with component_parents metafield value.
         let component_parents_json: Option<String> =
-            line_indices
+            merge_line_indices
                 .iter()
                 .find_map(|&idx| match lines[idx].merchandise() {
                     schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
@@ -147,7 +164,7 @@ pub fn process_merge_operations(
             continue;
         }
 
-        let group_variant_ids: Vec<String> = line_indices
+        let group_variant_ids: Vec<String> = merge_line_indices
             .iter()
             .filter_map(|&idx| match lines[idx].merchandise() {
                 schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
@@ -170,9 +187,8 @@ pub fn process_merge_operations(
         let mut paid_quantity: i64 = 0;
         let mut total_quantity: i64 = 0;
         let mut paid_unit_prices: Vec<f64> = Vec::new();
-        let mut selected_addon_discount_amount: f64 = 0.0;
 
-        for &idx in line_indices {
+        for &idx in &merge_line_indices {
             let line = &lines[idx];
             let qty = *line.quantity() as i64;
             let unit_price = decimal_to_f64(line.cost().amount_per_quantity().amount());
@@ -180,10 +196,7 @@ pub fn process_merge_operations(
             total_quantity += qty;
             let step_type = line.step_type().and_then(|a| a.value()).map(|s| s.as_str());
             if bundle_addon_offer_id.is_none() {
-                if let Some(value) = line
-                    .addon_offer_id()
-                    .and_then(|a| a.value())
-                {
+                if let Some(value) = line.addon_offer_id().and_then(|a| a.value()) {
                     let normalized = value.trim();
                     if !normalized.is_empty() {
                         bundle_addon_offer_id = Some(normalized.to_string());
@@ -198,18 +211,6 @@ pub fn process_merge_operations(
                 for _ in 0..qty.max(0) {
                     paid_unit_prices.push(unit_price);
                 }
-                if is_addon_line(step_type) {
-                    let addon_discount = parse_addon_discount(step_type);
-                    selected_addon_discount_amount += calculate_selected_addon_discount_amount(
-                        line_total,
-                        addon_discount
-                            .as_ref()
-                            .map(|(discount_type, _)| discount_type.as_str()),
-                        addon_discount
-                            .as_ref()
-                            .map(|(_, discount_value)| discount_value.as_str()),
-                    );
-                }
             }
         }
         let original_total = paid_total + free_gift_total;
@@ -219,14 +220,14 @@ pub fn process_merge_operations(
         // -------------------------------------------------------------------------
         let paid_discount_percentage = if let Some(ref pa) = parent.price_adjustment {
             if pa.method == PricingMethod::BuyXGetY {
-                    calculate_buy_x_get_y_discount_percentage(
-                        pa,
-                        &paid_unit_prices,
-                        paid_total,
-                        paid_total,
-                        paid_quantity,
-                        presentment_currency_rate,
-                    )
+                calculate_buy_x_get_y_discount_percentage(
+                    pa,
+                    &paid_unit_prices,
+                    paid_total,
+                    paid_total,
+                    paid_quantity,
+                    presentment_currency_rate,
+                )
             } else {
                 calculate_discount_percentage(
                     pa,
@@ -242,9 +243,7 @@ pub fn process_merge_operations(
         };
 
         let paid_discount_amount = paid_total * paid_discount_percentage / 100.0;
-        let total_discount_amount =
-            (paid_discount_amount + selected_addon_discount_amount + free_gift_total)
-                .min(original_total);
+        let total_discount_amount = (paid_discount_amount + free_gift_total).min(original_total);
         let discount_percentage = if total_discount_amount > 0.0 && original_total > 0.0 {
             rounded_percentage(total_discount_amount, original_total)
         } else {
@@ -277,7 +276,7 @@ pub fn process_merge_operations(
         let mut component_details: Vec<serde_json::Value> = Vec::new();
         let mut total_retail_cents: i64 = 0;
         let mut total_bundle_cents: i64 = 0;
-        for (i, &idx) in line_indices.iter().enumerate() {
+        for (i, &idx) in merge_line_indices.iter().enumerate() {
             let line = &lines[idx];
             let qty = *line.quantity() as i64;
             let retail_cents =
@@ -286,25 +285,10 @@ pub fn process_merge_operations(
             let is_free_gift = is_free_gift_line(step_type);
             let paid_bundle_cents =
                 (retail_cents as f64 * (1.0 - paid_discount_percentage / 100.0)).round() as i64;
-            let line_total = decimal_to_f64(line.cost().amount_per_quantity().amount()) * (qty as f64);
-            let addon_discount = parse_addon_discount(step_type);
-            let addon_discount_cents = if is_addon_line(step_type) {
-                (calculate_selected_addon_discount_amount(
-                    line_total,
-                    addon_discount
-                        .as_ref()
-                        .map(|(discount_type, _)| discount_type.as_str()),
-                    addon_discount
-                        .as_ref()
-                        .map(|(_, discount_value)| discount_value.as_str()),
-                ) * 100.0).round() as i64
-            } else {
-                0
-            };
             let line_bundle_cents_total = if is_free_gift {
                 0
             } else {
-                ((paid_bundle_cents * qty) - addon_discount_cents).max(0)
+                (paid_bundle_cents * qty).max(0)
             };
             let bundle_cents = if qty > 0 {
                 (line_bundle_cents_total as f64 / qty as f64).round() as i64
@@ -346,7 +330,7 @@ pub fn process_merge_operations(
         // -------------------------------------------------------------------------
         // Step 7: Build MERGE operation using schema-generated types.
         // -------------------------------------------------------------------------
-        let cart_lines: Vec<schema::CartLineInput> = line_indices
+        let cart_lines: Vec<schema::CartLineInput> = merge_line_indices
             .iter()
             .map(|&idx| {
                 let line = &lines[idx];
@@ -398,7 +382,13 @@ pub fn process_merge_operations(
             });
         }
 
-        let source_display_properties = crate::types::CartLineDisplayProperties::default();
+        let source_display_properties: crate::types::CartLineDisplayProperties =
+            parse_json_or_default(merge_line_indices.iter().find_map(|&idx| {
+                lines[idx]
+                    .bundle_display_properties()
+                    .and_then(|attribute| attribute.value())
+                    .map(|value| value.as_str())
+            }));
 
         attributes.push(schema::AttributeOutput {
             key: "_Items".into(),
@@ -415,7 +405,8 @@ pub fn process_merge_operations(
             let source_retail_price = non_empty(&source_display_properties.retail_price);
             let source_you_save = non_empty(&source_display_properties.you_save.amount_percentage);
             let source_you_save_amount = non_empty(&source_display_properties.you_save.amount);
-            let source_you_save_percentage = non_empty(&source_display_properties.you_save.percentage);
+            let source_you_save_percentage =
+                non_empty(&source_display_properties.you_save.percentage);
 
             if cart_line_messaging.show_bundle_contains {
                 if let Some(value) = source_items {
@@ -468,7 +459,11 @@ pub fn process_merge_operations(
 
         operations.push(schema::CartOperation::LinesMerge(merge_op));
 
-        for &idx in line_indices {
+        for &idx in &addon_line_indices {
+            processed_line_ids.insert(lines[idx].id().to_string());
+        }
+
+        for &idx in &merge_line_indices {
             processed_line_ids.insert(lines[idx].id().to_string());
         }
     }
