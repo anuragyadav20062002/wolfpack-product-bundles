@@ -818,7 +818,7 @@ body:has([data-fpb-design-preset]) {
     box-sizing: border-box;
     color: #252525;
     font-family: Assistant, sans-serif;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     line-height: 1.375rem;
     font-weight: 700;
     text-align: left;
