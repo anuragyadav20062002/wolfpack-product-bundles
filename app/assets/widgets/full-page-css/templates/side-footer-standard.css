@@ -2084,7 +2084,7 @@ body:has([data-fpb-design-preset]) {
 .layout-sidebar[data-fpb-design-preset="STANDARD"] .category-tab .tab-label {
   display: block;
   line-height: 28.8px;
-  font-weight: 400;
+  font-weight: 700;
 }
 .layout-sidebar[data-fpb-design-preset="STANDARD"] .category-tab.active {
   border-bottom: 2px solid #000;

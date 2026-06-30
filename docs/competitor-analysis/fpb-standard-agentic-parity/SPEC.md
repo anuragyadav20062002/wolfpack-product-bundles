@@ -168,6 +168,14 @@ Evidence path: `/private/tmp/fpb-standard-agentic-parity/step-timeline-all-confi
 - EB desktop/mobile icon evidence shows 40px circular step containers, active icon image 24px, inactive icon image 28px, hidden container overflow, and unrounded icon images.
 - Source fix in widget version `3.0.91` resets the Standard timeline icon image radius/object-fit and aligns the circle overflow. Evidence path: `/private/tmp/fpb-standard-agentic-parity/step-timeline/`.
 
+### Standard Category Tab Text Weight
+
+Evidence path: `/private/tmp/fpb-standard-agentic-parity/category-tab-font-weight/`
+
+- EB Standard category tab title nodes render at `font-weight: 700`; surrounding tab containers remain `400`.
+- WPB pre-fix evidence on widget `3.0.103` showed Standard `.category-tab .tab-label` at `400`. Source fix built into widget version `3.0.104` sets only the Standard tab label node to `700`.
+- Current WPB dev-preview storefront still served Shopify CDN widget `3.0.103` after cache clear, so live browser proof remains pending asset refresh/deploy.
+
 ## Pairwise Run Set
 
 Status values:
