@@ -617,12 +617,14 @@ body:has([data-fpb-design-preset]) {
     place-items: center;
     padding: 0;
     transform: translateX(-50%);
-    background: transparent;
+    background: #000;
     border: 0;
+    border-radius: 50%;
     color: #fff;
     font: inherit;
     font-size: 1.25rem;
     line-height: 1;
+    text-transform: uppercase;
     cursor: pointer;
   }
 
