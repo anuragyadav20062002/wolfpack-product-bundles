@@ -686,4 +686,19 @@ describe('isStepConditionSatisfied — category mode', () => {
       p2: { quantity: 1, amount: 61900 },
     })).toBe(true);
   });
+
+  it('weight category rule uses selected product weights, not selected quantity', () => {
+    const step = {
+      categories: [
+        makeCategory('Weighted', ['p1'], [{ type: 'weight', condition: 'greaterThanOrEqualTo', value: 500 }]),
+      ],
+    };
+
+    expect(isStepConditionSatisfied(step, {
+      p1: { quantity: 2, weight: 400 },
+    })).toBe(false);
+    expect(isStepConditionSatisfied(step, {
+      p1: { quantity: 2, weight: 600 },
+    })).toBe(true);
+  });
 });

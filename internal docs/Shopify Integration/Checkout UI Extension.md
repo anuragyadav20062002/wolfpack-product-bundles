@@ -58,3 +58,11 @@ EB's `ADD ON (-...)` row is a native line-level discount allocation, while WPB's
 Cart Transform `lineUpdate` only changes the line price. Evidence:
 `/private/tmp/fpb-standard-agentic-parity/checkout-ui/wpb-current-checkout-extension-script-audit.json`
 and `wpb-current-checkout-expanded.snapshot.txt`.
+
+2026-06-30 EB parity correction: paid add-on checkout proof also shows a native
+`TOTAL SAVINGS` row after the checkout total. Shopify Checkout UI static targets
+do not expose a slot after the native total row; the supported order-summary
+savings slot is `purchase.checkout.reductions.render-after`. WPB uses that target
+to render only `TOTAL SAVINGS` from native discount allocations or Cart Transform
+bundle savings attributes, while the cart-line target remains inert so it does
+not duplicate line item properties or native original/discounted price rows.

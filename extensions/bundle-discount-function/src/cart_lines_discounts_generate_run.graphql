@@ -1,0 +1,13 @@
+query Input {
+  cart {
+    lines {
+      id
+      stepType: attribute(key: "_bundle_step_type") {
+        value
+      }
+    }
+  }
+  discount {
+    discountClasses
+  }
+}

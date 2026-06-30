@@ -66,6 +66,11 @@ _populateCompactMobileSummaryTray(sheet) {
   sheet.appendChild(countBadge);
 
   sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
+  sheet.classList.toggle(
+    'fpb-mobile-summary-tray--slots',
+    this.getFullPageDesignPreset() === 'STANDARD' && this._shouldRenderProductSlots()
+  );
+  sheet.classList.remove('fpb-mobile-summary-tray--has-discount-summary');
 
   if (this.selectedBundle?.pricing?.enabled) {
     const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
@@ -109,6 +114,7 @@ _populateCompactMobileSummaryTray(sheet) {
     }
 
     if (discountBlock.childElementCount > 0) {
+      sheet.classList.add('fpb-mobile-summary-tray--has-discount-summary');
       sheet.appendChild(discountBlock);
     }
   }

@@ -24,6 +24,7 @@ Lock EB parity for the two separate Free Gift & Add Ons controls:
 | 4 | Paid add-on product selected on add-on step | Selected line has add-on step index and eligible percentage tier | Add-on line discount amount is included in bundle total discount | Paid add-ons remain discounted after eligibility. |
 | 5 | Paid add-on card renders active tier pricing | Add-on step product with original price `82900` and eligible `10%` tier | Card display data uses current price `74610`, compare-at price `82900`, and `10% off` badge text | Matches EB paid add-on row behavior. |
 | 6 | Paid add-on card uses cart CTA copy | Paid add-on step card rendered through shared product card | Card add button uses the configured add-to-cart label | Paid add-on selection is the final cart action in EB. |
+| 7 | Active multi-tier add-on product list | Tier 1 has one product, Tier 2 has one different `100%` product, paid quantity qualifies Tier 2 | Add-on step renders only Tier 2 products, max quantity matches Tier 2 product count, and stale Tier 1 selection is removed | Highest eligible tier owns the offer surface. |
 
 ## Acceptance Criteria
 - [x] All listed test cases pass

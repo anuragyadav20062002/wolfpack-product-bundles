@@ -14,3 +14,9 @@ Ensure the checkout UI extension does not add a custom bundle savings panel when
 - [x] Focused checkout UI unit test passes.
 - [x] Checkout UI extension validates against Shopify checkout Polaris web components.
 - [x] TypeScript check for checkout UI source passes.
+
+## 2026-06-30 Update
+EB checkout proof for a discounted paid add-on shows native original/discounted
+line pricing plus a bottom `TOTAL SAVINGS` row. WPB keeps cart-line targets
+inert and adds a reductions-area savings row from native discount allocations
+or Cart Transform bundle savings attributes.

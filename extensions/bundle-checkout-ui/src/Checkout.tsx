@@ -1,13 +1,122 @@
-/**
- * Bundle Checkout UI Extension
- *
- * EB-style checkout display is handled by Shopify native line properties and
- * discount allocations. The extension target stays registered but intentionally
- * renders nothing so it cannot duplicate native checkout rows.
- */
-
 import type {FunctionComponent} from 'preact';
 
+type CheckoutAttribute = {
+  key: string;
+  value: string;
+};
+
+type CheckoutMoney = {
+  amount?: number | string;
+  currencyCode?: string;
+};
+
+type CheckoutDiscountAllocation = {
+  discountedAmount?: CheckoutMoney;
+};
+
+type CheckoutLine = {
+  attributes?: CheckoutAttribute[];
+  discountAllocations?: CheckoutDiscountAllocation[];
+};
+
+const BUNDLE_TOTAL_SAVINGS_ATTRIBUTE = '_bundle_total_savings_cents';
+
+function readSignalValue<T>(signal: {value?: T} | T | undefined, fallback: T): T {
+  if (!signal || typeof signal !== 'object' || !('value' in signal)) {
+    return (signal as T) ?? fallback;
+  }
+
+  return signal.value ?? fallback;
+}
+
+function sumDiscountAllocations(allocations: CheckoutDiscountAllocation[] = []) {
+  return allocations.reduce((sum, allocation) => {
+    const amount = Number(allocation.discountedAmount?.amount);
+    return Number.isFinite(amount) && amount > 0 ? sum + amount : sum;
+  }, 0);
+}
+
+function getLineAttributeValue(attributes: CheckoutAttribute[] = [], key: string) {
+  return attributes.find((attribute) => attribute.key === key)?.value;
+}
+
+function getBundleAttributeSavings(line: CheckoutLine) {
+  const cents = Number(getLineAttributeValue(line.attributes, BUNDLE_TOTAL_SAVINGS_ATTRIBUTE));
+  return Number.isFinite(cents) && cents > 0 ? cents / 100 : 0;
+}
+
+function getCurrencyCode(
+  lines: CheckoutLine[],
+  discountAllocations: CheckoutDiscountAllocation[],
+  totalAmount?: CheckoutMoney,
+) {
+  return (
+    totalAmount?.currencyCode
+    ?? lines
+      .flatMap((line) => line.discountAllocations ?? [])
+      .find((allocation) => allocation.discountedAmount?.currencyCode)
+      ?.discountedAmount?.currencyCode
+    ?? discountAllocations.find((allocation) => allocation.discountedAmount?.currencyCode)
+      ?.discountedAmount?.currencyCode
+    ?? 'USD'
+  );
+}
+
+export function calculateCheckoutTotalSavings({
+  lines = [],
+  discountAllocations = [],
+}: {
+  lines?: CheckoutLine[];
+  discountAllocations?: CheckoutDiscountAllocation[];
+} = {}) {
+  const lineSavings = lines.reduce((sum, line) => {
+    const nativeSavings = sumDiscountAllocations(line.discountAllocations);
+    const bundleSavings = getBundleAttributeSavings(line);
+    return sum + Math.max(nativeSavings, bundleSavings);
+  }, 0);
+
+  return lineSavings > 0 ? lineSavings : sumDiscountAllocations(discountAllocations);
+}
+
+export function formatCheckoutMoney(amount: number, currencyCode = 'USD') {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: currencyCode,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+/**
+ * EB-style cart-line checkout display is handled by Shopify native line
+ * properties and discount allocations. This target intentionally renders
+ * nothing so it cannot duplicate native checkout rows.
+ */
 export const BundlePricingExtension: FunctionComponent = () => {
   return null;
+};
+
+export const TotalSavingsExtension: FunctionComponent = () => {
+  const checkout = globalThis.shopify as {
+    lines?: {value?: CheckoutLine[]};
+    discountAllocations?: {value?: CheckoutDiscountAllocation[]};
+    cost?: {totalAmount?: {value?: CheckoutMoney}};
+  } | undefined;
+  const lines = readSignalValue(checkout?.lines, []);
+  const discountAllocations = readSignalValue(checkout?.discountAllocations, []);
+  const totalAmount = readSignalValue(checkout?.cost?.totalAmount, undefined);
+  const totalSavings = calculateCheckoutTotalSavings({lines, discountAllocations});
+
+  if (totalSavings <= 0) {
+    return null;
+  }
+
+  const currencyCode = getCurrencyCode(lines, discountAllocations, totalAmount);
+
+  return (
+    <s-grid gridTemplateColumns="1fr auto" gap="base">
+      <s-text type="strong">TOTAL SAVINGS</s-text>
+      <s-text type="strong">{formatCheckoutMoney(totalSavings, currencyCode)}</s-text>
+    </s-grid>
+  );
 };

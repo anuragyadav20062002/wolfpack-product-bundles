@@ -25,11 +25,25 @@ import {
 
 export const fullPageStepFooterMethods = {
   buildCartLineSourceProperties(selectedLines) {
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
+    const parentSelectedLines = selectedLines.filter((line) => {
+      const step = line?.step;
+      return !(step?.isFreeGift === true && step?.addonDisplayFree !== true);
+    });
+    const totalPrice = parentSelectedLines.reduce((sum, line) => {
+      const quantity = Number(line?.quantity || 0);
+      const price = Number(line?.product?.price || 0);
+      return sum + (price * quantity);
+    }, 0);
+    const totalQuantity = parentSelectedLines.reduce(
+      (sum, line) => sum + Number(line?.quantity || 0),
+      0
     );
+    const unitPrices = [];
+    parentSelectedLines.forEach((line) => {
+      const quantity = Number(line?.quantity || 0);
+      const price = Number(line?.product?.price || 0);
+      for (let i = 0; i < quantity; i += 1) unitPrices.push(price);
+    });
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
@@ -37,12 +51,12 @@ export const fullPageStepFooterMethods = {
       unitPrices
     );
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-    const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
-    const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
+    const discountAmount = Math.max(0, Number(discountInfo.discountAmount || 0));
+    const discountPercentage = Number(discountInfo.discountPercentage || 0)
+      || (totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0);
 
     return buildSharedCartLineSourceProperties({
-      selectedLines,
+      selectedLines: parentSelectedLines,
       retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
       discountAmount: discountAmount > 0
         ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
@@ -140,7 +154,7 @@ async addBundleToCart(clickedButton = null) {
           }
 
           items.push(cartItem);
-          selectedLines.push({ product, quantity });
+          selectedLines.push({ product, quantity, step });
         }
       });
     });

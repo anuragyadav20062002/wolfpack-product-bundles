@@ -2,11 +2,11 @@ use shopify_function::scalars::Decimal;
 use std::collections::HashMap;
 
 use crate::helpers::{
-    decimal_to_f64, is_addon_line, is_free_gift_line, parse_addon_discount, parse_json_or_default,
+    decimal_to_f64, is_addon_line, is_free_gift_line, parse_json_or_default,
 };
 use crate::pricing::{
     calculate_buy_x_get_y_discount_percentage, calculate_discount_percentage,
-    calculate_selected_addon_discount_amount, rounded_percentage,
+    rounded_percentage,
 };
 use crate::schema;
 use crate::types::{CartLineMessagingSettings, ComponentParent, PricingMethod};
@@ -187,7 +187,6 @@ pub fn process_merge_operations(
         let mut paid_quantity: i64 = 0;
         let mut total_quantity: i64 = 0;
         let mut paid_unit_prices: Vec<f64> = Vec::new();
-        let mut selected_addon_discount_amount: f64 = 0.0;
 
         for &idx in &merge_line_indices {
             let line = &lines[idx];
@@ -211,18 +210,6 @@ pub fn process_merge_operations(
                 paid_quantity += qty;
                 for _ in 0..qty.max(0) {
                     paid_unit_prices.push(unit_price);
-                }
-                if is_addon_line(step_type) {
-                    let addon_discount = parse_addon_discount(step_type);
-                    selected_addon_discount_amount += calculate_selected_addon_discount_amount(
-                        line_total,
-                        addon_discount
-                            .as_ref()
-                            .map(|(discount_type, _)| discount_type.as_str()),
-                        addon_discount
-                            .as_ref()
-                            .map(|(_, discount_value)| discount_value.as_str()),
-                    );
                 }
             }
         }
@@ -256,9 +243,7 @@ pub fn process_merge_operations(
         };
 
         let paid_discount_amount = paid_total * paid_discount_percentage / 100.0;
-        let total_discount_amount =
-            (paid_discount_amount + selected_addon_discount_amount + free_gift_total)
-                .min(original_total);
+        let total_discount_amount = (paid_discount_amount + free_gift_total).min(original_total);
         let discount_percentage = if total_discount_amount > 0.0 && original_total > 0.0 {
             rounded_percentage(total_discount_amount, original_total)
         } else {
@@ -300,27 +285,10 @@ pub fn process_merge_operations(
             let is_free_gift = is_free_gift_line(step_type);
             let paid_bundle_cents =
                 (retail_cents as f64 * (1.0 - paid_discount_percentage / 100.0)).round() as i64;
-            let line_total =
-                decimal_to_f64(line.cost().amount_per_quantity().amount()) * (qty as f64);
-            let addon_discount = parse_addon_discount(step_type);
-            let addon_discount_cents = if is_addon_line(step_type) {
-                (calculate_selected_addon_discount_amount(
-                    line_total,
-                    addon_discount
-                        .as_ref()
-                        .map(|(discount_type, _)| discount_type.as_str()),
-                    addon_discount
-                        .as_ref()
-                        .map(|(_, discount_value)| discount_value.as_str()),
-                ) * 100.0)
-                    .round() as i64
-            } else {
-                0
-            };
             let line_bundle_cents_total = if is_free_gift {
                 0
             } else {
-                ((paid_bundle_cents * qty) - addon_discount_cents).max(0)
+                (paid_bundle_cents * qty).max(0)
             };
             let bundle_cents = if qty > 0 {
                 (line_bundle_cents_total as f64 / qty as f64).round() as i64
@@ -492,40 +460,7 @@ pub fn process_merge_operations(
         operations.push(schema::CartOperation::LinesMerge(merge_op));
 
         for &idx in &addon_line_indices {
-            let line = &lines[idx];
-            let qty = *line.quantity() as i64;
-            let step_type = line.step_type().and_then(|a| a.value()).map(|s| s.as_str());
-            let addon_discount = parse_addon_discount(step_type);
-            let unit_price = decimal_to_f64(line.cost().amount_per_quantity().amount());
-            let line_total = unit_price * (qty as f64);
-            let discount_amount = calculate_selected_addon_discount_amount(
-                line_total,
-                addon_discount
-                    .as_ref()
-                    .map(|(discount_type, _)| discount_type.as_str()),
-                addon_discount
-                    .as_ref()
-                    .map(|(_, discount_value)| discount_value.as_str()),
-            );
-            if qty > 0 && discount_amount > 0.0 {
-                let discounted_unit_price = (unit_price - (discount_amount / qty as f64)).max(0.0);
-                operations.push(schema::CartOperation::LineUpdate(
-                    schema::LineUpdateOperation {
-                        cart_line_id: line.id().to_string(),
-                        title: None,
-                        image: None,
-                        price: Some(schema::LineUpdateOperationPriceAdjustment {
-                            adjustment:
-                                schema::LineUpdateOperationPriceAdjustmentValue::FixedPricePerUnit(
-                                    schema::LineUpdateOperationFixedPricePerUnitAdjustment {
-                                        amount: Decimal::from(discounted_unit_price),
-                                    },
-                                ),
-                        }),
-                    },
-                ));
-            }
-            processed_line_ids.insert(line.id().to_string());
+            processed_line_ids.insert(lines[idx].id().to_string());
         }
 
         for &idx in &merge_line_indices {

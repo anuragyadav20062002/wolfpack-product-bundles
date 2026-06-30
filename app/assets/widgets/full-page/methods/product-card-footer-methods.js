@@ -26,7 +26,7 @@ import {
 
 
 export const fullPageProductCardFooterMethods = {
-createProductCard(product, stepIndex) {
+createProductCard(product, stepIndex, options = {}) {
   const productId = product.variantId || product.id;
   const selectedQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
   const directDefaultQuantity = product?.isDirectDefaultProduct
@@ -49,15 +49,24 @@ createProductCard(product, stepIndex) {
   // Build inline variant selector using the step's merchant-configured primary option
   const step = (this.selectedBundle?.steps || [])[stepIndex];
   const primaryOptionName = step?.primaryVariantOption || null;
-  const variantSelectorHtml = shouldRenderInlineVariantSelector({
+  const displayVariantsAsIndividualProducts =
+    typeof options.displayVariantsAsIndividualProducts === 'boolean'
+      ? options.displayVariantsAsIndividualProducts
+      : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+  const designPreset = this.getFullPageDesignPreset();
+  const shouldRenderVariantSelector = shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
-    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
-  })
-    ? VariantSelectorComponent.renderHtml(product, primaryOptionName)
+    displayVariantsAsIndividualProducts,
+  });
+  const variantSelectorHtml = shouldRenderVariantSelector
+    ? designPreset === 'STANDARD'
+      ? VariantSelectorComponent.renderDropdownHtml(product, primaryOptionName, {
+        placeholder: this._resolveText('chooseOptionsButton', 'Choose Options'),
+      })
+      : VariantSelectorComponent.renderHtml(product, primaryOptionName)
     : '';
 
-  const designPreset = this.getFullPageDesignPreset();
   const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
   const hasStandardAddonDiscountBadge = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText;
   const stockBadgeHtml = hasStandardAddonDiscountBadge
@@ -74,6 +83,7 @@ createProductCard(product, stepIndex) {
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         addButtonText: this.getProductCardAddButtonText(step),
         stockBadgeHtml,
+        variantSelectorPlacement: designPreset === 'STANDARD' ? 'beforePrice' : undefined,
       }
     );
   } else {
@@ -157,7 +167,9 @@ createProductCard(product, stepIndex) {
   }
 
   // Attach event listeners for full-page specific interactions
-  this.attachProductCardListeners(cardElement, product, stepIndex);
+  this.attachProductCardListeners(cardElement, product, stepIndex, {
+    displayVariantsAsIndividualProducts,
+  });
 
   return cardElement;
 },
@@ -283,7 +295,7 @@ getSummaryVariantFromDisplayTitle(displayTitle) {
 },
 
 // Attach event listeners to product card
-attachProductCardListeners(cardElement, product, stepIndex) {
+attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
   // Default steps are read-only — no add/remove/quantity interaction allowed
   if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
 
@@ -325,10 +337,14 @@ attachProductCardListeners(cardElement, product, stepIndex) {
 
   // Inline variant selector (VariantSelectorComponent button group + panels)
   const step = (this.selectedBundle?.steps || [])[stepIndex];
+  const displayVariantsAsIndividualProducts =
+    typeof options.displayVariantsAsIndividualProducts === 'boolean'
+      ? options.displayVariantsAsIndividualProducts
+      : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
   if (shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
-    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
+    displayVariantsAsIndividualProducts,
   })) {
     VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
       const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
@@ -359,14 +375,47 @@ attachProductCardListeners(cardElement, product, stepIndex) {
 
       // Update data-product-id on card + action buttons so subsequent clicks use correct ID
       cardElement.dataset.productId = newVariantId;
+      cardElement.dataset.currentSelectedVariantId = newVariantId;
       cardElement.querySelectorAll('[data-product-id]').forEach(el => {
         if (el !== cardElement) el.dataset.productId = newVariantId;
       });
+      this.updateProductCardVariantDisplay(cardElement, product, step);
 
       this.updateFooterMessaging?.();
       this.updateStepTimeline?.();
       this._refreshSiblingDimState?.(stepIndex);
     });
+  }
+},
+
+updateProductCardVariantDisplay(cardElement, product, step) {
+  if (!cardElement || !product) return;
+
+  const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const priceEl = cardElement.querySelector('.product-price');
+  if (priceEl) {
+    priceEl.textContent = CurrencyManager.convertAndFormat(displayProduct.price || 0, currencyInfo);
+  }
+
+  const priceRow = cardElement.querySelector('.product-price-row');
+  let compareEl = cardElement.querySelector('.product-price-strike');
+  if (displayProduct.compareAtPrice) {
+    if (!compareEl && priceRow && priceEl) {
+      compareEl = document.createElement('span');
+      compareEl.className = 'bw-product-card__compare-price product-price-strike';
+      priceRow.insertBefore(compareEl, priceEl);
+    }
+    if (compareEl) {
+      compareEl.textContent = CurrencyManager.convertAndFormat(displayProduct.compareAtPrice, currencyInfo);
+    }
+  } else if (compareEl) {
+    compareEl.remove();
+  }
+
+  const imageEl = cardElement.querySelector('.bw-product-card__image, .product-image img, img');
+  if (imageEl && product.imageUrl) {
+    imageEl.src = product.imageUrl;
   }
 },
 

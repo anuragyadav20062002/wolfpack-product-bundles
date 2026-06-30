@@ -5,7 +5,7 @@ const { fullPageStepFooterMethods } =
   require("../../../app/assets/widgets/full-page/methods/step-footer-methods.js");
 
 describe("FPB checkout cart-line properties", () => {
-  it("keeps public checkout labels out of component source metadata", () => {
+  it("keeps paid add-on savings out of parent bundle display metadata", () => {
     const originalWindow = (global as any).window;
     let sourceProperties;
 
@@ -14,14 +14,23 @@ describe("FPB checkout cart-line properties", () => {
         Shopify: { currency: { active: "USD", format: ["$", "{{amount}}"].join("") } },
       };
 
+      const paidStep = { id: "paid-step" };
+      const paidAddonStep = { id: "addon-step", isFreeGift: true, addonDisplayFree: false };
+
       sourceProperties = fullPageStepFooterMethods.buildCartLineSourceProperties.call(
         {
-          selectedProducts: [],
-          stepProductData: [],
-          selectedBundle: { steps: [] },
-          getDiscountInfoWithSelectedAddonDiscount: () => ({
-            discountAmount: 8290,
-          }),
+          selectedProducts: [
+            { paidVariant: 1 },
+            { addonVariant: 1 },
+          ],
+          stepProductData: [
+            [{ variantId: "paidVariant", title: "Paid product", price: 82900 }],
+            [{ variantId: "addonVariant", title: "Paid add-on", price: 82900 }],
+          ],
+          selectedBundle: {
+            pricing: { enabled: false, rules: [] },
+            steps: [paidStep, paidAddonStep],
+          },
           buildCartLineDisplayProperties:
             fullPageStepFooterMethods.buildCartLineDisplayProperties,
           getCartLineLabels: () => ({
@@ -31,8 +40,8 @@ describe("FPB checkout cart-line properties", () => {
           }),
         },
         [
-          { product: { title: "14k Dangling Obsidian Earrings" }, quantity: 1 },
-          { product: { title: "14k Dangling Obsidian Earrings" }, quantity: 1 },
+          { product: { title: "Paid product", price: 82900 }, quantity: 1, step: paidStep },
+          { product: { title: "Paid add-on", price: 82900 }, quantity: 1, step: paidAddonStep },
         ],
       );
     } finally {
@@ -42,14 +51,8 @@ describe("FPB checkout cart-line properties", () => {
     expect(sourceProperties).toEqual({
       _bundle_display_properties: JSON.stringify({
         box: "1",
-        items:
-          "1 x 14k Dangling Obsidian Earrings, 1 x 14k Dangling Obsidian Earrings",
-        retailPrice: "$0.00",
-        youSave: {
-          amount: "$82.90",
-          percentage: "0%",
-          amountPercentage: "$82.90 (0%)",
-        },
+        items: "1 x Paid product",
+        retailPrice: "$829.00",
       }),
     });
     expect(sourceProperties).not.toHaveProperty("Items");

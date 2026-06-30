@@ -741,7 +741,7 @@ mod tests {
 
         let output: schema::FunctionRunResult =
             run_function_with_input(cart_transform_run, &input).expect("should not error");
-        assert_eq!(output.operations.len(), 2);
+        assert_eq!(output.operations.len(), 1);
 
         let merge = output
             .operations
@@ -778,24 +778,13 @@ mod tests {
             Some("5000")
         );
 
-        let line_update = output
-            .operations
-            .iter()
-            .find_map(|operation| match operation {
-                schema::CartOperation::LineUpdate(update) => Some(update),
-                _ => None,
-            })
-            .expect("expected paid add-on to remain as a separate discounted line");
-        assert_eq!(line_update.cart_line_id, "addon-line");
-        let fixed_price = line_update
-            .price
-            .as_ref()
-            .map(|price| match &price.adjustment {
-                schema::LineUpdateOperationPriceAdjustmentValue::FixedPricePerUnit(adjustment) => {
-                    adjustment.amount.to_string()
-                }
-            });
-        assert_eq!(fixed_price.as_deref(), Some("54.0"));
+        let line_update = output.operations.iter().find(|operation| {
+            matches!(operation, schema::CartOperation::LineUpdate(_))
+        });
+        assert!(
+            line_update.is_none(),
+            "paid add-on discounting is handled by the Discount Function"
+        );
     }
 
     #[test]

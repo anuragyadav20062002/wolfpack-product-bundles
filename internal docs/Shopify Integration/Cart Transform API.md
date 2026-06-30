@@ -65,6 +65,18 @@ path that emits a product discount candidate/message for the selected add-on
 line; otherwise Checkout UI must stay inert and Cart Transform remains only the
 price-adjustment source.
 
+2026-06-30 implementation note: `extensions/bundle-discount-function` provides
+the product Discount Function query and Rust logic for `_bundle_step_type`
+values such as `addon:PERCENTAGE:10` and emits product discount candidates with
+message `Add On`. `AddOnDiscountFunctionService` creates the matching automatic
+app discount with EB-aligned settings: `discountClasses: ["PRODUCT"]` and
+`combinesWith.orderDiscounts/productDiscounts: true`,
+`combinesWith.shippingDiscounts: false`. The app config must request both
+`read_discounts` and `write_discounts`; Shopify schema validation reports both
+scopes for the activation flow. Cart Transform no longer emits a paid add-on
+`lineUpdate` fixed unit price for selected add-on lines, otherwise the selected
+add-on can be discounted twice once the Discount Function is active.
+
 ## See Also
 - [[Architecture/Cart Transform Function]] — full implementation reference
 - [[Features/Bundle Instance Tracking]]

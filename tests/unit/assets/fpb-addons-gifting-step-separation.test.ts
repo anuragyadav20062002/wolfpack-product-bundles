@@ -17,6 +17,9 @@ const { fullPageValidationAddonsMethods } =
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageProductCardFooterMethods } =
   require("../../../app/assets/widgets/full-page/methods/product-card-footer-methods.js");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { fullPageProductProcessingMethods } =
+  require("../../../app/assets/widgets/full-page/methods/product-processing-methods.js");
 
 const buildAddonStepFromPersonalization =
   fullPageInitialRenderMethods.buildAddonStepFromPersonalization;
@@ -35,6 +38,7 @@ const buildPaidAddonProductDisplayData =
   fullPageProductCardFooterMethods.buildPaidAddonProductDisplayData;
 const getProductCardAddButtonText =
   fullPageProductCardFooterMethods.getProductCardAddButtonText;
+const loadStepProducts = fullPageProductProcessingMethods.loadStepProducts;
 
 if (
   typeof buildAddonStepFromPersonalization !== "function" ||
@@ -45,7 +49,8 @@ if (
   typeof calculateSelectedAddonDiscountAmount !== "function" ||
   typeof renderAddonEligibilityMessage !== "function" ||
   typeof buildPaidAddonProductDisplayData !== "function" ||
-  typeof getProductCardAddButtonText !== "function"
+  typeof getProductCardAddButtonText !== "function" ||
+  typeof loadStepProducts !== "function"
 ) {
   throw new Error("Expected FPB add-on methods missing");
 }
@@ -459,5 +464,53 @@ describe("FPB add-ons / gifting step separation", () => {
       tierIndex: 1,
       isEligible: true,
     });
+  });
+
+  it("loads products and selection capacity from the active add-on tier only", async () => {
+    const tierOneProduct = {
+      ...makeProduct("gid://shopify/Product/1"),
+      variants: [{ variantGraphqlId: "gid://shopify/ProductVariant/11", price: "10.00" }],
+    };
+    const tierTwoProduct = {
+      ...makeProduct("gid://shopify/Product/2"),
+      variants: [{ variantGraphqlId: "gid://shopify/ProductVariant/22", price: "20.00" }],
+    };
+    const addonStep = {
+      isFreeGift: true,
+      maxQuantity: 2,
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 20 },
+          selectedAddonProducts: [tierOneProduct],
+        },
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 2 },
+          discount: { type: "PERCENTAGE", value: 100 },
+          selectedAddonProducts: [tierTwoProduct],
+        },
+      ],
+    };
+    const ctx = {
+      ...fullPageValidationAddonsMethods,
+      ...fullPageInitialRenderMethods,
+      ...fullPageProductProcessingMethods,
+      selectedProducts: [{ paidVariant: 2 }, { "11": 1 }],
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }], []],
+      selectedBundle: { steps: [{ id: "paid" }, addonStep] },
+      directDefaultProducts: [],
+      stepCollectionProductIds: {},
+      processProductsForStep: (_products: unknown[], _step: unknown) => [
+        { variantId: "22", id: "2", price: 2000 },
+      ],
+      _mergeDirectDefaultProductsIntoStep: (_stepIndex: number, products: unknown[]) => products,
+      collectStepCollectionHandles: () => [],
+    };
+
+    await loadStepProducts.call(ctx, 1);
+
+    expect(addonStep.maxQuantity).toBe(1);
+    expect(ctx.stepProductData[1]).toEqual([{ variantId: "22", id: "2", price: 2000 }]);
+    expect(ctx.selectedProducts[1]).toEqual({});
   });
 });

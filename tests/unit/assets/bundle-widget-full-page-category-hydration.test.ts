@@ -59,7 +59,7 @@ describe('Full Page widget category hydration behavior', () => {
     ]);
   });
 
-  it('inherits the FPB step-level variant display flag for category tabs', () => {
+  it('uses the active category variant display flag for category tabs', () => {
     const step = {
       displayVariantsAsIndividual: true,
       categories: [
@@ -67,6 +67,29 @@ describe('Full Page widget category hydration behavior', () => {
           categoryId: 'cat-collection',
           title: 'Collection',
           displayVariantsAsIndividualProducts: false,
+          collections: [{ handle: 'automated-collection' }],
+        },
+      ],
+    };
+    const activeCategory = getStepCategoryTabEntries(step)[0];
+
+    expect(
+      shouldDisplayVariantsAsIndividualForProductGrid.call(
+        categoryContext(),
+        step,
+        activeCategory,
+      ),
+    ).toBe(false);
+  });
+
+  it('expands category tab products only when the active category display flag is on', () => {
+    const step = {
+      displayVariantsAsIndividual: false,
+      categories: [
+        {
+          categoryId: 'cat-collection',
+          title: 'Collection',
+          displayVariantsAsIndividualProducts: true,
           collections: [{ handle: 'automated-collection' }],
         },
       ],

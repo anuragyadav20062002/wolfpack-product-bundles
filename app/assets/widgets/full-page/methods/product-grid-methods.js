@@ -303,7 +303,9 @@ createFullPageProductGrid(stepIndex) {
 
   // Create product cards using ComponentGenerator
   expandedProducts.forEach(product => {
-    const productCard = this.createProductCard(product, stepIndex);
+    const productCard = this.createProductCard(product, stepIndex, {
+      displayVariantsAsIndividualProducts: shouldDisplayVariantsAsIndividual,
+    });
     const productId = product.variantId || product.id;
     const currentQty = stepSelections[productId] || 0;
     // Dim unselected cards when step quota is full

@@ -145,6 +145,13 @@ const ConditionValidator = (function () {
     return Number(selection) || 0;
   }
 
+  function _getSelectionWeight(selection) {
+    if (selection && typeof selection === 'object') {
+      return Number(selection.weight) || 0;
+    }
+    return Number(selection) || 0;
+  }
+
   function _normalizeAmountRuleValue(value) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return numeric;
@@ -169,14 +176,19 @@ const ConditionValidator = (function () {
       const operator = _normalizeOperator(rule && (rule.operator || rule.condition));
       const ruleType = rule && (rule.conditionType || rule.type);
       const isAmountRule = ruleType === 'amount';
+      const isWeightRule = ruleType === 'weight';
       const value = isAmountRule ? _normalizeAmountRuleValue(rule && rule.value) : Number(rule && rule.value);
       if (!Number.isFinite(value)) continue;
       let categoryTotal = 0;
       for (const pid of Object.keys(selections)) {
         if (productIds.has(String(pid))) {
-          categoryTotal += isAmountRule
-            ? _getSelectionAmount(selections[pid])
-            : _getSelectionQuantity(selections[pid]);
+          if (isAmountRule) {
+            categoryTotal += _getSelectionAmount(selections[pid]);
+          } else if (isWeightRule) {
+            categoryTotal += _getSelectionWeight(selections[pid]);
+          } else {
+            categoryTotal += _getSelectionQuantity(selections[pid]);
+          }
         }
       }
       if (!_evaluateSatisfied(operator, value, categoryTotal)) return false;

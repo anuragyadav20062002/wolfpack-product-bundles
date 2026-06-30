@@ -9,6 +9,7 @@ import { CachedSessionStorage } from "./lib/cached-session-storage.server";
 import prisma from "./db.server";
 import { createStorefrontAccessToken } from "./services/storefront-token.server";
 import { CartTransformService } from "./services/cart-transform-service.server";
+import { AddOnDiscountFunctionService } from "./services/addon-discount-function-service.server";
 import { BillingService } from "./services/billing.server";
 import { ensureVariantBundleMetafieldDefinitions } from "./services/bundles/metafield-sync.server";
 import { syncThemeColors } from "./services/theme-colors.server";
@@ -187,6 +188,58 @@ const shopify = shopifyApp({
           errorCode: "exception",
           attributes: {
             error_message_safe: error instanceof Error ? error.message : "Cart transform setup error",
+          },
+        });
+      }
+
+      // Automatically activate the Add On discount function so selected add-on
+      // cart lines can render native Shopify discount allocations.
+      try {
+        const result = await AddOnDiscountFunctionService.completeSetup(admin, session.shop);
+        if (result.success) {
+          await recordBusinessEvent({
+            eventHandle: "addon_discount_function_enabled",
+            shopDomain: session.shop,
+            shopifyShopGid,
+            surface: "admin",
+            actor: "system",
+            routeFamily: "cart_transform",
+            result: "success",
+            attributes: {
+              discount_id: result.discountId ?? null,
+              function_id: result.functionId ?? null,
+              already_exists: result.alreadyExists ?? false,
+            },
+          });
+        } else {
+          AppLogger.warn("Add-on discount function setup failed (non-critical)", { shop: session.shop, error: result.error });
+          await recordBusinessEvent({
+            eventHandle: "addon_discount_function_failed",
+            shopDomain: session.shop,
+            shopifyShopGid,
+            surface: "admin",
+            actor: "system",
+            routeFamily: "cart_transform",
+            result: "failure",
+            errorCode: "setup_failed",
+            attributes: {
+              error_message_safe: result.error ?? "Add-on discount function setup failed",
+            },
+          });
+        }
+      } catch (error: any) {
+        AppLogger.error("Error during add-on discount function setup", { shop: session.shop }, error);
+        await recordBusinessEvent({
+          eventHandle: "addon_discount_function_failed",
+          shopDomain: session.shop,
+          shopifyShopGid,
+          surface: "admin",
+          actor: "system",
+          routeFamily: "cart_transform",
+          result: "failure",
+          errorCode: "exception",
+          attributes: {
+            error_message_safe: error instanceof Error ? error.message : "Add-on discount function setup error",
           },
         });
       }
