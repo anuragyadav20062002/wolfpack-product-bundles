@@ -27,6 +27,7 @@ import {
   fetchShopLocales,
   fetchEmbedData,
 } from "../../../lib/bundle-configure-loader.server";
+import { handleRecordBundlePreview } from "../shared/bundle-preview-action.server";
 import ConfigureBundleFlow from "./ConfigureBundleFlow";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -161,6 +162,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           bundleId,
           formData,
         );
+      case "recordBundlePreview":
+        return await handleRecordBundlePreview(admin, session, bundleId, formData);
       case "validateSellingPlanGroups":
         return await handleValidateSellingPlanGroups(admin, session, bundleId);
       default:

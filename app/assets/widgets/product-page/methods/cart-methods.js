@@ -139,7 +139,7 @@ export const ProductPageCartMethods = {
               properties._addonTierId = String(addonEval.tier.tierId);
             }
           const addonVariantId = this.extractId(variantId);
-          properties._uniqueGbbItemKey = `${addonVariantId || variantId}_pageId:addonProduct`;
+          properties._uniqueWpbItemKey = `${addonVariantId || variantId}_pageId:addonProduct`;
           properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true
             ? `addon:${addonDiscount.type}:${addonDiscount.value}`
             : 'addon';

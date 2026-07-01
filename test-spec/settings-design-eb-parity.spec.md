@@ -24,8 +24,8 @@ Pin the Settings -> Design mapper against the observed Easy Bundles pageCustomiz
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
 | 1 | PPB EB direct variable aliases are emitted | Design settings containing mapped fields | CSS contains `--product-card-*`, `--tabs-*`, `--footer-*`, and empty-state aliases | Required for PPB template parity |
-| 2 | PPB consolidated bridge is emitted | Same settings | CSS contains `body[gbb-mix-consolidated-design="true"]` bridge to `--gbbMix-*` vars | EB sets this body attr on current PPB templates |
-| 3 | PDP_INPAGE font adjustment is emitted | Same settings | CSS includes `calc(... - 2px)` rules for `body[gbbmix-template-type="PDP_INPAGE"]` | EB Product List/Grid behavior |
+| 2 | PPB consolidated bridge is emitted | Same settings | CSS contains `body[wpb-mix-consolidated-design="true"]` bridge to `--wpbMix-*` vars | EB sets this body attr on current PPB templates |
+| 3 | PDP_INPAGE font adjustment is emitted | Same settings | CSS includes `calc(... - 2px)` rules for `body[wpbmix-template-type="PDP_INPAGE"]` | EB Product List/Grid behavior |
 
 ## Acceptance Criteria
 
