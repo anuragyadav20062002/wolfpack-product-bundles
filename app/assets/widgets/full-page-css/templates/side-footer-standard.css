@@ -3335,7 +3335,7 @@ body:has([data-fpb-design-preset]) {
   .sidebar-content
   .product-card.bw-product-card--selected {
   outline: 0.125rem solid #000;
-  outline-offset: 0;
+  outline-offset: -0.125rem;
   box-shadow: none;
 }
 
