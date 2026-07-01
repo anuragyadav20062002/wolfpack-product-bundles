@@ -2142,7 +2142,6 @@
   border-bottom: 1px solid #ebebeb;
 }
 
-.categorySelectedItemDrag,
 .categorySelectedItemRemove {
   flex: 0 0 28px;
   width: 28px;
@@ -2159,10 +2158,19 @@
   cursor: pointer;
 }
 
-.categorySelectedItemDrag:hover,
+.categorySelectedItemDrag {
+  composes: categoryDrag from "./bundle-configure-shared.module.css";
+  flex: 0 0 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+}
+
 .categorySelectedItemDrag:focus-visible {
-  background: #f1f2f3;
-  color: #202223;
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
 }
 
 .categorySelectedItemImage {

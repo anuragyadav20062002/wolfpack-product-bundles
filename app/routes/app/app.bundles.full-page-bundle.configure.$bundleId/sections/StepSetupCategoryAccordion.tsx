@@ -449,6 +449,9 @@ export function FpbStepCategoryAccordion({
                           className={fullPageBundleStyles.categorySelectedItemDrag}
                           aria-label={`Reorder ${product.title || "selected product"}`}
                           draggable="true"
+                          onClick={(event: React.MouseEvent) => {
+                            event.stopPropagation();
+                          }}
                           onDragStart={(event: React.DragEvent) => {
                             event.stopPropagation();
                             setDraggedProductIndex(index);
@@ -556,6 +559,9 @@ export function FpbStepCategoryAccordion({
                           className={fullPageBundleStyles.categorySelectedItemDrag}
                           aria-label={`Reorder ${collection.title || "selected collection"}`}
                           draggable="true"
+                          onClick={(event: React.MouseEvent) => {
+                            event.stopPropagation();
+                          }}
                           onDragStart={(event: React.DragEvent) => {
                             event.stopPropagation();
                             setDraggedCollectionIndex(index);
@@ -565,7 +571,7 @@ export function FpbStepCategoryAccordion({
                             setDraggedCollectionIndex(null);
                           }}
                         >
-                          ::
+                          ⠿
                         </button>
                         <span className={fullPageBundleStyles.categorySelectedItemName}>
                           {collection.title || "Unnamed Collection"}
