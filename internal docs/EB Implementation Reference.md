@@ -390,6 +390,8 @@ Storefront runtime adds the following app-discount fields under `personalization
 
 2026-06-29 checkout UI proof: EB checkout does not add a custom app-rendered savings panel under bundle lines. Evidence in `/private/tmp/fpb-standard-agentic-parity/checkout-ui/eb-checkout-reference-current.snapshot.txt` shows the add-on line with native `Box: 1`, native discount rows `Discount code` / `ADD ON (-₹82.90)`, native original/discounted prices, and the parent line with native `Box: 1` plus `Items: 1 x 14k Dangling Obsidian Earrings`. WPB proof in `/private/tmp/fpb-standard-agentic-parity/checkout-ui/wpb-checkout-box-fix-expanded.snapshot.txt` shows the child line leakage removed (`Retail Price` / `You Save` absent) and the checkout UI extension asset loaded from `bundle-checkout-ui`; the extension must render nothing for FPB parity and leave native checkout rows as the display surface.
 
+2026-07-01 Standard sidebar behavior proof: EB shows the add-on title/message section in the desktop summary sidebar only while the shopper is on paid product steps. On the add-on step, that section is absent and the sidebar contains the normal selected-product summary, total, and cart action. EB also gates summary product removal by current step: products selected from other steps show a disabled trash affordance, and clicking it toasts `Remove This Product From <Step Name>`. Selected Standard product cards use a black `2px` outline with `border: 0`, preserving card dimensions. Current evidence is in `/private/tmp/fpb-standard-agentic-parity/addon-summary-sidebar-current/` and `/private/tmp/fpb-standard-agentic-parity/selected-card-border/`.
+
 ### FPB Messages Personalization Contract
 
 Captured from `network-1548-savePersonalization-giftMessage.request.network-request`, `fpb-storefront-runtime-messages.json`, and the desktop/mobile validation screenshots.
@@ -787,6 +789,18 @@ Per-product attributes: `productid="{numericId}"` `firstvariantid="{numericVaria
 
 Per-category attribute: `categoryid="{categoryId}"`
 
+### FPB Standard Variant Selector UI
+
+For Standard Design (`FBP_SIDE_FOOTER` + `DEFAULT_FBP`), grouped variant products render an inline `Choose Options` dropdown on desktop when variants are not displayed as individual products.
+
+Observed desktop behavior:
+- The selected row uses the EB Standard card dropdown style: one row tall, `1.5px` light border, `5px` radius, Assistant text, and option rows with product images where available.
+- Long option lists use a short scrolling dropdown viewport with a `max-height` transition when opening and closing.
+- The dropdown paints above later product cards in the grid when expanded.
+- The scrollbar is a narrow WebKit scrollbar: `3px` width, transparent scrollbar background, `#f1f1f1` track, and `#f6f6f6` thumb.
+
+Evidence: `/private/tmp/fpb-standard-agentic-parity/variant-selector-dropdown-clipping/eb-long-dropdown-reference.json` and `eb-scrollbar-pseudo-reference.json`.
+
 ### PPB Global Namespace
 
 | Global | Purpose |
@@ -1090,7 +1104,7 @@ Storage: per-category field in both FPB and PPB (`displayVariantsAsIndividualPro
 
 Steps are keyed `addProductsPage{N}`. Advancing to the next step is a **full page navigation** (`?page=addProductsPage{N}`), not an SPA state swap.
 
-Completed step: `gbbNavigationStepImgContainerActive` class removed; icon container gets `background-color: rgb(0, 0, 0)` and a `gbbtickMark` SVG checkmark.
+Completed step: `gbbNavigationStepImgContainerActive` class removed; icon container gets `background-color: rgb(0, 0, 0)` and a centered white tick (`gbbtickMark` in EB DOM). Current desktop/mobile evidence in `/private/tmp/fpb-standard-agentic-parity/step-timeline-completed-tick/` confirms EB applies this only to completed past steps; the active step remains a white circle with a black border and image, and locked future steps keep the inactive image treatment.
 
 Active step: `gbbNavigationStepImgContainerActive` class + `border: 4px solid`.
 

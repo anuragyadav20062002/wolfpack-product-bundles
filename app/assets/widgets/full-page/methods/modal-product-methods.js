@@ -13,7 +13,7 @@ import { hideLoadingOverlayElement, markLoadingOverlayVisible } from '../../shar
 import { getDiscountProgressData, getSelectedQuantity, getTimelineEntryState } from '../../shared/engine/bundle-selectors.js';
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { createBundleBannerElement, createStepBannerImageElement } from '../../shared/components/bundle-banners.js';
-import { renderSharedProductCard } from '../../shared/components/product-card.js';
+import { getProductImageUrls, renderSharedProductCard } from '../../shared/components/product-card.js';
 import { renderSelectedProductRow } from '../../shared/components/selected-product-row.js';
 import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
 import { renderStepTimelineEntry } from '../../shared/components/step-timeline.js';
@@ -205,8 +205,22 @@ attachProductEventHandlers(productGrid, stepIndex) {
   const findProduct = (productId) => {
     return this.stepProductData[stepIndex]?.find(p => {
       const selectionKey = p.variantId || p.id;
-      return selectionKey === productId;
+      return String(selectionKey) === String(productId);
     });
+  };
+
+  const openProductModalForCard = (productCard) => {
+    if (!this.productModal && window.BundleProductModal) {
+      this.productModal = new window.BundleProductModal(this);
+    }
+    if (!productCard || !this.productModal) return;
+    const productId = productCard.dataset.productId;
+    const product = findProduct(productId);
+
+    if (product && step) {
+      const initialImageIndex = Number(productCard.dataset.bwCardImageIndex || 0);
+      this.productModal.open(product, step, { initialImageIndex });
+    }
   };
 
   // Quantity button handlers
@@ -241,20 +255,38 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
   // Product image/title click - open modal
   newProductGrid.addEventListener('click', (e) => {
-    const productImage = e.target.closest('.product-image');
-    const productTitle = e.target.closest('.product-title');
+    const imageNav = e.target.closest('.bw-product-card__image-nav');
+    if (imageNav) {
+      e.preventDefault();
+      e.stopPropagation();
+      const productCard = imageNav.closest('.product-card');
+      if (!productCard) return;
+      const product = findProduct(productCard.dataset.productId);
+      const imageUrls = getProductImageUrls(product);
+      if (imageUrls.length <= 1) return;
 
-    if (productImage || productTitle) {
-      const productCard = e.target.closest('.product-card');
-      if (productCard && this.productModal) {
-        const productId = productCard.dataset.productId;
-        const product = findProduct(productId);
-
-        if (product && step) {
-          this.productModal.open(product, step);
-        }
+      const currentIndex = Number(productCard.dataset.bwCardImageIndex || 0);
+      const direction = imageNav.dataset.bwImageNav === 'prev' ? -1 : 1;
+      const nextIndex = (currentIndex + direction + imageUrls.length) % imageUrls.length;
+      const imageEl = productCard.querySelector('.bw-product-card__image');
+      if (imageEl) {
+        imageEl.src = imageUrls[nextIndex];
       }
+      productCard.dataset.bwCardImageIndex = String(nextIndex);
+      return;
     }
+
+    if (e.target.closest('.product-image, .product-title')) {
+      openProductModalForCard(e.target.closest('.product-card'));
+    }
+  });
+
+  newProductGrid.querySelectorAll('.product-image, .product-title').forEach((element) => {
+    element.addEventListener('click', (event) => {
+      if (event.target.closest('.bw-product-card__image-nav')) return;
+      event.stopPropagation();
+      openProductModalForCard(event.target.closest('.product-card'));
+    });
   });
 
   // Variant selector handler

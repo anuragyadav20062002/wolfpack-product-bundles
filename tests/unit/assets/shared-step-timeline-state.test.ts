@@ -1,5 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { getTimelineEntryState } = require('../../../app/assets/widgets/shared/engine/bundle-selectors.js');
+const {
+  getTimelineEntryState,
+  shouldShowTimelineCompletedState,
+} = require('../../../app/assets/widgets/shared/engine/bundle-selectors.js');
 
 describe('shared step timeline state selector', () => {
   it('marks the current accessible step active', () => {
@@ -49,5 +52,34 @@ describe('shared step timeline state selector', () => {
       isAccessible: true,
       hasMultipleCategoryEntry: true,
     }).classes).toEqual(['timeline-step--active']);
+  });
+});
+
+describe('timeline completed-state selector', () => {
+  it('does not mark future steps completed even when their condition is satisfied', () => {
+    expect(shouldShowTimelineCompletedState({
+      entry: { type: 'step', stepIndex: 1, step: {} },
+      currentStepIndex: 0,
+      isStepCompleted: true,
+      hasMultipleCategoryEntry: false,
+    })).toBe(false);
+  });
+
+  it('marks past completed steps completed', () => {
+    expect(shouldShowTimelineCompletedState({
+      entry: { type: 'step', stepIndex: 0, step: {} },
+      currentStepIndex: 1,
+      isStepCompleted: true,
+      hasMultipleCategoryEntry: false,
+    })).toBe(true);
+  });
+
+  it('preserves the current multiple-category step completed state', () => {
+    expect(shouldShowTimelineCompletedState({
+      entry: { type: 'step', stepIndex: 1, step: {} },
+      currentStepIndex: 1,
+      isStepCompleted: true,
+      hasMultipleCategoryEntry: true,
+    })).toBe(true);
   });
 });

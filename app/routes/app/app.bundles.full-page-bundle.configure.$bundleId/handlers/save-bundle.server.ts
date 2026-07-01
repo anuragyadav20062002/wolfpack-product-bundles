@@ -13,8 +13,31 @@ import {
 } from "../../../../lib/pricing-display-options";
 import { parseConditionValue } from "../../../../lib/parse-condition-value";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
+import { AddOnDiscountFunctionService } from "../../../../services/addon-discount-function-service.server";
 import { parseFpbSaveBundleForm } from "./save-bundle-form.server";
 import { syncSavedFpbBundleStorefrontState } from "./save-metafields.server";
+
+function hasEnabledAddonProducts(personalizationData: unknown) {
+  if (
+    personalizationData === null ||
+    typeof personalizationData !== "object" ||
+    Array.isArray(personalizationData)
+  ) {
+    return false;
+  }
+
+  const addonProducts = (personalizationData as Record<string, unknown>)
+    .addonProducts;
+  if (
+    addonProducts === null ||
+    typeof addonProducts !== "object" ||
+    Array.isArray(addonProducts)
+  ) {
+    return false;
+  }
+
+  return (addonProducts as Record<string, unknown>).isEnabled === true;
+}
 
 /**
  * Handle saving bundle configuration
@@ -455,6 +478,30 @@ export async function handleSaveBundle(
         personalizationData,
       },
     });
+
+    if (hasEnabledAddonProducts(personalizationData)) {
+      try {
+        const activationResult = await AddOnDiscountFunctionService.completeSetup(
+          admin,
+          session.shop,
+        );
+        if (!activationResult.success) {
+          AppLogger.warn("Add-on discount function setup failed during bundle save", {
+            component: "bundle-config",
+            operation: "save",
+            bundleId,
+            shopId: session.shop,
+          }, { error: activationResult.error });
+        }
+      } catch (activationError) {
+        AppLogger.warn("Add-on discount function setup threw during bundle save", {
+          component: "bundle-config",
+          operation: "save",
+          bundleId,
+          shopId: session.shop,
+        }, activationError);
+      }
+    }
 
     // BUNDLE INDEX: No longer needed
     // Cart transform now queries variant metafields directly (Shopify Standard)

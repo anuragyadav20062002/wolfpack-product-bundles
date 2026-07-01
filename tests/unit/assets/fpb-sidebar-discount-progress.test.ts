@@ -215,6 +215,25 @@ describe('FPB Standard summary sidebar add-ons', () => {
     expect(addonMessage?.textContent).toContain('100% off');
   });
 
+  it('does not render the add-on summary block when the active step is the add-on step', () => {
+    const panel = document.createElement('aside');
+    const context = makeContext('STANDARD', 'simple');
+    let renderCount = 0;
+    context.currentStepIndex = 1;
+    context.selectedBundle.steps = [
+      { id: 'step-1', enabled: true },
+      { id: 'personalization-addons', name: 'Add On', isFreeGift: true },
+    ];
+    context._renderFreeGiftSection = () => {
+      renderCount += 1;
+    };
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    expect(renderCount).toBe(0);
+    expect(panel.className).not.toContain('full-page-side-panel--has-addon-summary');
+  });
+
   it('keeps non-Standard desktop free-gift rendering outside the summary content', () => {
     const panel = document.createElement('aside');
     const context = makeContext('COMPACT', 'simple');

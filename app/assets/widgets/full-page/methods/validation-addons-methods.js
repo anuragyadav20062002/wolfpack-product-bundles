@@ -38,6 +38,21 @@ function hasConfiguredAddonRule(step) {
   });
 }
 
+function createFreeGiftStatusIcon(state) {
+  const icon = document.createElement('span');
+  icon.className = `side-panel-free-gift-icon side-panel-free-gift-icon--${state}`;
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = state === 'unlocked' ? '✓' : '🔒';
+  return icon;
+}
+
+function createFreeGiftStatusText(message) {
+  const text = document.createElement('span');
+  text.className = 'side-panel-free-gift-text';
+  text.textContent = message;
+  return text;
+}
+
 export const fullPageValidationAddonsMethods = {
 async _sidebarAdvanceToNextStep() {
   const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
@@ -497,7 +512,7 @@ _renderFreeGiftSection(container) {
   if (step.addonProductsEnabled === false) return;
 
   const section = document.createElement('div');
-  const giftName = this._escapeHTML(step.freeGiftName || 'gift');
+  const giftName = String(step.freeGiftName || 'gift').trim() || 'gift';
   const hasDirectAddonTiers = step.addonEligibilityCondition || Array.isArray(step.addonTiers);
 
   if (hasDirectAddonTiers) {
@@ -520,17 +535,15 @@ _renderFreeGiftSection(container) {
 
   if (this.isFreeGiftUnlocked) {
     section.className = 'side-panel-free-gift unlocked';
-    section.innerHTML = `
-      <span class="side-panel-free-gift-icon">✅</span>
-      <span class="side-panel-free-gift-text">Congrats! You're eligible for a FREE ${giftName}!</span>
-    `;
+    section.appendChild(createFreeGiftStatusIcon('unlocked'));
+    section.appendChild(createFreeGiftStatusText(`Congrats! You're eligible for a FREE ${giftName}!`));
   } else {
     const remaining = this._getFreeGiftRemainingCount();
     section.className = 'side-panel-free-gift';
-    section.innerHTML = `
-      <span class="side-panel-free-gift-icon">🔒</span>
-      <span class="side-panel-free-gift-text">Add ${remaining} more product${remaining !== 1 ? 's' : ''} to claim a FREE ${giftName}!</span>
-    `;
+    section.appendChild(createFreeGiftStatusIcon('locked'));
+    section.appendChild(createFreeGiftStatusText(
+      `Add ${remaining} more product${remaining !== 1 ? 's' : ''} to claim a FREE ${giftName}!`
+    ));
   }
   container.appendChild(section);
 },
