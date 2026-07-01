@@ -27,6 +27,7 @@ Lock EB parity for the two separate Free Gift & Add Ons controls:
 | 7 | Active multi-tier add-on product list | Tier 1 has one product, Tier 2 has one different `100%` product, paid quantity qualifies Tier 2 | Add-on step renders only Tier 2 products, max quantity matches Tier 2 product count, and stale Tier 1 selection is removed | Highest eligible tier owns the offer surface. |
 | 8 | Empty add-on message templates | Add-on tier has threshold and discount but saved `addonsMessaging` strings are empty | Runtime derives EB default ineligible and eligible tier messages from the active tier | EB renders the add-on sidebar card even when custom message fields are empty. |
 | 9 | Active add-on step summary | Current step is `isFreeGift=true` | Standard summary sidebar does not render the add-on eligibility section | EB only shows the add-on summary section before the shopper is on the add-on step. |
+| 10 | 100% add-on discount amount | Add-on step displays as free but has an eligible `PERCENTAGE:100` tier | Selected add-on discount amount contributes the full add-on price | Supports native Add On discount proof for free-tier add-ons. |
 
 ## Acceptance Criteria
 - [x] All listed test cases pass

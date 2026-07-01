@@ -6,6 +6,10 @@ const {
 const {
   fullPageProductGridMethods,
 } = require('../../../app/assets/widgets/full-page/methods/product-grid-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const {
+  fullPageModalProductMethods,
+} = require('../../../app/assets/widgets/full-page/methods/modal-product-methods.js');
 
 describe('Full Page widget category hydration behavior', () => {
   const getStepCategoryTabEntries = fullPageSearchCategoryMethods.getStepCategoryTabEntries;
@@ -216,5 +220,30 @@ describe('Full Page widget category hydration behavior', () => {
 
     expect(overridden).toBe('Nothing available');
     expect(defaulted).toBe('No Products Available');
+  });
+
+  it('uses the same empty-product copy in modal product rendering', () => {
+    const productGrid = { innerHTML: '' };
+    const context = {
+      stepProductData: [[]],
+      selectedProducts: [{}],
+      selectedBundle: { steps: [{}] },
+      elements: {
+        modal: {
+          querySelector: (selector: string) => (
+            selector === '.product-grid' ? productGrid : null
+          ),
+        },
+      },
+      _shouldRenderProductSlots: () => false,
+      getNoProductsAvailableMessage: () => 'Nothing available',
+    };
+
+    fullPageModalProductMethods.renderModalProducts.call(context, 0);
+
+    expect(productGrid.innerHTML).toContain('Nothing available');
+    expect(productGrid.innerHTML).not.toContain(
+      'No products available for this step.',
+    );
   });
 });

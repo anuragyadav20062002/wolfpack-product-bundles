@@ -24,10 +24,20 @@ import {
 
 
 export const fullPageStepFooterMethods = {
+  isSelectedAddonCartLine(step) {
+    if (step?.isFreeGift !== true) return false;
+    const addonEval = typeof this.getAddonTierEvaluation === 'function'
+      ? this.getAddonTierEvaluation(step)
+      : {};
+    if (addonEval?.tier && addonEval?.isEligible !== false) return true;
+    if (step?.addonDisplayFree === true) return false;
+    if (typeof this.getAddonLineDiscount !== 'function') return true;
+    return Boolean(this.getAddonLineDiscount(step));
+  },
+
   buildCartLineSourceProperties(selectedLines) {
     const parentSelectedLines = selectedLines.filter((line) => {
-      const step = line?.step;
-      return !(step?.isFreeGift === true && step?.addonDisplayFree !== true);
+      return !fullPageStepFooterMethods.isSelectedAddonCartLine.call(this, line?.step);
     });
     const totalPrice = parentSelectedLines.reduce((sum, line) => {
       const quantity = Number(line?.quantity || 0);
@@ -96,8 +106,7 @@ async addBundleToCart(clickedButton = null) {
     const selectedLines = [];
     let itemNumber = 0;
     const hasAddonStepConfigured = (this.selectedBundle?.steps || []).some((candidateStep) => {
-      const addonEval = this.getAddonTierEvaluation?.(candidateStep);
-      return candidateStep?.isFreeGift === true && candidateStep?.addonDisplayFree !== true && addonEval?.tier;
+      return fullPageStepFooterMethods.isSelectedAddonCartLine.call(this, candidateStep);
     });
     let hasSelectedAddonLine = false;
 
@@ -124,7 +133,8 @@ async addBundleToCart(clickedButton = null) {
           };
           const addonEval = this.getAddonTierEvaluation?.(step) || {};
           const addonDiscount = this.getAddonLineDiscount(step);
-          if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {
+          const isAddonCartLine = fullPageStepFooterMethods.isSelectedAddonCartLine.call(this, step);
+          if (isAddonCartLine && addonEval?.tier) {
             hasSelectedAddonLine = true;
             properties.Box = '1';
             properties._addon_product = 'true';
@@ -135,7 +145,7 @@ async addBundleToCart(clickedButton = null) {
             }
             const addonVariantId = this.extractId(variantId);
             properties._uniqueGbbItemKey = `${addonVariantId || numericVariantId}_pageId:addonProduct`;
-            properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true
+            properties._bundle_step_type = addonDiscount
               ? `addon:${addonDiscount.type}:${addonDiscount.value}`
               : 'addon';
           } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
