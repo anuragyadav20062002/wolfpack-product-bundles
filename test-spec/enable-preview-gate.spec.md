@@ -35,4 +35,4 @@ decideEnablePreviewGate({ appEmbedEnabled, themeEditorUrl }): { mode: "proceed" 
 
 - [ ] All 8 cases pass
 - [ ] Helper is pure
-- [ ] No competitor keywords (`eb`, `gbb`, `easybundles`) in source
+- [ ] No competitor keyword references in source

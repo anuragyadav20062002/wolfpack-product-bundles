@@ -33,4 +33,4 @@ buildWizardPreviewUrl({
 
 - [ ] All 6 test cases pass
 - [ ] Function is pure (no DOM, no network, no `window`)
-- [ ] No competitor keywords (`eb`, `gbb`, `easybundles`) in source or tests
+- [ ] No competitor keyword references in source or tests

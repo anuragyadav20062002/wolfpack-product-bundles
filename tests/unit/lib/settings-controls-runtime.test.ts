@@ -16,9 +16,9 @@ const controlsPayload = {
   "Checkout Settings": "Redirect to Checkout",
   "Execute Script": "window.__fpbDone = true;",
   "Custom Font": "Inter",
-  "Custom CSS for bundle builder pages": ".gbbBundle-HTML .builder { color: red; }",
-  "Custom CSS for bundle dummy product page": ".gbbBundle-HTML .dummy { color: blue; }",
-  "Custom CSS for theme pages": ".gbbBundle-HTML .theme { color: green; }",
+  "Custom CSS for bundle builder pages": ".wpbBundle-HTML .builder { color: red; }",
+  "Custom CSS for bundle dummy product page": ".wpbBundle-HTML .dummy { color: blue; }",
+  "Custom CSS for theme pages": ".wpbBundle-HTML .theme { color: green; }",
   "Enable Custom Theme Integration Script": "Checked",
   "Custom Theme Integration Script": "window.__themeIntegrated = true;",
   "Enable Cart Integration": "Checked",
@@ -37,7 +37,7 @@ const controlsPayload = {
   "Hide Step Titles in completed state": "Checked",
   "Add to cart when product card is clicked": "",
   "Redirect Settings": "Redirect to Cart",
-  "Custom CSS for Mix And Match Bundles": ".gbbMixBundle { color: purple; }",
+  "Custom CSS for Mix And Match Bundles": ".wpbMixBundle { color: purple; }",
   "Execute Custom Script": "window.__ppbCustom = true;",
   "Side cart selector": ".side-cart",
   "Side cart section ID": "cart-drawer",
@@ -70,9 +70,9 @@ describe("Settings Controls runtime mapping", () => {
         customFont: "Inter",
       },
       css: {
-        bundleBuilderPages: ".gbbBundle-HTML .builder { color: red; }",
-        bundleDummyProductPage: ".gbbBundle-HTML .dummy { color: blue; }",
-        themePages: ".gbbBundle-HTML .theme { color: green; }",
+        bundleBuilderPages: ".wpbBundle-HTML .builder { color: red; }",
+        bundleDummyProductPage: ".wpbBundle-HTML .dummy { color: blue; }",
+        themePages: ".wpbBundle-HTML .theme { color: green; }",
       },
       integrations: {
         customThemeScriptEnabled: true,
@@ -100,8 +100,8 @@ describe("Settings Controls runtime mapping", () => {
         executeScript: "window.__fpbDone = true;",
       },
       css: {
-        mixAndMatchBundles: ".gbbMixBundle { color: purple; }",
-        themePages: ".gbbBundle-HTML .theme { color: green; }",
+        mixAndMatchBundles: ".wpbMixBundle { color: purple; }",
+        themePages: ".wpbBundle-HTML .theme { color: green; }",
       },
       scripts: {
         executeCustomScript: "window.__ppbCustom = true;",
@@ -125,8 +125,8 @@ describe("Settings Controls runtime mapping", () => {
     expect(runtime.fullPageCustomCss).toContain(".builder");
     expect(runtime.fullPageCustomCss).toContain(".dummy");
     expect(runtime.fullPageCustomCss).toContain(".theme");
-    expect(runtime.fullPageCustomCss).not.toContain(".gbbMixBundle");
-    expect(runtime.productPageCustomCss).toContain(".gbbMixBundle");
+    expect(runtime.fullPageCustomCss).not.toContain(".wpbMixBundle");
+    expect(runtime.productPageCustomCss).toContain(".wpbMixBundle");
     expect(runtime.productPageCustomCss).toContain(".theme");
     expect(runtime.productPageCustomCss).not.toContain(".builder");
     expect(runtime.productPageCustomCss).not.toContain(".dummy");

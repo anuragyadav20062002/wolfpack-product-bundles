@@ -624,7 +624,7 @@ export const CONTROL_LAYOUTS: ControlsLayout[] = [
             kind: "css",
             group: "CSS",
             description: "The CSS written here will have a global impact on all store pages. Please choose classes carefully.",
-            note: "Use \".gbbBundle-HTML\" as parent class for giftbox builder CSS to avoid overwriting CSS throughout the site.",
+            note: "Use \".wpbBundle-HTML\" as parent class for giftbox builder CSS to avoid overwriting CSS throughout the site.",
           },
           { label: "Custom JS Bundle Script", kind: "script", group: "JavaScript & Selectors", description: "Script, written here, would be applied only on bundle pages.", note: "Paste Custom Bundle Script here" },
           { label: "Button Selectors", kind: "text", group: "JavaScript & Selectors", description: "CSS selectors for buttons" },

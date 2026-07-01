@@ -28,6 +28,7 @@ import {
   handleRenamePageSlug,
   handleUpdateBundleDesignTemplate,
 } from "./handlers";
+import { handleRecordBundlePreview } from "../shared/bundle-preview-action.server";
 import ConfigureBundleFlow from "./ConfigureBundleFlow";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -173,6 +174,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         );
       case "createPreviewPage":
         return await handleCreatePreviewPage(admin, session, bundleId);
+      case "recordBundlePreview":
+        return await handleRecordBundlePreview(admin, session, bundleId, formData);
       case "syncBundle":
         return await handleSyncBundle(admin, session, bundleId);
       case "updateBundleDesignTemplate":

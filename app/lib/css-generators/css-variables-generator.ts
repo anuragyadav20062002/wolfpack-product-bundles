@@ -168,26 +168,26 @@ export function generateEBDcpBridgeCSS(ctx: CSSGenerationContext): string {
   const imageFit = designPath(s, 'mixAndMatchConfig.productCard.productCardImageFit', cssValue(s.productCardImageFit, 'cover'));
 
   return `
-body[gbb-mix-consolidated-design="true"] {
-  --gbbMix-primary-color: var(--product-card-button-bg-color, ${primaryColor});
-  --gbbMix-primary-button-text-color: var(--product-card-button-text-color, ${buttonText});
-  --gbbMix-primary-text-color: var(--product-card-title-color, ${primaryText});
-  --gbbMix-secondary-color: var(--tabs-inactive-bg-color, ${secondaryColor});
-  --gbbMix-cart-bg-color: var(--footer-bg-color, ${cartBg});
-  --gbbMix-cart-text-color: var(--footer-text-color, ${cartText});
-  --gbbMix-button-border-radius: var(--product-card-button-border-radius, ${buttonRadius});
-  --gbbMix-card-border-radius: var(--product-card-border-radius, ${cardRadius});
-  --gbbMix-primary-font-size: var(--product-card-title-font, ${primaryFont});
-  --gbbMix-primary-font-weight: var(--product-card-title-weight, ${primaryWeight});
-  --gbbMix-secondary-font-size: var(--header-discount-text-font, ${secondaryFont});
-  --gbbMix-body-font-size: var(--product-card-variant-selector-font-size, ${bodyFont});
-  --gbbMix-image-fit: var(--product-card-image-fit, ${imageFit});
+body[wpb-mix-consolidated-design="true"] {
+  --wpbMix-primary-color: var(--product-card-button-bg-color, ${primaryColor});
+  --wpbMix-primary-button-text-color: var(--product-card-button-text-color, ${buttonText});
+  --wpbMix-primary-text-color: var(--product-card-title-color, ${primaryText});
+  --wpbMix-secondary-color: var(--tabs-inactive-bg-color, ${secondaryColor});
+  --wpbMix-cart-bg-color: var(--footer-bg-color, ${cartBg});
+  --wpbMix-cart-text-color: var(--footer-text-color, ${cartText});
+  --wpbMix-button-border-radius: var(--product-card-button-border-radius, ${buttonRadius});
+  --wpbMix-card-border-radius: var(--product-card-border-radius, ${cardRadius});
+  --wpbMix-primary-font-size: var(--product-card-title-font, ${primaryFont});
+  --wpbMix-primary-font-weight: var(--product-card-title-weight, ${primaryWeight});
+  --wpbMix-secondary-font-size: var(--header-discount-text-font, ${secondaryFont});
+  --wpbMix-body-font-size: var(--product-card-variant-selector-font-size, ${bodyFont});
+  --wpbMix-image-fit: var(--product-card-image-fit, ${imageFit});
 }
 
-body[gbb-mix-consolidated-design="true"][gbbmix-template-type="PDP_INPAGE"] {
-  --gbbMix-primary-font-size: calc(var(--product-card-title-font, 16px) - 2px);
-  --gbbMix-secondary-font-size: calc(var(--header-discount-text-font, 14px) - 2px);
-  --gbbMix-body-font-size: calc(var(--product-card-variant-selector-font-size, 14px) - 2px);
+body[wpb-mix-consolidated-design="true"][wpbmix-template-type="PDP_INPAGE"] {
+  --wpbMix-primary-font-size: calc(var(--product-card-title-font, 16px) - 2px);
+  --wpbMix-secondary-font-size: calc(var(--header-discount-text-font, 14px) - 2px);
+  --wpbMix-body-font-size: calc(var(--product-card-variant-selector-font-size, 14px) - 2px);
 }`;
 }
 

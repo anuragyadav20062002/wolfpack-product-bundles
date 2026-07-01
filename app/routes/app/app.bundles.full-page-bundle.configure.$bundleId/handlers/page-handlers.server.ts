@@ -11,6 +11,7 @@ import {
   refreshFullPageBundlePageBody,
   writeBundleConfigPageMetafield,
 } from "../../../../services/widget-installation/widget-full-page-bundle.server";
+import { recordFirstBundlePreviewEvent } from "../../../../services/bundles/bundle-preview-event.server";
 
 export async function handleCheckFullPageTemplate(
   admin: ShopifyAdmin,
@@ -95,6 +96,7 @@ export async function handleCreatePreviewPage(
   admin: ShopifyAdmin,
   session: Session,
   bundleId: string,
+  routeFamily = "fpb_configure",
 ) {
   try {
     AppLogger.debug("[PREVIEW_PAGE] Creating/retrieving preview page", {
@@ -157,6 +159,15 @@ export async function handleCreatePreviewPage(
           bundleId,
           previewPageId: bundle.shopifyPreviewPageId,
         });
+        if (urlResult.previewUrl) {
+          await recordFirstBundlePreviewEvent({
+            admin,
+            shopDomain: session.shop,
+            bundle,
+            bundleLink: urlResult.previewUrl,
+            routeFamily,
+          });
+        }
         return json({
           success: true,
           shareablePreviewUrl: urlResult.previewUrl,
@@ -228,6 +239,16 @@ export async function handleCreatePreviewPage(
       previewPageId: result.pageId,
       previewPageHandle: result.pageHandle,
     });
+
+    if (result.pageUrl) {
+      await recordFirstBundlePreviewEvent({
+        admin,
+        shopDomain: session.shop,
+        bundle,
+        bundleLink: result.pageUrl,
+        routeFamily,
+      });
+    }
 
     return json({ success: true, shareablePreviewUrl: result.pageUrl });
   } catch (error) {
