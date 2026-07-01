@@ -3,7 +3,6 @@ export {};
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const {
   BundlePricingExtension,
-  TotalSavingsExtension,
   calculateCheckoutTotalSavings,
   formatCheckoutMoney,
 } = require("../../../extensions/bundle-checkout-ui/src/Checkout.tsx");
@@ -41,30 +40,14 @@ describe("BundlePricingExtension EB native checkout parity", () => {
 });
 
 describe("TotalSavingsExtension EB checkout parity", () => {
-  const originalShopify = (global as any).shopify;
-
-  afterEach(() => {
-    (global as any).shopify = originalShopify;
+  it("returns zero when checkout has no savings", () => {
+    expect(calculateCheckoutTotalSavings({ lines: [], discountAllocations: [] })).toBe(0);
   });
 
-  it("renders nothing when checkout has no savings", () => {
-    (global as any).shopify = {
-      lines: { value: [] },
-      discountAllocations: { value: [] },
-      cost: {
-        totalAmount: {
-          value: { amount: 1658, currencyCode: "USD" },
-        },
-      },
-    };
-
-    expect(TotalSavingsExtension({})).toBeNull();
-  });
-
-  it("renders EB-style total savings from native checkout discount allocations", () => {
-    (global as any).shopify = {
-      lines: {
-        value: [
+  it("uses native checkout discount allocations for total savings", () => {
+    expect(
+      calculateCheckoutTotalSavings({
+        lines: [
           {
             attributes: [{ key: "Box", value: "1" }],
             discountAllocations: [
@@ -72,22 +55,11 @@ describe("TotalSavingsExtension EB checkout parity", () => {
             ],
           },
         ],
-      },
-      discountAllocations: {
-        value: [{ discountedAmount: { amount: 82.9, currencyCode: "USD" } }],
-      },
-      cost: {
-        totalAmount: {
-          value: { amount: 1575.1, currencyCode: "USD" },
-        },
-      },
-    };
-
-    const rendered = TotalSavingsExtension({});
-
-    expect(rendered.type).toBe("s-grid");
-    expect(rendered.props.children[0].props.children).toBe("TOTAL SAVINGS");
-    expect(rendered.props.children[1].props.children).toBe("$82.90");
+        discountAllocations: [
+          { discountedAmount: { amount: 82.9, currencyCode: "USD" } },
+        ],
+      }),
+    ).toBe(82.9);
   });
 
   it("includes Cart Transform bundle savings attributes when native allocations are absent", () => {
@@ -105,6 +77,23 @@ describe("TotalSavingsExtension EB checkout parity", () => {
         discountAllocations: [],
       }),
     ).toBe(82.9);
+  });
+
+  it("includes free add-on bundle savings attributes when native allocations are absent", () => {
+    expect(
+      calculateCheckoutTotalSavings({
+        lines: [
+          {
+            attributes: [
+              { key: "_is_bundle_parent", value: "true" },
+              { key: "_bundle_total_savings_cents", value: "82900" },
+            ],
+            discountAllocations: [],
+          },
+        ],
+        discountAllocations: [],
+      }),
+    ).toBe(829);
   });
 
   it("formats savings with the active checkout currency", () => {

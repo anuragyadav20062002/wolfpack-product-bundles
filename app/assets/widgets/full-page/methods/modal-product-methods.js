@@ -104,9 +104,21 @@ renderModalProducts(stepIndex, productsToRender = null) {
 
   if (products.length === 0) {
     if (!this._shouldRenderProductSlots()) {
+      const emptyMessage = typeof this.getNoProductsAvailableMessage === 'function'
+        ? this.getNoProductsAvailableMessage()
+        : 'No Products Available';
+      const escapedEmptyMessage = typeof this._escapeHTML === 'function'
+        ? this._escapeHTML(emptyMessage)
+        : String(emptyMessage).replace(/[&<>"']/g, (char) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        })[char]);
       productGrid.innerHTML = `
         <div class="empty-products-message">
-          <p>No products available for this step.</p>
+          <p>${escapedEmptyMessage}</p>
         </div>
       `;
       return;

@@ -1,4 +1,9 @@
 import type {FunctionComponent} from 'preact';
+import {
+  useCartLines,
+  useDiscountAllocations,
+  useTotalAmount,
+} from '@shopify/ui-extensions/checkout/preact';
 
 type CheckoutAttribute = {
   key: string;
@@ -20,14 +25,6 @@ type CheckoutLine = {
 };
 
 const BUNDLE_TOTAL_SAVINGS_ATTRIBUTE = '_bundle_total_savings_cents';
-
-function readSignalValue<T>(signal: {value?: T} | T | undefined, fallback: T): T {
-  if (!signal || typeof signal !== 'object' || !('value' in signal)) {
-    return (signal as T) ?? fallback;
-  }
-
-  return signal.value ?? fallback;
-}
 
 function sumDiscountAllocations(allocations: CheckoutDiscountAllocation[] = []) {
   return allocations.reduce((sum, allocation) => {
@@ -97,14 +94,9 @@ export const BundlePricingExtension: FunctionComponent = () => {
 };
 
 export const TotalSavingsExtension: FunctionComponent = () => {
-  const checkout = globalThis.shopify as {
-    lines?: {value?: CheckoutLine[]};
-    discountAllocations?: {value?: CheckoutDiscountAllocation[]};
-    cost?: {totalAmount?: {value?: CheckoutMoney}};
-  } | undefined;
-  const lines = readSignalValue(checkout?.lines, []);
-  const discountAllocations = readSignalValue(checkout?.discountAllocations, []);
-  const totalAmount = readSignalValue(checkout?.cost?.totalAmount, undefined);
+  const lines = useCartLines() as CheckoutLine[];
+  const discountAllocations = useDiscountAllocations() as CheckoutDiscountAllocation[];
+  const totalAmount = useTotalAmount() as CheckoutMoney | undefined;
   const totalSavings = calculateCheckoutTotalSavings({lines, discountAllocations});
 
   if (totalSavings <= 0) {
