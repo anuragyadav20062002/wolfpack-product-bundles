@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.108
- * Built   : 2026-06-30
+ * Version : 4.0.0
+ * Built   : 2026-07-01
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.108';
+window.__BUNDLE_WIDGET_VERSION__ = '4.0.0';
 (function() {
   'use strict';
 
@@ -3018,7 +3018,6 @@ function renderStepTimelineEntry({
   timelineType = 'step',
   label = '',
   iconHtml = '',
-  checkmarkHtml = '',
   classes = [],
 } = {}) {
   const className = [
@@ -3030,7 +3029,7 @@ function renderStepTimelineEntry({
     <div class="${escapeAttribute(className)}" data-step-index="${escapeAttribute(stepIndex)}" data-timeline-type="${escapeAttribute(timelineType)}">
       <div class="timeline-icon-wrapper">
         ${iconHtml || ''}
-        <div class="timeline-checkmark">${checkmarkHtml || ''}</div>
+        <div class="timeline-checkmark"></div>
       </div>
       <span class="timeline-step-name">${escapeHtml(label)}</span>
     </div>
@@ -3173,6 +3172,29 @@ function getTimelineEntryState({
     isAccessible: accessible,
     classes,
   };
+}
+
+function shouldShowTimelineCompletedState({
+  entry = {},
+  currentStepIndex = 0,
+  isStepCompleted = false,
+  hasMultipleCategoryEntry = false,
+} = {}) {
+  if (!isStepCompleted) return false;
+
+  const stepIndex = Number(entry.stepIndex);
+  const activeStepIndex = Number(currentStepIndex);
+  if (!Number.isFinite(stepIndex) || !Number.isFinite(activeStepIndex)) {
+    return false;
+  }
+
+  const isPastStep = stepIndex < activeStepIndex;
+  if (entry.type === 'multiple_categories') {
+    return isPastStep;
+  }
+
+  return isPastStep
+    || (hasMultipleCategoryEntry && stepIndex === activeStepIndex);
 }
 
 function findProductByVariantId(state, variantId) {

@@ -1104,7 +1104,7 @@ Storage: per-category field in both FPB and PPB (`displayVariantsAsIndividualPro
 
 Steps are keyed `addProductsPage{N}`. Advancing to the next step is a **full page navigation** (`?page=addProductsPage{N}`), not an SPA state swap.
 
-Completed step: `gbbNavigationStepImgContainerActive` class removed; icon container gets `background-color: rgb(0, 0, 0)` and a `gbbtickMark` SVG checkmark.
+Completed step: `gbbNavigationStepImgContainerActive` class removed; icon container gets `background-color: rgb(0, 0, 0)` and a centered white tick (`gbbtickMark` in EB DOM). Current desktop/mobile evidence in `/private/tmp/fpb-standard-agentic-parity/step-timeline-completed-tick/` confirms EB applies this only to completed past steps; the active step remains a white circle with a black border and image, and locked future steps keep the inactive image treatment.
 
 Active step: `gbbNavigationStepImgContainerActive` class + `border: 4px solid`.
 

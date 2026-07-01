@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.108
- * Built   : 2026-06-30
+ * Version : 4.0.0
+ * Built   : 2026-07-01
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.108';
+window.__BUNDLE_WIDGET_VERSION__ = '4.0.0';
 (function() {
   'use strict';
 
@@ -3018,7 +3018,6 @@ function renderStepTimelineEntry({
   timelineType = 'step',
   label = '',
   iconHtml = '',
-  checkmarkHtml = '',
   classes = [],
 } = {}) {
   const className = [
@@ -3030,7 +3029,7 @@ function renderStepTimelineEntry({
     <div class="${escapeAttribute(className)}" data-step-index="${escapeAttribute(stepIndex)}" data-timeline-type="${escapeAttribute(timelineType)}">
       <div class="timeline-icon-wrapper">
         ${iconHtml || ''}
-        <div class="timeline-checkmark">${checkmarkHtml || ''}</div>
+        <div class="timeline-checkmark"></div>
       </div>
       <span class="timeline-step-name">${escapeHtml(label)}</span>
     </div>
@@ -3173,6 +3172,29 @@ function getTimelineEntryState({
     isAccessible: accessible,
     classes,
   };
+}
+
+function shouldShowTimelineCompletedState({
+  entry = {},
+  currentStepIndex = 0,
+  isStepCompleted = false,
+  hasMultipleCategoryEntry = false,
+} = {}) {
+  if (!isStepCompleted) return false;
+
+  const stepIndex = Number(entry.stepIndex);
+  const activeStepIndex = Number(currentStepIndex);
+  if (!Number.isFinite(stepIndex) || !Number.isFinite(activeStepIndex)) {
+    return false;
+  }
+
+  const isPastStep = stepIndex < activeStepIndex;
+  if (entry.type === 'multiple_categories') {
+    return isPastStep;
+  }
+
+  return isPastStep
+    || (hasMultipleCategoryEntry && stepIndex === activeStepIndex);
 }
 
 function findProductByVariantId(state, variantId) {
@@ -6936,13 +6958,16 @@ createStepTimeline() {
     const step = entry.step;
     const index = entry.stepIndex;
     const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
-    const isCategoryEntry = entry.type === 'multiple_categories';
+    const isCompleted = shouldShowTimelineCompletedState({
+      entry,
+      currentStepIndex: this.currentStepIndex,
+      isStepCompleted: this.isStepCompleted(index),
+      hasMultipleCategoryEntry,
+    });
     const timelineState = getTimelineEntryState({
       entry,
       currentStepIndex: this.currentStepIndex,
-      isCompleted: isCategoryEntry
-        ? this.isStepCompleted(index)
-        : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex),
+      isCompleted,
       isAccessible: this.isStepAccessible(index),
       hasMultipleCategoryEntry,
     });
@@ -6955,17 +6980,12 @@ createStepTimeline() {
       ? `<img class="timeline-step-icon" src="${uploadedIconUrl}" alt="${escapedName}">`
       : this._getDefaultTimelineIcon(step);
 
-    const checkmarkSvg = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
-
     const stepWrapper = document.createElement('div');
     stepWrapper.innerHTML = renderStepTimelineEntry({
       stepIndex: index,
       timelineType: entry.type,
       label: tabLabel || `Step ${index + 1}`,
       iconHtml: iconContent,
-      checkmarkHtml: checkmarkSvg,
       classes: timelineState.classes,
     }).trim();
     const stepEl = stepWrapper.firstElementChild;
@@ -7091,8 +7111,13 @@ createStandardStepTimeline() {
   visibleEntries.forEach((entry) => {
     const step = entry.step;
     const index = entry.stepIndex;
-    const isCategoryEntry = entry.type === 'multiple_categories';
     const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
+    const isCompleted = shouldShowTimelineCompletedState({
+      entry,
+      currentStepIndex: this.currentStepIndex,
+      isStepCompleted: this.isStepCompleted(index),
+      hasMultipleCategoryEntry,
+    });
     const itemEl = document.createElement('div');
     itemEl.className = 'standard-navigation-item timeline-step';
     itemEl.dataset.stepIndex = index;
@@ -7101,9 +7126,7 @@ createStandardStepTimeline() {
     const timelineState = getTimelineEntryState({
       entry,
       currentStepIndex: this.currentStepIndex,
-      isCompleted: isCategoryEntry
-        ? this.isStepCompleted(index)
-        : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex),
+      isCompleted,
       isAccessible: this.isStepAccessible(index),
       hasMultipleCategoryEntry,
     });
@@ -8857,6 +8880,21 @@ function hasConfiguredAddonRule(step) {
   });
 }
 
+function createFreeGiftStatusIcon(state) {
+  const icon = document.createElement('span');
+  icon.className = `side-panel-free-gift-icon side-panel-free-gift-icon--${state}`;
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = state === 'unlocked' ? '✓' : '🔒';
+  return icon;
+}
+
+function createFreeGiftStatusText(message) {
+  const text = document.createElement('span');
+  text.className = 'side-panel-free-gift-text';
+  text.textContent = message;
+  return text;
+}
+
 const fullPageValidationAddonsMethods = {
 async _sidebarAdvanceToNextStep() {
   const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
@@ -9300,7 +9338,7 @@ _renderFreeGiftSection(container) {
   if (step.addonProductsEnabled === false) return;
 
   const section = document.createElement('div');
-  const giftName = this._escapeHTML(step.freeGiftName || 'gift');
+  const giftName = String(step.freeGiftName || 'gift').trim() || 'gift';
   const hasDirectAddonTiers = step.addonEligibilityCondition || Array.isArray(step.addonTiers);
 
   if (hasDirectAddonTiers) {
@@ -9323,17 +9361,15 @@ _renderFreeGiftSection(container) {
 
   if (this.isFreeGiftUnlocked) {
     section.className = 'side-panel-free-gift unlocked';
-    section.innerHTML = `
-      <span class="side-panel-free-gift-icon">✅</span>
-      <span class="side-panel-free-gift-text">Congrats! You're eligible for a FREE ${giftName}!</span>
-    `;
+    section.appendChild(createFreeGiftStatusIcon('unlocked'));
+    section.appendChild(createFreeGiftStatusText(`Congrats! You're eligible for a FREE ${giftName}!`));
   } else {
     const remaining = this._getFreeGiftRemainingCount();
     section.className = 'side-panel-free-gift';
-    section.innerHTML = `
-      <span class="side-panel-free-gift-icon">🔒</span>
-      <span class="side-panel-free-gift-text">Add ${remaining} more product${remaining !== 1 ? 's' : ''} to claim a FREE ${giftName}!</span>
-    `;
+    section.appendChild(createFreeGiftStatusIcon('locked'));
+    section.appendChild(createFreeGiftStatusText(
+      `Add ${remaining} more product${remaining !== 1 ? 's' : ''} to claim a FREE ${giftName}!`
+    ));
   }
   container.appendChild(section);
 },

@@ -12,7 +12,6 @@ export function renderStepTimelineEntry({
   timelineType = 'step',
   label = '',
   iconHtml = '',
-  checkmarkHtml = '',
   classes = [],
 } = {}) {
   const className = [
@@ -24,7 +23,7 @@ export function renderStepTimelineEntry({
     <div class="${escapeAttribute(className)}" data-step-index="${escapeAttribute(stepIndex)}" data-timeline-type="${escapeAttribute(timelineType)}">
       <div class="timeline-icon-wrapper">
         ${iconHtml || ''}
-        <div class="timeline-checkmark">${checkmarkHtml || ''}</div>
+        <div class="timeline-checkmark"></div>
       </div>
       <span class="timeline-step-name">${escapeHtml(label)}</span>
     </div>

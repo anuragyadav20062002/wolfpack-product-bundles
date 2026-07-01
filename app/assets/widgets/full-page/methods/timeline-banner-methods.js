@@ -10,7 +10,12 @@ import {
 import { ConditionValidator } from '../../shared/condition-validator.js';
 import { createDefaultLoadingAnimation } from '../../shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from '../../shared/loading-overlay.js';
-import { getDiscountProgressData, getSelectedQuantity, getTimelineEntryState } from '../../shared/engine/bundle-selectors.js';
+import {
+  getDiscountProgressData,
+  getSelectedQuantity,
+  getTimelineEntryState,
+  shouldShowTimelineCompletedState,
+} from '../../shared/engine/bundle-selectors.js';
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { createBundleBannerElement, createStepBannerImageElement } from '../../shared/components/bundle-banners.js';
 import { renderSharedProductCard } from '../../shared/components/product-card.js';
@@ -147,13 +152,16 @@ createStepTimeline() {
     const step = entry.step;
     const index = entry.stepIndex;
     const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
-    const isCategoryEntry = entry.type === 'multiple_categories';
+    const isCompleted = shouldShowTimelineCompletedState({
+      entry,
+      currentStepIndex: this.currentStepIndex,
+      isStepCompleted: this.isStepCompleted(index),
+      hasMultipleCategoryEntry,
+    });
     const timelineState = getTimelineEntryState({
       entry,
       currentStepIndex: this.currentStepIndex,
-      isCompleted: isCategoryEntry
-        ? this.isStepCompleted(index)
-        : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex),
+      isCompleted,
       isAccessible: this.isStepAccessible(index),
       hasMultipleCategoryEntry,
     });
@@ -167,18 +175,12 @@ createStepTimeline() {
       ? `<img class="timeline-step-icon" src="${uploadedIconUrl}" alt="${escapedName}">`
       : this._getDefaultTimelineIcon(step);
 
-    // Checkmark badge — always rendered, shown via CSS only when completed
-    const checkmarkSvg = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
-
     const stepWrapper = document.createElement('div');
     stepWrapper.innerHTML = renderStepTimelineEntry({
       stepIndex: index,
       timelineType: entry.type,
       label: tabLabel || `Step ${index + 1}`,
       iconHtml: iconContent,
-      checkmarkHtml: checkmarkSvg,
       classes: timelineState.classes,
     }).trim();
     const stepEl = stepWrapper.firstElementChild;
@@ -306,8 +308,13 @@ createStandardStepTimeline() {
   visibleEntries.forEach((entry) => {
     const step = entry.step;
     const index = entry.stepIndex;
-    const isCategoryEntry = entry.type === 'multiple_categories';
     const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
+    const isCompleted = shouldShowTimelineCompletedState({
+      entry,
+      currentStepIndex: this.currentStepIndex,
+      isStepCompleted: this.isStepCompleted(index),
+      hasMultipleCategoryEntry,
+    });
     const itemEl = document.createElement('div');
     itemEl.className = 'standard-navigation-item timeline-step';
     itemEl.dataset.stepIndex = index;
@@ -316,9 +323,7 @@ createStandardStepTimeline() {
     const timelineState = getTimelineEntryState({
       entry,
       currentStepIndex: this.currentStepIndex,
-      isCompleted: isCategoryEntry
-        ? this.isStepCompleted(index)
-        : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex),
+      isCompleted,
       isAccessible: this.isStepAccessible(index),
       hasMultipleCategoryEntry,
     });
