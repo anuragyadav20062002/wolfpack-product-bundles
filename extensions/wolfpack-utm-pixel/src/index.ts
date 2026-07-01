@@ -34,6 +34,12 @@ function extractUtmParams(url: string): Record<string, string> | null {
 
 register(({ analytics, browser, settings }) => {
   const appServerUrl = settings.app_server_url as string | undefined;
+  // Shop domain is passed in at activation from session.shop so it doesn't depend
+  // on document.location.hostname — that value can be null on Shopify's hosted
+  // Thank-you page or the wrong domain when a shop uses a custom checkout domain,
+  // which would cause the /api/attribution POST to be rejected or written under
+  // the wrong shopId.
+  const shopDomainSetting = settings.shop_domain as string | undefined;
 
   // ── page_viewed: Capture UTMs from the landing URL (last-touch) ──
   // Uses localStorage (persists across sessions) and always overwrites so the
@@ -78,7 +84,7 @@ register(({ analytics, browser, settings }) => {
       const payload = {
         orderId: rawOrderId,
         orderNumber,
-        shopId: event.context?.document?.location?.hostname ?? null,
+        shopId: shopDomainSetting ?? event.context?.document?.location?.hostname ?? null,
         totalPrice: checkout.totalPrice?.amount ?? null,
         currencyCode: checkout.totalPrice?.currencyCode ?? "USD",
         lineItems: (checkout.lineItems ?? []).map((item: any) => ({

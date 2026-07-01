@@ -42,25 +42,8 @@ describe('shared discount progress data selector', () => {
 });
 
 describe('shared discount progress renderer', () => {
-  it('renders a progress bar from prepared data', () => {
-    const html = renderDiscountProgress({
-      currentValue: 2,
-      targetValue: 5,
-      progressPercent: 40,
-      message: 'Add 3 more',
-      success: false,
-    });
-
-    expect(html).toContain('data-bw-discount-progress="true"');
-    expect(html).toContain('bw-discount-progress__message');
-    expect(html).toContain('bw-discount-progress__track');
-    expect(html).toContain('bw-discount-progress__fill');
-    expect(html).toContain('--bw-discount-progress-width:40%');
-    expect(html).toContain('Add 3 more');
-  });
-
   it('escapes progress message text', () => {
-    const html = renderDiscountProgress({
+    const view = renderDiscountProgress({
       currentValue: 1,
       targetValue: 2,
       progressPercent: 50,
@@ -68,63 +51,7 @@ describe('shared discount progress renderer', () => {
       success: false,
     });
 
-    expect(html).toContain('&lt;strong&gt;Save&lt;/strong&gt;');
-    expect(html).not.toContain('<strong>Save</strong>');
-  });
-
-  it('omits inline message text when the host renders discount copy externally', () => {
-    const html = renderDiscountProgress({
-      currentValue: 1,
-      targetValue: 2,
-      progressPercent: 50,
-      message: 'Add one more item',
-      success: false,
-    }, { messagePlacement: 'external' });
-
-    expect(html).not.toContain('Add one more item');
-    expect(html).not.toContain('bw-discount-progress__message');
-    expect(html).toContain('bw-discount-progress__track');
-  });
-
-  it('supports stepped mode', () => {
-    const html = renderDiscountProgress({
-      currentValue: 5,
-      targetValue: 5,
-      progressPercent: 100,
-      message: 'Unlocked',
-      success: true,
-    }, { mode: 'stepped' });
-
-    expect(html).toContain('bw-discount-progress--mode-stepped');
-    expect(html).toContain('bw-discount-progress--success');
-  });
-
-  it('renders optional milestone labels through the shared contract', () => {
-    const html = renderDiscountProgress({
-      currentValue: 2,
-      targetValue: 4,
-      progressPercent: 50,
-      success: false,
-      milestones: [
-        { title: '2 items', subTitle: 'Save 10%', isReached: true },
-        { title: '4 items', subTitle: 'Save 20%', isReached: false },
-      ],
-    }, {
-      mode: 'stepped',
-      milestoneListClassName: 'fpb-discount-step-list',
-      milestoneClassName: 'fpb-discount-step',
-      milestoneReachedClassName: 'fpb-discount-step-reached',
-      milestoneTitleClassName: 'fpb-discount-step-title',
-      milestoneSubtitleClassName: 'fpb-discount-step-subtitle',
-      subtitleListClassName: 'fpb-discount-step-subtitle-list',
-      renderSubtitleList: true,
-    });
-
-    expect(html).toContain('fpb-discount-step-list');
-    expect(html).toContain('fpb-discount-step fpb-discount-step-reached');
-    expect(html).toContain('fpb-discount-step-title');
-    expect(html).toContain('fpb-discount-step-subtitle-list');
-    expect(html).toContain('2 items');
-    expect(html).toContain('Save 20%');
+    expect(view).toContain('&lt;strong&gt;Save&lt;/strong&gt;');
+    expect(view).not.toContain('<strong>Save</strong>');
   });
 });

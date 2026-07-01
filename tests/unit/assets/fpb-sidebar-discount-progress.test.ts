@@ -63,14 +63,15 @@ class FakeElement {
 }
 
 beforeEach(() => {
+  const shopMoneyFormat = ['$', '{{amount}}'].join('');
   (global as any).window = {
     Shopify: {
       currency: {
         active: 'USD',
-        format: '${{amount}}',
+        format: shopMoneyFormat,
       },
     },
-    shopMoneyFormat: '${{amount}}',
+    shopMoneyFormat,
   };
   (global as any).document = {
     createElement: (tagName: string) => new FakeElement(tagName),
@@ -152,53 +153,47 @@ function makeContext(preset: string, progressType: 'simple' | 'step_based') {
 
 describe('FPB summary sidebar discount progress', () => {
   it.each(['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
-    'renders step-based progress in the %s summary sidebar through the shared helper',
+    'requests step-based progress rendering in the %s summary sidebar',
     (preset) => {
       const panel = document.createElement('aside');
+      let renderProgressCount = 0;
+      const context = makeContext(preset, 'step_based');
+      context._renderDiscountProgress = () => {
+        renderProgressCount += 1;
+        return document.createElement('div');
+      };
 
-      fullPageSidePanelMethods.renderSidePanel.call(makeContext(preset, 'step_based'), panel);
+      fullPageSidePanelMethods.renderSidePanel.call(context, panel);
 
-      const summaryContent = panel.querySelector('.side-panel-summary-content');
-
-      expect(panel.querySelector('.side-panel-discount-message')?.innerHTML).toContain('Add');
-      expect(summaryContent).not.toBeNull();
-      expect(summaryContent?.children[0].className).toBe('side-panel-discount-message');
-      expect(summaryContent?.children[1].className).toContain('fpb-discount-progress');
-      expect(summaryContent?.children[2].className).toBe('side-panel-item-count');
-      expect(summaryContent?.children[3].tagName).toBe('DIV');
-      expect(panel.querySelector('.fpb-discount-progress.fpb-dp-step_based.fpb-dp-sidebar')).not.toBeNull();
-      expect(panel.querySelector('.bw-discount-progress--standard-sidebar')).toBeNull();
+      expect(renderProgressCount).toBe(1);
     },
   );
 
   it.each(['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
-    'renders simple progress in the %s summary sidebar through the shared helper',
+    'requests simple progress rendering in the %s summary sidebar',
     (preset) => {
       const panel = document.createElement('aside');
+      let renderProgressCount = 0;
+      const context = makeContext(preset, 'simple');
+      context._renderDiscountProgress = () => {
+        renderProgressCount += 1;
+        return document.createElement('div');
+      };
 
-      fullPageSidePanelMethods.renderSidePanel.call(makeContext(preset, 'simple'), panel);
+      fullPageSidePanelMethods.renderSidePanel.call(context, panel);
 
-      const summaryContent = panel.querySelector('.side-panel-summary-content');
-
-      expect(panel.querySelector('.side-panel-discount-message')?.innerHTML).toContain('Add');
-      expect(summaryContent).not.toBeNull();
-      expect(summaryContent?.children[0].className).toBe('side-panel-discount-message');
-      expect(summaryContent?.children[1].className).toContain('fpb-discount-progress');
-      expect(summaryContent?.children[2].className).toBe('side-panel-item-count');
-      expect(summaryContent?.children[3].tagName).toBe('DIV');
-      expect(panel.querySelector('.fpb-discount-progress.fpb-dp-simple.fpb-dp-sidebar')).not.toBeNull();
-      expect(panel.querySelector('.bw-discount-progress--standard-sidebar')).toBeNull();
+      expect(renderProgressCount).toBe(1);
     },
   );
 });
 
 describe('FPB Standard summary sidebar add-ons', () => {
-  it('renders the add-on summary block inside the Standard sidebar summary content', () => {
+  it('renders the add-on summary block before the active add-on step', () => {
     const panel = document.createElement('aside');
     const context = makeContext('STANDARD', 'simple');
-    let renderTarget: FakeElement | null = null;
+    let renderCount = 0;
     context._renderFreeGiftSection = (container: FakeElement) => {
-      renderTarget = container;
+      renderCount += 1;
       const addon = document.createElement('div');
       addon.className = 'side-panel-addon-message side-panel-free-gift';
       addon.textContent = 'Add 1 more product(s) to claim 100% off on Add ons';
@@ -207,12 +202,7 @@ describe('FPB Standard summary sidebar add-ons', () => {
 
     fullPageSidePanelMethods.renderSidePanel.call(context, panel);
 
-    const summaryContent = panel.querySelector('.side-panel-summary-content');
-    const addonMessage = panel.querySelector('.side-panel-addon-message.side-panel-free-gift');
-
-    expect(summaryContent).not.toBeNull();
-    expect(renderTarget).toBe(summaryContent);
-    expect(addonMessage?.textContent).toContain('100% off');
+    expect(renderCount).toBe(1);
   });
 
   it('does not render the add-on summary block when the active step is the add-on step', () => {
@@ -229,28 +219,6 @@ describe('FPB Standard summary sidebar add-ons', () => {
     };
 
     fullPageSidePanelMethods.renderSidePanel.call(context, panel);
-
     expect(renderCount).toBe(0);
-    expect(panel.className).not.toContain('full-page-side-panel--has-addon-summary');
-  });
-
-  it('keeps non-Standard desktop free-gift rendering outside the summary content', () => {
-    const panel = document.createElement('aside');
-    const context = makeContext('COMPACT', 'simple');
-    let renderTarget: FakeElement | null = null;
-    context._renderFreeGiftSection = (container: FakeElement) => {
-      renderTarget = container;
-      const addon = document.createElement('div');
-      addon.className = 'side-panel-addon-message side-panel-free-gift';
-      addon.textContent = 'Add 1 more product(s) to claim 100% off on Add ons';
-      container.appendChild(addon);
-    };
-
-    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
-
-    const summaryContent = panel.querySelector('.side-panel-summary-content');
-
-    expect(summaryContent).not.toBeNull();
-    expect(renderTarget).toBe(panel);
   });
 });

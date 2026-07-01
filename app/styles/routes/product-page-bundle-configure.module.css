@@ -1710,6 +1710,30 @@
   composes: categoryProductTitle from "./bundle-configure-shared.module.css";
 }
 
+.selectedItemsChip {
+  composes: selectedItemsChip from "./bundle-configure-shared.module.css";
+}
+
+.selectedItemList {
+  composes: selectedItemList from "./bundle-configure-shared.module.css";
+}
+
+.selectedItemRow {
+  composes: selectedItemRow from "./bundle-configure-shared.module.css";
+}
+
+.selectedItemDrag {
+  composes: selectedItemDrag from "./bundle-configure-shared.module.css";
+}
+
+.selectedItemRemove {
+  composes: selectedItemRemove from "./bundle-configure-shared.module.css";
+}
+
+.selectedItemName {
+  composes: selectedItemName from "./bundle-configure-shared.module.css";
+}
+
 .categoryNameInput {
   composes: categoryNameInput from "./bundle-configure-shared.module.css";
 }

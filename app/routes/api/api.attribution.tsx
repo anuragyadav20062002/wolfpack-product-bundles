@@ -13,6 +13,7 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
+import { matchLineItemsToBundles, normalizeToOrderGid } from "../../lib/analytics/bundle-matcher.server";
 
 // CORS headers required for cross-origin fetch() calls from the web pixel sandbox.
 // The sandbox runs in an isolated iframe with an opaque (null) origin, so we must
@@ -63,43 +64,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // Calculate revenue in cents
     const revenue = totalPrice ? Math.round(parseFloat(totalPrice) * 100) : 0;
 
-    // Find bundle IDs from line items by matching against our database.
-    //
-    // Two-pass strategy:
-    //   Pass 1 (MERGE active)  — line items contain the bundle container product.
-    //                            Match bundle.shopifyProductId directly.
-    //   Pass 2 (MERGE inactive) — line items contain component products.
-    //                             Cart Transform MERGE may not have been set up yet
-    //                             (e.g. first purchase before sync, or PPB bundles).
-    //                             Fall back to matching via StepProduct.productId.
-    const bundleIds: string[] = [];
-    if (lineItems && lineItems.length > 0) {
-      const productIds: string[] = lineItems
-        .map((item: any) => item.productId as string | undefined)
-        .filter((id: string | undefined): id is string => Boolean(id));
+    // Normalize orderId to canonical GID form so the pixel-driven insert and the
+    // backfill service produce matching keys — otherwise dedup fails and the
+    // dashboard shows duplicate revenue.
+    const normalizedOrderId = orderId ? normalizeToOrderGid(orderId as string) : "unknown";
 
-      if (productIds.length > 0) {
-        // Pass 1: direct match on bundle container product
-        const directBundles = await db.bundle.findMany({
-          where: { shopId, shopifyProductId: { in: productIds } },
-          select: { id: true },
-        });
-        bundleIds.push(...directBundles.map((b: { id: string }) => b.id));
-
-        // Pass 2: fallback — match component products through bundle steps
-        if (bundleIds.length === 0) {
-          const matchedSteps = await db.bundleStep.findMany({
-            where: {
-              StepProduct: { some: { productId: { in: productIds } } },
-              bundle: { shopId },
-            },
-            select: { bundleId: true },
-            distinct: ["bundleId"],
-          });
-          bundleIds.push(...matchedSteps.map((s) => s.bundleId));
-        }
-      }
-    }
+    // Match line items to bundles. See matchLineItemsToBundles for the two-pass
+    // strategy — it also normalizes numeric vs GID productId formats.
+    const bundleIds = await matchLineItemsToBundles(shopId, lineItems ?? []);
 
     // Create attribution record(s) — one per bundle, or one with null bundleId if no bundles matched
     if (bundleIds.length > 0) {
@@ -107,7 +79,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         data: bundleIds.map((bundleId) => ({
           shopId,
           bundleId,
-          orderId: orderId || "unknown",
+          orderId: normalizedOrderId,
           orderNumber: orderNumber || null,
           utmSource,
           utmMedium: utmMedium || null,
@@ -125,7 +97,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         data: {
           shopId,
           bundleId: null,
-          orderId: orderId || "unknown",
+          orderId: normalizedOrderId,
           orderNumber: orderNumber || null,
           utmSource,
           utmMedium: utmMedium || null,
