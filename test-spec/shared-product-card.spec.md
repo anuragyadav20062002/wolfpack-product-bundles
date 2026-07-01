@@ -18,7 +18,8 @@ Create the Loop 4 shared product-card primitive before migrating templates.
 | 6 | Suppresses empty/default variant row | default or missing variant title | no variant row marker | Avoids blank divider bands |
 | 7 | Does not split ordinary hyphenated titles | title `Pre-order - Limited Edition` without variant metadata | full title remains in title row, no variant row | Avoids false-positive variant inference |
 | 8 | Escapes merchant/product text | product title with HTML | escaped title and alt text | Prevents innerHTML injection |
-| 9 | Quantity control supports disabled increase | quantity input with `increaseDisabled` | plus button has `disabled aria-disabled="true"` | Stock/rule clamp compatibility |
+| 9 | Normalizes product image URLs | product with imageUrl, image, featuredImage, images array, and duplicates | ordered unique image URL list | Shared card and modal use the same multi-image data source |
+| 10 | Quantity control supports disabled increase | quantity input with `increaseDisabled` | plus button has `disabled aria-disabled="true"` | Stock/rule clamp compatibility |
 
 ### WidgetBuildSharedModules
 | # | Scenario | Input | Expected Output | Notes |

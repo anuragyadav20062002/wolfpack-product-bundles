@@ -108,6 +108,29 @@ export function getTimelineEntryState({
   };
 }
 
+export function shouldShowTimelineCompletedState({
+  entry = {},
+  currentStepIndex = 0,
+  isStepCompleted = false,
+  hasMultipleCategoryEntry = false,
+} = {}) {
+  if (!isStepCompleted) return false;
+
+  const stepIndex = Number(entry.stepIndex);
+  const activeStepIndex = Number(currentStepIndex);
+  if (!Number.isFinite(stepIndex) || !Number.isFinite(activeStepIndex)) {
+    return false;
+  }
+
+  const isPastStep = stepIndex < activeStepIndex;
+  if (entry.type === 'multiple_categories') {
+    return isPastStep;
+  }
+
+  return isPastStep
+    || (hasMultipleCategoryEntry && stepIndex === activeStepIndex);
+}
+
 function findProductByVariantId(state, variantId) {
   const stepProductData = Array.isArray(state?.stepProductData) ? state.stepProductData : [];
 

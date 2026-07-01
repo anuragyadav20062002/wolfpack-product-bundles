@@ -26,6 +26,7 @@ class BundleProductModal {
     this.currentStep = null;
     this.selectedVariant = null;
     this.selectedQuantity = 1;
+    this.currentImageIndex = 0;
 
     this.init();
   }
@@ -57,6 +58,8 @@ class BundleProductModal {
               <div class="bundle-modal-main-image-container">
                 <div class="bundle-modal-main-image">
                   <img src="" alt="Product image" id="modal-main-image">
+                  <button type="button" class="bundle-modal-image-nav bundle-modal-image-nav--prev" data-modal-image-nav="prev" aria-label="Previous image" hidden>&#10094;</button>
+                  <button type="button" class="bundle-modal-image-nav bundle-modal-image-nav--next" data-modal-image-nav="next" aria-label="Next image" hidden>&#10095;</button>
                 </div>
               </div>
             </div>
@@ -141,6 +144,14 @@ class BundleProductModal {
       this.addToBundle();
     });
 
+    this.modalElement.querySelectorAll('[data-modal-image-nav]').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.showAdjacentImage(button.dataset.modalImageNav === 'prev' ? -1 : 1);
+      });
+    });
+
     // Swipe gesture detection for mobile
     this.setupSwipeGestures();
   }
@@ -211,11 +222,16 @@ class BundleProductModal {
    * @param {Object} product - Product data
    * @param {Object} step - Step data
    */
-  open(product, step) {
+  open(product, step, options = {}) {
 
     this.currentProduct = product;
     this.currentStep = step;
     this.selectedQuantity = 1;
+    const imageCount = this.getProductImages().length;
+    const initialImageIndex = Number(options.initialImageIndex || 0);
+    this.currentImageIndex = imageCount > 0
+      ? Math.min(Math.max(0, initialImageIndex), imageCount - 1)
+      : 0;
 
     // Populate modal content
     this.populateModal();
@@ -237,6 +253,7 @@ class BundleProductModal {
     this.currentStep = null;
     this.selectedVariant = null;
     this.selectedQuantity = 1;
+    this.currentImageIndex = 0;
   }
 
   /**
@@ -274,28 +291,60 @@ class BundleProductModal {
    * Handles imageUrl, image.src, images array, and featuredImage.url.
    * @returns {string} Image URL
    */
-  getProductImage() {
+  getProductImages() {
     const product = this.currentProduct;
-    if (!product) return BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    if (!product) return [BUNDLE_WIDGET.PLACEHOLDER_IMAGE];
 
-    if (product.imageUrl) return product.imageUrl;
-    if (product.image?.src) return product.image.src;
-    if (product.featuredImage?.url) return product.featuredImage.url;
+    const urls = [];
+    const addUrl = (value) => {
+      const url = this.normalizeImageUrl(value);
+      if (url && !urls.includes(url)) urls.push(url);
+    };
 
-    const firstImage = Array.isArray(product.images) ? product.images[0] : null;
-    if (typeof firstImage === 'string') return firstImage;
-    if (firstImage?.url) return firstImage.url;
-    if (firstImage?.src) return firstImage.src;
+    addUrl(product.imageUrl);
+    addUrl(product.image);
+    addUrl(product.featuredImage);
+    (Array.isArray(product.images) ? product.images : []).forEach(addUrl);
 
-    return BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    return urls.length > 0 ? urls : [BUNDLE_WIDGET.PLACEHOLDER_IMAGE];
+  }
+
+  normalizeImageUrl(value) {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    return value.url || value.src || value.originalSrc || value.transformedSrc || '';
+  }
+
+  getProductImage() {
+    const images = this.getProductImages();
+    return images[this.currentImageIndex] || images[0] || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
   }
 
   loadImage() {
     const mainImageEl = document.getElementById('modal-main-image');
     if (!mainImageEl) return;
 
+    const images = this.getProductImages();
+    this.currentImageIndex = Math.min(Math.max(0, this.currentImageIndex), images.length - 1);
     mainImageEl.src = this.getProductImage();
     mainImageEl.alt = this.currentProduct?.title || 'Product image';
+
+    const hasGallery = images.length > 1;
+    const imageFrame = this.modalElement.querySelector('.bundle-modal-main-image');
+    if (imageFrame) {
+      imageFrame.classList.toggle('bundle-modal-main-image--has-gallery', hasGallery);
+    }
+    this.modalElement.querySelectorAll('[data-modal-image-nav]').forEach((button) => {
+      button.hidden = !hasGallery;
+    });
+  }
+
+  showAdjacentImage(direction) {
+    const images = this.getProductImages();
+    if (images.length <= 1) return;
+
+    this.currentImageIndex = (this.currentImageIndex + direction + images.length) % images.length;
+    this.loadImage();
   }
 
   updateQuantity(quantity) {

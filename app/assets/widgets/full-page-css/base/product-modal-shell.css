@@ -116,6 +116,39 @@
   position: relative;
 }
 
+.bundle-modal-image-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #777676;
+  font-family: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.16);
+}
+
+.bundle-modal-image-nav[hidden] {
+  display: none;
+}
+
+.bundle-modal-image-nav--prev {
+  left: 0.75rem;
+}
+
+.bundle-modal-image-nav--next {
+  right: 0.75rem;
+}
+
 .bundle-modal-main-image img {
   width: 100%;
   height: 100%;

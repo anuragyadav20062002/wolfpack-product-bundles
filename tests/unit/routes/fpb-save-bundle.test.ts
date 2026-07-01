@@ -6,6 +6,7 @@
  */
 
 import { handleSaveBundle } from "../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
+import { AddOnDiscountFunctionService } from "../../../app/services/addon-discount-function-service.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -32,6 +33,12 @@ jest.mock("../../../app/lib/logger", () => ({
 jest.mock("../../../app/services/bundles/metafield-sync.server", () => ({
   updateBundleProductMetafields: jest.fn().mockResolvedValue(undefined),
   updateComponentProductMetafields: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock("../../../app/services/addon-discount-function-service.server", () => ({
+  AddOnDiscountFunctionService: {
+    completeSetup: jest.fn().mockResolvedValue({ success: true }),
+  },
 }));
 
 jest.mock("../../../app/services/bundles/standard-metafields.server", () => ({
@@ -412,6 +419,53 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
         data: expect.objectContaining({ status: "active" }),
       })
     );
+  });
+
+  it("activates the add-on discount function when add-ons are enabled", async () => {
+    const personalizationData = {
+      isPersonalizationEnabled: true,
+      personalizeStepText: "Add On",
+      addonProducts: {
+        isEnabled: true,
+        title: "Add On",
+        tiers: [
+          {
+            tierId: "tier1",
+            discount: { type: "PERCENTAGE", value: "10" },
+            products: [{ id: "gid://shopify/Product/111" }],
+          },
+        ],
+      },
+    };
+    const fd = makeFormData({
+      personalizationData: JSON.stringify(personalizationData),
+    });
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+
+    expect(AddOnDiscountFunctionService.completeSetup).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      MOCK_SESSION.shop,
+    );
+  });
+
+  it("does not activate the add-on discount function when add-ons are disabled", async () => {
+    const personalizationData = {
+      isPersonalizationEnabled: true,
+      personalizeStepText: "Add On",
+      addonProducts: {
+        isEnabled: false,
+        title: "Add On",
+        tiers: [],
+      },
+    };
+    const fd = makeFormData({
+      personalizationData: JSON.stringify(personalizationData),
+    });
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+
+    expect(AddOnDiscountFunctionService.completeSetup).not.toHaveBeenCalled();
   });
 
   it("creates nested StepCategory records when categories are present", async () => {

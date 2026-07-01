@@ -288,6 +288,16 @@
   height: 9px;
 }
 
+.timeline-checkmark::before {
+  content: "";
+  width: 34%;
+  height: 56%;
+  border-right: 0.125rem solid #fff;
+  border-bottom: 0.125rem solid #fff;
+  transform: translateY(-8%) rotate(45deg);
+  box-sizing: border-box;
+}
+
 .timeline-step-name {
   margin-top: 6px;
   font-family: inherit;
