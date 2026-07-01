@@ -2097,6 +2097,22 @@
   composes: selectedItemsChip from "./bundle-configure-shared.module.css";
 }
 
+.categorySelectedItemsChip {
+  border: 0;
+  background: transparent;
+  color: #005bd3;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.categorySelectedItemsChip:hover,
+.categorySelectedItemsChip:focus-visible {
+  color: #004299;
+  text-decoration: underline;
+}
+
 .selectedItemList {
   composes: selectedItemList from "./bundle-configure-shared.module.css";
 }
@@ -2115,6 +2131,73 @@
 
 .selectedItemName {
   composes: selectedItemName from "./bundle-configure-shared.module.css";
+}
+
+.categorySelectedItemRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 62px;
+  padding: 8px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.categorySelectedItemDrag,
+.categorySelectedItemRemove {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6d7175;
+  font: inherit;
+  font-size: 13px;
+  line-height: 28px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.categorySelectedItemDrag:hover,
+.categorySelectedItemDrag:focus-visible {
+  background: #f1f2f3;
+  color: #202223;
+}
+
+.categorySelectedItemImage {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f1f1f1;
+}
+
+.categorySelectedItemName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categorySelectedItemRemove {
+  color: #d72c0d;
+}
+
+.categorySelectedItemRemove s-icon {
+  color: inherit;
+}
+
+.categorySelectedItemRemove:hover,
+.categorySelectedItemRemove:focus-visible {
+  background: #f1f2f3;
+  color: #b5260b;
 }
 
 .ruleCard {

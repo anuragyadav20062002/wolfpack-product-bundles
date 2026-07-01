@@ -49,6 +49,12 @@ export function FpbStepCategoryAccordion({
   const [draggedCollectionIndex, setDraggedCollectionIndex] = useState<
     number | null
   >(null);
+  const getProductImageUrl = (product: any) =>
+    product.imageUrl ||
+    product.image?.url ||
+    product.images?.[0]?.url ||
+    product.images?.[0]?.originalSrc ||
+    "/bundle.png";
 
   const updateCategory = (updater: (category: any) => any) => {
     const updated = ((step.StepCategory as any[]) ?? []).map(
@@ -408,7 +414,7 @@ export function FpbStepCategoryAccordion({
                 {catProducts.length > 0 && (
                   <button
                     type="button"
-                    className={fullPageBundleStyles.selectedItemsChip}
+                    className={fullPageBundleStyles.categorySelectedItemsChip}
                     onClick={() => showPolarisModal(selectedProductsModalRef)}
                   >
                     {catProducts.length} Selected
@@ -425,7 +431,7 @@ export function FpbStepCategoryAccordion({
                     {catProducts.map((product: any, index: number) => (
                       <li
                         key={product.id ?? index}
-                        className={fullPageBundleStyles.selectedItemRow}
+                        className={fullPageBundleStyles.categorySelectedItemRow}
                         onDragOver={(event: React.DragEvent) => {
                           event.preventDefault();
                           event.stopPropagation();
@@ -440,7 +446,7 @@ export function FpbStepCategoryAccordion({
                       >
                         <button
                           type="button"
-                          className={fullPageBundleStyles.selectedItemDrag}
+                          className={fullPageBundleStyles.categorySelectedItemDrag}
                           aria-label={`Reorder ${product.title || "selected product"}`}
                           draggable="true"
                           onDragStart={(event: React.DragEvent) => {
@@ -452,18 +458,23 @@ export function FpbStepCategoryAccordion({
                             setDraggedProductIndex(null);
                           }}
                         >
-                          ::
+                          ⠿
                         </button>
-                        <span className={fullPageBundleStyles.selectedItemName}>
+                        <img
+                          className={fullPageBundleStyles.categorySelectedItemImage}
+                          src={getProductImageUrl(product)}
+                          alt={product.title || product.name || "Product"}
+                        />
+                        <span className={fullPageBundleStyles.categorySelectedItemName}>
                           {product.title || product.name || "Unnamed Product"}
                         </span>
                         <button
                           type="button"
-                          className={fullPageBundleStyles.selectedItemRemove}
+                          className={fullPageBundleStyles.categorySelectedItemRemove}
                           aria-label={`Remove ${product.title || "selected product"}`}
                           onClick={() => removeCategoryProduct(product.id)}
                         >
-                          x
+                          <s-icon type="delete" />
                         </button>
                       </li>
                     ))}
@@ -507,7 +518,7 @@ export function FpbStepCategoryAccordion({
                 {catCollections.length > 0 && (
                   <button
                     type="button"
-                    className={fullPageBundleStyles.selectedItemsChip}
+                    className={fullPageBundleStyles.categorySelectedItemsChip}
                     onClick={() => showPolarisModal(selectedCollectionsModalRef)}
                   >
                     {catCollections.length} Selected
@@ -524,7 +535,7 @@ export function FpbStepCategoryAccordion({
                     {catCollections.map((collection: any, index: number) => (
                       <li
                         key={collection.id ?? index}
-                        className={fullPageBundleStyles.selectedItemRow}
+                        className={fullPageBundleStyles.categorySelectedItemRow}
                         onDragOver={(event: React.DragEvent) => {
                           event.preventDefault();
                           event.stopPropagation();
@@ -542,7 +553,7 @@ export function FpbStepCategoryAccordion({
                       >
                         <button
                           type="button"
-                          className={fullPageBundleStyles.selectedItemDrag}
+                          className={fullPageBundleStyles.categorySelectedItemDrag}
                           aria-label={`Reorder ${collection.title || "selected collection"}`}
                           draggable="true"
                           onDragStart={(event: React.DragEvent) => {
@@ -556,12 +567,12 @@ export function FpbStepCategoryAccordion({
                         >
                           ::
                         </button>
-                        <span className={fullPageBundleStyles.selectedItemName}>
+                        <span className={fullPageBundleStyles.categorySelectedItemName}>
                           {collection.title || "Unnamed Collection"}
                         </span>
                         <button
                           type="button"
-                          className={fullPageBundleStyles.selectedItemRemove}
+                          className={fullPageBundleStyles.categorySelectedItemRemove}
                           aria-label={`Remove ${collection.title || "selected collection"}`}
                           onClick={() =>
                             removeCategoryCollection(collection.id)
