@@ -334,11 +334,11 @@ _markProductPageTemplate() {
   const designPreset = this._getProductPageDesignPreset();
 
   this.container.classList.toggle(
-    'gbbMixPageWrapper',
+    'wpbMixPageWrapper',
     templateType === 'PDP_INPAGE' && designPreset === 'CASCADE'
   );
   this.container.classList.toggle(
-    'gbbMixProductPageWrapperV2',
+    'wpbMixProductPageWrapperV2',
     templateType === 'PDP_INPAGE' && designPreset === 'CASCADE'
   );
 
@@ -349,9 +349,9 @@ _markProductPageTemplate() {
   this.elements.stepsContainer.dataset.ppbTemplateType = templateType;
   this.elements.stepsContainer.dataset.ppbDesignPreset = designPreset;
 
-  document.body?.setAttribute('gbbmix-template-id', designPreset);
-  document.body?.setAttribute('gbbmix-template-type', templateType);
-  document.body?.setAttribute('gbb-mix-consolidated-design', 'true');
+  document.body?.setAttribute('wpbmix-template-id', designPreset);
+  document.body?.setAttribute('wpbmix-template-type', templateType);
+  document.body?.setAttribute('wpb-mix-consolidated-design', 'true');
   void this.ensureProductPageTemplateStylesheet(templateType, designPreset);
 
   if (templateType === 'PDP_MODAL') {

@@ -284,6 +284,11 @@ body:has([data-fpb-design-preset]) {
   --mih-action-width: clamp(60px, 17vw, 70px);
   --standard-mobile-title-line-height: clamp(16px, 4.2vw, 18px);
   --standard-mobile-price-line-height: clamp(16px, 4.2vw, 18px);
+  --standard-variant-options-open-max-height: min(9.375rem, 55vh);
+  --standard-variant-options-scrollbar-size: 0.125rem;
+  --standard-product-grid-z-index: 1;
+  --standard-variant-open-card-z-index: 40;
+  --standard-variant-dropdown-z-index: 60;
   --cg: 15px;
 }
 
@@ -517,8 +522,8 @@ body:has([data-fpb-design-preset]) {
   position: absolute;
   inset-block-start: 100%;
   inset-inline: 0;
-  z-index: 10;
-  max-height: min(3.9rem, 55vh);
+  z-index: var(--standard-variant-dropdown-z-index, 60);
+  max-height: var(--standard-variant-options-open-max-height, min(9.375rem, 55vh));
   margin: 0;
   padding: 0;
   overflow: hidden scroll;
@@ -545,7 +550,7 @@ body:has([data-fpb-design-preset]) {
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
   .sidebar-content
   .vs-options::-webkit-scrollbar {
-  width: 0.1875rem;
+  width: var(--standard-variant-options-scrollbar-size, 0.125rem);
   height: 0.25rem;
 }
 
@@ -3346,6 +3351,21 @@ body:has([data-fpb-design-preset]) {
   overflow: visible;
 }
 
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .sidebar-content
+  .full-page-product-grid:has(.vs-wrapper--standard) {
+  position: relative;
+  z-index: var(--standard-product-grid-z-index, 1);
+  overflow: visible;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .sidebar-content
+  .product-card:has(.vs-wrapper--standard .vs-options:not([hidden])) {
+  position: relative;
+  z-index: var(--standard-variant-open-card-z-index, 40);
+}
+
 .layout-sidebar[data-fpb-design-preset="STANDARD"]:not([data-fpb-card-cta-mode="icon"])
   .sidebar-content
   .product-card:has(.vs-wrapper--standard)
@@ -3432,8 +3452,15 @@ body:has([data-fpb-design-preset]) {
 
   .layout-sidebar[data-fpb-design-preset="STANDARD"]
     .sidebar-content
+    .vs-wrapper--standard {
+    position: relative;
+    z-index: 31;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="STANDARD"]
+    .sidebar-content
     .vs-options {
-    max-height: min(3.9rem, 55vh);
+    max-height: var(--standard-variant-options-open-max-height, min(9.375rem, 55vh));
     overflow: hidden scroll;
   }
 }

@@ -45,6 +45,10 @@ jest.mock('../../../app/services/bundles/metafield-sync.server', () => ({
   updateComponentProductMetafields: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../../../app/services/bundles/bundle-preview-event.server', () => ({
+  recordFirstBundlePreviewEvent: jest.fn().mockResolvedValue(true),
+}));
+
 // ─── Imports ──────────────────────────────────────────────────────────────────
 
 import { WidgetInstallationService } from '../../../app/services/widget-installation.server';
@@ -58,6 +62,7 @@ import {
   handleCreatePreviewPage,
   handleValidateWidgetPlacement,
 } from '../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server';
+import { recordFirstBundlePreviewEvent } from '../../../app/services/bundles/bundle-preview-event.server';
 
 const getDb = () => require('../../../app/db.server').default;
 
@@ -66,6 +71,7 @@ const mockPublishPreviewPage = publishPreviewPage as jest.MockedFunction<typeof 
 const mockGetPreviewPageUrl = getPreviewPageUrl as jest.MockedFunction<typeof getPreviewPageUrl>;
 const mockWriteBundleConfigPageMetafield = writeBundleConfigPageMetafield as jest.MockedFunction<typeof writeBundleConfigPageMetafield>;
 const mockRefreshFullPageBundlePageBody = refreshFullPageBundlePageBody as jest.MockedFunction<typeof refreshFullPageBundlePageBody>;
+const mockRecordFirstBundlePreviewEvent = recordFirstBundlePreviewEvent as jest.MockedFunction<typeof recordFirstBundlePreviewEvent>;
 
 const mockAdmin = { graphql: jest.fn() } as any;
 const mockSession = {
@@ -87,6 +93,8 @@ function makeBundle(overrides: Record<string, any> = {}) {
     id: bundleId,
     name: 'My Kit',
     shopId: 'test-shop.myshopify.com',
+    bundleType: 'full_page',
+    status: 'draft',
     shopifyPageHandle: null,
     shopifyPageId: null,
     shopifyPreviewPageId: null,
@@ -155,6 +163,17 @@ describe('handleCreatePreviewPage', () => {
     );
     expect(body.success).toBe(true);
     expect(body.shareablePreviewUrl).toBe(PREVIEW_URL);
+    expect(mockRecordFirstBundlePreviewEvent).toHaveBeenCalledWith({
+      admin: mockAdmin,
+      shopDomain: mockSession.shop,
+      bundle: expect.objectContaining({
+        id: bundleId,
+        bundleType: 'full_page',
+        status: 'draft',
+      }),
+      bundleLink: PREVIEW_URL,
+      routeFamily: 'fpb_configure',
+    });
   });
 
   it('returns previewUrl from existing draft without creating a new page', async () => {
@@ -179,6 +198,17 @@ describe('handleCreatePreviewPage', () => {
     expect(getDb().bundle.update).not.toHaveBeenCalled();
     expect(body.success).toBe(true);
     expect(body.shareablePreviewUrl).toBe(PREVIEW_URL);
+    expect(mockRecordFirstBundlePreviewEvent).toHaveBeenCalledWith({
+      admin: mockAdmin,
+      shopDomain: mockSession.shop,
+      bundle: expect.objectContaining({
+        id: bundleId,
+        bundleType: 'full_page',
+        status: 'draft',
+      }),
+      bundleLink: PREVIEW_URL,
+      routeFamily: 'fpb_configure',
+    });
   });
 
   it('creates new draft when existing draft page was deleted externally', async () => {

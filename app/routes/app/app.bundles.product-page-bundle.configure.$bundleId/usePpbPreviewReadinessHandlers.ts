@@ -7,6 +7,14 @@ import { pickPpbPreviewUrl } from "../../../lib/ppb-preview-url";
 import type { BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import type { TourStep } from "../../../components/bundle-configure/tourSteps";
 
+function recordBundlePreview(bundleLink: string) {
+  const formData = new FormData();
+  formData.append("intent", "recordBundlePreview");
+  formData.append("bundleLink", bundleLink);
+  formData.append("routeFamily", "ppb_configure");
+  void fetch(window.location.href, { method: "POST", body: formData }).catch(() => {});
+}
+
 export function usePpbPreviewReadinessHandlers({
   base,
   visibility,
@@ -102,6 +110,7 @@ export function usePpbPreviewReadinessHandlers({
         } else {
           window.open(productUrl, "_blank", "noopener,noreferrer");
         }
+        recordBundlePreview(productUrl);
         const isPreviewUrl =
           base.bundleProduct &&
           productUrl === base.bundleProduct.onlineStorePreviewUrl;

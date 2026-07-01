@@ -183,6 +183,15 @@ export function DashboardPage() {
     isOpen: enablePreviewGate.modalProps.open,
   });
 
+  const recordDashboardPreview = useCallback((bundleId: string, bundleLink: string) => {
+    const formData = new FormData();
+    formData.append("intent", "recordBundlePreview");
+    formData.append("bundleId", bundleId);
+    formData.append("bundleLink", bundleLink);
+    formData.append("routeFamily", "dashboard");
+    void fetch(window.location.href, { method: "POST", body: formData }).catch(() => {});
+  }, []);
+
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
     const stopPreviewLoadingSoon = () => {
       window.setTimeout(() => setPreviewingBundleId(null), 500);
@@ -215,6 +224,7 @@ export function DashboardPage() {
       }
 
       window.open(action.url, "_blank", "noopener,noreferrer");
+      recordDashboardPreview(bundle.id, action.url);
       stopPreviewLoadingSoon();
     };
 
@@ -224,7 +234,7 @@ export function DashboardPage() {
     }
 
     enablePreviewGate.requestPreview(executePreviewAction);
-  }, [shop, shopify, fetcher, enablePreviewGate, appEmbedEnabled]);
+  }, [shop, shopify, fetcher, enablePreviewGate, appEmbedEnabled, recordDashboardPreview]);
 
   const getStatusDisplay = (status: string) => {
     const tone = STATUS_TONE_MAP[status as keyof typeof STATUS_TONE_MAP] ?? 'info';

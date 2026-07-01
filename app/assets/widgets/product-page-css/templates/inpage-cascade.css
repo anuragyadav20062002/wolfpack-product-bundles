@@ -215,7 +215,7 @@
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .bw-ppb-inpage-category-tab.active,
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-  .gbbMixCascadeCategoryTab--active {
+  .wpbMixCascadeCategoryTab--active {
   background: #1e1e1e;
   color: #ffffff;
 }
@@ -252,7 +252,7 @@
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-  .gbbMixCascadeProductLeftSection {
+  .wpbMixCascadeProductLeftSection {
   display: grid;
   grid-template-columns: 70px minmax(0, 1fr);
   gap: 10px;
@@ -261,9 +261,9 @@
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-  .gbbMixCascadeProductRightSection,
+  .wpbMixCascadeProductRightSection,
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-  .gbbMixCascadeProductBtnWrapper {
+  .wpbMixCascadeProductBtnWrapper {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -374,7 +374,7 @@
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-  .gbbMixCascadeFooterWrapper--cartDrawerUI {
+  .wpbMixCascadeFooterWrapper--cartDrawerUI {
   display: grid;
 }
 
@@ -408,7 +408,7 @@
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-  .gbbMixCascadeSelectedItemsInCartWrappper {
+  .wpbMixCascadeSelectedItemsInCartWrappper {
   border-radius: 10px;
 }
 

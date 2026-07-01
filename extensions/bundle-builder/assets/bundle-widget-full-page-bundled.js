@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 4.0.3
+ * Version : 4.0.5
  * Built   : 2026-07-01
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '4.0.3';
+window.__BUNDLE_WIDGET_VERSION__ = '4.0.5';
 (function() {
   'use strict';
 
@@ -9615,7 +9615,7 @@ async addBundleToCart(clickedButton = null) {
               properties._addonTierId = String(addonEval.tier.tierId);
             }
             const addonVariantId = this.extractId(variantId);
-            properties._uniqueGbbItemKey = `${addonVariantId || numericVariantId}_pageId:addonProduct`;
+            properties._uniqueWpbItemKey = `${addonVariantId || numericVariantId}_pageId:addonProduct`;
             properties._bundle_step_type = addonDiscount
               ? `addon:${addonDiscount.type}:${addonDiscount.value}`
               : 'addon';

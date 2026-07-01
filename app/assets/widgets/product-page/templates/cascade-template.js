@@ -71,21 +71,21 @@ export const cascadeTemplateMethods = {
   },
 
   _renderCascadeFooter(el) {
-    el.className = 'bundle-footer-messaging bw-ppb-cascade-footer gbbMixCascadeFooterWrapper gbbMixCascadeFooterWrapper--bundleATCBtnV2 gbbMixCascadeFooterWrapper--cartDrawerUI';
+    el.className = 'bundle-footer-messaging bw-ppb-cascade-footer wpbMixCascadeFooterWrapper wpbMixCascadeFooterWrapper--bundleATCBtnV2 wpbMixCascadeFooterWrapper--cartDrawerUI';
     el.style.display = '';
     el.style.cssText = '';
 
     const selectedEntries = this._getSelectedProductEntries();
     const drawer = document.createElement('div');
-    drawer.className = 'bw-ppb-cascade-selected-drawer gbbMixCascadeCartDrawerContainer';
+    drawer.className = 'bw-ppb-cascade-selected-drawer wpbMixCascadeCartDrawerContainer';
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.className = 'bw-ppb-cascade-selected-toggle gbbMixCascadeSelectedItemsInCartWrappper';
+    toggle.className = 'bw-ppb-cascade-selected-toggle wpbMixCascadeSelectedItemsInCartWrappper';
     const totalSelectedQuantity = selectedEntries.reduce((sum, entry) => sum + entry.quantity, 0);
     toggle.innerHTML = `
-      <span class="bw-ppb-cascade-selected-toggle-label gbbMixCascadeCartDrawerBtnText">${ComponentGenerator.escapeHtml(this._resolveText('viewBundleItems', 'View Bundle Items'))}</span>
-      <span class="bw-ppb-cascade-selected-toggle-count gbbMixCascadeSelectedItemsInCart">${totalSelectedQuantity}</span>
+      <span class="bw-ppb-cascade-selected-toggle-label wpbMixCascadeCartDrawerBtnText">${ComponentGenerator.escapeHtml(this._resolveText('viewBundleItems', 'View Bundle Items'))}</span>
+      <span class="bw-ppb-cascade-selected-toggle-count wpbMixCascadeSelectedItemsInCart">${totalSelectedQuantity}</span>
     `;
     toggle.addEventListener('click', () => {
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open');
@@ -94,7 +94,7 @@ export const cascadeTemplateMethods = {
 
     if (selectedEntries.length > 0) {
       const list = document.createElement('div');
-      list.className = 'bw-ppb-cascade-selected-list gbbMixCascadeCartItemsWrapper';
+      list.className = 'bw-ppb-cascade-selected-list wpbMixCascadeCartItemsWrapper';
       selectedEntries.forEach(({ stepIndex, variantId, quantity, product }) => {
         const item = document.createElement('div');
         item.innerHTML = renderSelectedProductRow({
@@ -102,7 +102,7 @@ export const cascadeTemplateMethods = {
           variantId,
           quantity,
         }, {
-          className: 'bw-ppb-cascade-selected-item gbbMixCascadeBundleCartItem',
+          className: 'bw-ppb-cascade-selected-item wpbMixCascadeBundleCartItem',
         }).trim();
         const row = item.firstElementChild;
         row?.querySelector('[data-action="remove-selected-product"]')?.addEventListener('click', () => {

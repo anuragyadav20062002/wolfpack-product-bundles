@@ -144,7 +144,7 @@ async addBundleToCart(clickedButton = null) {
               properties._addonTierId = String(addonEval.tier.tierId);
             }
             const addonVariantId = this.extractId(variantId);
-            properties._uniqueGbbItemKey = `${addonVariantId || numericVariantId}_pageId:addonProduct`;
+            properties._uniqueWpbItemKey = `${addonVariantId || numericVariantId}_pageId:addonProduct`;
             properties._bundle_step_type = addonDiscount
               ? `addon:${addonDiscount.type}:${addonDiscount.value}`
               : 'addon';
