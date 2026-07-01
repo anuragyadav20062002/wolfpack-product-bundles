@@ -370,12 +370,13 @@ getAddonProductSelectionKeys(step) {
 
 calculateSelectedAddonDiscountAmount() {
   const steps = this.selectedBundle?.steps || [];
-  const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));
+  const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && this.getAddonLineDiscount(candidate));
   const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);
   return this.getAllSelectedProductsData().reduce((total, item) => {
-    const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
+    const itemStepIndex = Number(item.stepIndex);
+    const isChargeableAddonItem = itemStepIndex === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
     if (!isChargeableAddonItem) return total;
-    const step = steps[item.stepIndex];
+    const step = steps[itemStepIndex] || chargeableAddonStep;
     const addonDiscount = this.getAddonLineDiscount(step) || this.getAddonLineDiscount(chargeableAddonStep);
     if (!addonDiscount) return total;
 

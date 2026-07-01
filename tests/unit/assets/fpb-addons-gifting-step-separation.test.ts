@@ -409,7 +409,10 @@ describe("FPB add-ons / gifting step separation", () => {
     const ctx = {
       ...fullPageValidationAddonsMethods,
       selectedProducts: [{ paidVariant: 1 }, { addonVariant: 1 }],
-      stepProductData: [[{ variantId: "paidVariant", price: 82900 }], [{ variantId: "addonVariant", price: 82900 }]],
+      stepProductData: [
+        [{ variantId: "paidVariant", price: 82900 }],
+        [{ variantId: "addonVariant", price: 82900 }],
+      ],
       selectedBundle: { steps: [{ id: "paid" }, addonStep] },
       getAllSelectedProductsData: () => [
         {
@@ -426,6 +429,43 @@ describe("FPB add-ons / gifting step separation", () => {
     };
 
     expect(calculateSelectedAddonDiscountAmount.call(ctx)).toBe(8290);
+  });
+
+  it("counts active 100 percent add-on tier savings even when the step displays as free", () => {
+    const addonStep = {
+      isFreeGift: true,
+      addonDisplayFree: true,
+      StepProduct: [makeProduct()],
+      products: [makeProduct()],
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 100 },
+          selectedAddonProducts: [makeProduct()],
+        },
+      ],
+    };
+    const ctx = {
+      ...fullPageValidationAddonsMethods,
+      selectedProducts: [{ paidVariant: 1 }, { addonVariant: 1 }],
+      stepProductData: [[{ variantId: "paidVariant", price: 82900 }], [{ variantId: "addonVariant", price: 82900 }]],
+      selectedBundle: { steps: [{ id: "paid" }, addonStep] },
+      getAllSelectedProductsData: () => [
+        {
+          stepIndex: 1,
+          variantId: "addonVariant",
+          quantity: 1,
+          price: 82900,
+          isFreeGift: true,
+          addonDisplayFree: true,
+        },
+      ],
+      extractId: (value: unknown) => String(value ?? "").split("/").pop(),
+      getAddonLineDiscount: (step: unknown) =>
+        step === addonStep ? { type: "PERCENTAGE", value: 100 } : null,
+    };
+
+    expect(calculateSelectedAddonDiscountAmount.call(ctx)).toBe(82900);
   });
 
   it("derives paid add-on card display pricing from the active add-on discount", () => {

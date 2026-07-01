@@ -61,16 +61,22 @@ describe("FPB checkout cart-line properties", () => {
     expect(sourceProperties).not.toHaveProperty("Box");
   });
 
-  it("uses EB-style box numbering and hidden bundle metadata for paid add-on lines", async () => {
+  it("uses bundle box numbering and hidden bundle metadata for paid add-on lines", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({}),
     });
     const originalFetch = (global as any).fetch;
+    const originalWindow = (global as any).window;
     const originalDocument = (global as any).document;
     const originalGetComputedStyle = (global as any).getComputedStyle;
     const originalSetTimeout = (global as any).setTimeout;
     (global as any).fetch = fetchMock;
+    (global as any).window = {
+      Shopify: {
+        currency: { active: "USD", format: ["$", "{{amount}}"].join("") },
+      },
+    };
     (global as any).document = {
       documentElement: {},
       getElementById: () => null,
@@ -91,6 +97,7 @@ describe("FPB checkout cart-line properties", () => {
       getPropertyValue: () => "",
     });
     (global as any).setTimeout = jest.fn();
+    const emitMock = jest.fn();
 
     try {
       await fullPageStepFooterMethods.addBundleToCart.call({
@@ -128,12 +135,13 @@ describe("FPB checkout cart-line properties", () => {
         showLoadingOverlay: jest.fn(),
         hideLoadingOverlay: jest.fn(),
         syncBundleDetailsCartMetafield: jest.fn(),
-        _emitStorefrontEvent: jest.fn(),
+        _emitStorefrontEvent: emitMock,
         _handlePostAddToCartAction: jest.fn(),
         _getLandingPageControls: () => ({ checkout: null }),
       });
     } finally {
       (global as any).fetch = originalFetch;
+      (global as any).window = originalWindow;
       (global as any).document = originalDocument;
       (global as any).getComputedStyle = originalGetComputedStyle;
       (global as any).setTimeout = originalSetTimeout;
@@ -152,5 +160,135 @@ describe("FPB checkout cart-line properties", () => {
     expect(addonLine.properties).not.toHaveProperty("Items");
     expect(addonLine.properties).not.toHaveProperty("Retail Price");
     expect(addonLine.properties).not.toHaveProperty("You Save");
+  });
+
+  it("keeps active 100 percent add-on tier lines separate from free-gift merge semantics", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    });
+    const originalFetch = (global as any).fetch;
+    const originalWindow = (global as any).window;
+    const originalDocument = (global as any).document;
+    const originalGetComputedStyle = (global as any).getComputedStyle;
+    const originalSetTimeout = (global as any).setTimeout;
+    (global as any).fetch = fetchMock;
+    (global as any).window = {
+      Shopify: {
+        currency: { active: "USD", format: ["$", "{{amount}}"].join("") },
+      },
+    };
+    (global as any).document = {
+      documentElement: {},
+      getElementById: () => null,
+      createElement: () => ({
+        id: "",
+        className: "",
+        innerHTML: "",
+        remove: jest.fn(),
+        querySelector: () => ({
+          addEventListener: jest.fn(),
+        }),
+      }),
+      body: {
+        appendChild: jest.fn(),
+      },
+    };
+    (global as any).getComputedStyle = () => ({
+      getPropertyValue: () => "",
+    });
+    (global as any).setTimeout = jest.fn();
+
+    try {
+      const addonStep = {
+        id: "addon-step",
+        isFreeGift: true,
+        addonDisplayFree: true,
+      };
+
+      await fullPageStepFooterMethods.addBundleToCart.call({
+        _isWidgetActionBusy: false,
+        container: null,
+        selectedBundle: {
+          name: "Daily Essentials",
+          pricing: { enabled: false, rules: [] },
+          steps: [{ id: "paid-step", isFreeGift: false }, addonStep],
+        },
+        selectedProducts: [
+          { "gid://shopify/ProductVariant/111": 1 },
+          { "gid://shopify/ProductVariant/222": 1 },
+        ],
+        stepProductData: [
+          [
+            {
+              variantId: "gid://shopify/ProductVariant/111",
+              title: "Paid product",
+              price: 82900,
+            },
+          ],
+          [
+            {
+              variantId: "gid://shopify/ProductVariant/222",
+              title: "Free add-on",
+              price: 82900,
+            },
+          ],
+        ],
+        areBundleConditionsMet: () => true,
+        expandProductsByVariant: (products: unknown[]) => products,
+        extractId: (value: string) => value.split("/").pop(),
+        generateBundleSessionKey: () => "ABC",
+        resolveFullPageOfferId: () => "FBP-1",
+        getAddonTierEvaluation: (step: { id?: string }) =>
+          step === addonStep ? { tier: { tierId: "tier2" }, isEligible: true } : {},
+        getAddonLineDiscount: (step: { id?: string }) =>
+          step === addonStep ? { type: "PERCENTAGE", value: 100 } : null,
+        getSelectedSellingPlanAllocationId: () => null,
+        buildCartLineSourceProperties:
+          fullPageStepFooterMethods.buildCartLineSourceProperties,
+        buildCartLineDisplayProperties:
+          fullPageStepFooterMethods.buildCartLineDisplayProperties,
+        getCartLineLabels: () => ({
+          items: "Items",
+          retailPrice: "Retail Price",
+          youSave: "You Save",
+        }),
+        _setWidgetBusy: jest.fn(),
+        showLoadingOverlay: jest.fn(),
+        hideLoadingOverlay: jest.fn(),
+        syncBundleDetailsCartMetafield: jest.fn(),
+        _emitStorefrontEvent: jest.fn(),
+        _handlePostAddToCartAction: jest.fn(),
+        _getLandingPageControls: () => ({ checkout: null }),
+      });
+    } finally {
+      (global as any).fetch = originalFetch;
+      (global as any).window = originalWindow;
+      (global as any).document = originalDocument;
+      (global as any).getComputedStyle = originalGetComputedStyle;
+      (global as any).setTimeout = originalSetTimeout;
+    }
+
+    const addRequest = fetchMock.mock.calls.find(([url]) => url === "/cart/add.js");
+    expect(addRequest).toBeDefined();
+    const body = JSON.parse(addRequest[1].body);
+    const addonLine = body.items.find(
+      (item: { properties: Record<string, string> }) =>
+        item.properties._bundle_step_type === "addon:PERCENTAGE:100",
+    );
+    const paidLine = body.items.find(
+      (item: { properties: Record<string, string> }) =>
+        item.properties._bundle_step_type !== "addon:PERCENTAGE:100",
+    );
+
+    expect(addonLine).toBeDefined();
+    expect(addonLine.properties._addon_product).toBe("true");
+    expect(addonLine.properties._addonTierId).toBe("tier2");
+    expect(addonLine.properties._bundle_step_type).not.toBe("free_gift");
+    expect(JSON.parse(paidLine.properties._bundle_display_properties)).toEqual({
+      box: "1",
+      items: "1 x Paid product",
+      retailPrice: "$829.00",
+    });
   });
 });
