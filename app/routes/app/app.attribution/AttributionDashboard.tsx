@@ -454,6 +454,19 @@ function AttributionDashboardContent({ data }: { data: AttributionDashboardData 
               )}
             </div>
             <s-stack direction="inline" alignItems="center" gap="small-100">
+              <form
+                method="post"
+                style={{ display: "inline" }}
+                onSubmit={(e) => {
+                  if (!window.confirm("Reconcile the last 30 days of orders from Shopify? Existing rows are skipped.")) {
+                    e.preventDefault();
+                  }
+                }}
+              >
+                <input type="hidden" name="intent" value="backfill" />
+                <input type="hidden" name="days" value="30" />
+                <s-button variant="secondary">Backfill 30 days</s-button>
+              </form>
               <form method="post" style={{ display: "inline" }}>
                 <input type="hidden" name="intent" value="export" />
                 {from && to ? (
