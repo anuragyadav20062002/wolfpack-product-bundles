@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { openSupportChat } from "../../lib/support-chat.client";
 
 export interface SubscriptionErrorBannerProps {
   errorCode: string | null;
@@ -35,11 +36,7 @@ export function SubscriptionErrorBanner({
         <s-stack direction="inline" gap="small">
           <s-button
             variant="tertiary"
-            onClick={() => {
-              if (typeof window !== "undefined" && window.$crisp) {
-                window.$crisp.push(["do", "chat:open"]);
-              }
-            }}
+            onClick={() => openSupportChat()}
           >
             {t("billing.actions.contactSupport")}
           </s-button>
@@ -50,10 +47,4 @@ export function SubscriptionErrorBanner({
       </div>
     </s-banner>
   );
-}
-
-declare global {
-  interface Window {
-    $crisp?: any[];
-  }
 }

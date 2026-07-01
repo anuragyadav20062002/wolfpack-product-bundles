@@ -8,6 +8,7 @@ import { DashboardBannerSkeleton } from "../../../components/skeletons/Dashboard
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
 import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
+import { openSupportChat } from "../../../lib/support-chat.client";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { normalizeAdminLocale } from "../../../i18n/config";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
@@ -111,9 +112,7 @@ export function DashboardPage() {
   }, [fetcher.state, fetcher.data, navigate, shopify, t]);
 
   const handleDirectChat = () => {
-    if (typeof window !== 'undefined' && (window as any).$crisp) {
-      (window as any).$crisp.push(["do", "chat:open"]);
-    }
+    openSupportChat();
   };
 
   const handleEditBundle = useCallback((bundle: typeof bundles[number]) => {

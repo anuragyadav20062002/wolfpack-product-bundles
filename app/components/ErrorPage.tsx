@@ -1,4 +1,5 @@
 import { isRouteErrorResponse, useNavigate } from "@remix-run/react";
+import { openSupportChat } from "../lib/support-chat.client";
 
 interface ErrorPageProps {
   error: unknown;
@@ -116,12 +117,6 @@ function IllustrationLocked() {
       <circle cx="140" cy="30" r="3" fill="#E8E8F0"/>
     </svg>
   );
-}
-
-function openSupportChat() {
-  if (typeof window === "undefined") return;
-  window.$crisp = window.$crisp ?? [];
-  window.$crisp.push(["do", "chat:open"]);
 }
 
 // ---------------------------------------------------------------------------
@@ -395,9 +390,3 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: "500",
   },
 };
-
-declare global {
-  interface Window {
-    $crisp?: any[];
-  }
-}
