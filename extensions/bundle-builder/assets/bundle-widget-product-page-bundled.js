@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.92
- * Built   : 2026-06-30
+ * Version : 4.0.1
+ * Built   : 2026-07-01
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.92';
+window.__BUNDLE_WIDGET_VERSION__ = '4.0.1';
 (function() {
   'use strict';
 
@@ -2663,7 +2663,9 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const mode = options.mode || 'grid';
   const variantText = getVariantDisplayText(product);
   const title = getDisplayTitle(product, variantText);
-  const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
+  const imageUrls = getProductImageUrls(product);
+  const imageUrl = imageUrls[0] || DEFAULT_PLACEHOLDER_IMAGE;
+  const hasMultipleImages = imageUrls.length > 1;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
   const variantSelectorBeforePrice = options.variantSelectorPlacement === 'beforePrice';
@@ -2677,11 +2679,17 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   ].filter(Boolean).join(' ');
 
   return `
-    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}">
-      <div class="bw-product-card__media product-image">
+    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}" data-bw-card-image-count="${imageUrls.length}" data-bw-card-image-index="0"${hasMultipleImages ? ' data-bw-card-has-multiple-images="true"' : ''}>
+      <div class="bw-product-card__media product-image" data-bw-product-media="true">
         <img class="bw-product-card__image" src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(title)}" loading="lazy">
+        ${hasMultipleImages ? renderImageNavButton('prev') : ''}
+        ${hasMultipleImages ? renderImageNavButton('next') : ''}
+        <span class="bw-product-card__image-overlay product-image-overlay" aria-hidden="true">
+          <span class="bw-product-card__magnifier"></span>
+        </span>
         ${options.stockBadgeHtml || ''}
       </div>
+      ${options.cardBadgeHtml || ''}
       <div class="bw-product-card__body product-content-wrapper">
           <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
@@ -2710,6 +2718,21 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
       </div>
     </div>
   `;
+}
+
+function getProductImageUrls(product = {}) {
+  const urls = [];
+  const addUrl = (value) => {
+    const url = normalizeImageUrl(value);
+    if (url && !urls.includes(url)) urls.push(url);
+  };
+
+  addUrl(product.imageUrl);
+  addUrl(product.image);
+  addUrl(product.featuredImage);
+  (Array.isArray(product.images) ? product.images : []).forEach(addUrl);
+
+  return urls.length > 0 ? urls : [DEFAULT_PLACEHOLDER_IMAGE];
 }
 
 function getDisplayTitle(product, variantText) {
@@ -2764,6 +2787,22 @@ function renderAddButton(selectionKey, options) {
       ${escapeHtml(text)}
     </button>
   `;
+}
+
+function renderImageNavButton(direction) {
+  const label = direction === 'prev' ? 'Previous image' : 'Next image';
+  const symbol = direction === 'prev' ? '&#10094;' : '&#10095;';
+  return `
+    <button type="button" class="bw-product-card__image-nav bw-product-card__image-nav--${direction}" data-bw-image-nav="${direction}" aria-label="${label}">
+      ${symbol}
+    </button>
+  `;
+}
+
+function normalizeImageUrl(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return value.url || value.src || value.originalSrc || value.transformedSrc || '';
 }
 
 function formatPrice(value, currencyInfo) {
@@ -2979,7 +3018,6 @@ function renderStepTimelineEntry({
   timelineType = 'step',
   label = '',
   iconHtml = '',
-  checkmarkHtml = '',
   classes = [],
 } = {}) {
   const className = [
@@ -2991,7 +3029,7 @@ function renderStepTimelineEntry({
     <div class="${escapeAttribute(className)}" data-step-index="${escapeAttribute(stepIndex)}" data-timeline-type="${escapeAttribute(timelineType)}">
       <div class="timeline-icon-wrapper">
         ${iconHtml || ''}
-        <div class="timeline-checkmark">${checkmarkHtml || ''}</div>
+        <div class="timeline-checkmark"></div>
       </div>
       <span class="timeline-step-name">${escapeHtml(label)}</span>
     </div>
@@ -3134,6 +3172,29 @@ function getTimelineEntryState({
     isAccessible: accessible,
     classes,
   };
+}
+
+function shouldShowTimelineCompletedState({
+  entry = {},
+  currentStepIndex = 0,
+  isStepCompleted = false,
+  hasMultipleCategoryEntry = false,
+} = {}) {
+  if (!isStepCompleted) return false;
+
+  const stepIndex = Number(entry.stepIndex);
+  const activeStepIndex = Number(currentStepIndex);
+  if (!Number.isFinite(stepIndex) || !Number.isFinite(activeStepIndex)) {
+    return false;
+  }
+
+  const isPastStep = stepIndex < activeStepIndex;
+  if (entry.type === 'multiple_categories') {
+    return isPastStep;
+  }
+
+  return isPastStep
+    || (hasMultipleCategoryEntry && stepIndex === activeStepIndex);
 }
 
 function findProductByVariantId(state, variantId) {

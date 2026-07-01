@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.92
- * Built   : 2026-06-30
+ * Version : 4.0.1
+ * Built   : 2026-07-01
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.92';
+window.__BUNDLE_WIDGET_VERSION__ = '4.0.1';
 (function() {
   'use strict';
 
@@ -2663,7 +2663,9 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const mode = options.mode || 'grid';
   const variantText = getVariantDisplayText(product);
   const title = getDisplayTitle(product, variantText);
-  const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
+  const imageUrls = getProductImageUrls(product);
+  const imageUrl = imageUrls[0] || DEFAULT_PLACEHOLDER_IMAGE;
+  const hasMultipleImages = imageUrls.length > 1;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
   const variantSelectorBeforePrice = options.variantSelectorPlacement === 'beforePrice';
@@ -2677,11 +2679,17 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   ].filter(Boolean).join(' ');
 
   return `
-    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}">
-      <div class="bw-product-card__media product-image">
+    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}" data-bw-card-image-count="${imageUrls.length}" data-bw-card-image-index="0"${hasMultipleImages ? ' data-bw-card-has-multiple-images="true"' : ''}>
+      <div class="bw-product-card__media product-image" data-bw-product-media="true">
         <img class="bw-product-card__image" src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(title)}" loading="lazy">
+        ${hasMultipleImages ? renderImageNavButton('prev') : ''}
+        ${hasMultipleImages ? renderImageNavButton('next') : ''}
+        <span class="bw-product-card__image-overlay product-image-overlay" aria-hidden="true">
+          <span class="bw-product-card__magnifier"></span>
+        </span>
         ${options.stockBadgeHtml || ''}
       </div>
+      ${options.cardBadgeHtml || ''}
       <div class="bw-product-card__body product-content-wrapper">
           <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
@@ -2710,6 +2718,21 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
       </div>
     </div>
   `;
+}
+
+function getProductImageUrls(product = {}) {
+  const urls = [];
+  const addUrl = (value) => {
+    const url = normalizeImageUrl(value);
+    if (url && !urls.includes(url)) urls.push(url);
+  };
+
+  addUrl(product.imageUrl);
+  addUrl(product.image);
+  addUrl(product.featuredImage);
+  (Array.isArray(product.images) ? product.images : []).forEach(addUrl);
+
+  return urls.length > 0 ? urls : [DEFAULT_PLACEHOLDER_IMAGE];
 }
 
 function getDisplayTitle(product, variantText) {
@@ -2764,6 +2787,22 @@ function renderAddButton(selectionKey, options) {
       ${escapeHtml(text)}
     </button>
   `;
+}
+
+function renderImageNavButton(direction) {
+  const label = direction === 'prev' ? 'Previous image' : 'Next image';
+  const symbol = direction === 'prev' ? '&#10094;' : '&#10095;';
+  return `
+    <button type="button" class="bw-product-card__image-nav bw-product-card__image-nav--${direction}" data-bw-image-nav="${direction}" aria-label="${label}">
+      ${symbol}
+    </button>
+  `;
+}
+
+function normalizeImageUrl(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return value.url || value.src || value.originalSrc || value.transformedSrc || '';
 }
 
 function formatPrice(value, currencyInfo) {
@@ -2979,7 +3018,6 @@ function renderStepTimelineEntry({
   timelineType = 'step',
   label = '',
   iconHtml = '',
-  checkmarkHtml = '',
   classes = [],
 } = {}) {
   const className = [
@@ -2991,7 +3029,7 @@ function renderStepTimelineEntry({
     <div class="${escapeAttribute(className)}" data-step-index="${escapeAttribute(stepIndex)}" data-timeline-type="${escapeAttribute(timelineType)}">
       <div class="timeline-icon-wrapper">
         ${iconHtml || ''}
-        <div class="timeline-checkmark">${checkmarkHtml || ''}</div>
+        <div class="timeline-checkmark"></div>
       </div>
       <span class="timeline-step-name">${escapeHtml(label)}</span>
     </div>
@@ -3134,6 +3172,29 @@ function getTimelineEntryState({
     isAccessible: accessible,
     classes,
   };
+}
+
+function shouldShowTimelineCompletedState({
+  entry = {},
+  currentStepIndex = 0,
+  isStepCompleted = false,
+  hasMultipleCategoryEntry = false,
+} = {}) {
+  if (!isStepCompleted) return false;
+
+  const stepIndex = Number(entry.stepIndex);
+  const activeStepIndex = Number(currentStepIndex);
+  if (!Number.isFinite(stepIndex) || !Number.isFinite(activeStepIndex)) {
+    return false;
+  }
+
+  const isPastStep = stepIndex < activeStepIndex;
+  if (entry.type === 'multiple_categories') {
+    return isPastStep;
+  }
+
+  return isPastStep
+    || (hasMultipleCategoryEntry && stepIndex === activeStepIndex);
 }
 
 function findProductByVariantId(state, variantId) {
@@ -3640,6 +3701,7 @@ class BundleProductModal {
     this.currentStep = null;
     this.selectedVariant = null;
     this.selectedQuantity = 1;
+    this.currentImageIndex = 0;
 
     this.init();
   }
@@ -3671,6 +3733,8 @@ class BundleProductModal {
               <div class="bundle-modal-main-image-container">
                 <div class="bundle-modal-main-image">
                   <img src="" alt="Product image" id="modal-main-image">
+                  <button type="button" class="bundle-modal-image-nav bundle-modal-image-nav--prev" data-modal-image-nav="prev" aria-label="Previous image" hidden>&#10094;</button>
+                  <button type="button" class="bundle-modal-image-nav bundle-modal-image-nav--next" data-modal-image-nav="next" aria-label="Next image" hidden>&#10095;</button>
                 </div>
               </div>
             </div>
@@ -3750,6 +3814,14 @@ class BundleProductModal {
       this.addToBundle();
     });
 
+    this.modalElement.querySelectorAll('[data-modal-image-nav]').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.showAdjacentImage(button.dataset.modalImageNav === 'prev' ? -1 : 1);
+      });
+    });
+
     this.setupSwipeGestures();
   }
 
@@ -3815,11 +3887,16 @@ class BundleProductModal {
    * @param {Object} product - Product data
    * @param {Object} step - Step data
    */
-  open(product, step) {
+  open(product, step, options = {}) {
 
     this.currentProduct = product;
     this.currentStep = step;
     this.selectedQuantity = 1;
+    const imageCount = this.getProductImages().length;
+    const initialImageIndex = Number(options.initialImageIndex || 0);
+    this.currentImageIndex = imageCount > 0
+      ? Math.min(Math.max(0, initialImageIndex), imageCount - 1)
+      : 0;
 
     this.populateModal();
 
@@ -3838,6 +3915,7 @@ class BundleProductModal {
     this.currentStep = null;
     this.selectedVariant = null;
     this.selectedQuantity = 1;
+    this.currentImageIndex = 0;
   }
 
   /**
@@ -3870,28 +3948,60 @@ class BundleProductModal {
    * Handles imageUrl, image.src, images array, and featuredImage.url.
    * @returns {string} Image URL
    */
-  getProductImage() {
+  getProductImages() {
     const product = this.currentProduct;
-    if (!product) return BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    if (!product) return [BUNDLE_WIDGET.PLACEHOLDER_IMAGE];
 
-    if (product.imageUrl) return product.imageUrl;
-    if (product.image?.src) return product.image.src;
-    if (product.featuredImage?.url) return product.featuredImage.url;
+    const urls = [];
+    const addUrl = (value) => {
+      const url = this.normalizeImageUrl(value);
+      if (url && !urls.includes(url)) urls.push(url);
+    };
 
-    const firstImage = Array.isArray(product.images) ? product.images[0] : null;
-    if (typeof firstImage === 'string') return firstImage;
-    if (firstImage?.url) return firstImage.url;
-    if (firstImage?.src) return firstImage.src;
+    addUrl(product.imageUrl);
+    addUrl(product.image);
+    addUrl(product.featuredImage);
+    (Array.isArray(product.images) ? product.images : []).forEach(addUrl);
 
-    return BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    return urls.length > 0 ? urls : [BUNDLE_WIDGET.PLACEHOLDER_IMAGE];
+  }
+
+  normalizeImageUrl(value) {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    return value.url || value.src || value.originalSrc || value.transformedSrc || '';
+  }
+
+  getProductImage() {
+    const images = this.getProductImages();
+    return images[this.currentImageIndex] || images[0] || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
   }
 
   loadImage() {
     const mainImageEl = document.getElementById('modal-main-image');
     if (!mainImageEl) return;
 
+    const images = this.getProductImages();
+    this.currentImageIndex = Math.min(Math.max(0, this.currentImageIndex), images.length - 1);
     mainImageEl.src = this.getProductImage();
     mainImageEl.alt = this.currentProduct?.title || 'Product image';
+
+    const hasGallery = images.length > 1;
+    const imageFrame = this.modalElement.querySelector('.bundle-modal-main-image');
+    if (imageFrame) {
+      imageFrame.classList.toggle('bundle-modal-main-image--has-gallery', hasGallery);
+    }
+    this.modalElement.querySelectorAll('[data-modal-image-nav]').forEach((button) => {
+      button.hidden = !hasGallery;
+    });
+  }
+
+  showAdjacentImage(direction) {
+    const images = this.getProductImages();
+    if (images.length <= 1) return;
+
+    this.currentImageIndex = (this.currentImageIndex + direction + images.length) % images.length;
+    this.loadImage();
   }
 
   updateQuantity(quantity) {
@@ -5531,18 +5641,15 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
     if (!item.isDefault) {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'fpb-mobile-summary-product-remove';
+      const removalState = this.getSummaryProductRemovalState(item);
+      if (!removalState.canRemove) {
+        removeBtn.classList.add('fpb-mobile-summary-product-remove--disabled');
+        removeBtn.setAttribute('aria-disabled', 'true');
+        removeBtn.title = removalState.blockedMessage;
+      }
       removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
       removeBtn.addEventListener('click', () => {
-        const stepIndex = item.stepIndex;
-        const productId = item.variantId || item.productId || item.id;
-        const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
-        this.updateProductSelection(stepIndex, productId, 0);
-        const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
-        ToastManager.showWithUndo(
-          `Removed "${truncated}"`,
-          () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-          5000
-        );
+        this.removeSummarySelectedProduct(item, summaryTitle);
       });
       row.querySelector('.fpb-mobile-summary-product-action')?.appendChild(removeBtn);
     }
@@ -5916,7 +6023,9 @@ renderSidePanel(panel) {
 
   if (isStandardDesktopSidebar) {
     const addonChildCountBefore = summaryContent.children.length;
-    this._renderFreeGiftSection(summaryContent);
+    if (activeStep?.isFreeGift !== true) {
+      this._renderFreeGiftSection(summaryContent);
+    }
     panel.classList.toggle(
       'full-page-side-panel--has-addon-summary',
       summaryContent.children.length > addonChildCountBefore
@@ -5964,18 +6073,15 @@ renderSidePanel(panel) {
           const row = this.createStandardSidebarSelectedRow(item, currencyInfo);
           const removeBtn = row?.querySelector('[data-action="remove-selected-product"]');
           if (removeBtn) {
+            const removalState = this.getSummaryProductRemovalState(item);
+            if (!removalState.canRemove) {
+              removeBtn.classList.add('bw-selected-row__remove--disabled');
+              removeBtn.setAttribute('aria-disabled', 'true');
+              removeBtn.title = removalState.blockedMessage;
+            }
             removeBtn.addEventListener('click', () => {
-              const stepIndex = item.stepIndex;
-              const productId = item.variantId || item.productId || item.id;
-              const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
               const summaryTitle = this.getSummaryProductDisplayTitle(item);
-              this.updateProductSelection(stepIndex, productId, 0);
-              const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
-              ToastManager.showWithUndo(
-                `Removed "${truncated}"`,
-                () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-                5000
-              );
+              this.removeSummarySelectedProduct(item, summaryTitle);
             });
           }
           if (row) productsContainer.appendChild(row);
@@ -6030,18 +6136,15 @@ renderSidePanel(panel) {
           removeBtn.className = 'side-panel-product-remove';
           removeBtn.type = 'button';
           removeBtn.setAttribute('aria-label', `Delete ${summaryTitle || 'product'}`);
+          const removalState = this.getSummaryProductRemovalState(item);
+          if (!removalState.canRemove) {
+            removeBtn.classList.add('side-panel-product-remove--disabled');
+            removeBtn.setAttribute('aria-disabled', 'true');
+            removeBtn.title = removalState.blockedMessage;
+          }
           removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" aria-hidden="true" focusable="false"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
           removeBtn.addEventListener('click', () => {
-            const stepIndex = item.stepIndex;
-            const productId = item.variantId || item.productId || item.id;
-            const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
-            this.updateProductSelection(stepIndex, productId, 0);
-            const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
-            ToastManager.showWithUndo(
-              `Removed "${truncated}"`,
-              () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-              5000
-            );
+            this.removeSummarySelectedProduct(item, summaryTitle);
           });
           if (isStandardDesktopSidebar) {
             row.querySelector('.side-panel-product-action')?.appendChild(removeBtn);
@@ -6099,7 +6202,7 @@ renderSidePanel(panel) {
 
   panel.appendChild(summaryContent);
 
-  if (!isClassicDesktopSidebar && !isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
+  if (!isClassicDesktopSidebar && !isStandardDesktopSidebar && activeStep?.isFreeGift !== true) this._renderFreeGiftSection(panel);
 
   const totalSection = document.createElement('div');
   totalSection.className = 'side-panel-total';
@@ -6275,6 +6378,46 @@ createSidebarTierCta(nextRule) {
   }
 
   return cta;
+},
+
+getSummaryProductRemovalState(item = {}) {
+  const itemStepIndex = Number(item?.stepIndex);
+  const currentStepIndex = Number(this.currentStepIndex || 0);
+  const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+  const targetStep = Number.isFinite(itemStepIndex) ? steps[itemStepIndex] : null;
+  const rawStepName = targetStep?.name
+    || targetStep?.addonLabel
+    || targetStep?.freeGiftName
+    || (Number.isFinite(itemStepIndex) ? `Step ${itemStepIndex + 1}` : 'This Step');
+  const targetStepName = String(rawStepName || '').trim() || 'This Step';
+  const canRemove = Number.isFinite(itemStepIndex) && itemStepIndex === currentStepIndex;
+
+  return {
+    canRemove,
+    targetStepName,
+    blockedMessage: canRemove ? '' : `Remove This Product From ${targetStepName}`,
+  };
+},
+
+removeSummarySelectedProduct(item = {}, summaryTitle = '') {
+  const removalState = this.getSummaryProductRemovalState(item);
+  if (!removalState.canRemove) {
+    ToastManager.show(removalState.blockedMessage);
+    return false;
+  }
+
+  const stepIndex = item.stepIndex;
+  const productId = item.variantId || item.productId || item.id;
+  const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
+  this.updateProductSelection(stepIndex, productId, 0);
+  const displayTitle = summaryTitle || item.title || 'Product';
+  const truncated = displayTitle.length > 25 ? displayTitle.substring(0, 25) + '...' : displayTitle;
+  ToastManager.showWithUndo(
+    `Removed "${truncated}"`,
+    () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+    5000
+  );
+  return true;
 },
 };
 
@@ -6815,13 +6958,16 @@ createStepTimeline() {
     const step = entry.step;
     const index = entry.stepIndex;
     const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
-    const isCategoryEntry = entry.type === 'multiple_categories';
+    const isCompleted = shouldShowTimelineCompletedState({
+      entry,
+      currentStepIndex: this.currentStepIndex,
+      isStepCompleted: this.isStepCompleted(index),
+      hasMultipleCategoryEntry,
+    });
     const timelineState = getTimelineEntryState({
       entry,
       currentStepIndex: this.currentStepIndex,
-      isCompleted: isCategoryEntry
-        ? this.isStepCompleted(index)
-        : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex),
+      isCompleted,
       isAccessible: this.isStepAccessible(index),
       hasMultipleCategoryEntry,
     });
@@ -6834,17 +6980,12 @@ createStepTimeline() {
       ? `<img class="timeline-step-icon" src="${uploadedIconUrl}" alt="${escapedName}">`
       : this._getDefaultTimelineIcon(step);
 
-    const checkmarkSvg = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
-
     const stepWrapper = document.createElement('div');
     stepWrapper.innerHTML = renderStepTimelineEntry({
       stepIndex: index,
       timelineType: entry.type,
       label: tabLabel || `Step ${index + 1}`,
       iconHtml: iconContent,
-      checkmarkHtml: checkmarkSvg,
       classes: timelineState.classes,
     }).trim();
     const stepEl = stepWrapper.firstElementChild;
@@ -6970,8 +7111,13 @@ createStandardStepTimeline() {
   visibleEntries.forEach((entry) => {
     const step = entry.step;
     const index = entry.stepIndex;
-    const isCategoryEntry = entry.type === 'multiple_categories';
     const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
+    const isCompleted = shouldShowTimelineCompletedState({
+      entry,
+      currentStepIndex: this.currentStepIndex,
+      isStepCompleted: this.isStepCompleted(index),
+      hasMultipleCategoryEntry,
+    });
     const itemEl = document.createElement('div');
     itemEl.className = 'standard-navigation-item timeline-step';
     itemEl.dataset.stepIndex = index;
@@ -6980,9 +7126,7 @@ createStandardStepTimeline() {
     const timelineState = getTimelineEntryState({
       entry,
       currentStepIndex: this.currentStepIndex,
-      isCompleted: isCategoryEntry
-        ? this.isStepCompleted(index)
-        : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex),
+      isCompleted,
       isAccessible: this.isStepAccessible(index),
       hasMultipleCategoryEntry,
     });
@@ -7913,7 +8057,7 @@ createProductCard(product, stepIndex, options = {}) {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         addButtonText: this.getProductCardAddButtonText(step),
-        stockBadgeHtml,
+        cardBadgeHtml: stockBadgeHtml,
         variantSelectorPlacement: designPreset === 'STANDARD' ? 'beforePrice' : undefined,
       }
     );
@@ -8123,10 +8267,42 @@ getSummaryVariantFromDisplayTitle(displayTitle) {
 
 attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
 
-  if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
+  const step = (this.selectedBundle?.steps || [])[stepIndex];
+  if (step?.isDefault) return;
 
   const getProductId = () => product.variantId || product.id;
   const getClickedProductId = (element) => element?.dataset?.productId || getProductId();
+
+  cardElement.addEventListener('click', (e) => {
+    const imageNav = e.target.closest('.bw-product-card__image-nav');
+    if (imageNav) {
+      e.preventDefault();
+      e.stopPropagation();
+      const imageUrls = getProductImageUrls(product);
+      if (imageUrls.length <= 1) return;
+
+      const currentIndex = Number(cardElement.dataset.bwCardImageIndex || 0);
+      const direction = imageNav.dataset.bwImageNav === 'prev' ? -1 : 1;
+      const nextIndex = (currentIndex + direction + imageUrls.length) % imageUrls.length;
+      const imageEl = cardElement.querySelector('.bw-product-card__image');
+      if (imageEl) {
+        imageEl.src = imageUrls[nextIndex];
+      }
+      cardElement.dataset.bwCardImageIndex = String(nextIndex);
+      return;
+    }
+
+    if (!e.target.closest('.product-image, .product-title')) return;
+    e.stopPropagation();
+
+    if (!this.productModal && window.BundleProductModal) {
+      this.productModal = new window.BundleProductModal(this);
+    }
+    if (!this.productModal) return;
+
+    const initialImageIndex = Number(cardElement.dataset.bwCardImageIndex || 0);
+    this.productModal.open(product, step, { initialImageIndex });
+  });
 
   cardElement.addEventListener('click', (e) => {
     const btn = e.target.closest('.inline-qty-btn');
@@ -8157,7 +8333,6 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
     }
   });
 
-  const step = (this.selectedBundle?.steps || [])[stepIndex];
   const displayVariantsAsIndividualProducts =
     typeof options.displayVariantsAsIndividualProducts === 'boolean'
       ? options.displayVariantsAsIndividualProducts
@@ -8236,6 +8411,8 @@ updateProductCardVariantDisplay(cardElement, product, step) {
   const imageEl = cardElement.querySelector('.bw-product-card__image, .product-image img, img');
   if (imageEl && product.imageUrl) {
     imageEl.src = product.imageUrl;
+    cardElement.dataset.bwCardImageIndex = '0';
+    cardElement.dataset.bwCardImageCount = String(getProductImageUrls(product).length);
   }
 },
 
@@ -8703,6 +8880,21 @@ function hasConfiguredAddonRule(step) {
   });
 }
 
+function createFreeGiftStatusIcon(state) {
+  const icon = document.createElement('span');
+  icon.className = `side-panel-free-gift-icon side-panel-free-gift-icon--${state}`;
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = state === 'unlocked' ? '✓' : '🔒';
+  return icon;
+}
+
+function createFreeGiftStatusText(message) {
+  const text = document.createElement('span');
+  text.className = 'side-panel-free-gift-text';
+  text.textContent = message;
+  return text;
+}
+
 const fullPageValidationAddonsMethods = {
 async _sidebarAdvanceToNextStep() {
   const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
@@ -9146,7 +9338,7 @@ _renderFreeGiftSection(container) {
   if (step.addonProductsEnabled === false) return;
 
   const section = document.createElement('div');
-  const giftName = this._escapeHTML(step.freeGiftName || 'gift');
+  const giftName = String(step.freeGiftName || 'gift').trim() || 'gift';
   const hasDirectAddonTiers = step.addonEligibilityCondition || Array.isArray(step.addonTiers);
 
   if (hasDirectAddonTiers) {
@@ -9169,17 +9361,15 @@ _renderFreeGiftSection(container) {
 
   if (this.isFreeGiftUnlocked) {
     section.className = 'side-panel-free-gift unlocked';
-    section.innerHTML = `
-      <span class="side-panel-free-gift-icon">✅</span>
-      <span class="side-panel-free-gift-text">Congrats! You're eligible for a FREE ${giftName}!</span>
-    `;
+    section.appendChild(createFreeGiftStatusIcon('unlocked'));
+    section.appendChild(createFreeGiftStatusText(`Congrats! You're eligible for a FREE ${giftName}!`));
   } else {
     const remaining = this._getFreeGiftRemainingCount();
     section.className = 'side-panel-free-gift';
-    section.innerHTML = `
-      <span class="side-panel-free-gift-icon">🔒</span>
-      <span class="side-panel-free-gift-text">Add ${remaining} more product${remaining !== 1 ? 's' : ''} to claim a FREE ${giftName}!</span>
-    `;
+    section.appendChild(createFreeGiftStatusIcon('locked'));
+    section.appendChild(createFreeGiftStatusText(
+      `Add ${remaining} more product${remaining !== 1 ? 's' : ''} to claim a FREE ${giftName}!`
+    ));
   }
   container.appendChild(section);
 },
@@ -10883,8 +11073,22 @@ attachProductEventHandlers(productGrid, stepIndex) {
   const findProduct = (productId) => {
     return this.stepProductData[stepIndex]?.find(p => {
       const selectionKey = p.variantId || p.id;
-      return selectionKey === productId;
+      return String(selectionKey) === String(productId);
     });
+  };
+
+  const openProductModalForCard = (productCard) => {
+    if (!this.productModal && window.BundleProductModal) {
+      this.productModal = new window.BundleProductModal(this);
+    }
+    if (!productCard || !this.productModal) return;
+    const productId = productCard.dataset.productId;
+    const product = findProduct(productId);
+
+    if (product && step) {
+      const initialImageIndex = Number(productCard.dataset.bwCardImageIndex || 0);
+      this.productModal.open(product, step, { initialImageIndex });
+    }
   };
 
   newProductGrid.addEventListener('click', (e) => {
@@ -10915,20 +11119,38 @@ attachProductEventHandlers(productGrid, stepIndex) {
   });
 
   newProductGrid.addEventListener('click', (e) => {
-    const productImage = e.target.closest('.product-image');
-    const productTitle = e.target.closest('.product-title');
+    const imageNav = e.target.closest('.bw-product-card__image-nav');
+    if (imageNav) {
+      e.preventDefault();
+      e.stopPropagation();
+      const productCard = imageNav.closest('.product-card');
+      if (!productCard) return;
+      const product = findProduct(productCard.dataset.productId);
+      const imageUrls = getProductImageUrls(product);
+      if (imageUrls.length <= 1) return;
 
-    if (productImage || productTitle) {
-      const productCard = e.target.closest('.product-card');
-      if (productCard && this.productModal) {
-        const productId = productCard.dataset.productId;
-        const product = findProduct(productId);
-
-        if (product && step) {
-          this.productModal.open(product, step);
-        }
+      const currentIndex = Number(productCard.dataset.bwCardImageIndex || 0);
+      const direction = imageNav.dataset.bwImageNav === 'prev' ? -1 : 1;
+      const nextIndex = (currentIndex + direction + imageUrls.length) % imageUrls.length;
+      const imageEl = productCard.querySelector('.bw-product-card__image');
+      if (imageEl) {
+        imageEl.src = imageUrls[nextIndex];
       }
+      productCard.dataset.bwCardImageIndex = String(nextIndex);
+      return;
     }
+
+    if (e.target.closest('.product-image, .product-title')) {
+      openProductModalForCard(e.target.closest('.product-card'));
+    }
+  });
+
+  newProductGrid.querySelectorAll('.product-image, .product-title').forEach((element) => {
+    element.addEventListener('click', (event) => {
+      if (event.target.closest('.bw-product-card__image-nav')) return;
+      event.stopPropagation();
+      openProductModalForCard(event.target.closest('.product-card'));
+    });
   });
 
   newProductGrid.addEventListener('change', (e) => {

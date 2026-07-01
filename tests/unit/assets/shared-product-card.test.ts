@@ -1,5 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { renderSharedProductCard } = require('../../../app/assets/widgets/shared/components/product-card.js');
+const {
+  getProductImageUrls,
+  renderSharedProductCard,
+} = require('../../../app/assets/widgets/shared/components/product-card.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { renderQuantityControl } = require('../../../app/assets/widgets/shared/components/quantity-control.js');
 
@@ -116,6 +119,24 @@ describe('shared product card contract', () => {
 
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(html).not.toContain('<img src=x onerror=alert(1)>');
+  });
+
+  it('normalizes product image URLs without duplicates', () => {
+    expect(getProductImageUrls({
+      imageUrl: 'https://cdn.example.test/primary.jpg',
+      image: { src: 'https://cdn.example.test/primary.jpg' },
+      featuredImage: { url: 'https://cdn.example.test/featured.jpg' },
+      images: [
+        { originalSrc: 'https://cdn.example.test/secondary.jpg' },
+        { url: 'https://cdn.example.test/featured.jpg' },
+        'https://cdn.example.test/third.jpg',
+      ],
+    })).toEqual([
+      'https://cdn.example.test/primary.jpg',
+      'https://cdn.example.test/featured.jpg',
+      'https://cdn.example.test/secondary.jpg',
+      'https://cdn.example.test/third.jpg',
+    ]);
   });
 });
 

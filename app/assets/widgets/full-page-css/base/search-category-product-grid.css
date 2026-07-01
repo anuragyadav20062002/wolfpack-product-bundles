@@ -487,6 +487,11 @@
   line-height: 1.35;
 }
 
+.bundle-widget-full-page .product-card .bw-product-card__image-overlay,
+.bundle-widget-full-page .product-card .bw-product-card__image-nav {
+  display: none;
+}
+
 .bundle-widget-full-page .product-card .product-variant-row {
   white-space: normal;
   margin-top: 4px;
