@@ -38,6 +38,9 @@ export function FpbStepCategoryAccordion({
   const catProducts = (cat.products as any[]) ?? [];
   const catCollections = (cat.collections as any[]) ?? [];
   const isOpen = categoryOpen[catKey] ?? false;
+  const modalIdBase = `fpb-category-${catKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+  const selectedProductsModalId = `${modalIdBase}-selected-products-modal`;
+  const selectedCollectionsModalId = `${modalIdBase}-selected-collections-modal`;
   const selectedProductsModalRef = useRef<any>(null);
   const selectedCollectionsModalRef = useRef<any>(null);
   const [draggedProductIndex, setDraggedProductIndex] = useState<number | null>(
@@ -413,6 +416,7 @@ export function FpbStepCategoryAccordion({
                 )}
               </div>
               <s-modal
+                id={selectedProductsModalId}
                 ref={selectedProductsModalRef}
                 heading="Selected Products"
               >
@@ -472,6 +476,8 @@ export function FpbStepCategoryAccordion({
                 <s-button
                   slot="secondary-actions"
                   variant="secondary"
+                  commandFor={selectedProductsModalId}
+                  command="--hide"
                   onClick={() => hidePolarisModal(selectedProductsModalRef)}
                 >
                   Close
@@ -509,6 +515,7 @@ export function FpbStepCategoryAccordion({
                 )}
               </div>
               <s-modal
+                id={selectedCollectionsModalId}
                 ref={selectedCollectionsModalRef}
                 heading="Selected Collections"
               >
@@ -573,6 +580,8 @@ export function FpbStepCategoryAccordion({
                 <s-button
                   slot="secondary-actions"
                   variant="secondary"
+                  commandFor={selectedCollectionsModalId}
+                  command="--hide"
                   onClick={() => hidePolarisModal(selectedCollectionsModalRef)}
                 >
                   Close
