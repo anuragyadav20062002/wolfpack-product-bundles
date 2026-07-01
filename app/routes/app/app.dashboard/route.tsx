@@ -7,6 +7,7 @@ import { fetchEmbedData } from "../../../lib/bundle-configure-loader.server";
 import { getSubscriptionInfoFromCache } from "../../../services/subscription-cache.server";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 import { handleCreatePreviewPage } from "../app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
+import { handleRecordBundlePreview } from "../shared/bundle-preview-action.server";
 import { saveShopAdminLocale } from "../../../services/admin-locale.server";
 import { handleCloneBundle, handleDeleteBundle } from "./handlers";
 import { DashboardPage } from "./DashboardPage";
@@ -246,7 +247,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (intent === "createPreviewPage") {
     const bundleId = String(formData.get("bundleId") || "");
     if (!bundleId) return json({ success: false, error: "Missing bundleId" }, { status: 400 });
-    return handleCreatePreviewPage(admin, session, bundleId);
+    return handleCreatePreviewPage(admin, session, bundleId, "dashboard");
+  }
+  if (intent === "recordBundlePreview") {
+    const bundleId = String(formData.get("bundleId") || "");
+    if (!bundleId) return json({ success: false, error: "Missing bundleId" }, { status: 400 });
+    return handleRecordBundlePreview(admin, session, bundleId, formData);
   }
   return json({ error: "Unknown action" }, { status: 400 });
 };

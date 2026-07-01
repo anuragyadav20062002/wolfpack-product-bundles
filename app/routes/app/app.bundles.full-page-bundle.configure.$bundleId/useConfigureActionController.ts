@@ -9,6 +9,14 @@ import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
 import { useConfigureAddonActionHandlers } from "./useConfigureAddonActionHandlers";
 import { useConfigureVisibilityActionHandlers } from "./useConfigureVisibilityActionHandlers";
 
+function recordBundlePreview(bundleLink: string, routeFamily: string) {
+  const formData = new FormData();
+  formData.append("intent", "recordBundlePreview");
+  formData.append("bundleLink", bundleLink);
+  formData.append("routeFamily", routeFamily);
+  void fetch(window.location.href, { method: "POST", body: formData }).catch(() => {});
+}
+
 export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
   const [isPreviewBundleLoading, setIsPreviewBundleLoading] = useState(false);
   const sharedHandlers = useSharedBundleHandlers({
@@ -88,6 +96,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
           : flow.shop.split(".")[0];
         const pageUrl = `https://${shopDomain}.myshopify.com/pages/${flow.bundle.shopifyPageHandle}`;
         open(pageUrl, "_blank");
+        recordBundlePreview(pageUrl, "fpb_configure");
         flow.shopify.toast.show("Bundle page opened in new tab", {
           isError: false,
         });
@@ -125,6 +134,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
       }
       if (productUrl) {
         open(productUrl, "_blank");
+        recordBundlePreview(productUrl, "fpb_configure");
         const isPreviewUrl =
           flow.bundleProduct &&
           productUrl === flow.bundleProduct.onlineStorePreviewUrl;

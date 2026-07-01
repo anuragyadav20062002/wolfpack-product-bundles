@@ -180,17 +180,17 @@ describe("Settings Design CSS variable aliases", () => {
     expect(css).toContain("--footer-next-btn-bg-color: #111111");
     expect(css).toContain("--footer-next-btn-text-color: #fafafa");
     expect(css).toContain("--empty-state-card-bg-color: #ffffff");
-    expect(css).toContain('body[gbb-mix-consolidated-design="true"]');
-    expect(css).toContain("--gbbMix-primary-color: var(--product-card-button-bg-color, #111111)");
-    expect(css).toContain("--gbbMix-button-border-radius: var(--product-card-button-border-radius, 7px)");
+    expect(css).toContain('body[wpb-mix-consolidated-design="true"]');
+    expect(css).toContain("--wpbMix-primary-color: var(--product-card-button-bg-color, #111111)");
+    expect(css).toContain("--wpbMix-button-border-radius: var(--product-card-button-border-radius, 7px)");
   });
 
   it("emits the EB PDP_INPAGE font-size adjustment", () => {
     const runtime = buildSettingsDesignRuntime(makePayload());
     const css = generateCSSFromSettings(runtime.cssSettings as any, "product_page");
 
-    expect(css).toContain('body[gbb-mix-consolidated-design="true"][gbbmix-template-type="PDP_INPAGE"]');
-    expect(css).toContain("--gbbMix-primary-font-size: calc(var(--product-card-title-font, 16px) - 2px)");
-    expect(css).toContain("--gbbMix-body-font-size: calc(var(--product-card-variant-selector-font-size, 14px) - 2px)");
+    expect(css).toContain('body[wpb-mix-consolidated-design="true"][wpbmix-template-type="PDP_INPAGE"]');
+    expect(css).toContain("--wpbMix-primary-font-size: calc(var(--product-card-title-font, 16px) - 2px)");
+    expect(css).toContain("--wpbMix-body-font-size: calc(var(--product-card-variant-selector-font-size, 14px) - 2px)");
   });
 });

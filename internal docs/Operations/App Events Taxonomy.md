@@ -129,6 +129,7 @@ Drop-off reports should group merchants by the final `bundle_create_step_complet
 | `bundle_saved` | App Events + internal | Configure save succeeds. | `bundle_id`, `bundle_type`, `changed_sections` |
 | `bundle_save_failed` | App Events + internal | Configure save action fails. | `bundle_id`, `intent`, `error_code` |
 | `bundle_status_changed` | App Events + internal | Merchant activates/deactivates a bundle. | `bundle_id`, `new_status` |
+| `bundle_previewed` | App Events + internal | Merchant previews a bundle for the first time after a preview/product/page link is available. | `bundle_id`, `bundle_type`, `bundle_status`, `bundle_link` |
 | `template_selected` | App Events + internal | Merchant saves a template/preset change. | `bundle_id`, `template_id`, `preset_id` |
 | `pricing_configured` | App Events + internal | Merchant saves pricing/discount configuration. | `bundle_id`, `pricing_mode`, `discount_type` |
 | `visibility_configured` | App Events + internal | Merchant saves visibility/display rules. | `bundle_id`, `visibility_mode` |

@@ -195,10 +195,10 @@ _createInpageStepSection(step, stepIndex) {
   const section = document.createElement('div');
   const preset = this._getProductPageDesignPreset();
   const isCascade = this._isProductPageCascadeTemplate?.() === true;
-  section.className = `bw-ppb-inpage-step-section bw-ppb-inpage-step-section--${preset.toLowerCase()}${isCascade ? ' gbbMixCascadeBodyWrapper' : ''}`;
+  section.className = `bw-ppb-inpage-step-section bw-ppb-inpage-step-section--${preset.toLowerCase()}${isCascade ? ' wpbMixCascadeBodyWrapper' : ''}`;
 
   const title = document.createElement('div');
-  title.className = `bw-ppb-inpage-step-title${isCascade ? ' gbbMixCascadeBodyHeaderCategoryName' : ''}`;
+  title.className = `bw-ppb-inpage-step-title${isCascade ? ' wpbMixCascadeBodyHeaderCategoryName' : ''}`;
   title.textContent = step.pageTitle || step.name || '';
   section.appendChild(title);
 
@@ -222,13 +222,13 @@ _createInpageCategoryTabs(step, stepIndex) {
 
   const tabs = document.createElement('div');
   const isCascade = this._isProductPageCascadeTemplate?.() === true;
-  tabs.className = `bw-ppb-inpage-category-tabs${isCascade ? ' gbbMixCascadeCategoryTabsWrapper' : ''}`;
+  tabs.className = `bw-ppb-inpage-category-tabs${isCascade ? ' wpbMixCascadeCategoryTabsWrapper' : ''}`;
 
   categories.forEach((category, categoryIndex) => {
     const button = document.createElement('button');
     button.type = 'button';
     const isActive = categoryIndex === this.activeInpageCategoryIndexes[stepIndex];
-    button.className = `bw-ppb-inpage-category-tab${isActive ? ' active' : ''}${isCascade ? ` gbbMixCascadeCategoryTab${isActive ? ' gbbMixCascadeCategoryTab--active' : ''}` : ''}`;
+    button.className = `bw-ppb-inpage-category-tab${isActive ? ' active' : ''}${isCascade ? ` wpbMixCascadeCategoryTab${isActive ? ' wpbMixCascadeCategoryTab--active' : ''}` : ''}`;
     button.dataset.categoryIndex = String(categoryIndex);
     button.textContent = this._getInpageCategoryLabel(category, categoryIndex);
     button.addEventListener('click', () => {
@@ -236,7 +236,7 @@ _createInpageCategoryTabs(step, stepIndex) {
       tabs.querySelectorAll('.bw-ppb-inpage-category-tab').forEach(tab => {
         const active = tab === button;
         tab.classList.toggle('active', active);
-        tab.classList.toggle('gbbMixCascadeCategoryTab--active', active);
+        tab.classList.toggle('wpbMixCascadeCategoryTab--active', active);
       });
       const grid = tabs.parentElement?.querySelector('.bw-ppb-inpage-step-grid');
       if (grid) this._renderInpageStepProducts(stepIndex, grid);

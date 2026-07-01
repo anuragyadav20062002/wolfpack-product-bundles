@@ -64,11 +64,11 @@ _renderInpageStepProducts(stepIndex, target) {
       : '';
 
     const productContent = `
-      <div class="product-title${usesCascadeCards ? ' gbbMixCascadeProductTitle' : ''}">${ComponentGenerator.escapeHtml(product.title)}</div>
+      <div class="product-title${usesCascadeCards ? ' wpbMixCascadeProductTitle' : ''}">${ComponentGenerator.escapeHtml(product.title)}</div>
       ${product.price ? `
-        <div class="product-price-row${usesCascadeCards ? ' gbbMixCascadeProductsPriceWrapper' : ''}">
-          ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike${usesCascadeCards ? ' gbbMixCascadeProductCompareAtPrice' : ''}">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
-          <span class="product-price${usesCascadeCards ? ' gbbMixCascadeProductsPrice' : ''}">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
+        <div class="product-price-row${usesCascadeCards ? ' wpbMixCascadeProductsPriceWrapper' : ''}">
+          ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike${usesCascadeCards ? ' wpbMixCascadeProductCompareAtPrice' : ''}">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+          <span class="product-price${usesCascadeCards ? ' wpbMixCascadeProductsPrice' : ''}">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
         </div>
       ` : ''}
       ${this.renderInlineCardVariantSelector(product, currentStep)}
@@ -83,7 +83,7 @@ _renderInpageStepProducts(stepIndex, target) {
       ` : ''}
     `;
     const addButton = `
-      <button class="product-add-btn${usesCascadeCards ? ' gbbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+      <button class="product-add-btn${usesCascadeCards ? ' wpbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
         ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
       </button>
     `;
@@ -96,7 +96,7 @@ _renderInpageStepProducts(stepIndex, target) {
         {
           variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'row',
-          className: `bw-ppb-cascade-product-row gbbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
+          className: `bw-ppb-cascade-product-row wpbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled,
           increaseDisabled,

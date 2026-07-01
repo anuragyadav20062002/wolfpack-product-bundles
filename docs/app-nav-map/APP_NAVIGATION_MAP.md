@@ -4,7 +4,7 @@
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-06-21
+**Last Updated:** 2026-07-02
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -65,7 +65,8 @@ Dashboard
 
 Dashboard preview behavior:
 - Product-page bundle preview opens `/products/{shopifyProductHandle}`.
-- Full-page bundle preview opens `/apps/product-bundles/wpb/{bundleId}`.
+- Full-page bundle preview opens the bundle page when published or creates/opens the draft preview page when no page exists.
+- First successful preview records the Admin `bundle_previewed` event with bundle id, type, status, and link.
 
 #### "Create Bundle" Button
 Navigates to: `/app/bundles/create` (bundle type selection entry)
@@ -478,6 +479,7 @@ Billing Page
 | `/api/activate-cart-transform` | Deploy cart transform function |
 | `/api/activate-pixel` | Activate UTM web pixel |
 | `/apps/product-bundles/api/proxy-health` | Proxy health check |
+| `/health` | Public Render HTTP health check; returns 2xx only when the app and DB are ready |
 | `/api/attribution` | UTM attribution analytics data |
 | `/api/web-vitals` | No-op tombstone for retired custom Admin Web Vitals beacons; returns 204 for stale POSTs |
 | `/api/widget-error` | Widget runtime error logging |
