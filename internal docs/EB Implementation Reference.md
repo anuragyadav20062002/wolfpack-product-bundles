@@ -287,6 +287,7 @@ Sent to `saveMultipleCategoriesData`. The captured Admin save payload preserves 
 - FPB category save records include `products`, `selectedProducts`, `collectionsData`, and `collectionsSelectedData`; the source tab is inferred from which arrays are populated, not from a persisted `categoryType` field in the captured save.
 - Products in the captured Admin save payload are hydrated product objects with product GIDs, handles, variants, images, and titles. The public storefront DTO may be normalized later, but the Admin save proof is hydrated.
 - `displayVariantsAsIndividualProducts` is stored at the **category level** in PPB, at the step level in this FPB capture (verify before relying on step-level placement in FPB).
+- 2026-07-01 EB Admin Step Setup evidence: opening a category shows `Add Products` and a selected-count chip such as `7 Selected`; EB does not render selected product rows inline in the category accordion. Clicking the chip opens a `Selected Products` modal with draggable product rows, remove buttons, `Close`, and `Add Products`. Evidence lives under `/private/tmp/fpb-standard-agentic-parity/admin-category-selected-products/`.
 
 ### FPB Full `stepsConfiguration/update` Top-Level Keys
 

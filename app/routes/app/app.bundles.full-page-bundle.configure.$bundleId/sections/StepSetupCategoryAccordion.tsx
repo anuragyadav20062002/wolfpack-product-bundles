@@ -1,3 +1,6 @@
+import { useRef, useState } from "react";
+
+import { moveArrayItem } from "../../../../lib/bundle-config/reorder-items";
 import type { ConfigureBundleFlowContext } from "../useConfigureBundleFlow";
 
 export function FpbStepCategoryAccordion({
@@ -25,6 +28,8 @@ export function FpbStepCategoryAccordion({
     setCategoryActiveTabs,
     setCategoryOpen,
     setDragOverCatKey,
+    showPolarisModal,
+    hidePolarisModal,
     shopify,
     stepsState,
   } = flow;
@@ -33,6 +38,106 @@ export function FpbStepCategoryAccordion({
   const catProducts = (cat.products as any[]) ?? [];
   const catCollections = (cat.collections as any[]) ?? [];
   const isOpen = categoryOpen[catKey] ?? false;
+  const selectedProductsModalRef = useRef<any>(null);
+  const selectedCollectionsModalRef = useRef<any>(null);
+  const [draggedProductIndex, setDraggedProductIndex] = useState<number | null>(
+    null,
+  );
+  const [draggedCollectionIndex, setDraggedCollectionIndex] = useState<
+    number | null
+  >(null);
+
+  const updateCategory = (updater: (category: any) => any) => {
+    const updated = ((step.StepCategory as any[]) ?? []).map(
+      (category: any, index: number) =>
+        index === catIndex ? updater(category) : category,
+    );
+    stepsState.updateStepField(step.id, "StepCategory", updated);
+    markAsDirty();
+  };
+
+  const handlePickProducts = async () => {
+    const picked = await (shopify as any).resourcePicker({
+      type: "product",
+      multiple: true,
+      selectionIds: catProducts.map((p: any) => ({
+        id: p.id,
+      })),
+    });
+    if (!picked) return;
+
+    updateCategory((category: any) => ({
+      ...category,
+      products: picked.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        imageUrl: p.images?.[0]?.originalSrc || p.images?.[0]?.url || null,
+        variants: p.variants || null,
+        minQuantity: 1,
+        maxQuantity: 10,
+      })),
+    }));
+  };
+
+  const handlePickCollections = async () => {
+    const picked = await (shopify as any).resourcePicker({
+      type: "collection",
+      multiple: true,
+      selectionIds: catCollections.map((collection: any) => ({
+        id: collection.id,
+      })),
+    });
+    if (!picked) return;
+
+    updateCategory((category: any) => ({
+      ...category,
+      collections: picked.map((collection: any) => ({
+        id: collection.id,
+        handle: collection.handle,
+        title: collection.title,
+      })),
+    }));
+  };
+
+  const removeCategoryProduct = (productId: string) => {
+    updateCategory((category: any) => ({
+      ...category,
+      products: ((category.products as any[]) ?? []).filter(
+        (product: any) => product.id !== productId,
+      ),
+    }));
+  };
+
+  const removeCategoryCollection = (collectionId: string) => {
+    updateCategory((category: any) => ({
+      ...category,
+      collections: ((category.collections as any[]) ?? []).filter(
+        (collection: any) => collection.id !== collectionId,
+      ),
+    }));
+  };
+
+  const reorderCategoryProducts = (fromIndex: number, toIndex: number) => {
+    updateCategory((category: any) => ({
+      ...category,
+      products: moveArrayItem(
+        ((category.products as any[]) ?? []),
+        fromIndex,
+        toIndex,
+      ),
+    }));
+  };
+
+  const reorderCategoryCollections = (fromIndex: number, toIndex: number) => {
+    updateCategory((category: any) => ({
+      ...category,
+      collections: moveArrayItem(
+        ((category.collections as any[]) ?? []),
+        fromIndex,
+        toIndex,
+      ),
+    }));
+  };
 
   return (
     <div
@@ -293,95 +398,92 @@ export function FpbStepCategoryAccordion({
               <div className={fullPageBundleStyles.productActions}>
                 <s-button
                   variant="primary"
-                  onClick={async () => {
-                    const picked = await (shopify as any).resourcePicker({
-                      type: "product",
-                      multiple: true,
-                      selectionIds: catProducts.map((p: any) => ({
-                        id: p.id,
-                      })),
-                    });
-                    if (!picked) return;
-                    const updated = ((step.StepCategory as any[]) ?? []).map(
-                      (c: any, i: number) =>
-                        i === catIndex
-                          ? {
-                              ...c,
-                              products: picked.map((p: any) => ({
-                                id: p.id,
-                                title: p.title,
-                                imageUrl:
-                                  p.images?.[0]?.originalSrc ||
-                                  p.images?.[0]?.url ||
-                                  null,
-                                variants: p.variants || null,
-                                minQuantity: 1,
-                                maxQuantity: 10,
-                              })),
-                            }
-                          : c,
-                    );
-                    stepsState.updateStepField(
-                      step.id,
-                      "StepCategory",
-                      updated,
-                    );
-                    markAsDirty();
-                  }}
+                  onClick={handlePickProducts}
                 >
                   Add Products
                 </s-button>
                 {catProducts.length > 0 && (
-                  <s-badge tone="success">{catProducts.length} Selected</s-badge>
+                  <button
+                    type="button"
+                    className={fullPageBundleStyles.selectedItemsChip}
+                    onClick={() => showPolarisModal(selectedProductsModalRef)}
+                  >
+                    {catProducts.length} Selected
+                  </button>
                 )}
               </div>
-              {catProducts.length > 0 && (
-                <div className={fullPageBundleStyles.categoryProductList}>
-                  {catProducts.map((product: any) => (
-                    <div
-                      key={product.id}
-                      className={fullPageBundleStyles.categoryProductRow}
-                    >
-                      <img
-                        className={fullPageBundleStyles.categoryProductImage}
-                        src={product.imageUrl || "/bundle.png"}
-                        alt={product.title}
-                      />
-                      <span
-                        className={fullPageBundleStyles.categoryProductTitle}
-                      >
-                        {product.title}
-                      </span>
-                      <button
-                        type="button"
-                        className={fullPageBundleStyles.categoryDangerButton}
-                        onClick={() => {
-                          const updated = (
-                            (step.StepCategory as any[]) ?? []
-                          ).map((c: any, i: number) =>
-                            i === catIndex
-                              ? {
-                                  ...c,
-                                  products: c.products.filter(
-                                    (p: any) => p.id !== product.id,
-                                  ),
-                                }
-                              : c,
-                          );
-                          stepsState.updateStepField(
-                            step.id,
-                            "StepCategory",
-                            updated,
-                          );
-                          markAsDirty();
+              <s-modal
+                ref={selectedProductsModalRef}
+                heading="Selected Products"
+              >
+                {catProducts.length > 0 ? (
+                  <ul className={fullPageBundleStyles.selectedItemList}>
+                    {catProducts.map((product: any, index: number) => (
+                      <li
+                        key={product.id ?? index}
+                        className={fullPageBundleStyles.selectedItemRow}
+                        onDragOver={(event: React.DragEvent) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        onDrop={(event: React.DragEvent) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          if (draggedProductIndex === null) return;
+                          reorderCategoryProducts(draggedProductIndex, index);
+                          setDraggedProductIndex(null);
                         }}
                       >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                        <button
+                          type="button"
+                          className={fullPageBundleStyles.selectedItemDrag}
+                          aria-label={`Reorder ${product.title || "selected product"}`}
+                          draggable="true"
+                          onDragStart={(event: React.DragEvent) => {
+                            event.stopPropagation();
+                            setDraggedProductIndex(index);
+                          }}
+                          onDragEnd={(event: React.DragEvent) => {
+                            event.stopPropagation();
+                            setDraggedProductIndex(null);
+                          }}
+                        >
+                          ::
+                        </button>
+                        <span className={fullPageBundleStyles.selectedItemName}>
+                          {product.title || product.name || "Unnamed Product"}
+                        </span>
+                        <button
+                          type="button"
+                          className={fullPageBundleStyles.selectedItemRemove}
+                          aria-label={`Remove ${product.title || "selected product"}`}
+                          onClick={() => removeCategoryProduct(product.id)}
+                        >
+                          x
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                    No products selected for this category yet.
+                  </p>
+                )}
+                <s-button
+                  slot="secondary-actions"
+                  variant="secondary"
+                  onClick={() => hidePolarisModal(selectedProductsModalRef)}
+                >
+                  Close
+                </s-button>
+                <s-button
+                  slot="primary-action"
+                  variant="primary"
+                  onClick={handlePickProducts}
+                >
+                  Add Products
+                </s-button>
+              </s-modal>
             </div>
           )}
           {catActiveTab === 1 && (
@@ -392,91 +494,97 @@ export function FpbStepCategoryAccordion({
               <div className={fullPageBundleStyles.productActions}>
                 <s-button
                   variant="primary"
-                  onClick={async () => {
-                    const picked = await (shopify as any).resourcePicker({
-                      type: "collection",
-                      multiple: true,
-                      selectionIds: catCollections.map((c: any) => ({
-                        id: c.id,
-                      })),
-                    });
-                    if (!picked) return;
-                    const updated = ((step.StepCategory as any[]) ?? []).map(
-                      (c: any, i: number) =>
-                        i === catIndex
-                          ? {
-                              ...c,
-                              collections: picked.map((col: any) => ({
-                                id: col.id,
-                                handle: col.handle,
-                                title: col.title,
-                              })),
-                            }
-                          : c,
-                    );
-                    stepsState.updateStepField(
-                      step.id,
-                      "StepCategory",
-                      updated,
-                    );
-                    markAsDirty();
-                  }}
+                  onClick={handlePickCollections}
                 >
                   Add Collections
                 </s-button>
                 {catCollections.length > 0 && (
-                  <s-badge tone="success">
+                  <button
+                    type="button"
+                    className={fullPageBundleStyles.selectedItemsChip}
+                    onClick={() => showPolarisModal(selectedCollectionsModalRef)}
+                  >
                     {catCollections.length} Selected
-                  </s-badge>
+                  </button>
                 )}
               </div>
-              {catCollections.length > 0 && (
-                <div className={fullPageBundleStyles.categoryProductList}>
-                  {catCollections.map((col: any) => (
-                    <div
-                      key={col.id}
-                      className={fullPageBundleStyles.categoryProductRow}
-                    >
-                      <img
-                        className={fullPageBundleStyles.categoryProductImage}
-                        src={col.image?.url || "/bundle.png"}
-                        alt={col.title}
-                      />
-                      <span
-                        className={fullPageBundleStyles.categoryProductTitle}
-                      >
-                        {col.title}
-                      </span>
-                      <button
-                        type="button"
-                        className={fullPageBundleStyles.categoryDangerButton}
-                        onClick={() => {
-                          const updated = (
-                            (step.StepCategory as any[]) ?? []
-                          ).map((c: any, i: number) =>
-                            i === catIndex
-                              ? {
-                                  ...c,
-                                  collections: c.collections.filter(
-                                    (col2: any) => col2.id !== col.id,
-                                  ),
-                                }
-                              : c,
+              <s-modal
+                ref={selectedCollectionsModalRef}
+                heading="Selected Collections"
+              >
+                {catCollections.length > 0 ? (
+                  <ul className={fullPageBundleStyles.selectedItemList}>
+                    {catCollections.map((collection: any, index: number) => (
+                      <li
+                        key={collection.id ?? index}
+                        className={fullPageBundleStyles.selectedItemRow}
+                        onDragOver={(event: React.DragEvent) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        onDrop={(event: React.DragEvent) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          if (draggedCollectionIndex === null) return;
+                          reorderCategoryCollections(
+                            draggedCollectionIndex,
+                            index,
                           );
-                          stepsState.updateStepField(
-                            step.id,
-                            "StepCategory",
-                            updated,
-                          );
-                          markAsDirty();
+                          setDraggedCollectionIndex(null);
                         }}
                       >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                        <button
+                          type="button"
+                          className={fullPageBundleStyles.selectedItemDrag}
+                          aria-label={`Reorder ${collection.title || "selected collection"}`}
+                          draggable="true"
+                          onDragStart={(event: React.DragEvent) => {
+                            event.stopPropagation();
+                            setDraggedCollectionIndex(index);
+                          }}
+                          onDragEnd={(event: React.DragEvent) => {
+                            event.stopPropagation();
+                            setDraggedCollectionIndex(null);
+                          }}
+                        >
+                          ::
+                        </button>
+                        <span className={fullPageBundleStyles.selectedItemName}>
+                          {collection.title || "Unnamed Collection"}
+                        </span>
+                        <button
+                          type="button"
+                          className={fullPageBundleStyles.selectedItemRemove}
+                          aria-label={`Remove ${collection.title || "selected collection"}`}
+                          onClick={() =>
+                            removeCategoryCollection(collection.id)
+                          }
+                        >
+                          x
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                    No collections selected for this category yet.
+                  </p>
+                )}
+                <s-button
+                  slot="secondary-actions"
+                  variant="secondary"
+                  onClick={() => hidePolarisModal(selectedCollectionsModalRef)}
+                >
+                  Close
+                </s-button>
+                <s-button
+                  slot="primary-action"
+                  variant="primary"
+                  onClick={handlePickCollections}
+                >
+                  Add Collections
+                </s-button>
+              </s-modal>
             </div>
           )}
         </div>

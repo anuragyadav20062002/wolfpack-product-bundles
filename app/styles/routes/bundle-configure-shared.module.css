@@ -608,6 +608,71 @@
   white-space: nowrap;
 }
 
+.selectedItemsChip {
+  min-height: 28px;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: #d1f7c4;
+  color: #0c5132;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.selectedItemList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selectedItemRow {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.selectedItemDrag,
+.selectedItemRemove {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6d7175;
+  font: inherit;
+  font-size: 13px;
+  line-height: 28px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.selectedItemDrag:hover,
+.selectedItemDrag:focus-visible,
+.selectedItemRemove:hover,
+.selectedItemRemove:focus-visible {
+  background: #f1f2f3;
+  color: #202223;
+}
+
+.selectedItemName {
+  overflow: hidden;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ruleCard {
   display: flex;
   flex-direction: column;
