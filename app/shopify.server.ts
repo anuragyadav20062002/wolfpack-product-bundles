@@ -122,7 +122,7 @@ const shopify = shopifyApp({
       try {
         const appUrl = process.env.SHOPIFY_APP_URL;
         if (appUrl) {
-          await activateUtmPixel(admin, appUrl);
+          await activateUtmPixel(admin, appUrl, session.shop);
           AppLogger.info("UTM pixel auto-activated", { shop: session.shop });
         }
       } catch (error: any) {

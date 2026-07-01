@@ -22,7 +22,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   try {
-    const result = await activateUtmPixel(admin, appUrl);
+    const result = await activateUtmPixel(admin, appUrl, session.shop);
     return json({ ...result, shopDomain: session.shop });
   } catch (error: unknown) {
     AppLogger.error("[PIXEL] Activation route failed", {
