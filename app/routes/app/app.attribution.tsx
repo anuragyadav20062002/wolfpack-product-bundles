@@ -8,6 +8,7 @@
 import { defer, json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { getPixelStatus, activateUtmPixel, deactivateUtmPixel } from "../../services/pixel-activation.server";
+import { backfillOrderAttribution } from "../../services/analytics/order-backfill.server";
 import {
   computeBundleRevenueSummary,
   buildBundleLeaderboard,
@@ -117,7 +118,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!appUrl) {
       return json({ success: false, pixelActive: false, error: "App URL not configured." });
     }
-    const result = await activateUtmPixel(admin, appUrl);
+    const result = await activateUtmPixel(admin, appUrl, session.shop);
     if (result.success) {
       return json({ success: true, pixelActive: true, message: "UTM tracking enabled successfully" });
     }
@@ -138,6 +139,34 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ success: true, pixelActive: false, message: "UTM tracking disabled" });
     }
     return json({ success: false, pixelActive: true, error: "Failed to disable tracking. Please try again." });
+  }
+
+  if (intent === "backfill") {
+    const daysParam = formData.get("days") as string | null;
+    const days = Math.max(1, Math.min(90, parseInt(daysParam || "30", 10)));
+    const until = new Date();
+    const since = new Date(until);
+    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
+
+    try {
+      const result = await backfillOrderAttribution(
+        admin,
+        session.shop,
+        since.toISOString(),
+        until.toISOString()
+      );
+      return json({
+        success: true,
+        backfill: result,
+        message: `Backfill complete: ${result.created} rows created, ${result.skipped} already present.`,
+      });
+    } catch (error) {
+      return json({
+        success: false,
+        error: error instanceof Error ? error.message : "Backfill failed. Please try again.",
+      }, { status: 500 });
+    }
   }
 
   return json({ error: "Unknown intent" }, { status: 400 });

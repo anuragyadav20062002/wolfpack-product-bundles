@@ -117,8 +117,15 @@ describe("activateUtmPixel", () => {
           },
         })
       );
-    const result = await activateUtmPixel(makeAdmin(graphql), "https://app.example.com");
+    const result = await activateUtmPixel(makeAdmin(graphql), "https://app.example.com", "test.myshopify.com");
     expect(result).toEqual({ success: true, pixelId: "gid://shopify/WebPixel/2", deleted: false });
+    // Verify shop_domain setting is included so the pixel doesn't depend on
+    // document.location.hostname (which can be null in Shopify's checkout sandbox)
+    expect(graphql.mock.calls[1][1]).toEqual({
+      variables: {
+        webPixel: { settings: { app_server_url: "https://app.example.com", shop_domain: "test.myshopify.com" } },
+      },
+    });
   });
 
   it("returns success:false when create returns userErrors", async () => {
@@ -134,7 +141,7 @@ describe("activateUtmPixel", () => {
           },
         })
       );
-    const result = await activateUtmPixel(makeAdmin(graphql), "https://app.example.com");
+    const result = await activateUtmPixel(makeAdmin(graphql), "https://app.example.com", "test.myshopify.com");
     expect(result.success).toBe(false);
     expect(result.error).toBeDefined();
   });
