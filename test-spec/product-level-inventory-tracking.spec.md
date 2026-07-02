@@ -17,6 +17,7 @@ Match EB's product-level inventory toggle behavior for FPB and PPB storefront wi
 | 4 | Toggle disabled, positive tracked stock | Product `quantityAvailable=2` with control disabled | FPB returns no stock cap | The merchant did not opt into storefront inventory quantity enforcement. |
 | 5 | Direct default product with explicit zero inventory | Saved default product variant has `inventoryQuantity=0` | FPB preserves `quantityAvailable=0` so the global tracking toggle can block it | Prevents default-products DTOs from erasing real zero stock. |
 | 6 | Direct default product without inventory data | Saved default product variant has no inventory quantity | FPB preserves `quantityAvailable=null` | Unknown or unscoped inventory remains unbounded. |
+| 7 | Cart submit with stale tracked zero-stock selection | FPB selected products still contain a variant whose hydrated product is now tracked zero stock and tracking is enabled | FPB blocks cart add before `/cart/add.js` | Final submit path must enforce the same inventory gate as card selection. |
 
 ### ProductPageInventoryTracking
 

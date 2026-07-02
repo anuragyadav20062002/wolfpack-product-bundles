@@ -22,6 +22,20 @@ import {
   buildCartLineSourceProperties as buildSharedCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
 
+function isFullPageCartLineOutOfStock(context, product) {
+  if (!product) return false;
+  if (typeof context?.isVariantOutOfStock === 'function') {
+    return context.isVariantOutOfStock(product);
+  }
+  if (product.available === false) return true;
+
+  const controls = typeof context?._getLandingPageControls === 'function'
+    ? context._getLandingPageControls()
+    : null;
+  return controls?.trackInventoryOnAddToCart === true
+    && product.quantityAvailable === 0
+    && product.currentlyNotInStock !== true;
+}
 
 export const fullPageStepFooterMethods = {
   isSelectedAddonCartLine(step) {
@@ -104,6 +118,7 @@ async addBundleToCart(clickedButton = null) {
     const offerId = this.resolveFullPageOfferId();
     const baseOfferId = `${offerId}_${sessionKey}`;
     const selectedLines = [];
+    const unavailableLines = [];
     let itemNumber = 0;
     const hasAddonStepConfigured = (this.selectedBundle?.steps || []).some((candidateStep) => {
       return fullPageStepFooterMethods.isSelectedAddonCartLine.call(this, candidateStep);
@@ -123,6 +138,10 @@ async addBundleToCart(clickedButton = null) {
           const product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId))
             || { id: variantId, title: variantId };
 
+          if (isFullPageCartLineOutOfStock(this, product)) {
+            unavailableLines.push(product.title || variantId);
+            return;
+          }
 
           itemNumber += 1;
           const properties = {
@@ -168,6 +187,11 @@ async addBundleToCart(clickedButton = null) {
         }
       });
     });
+
+    if (unavailableLines.length > 0) {
+      ToastManager.show(`${unavailableLines[0]} is out of stock.`);
+      return;
+    }
 
     if (items.length === 0) {
       ToastManager.show('Please select products before adding to cart');

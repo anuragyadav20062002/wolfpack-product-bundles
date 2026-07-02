@@ -162,6 +162,102 @@ describe("FPB checkout cart-line properties", () => {
     expect(addonLine.properties).not.toHaveProperty("You Save");
   });
 
+  it("blocks stale out-of-stock selections before posting the full-page bundle to cart", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    });
+    const originalFetch = (global as any).fetch;
+    const originalWindow = (global as any).window;
+    const originalDocument = (global as any).document;
+    const originalGetComputedStyle = (global as any).getComputedStyle;
+    const originalSetTimeout = (global as any).setTimeout;
+    const appendedToasts: any[] = [];
+    (global as any).fetch = fetchMock;
+    (global as any).window = {
+      Shopify: {
+        currency: { active: "USD", format: ["$", "{{amount}}"].join("") },
+      },
+    };
+    (global as any).document = {
+      documentElement: {},
+      getElementById: () => null,
+      createElement: () => ({
+        id: "",
+        className: "",
+        innerHTML: "",
+        classList: { add: jest.fn() },
+        remove: jest.fn(),
+        querySelector: () => ({
+          addEventListener: jest.fn(),
+        }),
+      }),
+      body: {
+        appendChild: (element: any) => appendedToasts.push(element),
+      },
+    };
+    (global as any).getComputedStyle = () => ({
+      getPropertyValue: () => "",
+    });
+    (global as any).setTimeout = jest.fn();
+
+    try {
+      await fullPageStepFooterMethods.addBundleToCart.call({
+        _isWidgetActionBusy: false,
+        container: null,
+        selectedBundle: {
+          name: "Daily Essentials",
+          steps: [{ id: "paid-step", isFreeGift: false }],
+        },
+        selectedProducts: [
+          { "gid://shopify/ProductVariant/111": 1 },
+        ],
+        stepProductData: [
+          [{
+            variantId: "gid://shopify/ProductVariant/111",
+            title: "Tracked zero-stock product",
+            available: true,
+            quantityAvailable: 0,
+            currentlyNotInStock: false,
+          }],
+        ],
+        areBundleConditionsMet: () => true,
+        expandProductsByVariant: (products: unknown[]) => products,
+        extractId: (value: string) => value.split("/").pop(),
+        generateBundleSessionKey: () => "ABC",
+        resolveFullPageOfferId: () => "FBP-1",
+        getAddonTierEvaluation: () => ({}),
+        getAddonLineDiscount: () => null,
+        getSelectedSellingPlanAllocationId: () => null,
+        buildCartLineSourceProperties: () => ({}),
+        _setWidgetBusy: jest.fn(),
+        showLoadingOverlay: jest.fn(),
+        hideLoadingOverlay: jest.fn(),
+        syncBundleDetailsCartMetafield: jest.fn(),
+        _emitStorefrontEvent: jest.fn(),
+        _handlePostAddToCartAction: jest.fn(),
+        _getLandingPageControls: () => ({
+          trackInventoryOnAddToCart: true,
+          checkout: null,
+        }),
+      });
+    } finally {
+      (global as any).fetch = originalFetch;
+      (global as any).window = originalWindow;
+      (global as any).document = originalDocument;
+      (global as any).getComputedStyle = originalGetComputedStyle;
+      (global as any).setTimeout = originalSetTimeout;
+    }
+
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      "/cart/add.js",
+      expect.anything(),
+    );
+    expect(appendedToasts.some((toast) =>
+      String(toast.innerHTML).includes("out of stock")
+    )).toBe(true);
+  });
+
   it("keeps active 100 percent add-on tier lines separate from free-gift merge semantics", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

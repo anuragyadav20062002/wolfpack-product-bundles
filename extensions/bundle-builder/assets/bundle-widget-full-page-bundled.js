@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.5
+ * Version : 5.0.6
  * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.5';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.6';
 (function() {
   'use strict';
 
@@ -9731,6 +9731,21 @@ getSummarySidebarEmptyStateMode() {
 },
 };
 
+function isFullPageCartLineOutOfStock(context, product) {
+  if (!product) return false;
+  if (typeof context?.isVariantOutOfStock === 'function') {
+    return context.isVariantOutOfStock(product);
+  }
+  if (product.available === false) return true;
+
+  const controls = typeof context?._getLandingPageControls === 'function'
+    ? context._getLandingPageControls()
+    : null;
+  return controls?.trackInventoryOnAddToCart === true
+    && product.quantityAvailable === 0
+    && product.currentlyNotInStock !== true;
+}
+
 const fullPageStepFooterMethods = {
   isSelectedAddonCartLine(step) {
     if (step?.isFreeGift !== true) return false;
@@ -9806,6 +9821,7 @@ async addBundleToCart(clickedButton = null) {
     const offerId = this.resolveFullPageOfferId();
     const baseOfferId = `${offerId}_${sessionKey}`;
     const selectedLines = [];
+    const unavailableLines = [];
     let itemNumber = 0;
     const hasAddonStepConfigured = (this.selectedBundle?.steps || []).some((candidateStep) => {
       return fullPageStepFooterMethods.isSelectedAddonCartLine.call(this, candidateStep);
@@ -9822,6 +9838,11 @@ async addBundleToCart(clickedButton = null) {
           const numericVariantId = this.extractId(variantId) || variantId;
           const product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId))
             || { id: variantId, title: variantId };
+
+          if (isFullPageCartLineOutOfStock(this, product)) {
+            unavailableLines.push(product.title || variantId);
+            return;
+          }
 
           itemNumber += 1;
           const properties = {
@@ -9867,6 +9888,11 @@ async addBundleToCart(clickedButton = null) {
         }
       });
     });
+
+    if (unavailableLines.length > 0) {
+      ToastManager.show(`${unavailableLines[0]} is out of stock.`);
+      return;
+    }
 
     if (items.length === 0) {
       ToastManager.show('Please select products before adding to cart');
