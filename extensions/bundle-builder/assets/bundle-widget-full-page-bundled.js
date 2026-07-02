@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.11
+ * Version : 5.0.13
  * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.11';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.13';
 (function() {
   'use strict';
 
@@ -7595,6 +7595,22 @@ hidePageTitle() {
     if (hasPageTitle && !hasOtherContent) {
       container.remove();
     }
+  });
+
+  document.querySelectorAll('.shopify-section, [id^="shopify-section"], section').forEach(section => {
+    if (!section.querySelector?.('.bundle-widget-container, #bundle-builder-app')) return;
+
+    section.querySelectorAll?.('h1').forEach(el => {
+      if (el.closest('.bundle-widget-container, #bundle-builder-app, .promo-banner')) return;
+
+      const titleBlock = el.closest('.text-block, .page-width--narrow') || el.parentElement;
+      if (titleBlock && !titleBlock.querySelector('.bundle-widget-container, #bundle-builder-app')) {
+        titleBlock.remove();
+        return;
+      }
+
+      el.remove();
+    });
   });
 
   if (!normalizedConfigName) return;
