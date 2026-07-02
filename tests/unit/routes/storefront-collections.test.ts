@@ -30,6 +30,7 @@ describe("api.storefront-collections loader", () => {
     global.fetch = mockFetch as any;
     (getOfflineSessionForShop as jest.Mock).mockResolvedValue({
       storefrontAccessToken: "storefront-token",
+      scope: "",
     });
   });
 
@@ -169,6 +170,142 @@ describe("api.storefront-collections loader", () => {
       option1: "4 meals",
       option2: "Weekly",
       option3: null,
+    });
+  });
+
+  it("requests and maps collection variant inventory fields when inventory scope is granted", async () => {
+    (getOfflineSessionForShop as jest.Mock).mockResolvedValue({
+      storefrontAccessToken: "storefront-token",
+      scope: "unauthenticated_read_product_inventory,unauthenticated_read_product_listings",
+    });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: {
+          collections: {
+            edges: [
+              {
+                node: {
+                  id: "gid://shopify/Collection/1",
+                  handle: "inventory",
+                  products: {
+                    edges: [
+                      {
+                        node: {
+                          id: "gid://shopify/Product/111",
+                          title: "Tracked Product",
+                          handle: "tracked-product",
+                          featuredImage: null,
+                          options: [],
+                          variants: {
+                            edges: [
+                              {
+                                node: {
+                                  id: "gid://shopify/ProductVariant/222",
+                                  title: "Default Title",
+                                  selectedOptions: [],
+                                  price: { amount: "10.00", currencyCode: "USD" },
+                                  compareAtPrice: null,
+                                  availableForSale: true,
+                                  quantityAvailable: 0,
+                                  currentlyNotInStock: false,
+                                  weight: 0,
+                                  weightUnit: "GRAMS",
+                                  image: null,
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        },
+      }),
+    });
+
+    const response = await loader({
+      request: new Request("https://app.example/api/storefront-collections?handles=inventory&shop=test.myshopify.com"),
+      params: {},
+      context: {},
+    } as any);
+    const body = await response.json() as { products: any[] };
+    const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+
+    expect(requestBody.query).toContain("quantityAvailable");
+    expect(requestBody.query).toContain("currentlyNotInStock");
+    expect(body.products[0].variants[0]).toMatchObject({
+      quantityAvailable: 0,
+      currentlyNotInStock: false,
+    });
+  });
+
+  it("omits collection variant inventory fields when inventory scope is missing", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: {
+          collections: {
+            edges: [
+              {
+                node: {
+                  id: "gid://shopify/Collection/1",
+                  handle: "inventory",
+                  products: {
+                    edges: [
+                      {
+                        node: {
+                          id: "gid://shopify/Product/111",
+                          title: "Unscoped Product",
+                          handle: "unscoped-product",
+                          featuredImage: null,
+                          options: [],
+                          variants: {
+                            edges: [
+                              {
+                                node: {
+                                  id: "gid://shopify/ProductVariant/222",
+                                  title: "Default Title",
+                                  selectedOptions: [],
+                                  price: { amount: "10.00", currencyCode: "USD" },
+                                  compareAtPrice: null,
+                                  availableForSale: true,
+                                  weight: 0,
+                                  weightUnit: "GRAMS",
+                                  image: null,
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        },
+      }),
+    });
+
+    const response = await loader({
+      request: new Request("https://app.example/api/storefront-collections?handles=inventory&shop=test.myshopify.com"),
+      params: {},
+      context: {},
+    } as any);
+    const body = await response.json() as { products: any[] };
+    const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+
+    expect(requestBody.query).not.toContain("quantityAvailable");
+    expect(requestBody.query).not.toContain("currentlyNotInStock");
+    expect(body.products[0].variants[0]).toMatchObject({
+      quantityAvailable: null,
+      currentlyNotInStock: false,
     });
   });
 });

@@ -27,6 +27,13 @@ Match EB's product-level inventory toggle behavior for FPB and PPB storefront wi
 | 5 | Variant selector option with tracking enabled | Same variant with control enabled | PPB disables option | Hard zero-stock tracked variants are blocked only after opt-in. |
 | 6 | Backorderable variant option with tracking enabled | Variant `quantityAvailable=0`, `currentlyNotInStock=true` | PPB keeps option enabled | Backorderable zero-stock variants remain sellable. |
 
+### CollectionInventoryPayload
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Collection endpoint with inventory scope | Offline session includes `unauthenticated_read_product_inventory`; collection variant has `quantityAvailable=0`, `currentlyNotInStock=false` | API requests and returns those fields | FPB collection-sourced products must follow the same toggle logic as manual products. |
+| 2 | Collection endpoint without inventory scope | Offline session lacks inventory scope | API omits inventory-only fields and maps missing quantity to `null` | Prevents Storefront API access-denied errors on shops without the scope. |
+
 ## Acceptance Criteria
 
 - [x] The new tests fail before implementation.
