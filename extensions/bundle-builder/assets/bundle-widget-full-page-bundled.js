@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.13
+ * Version : 5.0.15
  * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.13';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.15';
 (function() {
   'use strict';
 
@@ -5482,6 +5482,7 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
   document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
   document.querySelector('.fpb-mobile-backdrop')?.remove();
   document.body.classList.remove('fpb-compact-mobile-summary-active');
+  document.body.classList.remove('fpb-mobile-summary-scroll-locked');
 
   const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
     this.selectedProducts,
@@ -5688,6 +5689,7 @@ _populateCompactMobileSummaryTray(sheet) {
   sheet.appendChild(countBadge);
 
   sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
+  this._syncCompactMobileSummaryScrollLock();
   sheet.classList.toggle(
     'fpb-mobile-summary-tray--slots',
     this.getFullPageDesignPreset() === 'STANDARD' && this._shouldRenderProductSlots()
@@ -5770,6 +5772,7 @@ _toggleCompactMobileSummaryTray(sheet) {
   const nextExpanded = !this.compactMobileSummaryTrayExpanded;
   this.compactMobileSummaryTrayExpanded = nextExpanded;
   this._populateCompactMobileSummaryTray(sheet);
+  this._syncCompactMobileSummaryScrollLock();
 
   sheet.classList.remove(
     'fpb-mobile-summary-tray-animating-open',
@@ -5789,7 +5792,14 @@ _toggleCompactMobileSummaryTray(sheet) {
       'fpb-mobile-summary-tray-animating-open',
       'fpb-mobile-summary-tray-animating-closed'
     );
-  }, 260);
+  }, 380);
+},
+
+_syncCompactMobileSummaryScrollLock() {
+  document.body.classList.toggle(
+    'fpb-mobile-summary-scroll-locked',
+    this.compactMobileSummaryTrayExpanded === true
+  );
 },
 
 _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
@@ -5881,6 +5891,15 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
     productsList.appendChild(row);
   });
+
+  if (
+    allSelectedProducts.length === 0
+    && !this._shouldRenderProductSlots()
+    && typeof this._renderSidebarProductSkeletons === 'function'
+  ) {
+    productsList.classList.add('fpb-mobile-summary-products-list--skeletons');
+    this._renderSidebarProductSkeletons(productsList);
+  }
 
   const requiredSlots = Math.max(
     allSelectedProducts.length + 1,

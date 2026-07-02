@@ -66,6 +66,7 @@ _populateCompactMobileSummaryTray(sheet) {
   sheet.appendChild(countBadge);
 
   sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
+  this._syncCompactMobileSummaryScrollLock();
   sheet.classList.toggle(
     'fpb-mobile-summary-tray--slots',
     this.getFullPageDesignPreset() === 'STANDARD' && this._shouldRenderProductSlots()
@@ -148,6 +149,7 @@ _toggleCompactMobileSummaryTray(sheet) {
   const nextExpanded = !this.compactMobileSummaryTrayExpanded;
   this.compactMobileSummaryTrayExpanded = nextExpanded;
   this._populateCompactMobileSummaryTray(sheet);
+  this._syncCompactMobileSummaryScrollLock();
 
   sheet.classList.remove(
     'fpb-mobile-summary-tray-animating-open',
@@ -167,7 +169,14 @@ _toggleCompactMobileSummaryTray(sheet) {
       'fpb-mobile-summary-tray-animating-open',
       'fpb-mobile-summary-tray-animating-closed'
     );
-  }, 260);
+  }, 380);
+},
+
+_syncCompactMobileSummaryScrollLock() {
+  document.body.classList.toggle(
+    'fpb-mobile-summary-scroll-locked',
+    this.compactMobileSummaryTrayExpanded === true
+  );
 },
 
 _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
@@ -259,6 +268,15 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
     productsList.appendChild(row);
   });
+
+  if (
+    allSelectedProducts.length === 0
+    && !this._shouldRenderProductSlots()
+    && typeof this._renderSidebarProductSkeletons === 'function'
+  ) {
+    productsList.classList.add('fpb-mobile-summary-products-list--skeletons');
+    this._renderSidebarProductSkeletons(productsList);
+  }
 
   const requiredSlots = Math.max(
     allSelectedProducts.length + 1,
