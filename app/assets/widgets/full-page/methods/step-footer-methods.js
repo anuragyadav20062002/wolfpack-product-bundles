@@ -128,8 +128,8 @@ async addBundleToCart(clickedButton = null) {
           const properties = {
             Box: String(itemNumber),
             '_bundleName': bundleName,
-            '_easyBundle:prodQty': String(quantity),
-            '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
+            '_wolfpackProductBundle:prodQty': String(quantity),
+            '_wolfpackProductBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
           };
           const addonEval = this.getAddonTierEvaluation?.(step) || {};
           const addonDiscount = this.getAddonLineDiscount(step);
@@ -208,7 +208,7 @@ async addBundleToCart(clickedButton = null) {
 
       // Show success message
       ToastManager.show('Bundle added to cart successfully!');
-      this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
+      await this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
 
     } catch (fetchError) {
       this._emitStorefrontEvent('bundle-add-to-cart-failed', { reason: 'fetch-error', message: String(fetchError && fetchError.message || fetchError) });

@@ -176,7 +176,7 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js` completed with 0 errors; both files are ignored by the current ESLint config.
 
 ### 2026-06-02 12:28 - Started PPB SDK cart contract parity slice
-- Grounded the gap in EB cart evidence: PPB uses multipart `/cart/add`, public `_easyBundle:OfferId` properties, and post-add `bundle_details` cart metafield sync.
+- Grounded the gap in EB cart evidence: PPB uses multipart `/cart/add`, public `_wolfpackProductBundle:OfferId` properties, and post-add `bundle_details` cart metafield sync.
 - Found SDK mode still emitted `_bundle_id`, `_bundle_name`, and `_step_index` with JSON `/cart/add.js`, which breaks the EB PPB storefront contract when `bundle_ui_config.sdkMode` is true.
 - Updated SDK state/config to carry `offerId`, changed SDK cart lines to EB-compatible public properties, switched SDK add-to-cart to multipart `/cart/add`, and reused the app-proxy `bundle_details` sync route.
 - Added `test-spec/sdk-cart-eb-contract.spec.md` and updated focused SDK cart tests for the EB contract.
@@ -206,7 +206,7 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Desktop FPB page loaded widget version 2.9.43, selected Cross Necklace, and updated bundle summary to 1 item with total .97.
 - Cart state after widget CTA showed one FPB parent line with final_line_price 497 and parent properties for _is_bundle_parent, _bundle_name, _bundle_components, Box, and bundle totals.
 - Network proof returned 200 for bundle config, storefront-products, cart/add.js, cart.js?app=wolfpackProductBundles, and app-proxy cart-bundle-details.
-- Saved cart-add body matched EB-style fields: Box, _bundleName, _easyBundle:prodQty, _easyBundle:OfferId, Items, Retail Price, and _bundle_display_properties. Cart-bundle-details body carried displayProperties only in the issue log; sensitive cart token was not copied.
+- Saved cart-add body matched EB-style fields: Box, _bundleName, _wolfpackProductBundle:prodQty, _wolfpackProductBundle:OfferId, Items, Retail Price, and _bundle_display_properties. Cart-bundle-details body carried displayProperties only in the issue log; sensitive cart token was not copied.
 
 
 - internal docs/EB Implementation Reference.md
@@ -484,7 +484,7 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 
 ### 2026-06-02 10:27 - PPB multipart cart API parity implemented
 - Updated PPB storefront `addToCart()` to submit multipart `FormData` to `/cart/add`, matching EB's PPB cart transport.
-- Added explicit EB field names for `items[index][id]`, `items[index][quantity]`, `items[index][properties][Box]`, `items[index][properties][_easyBundle:OfferId]`, and `items[index][properties][_easyBundle:prodQty]`.
+- Added explicit EB field names for `items[index][id]`, `items[index][quantity]`, `items[index][properties][Box]`, `items[index][properties][_wolfpackProductBundle:OfferId]`, and `items[index][properties][_wolfpackProductBundle:prodQty]`.
 - Preserved existing private `_bundle_id` grouping properties so the current WPB Cart Transform path does not regress while PPB transport moves toward EB.
 - Bumped `WIDGET_VERSION` to `2.9.24`, rebuilt widget assets, and minified CSS assets.
 - Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts`, `npm run build:widgets`, `npm run minify:assets css`, and modified-file ESLint with 0 errors.
@@ -492,25 +492,25 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 
 ### 2026-06-02 10:32 - PPB multipart cart-add implementation committed
 - Implemented EB-aligned PPB cart-add transport in the product-page widget: `FormData` POST to `/cart/add` instead of JSON `/cart/add.js`.
-- Added multipart fields for `items[index][id]`, `items[index][quantity]`, `items[index][properties][Box]`, `items[index][properties][_easyBundle:OfferId]`, and `items[index][properties][_easyBundle:prodQty]`.
+- Added multipart fields for `items[index][id]`, `items[index][quantity]`, `items[index][properties][Box]`, `items[index][properties][_wolfpackProductBundle:OfferId]`, and `items[index][properties][_wolfpackProductBundle:prodQty]`.
 - Kept FPB widget cart-add transport unchanged on JSON `/cart/add.js`.
 - Bumped `WIDGET_VERSION` to `2.9.24` and rebuilt widget bundles.
 - Verification passed: `npm run build:widgets`, `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, and `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand` (27 tests).
 - ESLint returned 0 errors with ignored-file/existing warnings only.
 
 ### 2026-06-02 10:33 - FPB/PPB EB cart-line property DTO slice started
-- EB ground truth: FPB and PPB cart component lines send `Box`, `_bundleName`, `_easyBundle:prodQty`, and `_easyBundle:OfferId`; step/category details are client-only and not sent to cart.
+- EB ground truth: FPB and PPB cart component lines send `Box`, `_bundleName`, `_wolfpackProductBundle:prodQty`, and `_wolfpackProductBundle:OfferId`; step/category details are client-only and not sent to cart.
 - Current WPB widgets still send private `_step_index` and FPB sends `_step_name`; these diverge from EB cart DTOs.
 - Scope: add EB public cart properties to FPB and PPB line payloads and remove step attribution from cart properties, while retaining `_bundle_id` and `_bundle_display_properties` for the current WPB Cart Transform until the transform itself is migrated.
 
 ### 2026-06-02 10:36 - Bundle details cart metafield parity slice started
 - EB reference confirms FPB and PPB both merge a `bundle_details` cart metafield through the Storefront API around cart add.
-- Current WPB widgets send EB-style `_easyBundle:OfferId` line properties but do not write the accumulated `bundle_details` cart metafield.
+- Current WPB widgets send EB-style `_wolfpackProductBundle:OfferId` line properties but do not write the accumulated `bundle_details` cart metafield.
 - Live Storefront API probing showed cart metafield access is currently denied, and app config is missing Storefront cart access scopes.
 - Scope: add required storefront cart scopes and implement non-fatal EB-style `bundle_details` merge for both FPB and PPB widgets.
 
 ### 2026-06-02 10:37 - FPB/PPB EB cart-line property DTO slice completed
-- Aligned FPB cart JSON public line properties with EB evidence: `Box`, `_bundleName`, `_easyBundle:prodQty`, `_easyBundle:OfferId`.
+- Aligned FPB cart JSON public line properties with EB evidence: `Box`, `_bundleName`, `_wolfpackProductBundle:prodQty`, `_wolfpackProductBundle:OfferId`.
 - Aligned PPB multipart cart form properties with EB evidence while preserving private `_bundle_id` needed by the current Cart Transform grouping.
 - Removed step attribution from storefront cart payloads for this slice (`_step_index` / `_step_name` are no longer emitted in the touched FPB/PPB cart paths).
 - Bumped storefront widget version to `2.9.25` and rebuilt widget deploy assets.
@@ -541,7 +541,7 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 ### 2026-06-02 11:02 - Cart `bundle_details` metafield route fix completed
 - Added signed app-proxy route `/apps/product-bundles/api/cart-bundle-details` to merge EB-style cart `bundle_details` entries server-side with the stored Storefront access token.
 - Replaced FPB and PPB widget direct tokenless Storefront GraphQL calls with app-proxy POSTs carrying only `cartToken`, `{offerId}_{sessionKey}` key, and display properties.
-- Preserved EB key semantics: `_easyBundle:OfferId` remains `{offerId}_{sessionKey}_{itemIndex}`, while `bundle_details` stores under `{offerId}_{sessionKey}`.
+- Preserved EB key semantics: `_wolfpackProductBundle:OfferId` remains `{offerId}_{sessionKey}_{itemIndex}`, while `bundle_details` stores under `{offerId}_{sessionKey}`.
 - Updated API navigation map and bumped widget version to `2.9.26`.
 - Verification: Storefront GraphQL `cart(id).metafields(identifiers: [{ key: "bundle_details" }])` query and `cartMetafieldsSet` mutation were validated with Shopify MCP.
 - Verification: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js && npx jest tests/unit/routes/cart-bundle-details.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` passed with 37 tests.
@@ -568,14 +568,14 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: `npx eslint --max-warnings 9999 app/routes/api/api.cart-bundle-details.tsx app/assets/bundle-widget-full-page.js app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js tests/unit/routes/cart-bundle-details.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` completed with 0 errors and warnings only.
 
 ### 2026-06-02 11:36 - EB OfferId Cart Transform grouping slice started
-- EB ground truth: component cart lines are identified by `_easyBundle:OfferId` in `{offerId}_{sessionKey}_{itemIndex}` format and display name comes from `_bundleName`.
+- EB ground truth: component cart lines are identified by `_wolfpackProductBundle:OfferId` in `{offerId}_{sessionKey}_{itemIndex}` format and display name comes from `_bundleName`.
 - Current WPB gap: Cart Transform still queried/grouped by private `_bundle_id`, and FPB/PPB widget cart payloads still emitted that private attribute.
-- Scope: migrate Function input/grouping to `_easyBundle:OfferId` base, use `_bundleName`, remove `_bundle_id`/`_bundle_name` from touched FPB/PPB component line payloads, update internal docs, and rebuild widgets.
+- Scope: migrate Function input/grouping to `_wolfpackProductBundle:OfferId` base, use `_bundleName`, remove `_bundle_id`/`_bundle_name` from touched FPB/PPB component line payloads, update internal docs, and rebuild widgets.
 
 ### 2026-06-02 11:45 - EB OfferId Cart Transform grouping slice completed
-- Cart Transform input now reads EB public cart attributes: `_easyBundle:OfferId` and `_bundleName`.
-- Merge grouping now derives the bundle instance from the `_easyBundle:OfferId` base, for example `MIX-894502_K1K_1` and `MIX-894502_K1K_2` merge as `MIX-894502_K1K`.
-- FPB and PPB component cart payloads no longer emit private `_bundle_id` / `_bundle_name` in the touched widget paths; public EB properties remain `_bundleName`, `_easyBundle:prodQty`, `_easyBundle:OfferId`, and `Box`.
+- Cart Transform input now reads EB public cart attributes: `_wolfpackProductBundle:OfferId` and `_bundleName`.
+- Merge grouping now derives the bundle instance from the `_wolfpackProductBundle:OfferId` base, for example `MIX-894502_K1K_1` and `MIX-894502_K1K_2` merge as `MIX-894502_K1K`.
+- FPB and PPB component cart payloads no longer emit private `_bundle_id` / `_bundle_name` in the touched widget paths; public EB properties remain `_bundleName`, `_wolfpackProductBundle:prodQty`, `_wolfpackProductBundle:OfferId`, and `Box`.
 - Updated internal Cart Transform and bundle instance tracking docs to the EB OfferId contract.
 - Bumped storefront widget version to `2.9.28` and rebuilt widget deploy assets.
 - Verification: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js` passed.
@@ -633,8 +633,8 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - CASCADE: persisted SIT PPB fixture to PDP_INPAGE/CASCADE, storefront loaded widget 2.9.43 with body marker CASCADE, selected Cross Necklace from the in-page product list, clicked enabled black Add Bundle to Cart • .97, and cart rendered the PPB bundle line with Cross Necklace, Box: 1, and .97.
 - COGNIVE: persisted SIT PPB fixture to PDP_INPAGE/COGNIVE, storefront loaded widget 2.9.43 with body marker COGNIVE and three-column product grid, selected Cross Necklace, clicked enabled black Add Bundle to Cart • .97, and cart rendered the PPB bundle line with Cross Necklace, Box: 1, and .97.
 - SIMPLIFIED: persisted SIT PPB fixture to PDP_MODAL/SIMPLIFIED with renderFilledSlotsAsHorizontalStacked false, storefront loaded widget 2.9.43 with body marker SIMPLIFIED, measured closed slot as 345px x 104px, opened modal, selected Cross Necklace, clicked enabled black Add Bundle to Cart • .97, and cart rendered the PPB bundle line with Cross Necklace, Box: 1, and .97.
-- Network proof for the SIMPLIFIED add: cart-bundle-details app-proxy call returned 200, Shopify /cart/add returned 302 to /cart, and the multipart request body carried EB component fields Box, _bundleName, _easyBundle:OfferId, and _easyBundle:prodQty.
-- Cart.js note: merged parent cart lines expose _bundle_name from the Cart Transform output for checkout/display metadata; the widget component add payload itself uses the EB _bundleName/_easyBundle fields.
+- Network proof for the SIMPLIFIED add: cart-bundle-details app-proxy call returned 200, Shopify /cart/add returned 302 to /cart, and the multipart request body carried EB component fields Box, _bundleName, _wolfpackProductBundle:OfferId, and _wolfpackProductBundle:prodQty.
+- Cart.js note: merged parent cart lines expose _bundle_name from the Cart Transform output for checkout/display metadata; the widget component add payload itself uses the EB _bundleName/_wolfpackProductBundle fields.
 
 ### 2026-06-02 18:01 IST - Resynced FPB fixture metafield cache and verified cache-first marker
 - Found the current FPB page marker carrying stale cached config with null bundleDesignTemplate and bundleDesignPresetId, causing the widget to use the proxy fallback.

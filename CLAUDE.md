@@ -448,7 +448,7 @@ This doc is the distilled, topic-organized reference captured from a live authen
 | Default/preselected products | `defaultProductsData` full shape |
 | Template system | FPB two-field (`bundleDesignTemplate` + `bundleDesignPresetId`) — all 4 presets confirmed; PPB two-field (`bundleDesignTemplate` + `templateId`) — all 4 templates confirmed |
 | Storefront globals | FPB `window.gbb.*` + `stepsConfigurationData`; PPB `window.gbbMix.*` + `mixAndMatchBundleSettings` (25+ fields) |
-| Cart add format | FPB JSON + PPB multipart; `_easyBundle:OfferId` format; `bundle_details` metafield accumulation |
+| Cart add format | FPB JSON + PPB multipart; `_wolfpackProductBundle:OfferId` format; `bundle_details` metafield accumulation |
 | Box selection | `gbbBoxSelection.state` schema; ATC enforcement logic (decompiled); DOM structure |
 | Text config | `bundleTextConfig.bundleSummary.{title,subTitle}` — confirmed only two fields |
 | Collection pagination | Batch `nodes(ids:[...])` architecture — NOT cursor-based |

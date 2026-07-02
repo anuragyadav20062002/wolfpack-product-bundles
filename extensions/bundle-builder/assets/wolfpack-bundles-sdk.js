@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 4.0.5
- * Built   : 2026-07-01
+ * Version : 5.0.0
+ * Built   : 2026-07-02
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '4.0.5';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.0';
 (function (window) {
   'use strict';
 
@@ -2988,8 +2988,8 @@ function buildCartItems(state) {
       var properties = {
         'Box': String(itemNumber),
         '_bundleName': state.bundleName || '',
-        '_easyBundle:OfferId': offerId + '_' + sessionKey + '_' + itemNumber,
-        '_easyBundle:prodQty': String(qty),
+        '_wolfpackProductBundle:OfferId': offerId + '_' + sessionKey + '_' + itemNumber,
+        '_wolfpackProductBundle:prodQty': String(qty),
       };
       if (step.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
       if (step.isDefault) properties['_bundle_step_type'] = 'default';

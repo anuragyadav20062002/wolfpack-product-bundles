@@ -915,8 +915,8 @@ Admin location: Settings → Controls → Product Page Layout section.
       "properties": {
         "Box": "1",
         "_bundleName": "WPB Research Landing Bundle 2026-05-22",
-        "_easyBundle:prodQty": 1,
-        "_easyBundle:OfferId": "FBP-2_K6C_1"
+        "_wolfpackProductBundle:prodQty": 1,
+        "_wolfpackProductBundle:OfferId": "FBP-2_K6C_1"
       }
     }
   ]
@@ -939,13 +939,13 @@ Admin location: Settings → Controls → Product Page Layout section.
 items[0][id]                              = 45038877868228
 items[0][quantity]                        = 1
 items[0][properties][Box]                 = 1
-items[0][properties][_easyBundle:OfferId] = MIX-894502_K1K_1
-items[0][properties][_easyBundle:prodQty] = 1
+items[0][properties][_wolfpackProductBundle:OfferId] = MIX-894502_K1K_1
+items[0][properties][_wolfpackProductBundle:prodQty] = 1
 ```
 
 PPB Cart Transform responds with OVERWRITE_LINE_ITEM — the `/cart/add` response already contains the parent bundle line item (Cart Transform fires synchronously in Shopify's pipeline).
 
-### `_easyBundle:OfferId` Format
+### `_wolfpackProductBundle:OfferId` Format
 
 ```
 FBP  → "FBP-{bundleId}_{sessionKey}_{itemIndex}"
@@ -1226,3 +1226,16 @@ Captured from the EB in-app `Know More` article on 2026-06-01 while auditing Set
 - Digital products should have inventory set to `0 or below` so EB can recognize them as digital.
 - If `Track Quantity` is not enabled, the product can still appear in the bundle builder, but customers cannot add it to cart when it is out of stock.
 - If Shopify `Allow out-of-stock` is enabled and inventory is above 0, EB may not identify the product as digital, which can restrict add-to-cart behavior.
+
+## Checkout Integration Discount-Code Handoff
+
+Captured from the EB checkout/side-cart functions article on 2026-07-02:
+
+- EB lists post-add callbacks for checkout and cart apps. Article-listed entries are Theme cart drawer, GoKwik, Shopflo, Zecpay, Rebuy, Shiprocket/Fastrr, Monster cart, Upcart, and Kaching Cart.
+- Checkout handoff examples include GoKwik `window.gokwikSdk.initCheckout(merchantInfo);`, Shopflo `window.Shopflo.openCheckout()`, Zecpay `zecpeCheckFunctionAndCall("handleOcc")`, and Shiprocket/Fastrr `shiprocketCheckoutBuyCartHandler()`.
+- Side-cart/cart-refresh examples include Rebuy `Cart.getCart()`, Upcart `window.upcartOpenCart()`, and Kaching Cart `kachingCartApi.openCart()` plus `kachingCartApi.refreshCart()`. Theme cart drawer and Monster cart use EB-owned helper code in the article; WPB implements those as WPB-owned cart refresh/open callbacks rather than depending on competitor-owned globals.
+- For some checkout apps EB persists the generated discount code into `sessionStorage` and the `discount_code` cookie before invoking the checkout app.
+- When the checkout handoff bypasses the native Shopify checkout path where Cart Transform grouping is applied, WPB uses the Discount Function to recreate the bundle price modification through a generated Shopify app discount code.
+- WPB-generated checkout-integration codes are created only for GoKwik, Shopflo, Zecpay, and Shiprocket/Fastrr. They use the `WPB-` prefix, one use, `PRODUCT` discount class, and a 30 minute expiry. The EB help article did not reveal a precise TTL, so 30 minutes is the documented default until live network/Admin discount evidence proves another value.
+- Theme cart drawer, Rebuy, Monster cart, Upcart, and Kaching Cart do not create discount codes through the app-proxy endpoint because they keep the customer in a cart drawer/cart refresh flow.
+- The automatic add-on discount path remains add-on-only. When a generated `WPB-` code is entered, the automatic branch suppresses add-on candidates so the code-triggered branch can apply base bundle and add-on savings without double discounting.

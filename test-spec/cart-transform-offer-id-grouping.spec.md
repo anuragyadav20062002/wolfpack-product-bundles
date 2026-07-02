@@ -2,13 +2,13 @@
 **Spec ID:** cart-transform-offer-id-grouping  **Issue:** [eb-storefront-parity-1]  **Created:** 2026-06-02
 
 ## Purpose
-Validate that storefront component lines group for Cart Transform using EB `_easyBundle:OfferId` and `_bundleName`, not private `_bundle_id` attributes.
+Validate that storefront component lines group for Cart Transform using EB `_wolfpackProductBundle:OfferId` and `_bundleName`, not private `_bundle_id` attributes.
 
 ## Test Cases
 ### CartTransformInputQuery
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | Function input query reads EB attributes | `run.graphql` | `_easyBundle:OfferId` and `_bundleName` are queried | No private `_bundle_id` query |
+| 1 | Function input query reads EB attributes | `run.graphql` | `_wolfpackProductBundle:OfferId` and `_bundleName` are queried | No private `_bundle_id` query |
 
 ### RustMerge
 | # | Scenario | Input | Expected Output | Notes |
@@ -19,8 +19,8 @@ Validate that storefront component lines group for Cart Transform using EB `_eas
 ### StorefrontWidgetSource
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | FPB cart payload emits public EB fields only | source scan | `_easyBundle:OfferId`, `_bundleName`; no `_bundle_id` component property | JSON `/cart/add.js` remains |
-| 2 | PPB cart payload emits public EB fields only | source scan | `_easyBundle:OfferId`, `_bundleName`; no `_bundle_id`/`_bundle_name` component property | Multipart `/cart/add` remains |
+| 1 | FPB cart payload emits public EB fields only | source scan | `_wolfpackProductBundle:OfferId`, `_bundleName`; no `_bundle_id` component property | JSON `/cart/add.js` remains |
+| 2 | PPB cart payload emits public EB fields only | source scan | `_wolfpackProductBundle:OfferId`, `_bundleName`; no `_bundle_id`/`_bundle_name` component property | Multipart `/cart/add` remains |
 
 ## Acceptance Criteria
 - [ ] Rust Function tests pass.

@@ -1,8 +1,8 @@
 import '@shopify/ui-extensions/preact';
-import {render} from 'preact';
+import {h, render} from 'preact';
 
 import {TotalSavingsExtension} from './Checkout';
 
 export default function extension() {
-  render(<TotalSavingsExtension />, document.body);
+  render(h(TotalSavingsExtension, {}), document.body);
 }

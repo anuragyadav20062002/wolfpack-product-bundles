@@ -68,6 +68,39 @@ export function getFullPageStepConditionValidationMessage(step) {
   }
 }
 
+function buildCategoryRuleValidationStep(step, stepIndex, stepCollectionProductIds = {}, extractId = value => value) {
+  if (!ConditionValidator.isCategoryRuleMode(step)) return step;
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+
+  return {
+    ...step,
+    categories: categories.map(category => {
+      const products = Array.isArray(category?.products) ? [...category.products] : [];
+      const seenProductIds = new Set(products.map(product => {
+        const rawId = product?.id || product?.productId || product?.graphqlId;
+        return rawId == null ? '' : String(extractId(rawId) || rawId);
+      }));
+      const addCollectionHandle = (collection) => {
+        const handle = collection?.handle;
+        if (!handle) return;
+        const productIds = stepCollectionProductIds[`${stepIndex}:${handle}`] || [];
+        productIds.forEach(productId => {
+          const normalizedId = String(extractId(productId) || productId);
+          if (!normalizedId || seenProductIds.has(normalizedId)) return;
+          seenProductIds.add(normalizedId);
+          products.push({ id: normalizedId });
+        });
+      };
+
+      (category.collections || []).forEach(addCollectionHandle);
+      (category.collectionsData || []).forEach(addCollectionHandle);
+      (category.collectionsSelectedData || []).forEach(addCollectionHandle);
+
+      return { ...category, products };
+    }),
+  };
+}
+
 export const fullPageSelectionNavigationMethods = {
 getStepConditionValidationMessage(stepIndex = this.currentStepIndex) {
   return getFullPageStepConditionValidationMessage(this.selectedBundle?.steps?.[stepIndex]);
@@ -366,12 +399,21 @@ validateStepCondition(stepIndex, productId, newQuantity) {
 validateStep(stepIndex) {
   const step = this.selectedBundle.steps[stepIndex];
   const currentSelections = this.selectedProducts[stepIndex] || {};
-  const conditionSelections = this._getStepConditionSelections(stepIndex, currentSelections);
+  const conditionSelections = typeof this._getStepConditionSelections === 'function'
+    ? this._getStepConditionSelections(stepIndex, currentSelections)
+    : currentSelections;
 
   // In category-rule mode, selection keys are numeric variant IDs but
   // category product IDs are numeric product IDs (GID-stripped). Translate
   // each variant-ID key → its parent product ID before the validator runs.
-  if (ConditionValidator.isCategoryRuleMode(step)) {
+  const validationStep = buildCategoryRuleValidationStep(
+    step,
+    stepIndex,
+    this.stepCollectionProductIds,
+    value => this.extractId?.(value) || value,
+  );
+
+  if (ConditionValidator.isCategoryRuleMode(validationStep)) {
     const products = this.stepProductData[stepIndex] || [];
     const translated = {};
     for (const [selKey, qty] of Object.entries(conditionSelections)) {
@@ -385,10 +427,10 @@ validateStep(stepIndex) {
         weight: (current.weight || 0) + ((Number(product?.weight) || 0) * quantity),
       };
     }
-    return ConditionValidator.isStepConditionSatisfied(step, translated);
+    return ConditionValidator.isStepConditionSatisfied(validationStep, translated);
   }
 
-  return ConditionValidator.isStepConditionSatisfied(step, conditionSelections);
+  return ConditionValidator.isStepConditionSatisfied(validationStep, conditionSelections);
 },
 
 isStepAccessible(stepIndex) {

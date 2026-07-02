@@ -206,12 +206,240 @@ _runControlsScript(script) {
   }
 },
 
-_handlePostAddToCartAction(actionConfig) {
+_getCheckoutIntegrationProvider(providerId) {
+  const providers = {
+    native: { id: 'native', callbackMode: 'native', requiresDiscountCode: false },
+    theme_cart_drawer: { id: 'theme_cart_drawer', callbackMode: 'side_cart', requiresDiscountCode: false },
+    gokwik: { id: 'gokwik', callbackMode: 'checkout', requiresDiscountCode: true },
+    shopflo: { id: 'shopflo', callbackMode: 'checkout', requiresDiscountCode: true },
+    zecpay: { id: 'zecpay', callbackMode: 'checkout', requiresDiscountCode: true },
+    rebuy: { id: 'rebuy', callbackMode: 'cart_refresh', requiresDiscountCode: false },
+    shiprocket_fastrr: { id: 'shiprocket_fastrr', callbackMode: 'checkout', requiresDiscountCode: true },
+    monster_cart: { id: 'monster_cart', callbackMode: 'side_cart', requiresDiscountCode: false },
+    upcart: { id: 'upcart', callbackMode: 'side_cart', requiresDiscountCode: false },
+    kaching_cart: { id: 'kaching_cart', callbackMode: 'side_cart', requiresDiscountCode: false },
+  };
+  return providers[providerId] || providers.native;
+},
+
+_isCheckoutIntegrationProvider(providerId) {
+  return this._getCheckoutIntegrationProvider(providerId).id !== 'native';
+},
+
+_getCheckoutIntegrationFallbackTarget(provider) {
+  return provider.callbackMode === 'checkout' ? '/checkout' : '/cart';
+},
+
+async _openThemeCartDrawer() {
+  let cart = null;
+  try {
+    const response = await fetch('/cart.js', {
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+    if (response.ok) {
+      cart = await response.json();
+    }
+  } catch (_) {
+    // Cart drawer refresh is best-effort.
+  }
+
+  const detail = { cart };
+  [
+    'cart:refresh',
+    'cart:updated',
+    'cart:open',
+    'theme:cart:open',
+  ].forEach((eventName) => {
+    try {
+      document.dispatchEvent(new CustomEvent(eventName, { detail, bubbles: true }));
+      window.dispatchEvent(new CustomEvent(eventName, { detail }));
+    } catch (_) {
+      // Keep trying the remaining event contracts.
+    }
+  });
+
+  const drawer = document.querySelector('cart-drawer, cart-notification');
+  if (drawer && typeof drawer.open === 'function') {
+    drawer.open();
+    return true;
+  }
+
+  const trigger = document.querySelector(
+    '[aria-controls="CartDrawer"], [data-cart-drawer-open], [data-cart-open], [href="/cart"]',
+  );
+  if (trigger && typeof trigger.click === 'function') {
+    trigger.click();
+    return true;
+  }
+
+  return cart !== null;
+},
+
+_setCheckoutIntegrationDiscountState(code) {
+  if (!code) return;
+  try {
+    sessionStorage.setItem('wpbDiscountCode', code);
+  } catch (_) {
+    // Non-critical persistence.
+  }
+  try {
+    document.cookie = `discount_code=${encodeURIComponent(code)}; path=/; Secure; SameSite=Lax`;
+  } catch (_) {
+    // Non-critical persistence.
+  }
+},
+
+async _createCheckoutIntegrationDiscountCode(providerId) {
+  const response = await fetch('/apps/product-bundles/api/checkout-integration-discount-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    cache: 'no-store',
+    body: JSON.stringify({ providerId }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload?.ok || !payload?.code) {
+    throw new Error(payload?.error || 'Checkout integration discount code could not be created');
+  }
+  return payload;
+},
+
+async _applyCheckoutIntegrationDiscountCode(code) {
+  if (!code) return false;
+  const discountUrl = `/discount/${encodeURIComponent(code)}?redirect=/cart`;
+  const response = await fetch(discountUrl, {
+    method: 'GET',
+    credentials: 'same-origin',
+    cache: 'no-store',
+    redirect: 'follow',
+  });
+  return response.ok;
+},
+
+async _invokeCheckoutIntegrationProvider(providerId) {
+  if (providerId === 'theme_cart_drawer' || providerId === 'monster_cart') {
+    return await this._openThemeCartDrawer();
+  }
+
+  if (providerId === 'gokwik') {
+    const sdk = window.gokwikSdk;
+    if (sdk && typeof sdk.initCheckout === 'function') {
+      sdk.initCheckout(window.merchantInfo || window.gokwikMerchantInfo || undefined);
+      return true;
+    }
+  }
+
+  if (providerId === 'shopflo') {
+    const shopflo = window.Shopflo;
+    if (shopflo && typeof shopflo.openCheckout === 'function') {
+      shopflo.openCheckout();
+      return true;
+    }
+  }
+
+  if (providerId === 'zecpay') {
+    if (typeof window.zecpeCheckFunctionAndCall === 'function') {
+      window.zecpeCheckFunctionAndCall('handleOcc');
+      return true;
+    }
+  }
+
+  if (providerId === 'rebuy') {
+    const cart = window.Cart;
+    if (cart && typeof cart.getCart === 'function') {
+      cart.getCart();
+      window.location.reload();
+      return true;
+    }
+  }
+
+  if (providerId === 'shiprocket_fastrr') {
+    if (typeof window.shiprocketCheckoutBuyCartHandler === 'function') {
+      window.shiprocketCheckoutBuyCartHandler();
+      return true;
+    }
+  }
+
+  if (providerId === 'upcart') {
+    if (typeof window.upcartOpenCart === 'function') {
+      window.upcartOpenCart();
+      return true;
+    }
+  }
+
+  if (providerId === 'kaching_cart') {
+    const cart = window.kachingCartApi;
+    if (!cart) return false;
+    let invoked = false;
+    if (typeof cart.openCart === 'function') {
+      cart.openCart();
+      invoked = true;
+    }
+    if (typeof cart.refreshCart === 'function') {
+      cart.refreshCart();
+      invoked = true;
+    }
+    return invoked;
+  }
+
+  return false;
+},
+
+async _handleCheckoutIntegrationProvider(checkout) {
+  const provider = this._getCheckoutIntegrationProvider(checkout?.providerId || 'native');
+  const providerId = provider.id;
+  let payload = null;
+
+  if (provider.requiresDiscountCode) {
+    payload = await this._createCheckoutIntegrationDiscountCode(providerId);
+    this._setCheckoutIntegrationDiscountState(payload.code);
+    const applied = await this._applyCheckoutIntegrationDiscountCode(payload.code);
+
+    if (!applied) {
+      window.location.href = `/discount/${encodeURIComponent(payload.code)}?redirect=/checkout`;
+      return;
+    }
+
+    this._emitStorefrontEvent('checkout-integration-discount-code-created', {
+      providerId,
+      expiresAt: payload.expiresAt || null,
+    });
+  }
+
+  if (await this._invokeCheckoutIntegrationProvider(providerId)) {
+    this._emitStorefrontEvent('checkout-integration-provider-invoked', { providerId });
+    return;
+  }
+
+  this._emitStorefrontEvent('checkout-integration-provider-fallback', { providerId, reason: 'sdk-missing' });
+  if (payload?.code) {
+    window.location.href = `/discount/${encodeURIComponent(payload.code)}?redirect=/checkout`;
+    return;
+  }
+  window.location.href = this._getCheckoutIntegrationFallbackTarget(provider);
+},
+
+async _handlePostAddToCartAction(actionConfig) {
   const checkout = actionConfig || this._getLandingPageControls()?.checkout || {};
-  this._runControlsScript(checkout.executeScript);
 
   const target = checkout.action === 'checkout' ? '/checkout' : '/cart';
-  this._emitStorefrontEvent('checkout-clicked', { target });
+  const providerId = checkout.providerId || 'native';
+  this._emitStorefrontEvent('checkout-clicked', { target, providerId });
+
+  if (this._isCheckoutIntegrationProvider(providerId)) {
+    try {
+      await this._handleCheckoutIntegrationProvider(checkout);
+      return;
+    } catch (error) {
+      this._emitStorefrontEvent('checkout-integration-provider-fallback', {
+        providerId,
+        reason: 'discount-code-error',
+        message: String(error && error.message || error),
+      });
+      ToastManager.show('Checkout discount could not be prepared. Redirecting to checkout.');
+    }
+  }
 
   setTimeout(() => {
     window.location.href = target;

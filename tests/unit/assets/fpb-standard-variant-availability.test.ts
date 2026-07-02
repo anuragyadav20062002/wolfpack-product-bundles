@@ -1,3 +1,5 @@
+export {};
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { VariantSelectorComponent } = require('../../../app/assets/widgets/shared/variant-selector.js');
 

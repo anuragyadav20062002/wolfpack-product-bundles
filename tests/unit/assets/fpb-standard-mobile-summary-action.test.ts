@@ -1,3 +1,5 @@
+export {};
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageMobileSummaryMethods } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports

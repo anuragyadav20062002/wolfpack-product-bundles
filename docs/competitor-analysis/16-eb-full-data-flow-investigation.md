@@ -654,15 +654,15 @@ FPB `offerId` format: `FBP-{bundleId}`. Widget keyed as `window.gbb`.
       "properties": {
         "Box": "1",
         "_bundleName": "WPB Research Landing Bundle 2026-05-22",
-        "_easyBundle:prodQty": 1,
-        "_easyBundle:OfferId": "FBP-2_K6C_1"
+        "_wolfpackProductBundle:prodQty": 1,
+        "_wolfpackProductBundle:OfferId": "FBP-2_K6C_1"
       }
     }
   ]
 }
 ```
 
-`_easyBundle:OfferId` format: `{offerId}_{sessionKey}_{itemIndex}` where `sessionKey` is a short random string making each add-to-cart event unique.
+`_wolfpackProductBundle:OfferId` format: `{offerId}_{sessionKey}_{itemIndex}` where `sessionKey` is a short random string making each add-to-cart event unique.
 
 `cartMetafieldsSet` merges display properties into a single `bundle_details` cart metafield. Key is `{offerId}_{sessionKey}` (no item index):
 
@@ -721,8 +721,8 @@ Collection pagination limit: `productToFetchCnt: 24` / `collectionProductsToFetc
 items[0][id]                              = 45038877868228   (component variant ID)
 items[0][quantity]                        = 1
 items[0][properties][Box]                 = 1
-items[0][properties][_easyBundle:OfferId] = MIX-894502_K1K_1
-items[0][properties][_easyBundle:prodQty] = 1
+items[0][properties][_wolfpackProductBundle:OfferId] = MIX-894502_K1K_1
+items[0][properties][_wolfpackProductBundle:prodQty] = 1
 ```
 
 `/cart/add` response (Cart Transform converts component line to parent product line):
@@ -768,11 +768,11 @@ The Cart Transform OVERWRITE_LINE_ITEM operation replaces the component item wit
 | Items added | component items only | component items only |
 | Cart Transform operation | EXPAND / MERGE | OVERWRITE_LINE_ITEM |
 | Cart representation | varies by setting | parent bundle line item |
-| Parent line `_originalOfferId` | n/a (FPB uses `_easyBundle:OfferId` per item) | `{offerId}_{sessionKey}` |
+| Parent line `_originalOfferId` | n/a (FPB uses `_wolfpackProductBundle:OfferId` per item) | `{offerId}_{sessionKey}` |
 | `bundle_details` metafield key | `{offerId}_{sessionKey}` | `{offerId}_{sessionKey}` |
 
 Both bundle types:
-1. Add **component items** with `_easyBundle:OfferId: "{offerId}_{sessionKey}_{itemIndex}"`.
+1. Add **component items** with `_wolfpackProductBundle:OfferId: "{offerId}_{sessionKey}_{itemIndex}"`.
 2. Read and write the `bundle_details` cart metafield via Storefront API.
 3. Use the same `{offerId}_{sessionKey}` (without item index) as the metafield key.
 
@@ -902,7 +902,7 @@ Fully resolved:
 - PPB template dispatch — binary `PDP_INPAGE` vs `PDP_MODAL` confirmed (Phase 5)
 - Screenshots were not committed, per repo rule
 
-These remaining gaps do not change the main data-shape conclusion: categories are stable first-class step children, direct products and selected collections are separately represented under each category, product/collection hydration preserves Shopify GIDs plus numeric storefront IDs, both FPB and PPB use the same `_easyBundle:OfferId` + `bundle_details` metafield cart pattern, and the multi-step FPB uses URL-based page navigation with checkmark-completed step indicators.
+These remaining gaps do not change the main data-shape conclusion: categories are stable first-class step children, direct products and selected collections are separately represented under each category, product/collection hydration preserves Shopify GIDs plus numeric storefront IDs, both FPB and PPB use the same `_wolfpackProductBundle:OfferId` + `bundle_details` metafield cart pattern, and the multi-step FPB uses URL-based page navigation with checkmark-completed step indicators.
 
 ---
 
@@ -1883,8 +1883,8 @@ This phase resolves five of the eight previously unconfirmed gaps via live store
       "properties": {
         "Box": 2,
         "_bundleName": "WPB Research Landing Bundle 2026-05-22",
-        "_easyBundle:prodQty": 1,
-        "_easyBundle:OfferId": "FBP-2_AQR_1"
+        "_wolfpackProductBundle:prodQty": 1,
+        "_wolfpackProductBundle:OfferId": "FBP-2_AQR_1"
       }
     }
   ]
@@ -1895,14 +1895,14 @@ This phase resolves five of the eight previously unconfirmed gaps via live store
 
 | Property | Value format | Notes |
 |---|---|---|
-| `_easyBundle:OfferId` | `FBP-{bundleId}_{sessionKey}_{itemCount}` | Unique per add-to-cart action |
+| `_wolfpackProductBundle:OfferId` | `FBP-{bundleId}_{sessionKey}_{itemCount}` | Unique per add-to-cart action |
 | `_bundleName` | Bundle name string | Display only |
-| `_easyBundle:prodQty` | Integer | Total product count in this add |
+| `_wolfpackProductBundle:prodQty` | Integer | Total product count in this add |
 | `Box` | Integer (box tier index, 1-based) | Which `boxSelection.rules` tier was selected |
 
-**Key finding — step info is client-only:** The widget client state (`giftBoxCartData.items[].properties`) tracks `_boxProduct` (step page ID, e.g. `"addProductsPage1"`), `_Category`, `_CategoryName`, and `_uniqueGbbItemKey`. **None of these step/category properties are sent to `/cart/add.js`.** The cart line item has no step attribution. Cart Transform groups by `_easyBundle:OfferId` alone.
+**Key finding — step info is client-only:** The widget client state (`giftBoxCartData.items[].properties`) tracks `_boxProduct` (step page ID, e.g. `"addProductsPage1"`), `_Category`, `_CategoryName`, and `_uniqueGbbItemKey`. **None of these step/category properties are sent to `/cart/add.js`.** The cart line item has no step attribution. Cart Transform groups by `_wolfpackProductBundle:OfferId` alone.
 
-**`_easyBundle:OfferId` session key format:** The `_{sessionKey}` segment is a 3-character alphanumeric session token regenerated each page load. The trailing `_{itemCount}` suffix in the cart payload becomes the key **without** the suffix in the `bundle_details` metafield: `FBP-2_AQR_1` → metafield key `FBP-2_AQR`.
+**`_wolfpackProductBundle:OfferId` session key format:** The `_{sessionKey}` segment is a 3-character alphanumeric session token regenerated each page load. The trailing `_{itemCount}` suffix in the cart payload becomes the key **without** the suffix in the `bundle_details` metafield: `FBP-2_AQR_1` → metafield key `FBP-2_AQR`.
 
 **Post-add Storefront API sequence (same pattern as single-step):**
 

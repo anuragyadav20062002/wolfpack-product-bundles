@@ -89,7 +89,7 @@ describe("api.storefront-collections loader", () => {
       params: {},
       context: {},
     } as any);
-    const body = await response.json();
+    const body = await response.json() as { products: any[] };
 
     expect(body.products[0].variants[0]).toMatchObject({
       id: "gid://shopify/ProductVariant/222",
@@ -158,7 +158,7 @@ describe("api.storefront-collections loader", () => {
       params: {},
       context: {},
     } as any);
-    const body = await response.json();
+    const body = await response.json() as { products: any[] };
 
     expect(body.products[0].options).toEqual([
       { name: "Meals", values: ["4 meals", "6 meals"] },

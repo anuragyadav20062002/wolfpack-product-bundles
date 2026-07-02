@@ -178,6 +178,17 @@ Evidence path: `/private/tmp/fpb-standard-agentic-parity/category-tab-font-weigh
 - WPB pre-fix evidence on widget `3.0.103` showed Standard `.category-tab .tab-label` at `400`. Source fix built into widget version `3.0.104` sets only the Standard tab label node to `700`.
 - Current WPB dev-preview storefront still served Shopify CDN widget `3.0.103` after cache clear, so live browser proof remains pending asset refresh/deploy.
 
+### Current WPB Standard Hard-Reload Check
+
+Evidence path: `/private/tmp/fpb-standard-agentic-parity/final-wrap-current-wpb/`
+
+- Chrome DevTools MCP hard-reload proof on the current dev-tunnel preview confirms WPB Standard widget `4.0.5`, preset `STANDARD`, and the active two-entry add-on fixture (`Choose Full-Size Products`, `Add On`).
+- Desktop first-load proof `wpb-desktop-runtime-and-metrics.json` confirms product images keep `fpb-standard-product-image-fade 1.5s` and visible product cards are uniform in the current wide-desktop viewport.
+- Desktop post-selection proof `wpb-desktop-after-one-selection.json` confirms the selected product card uses `outline: rgb(0, 0, 0) solid 2px`, `border: 0`, and unchanged card dimensions, so the selected black state does not resize the card.
+- The same post-selection proof confirms the Standard sidebar displays the add-on summary block and moves to `1 item(s)` with the selected product row, total, and Next action.
+- Follow-up hard-reload evidence `wpb-current-hard-reload-desktop-metrics-2.json`, `wpb-current-selected-desktop-metrics-2.json`, `wpb-current-four-selected-next-blocked.json`, `wpb-current-statement-category-next-blocked.json`, and `wpb-current-narrow-container-probe.json` reconfirms widget `4.0.5`, product image fade animation, visible full product titles, selected-card outline behavior, and the add-on qualification summary on the base step. The active fixture still blocks Add On navigation with `Complete all steps to unlock Add On!` after four selected base products, including after switching to the long-label Statement category, so add-on-step sidebar removal is not proven by this current fixture.
+- This proof does not close any pending pairwise or stress row by itself because the browser was at a wide desktop viewport, the store cart already contained older lines, and the active fixture is not the OOS, cloned-step, weight-rule, empty-category, or long-content row-specific fixture.
+
 ## Pairwise Run Set
 
 Status values:
@@ -192,7 +203,7 @@ Status values:
 
 | Field | Value |
 |---|---|
-| Status | verified |
+| Status | fixed-awaiting-deploy |
 | EB config | Captured EB Standard bundle `Daily Essentials`, bundle ID `1`, `FBP_SIDE_FOOTER` + `DEFAULT_FBP` |
 | WPB config | Captured Wolfpack Standard bundle `Daily Essentials`, bundle ID `cmqwx0k3u0000v08brgbhh6aa`, `FBP_SIDE_FOOTER` + `STANDARD` |
 | Matrix coverage | Single-step, one category, manual products, no variants, all in stock, step min 4, discount/progress copy for one 100% off item at threshold, add-ons disabled, no defaults, no slots, default text, no banner, default settings, desktop sidebar open, mobile summary tray, add to cart blocked before min, desktop/mobile first load and after one add |
@@ -356,7 +367,7 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | fixed-awaiting-deploy |
+| Status | verified |
 | EB config | Add-Ons and Gifting Step enabled; Add-Ons with Bundles disabled |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Multi-step with add-on/gifting step, one category, manual products, no variants, all in stock, no rule, no discount, gifting step only, no defaults, no slots, edited bundle summary title/subtitle, no banner, personalization or message controls, next/back, mobile final-step cart state |

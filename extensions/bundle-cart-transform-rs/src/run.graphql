@@ -9,10 +9,10 @@ query Input {
     lines {
       id
       quantity
-      easyBundleOfferId: attribute(key: "_easyBundle:OfferId") {
+      wolfpackProductBundleOfferId: attribute(key: "_wolfpackProductBundle:OfferId") {
         value
       }
-      easyBundleName: attribute(key: "_bundleName") {
+      wolfpackProductBundleName: attribute(key: "_bundleName") {
         value
       }
       stepType: attribute(key: "_bundle_step_type") {

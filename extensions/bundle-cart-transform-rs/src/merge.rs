@@ -1,12 +1,9 @@
 use shopify_function::scalars::Decimal;
 use std::collections::HashMap;
 
-use crate::helpers::{
-    decimal_to_f64, is_addon_line, is_free_gift_line, parse_json_or_default,
-};
+use crate::helpers::{decimal_to_f64, is_addon_line, is_free_gift_line, parse_json_or_default};
 use crate::pricing::{
-    calculate_buy_x_get_y_discount_percentage, calculate_discount_percentage,
-    rounded_percentage,
+    calculate_buy_x_get_y_discount_percentage, calculate_discount_percentage, rounded_percentage,
 };
 use crate::schema;
 use crate::types::{CartLineMessagingSettings, ComponentParent, PricingMethod};
@@ -52,7 +49,7 @@ fn non_empty(value: &Option<String>) -> Option<String> {
 
 /// Process all MERGE operations for one cart pass.
 ///
-fn easy_bundle_offer_group_id(value: &str) -> Option<String> {
+fn wolfpack_product_bundle_offer_group_id(value: &str) -> Option<String> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
         return None;
@@ -69,7 +66,7 @@ fn easy_bundle_offer_group_id(value: &str) -> Option<String> {
     Some(base.to_string())
 }
 
-/// Groups cart lines by EB `_easyBundle:OfferId` base (O(n) pass), then for each group builds one
+/// Groups cart lines by EB `_wolfpackProductBundle:OfferId` base (O(n) pass), then for each group builds one
 /// MERGE operation using the component_parents metafield for parent variant ID
 /// and pricing config.
 ///
@@ -89,7 +86,7 @@ pub fn process_merge_operations(
     let mut bundle_name_counts: HashMap<String, u32> = HashMap::new();
 
     // -------------------------------------------------------------------------
-    // Step 1: Group cart lines by EB `_easyBundle:OfferId` base in a single O(n) pass.
+    // Step 1: Group cart lines by EB `_wolfpackProductBundle:OfferId` base in a single O(n) pass.
     // Using indices to avoid borrow conflicts with `lines` slice.
     // -------------------------------------------------------------------------
     let lines = input.cart().lines();
@@ -102,9 +99,9 @@ pub fn process_merge_operations(
         }
 
         let offer_group_id = match line
-            .easy_bundle_offer_id()
+            .wolfpack_product_bundle_offer_id()
             .and_then(|a| a.value())
-            .and_then(|value| easy_bundle_offer_group_id(value.as_str()))
+            .and_then(|value| wolfpack_product_bundle_offer_group_id(value.as_str()))
         {
             Some(v) => v,
             None => continue,
@@ -254,7 +251,7 @@ pub fn process_merge_operations(
         // Step 5: Build unique bundle title.
         // -------------------------------------------------------------------------
         let base_name = lines[line_indices[0]]
-            .easy_bundle_name()
+            .wolfpack_product_bundle_name()
             .and_then(|a| a.value())
             .map(|s| s.as_str().to_string())
             .unwrap_or_else(|| "Bundle".to_string());

@@ -61,8 +61,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-attrs" }},
-                        "easyBundleName": {{ "value": "Test Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-attrs" }},
+                        "wolfpackProductBundleName": {{ "value": "Test Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -80,8 +80,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 2,
-                        "easyBundleOfferId": {{ "value": "bundle-attrs" }},
-                        "easyBundleName": {{ "value": "Test Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-attrs" }},
+                        "wolfpackProductBundleName": {{ "value": "Test Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -119,7 +119,7 @@ mod tests {
             "cart": {
                 "lines": [{
                     "id": "line1", "quantity": 1,
-                    "easyBundleOfferId": null, "easyBundleName": null, "stepType": null,
+                    "wolfpackProductBundleOfferId": null, "wolfpackProductBundleName": null, "stepType": null,
                     "merchandise": {
                         "__typename": "ProductVariant",
                         "id": "gid://shopify/ProductVariant/111",
@@ -158,8 +158,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "MIX-894502_K1K_1" }},
-                        "easyBundleName": {{ "value": "Test Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "MIX-894502_K1K_1" }},
+                        "wolfpackProductBundleName": {{ "value": "Test Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -176,8 +176,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "MIX-894502_K1K_2" }},
-                        "easyBundleName": {{ "value": "Test Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "MIX-894502_K1K_2" }},
+                        "wolfpackProductBundleName": {{ "value": "Test Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -258,8 +258,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-with-message" }},
-                        "easyBundleName": {{ "value": "Message Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-with-message" }},
+                        "wolfpackProductBundleName": {{ "value": "Message Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display:?} }},
                         "merchandise": {{
@@ -279,8 +279,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-with-message" }},
-                        "easyBundleName": {{ "value": "Message Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-with-message" }},
+                        "wolfpackProductBundleName": {{ "value": "Message Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display:?} }},
                         "merchandise": {{
@@ -300,8 +300,8 @@ mod tests {
                     }},
                     {{
                         "id": "message-line", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-with-message" }},
-                        "easyBundleName": {{ "value": "Message Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-with-message" }},
+                        "wolfpackProductBundleName": {{ "value": "Message Bundle" }},
                         "stepType": {{ "value": "gift_message" }},
                         "bundleDisplayProperties": null,
                         "merchandise": {{
@@ -390,8 +390,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 3,
-                        "easyBundleOfferId": {{ "value": "bundle-bxy" }},
-                        "easyBundleName": {{ "value": "BXY Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-bxy" }},
+                        "wolfpackProductBundleName": {{ "value": "BXY Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -513,8 +513,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-001" }},
-                        "easyBundleName": {{ "value": "Summer Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-001" }},
+                        "wolfpackProductBundleName": {{ "value": "Summer Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant", "id": "gid://shopify/ProductVariant/101",
@@ -527,8 +527,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-002" }},
-                        "easyBundleName": {{ "value": "Summer Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-002" }},
+                        "wolfpackProductBundleName": {{ "value": "Summer Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant", "id": "gid://shopify/ProductVariant/201",
@@ -590,8 +590,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "sidebar-instance-1" }},
-                        "easyBundleName": {{ "value": "Full Page Sidebar Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "sidebar-instance-1" }},
+                        "wolfpackProductBundleName": {{ "value": "Full Page Sidebar Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -608,8 +608,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "sidebar-instance-1" }},
-                        "easyBundleName": {{ "value": "Full Page Sidebar Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "sidebar-instance-1" }},
+                        "wolfpackProductBundleName": {{ "value": "Full Page Sidebar Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -679,8 +679,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-with-addon" }},
-                        "easyBundleName": {{ "value": "Add-on Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-with-addon" }},
+                        "wolfpackProductBundleName": {{ "value": "Add-on Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -698,8 +698,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-with-addon" }},
-                        "easyBundleName": {{ "value": "Add-on Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-with-addon" }},
+                        "wolfpackProductBundleName": {{ "value": "Add-on Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -717,8 +717,8 @@ mod tests {
                     }},
                     {{
                         "id": "addon-line", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-with-addon" }},
-                        "easyBundleName": {{ "value": "Add-on Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-with-addon" }},
+                        "wolfpackProductBundleName": {{ "value": "Add-on Bundle" }},
                         "stepType": {{ "value": "addon:PERCENTAGE:10" }},
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -778,9 +778,10 @@ mod tests {
             Some("5000")
         );
 
-        let line_update = output.operations.iter().find(|operation| {
-            matches!(operation, schema::CartOperation::LineUpdate(_))
-        });
+        let line_update = output
+            .operations
+            .iter()
+            .find(|operation| matches!(operation, schema::CartOperation::LineUpdate(_)));
         assert!(
             line_update.is_none(),
             "paid add-on discounting is handled by the Discount Function"
@@ -805,8 +806,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "paid-line", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-with-free-gift" }},
-                        "easyBundleName": {{ "value": "Free Gift Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-with-free-gift" }},
+                        "wolfpackProductBundleName": {{ "value": "Free Gift Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -823,8 +824,8 @@ mod tests {
                     }},
                     {{
                         "id": "free-gift-line", "quantity": 1,
-                        "easyBundleOfferId": {{ "value": "bundle-with-free-gift" }},
-                        "easyBundleName": {{ "value": "Free Gift Bundle" }},
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-with-free-gift" }},
+                        "wolfpackProductBundleName": {{ "value": "Free Gift Bundle" }},
                         "stepType": {{ "value": "free_gift" }},
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -899,8 +900,8 @@ mod tests {
             "cart": {{
                 "lines": [{{
                     "id": "flex-line", "quantity": 1,
-                    "easyBundleOfferId": null,
-                    "easyBundleName": {{ "value": "Flex Bundle" }},
+                    "wolfpackProductBundleOfferId": null,
+                    "wolfpackProductBundleName": {{ "value": "Flex Bundle" }},
                     "stepType": null,
                     "merchandise": {{
                         "__typename": "ProductVariant",
@@ -953,8 +954,8 @@ mod tests {
             "cart": {{
                 "lines": [{{
                     "id": "flex-line-2", "quantity": 1,
-                    "easyBundleOfferId": null,
-                    "easyBundleName": {{ "value": "No Discount Bundle" }},
+                    "wolfpackProductBundleOfferId": null,
+                    "wolfpackProductBundleName": {{ "value": "No Discount Bundle" }},
                     "stepType": null,
                     "merchandise": {{
                         "__typename": "ProductVariant",

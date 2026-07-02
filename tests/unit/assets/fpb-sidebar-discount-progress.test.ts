@@ -78,7 +78,7 @@ beforeEach(() => {
   };
 });
 
-function makeContext(preset: string, progressType: 'simple' | 'step_based') {
+function makeContext(preset: string, progressType: 'simple' | 'step_based'): any {
   return {
     selectedProducts: [{}],
     stepProductData: [[]],
@@ -155,7 +155,7 @@ describe('FPB summary sidebar discount progress', () => {
   it.each(['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
     'requests step-based progress rendering in the %s summary sidebar',
     (preset) => {
-      const panel = document.createElement('aside');
+      const panel = document.createElement('aside') as unknown as FakeElement;
       let renderProgressCount = 0;
       const context = makeContext(preset, 'step_based');
       context._renderDiscountProgress = () => {
@@ -192,9 +192,9 @@ describe('FPB Standard summary sidebar add-ons', () => {
     const panel = document.createElement('aside');
     const context = makeContext('STANDARD', 'simple');
     let renderCount = 0;
-    context._renderFreeGiftSection = (container: FakeElement) => {
+      context._renderFreeGiftSection = (container: FakeElement) => {
       renderCount += 1;
-      const addon = document.createElement('div');
+      const addon = document.createElement('div') as unknown as FakeElement;
       addon.className = 'side-panel-addon-message side-panel-free-gift';
       addon.textContent = 'Add 1 more product(s) to claim 100% off on Add ons';
       container.appendChild(addon);
@@ -206,7 +206,7 @@ describe('FPB Standard summary sidebar add-ons', () => {
   });
 
   it('does not render the add-on summary block when the active step is the add-on step', () => {
-    const panel = document.createElement('aside');
+      const panel = document.createElement('aside') as unknown as FakeElement;
     const context = makeContext('STANDARD', 'simple');
     let renderCount = 0;
     context.currentStepIndex = 1;

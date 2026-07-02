@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 4.0.5
- * Built   : 2026-07-01
+ * Version : 5.0.0
+ * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '4.0.5';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.0';
 (function() {
   'use strict';
 
@@ -3333,8 +3333,8 @@ function buildProductPageCartFormData(cartItems = [], {
     });
     formData.append(`items[${index}][properties][Box]`, String(itemNumber));
     formData.append(`items[${index}][properties][_bundleName]`, bundleName);
-    formData.append(`items[${index}][properties][_easyBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
-    formData.append(`items[${index}][properties][_easyBundle:prodQty]`, String(item.quantity));
+    formData.append(`items[${index}][properties][_wolfpackProductBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
+    formData.append(`items[${index}][properties][_wolfpackProductBundle:prodQty]`, String(item.quantity));
   });
 
   return {

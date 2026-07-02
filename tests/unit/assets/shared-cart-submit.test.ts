@@ -37,8 +37,8 @@ describe('shared cart-submit helpers', () => {
       ['items[0][properties][_custom]', 'value'],
       ['items[0][properties][Box]', '1'],
       ['items[0][properties][_bundleName]', 'Gift Box'],
-      ['items[0][properties][_easyBundle:OfferId]', 'offer-1_session-1_1'],
-      ['items[0][properties][_easyBundle:prodQty]', '2'],
+      ['items[0][properties][_wolfpackProductBundle:OfferId]', 'offer-1_session-1_1'],
+      ['items[0][properties][_wolfpackProductBundle:prodQty]', '2'],
     ]);
   });
 

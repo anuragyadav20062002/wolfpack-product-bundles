@@ -1,3 +1,5 @@
+export {};
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldAutoAdvanceFullPageStep } = require('../../../app/assets/widgets/full-page/methods/selection-navigation-methods.js');
 
