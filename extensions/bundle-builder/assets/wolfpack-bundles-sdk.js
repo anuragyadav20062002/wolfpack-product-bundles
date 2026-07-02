@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 5.0.2
+ * Version : 5.0.3
  * Built   : 2026-07-02
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.2';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.3';
 (function (window) {
   'use strict';
 

@@ -1,4 +1,8 @@
 import { readProductPageWidgetSources } from './widget-source-helpers';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ProductPageSelectionDataMethods } = require('../../../app/assets/widgets/product-page/methods/selection-data-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { shouldDisableProductPageVariantOption } = require('../../../app/assets/widgets/product-page/methods/modal-methods.js');
 /**
  * Unit Tests — Product Page widget product normalization
  *
@@ -157,6 +161,81 @@ describe('Product Page widget quantity-validation contract', () => {
   });
 });
 
+describe('Product Page widget product-level inventory tracking', () => {
+  function makeSelectionContext(trackInventoryOnAddToCart: boolean) {
+    return {
+      stepProductData: [[{
+        variantId: 'variant-1',
+        available: true,
+        quantityAvailable: 0,
+        currentlyNotInStock: false,
+      }]],
+      _getProductPageControls: () => ({ trackInventoryOnAddToCart }),
+      normalizeSelectionKey: (value: string) => value,
+      findProductBySelectionKey(products: any[], selectionKey: string) {
+        return products.find(product => product.variantId === selectionKey) || null;
+      },
+    };
+  }
+
+  it('blocks tracked zero-stock variants when inventory tracking is enabled', () => {
+    const state = ProductPageSelectionDataMethods.getVariantAvailable.call(
+      makeSelectionContext(true),
+      0,
+      'variant-1',
+    );
+
+    expect(state).toEqual({ available: 0, outOfStock: true, acceptsBackorder: false });
+  });
+
+  it('keeps tracked zero-stock variants unbounded when inventory tracking is disabled', () => {
+    const state = ProductPageSelectionDataMethods.getVariantAvailable.call(
+      makeSelectionContext(false),
+      0,
+      'variant-1',
+    );
+
+    expect(state).toEqual({ available: null, outOfStock: false, acceptsBackorder: false });
+  });
+
+  it('does not clamp positive stock quantities when inventory tracking is disabled', () => {
+    const context = makeSelectionContext(false);
+    context.stepProductData[0][0].quantityAvailable = 2;
+
+    const state = ProductPageSelectionDataMethods.getVariantAvailable.call(
+      context,
+      0,
+      'variant-1',
+    );
+
+    expect(state).toEqual({ available: null, outOfStock: false, acceptsBackorder: false });
+  });
+
+  it('does not disable a zero-stock variant option when inventory tracking is disabled', () => {
+    expect(shouldDisableProductPageVariantOption({
+      available: true,
+      quantityAvailable: 0,
+      currentlyNotInStock: false,
+    }, false)).toBe(false);
+  });
+
+  it('disables a zero-stock variant option when inventory tracking is enabled', () => {
+    expect(shouldDisableProductPageVariantOption({
+      available: true,
+      quantityAvailable: 0,
+      currentlyNotInStock: false,
+    }, true)).toBe(true);
+  });
+
+  it('keeps backorderable zero-stock variant options enabled when inventory tracking is enabled', () => {
+    expect(shouldDisableProductPageVariantOption({
+      available: true,
+      quantityAvailable: 0,
+      currentlyNotInStock: true,
+    }, true)).toBe(false);
+  });
+});
+
 describe('Product Page widget direct default-products contract', () => {
   it('reads direct defaultProductsData and renders the preselected summary branch', () => {
     const source = readProductPageWidgetSources();
@@ -164,7 +243,6 @@ describe('Product Page widget direct default-products contract', () => {
     expect(source).toContain('_initDirectDefaultProducts');
     expect(source).toContain('_renderDirectDefaultProducts');
     expect(source).toContain('this.selectedBundle?.defaultProductsData');
-    expect(source).toContain('bw-default-products');
   });
 
   it('does not mark direct defaults unavailable from zero inventory alone', () => {

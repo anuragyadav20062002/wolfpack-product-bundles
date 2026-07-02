@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.2
+ * Version : 5.0.3
  * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.2';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.3';
 (function() {
   'use strict';
 
@@ -6288,6 +6288,13 @@ processProductsForStep(products, step) {
 };
 
 const ProductPageSelectionDataMethods = {
+isInventoryTrackingOnAddToCartEnabled() {
+  const controls = typeof this._getProductPageControls === 'function'
+    ? this._getProductPageControls()
+    : null;
+  return controls?.trackInventoryOnAddToCart === true;
+},
+
 /**
  * Look up real stock for a variant. See full-page widget's getVariantAvailable
  * for field semantics.
@@ -6303,10 +6310,16 @@ getVariantAvailable(stepIndex, variantId) {
   }
   const qty = typeof product.quantityAvailable === 'number' ? product.quantityAvailable : null;
   const backorder = product.currentlyNotInStock === true;
-  if (qty === 0 && !backorder) {
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : ProductPageSelectionDataMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  if (!trackInventoryOnAddToCart) {
+    return { available: null, outOfStock: false, acceptsBackorder: backorder };
+  }
+  if (trackInventoryOnAddToCart && qty === 0 && !backorder) {
     return { available: 0, outOfStock: true, acceptsBackorder: false };
   }
-  return { available: qty, outOfStock: false, acceptsBackorder: backorder };
+  return { available: qty === 0 ? null : qty, outOfStock: false, acceptsBackorder: backorder };
 },
 
 findProductBySelectionKey(products, selectionKey) {
@@ -6690,6 +6703,16 @@ function resolveProductPageCardButtonText({
     .replace(/\{\{\s*quantity\s*\}\}/g, String(currentQuantity));
 }
 
+function shouldDisableProductPageVariantOption(variant, trackInventoryOnAddToCart = false) {
+  if (variant?.available !== true) {
+    return true;
+  }
+
+  return trackInventoryOnAddToCart === true
+    && variant?.quantityAvailable === 0
+    && variant?.currentlyNotInStock !== true;
+}
+
 const ProductPageModalMethods = {
 renderModalTabs() {
   const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
@@ -6889,13 +6912,15 @@ renderVariantSelector(product) {
     return '';
   }
 
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : false;
+
   return `
     <div class="variant-selector-wrapper">
       <select class="variant-selector" data-base-product-id="${product.id}">
         ${product.variants.map(v => {
-
-          const isHardOOS = v.available !== true
-            || (v.quantityAvailable === 0 && v.currentlyNotInStock !== true);
+          const isHardOOS = shouldDisableProductPageVariantOption(v, trackInventoryOnAddToCart);
           const label = isHardOOS ? `${v.title} — out of stock` : v.title;
           const selected = v.id === product.variantId ? 'selected' : '';
           const disabled = isHardOOS ? 'disabled' : '';
@@ -7037,12 +7062,15 @@ attachProductEventHandlers(productGrid, stepIndex) {
             this.setSelectedQuantity(stepIndex, product.variantId, 0);
 
             const newQtyAvail = product.quantityAvailable;
-            const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+            const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+              ? this.isInventoryTrackingOnAddToCartEnabled()
+              : false;
+            const newOOS = shouldDisableProductPageVariantOption(product, trackInventoryOnAddToCart);
             let migratedQty = oldQuantity;
             if (newOOS) {
               ToastManager.show('Selected variant is out of stock — selection cleared.');
               migratedQty = 0;
-            } else if (newQtyAvail !== null && oldQuantity > newQtyAvail) {
+            } else if (trackInventoryOnAddToCart && newQtyAvail !== null && oldQuantity > newQtyAvail) {
               migratedQty = newQtyAvail;
               ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
             }

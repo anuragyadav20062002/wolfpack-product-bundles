@@ -2,6 +2,8 @@ export {};
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { VariantSelectorComponent } = require('../../../app/assets/widgets/shared/variant-selector.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { fullPageProductProcessingMethods } = require('../../../app/assets/widgets/full-page/methods/product-processing-methods.js');
 
 class FakeWrapper {
   querySelectorAll() {
@@ -54,5 +56,46 @@ describe('FPB Standard variant availability', () => {
     expect(product.quantityAvailable).toBeNull();
     expect(product.currentlyNotInStock).toBe(false);
     expect(onVariantChange).toHaveBeenCalledWith('sold-out-large', 'available-small');
+  });
+
+  it('treats tracked zero-stock variants as out of stock only when inventory tracking is enabled', () => {
+    const trackedZeroStockProduct = {
+      available: true,
+      quantityAvailable: 0,
+      currentlyNotInStock: false,
+    };
+
+    expect(fullPageProductProcessingMethods.isVariantOutOfStock.call({
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+    }, trackedZeroStockProduct)).toBe(false);
+
+    expect(fullPageProductProcessingMethods.isVariantOutOfStock.call({
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: true }),
+    }, trackedZeroStockProduct)).toBe(true);
+  });
+
+  it('keeps backorderable zero-stock variants selectable when inventory tracking is enabled', () => {
+    expect(fullPageProductProcessingMethods.isVariantOutOfStock.call({
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: true }),
+    }, {
+      available: true,
+      quantityAvailable: 0,
+      currentlyNotInStock: true,
+    })).toBe(false);
+  });
+
+  it('does not clamp positive stock quantities when inventory tracking is disabled', () => {
+    const state = fullPageProductProcessingMethods.getVariantAvailable.call({
+      stepProductData: [[{
+        variantId: 'variant-1',
+        available: true,
+        quantityAvailable: 2,
+        currentlyNotInStock: false,
+      }]],
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+      isVariantOutOfStock: fullPageProductProcessingMethods.isVariantOutOfStock,
+    }, 0, 'variant-1');
+
+    expect(state).toEqual({ available: null, outOfStock: false, acceptsBackorder: false });
   });
 });

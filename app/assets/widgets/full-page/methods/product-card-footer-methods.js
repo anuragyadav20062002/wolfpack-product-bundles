@@ -388,11 +388,14 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
         // Clamp against new variant's stock
         const newQtyAvail = product.quantityAvailable; // already updated by component
         const newOOS = this.isVariantOutOfStock(product);
+        const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+          ? this.isInventoryTrackingOnAddToCartEnabled()
+          : false;
         let migratedQty = oldQty;
         if (newOOS) {
           ToastManager.show('Selected variant is out of stock — selection cleared.');
           migratedQty = 0;
-        } else if (newQtyAvail !== null && oldQty > newQtyAvail) {
+        } else if (trackInventoryOnAddToCart && newQtyAvail !== null && oldQty > newQtyAvail) {
           migratedQty = newQtyAvail;
           ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
         }

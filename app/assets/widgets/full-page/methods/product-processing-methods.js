@@ -94,6 +94,10 @@ function normalizeWeightToGrams(weight, unit) {
   }
 }
 
+function isTrackedZeroStock(product) {
+  return product?.quantityAvailable === 0 && product?.currentlyNotInStock !== true;
+}
+
 export function normalizeFullPageDirectDefaultProduct(product) {
   const variant = Array.isArray(product?.variants) ? product.variants[0] : null;
   const variantId = extractFullPageId(variant?.variantGraphqlId || variant?.variantId || variant?.id);
@@ -464,7 +468,27 @@ getFirstAvailableVariant(product) {
     return null;
   }
 
-  return variants.find(variant => variant.available === true) || null;
+  return variants.find(variant => this.isVariantSelectableForInventory(variant)) || null;
+},
+
+isInventoryTrackingOnAddToCartEnabled() {
+  const controls = typeof this._getLandingPageControls === 'function'
+    ? this._getLandingPageControls()
+    : null;
+  return controls?.trackInventoryOnAddToCart === true;
+},
+
+isVariantSelectableForInventory(variant) {
+  if (variant?.available !== true) {
+    return false;
+  }
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  if (!trackInventoryOnAddToCart) {
+    return true;
+  }
+  return !isTrackedZeroStock(variant);
 },
 
 processProductsForStep(products, step) {
@@ -472,24 +496,31 @@ processProductsForStep(products, step) {
   // quantityAvailable is number | null (null when the inventory scope isn't granted
   // or the variant is untracked — widget treats null as unlimited).
   // currentlyNotInStock is true for backorder-accepting variants that are sold out.
-  const normalizeVariant = (v) => ({
-    id: this.extractId(v.id),
-    title: v.title,
-    price: parseFloat(v.price || '0') * 100,
-    compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
-    sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
-      ? v.sellingPlanAllocations
-      : [],
-    available: v.available === true,
-    quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
-    currentlyNotInStock: v.currentlyNotInStock === true,
-    weight: normalizeWeightToGrams(v.weight, v.weightUnit),
-    weightUnit: 'GRAMS',
-    option1: v.option1 || null,
-    option2: v.option2 || null,
-    option3: v.option3 || null,
-    image: v.image || null
-  });
+  const normalizeVariant = (v) => {
+    const quantityAvailable = typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null;
+    const currentlyNotInStock = v.currentlyNotInStock === true;
+    return {
+      id: this.extractId(v.id),
+      title: v.title,
+      price: parseFloat(v.price || '0') * 100,
+      compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
+        ? v.sellingPlanAllocations
+        : [],
+      available: v.available === true && (
+        !fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this)
+        || !(quantityAvailable === 0 && currentlyNotInStock !== true)
+      ),
+      quantityAvailable,
+      currentlyNotInStock,
+      weight: normalizeWeightToGrams(v.weight, v.weightUnit),
+      weightUnit: 'GRAMS',
+      option1: v.option1 || null,
+      option2: v.option2 || null,
+      option3: v.option3 || null,
+      image: v.image || null
+    };
+  };
 
   return products.flatMap(product => {
     if (this.shouldExpandStepProductsDuringLoad(step) && product.variants && product.variants.length > 0) {
@@ -503,7 +534,7 @@ processProductsForStep(products, step) {
       });
 
       return product.variants
-        .filter(variant => variant.available === true) // Only show available variants
+        .filter(variant => this.isVariantSelectableForInventory(variant)) // Only show available variants
         .map(variant => {
           // Storefront API: prioritize variant image, fallback to product featured image.
           // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
@@ -525,7 +556,7 @@ processProductsForStep(products, step) {
             price: parseFloat(variant.price || '0') * 100,
             compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
             variantId: this.extractId(variant.id),
-            available: variant.available === true,
+            available: this.isVariantSelectableForInventory(variant),
             quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
             currentlyNotInStock: variant.currentlyNotInStock === true,
             weight: normalizeWeightToGrams(variant.weight, variant.weightUnit),
@@ -608,6 +639,12 @@ isVariantOutOfStock(product) {
   if (product.available === false) {
     return true;
   }
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  if (trackInventoryOnAddToCart && isTrackedZeroStock(product)) {
+    return true;
+  }
   return false;
 },
 
@@ -618,11 +655,16 @@ getVariantAvailable(stepIndex, variantId) {
     return { available: null, outOfStock: false, acceptsBackorder: false };
   }
 
-  const qty = typeof product.quantityAvailable === 'number' && product.quantityAvailable > 0
-    ? product.quantityAvailable
-    : null;
   const backorder = product.currentlyNotInStock === true;
   const outOfStock = this.isVariantOutOfStock(product);
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  const qty = trackInventoryOnAddToCart
+    && typeof product.quantityAvailable === 'number'
+    && product.quantityAvailable > 0
+    ? product.quantityAvailable
+    : null;
 
   return { available: qty, outOfStock, acceptsBackorder: backorder };
 },

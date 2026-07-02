@@ -369,6 +369,11 @@ Acceptance:
 - Inventory-related network proof is captured for both apps.
 - Rule blocking and inventory blocking messages do not conflict.
 
+Notes:
+- EB help article refreshed on 2026-07-02 from `https://easybundles-help.skailama.app/en/article/enabling-product-level-inventory-tracking-while-building-a-bundle-works-for-full-page-and-product-bundles-codyqn/`: product-level inventory tracking is a global Additional Configurations toggle; Shopify child products must use Track Quantity for physical stock; tracked zero-inventory products are not shown/blocked; untracked products remain unbounded; backorder/digital handling must not be inferred from quantity alone.
+- Source fix built into widget version `5.0.3`: FPB and PPB now honor the runtime `trackInventoryOnAddToCart` control before treating Storefront API `quantityAvailable: 0` as out of stock. With the toggle disabled, zero quantity remains unbounded, preserving the prior Storefront stock-gate fix; with the toggle enabled and `currentlyNotInStock !== true`, zero quantity blocks selection/cart behavior. Behavior proof: `npx jest tests/unit/assets/fpb-standard-variant-availability.test.ts tests/unit/assets/bundle-widget-product-page-products.test.ts --runInBand`.
+- Live EB/WPB P07 fixture capture remains pending; this source slice does not mark P07 verified.
+
 ### P08 Add-On Gifting Step Only
 
 | Field | Value |

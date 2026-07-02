@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.2
+ * Version : 5.0.3
  * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.2';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.3';
 (function() {
   'use strict';
 
@@ -8578,11 +8578,14 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
 
         const newQtyAvail = product.quantityAvailable;
         const newOOS = this.isVariantOutOfStock(product);
+        const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+          ? this.isInventoryTrackingOnAddToCartEnabled()
+          : false;
         let migratedQty = oldQty;
         if (newOOS) {
           ToastManager.show('Selected variant is out of stock — selection cleared.');
           migratedQty = 0;
-        } else if (newQtyAvail !== null && oldQty > newQtyAvail) {
+        } else if (trackInventoryOnAddToCart && newQtyAvail !== null && oldQty > newQtyAvail) {
           migratedQty = newQtyAvail;
           ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
         }
@@ -10595,6 +10598,10 @@ function normalizeWeightToGrams(weight, unit) {
   }
 }
 
+function isTrackedZeroStock(product) {
+  return product?.quantityAvailable === 0 && product?.currentlyNotInStock !== true;
+}
+
 function normalizeFullPageDirectDefaultProduct(product) {
   const variant = Array.isArray(product?.variants) ? product.variants[0] : null;
   const variantId = extractFullPageId(variant?.variantGraphqlId || variant?.variantId || variant?.id);
@@ -10947,29 +10954,56 @@ getFirstAvailableVariant(product) {
     return null;
   }
 
-  return variants.find(variant => variant.available === true) || null;
+  return variants.find(variant => this.isVariantSelectableForInventory(variant)) || null;
+},
+
+isInventoryTrackingOnAddToCartEnabled() {
+  const controls = typeof this._getLandingPageControls === 'function'
+    ? this._getLandingPageControls()
+    : null;
+  return controls?.trackInventoryOnAddToCart === true;
+},
+
+isVariantSelectableForInventory(variant) {
+  if (variant?.available !== true) {
+    return false;
+  }
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  if (!trackInventoryOnAddToCart) {
+    return true;
+  }
+  return !isTrackedZeroStock(variant);
 },
 
 processProductsForStep(products, step) {
 
-  const normalizeVariant = (v) => ({
-    id: this.extractId(v.id),
-    title: v.title,
-    price: parseFloat(v.price || '0') * 100,
-    compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
-    sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
-      ? v.sellingPlanAllocations
-      : [],
-    available: v.available === true,
-    quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
-    currentlyNotInStock: v.currentlyNotInStock === true,
-    weight: normalizeWeightToGrams(v.weight, v.weightUnit),
-    weightUnit: 'GRAMS',
-    option1: v.option1 || null,
-    option2: v.option2 || null,
-    option3: v.option3 || null,
-    image: v.image || null
-  });
+  const normalizeVariant = (v) => {
+    const quantityAvailable = typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null;
+    const currentlyNotInStock = v.currentlyNotInStock === true;
+    return {
+      id: this.extractId(v.id),
+      title: v.title,
+      price: parseFloat(v.price || '0') * 100,
+      compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
+        ? v.sellingPlanAllocations
+        : [],
+      available: v.available === true && (
+        !fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this)
+        || !(quantityAvailable === 0 && currentlyNotInStock !== true)
+      ),
+      quantityAvailable,
+      currentlyNotInStock,
+      weight: normalizeWeightToGrams(v.weight, v.weightUnit),
+      weightUnit: 'GRAMS',
+      option1: v.option1 || null,
+      option2: v.option2 || null,
+      option3: v.option3 || null,
+      image: v.image || null
+    };
+  };
 
   return products.flatMap(product => {
     if (this.shouldExpandStepProductsDuringLoad(step) && product.variants && product.variants.length > 0) {
@@ -10982,7 +11016,7 @@ processProductsForStep(products, step) {
       });
 
       return product.variants
-        .filter(variant => variant.available === true)
+        .filter(variant => this.isVariantSelectableForInventory(variant))
         .map(variant => {
 
           const imageUrl = variant?.image?.src
@@ -11003,7 +11037,7 @@ processProductsForStep(products, step) {
             price: parseFloat(variant.price || '0') * 100,
             compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
             variantId: this.extractId(variant.id),
-            available: variant.available === true,
+            available: this.isVariantSelectableForInventory(variant),
             quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
             currentlyNotInStock: variant.currentlyNotInStock === true,
             weight: normalizeWeightToGrams(variant.weight, variant.weightUnit),
@@ -11082,6 +11116,12 @@ isVariantOutOfStock(product) {
   if (product.available === false) {
     return true;
   }
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  if (trackInventoryOnAddToCart && isTrackedZeroStock(product)) {
+    return true;
+  }
   return false;
 },
 
@@ -11092,11 +11132,16 @@ getVariantAvailable(stepIndex, variantId) {
     return { available: null, outOfStock: false, acceptsBackorder: false };
   }
 
-  const qty = typeof product.quantityAvailable === 'number' && product.quantityAvailable > 0
-    ? product.quantityAvailable
-    : null;
   const backorder = product.currentlyNotInStock === true;
   const outOfStock = this.isVariantOutOfStock(product);
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  const qty = trackInventoryOnAddToCart
+    && typeof product.quantityAvailable === 'number'
+    && product.quantityAvailable > 0
+    ? product.quantityAvailable
+    : null;
 
   return { available: qty, outOfStock, acceptsBackorder: backorder };
 },
@@ -11424,11 +11469,14 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
             const newQtyAvail = product.quantityAvailable;
             const newOOS = this.isVariantOutOfStock(product);
+            const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+              ? this.isInventoryTrackingOnAddToCartEnabled()
+              : false;
             let migratedQty = oldQuantity;
             if (newOOS) {
               ToastManager.show('Selected variant is out of stock — selection cleared.');
               migratedQty = 0;
-            } else if (newQtyAvail !== null && newQtyAvail > 0 && oldQuantity > newQtyAvail) {
+            } else if (trackInventoryOnAddToCart && newQtyAvail !== null && newQtyAvail > 0 && oldQuantity > newQtyAvail) {
               migratedQty = newQtyAvail;
               ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
             }
