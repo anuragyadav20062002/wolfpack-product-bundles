@@ -665,7 +665,7 @@ Current blockers to closing:
 - P12 is `fixed-awaiting-live-proof`: it has source/test/Admin evidence and Storefront API weight payload proof, but still needs a live mirrored category-weight storefront fixture with below-threshold, threshold, quantity-change, and cart-blocking proof.
 - P13 has substantial mobile, long-title, variant-selector, and selected-card evidence, but the active EB/WPB fixtures differ and multi-image carousel/click proof still needs a dedicated mirrored fixture.
 - S01, S02, S03, S04, and S05 remain pending and have no completed evidence folders.
-- Regression smoke runtime/cart proof is complete for the current replacement fixture across Standard, Classic, Compact, and Horizontal, including Standard cart-add proof, Horizontal non-Standard cart-add proof, and the source-isolation delta note. This smoke proof does not replace the row-specific mirrored EB/WPB fixtures still listed above.
+- Regression smoke runtime/cart proof is complete for the current replacement fixture across Standard, Classic, Compact, and Horizontal. Standard has refreshed widget `5.0.8` desktop, mobile, and cart-add proof; Classic, Compact, and Horizontal remain covered by the earlier non-Standard `5.0.3` runtime/screenshot set, Horizontal cart-add proof, and the source-isolation delta note. This smoke proof does not replace the row-specific mirrored EB/WPB fixtures still listed above.
 
 No row should be marked complete from source-only evidence. Each remaining row requires the case evidence contract above: EB and WPB desktop/mobile captures, runtime snapshots, computed probes, accessibility/network evidence, interaction log, and cart proof where relevant.
 
