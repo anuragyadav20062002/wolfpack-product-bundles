@@ -45,7 +45,7 @@ _normalizeDirectDefaultProduct(product) {
   const requiredQuantity = Number(product.requiredQuantity || 1) || 1;
   const explicitlyUnavailable = variant?.availableForSale === false || variant?.available === false;
   const available = !explicitlyUnavailable;
-  const quantityAvailable = available && inventoryQuantity === 0 ? null : inventoryQuantity;
+  const quantityAvailable = inventoryQuantity;
 
   return {
     id: this.extractId(product.graphqlId || product.productId) || product.productId || variantId,

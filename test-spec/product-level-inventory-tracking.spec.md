@@ -15,6 +15,8 @@ Match EB's product-level inventory toggle behavior for FPB and PPB storefront wi
 | 2 | Toggle disabled, tracked zero stock | Same product with control disabled | FPB does not treat product as out of stock | Preserves existing Standard stock-gate fix for stores without the toggle. |
 | 3 | Toggle enabled, backorderable zero stock | Product `quantityAvailable=0`, `currentlyNotInStock=true` | FPB does not block | Shopify marks this as sellable/backorderable. |
 | 4 | Toggle disabled, positive tracked stock | Product `quantityAvailable=2` with control disabled | FPB returns no stock cap | The merchant did not opt into storefront inventory quantity enforcement. |
+| 5 | Direct default product with explicit zero inventory | Saved default product variant has `inventoryQuantity=0` | FPB preserves `quantityAvailable=0` so the global tracking toggle can block it | Prevents default-products DTOs from erasing real zero stock. |
+| 6 | Direct default product without inventory data | Saved default product variant has no inventory quantity | FPB preserves `quantityAvailable=null` | Unknown or unscoped inventory remains unbounded. |
 
 ### ProductPageInventoryTracking
 
@@ -29,6 +31,8 @@ Match EB's product-level inventory toggle behavior for FPB and PPB storefront wi
 | 7 | Individual card render with tracking enabled | One hard zero-stock variant, one backorderable zero-stock variant, one positive-stock variant | PPB renders only the backorderable and positive-stock variant cards | Matches EB help behavior that zero-inventory tracked products are not shown. |
 | 8 | Grouped card render with tracking enabled | First variant is hard zero stock, second variant has stock | PPB chooses the stocked variant for the product card | Prevents showing a blocked default variant when a sellable variant exists. |
 | 9 | Grouped card render with all variants hard zero stock | Product has only tracked zero-stock non-backorderable variants | PPB omits the product card | Matches EB help behavior before the customer reaches add-to-cart. |
+| 10 | Direct default product with explicit zero inventory | Saved default product variant has `inventoryQuantity=0` | PPB preserves `quantityAvailable=0` so the global tracking toggle can block it | Prevents default-products DTOs from erasing real zero stock. |
+| 11 | Direct default product without inventory data | Saved default product variant has no inventory quantity | PPB preserves `quantityAvailable=null` | Unknown or unscoped inventory remains unbounded. |
 
 ### ProductInventoryPayload
 

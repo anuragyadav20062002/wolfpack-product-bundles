@@ -4,6 +4,8 @@ const { ProductPageSelectionDataMethods } = require('../../../app/assets/widgets
 const { shouldDisableProductPageVariantOption } = require('../../../app/assets/widgets/product-page/methods/modal-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ProductPageProductDataMethods } = require('../../../app/assets/widgets/product-page/methods/product-data-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ProductPageDefaultProductMethods } = require('../../../app/assets/widgets/product-page/methods/default-product-methods.js');
 /**
  * Unit Tests — Product Page widget product normalization
  *
@@ -266,5 +268,50 @@ describe('Product Page widget product-level inventory tracking', () => {
     ], { displayVariantsAsIndividual: false }, true);
 
     expect(products).toEqual([]);
+  });
+
+  it('preserves explicit zero inventory on direct default products', () => {
+    const product = ProductPageDefaultProductMethods._normalizeDirectDefaultProduct.call({
+      extractId,
+    }, {
+      title: 'Default Product',
+      imageUrl: 'https://cdn.example/default.jpg',
+      graphqlId: 'gid://shopify/Product/9506413773059',
+      productId: '9506413773059',
+      variants: [{
+        variantGraphqlId: 'gid://shopify/ProductVariant/48720141091075',
+        variantId: '48720141091075',
+        price: '829.00',
+        inventoryQuantity: 0,
+      }],
+    });
+
+    expect(product).toEqual(expect.objectContaining({
+      variantId: '48720141091075',
+      available: true,
+      quantityAvailable: 0,
+    }));
+  });
+
+  it('keeps missing direct default inventory unbounded', () => {
+    const product = ProductPageDefaultProductMethods._normalizeDirectDefaultProduct.call({
+      extractId,
+    }, {
+      title: 'Default Product',
+      imageUrl: 'https://cdn.example/default.jpg',
+      graphqlId: 'gid://shopify/Product/9506413773059',
+      productId: '9506413773059',
+      variants: [{
+        variantGraphqlId: 'gid://shopify/ProductVariant/48720141091075',
+        variantId: '48720141091075',
+        price: '829.00',
+      }],
+    });
+
+    expect(product).toEqual(expect.objectContaining({
+      variantId: '48720141091075',
+      available: true,
+      quantityAvailable: null,
+    }));
   });
 });

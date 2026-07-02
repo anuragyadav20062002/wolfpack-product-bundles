@@ -201,8 +201,27 @@ describe('FPB Standard mobile summary action', () => {
       variantId: '48720141091075',
       price: 82900,
       available: true,
-      quantityAvailable: null,
+      quantityAvailable: 0,
       defaultRequiredQuantity: 1,
+    }));
+  });
+
+  it('preserves missing direct default inventory as unbounded for full-page first-load selection', () => {
+    const product = normalizeFullPageDirectDefaultProduct({
+      title: 'Inventory Unknown Earrings',
+      graphqlId: 'gid://shopify/Product/9506413773059',
+      productId: '9506413773059',
+      variants: [{
+        variantGraphqlId: 'gid://shopify/ProductVariant/48720141091075',
+        variantId: '48720141091075',
+        price: '829.00',
+      }],
+    });
+
+    expect(product).toEqual(expect.objectContaining({
+      variantId: '48720141091075',
+      available: true,
+      quantityAvailable: null,
     }));
   });
 
