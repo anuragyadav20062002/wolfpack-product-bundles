@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.10
+ * Version : 5.0.11
  * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.10';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.11';
 (function() {
   'use strict';
 
@@ -2865,7 +2865,7 @@ function renderSelectedProductRow(product = null, options = {}) {
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
-        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">${quantity}</span>
+        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">x${quantity}</span>
         ${removable ? `
           <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Delete ${escapeAttribute(title)}">
             ${renderTrashIcon()}
@@ -5859,7 +5859,7 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
         <span class="fpb-mobile-summary-product-price">${priceText}</span>
       </div>
       <div class="fpb-mobile-summary-product-action">
-        <span class="fpb-mobile-summary-product-qty">×${item.quantity}</span>
+        <span class="fpb-mobile-summary-product-qty">x${item.quantity}</span>
       </div>
     `;
 
@@ -6324,7 +6324,7 @@ renderSidePanel(panel) {
         const imgSrc = this._getSelectedProductImageSrc(item);
 
         const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
-        const qtySpan = `<span class="side-panel-product-qty" aria-label="Quantity ${item.quantity}">${item.quantity}</span>`;
+        const qtySpan = `<span class="side-panel-product-qty" aria-label="Quantity ${item.quantity}">x${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
           ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
           : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;

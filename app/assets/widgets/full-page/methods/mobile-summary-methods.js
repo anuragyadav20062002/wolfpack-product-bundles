@@ -237,7 +237,7 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
         <span class="fpb-mobile-summary-product-price">${priceText}</span>
       </div>
       <div class="fpb-mobile-summary-product-action">
-        <span class="fpb-mobile-summary-product-qty">×${item.quantity}</span>
+        <span class="fpb-mobile-summary-product-qty">x${item.quantity}</span>
       </div>
     `;
 

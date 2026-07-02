@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.10
+ * Version : 5.0.11
  * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.10';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.11';
 (function() {
   'use strict';
 
@@ -2865,7 +2865,7 @@ function renderSelectedProductRow(product = null, options = {}) {
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
-        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">${quantity}</span>
+        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">x${quantity}</span>
         ${removable ? `
           <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Delete ${escapeAttribute(title)}">
             ${renderTrashIcon()}

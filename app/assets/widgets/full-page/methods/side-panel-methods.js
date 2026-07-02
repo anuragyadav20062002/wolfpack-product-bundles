@@ -233,7 +233,7 @@ renderSidePanel(panel) {
         const imgSrc = this._getSelectedProductImageSrc(item);
 
         const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
-        const qtySpan = `<span class="side-panel-product-qty" aria-label="Quantity ${item.quantity}">${item.quantity}</span>`;
+        const qtySpan = `<span class="side-panel-product-qty" aria-label="Quantity ${item.quantity}">x${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
           ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
           : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;

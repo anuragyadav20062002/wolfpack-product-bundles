@@ -39,7 +39,7 @@ export function renderSelectedProductRow(product = null, options = {}) {
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
-        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">${quantity}</span>
+        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">x${quantity}</span>
         ${removable ? `
           <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Delete ${escapeAttribute(title)}">
             ${renderTrashIcon()}
