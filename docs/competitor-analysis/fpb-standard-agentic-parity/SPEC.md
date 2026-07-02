@@ -360,7 +360,7 @@ Notes:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | fixed-awaiting-live-proof |
 | EB config | Track inventory on add-to-cart enabled with OOS blocked state |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Single-step, one category, manual products, one option variant, out of stock blocked, step min, buy X get Y, add-ons disabled, no defaults, under-min blocked, default text, no banner, track inventory on add-to-cart, add to cart blocked, mobile 390 x 844 |
@@ -473,7 +473,7 @@ Notes:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | fixed-awaiting-live-proof |
 | EB config | Multi-category step with one empty category |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Single-step, empty category, no products, no variants, all in stock for non-empty category, no rule, no discount, add-ons disabled, no defaults, no slots, long labels, no banner, default settings, mobile tray closed, next/back only |
@@ -492,7 +492,7 @@ Notes:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | fixed-awaiting-live-proof |
 | EB config | Category minimum weight rule with weighted products |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Single-step, multiple categories, manual products, no variants, all in stock, category min weight, fixed amount tier, add-ons disabled, no defaults, quantity slots, default text, no banner, default settings, desktop sidebar open, add to cart blocked below weight |
@@ -657,9 +657,9 @@ Current blockers to closing:
 - The current WPB dev preview harness has been restored with replacement FPB Standard bundle `cmr361mz50000v00yrdeyxpf7` and storefront page `/pages/preview-daily-essentials-2`, but it is only a minimal one-step, one-category, four-product fixture. It is sufficient for focused widget proof such as the mobile summary footer empty-state fix, but it does not replace the row-specific EB/WPB mirrored fixtures required below.
 - P00, P01, P02, and P05 remain `fixed-awaiting-live-proof`; each needs cache-bypassed live proof on the current served widget after the relevant saved fixtures are loaded.
 - P06 has help/reference and current-fixture-drift evidence only. It still needs a mirrored OOS-visible EB/WPB fixture and desktop/mobile storefront proof.
-- P07 has current WPB source/control proof for widget `5.0.6`, but still needs a mirrored EB/WPB inventory-tracking/OOS-blocked fixture with tracking enabled.
-- P11 has source/test evidence and failed direct EB fixture loads, but still needs a live mirrored empty-category fixture through the UI.
-- P12 has source/test/Admin evidence and Storefront API weight payload proof, but still needs a live mirrored category-weight storefront fixture with below-threshold, threshold, quantity-change, and cart-blocking proof.
+- P07 is `fixed-awaiting-live-proof`: it has current WPB source/control proof for widget `5.0.6`, but still needs a mirrored EB/WPB inventory-tracking/OOS-blocked fixture with tracking enabled.
+- P11 is `fixed-awaiting-live-proof`: it has source/test evidence and failed direct EB fixture loads, but still needs a live mirrored empty-category fixture through the UI.
+- P12 is `fixed-awaiting-live-proof`: it has source/test/Admin evidence and Storefront API weight payload proof, but still needs a live mirrored category-weight storefront fixture with below-threshold, threshold, quantity-change, and cart-blocking proof.
 - P13 has substantial mobile, long-title, variant-selector, and selected-card evidence, but the active EB/WPB fixtures differ and multi-image carousel/click proof still needs a dedicated mirrored fixture.
 - S01, S02, S03, S04, and S05 remain pending and have no completed evidence folders.
 - Regression smoke runtime/cart proof is complete for the current replacement fixture across Standard, Classic, Compact, and Horizontal, including Standard cart-add proof, Horizontal non-Standard cart-add proof, and the source-isolation delta note. This smoke proof does not replace the row-specific mirrored EB/WPB fixtures still listed above.
@@ -689,12 +689,12 @@ The parity loop is complete when:
 | P04 | verified | `/private/tmp/fpb-standard-agentic-parity/P04-collection-amount-rule/` |
 | P05 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P05-cloned-step-max/` |
 | P06 | pending | `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/` |
-| P07 | pending | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |
+| P07 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |
 | P08 | verified | `/private/tmp/fpb-standard-agentic-parity/P08-gifting-step-only/` |
 | P09 | verified | `/private/tmp/fpb-standard-agentic-parity/P09-paid-addon-tier/`; `/private/tmp/fpb-standard-agentic-parity/cart-lines-post-save/` |
 | P10 | verified | `/private/tmp/fpb-standard-agentic-parity/P10-free-addon-highest-tier/`; `/private/tmp/fpb-standard-agentic-parity/P10-free-addon-highest-tier/current-wpb/` |
-| P11 | pending | `/private/tmp/fpb-standard-agentic-parity/P11-empty-category/` |
-| P12 | pending | `/private/tmp/fpb-standard-agentic-parity/P12-category-weight-rule/` |
+| P11 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P11-empty-category/` |
+| P12 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P12-category-weight-rule/` |
 | P13 | pending | `/private/tmp/fpb-standard-agentic-parity/P13-mobile-long-content/` |
 | S01 | pending | `/private/tmp/fpb-standard-agentic-parity/S01-multi-step-variants-discounts-addons/` |
 | S02 | pending | `/private/tmp/fpb-standard-agentic-parity/S02-free-gift-tier-boundary/` |
