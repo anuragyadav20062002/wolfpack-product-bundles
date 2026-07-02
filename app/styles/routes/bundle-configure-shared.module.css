@@ -528,13 +528,6 @@
   min-width: 0;
 }
 
-.categoryInputHelp {
-  margin: 0;
-  color: #6d7175;
-  font-size: 13px;
-  line-height: 18px;
-}
-
 .categoryDragOver {
   border: 2px solid #458fff;
   box-shadow: 0 0 0 3px rgba(69, 143, 255, 0.12);

@@ -327,9 +327,6 @@ export function FpbStepCategoryAccordion({
                     markAsDirty();
                   }}
                 />
-                <p className={fullPageBundleStyles.categoryInputHelp}>
-                  Will be visible on the storefront
-                </p>
               </div>
               <button
                 type="button"
