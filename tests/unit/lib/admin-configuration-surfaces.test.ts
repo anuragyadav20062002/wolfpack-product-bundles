@@ -158,7 +158,7 @@ describe("recovered admin surfaces contract", () => {
       "Discount Display",
       "Discount format",
       "Checkout Settings",
-      "Execute Script",
+      "Checkout Integration",
       "Font Settings",
       "Custom Font",
     ]);
@@ -182,6 +182,21 @@ describe("recovered admin surfaces contract", () => {
       "Font Settings",
       "Font Settings",
     ]);
+    expect(landingConfiguration?.fields.find((field) => field.label === "Checkout Integration")).toMatchObject({
+      kind: "select",
+      options: [
+        "Shopify checkout",
+        "Theme cart drawer",
+        "GoKwik",
+        "Shopflo",
+        "Zecpay",
+        "Rebuy",
+        "Shiprocket / Fastrr",
+        "Monster cart",
+        "Upcart",
+        "Kaching Cart",
+      ],
+    });
 
     const landingCss = CONTROL_LAYOUTS[0]?.tabs.find((tab) => tab.title === "CSS & Scripts");
     expect(landingCss?.fields.map((field) => field.group)).toEqual([
@@ -226,60 +241,27 @@ describe("recovered admin surfaces contract", () => {
   });
 
   it("keeps the recovered integrations inventory and action types", () => {
-    expect(INTEGRATION_CATEGORIES.map((category) => category.title)).toEqual([
-      "Pre-orders, Pickup & Delivery",
-      "Subscriptions",
-      "Reviews",
-      "Page Builders",
-      "Checkout",
-    ]);
-    expect(getIntegrationCardCount()).toBe(10);
+    expect(INTEGRATION_CATEGORIES.map((category) => category.title)).toEqual(["Checkout"]);
+    expect(getIntegrationCardCount()).toBe(2);
 
     const cards = INTEGRATION_CATEGORIES.flatMap((category) => category.cards);
-    expect(cards.filter((card) => card.ctaType === "chat").map((card) => card.id)).toEqual(["zapiet"]);
-    expect(cards.filter((card) => card.ctaType === "guide")).toHaveLength(9);
-    expect(cards.map((card) => card.ctaLabel)).toEqual(Array.from({ length: 10 }, () => "View Setup"));
-    expect(cards.map((card) => card.setupUrl)).toEqual(
-      Array.from({ length: 10 }, () => "https://wolfpackapps.com"),
-    );
+    expect(cards.map((card) => card.id)).toEqual(["gokwik", "shopflo"]);
+    expect(cards.filter((card) => card.ctaType === "guide")).toHaveLength(2);
+    expect(cards.every((card) => card.ctaLabel === "View Setup")).toBe(true);
+    expect(cards.every((card) => card.setupUrl === "https://wolfpackapps.com")).toBe(true);
     expect(cards.map((card) => card.description)).toEqual([
-      "Pre-order out-of-stock items within your bundles",
-      "Schedule store pickup & delivery for bundle orders",
-      "Add subscription selling plans to bundled products",
-      "Enable subscribe-and-save options on your bundles",
-      "Set up recurring bundle subscriptions via Bold",
-      "Display star ratings and reviews on your bundles",
-      "Create custom landing pages to showcase bundles",
-      "Build high-converting pages for your bundle store",
       "Streamlined Indian checkout experience for bundles",
       "Optimized Indian checkout flow with bundle support",
     ]);
-    expect(cards.map((card) => card.logoUrl)).toEqual([
-      "/icons/Stoq.avif",
-      "/icons/Zapiet.avif",
-      "/icons/Skio.avif",
-      "/icons/Appstle.avif",
-      "/icons/Bold.avif",
-      "/icons/Judgeme.avif",
-      "/icons/Pagefly.avif",
-      "/icons/Gempages.avif",
-      "/icons/Gokwik.avif",
-      "/icons/Shopflo.avif",
-    ]);
-    expect(JSON.stringify(cards)).not.toMatch(/easybundles|skailama|id_token|hmac|session=/i);
+    expect(JSON.stringify(INTEGRATION_CATEGORIES)).not.toMatch(
+      /theme_cart_drawer|zecpay|rebuy|shiprocket|monster|upcart|kaching|stoq|zapiet|skio|appstle|bold|judge\.?me|pagefly|gempages|easybundles|skailama|id_token|hmac|session=/i,
+    );
   });
 
   it("preserves setup behavior summaries from help evidence", () => {
     const cards = INTEGRATION_CATEGORIES.flatMap((category) => category.cards);
-    const subscription = cards.find((card) => card.id === "skio");
-    const review = cards.find((card) => card.id === "judgeme");
-    const pageBuilder = cards.find((card) => card.id === "pagefly");
     const checkout = cards.find((card) => card.id === "gokwik");
 
-    expect(subscription?.guideSummary.join(" ")).toContain("Create one external subscription plan");
-    expect(subscription?.guideSummary.join(" ")).toContain("sync collections");
-    expect(review?.guideSummary.join(" ")).toContain("custom theme-page CSS");
-    expect(pageBuilder?.guideSummary.join(" ")).toContain("parent product handle");
     expect(checkout?.guideSummary.join(" ")).toContain("discount state");
   });
 });

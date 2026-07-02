@@ -1,4 +1,8 @@
 import { BundleType } from "../constants/bundle";
+import {
+  normalizeCheckoutIntegrationProvider,
+  type CheckoutIntegrationProviderId,
+} from "./checkout-integrations";
 
 export const SETTINGS_CONTROLS_BUNDLE_TYPES = [
   BundleType.PRODUCT_PAGE,
@@ -17,7 +21,7 @@ export type SettingsControlsRuntime = {
     redirectCollectionQuickAddToBundle: boolean;
     checkout: {
       action: Exclude<ControlsRedirectAction, "side_cart">;
-      executeScript: string;
+      providerId: CheckoutIntegrationProviderId;
     };
     font: {
       customFont: string;
@@ -106,6 +110,10 @@ function getLandingCheckoutAction(payload: ControlsPayload): "checkout" | "cart"
   return value(payload, "Checkout Settings") === "Redirect to Cart" ? "cart" : "checkout";
 }
 
+function getLandingCheckoutProvider(payload: ControlsPayload): CheckoutIntegrationProviderId {
+  return normalizeCheckoutIntegrationProvider(value(payload, "Checkout Integration"));
+}
+
 function getProductPageRedirectAction(payload: ControlsPayload): ControlsRedirectAction {
   const redirectValue = value(payload, "Redirect Settings");
   if (redirectValue === "Redirect to Checkout") return "checkout";
@@ -133,7 +141,7 @@ export function buildSettingsControlsRuntime(payload: ControlsPayload): Settings
       redirectCollectionQuickAddToBundle: checked(payload, "Redirect Collection Page 'Quick Add' to Bundle"),
       checkout: {
         action: getLandingCheckoutAction(payload),
-        executeScript: value(payload, "Execute Script"),
+        providerId: getLandingCheckoutProvider(payload),
       },
       font: {
         customFont: value(payload, "Custom Font"),

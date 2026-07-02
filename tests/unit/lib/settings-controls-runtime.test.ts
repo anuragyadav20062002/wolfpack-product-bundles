@@ -14,7 +14,7 @@ const controlsPayload = {
   "Discount Display": "Checked",
   "Discount format": "Percentage only (Eg: \"You save 19%\")",
   "Checkout Settings": "Redirect to Checkout",
-  "Execute Script": "window.__fpbDone = true;",
+  "Checkout Integration": "GoKwik",
   "Custom Font": "Inter",
   "Custom CSS for bundle builder pages": ".wpbBundle-HTML .builder { color: red; }",
   "Custom CSS for bundle dummy product page": ".wpbBundle-HTML .dummy { color: blue; }",
@@ -64,7 +64,7 @@ describe("Settings Controls runtime mapping", () => {
       redirectCollectionQuickAddToBundle: true,
       checkout: {
         action: "checkout",
-        executeScript: "window.__fpbDone = true;",
+        providerId: "gokwik",
       },
       font: {
         customFont: "Inter",
@@ -97,7 +97,7 @@ describe("Settings Controls runtime mapping", () => {
       redirectCollectionQuickAddToBundle: true,
       redirect: {
         action: "cart",
-        executeScript: "window.__fpbDone = true;",
+        executeScript: "",
       },
       css: {
         mixAndMatchBundles: ".wpbMixBundle { color: purple; }",
@@ -146,5 +146,30 @@ describe("Settings Controls runtime mapping", () => {
         format: "percentage_only",
       },
     });
+  });
+
+  it("falls back to native checkout for unknown checkout integration labels", async () => {
+    const { buildSettingsControlsRuntime } = await import("../../../app/lib/settings-controls-runtime");
+
+    const runtime = buildSettingsControlsRuntime({
+      ...controlsPayload,
+      "Checkout Integration": "Paste custom script",
+    });
+
+    expect(runtime.settingsControls.landingPage.checkout).toEqual({
+      action: "checkout",
+      providerId: "native",
+    });
+  });
+
+  it("maps article-listed checkout and side-cart provider labels", async () => {
+    const { buildSettingsControlsRuntime } = await import("../../../app/lib/settings-controls-runtime");
+
+    const runtime = buildSettingsControlsRuntime({
+      ...controlsPayload,
+      "Checkout Integration": "Kaching Cart",
+    });
+
+    expect(runtime.settingsControls.landingPage.checkout.providerId).toBe("kaching_cart");
   });
 });
