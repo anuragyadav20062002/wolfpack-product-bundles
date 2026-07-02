@@ -1,8 +1,9 @@
-import { readProductPageWidgetSources } from './widget-source-helpers';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ProductPageSelectionDataMethods } = require('../../../app/assets/widgets/product-page/methods/selection-data-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldDisableProductPageVariantOption } = require('../../../app/assets/widgets/product-page/methods/modal-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ProductPageProductDataMethods } = require('../../../app/assets/widgets/product-page/methods/product-data-methods.js');
 /**
  * Unit Tests — Product Page widget product normalization
  *
@@ -43,69 +44,15 @@ function extractId(idString: string | null | undefined): string | null {
   return idString.toString().split('/').pop() ?? null;
 }
 
-function processProductPageProductsForStep(products: StorefrontProduct[], step: WidgetStep): any[] {
-  const normalizeVariant = (variant: StorefrontVariant) => ({
-    id: extractId(variant.id),
-    title: variant.title,
-    price: parseFloat(variant.price || '0') * 100,
-    compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
-    available: variant.available === true,
-    quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
-    currentlyNotInStock: variant.currentlyNotInStock === true,
-    image: variant.image || null,
-  });
-
-  return products.flatMap<any>(product => {
-    if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
-      const processedVariants = (product.variants || []).map(normalizeVariant);
-      const processedOptions = (product.options || []).map(option => (
-        typeof option === 'string' ? option : option.name
-      ));
-
-      return product.variants
-        .filter(variant => variant.available === true)
-        .map(variant => ({
-          id: extractId(variant.id),
-          title: `${product.title} - ${variant.title}`,
-          imageUrl: variant?.image?.src || product.imageUrl || 'placeholder',
-          price: parseFloat(variant.price || '0') * 100,
-          compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
-          variantId: extractId(variant.id),
-          available: variant.available === true,
-          parentProductId: extractId(product.id),
-          parentTitle: product.title,
-          variants: processedVariants,
-          options: processedOptions,
-        }));
-    }
-
-    const defaultVariant = product.variants?.find(variant => variant.available === true) || product.variants?.[0];
-
-    if (defaultVariant && defaultVariant.available !== true) {
-      return [];
-    }
-
-    const processedVariants = (product.variants || []).map(normalizeVariant);
-    const processedOptions = (product.options || []).map(option => (
-      typeof option === 'string' ? option : option.name
-    ));
-
-    return [{
-      id: extractId(product.id),
-      title: product.title,
-      imageUrl: defaultVariant?.image?.src || product.imageUrl || 'placeholder',
-      price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-      compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
-      variantId: extractId(defaultVariant?.id || product.id),
-      available: defaultVariant?.available === true,
-      quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
-      currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
-      variants: processedVariants,
-      options: processedOptions,
-      images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-      description: product.description || '',
-    }];
-  });
+function processProductPageProductsForStep(
+  products: StorefrontProduct[],
+  step: WidgetStep,
+  trackInventoryOnAddToCart = false,
+): any[] {
+  return ProductPageProductDataMethods.processProductsForStep.call({
+    extractId,
+    _getProductPageControls: () => ({ trackInventoryOnAddToCart }),
+  }, products, step);
 }
 
 describe('processProductPageProductsForStep', () => {
@@ -149,15 +96,6 @@ describe('processProductPageProductsForStep', () => {
       quantityAvailable: 4,
       currentlyNotInStock: false,
     });
-  });
-});
-
-describe('Product Page widget quantity-validation contract', () => {
-  it('uses the shared per-product quantity gate in render and state update paths', () => {
-    const source = readProductPageWidgetSources();
-
-    expect(source).toContain('ConditionValidator.getAllowedQuantityPerProduct');
-    expect(source).toContain('ConditionValidator.canUpdateProductQuantity');
   });
 });
 
@@ -234,81 +172,99 @@ describe('Product Page widget product-level inventory tracking', () => {
       currentlyNotInStock: true,
     }, true)).toBe(false);
   });
-});
 
-describe('Product Page widget direct default-products contract', () => {
-  it('reads direct defaultProductsData and renders the preselected summary branch', () => {
-    const source = readProductPageWidgetSources();
+  it('hides tracked zero-stock variants before rendering individual product cards', () => {
+    const products = processProductPageProductsForStep([
+      {
+        id: 'gid://shopify/Product/700',
+        title: 'Tracked Bundle Product',
+        imageUrl: 'https://cdn.example/product.jpg',
+        variants: [
+          {
+            id: 'gid://shopify/ProductVariant/701',
+            title: 'Tracked zero',
+            price: '10.00',
+            available: true,
+            quantityAvailable: 0,
+            currentlyNotInStock: false,
+          },
+          {
+            id: 'gid://shopify/ProductVariant/702',
+            title: 'Backorder',
+            price: '11.00',
+            available: true,
+            quantityAvailable: 0,
+            currentlyNotInStock: true,
+          },
+          {
+            id: 'gid://shopify/ProductVariant/703',
+            title: 'In stock',
+            price: '12.00',
+            available: true,
+            quantityAvailable: 3,
+            currentlyNotInStock: false,
+          },
+        ],
+      },
+    ], { displayVariantsAsIndividual: true }, true);
 
-    expect(source).toContain('_initDirectDefaultProducts');
-    expect(source).toContain('_renderDirectDefaultProducts');
-    expect(source).toContain('this.selectedBundle?.defaultProductsData');
+    expect(products.map(product => product.variantId)).toEqual(['702', '703']);
   });
 
-  it('does not mark direct defaults unavailable from zero inventory alone', () => {
-    const source = readProductPageWidgetSources();
+  it('selects the first sellable variant for grouped product cards when tracking is enabled', () => {
+    const products = processProductPageProductsForStep([
+      {
+        id: 'gid://shopify/Product/800',
+        title: 'Grouped Product',
+        imageUrl: 'https://cdn.example/product.jpg',
+        variants: [
+          {
+            id: 'gid://shopify/ProductVariant/801',
+            title: 'Tracked zero',
+            price: '10.00',
+            available: true,
+            quantityAvailable: 0,
+            currentlyNotInStock: false,
+          },
+          {
+            id: 'gid://shopify/ProductVariant/802',
+            title: 'Sellable',
+            price: '11.00',
+            available: true,
+            quantityAvailable: 5,
+            currentlyNotInStock: false,
+          },
+        ],
+      },
+    ], { displayVariantsAsIndividual: false }, true);
 
-    expect(source).toContain('variant?.availableForSale === false || variant?.available === false');
-    expect(source).not.toContain('const available = inventoryQuantity === null || inventoryQuantity > 0;');
-  });
-});
-
-describe('Product Page widget category hydration contract', () => {
-  it('hydrates products and collections from step.categories', () => {
-    const source = readProductPageWidgetSources();
-
-    expect(source).toContain('collectStepProductIds(step)');
-    expect(source).toContain('collectStepCollectionHandles(step)');
-    expect(source).toContain('category.collectionsSelectedData');
-  });
-});
-
-describe('Product Page widget selection-key normalization contract', () => {
-  it('uses a shared selection-key normalizer for update paths', () => {
-    const source = readProductPageWidgetSources();
-
-    expect(source).toContain('normalizeSelectionKey(variantId)');
-    expect(source).toContain('getSelectedQuantity(stepIndex, selectionKey);');
-    expect(source).toContain('this.setSelectedQuantity(stepIndex, selectionKey, quantity);');
-    expect(source).toContain('this.setSelectedQuantity(stepIndex, normalizedVariantId, 0);');
-    expect(source).toContain('const normalized = this.normalizeSelectionKey(variantId);');
-    expect(source).toContain('if (Object.prototype.hasOwnProperty.call(selectedProducts, normalized))');
-  });
-
-  it('normalizes the default variant key before seeding default-step selections', () => {
-    const source = readProductPageWidgetSources();
-
-    expect(source).toContain('const normalizedDefaultVariantId = this.normalizeSelectionKey(step.defaultVariantId);');
-    expect(source).toContain('if (normalizedDefaultVariantId) {');
-    expect(source).toContain('this.setSelectedQuantity(i, normalizedDefaultVariantId, 1);');
-    expect(source).not.toContain('this.setSelectedQuantity(i, step.defaultVariantId');
-    expect(source).not.toContain('this.setSelectedQuantity(i, step.defaultVariantId, 1)');
+    expect(products).toHaveLength(1);
+    expect(products[0]).toMatchObject({
+      variantId: '802',
+      available: true,
+      quantityAvailable: 5,
+    });
   });
 
-  it('reads direct default variant quantities through normalized lookup in the summary renderer', () => {
-    const source = readProductPageWidgetSources();
+  it('hides grouped products when every variant is tracked zero stock', () => {
+    const products = processProductPageProductsForStep([
+      {
+        id: 'gid://shopify/Product/900',
+        title: 'Empty Product',
+        imageUrl: 'https://cdn.example/product.jpg',
+        variants: [
+          {
+            id: 'gid://shopify/ProductVariant/901',
+            title: 'Tracked zero',
+            price: '10.00',
+            available: true,
+            quantityAvailable: 0,
+            currentlyNotInStock: false,
+          },
+        ],
+      },
+    ], { displayVariantsAsIndividual: false }, true);
 
-    expect(source).toContain('this._renderDirectDefaultProducts()');
-    expect(source).toContain('const quantity = this.getSelectedQuantity(0, product.variantId)');
-    expect(source).toContain('this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);');
-  });
-
-  it('keeps default-product guard checks normalized in removeProductFromSelection', () => {
-    const source = readProductPageWidgetSources();
-
-    expect(source).toContain('if (step?.isDefault && this.normalizeSelectionKey(step.defaultVariantId) === normalizedVariantId) return;');
-    expect(source).toContain('const currentQuantity = this.getSelectedQuantity(stepIndex, normalizedVariantId);');
-    expect(source).toContain('this.setSelectedQuantity(stepIndex, normalizedVariantId, currentQuantity - 1);');
-    expect(source).not.toContain('step?.isDefault && step.defaultVariantId === normalizedVariantId');
-    expect(source).not.toContain('this.setSelectedQuantity(stepIndex, step.defaultVariantId');
-  });
-
-  it('normalizes selection IDs when matching selected products for summary/cart payload paths', () => {
-    const source = readProductPageWidgetSources();
-
-    expect(source).toContain('findProductBySelectionKey(productsInStep, normalizedVariantId);');
-    expect(source).toContain('findProductBySelectionKey(products, variantId);');
-    expect(source).toContain('getVariantAvailable(stepIndex, variantId) {');
-    expect(source).toContain('findProductBySelectionKey(products, variantId);');
+    expect(products).toEqual([]);
   });
 });

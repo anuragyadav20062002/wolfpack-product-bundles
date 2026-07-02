@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.3
+ * Version : 5.0.4
  * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.3';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.4';
 (function() {
   'use strict';
 
@@ -6198,6 +6198,17 @@ async loadStepProducts(stepIndex) {
 
 processProductsForStep(products, step) {
 
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : this._getProductPageControls?.()?.trackInventoryOnAddToCart === true;
+  const isTrackedZeroStock = (variant) => (
+    variant?.quantityAvailable === 0 && variant?.currentlyNotInStock !== true
+  );
+  const isVariantSelectableForInventory = (variant) => (
+    variant?.available === true && (
+      !trackInventoryOnAddToCart || !isTrackedZeroStock(variant)
+    )
+  );
   const normalizeVariant = (v) => ({
     id: this.extractId(v.id),
     title: v.title,
@@ -6206,7 +6217,7 @@ processProductsForStep(products, step) {
     sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
       ? v.sellingPlanAllocations
       : [],
-    available: v.available === true,
+    available: isVariantSelectableForInventory(v),
     quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
     currentlyNotInStock: v.currentlyNotInStock === true,
     option1: v.option1 || null,
@@ -6226,7 +6237,7 @@ processProductsForStep(products, step) {
       });
 
       return product.variants
-        .filter(variant => variant.available === true)
+        .filter(isVariantSelectableForInventory)
         .map(variant => {
 
           const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
@@ -6238,7 +6249,7 @@ processProductsForStep(products, step) {
             price: parseFloat(variant.price || '0') * 100,
             compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
             variantId: this.extractId(variant.id),
-            available: variant.available === true,
+            available: isVariantSelectableForInventory(variant),
             quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
             currentlyNotInStock: variant.currentlyNotInStock === true,
             sellingPlanAllocations: variant.sellingPlanAllocations || [],
@@ -6253,7 +6264,13 @@ processProductsForStep(products, step) {
         });
     } else {
 
-      const defaultVariant = product.variants?.find(variant => variant.available === true) || product.variants?.[0];
+      const defaultVariant = product.variants?.find(isVariantSelectableForInventory) || (
+        trackInventoryOnAddToCart ? null : product.variants?.[0]
+      );
+
+      if (product.variants?.length > 0 && !defaultVariant) {
+        return [];
+      }
 
       const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
@@ -6272,7 +6289,7 @@ processProductsForStep(products, step) {
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
           sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
-          available: defaultVariant?.available === true,
+          available: defaultVariant ? isVariantSelectableForInventory(defaultVariant) : false,
           quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
           currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
 

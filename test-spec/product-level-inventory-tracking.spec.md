@@ -26,6 +26,15 @@ Match EB's product-level inventory toggle behavior for FPB and PPB storefront wi
 | 4 | Variant selector option with tracking disabled | Variant `available=true`, `quantityAvailable=0`, `currentlyNotInStock=false` | PPB keeps option enabled | Modal dropdown should follow the same opt-in rule as card quantity controls. |
 | 5 | Variant selector option with tracking enabled | Same variant with control enabled | PPB disables option | Hard zero-stock tracked variants are blocked only after opt-in. |
 | 6 | Backorderable variant option with tracking enabled | Variant `quantityAvailable=0`, `currentlyNotInStock=true` | PPB keeps option enabled | Backorderable zero-stock variants remain sellable. |
+| 7 | Individual card render with tracking enabled | One hard zero-stock variant, one backorderable zero-stock variant, one positive-stock variant | PPB renders only the backorderable and positive-stock variant cards | Matches EB help behavior that zero-inventory tracked products are not shown. |
+| 8 | Grouped card render with tracking enabled | First variant is hard zero stock, second variant has stock | PPB chooses the stocked variant for the product card | Prevents showing a blocked default variant when a sellable variant exists. |
+| 9 | Grouped card render with all variants hard zero stock | Product has only tracked zero-stock non-backorderable variants | PPB omits the product card | Matches EB help behavior before the customer reaches add-to-cart. |
+
+### ProductInventoryPayload
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Product endpoint fallback with inventory scope | Offline session includes `unauthenticated_read_product_inventory`; all-variants request fails after first product query succeeds | API requests and returns first-variant `quantityAvailable` / `currentlyNotInStock` | Keeps inventory behavior correct on the fallback path. |
 
 ### CollectionInventoryPayload
 
