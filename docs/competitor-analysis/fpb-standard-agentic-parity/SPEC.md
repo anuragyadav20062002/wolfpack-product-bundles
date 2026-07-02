@@ -425,7 +425,7 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | partial-live-proof |
+| Status | verified |
 | EB config | Multiple add-on tiers; highest eligible tier gives free add-on |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Multi-step with add-on/gifting step, multiple categories, collection-backed category, multiple option variants, all in stock, category exact, highest eligible tier, add-ons with free tier, no defaults, custom slot icon, multi-language labels, mobile banner, variant selector enabled, `bundle_details` cart metafield, desktop/mobile reload after selection |
@@ -617,6 +617,23 @@ Required proof:
 - Desktop screenshot for each preset.
 - Cart add proof for Standard and at least one non-Standard preset.
 - Source isolation note in `regression-smoke/delta.md`.
+
+## Closeout Audit 2026-07-02
+
+The goal is not yet closeable. Current source and generated assets are committed, but the parity evidence set is still incomplete against this spec's completion criteria.
+
+Current blockers to closing:
+
+- P00, P01, P02, and P05 remain `fixed-awaiting-deploy`; each needs cache-bypassed live proof on the current served widget after the relevant saved fixtures are loaded.
+- P06 has help/reference and current-fixture-drift evidence only. It still needs a mirrored OOS-visible EB/WPB fixture and desktop/mobile storefront proof.
+- P07 has no evidence folder yet and still needs a mirrored inventory-tracking/OOS-blocked fixture.
+- P11 has source/test evidence and failed direct EB fixture loads, but still needs a live mirrored empty-category fixture through the UI.
+- P12 has source/test/Admin evidence and Storefront API weight payload proof, but still needs a live mirrored category-weight storefront fixture with below-threshold, threshold, quantity-change, and cart-blocking proof.
+- P13 has substantial mobile, long-title, variant-selector, and selected-card evidence, but the active EB/WPB fixtures differ and multi-image carousel/click proof still needs a dedicated mirrored fixture.
+- S01, S02, S03, S04, and S05 remain pending and have no completed evidence folders.
+- Regression smoke remains missing; Standard plus Classic, Compact, and Horizontal need current runtime snapshots/screenshots, with cart add proof for Standard and at least one non-Standard preset.
+
+No row should be marked complete from source-only evidence. Each remaining row requires the case evidence contract above: EB and WPB desktop/mobile captures, runtime snapshots, computed probes, accessibility/network evidence, interaction log, and cart proof where relevant.
 
 ## Completion Criteria
 
