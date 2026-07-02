@@ -145,12 +145,6 @@ _populateCompactMobileSummaryTray(sheet) {
 },
 
 _toggleCompactMobileSummaryTray(sheet) {
-  const hasSelectedSummaryProducts = this.getAllSelectedProductsData().length > 0;
-  if (!hasSelectedSummaryProducts) {
-    this.compactMobileSummaryTrayExpanded = false;
-    this._populateCompactMobileSummaryTray(sheet);
-    return;
-  }
   const nextExpanded = !this.compactMobileSummaryTrayExpanded;
   this.compactMobileSummaryTrayExpanded = nextExpanded;
   this._populateCompactMobileSummaryTray(sheet);

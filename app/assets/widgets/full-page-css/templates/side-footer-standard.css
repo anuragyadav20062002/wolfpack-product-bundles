@@ -2946,6 +2946,7 @@ body:has([data-fpb-design-preset]) {
     min-width: 46.914px;
     height: 25.195px;
     line-height: 25.2px;
+    z-index: 1;
   }
   .fpb-mobile-summary-count-badge::before {
     content: "";

@@ -135,6 +135,28 @@ describe('FPB Standard mobile summary action', () => {
     expect(actionState).toEqual({ shouldAddToCart: false, disabled: false });
   });
 
+  it('allows the compact mobile summary tray to expand with no selected products', () => {
+    const classList = {
+      add: jest.fn(),
+      remove: jest.fn(),
+    };
+    const context = {
+      compactMobileSummaryTrayExpanded: false,
+      compactMobileSummaryTrayAnimationTimeout: null,
+      getAllSelectedProductsData: () => [],
+      _populateCompactMobileSummaryTray: jest.fn(),
+    };
+
+    fullPageMobileSummaryMethods._toggleCompactMobileSummaryTray.call(
+      context,
+      { classList },
+    );
+
+    expect(context.compactMobileSummaryTrayExpanded).toBe(true);
+    expect(context._populateCompactMobileSummaryTray).toHaveBeenCalledTimes(1);
+    expect(classList.add).toHaveBeenCalledWith('fpb-mobile-summary-tray-animating-open');
+  });
+
   it('keeps Standard mobile category tabs from switching the expanded product body', () => {
     expect(shouldCategoryTabActivateProducts({
       designPreset: 'STANDARD',
