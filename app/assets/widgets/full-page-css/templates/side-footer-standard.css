@@ -261,13 +261,17 @@ body:has([data-fpb-design-preset]) {
   --standard-desktop-content-bottom-padding: 120px;
   --standard-desktop-side-panel-min-height: 33.25rem;
   --standard-desktop-side-panel-height: 29.76855rem;
-  --standard-desktop-side-panel-addon-height: 35.867675rem;
+  --standard-desktop-side-panel-addon-height: var(
+    --standard-desktop-side-panel-height
+  );
+  --standard-desktop-side-panel-addon-slots-height: 20.75rem;
+  --standard-desktop-side-panel-addon-summary-row: 4.5rem;
   --standard-desktop-side-panel-slots-height: 18.51855rem;
   --standard-desktop-side-panel-products-row: 18.6748rem;
   --standard-desktop-side-panel-addon-products-row: 16.4873rem;
   --standard-desktop-side-panel-slots-row: 7.4248rem;
   --standard-sidebar-action-button-height: 2.5625rem;
-  --standard-sidebar-action-button-width: 9.4375rem;
+  --standard-sidebar-action-button-width: 9.5rem;
   --standard-sidebar-back-size: 2.6875rem;
   --standard-side-panel-products-offset: calc(1.8rem + 0.625rem);
   --standard-summary-slot-width: 4.6875rem;
@@ -2711,7 +2715,16 @@ body:has([data-fpb-design-preset]) {
   min-height: var(--standard-desktop-side-panel-addon-height);
   grid-template-rows:
     3.4375rem minmax(0, var(--standard-desktop-side-panel-addon-products-row))
-    auto 4.40625rem;
+    var(--standard-desktop-side-panel-addon-summary-row) 4.40625rem;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .full-page-side-panel.full-page-side-panel--inline-slots.full-page-side-panel--has-addon-summary {
+  height: var(--standard-desktop-side-panel-addon-slots-height);
+  min-height: var(--standard-desktop-side-panel-addon-slots-height);
+  grid-template-rows:
+    3.4375rem minmax(0, var(--standard-desktop-side-panel-slots-row))
+    var(--standard-desktop-side-panel-addon-summary-row) 4.40625rem;
 }
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
@@ -2733,8 +2746,8 @@ body:has([data-fpb-design-preset]) {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto;
-  gap: 0.375rem;
-  margin: 0.375rem 0 0;
+  gap: 0.25rem;
+  margin: 0;
   padding: 0;
   background: transparent;
   border: 0;
@@ -2749,7 +2762,7 @@ body:has([data-fpb-design-preset]) {
   color: #000;
   font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.25;
   text-align: start;
 }
 
@@ -2761,7 +2774,7 @@ body:has([data-fpb-design-preset]) {
   border-radius: 0.5rem;
   color: #000;
   overflow: hidden;
-  min-height: 3.375rem;
+  min-height: 2.75rem;
 }
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
@@ -2770,8 +2783,8 @@ body:has([data-fpb-design-preset]) {
   grid-template-columns: minmax(0, 1fr) 1.671875rem;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.5rem 0.625rem;
-  min-height: 2.75rem;
+  padding: 0.375rem 0.625rem;
+  min-height: 2.375rem;
 }
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
@@ -2857,7 +2870,7 @@ body:has([data-fpb-design-preset]) {
   font-family: Assistant, sans-serif;
   font-size: 0.875rem;
   font-weight: 400;
-  line-height: 1.8;
+  line-height: 1.35;
   text-align: start;
 }
 
