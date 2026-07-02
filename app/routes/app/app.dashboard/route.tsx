@@ -33,12 +33,12 @@ export const links: LinksFunction = () => [
 
 export const headers: HeadersFunction = () => {
   const imagePreloads = getDashboardInitialImagePreloads();
-  if (imagePreloads.length === 0) return {};
-  return {
+  if (imagePreloads.length === 0) return new Headers();
+  return new Headers({
     Link: imagePreloads
       .map((image) => `<${image.href}>; rel=preload; as=image; type=${image.type}; fetchpriority=high`)
       .join(", "),
-  };
+  });
 };
 
 const SHOP_EMBED_CACHE_TTL_MS = 5 * 60 * 1000;

@@ -294,12 +294,20 @@ export function DashboardPage() {
   useEffect(() => {
     if (localeFetcher.state !== "idle" || !localeFetcher.data) return;
     const data = localeFetcher.data;
-    if ("success" in data && data.success && "locale" in data) {
-      localStorage.setItem("wolfpack-locale", data.locale);
-      void i18n.changeLanguage(data.locale);
+    if (
+      typeof data === "object" &&
+      data !== null &&
+      "success" in data &&
+      data.success === true &&
+      "locale" in data &&
+      typeof data.locale === "string"
+    ) {
+      const locale = data.locale;
+      localStorage.setItem("wolfpack-locale", locale);
+      void i18n.changeLanguage(locale);
       setSearchParams(prev => {
         const next = new URLSearchParams(prev);
-        next.set("locale", data.locale);
+        next.set("locale", locale);
         return next;
       });
       shopify.toast.show(t("dashboard.language.saveSuccess"));
@@ -595,30 +603,32 @@ export function DashboardPage() {
                       <div className={dashboardStyles.paginationBar}>
                         <span className={dashboardStyles.paginationSpacer} />
                         <div className={dashboardStyles.paginationControls}>
-                          <s-button
-                            className={dashboardStyles.paginationArrow}
-                            variant="tertiary"
-                            disabled={effectivePage <= 1 || undefined}
-                            onClick={() => setCurrentPage(p => p - 1)}
-                            accessibilityLabel={t("dashboard.pagination.prev")}
-                          >
-                            ‹
-                          </s-button>
-                          <s-text size="small" className={dashboardStyles.paginationPageText}>
+                          <span className={dashboardStyles.paginationArrow}>
+                            <s-button
+                              variant="tertiary"
+                              disabled={effectivePage <= 1 || undefined}
+                              onClick={() => setCurrentPage(p => p - 1)}
+                              accessibilityLabel={t("dashboard.pagination.prev")}
+                            >
+                              ‹
+                            </s-button>
+                          </span>
+                          <span className={dashboardStyles.paginationPageText}>
                             {t("dashboard.pagination.page", { current: effectivePage, total: totalPages })}
-                          </s-text>
-                          <s-button
-                            className={dashboardStyles.paginationArrow}
-                            variant="tertiary"
-                            disabled={effectivePage >= totalPages || undefined}
-                            onClick={() => setCurrentPage(p => p + 1)}
-                            accessibilityLabel={t("dashboard.pagination.next")}
-                          >
-                            ›
-                          </s-button>
+                          </span>
+                          <span className={dashboardStyles.paginationArrow}>
+                            <s-button
+                              variant="tertiary"
+                              disabled={effectivePage >= totalPages || undefined}
+                              onClick={() => setCurrentPage(p => p + 1)}
+                              accessibilityLabel={t("dashboard.pagination.next")}
+                            >
+                              ›
+                            </s-button>
+                          </span>
                         </div>
                         <div className={dashboardStyles.perPageControls}>
-                          <s-text size="small" tone="subdued">{t("dashboard.pagination.perPageLabel")}</s-text>
+                          <span>{t("dashboard.pagination.perPageLabel")}</span>
                           <div className={dashboardStyles.perPageSelectWrap}>
                             <s-select
                               ref={perPageSelectRef}

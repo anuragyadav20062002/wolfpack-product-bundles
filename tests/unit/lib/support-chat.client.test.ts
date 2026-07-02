@@ -16,9 +16,9 @@ describe("support chat client", () => {
 
   it("defers chat configuration until the browser is idle", () => {
     const configure = jest.fn();
-    const idleCallbacks: Array<() => void> = [];
+    const idleCallbacks: IdleRequestCallback[] = [];
     const win: SupportChatWindow = {
-      requestIdleCallback: jest.fn((callback: () => void) => {
+      requestIdleCallback: jest.fn((callback: IdleRequestCallback) => {
         idleCallbacks.push(callback);
         return 7;
       }),
@@ -30,7 +30,7 @@ describe("support chat client", () => {
     expect(configure).not.toHaveBeenCalled();
     expect(win.__wpbLoadSupportChat).toEqual(expect.any(Function));
 
-    idleCallbacks[0]?.();
+    idleCallbacks[0]?.({ didTimeout: false, timeRemaining: () => 0 });
 
     expect(configure).toHaveBeenCalledTimes(1);
   });

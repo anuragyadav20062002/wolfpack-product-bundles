@@ -23,6 +23,11 @@ type PixelStatusPayload = {
   active: boolean;
 };
 
+type AttributionDashboardViewData = Omit<AttributionDashboardData, "from" | "to"> & {
+  from?: string;
+  to?: string;
+};
+
 // ─── Helpers ─────────────────────────────────────────────────
 
 function formatRevenue(cents: number, currency = "USD"): string {
@@ -425,7 +430,7 @@ function AttributionDashboardContent({
   data,
   pixelStatus,
 }: {
-  data: AttributionDashboardData;
+  data: AttributionDashboardViewData;
   pixelStatus: Promise<PixelStatusPayload>;
 }) {
   const {
@@ -598,7 +603,9 @@ export default function AttributionDashboard() {
           Dashboard
         </button>
       </ui-title-bar>
-      <PixelStatusBoundary pixelStatus={pixelStatus} />
+      <div className={styles.pixelStatusBoundary}>
+        <PixelStatusBoundary pixelStatus={pixelStatus} />
+      </div>
       <Suspense fallback={<AttributionDashboardSkeleton />}>
         <Await resolve={analytics}>
           {(data) => <AttributionDashboardContent data={data} pixelStatus={pixelStatus} />}

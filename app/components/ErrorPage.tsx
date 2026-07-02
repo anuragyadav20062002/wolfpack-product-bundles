@@ -210,7 +210,7 @@ export function ErrorPage({ error }: ErrorPageProps) {
             </button>
             <button
               type="button"
-              onClick={openSupportChat}
+              onClick={() => openSupportChat()}
               style={styles.btnSecondary}
             >
               Contact Support
