@@ -631,6 +631,11 @@ Required proof:
 - Cart add proof for Standard and at least one non-Standard preset.
 - Source isolation note in `regression-smoke/delta.md`.
 
+Current proof:
+- 2026-07-02 Standard smoke proof is captured in `/private/tmp/fpb-standard-agentic-parity/regression-smoke/current-standard-5.0.3/`. Chrome DevTools MCP desktop and mobile captures after hard reload show the current Standard FPB preview `Daily Essentials` on widget `5.0.3` with bundle id `cmr361mz50000v00yrdeyxpf7`: `wpb-standard-desktop-runtime.json`, `wpb-standard-desktop.png`, `wpb-standard-mobile-runtime.json`, and `wpb-standard-mobile.png`.
+- Standard cart-add smoke proof in the same folder: after `/cart/clear.js`, the mobile storefront selected `14k Dangling Obsidian Earrings`, clicked the widget `Add To Cart • $829.00`, and redirected to checkout. `wpb-standard-cart-after-add.json` shows one parent bundle line titled `Daily Essentials`, `itemCount: 1`, `totalPrice: 82900`, `_is_bundle_parent: "true"`, `_bundle_component_count: "1"`, and `Box: "1"`. `wpb-standard-cart-add-devtools-network.txt` records the DevTools network proof for `/cart/add.js`, `/cart.js?app=wolfpackProductBundles`, and `/apps/product-bundles/api/cart-bundle-details`, all `200`; `wpb-standard-checkout-after-add.snapshot.txt` and `.png` capture the checkout redirect with total `$829.00`.
+- Remaining smoke gap: Classic, Compact, and Horizontal runtime/desktop captures are still missing, and cart-add proof for at least one non-Standard preset is still missing.
+
 ## Closeout Audit 2026-07-02
 
 The goal is not yet closeable. Current source and generated assets are committed, but the parity evidence set is still incomplete against this spec's completion criteria.
@@ -645,7 +650,7 @@ Current blockers to closing:
 - P12 has source/test/Admin evidence and Storefront API weight payload proof, but still needs a live mirrored category-weight storefront fixture with below-threshold, threshold, quantity-change, and cart-blocking proof.
 - P13 has substantial mobile, long-title, variant-selector, and selected-card evidence, but the active EB/WPB fixtures differ and multi-image carousel/click proof still needs a dedicated mirrored fixture.
 - S01, S02, S03, S04, and S05 remain pending and have no completed evidence folders.
-- Regression smoke remains missing; Standard plus Classic, Compact, and Horizontal need current runtime snapshots/screenshots, with cart add proof for Standard and at least one non-Standard preset.
+- Regression smoke is partially complete for the current Standard preview on widget `5.0.3`, including desktop/mobile snapshots and Standard cart-add proof. Classic, Compact, and Horizontal still need current runtime snapshots/screenshots, and at least one non-Standard preset still needs cart-add proof.
 
 No row should be marked complete from source-only evidence. Each remaining row requires the case evidence contract above: EB and WPB desktop/mobile captures, runtime snapshots, computed probes, accessibility/network evidence, interaction log, and cart proof where relevant.
 
