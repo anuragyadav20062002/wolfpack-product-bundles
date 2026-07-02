@@ -35,9 +35,12 @@
 {% endif %}
 
 {% if should_show_widget %}
-  {% comment %} Compact bootstrap payload for storefront runtime (minimal markup footprint). {% endcomment %}
+  {% comment %} Prefer the page metafield cache. Fall back to a compact bootstrap pointer. {% endcomment %}
   {% assign bundle_config_json = 'null' %}
-  {% if bundle_id != blank %}
+  {% assign bundle_config_metafield = page.metafields.custom.bundle_config %}
+  {% if bundle_config_metafield.value != blank %}
+    {% assign bundle_config_json = bundle_config_metafield.value | json %}
+  {% elsif bundle_id != blank %}
     {% capture bundle_config_payload %}
       {"v":2,"type":"full_page","bundleType":"full_page","id":{{ bundle_id | json }}}
     {% endcapture %}

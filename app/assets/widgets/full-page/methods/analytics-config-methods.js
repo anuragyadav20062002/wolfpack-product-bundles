@@ -586,6 +586,9 @@ async loadBundleData() {
     if (cachedPayload) {
       if (this._isBundleConfigBootstrapPayload(cachedPayload)) {
         this._bundleConfigCacheMode = 'bootstrap';
+      } else if (typeof cachedPayload.id === 'string' && cachedPayload.id.trim() !== '') {
+        this._bundleConfigCacheMode = 'full';
+        bundleData = { [cachedPayload.id]: cachedPayload };
       }
     }
 
