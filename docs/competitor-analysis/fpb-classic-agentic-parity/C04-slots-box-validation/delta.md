@@ -5,14 +5,18 @@
 `in-progress-runtime-fixture-gap`
 
 The EB C04 fixture was configured through the visible Admin UI and captured on
-desktop and mobile. WPB storefront source is built at `window.__BUNDLE_WIDGET_VERSION__ === "5.0.19"`,
-but the live WPB proxy payload for `cmr361mz50000v00yrdeyxpf7` still reports:
+desktop and mobile. A fresh WPB hard-reload probe on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.20"`
+still shows that the live WPB proxy payload for `cmr361mz50000v00yrdeyxpf7` reports:
 
 - `bundleDesignTemplate: "FBP_SIDE_FOOTER"`
 - `bundleDesignPresetId: "CLASSIC"`
 - `productSlotsEnabled: false`
 - `productSlotIconUrl: null`
 - `boxSelection: null`
+
+Fresh proof:
+
+- `wpb-live-c04-slot-payload-probe-5020.json`
 
 This means the storefront template proof is valid for Classic rendering and
 Classic sidebar slot CSS, but C04 cannot be marked complete as a product-slot
@@ -53,11 +57,12 @@ embedded `bundleDesignPresetId` was `STANDARD`, while the current proxy payload
 returned `CLASSIC`. That is the root cause of the observed Standard first paint
 followed by a Classic switch.
 
-Current source/build includes `hydrateCurrentFullPageBundleBeforeRender()` and
+Current committed source/build includes `hydrateCurrentFullPageBundleBeforeRender()` and
 the focused unit case `hydrates current bundle data before first render when the
-full cached payload is stale`. After a hard reload in Chrome DevTools MCP, the
-live WPB page reported `window.__BUNDLE_WIDGET_VERSION__ === "5.0.19"`, root
-class `fpb-preset-classic`, and active widget stylesheets:
+full cached payload is stale`. Earlier hard reload proof reported
+`window.__BUNDLE_WIDGET_VERSION__ === "5.0.19"`; the follow-up probe now reports
+`window.__BUNDLE_WIDGET_VERSION__ === "5.0.20"` with the same Classic payload state.
+The active widget stylesheets remain:
 
 - `bundle-widget-full-page.css`
 - `bundle-widget-full-page-classic.css`
@@ -81,3 +86,4 @@ Source fix:
 - WPB desktop Classic slot visuals now match the actual shared slot DOM: empty slots are 90.75px square dashed tiles and filled slots are thumbnail-only with visual copy hidden and a 22px remove affordance.
 - WPB mobile footer uses the separate compact mobile tray. Because the live payload still has `productSlotsEnabled: false`, the tray renders skeleton rows instead of product-slot rows. This is fixture/runtime state, not a Classic CSS selector issue.
 - WPB add-to-cart proof was contaminated by a pre-existing cart line (`beforeItemCount: 1`); the cart was cleared after capture. Re-capture clean cart proof after the fixture payload is corrected.
+- The current Admin/business-logic flow is intentionally locked for this storefront loop, so no storefront-only implementation can fabricate missing product-slot or box-selection config. C04 remains open until a live fixture exposes the saved settings in the storefront payload.

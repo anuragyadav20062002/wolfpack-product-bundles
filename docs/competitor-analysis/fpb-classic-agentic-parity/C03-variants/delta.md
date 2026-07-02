@@ -79,6 +79,7 @@ Evidence root: `/private/tmp/fpb-classic-agentic-parity/C03-variants/`
 ## Remaining Gap
 
 - Variants-as-individual-products proof is still not captured for this row, so C03 remains `fixed-awaiting-live-proof` rather than `verified`.
+- The active fixture cannot prove variants-as-individual behavior: EB desktop/mobile evidence shows grouped dropdown/inline variant controls, and `wpb-c03-variants-individual-fixture-probe-5020.json` records WPB `displayVariantsAsIndividual: false` plus category `displayVariantsAsIndividualProducts: false`. Because the Admin configuration flow is locked for this storefront loop, this remains a fixture/proof gap rather than a source gap.
 
 ## WPB Follow-Up Proof
 
