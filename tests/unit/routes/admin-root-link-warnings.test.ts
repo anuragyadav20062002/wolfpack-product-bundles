@@ -114,29 +114,11 @@ describe("admin root link warnings", () => {
     consoleError.mockRestore();
   });
 
-  it("preloads first-viewport dashboard images with React-safe responsive image attributes", async () => {
+  it("preloads only first-render dashboard media with React-safe responsive image attributes", async () => {
     const { headers, links } = await import("../../../app/routes/app/app.dashboard/route");
     const preloads = links();
-    const responseHeaders = headers({} as any) as Record<string, string>;
 
-    expect(preloads).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        rel: "preload",
-        as: "image",
-        href: "/Parth.avif",
-        imageSrcSet: "/Parth.avif 120w",
-        imageSizes: "120px",
-        fetchpriority: "high",
-      }),
-      expect.objectContaining({
-        rel: "preload",
-        as: "image",
-        href: "/appEmbed.avif",
-        imageSrcSet: "/appEmbed.avif 420w",
-        imageSizes: "420px",
-        fetchpriority: "high",
-      }),
-    ]));
+    expect(preloads).toHaveLength(1);
     expect(preloads[0]).toMatchObject({
       rel: "preload",
       as: "image",
@@ -150,9 +132,7 @@ describe("admin root link warnings", () => {
       expect(preload).not.toHaveProperty("imagesrcset");
       expect(preload).not.toHaveProperty("imagesizes");
     }
-    expect(responseHeaders.Link).toContain("</appEmbed.avif>; rel=preload; as=image");
-    expect(responseHeaders.Link).toContain("</Parth.avif>; rel=preload; as=image");
-    expect(responseHeaders.Link).toContain("fetchpriority=high");
+    expect(headers({} as any)).not.toHaveProperty("Link");
   });
 
   it("renders OptimisedImage fetch priority without the React DOM prop warning", async () => {
