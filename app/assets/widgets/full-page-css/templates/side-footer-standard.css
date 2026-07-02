@@ -2271,20 +2271,16 @@ body:has([data-fpb-design-preset]) {
     display: grid;
     position: sticky;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows:
-      var(--standard-mobile-footer-summary-row)
-      var(--standard-mobile-footer-action-row);
+    grid-template-rows: var(--standard-mobile-footer-action-row);
     bottom: 0;
     left: 10px;
     width: var(--fpb-mobile-footer-shell-width);
     height: calc(
-      var(--standard-mobile-footer-summary-row)
-      + var(--standard-mobile-footer-action-row)
-      + 0.625rem
+      var(--standard-mobile-footer-action-row) + 0.3125rem
     );
     min-height: 0;
     margin-left: 0;
-    padding: 5px;
+    padding: 5px 5px 0;
     border-radius: 0;
     box-shadow: none;
     background: #fff;
@@ -2296,6 +2292,15 @@ body:has([data-fpb-design-preset]) {
   }
   .fpb-mobile-bottom-sheet.fpb-preset-standard.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray.fpb-mobile-summary-tray--has-discount-summary {
     --standard-mobile-footer-summary-row: 3.0121875rem;
+    grid-template-rows:
+      var(--standard-mobile-footer-summary-row)
+      var(--standard-mobile-footer-action-row);
+    height: calc(
+      var(--standard-mobile-footer-summary-row)
+      + var(--standard-mobile-footer-action-row)
+      + 0.625rem
+    );
+    padding: 5px;
   }
   .fpb-mobile-bottom-sheet.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
     .side-panel-discount-message {
@@ -2992,6 +2997,12 @@ body:has([data-fpb-design-preset]) {
   .fpb-mobile-bottom-sheet.fpb-preset-standard.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded {
     grid-template-rows: auto auto;
     height: auto;
+    padding: 5px;
+  }
+  .fpb-mobile-bottom-sheet.fpb-preset-standard.fpb-mobile-summary-tray:not(
+      .fpb-mobile-summary-tray-expanded
+    ):not(.fpb-mobile-summary-tray--has-discount-summary) {
+    padding-bottom: 0;
   }
   .fpb-mobile-summary-tray.fpb-preset-standard.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded.fpb-mobile-summary-tray--slots {
     min-height: 15.1875rem;
