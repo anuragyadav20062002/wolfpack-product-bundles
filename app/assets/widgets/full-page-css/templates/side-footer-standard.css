@@ -266,6 +266,9 @@ body:has([data-fpb-design-preset]) {
   --standard-desktop-side-panel-products-row: 18.6748rem;
   --standard-desktop-side-panel-addon-products-row: 16.4873rem;
   --standard-desktop-side-panel-slots-row: 7.4248rem;
+  --standard-sidebar-action-button-height: 2.5625rem;
+  --standard-sidebar-action-button-width: 9.4375rem;
+  --standard-sidebar-back-size: 2.6875rem;
   --standard-side-panel-products-offset: calc(1.8rem + 0.625rem);
   --standard-summary-slot-width: 4.6875rem;
   --standard-summary-slot-height: 4.375rem;
@@ -2434,7 +2437,10 @@ body:has([data-fpb-design-preset]) {
   grid-row: 4;
   grid-column: 1;
   align-self: stretch;
-  padding: 0.9375rem 0 0 !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  border-top: 0.0625rem solid #d9d9d9;
+  padding: 1.0625rem 0 0 !important;
 }
 
 @media (max-width: 767px) {
@@ -2629,27 +2635,32 @@ body:has([data-fpb-design-preset]) {
 .layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-nav {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 44px;
-  gap: 5px;
+  grid-template-rows: var(--standard-sidebar-action-button-height);
+  gap: 0.3125rem;
+  width: var(--standard-sidebar-action-button-width);
 }
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
   .side-panel-nav--with-back {
-  grid-template-columns: var(--standard-sidebar-back-size, 2.5625rem) minmax(
-      0,
-      1fr
+  grid-template-columns: var(--standard-sidebar-back-size) var(
+      --standard-sidebar-action-button-width
     );
+  width: calc(
+    var(--standard-sidebar-back-size) + var(--standard-sidebar-action-button-width) +
+      0.3125rem
+  );
 }
 .layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-btn-back {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--standard-sidebar-back-size, 2.5625rem);
+  width: var(--standard-sidebar-back-size);
   min-width: 0;
-  min-height: var(--standard-sidebar-back-size, 2.5625rem);
+  height: var(--standard-sidebar-back-size);
+  min-height: var(--standard-sidebar-back-size);
   padding: 0;
-  border: 0;
+  border: 0.0625rem solid #6d7175;
   border-radius: 5px;
-  background: var(--standard-sidebar-back-bg, #6d7175);
+  background: var(--standard-sidebar-back-bg, #ffffff);
   color: var(--standard-sidebar-back-icon, #2c2c2c);
 }
 .layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-btn-back svg {
@@ -2657,9 +2668,9 @@ body:has([data-fpb-design-preset]) {
   height: var(--standard-sidebar-back-icon-size, 1.5625rem);
 }
 .layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-btn-next {
-  width: 100%;
-  min-height: 41px;
-  height: auto;
+  width: var(--standard-sidebar-action-button-width);
+  min-height: var(--standard-sidebar-action-button-height);
+  height: var(--standard-sidebar-action-button-height);
   padding: 7px 8px;
   border: 0;
   border-radius: 5px;
@@ -2722,8 +2733,8 @@ body:has([data-fpb-design-preset]) {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto;
-  gap: 0.625rem;
-  margin: 0.625rem 0 0;
+  gap: 0.375rem;
+  margin: 0.375rem 0 0;
   padding: 0;
   background: transparent;
   border: 0;
@@ -2738,7 +2749,7 @@ body:has([data-fpb-design-preset]) {
   color: #000;
   font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.8;
+  line-height: 1.4;
   text-align: start;
 }
 
@@ -2750,7 +2761,7 @@ body:has([data-fpb-design-preset]) {
   border-radius: 0.5rem;
   color: #000;
   overflow: hidden;
-  min-height: 5.149375rem;
+  min-height: 3.375rem;
 }
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
@@ -2759,8 +2770,8 @@ body:has([data-fpb-design-preset]) {
   grid-template-columns: minmax(0, 1fr) 1.671875rem;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.625rem;
-  min-height: 3.149375rem;
+  padding: 0.5rem 0.625rem;
+  min-height: 2.75rem;
 }
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
@@ -2852,7 +2863,7 @@ body:has([data-fpb-design-preset]) {
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
   .side-panel-addon-tier-bottom-bar {
-  height: 0.5rem;
+  height: 0.25rem;
 }
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"]
