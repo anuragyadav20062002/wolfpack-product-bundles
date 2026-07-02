@@ -54,6 +54,7 @@ Wolfpack's offline token contract:
 - `app/services/offline-token.server.ts` requests new expiring offline tokens from embedded Admin `id_token` values with `expiring=1`.
 - Existing non-expiring offline tokens are migrated by token exchange with `subject_token_type=urn:shopify:params:oauth:token-type:offline-access-token`, `requested_token_type=urn:shopify:params:oauth:token-type:offline-access-token`, and `expiring=1`.
 - If a refresh token expires or Shopify rejects it with `invalid_grant`/401, the stale session row is dropped so the next merchant app launch can re-acquire an expiring offline token from the browser session ID token.
+- If Prisma reports `Server has closed the connection` during the initial session row lookup, `CachedSessionStorage.loadSession()` retries the read once after reconnecting the Prisma client. This handles stale pooled connections without hiding persistent database outages such as `Can't reach database server`.
 
 Do not make background Admin API calls by reading `Session.accessToken` directly from Prisma. Use `unauthenticated.admin(shopDomain)` or `getOfflineSessionForShop(...)` so the refresh/migration path runs first.
 

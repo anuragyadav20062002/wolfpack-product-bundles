@@ -65,7 +65,7 @@ export class CachedSessionStorage {
       return cached.session;
     }
 
-    const row = await this.prisma.session.findUnique({ where: { id } });
+    const row = await this.loadSessionRow(id);
     if (!row) {
       this.cache.delete(id);
       return undefined;
@@ -152,6 +152,40 @@ export class CachedSessionStorage {
     }
 
     return false;
+  }
+
+  private async loadSessionRow(id: string): Promise<SessionRow | null> {
+    try {
+      return await this.prisma.session.findUnique({ where: { id } });
+    } catch (error) {
+      if (!isTransientPrismaConnectionError(error)) {
+        throw error;
+      }
+
+      AppLogger.warn(
+        "[CachedSessionStorage] Prisma session read failed on a stale connection; retrying once",
+        { component: "cached-session-storage", sessionId: id },
+        error as Error,
+      );
+
+      await this.reconnectPrisma();
+      return await this.prisma.session.findUnique({ where: { id } });
+    }
+  }
+
+  private async reconnectPrisma(): Promise<void> {
+    const prismaWithConnection = this.prisma as PrismaClient & {
+      $disconnect?: () => Promise<void>;
+      $connect?: () => Promise<void>;
+    };
+
+    try {
+      await prismaWithConnection.$disconnect?.();
+    } catch {
+      // The connection is already unhealthy; continue to the reconnect attempt.
+    }
+
+    await prismaWithConnection.$connect?.();
   }
 
   private async refreshOfflineRowIfNeeded(row: SessionRow): Promise<SessionRow | null> {
@@ -280,4 +314,16 @@ function sleep(ms: number) {
 function isRefreshTokenUnusable(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /Offline token request failed:\s*401\b/.test(message) || /invalid_grant/i.test(message);
+}
+
+function isTransientPrismaConnectionError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+
+  const prismaError = error as Error & { code?: unknown };
+  const code = typeof prismaError.code === "string"
+    ? prismaError.code
+    : "";
+  const message = error.message.toLowerCase();
+
+  return code === "P1017" || message.includes("server has closed the connection");
 }

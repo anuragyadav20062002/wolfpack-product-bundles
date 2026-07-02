@@ -85,6 +85,19 @@ describe("CachedSessionStorage.loadSession", () => {
     expect(prisma.session.findUnique).toHaveBeenCalledTimes(1);
   });
 
+  it("retries once when Prisma reports a stale closed connection", async () => {
+    const prisma = makePrisma();
+    prisma.session.findUnique
+      .mockRejectedValueOnce(new Error("Invalid `prisma.session.findUnique()` invocation:\n\nServer has closed the connection."))
+      .mockResolvedValueOnce(makeRow());
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+
+    const result = await storage.loadSession("offline_test.myshopify.com");
+
+    expect(result?.accessToken).toBe("shpat_test");
+    expect(prisma.session.findUnique).toHaveBeenCalledTimes(2);
+  });
+
   it("refreshes an expiring offline session before returning it", async () => {
     const expiresSoon = new Date(Date.now() + 1_000);
     const refreshExpiresAt = new Date(Date.now() + 60_000);
