@@ -68,6 +68,31 @@ function compactOptions(value: unknown): Array<string | Record<string, unknown>>
     .filter((option): option is string | Record<string, unknown> => option !== null);
 }
 
+function selectedOptionValue(source: Record<string, unknown>, index: number): string | null {
+  const selectedOptions = asArray(source.selectedOptions);
+  const selectedOption = selectedOptions[index - 1];
+  if (!selectedOption || typeof selectedOption !== "object" || Array.isArray(selectedOption)) return null;
+
+  const value = (selectedOption as Record<string, unknown>).value;
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function compactOptionsFromVariants(value: unknown): Array<Record<string, unknown>> {
+  const optionNames: string[] = [];
+  for (const variant of asArray(value)) {
+    if (!variant || typeof variant !== "object" || Array.isArray(variant)) continue;
+
+    asArray((variant as Record<string, unknown>).selectedOptions).forEach((option, index) => {
+      if (optionNames[index] || !option || typeof option !== "object" || Array.isArray(option)) return;
+
+      const name = (option as Record<string, unknown>).name;
+      if (typeof name === "string" && name.trim()) optionNames[index] = name;
+    });
+  }
+
+  return optionNames.filter(Boolean).map((name) => ({ name }));
+}
+
 function compactVariants(value: unknown): Record<string, unknown>[] {
   return asArray(value)
     .map((variant) => {
@@ -94,6 +119,12 @@ function compactVariants(value: unknown): Record<string, unknown>[] {
       for (const key of ["option1", "option2", "option3"]) {
         const fieldValue = source[key];
         if (typeof fieldValue === "string" && fieldValue.trim()) compact[key] = fieldValue;
+      }
+      for (const key of ["option1", "option2", "option3"] as const) {
+        if (compact[key]) continue;
+
+        const selectedValue = selectedOptionValue(source, Number(key.replace("option", "")));
+        if (selectedValue) compact[key] = selectedValue;
       }
 
       const image = compactVariantImageReference(source.image) ?? compactVariantImageReference(source.imageUrl);
@@ -172,7 +203,8 @@ function compactProductReference(
   if (variants.length > 0) reference.variants = variants;
 
   const options = compactOptions(mergedProduct.options);
-  if (options.length > 0) reference.options = options;
+  const derivedOptions = options.length > 0 ? options : compactOptionsFromVariants(mergedProduct.variants);
+  if (derivedOptions.length > 0) reference.options = derivedOptions;
 
   for (const key of ["featuredImage", "image"]) {
     const image = compactImageReference(mergedProduct[key]);

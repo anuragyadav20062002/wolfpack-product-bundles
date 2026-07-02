@@ -2,6 +2,8 @@ export {};
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageAnalyticsConfigMethods } = require('../../../app/assets/widgets/full-page/methods/analytics-config-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { fullPageTierFloatingRuntimeMethods } = require('../../../app/assets/widgets/full-page/methods/tier-floating-runtime-methods.js');
 
 function makeWidgetContext(bundleConfig: unknown) {
   const context: any = {
@@ -65,5 +67,40 @@ describe('FPB full-page metafield cache', () => {
     expect(widget.bundleData).toEqual({ 'bundle-1': hydratedBundle });
     expect(widget._bundleConfigCacheMode).toBe('proxy');
     expect(fetchSpy).toHaveBeenCalledWith('/apps/product-bundles/api/bundle/bundle-1.json');
+  });
+
+  it('hydrates current bundle data before first render when the full cached payload is stale', async () => {
+    const staleBundle = {
+      id: 'bundle-1',
+      bundleType: 'full_page',
+      bundleDesignPresetId: 'STANDARD',
+      name: 'Old Daily Essentials',
+      steps: [{ id: 'step-1', name: 'Old Step', products: [] }],
+    };
+    const currentBundle = {
+      id: 'bundle-1',
+      bundleType: 'full_page',
+      bundleDesignPresetId: 'CLASSIC',
+      name: 'Daily Essentials',
+      steps: [{ id: 'step-1', name: 'Full Size Earrings With A Very Long Classic Pill Label', products: [] }],
+    };
+    const fetchSpy = jest.spyOn(global, 'fetch' as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, bundle: currentBundle }),
+    });
+    const widget = makeWidgetContext(staleBundle);
+    Object.assign(widget, fullPageTierFloatingRuntimeMethods);
+
+    await widget.loadBundleData();
+    widget.selectedBundle = staleBundle;
+    const view = await widget.hydrateCurrentFullPageBundleBeforeRender();
+
+    expect(view).toBe(true);
+    expect(widget.selectedBundle).toEqual(currentBundle);
+    expect(widget.bundleData).toEqual({ 'bundle-1': currentBundle });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/apps/product-bundles/api/bundle/bundle-1.json',
+      { cache: 'no-store', credentials: 'same-origin' },
+    );
   });
 });

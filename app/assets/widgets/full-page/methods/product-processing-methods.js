@@ -98,6 +98,108 @@ function isTrackedZeroStock(product) {
   return product?.quantityAvailable === 0 && product?.currentlyNotInStock !== true;
 }
 
+function getVariantSelectedOptionValue(variant, index) {
+  const directValue = variant?.[`option${index}`];
+  if (directValue) return directValue;
+
+  const selectedOptions = Array.isArray(variant?.selectedOptions) ? variant.selectedOptions : [];
+  const selectedOption = selectedOptions[index - 1];
+  if (selectedOption?.value) return selectedOption.value;
+
+  const titleParts = typeof variant?.title === 'string'
+    ? variant.title.split(' / ').map(part => part.trim()).filter(Boolean)
+    : [];
+  return titleParts[index - 1] || null;
+}
+
+function deriveProductOptionNames(product) {
+  const explicitOptions = (Array.isArray(product?.options) ? product.options : [])
+    .map(option => {
+      if (typeof option === 'string') return option;
+      return option?.name || option;
+    })
+    .filter(Boolean);
+  if (explicitOptions.length > 0) return explicitOptions;
+
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  const optionNames = [];
+  variants.forEach(variant => {
+    const selectedOptions = Array.isArray(variant?.selectedOptions) ? variant.selectedOptions : [];
+    selectedOptions.forEach((option, index) => {
+      if (!optionNames[index] && option?.name) optionNames[index] = option.name;
+    });
+  });
+  if (optionNames.filter(Boolean).length > 0) return optionNames.filter(Boolean);
+
+  const maxTitleParts = variants.reduce((max, variant) => {
+    if (typeof variant?.title !== 'string' || variant.title === 'Default Title') return max;
+    return Math.max(max, variant.title.split(' / ').filter(Boolean).length);
+  }, 0);
+
+  return Array.from({ length: maxTitleParts }, (_, index) => `Option ${index + 1}`);
+}
+
+function collectCategoryProducts(step) {
+  if (!Array.isArray(step?.categories)) return [];
+
+  const products = [];
+  step.categories.forEach(category => {
+    if (!category || typeof category !== 'object') return;
+    if (Array.isArray(category.products)) products.push(...category.products);
+    if (Array.isArray(category.selectedProducts)) products.push(...category.selectedProducts);
+  });
+  return products;
+}
+
+function productLookupKey(product) {
+  return extractFullPageId(product?.id || product?.productId || product?.graphqlId);
+}
+
+function variantLookupKey(variant) {
+  return extractFullPageId(
+    variant?.id
+    || variant?.variantId
+    || variant?.variantGraphqlId
+    || variant?.graphqlId
+    || variant?.admin_graphql_api_id
+  );
+}
+
+function mergeVariantRuntimeAvailability(product, categoryProduct) {
+  if (!Array.isArray(product?.variants) || !Array.isArray(categoryProduct?.variants)) return product;
+
+  const categoryVariantsById = new Map();
+  categoryProduct.variants.forEach(variant => {
+    const key = variantLookupKey(variant);
+    if (key) categoryVariantsById.set(key, variant);
+  });
+  if (categoryVariantsById.size === 0) return product;
+
+  let changed = false;
+  const variants = product.variants.map(variant => {
+    const source = categoryVariantsById.get(variantLookupKey(variant));
+    if (!source) return variant;
+
+    const patch = {};
+    if (source.available === true || source.available === false) patch.available = source.available;
+    if (typeof source.quantityAvailable === 'number') patch.quantityAvailable = source.quantityAvailable;
+    if (source.currentlyNotInStock === true || source.currentlyNotInStock === false) {
+      patch.currentlyNotInStock = source.currentlyNotInStock;
+    }
+    if (Object.keys(patch).length === 0) return variant;
+
+    changed = true;
+    return { ...variant, ...patch };
+  });
+
+  if (!changed) return product;
+  return {
+    ...product,
+    variants,
+    available: variants.some(variant => variant.available !== false),
+  };
+}
+
 export function normalizeFullPageDirectDefaultProduct(product) {
   const variant = Array.isArray(product?.variants) ? product.variants[0] : null;
   const variantId = extractFullPageId(variant?.variantGraphqlId || variant?.variantId || variant?.id);
@@ -144,6 +246,23 @@ export function normalizeFullPageDirectDefaultProduct(product) {
 }
 
 export const fullPageProductProcessingMethods = {
+mergeCategoryProductVariantAvailability(products, step) {
+  if (!Array.isArray(products) || products.length === 0) return products;
+
+  const categoryProductsByKey = new Map();
+  collectCategoryProducts(step).forEach(product => {
+    const key = productLookupKey(product);
+    if (key && !categoryProductsByKey.has(key)) categoryProductsByKey.set(key, product);
+  });
+  if (categoryProductsByKey.size === 0) return products;
+
+  return products.map(product => {
+    const key = productLookupKey(product);
+    const categoryProduct = key ? categoryProductsByKey.get(key) : null;
+    return categoryProduct ? mergeVariantRuntimeAvailability(product, categoryProduct) : product;
+  });
+},
+
 async loadStepProducts(stepIndex) {
   const step = this.selectedBundle.steps[stepIndex];
 
@@ -342,6 +461,7 @@ async loadStepProducts(stepIndex) {
   }
 
   // Process and normalize product data
+  allProducts = this.mergeCategoryProductVariantAvailability(allProducts, step);
 
   const processedProducts = this._mergeDirectDefaultProductsIntoStep(
     stepIndex,
@@ -515,9 +635,9 @@ processProductsForStep(products, step) {
       currentlyNotInStock,
       weight: normalizeWeightToGrams(v.weight, v.weightUnit),
       weightUnit: 'GRAMS',
-      option1: v.option1 || null,
-      option2: v.option2 || null,
-      option3: v.option3 || null,
+      option1: getVariantSelectedOptionValue(v, 1),
+      option2: getVariantSelectedOptionValue(v, 2),
+      option3: getVariantSelectedOptionValue(v, 3),
       image: v.image || null
     };
   };
@@ -528,10 +648,7 @@ processProductsForStep(products, step) {
       // Preserve parent product reference for variant selection in modal
       const processedVariants = (product.variants || []).map(normalizeVariant);
 
-      const processedOptions = (product.options || []).map(opt => {
-        if (typeof opt === 'string') return opt;
-        return opt.name || opt;
-      });
+      const processedOptions = deriveProductOptionNames(product);
 
       return product.variants
         .filter(variant => this.isVariantSelectableForInventory(variant)) // Only show available variants
@@ -596,10 +713,7 @@ processProductsForStep(products, step) {
       const processedVariants = (product.variants || []).map(normalizeVariant);
 
       // Process options array for variant selector labels
-      const processedOptions = (product.options || []).map(opt => {
-        if (typeof opt === 'string') return opt;
-        return opt.name || opt;
-      });
+      const processedOptions = deriveProductOptionNames(product);
 
       return [{
         id: this.extractId(product.id),

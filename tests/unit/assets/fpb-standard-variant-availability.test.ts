@@ -21,7 +21,29 @@ class FakeCard {
 }
 
 describe('FPB Standard variant availability', () => {
-  it('updates the product availability flag when variant selection falls back to an unavailable variant', () => {
+  it('filters unavailable-only primary values from grouped selector choices', () => {
+    const view = VariantSelectorComponent.renderHtml({
+      variantId: 'available-small',
+      options: ['Size'],
+      variants: [
+        {
+          id: 'available-small',
+          option1: 'Small',
+          available: true,
+        },
+        {
+          id: 'sold-out-large',
+          option1: 'Large',
+          available: false,
+        },
+      ],
+    }, 'Size');
+
+    expect(view).toContain('data-primary-value="Small"');
+    expect(view).not.toContain('data-primary-value="Large"');
+  });
+
+  it('ignores unavailable-only primary variant selections', () => {
     const product = {
       variantId: 'available-small',
       available: true,
@@ -51,11 +73,11 @@ describe('FPB Standard variant availability', () => {
 
     VariantSelectorComponent._selectPrimary(new FakeCard(), product, 1, 'Large', onVariantChange);
 
-    expect(product.variantId).toBe('sold-out-large');
-    expect(product.available).toBe(false);
-    expect(product.quantityAvailable).toBeNull();
+    expect(product.variantId).toBe('available-small');
+    expect(product.available).toBe(true);
+    expect(product.quantityAvailable).toBe(3);
     expect(product.currentlyNotInStock).toBe(false);
-    expect(onVariantChange).toHaveBeenCalledWith('sold-out-large', 'available-small');
+    expect(onVariantChange).not.toHaveBeenCalled();
   });
 
   it('treats tracked zero-stock variants as out of stock only when inventory tracking is enabled', () => {
@@ -97,5 +119,47 @@ describe('FPB Standard variant availability', () => {
     }, 0, 'variant-1');
 
     expect(state).toEqual({ available: null, outOfStock: false, acceptsBackorder: false });
+  });
+
+  it('normalizes selectedOptions into variant option fields for grouped FPB products', () => {
+    const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
+      extractId: (id: string) => String(id || '').split('/').pop(),
+      shouldExpandStepProductsDuringLoad: () => false,
+      getFirstAvailableVariant: (product: any) => product.variants[0],
+      isVariantSelectableForInventory: () => true,
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+    }, [{
+      id: 'gid://shopify/Product/123',
+      title: 'Black Crew Neck T-Shirt',
+      imageUrl: 'https://cdn.example.test/product.jpg',
+      variants: [
+        {
+          id: 'gid://shopify/ProductVariant/456',
+          title: 'S / Black',
+          price: '30.00',
+          available: true,
+          selectedOptions: [
+            { name: 'Size', value: 'S' },
+            { name: 'Color', value: 'Black' },
+          ],
+        },
+        {
+          id: 'gid://shopify/ProductVariant/789',
+          title: 'M / Navy',
+          price: '30.00',
+          available: true,
+          selectedOptions: [
+            { name: 'Size', value: 'M' },
+            { name: 'Color', value: 'Navy' },
+          ],
+        },
+      ],
+    }], { displayVariantsAsIndividual: false });
+
+    expect(normalized[0].options).toEqual(['Size', 'Color']);
+    expect(normalized[0].variants).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: '456', option1: 'S', option2: 'Black' }),
+      expect.objectContaining({ id: '789', option1: 'M', option2: 'Navy' }),
+    ]));
   });
 });

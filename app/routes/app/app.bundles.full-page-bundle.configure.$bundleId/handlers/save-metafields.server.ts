@@ -1,7 +1,10 @@
 import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { AppLogger } from "../../../../lib/logger";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
-import { writeBundleConfigPageMetafield } from "../../../../services/widget-installation/widget-full-page-bundle.server";
+import {
+  refreshFullPageBundlePageBody,
+  writeBundleConfigPageMetafield,
+} from "../../../../services/widget-installation/widget-full-page-bundle.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -20,6 +23,7 @@ export async function syncSavedFpbBundleStorefrontState({
   directBoxSelection,
   discountData,
   finalStatus,
+  shopDomain,
   stepConditionsData,
   stepsData,
   updatedBundle,
@@ -29,6 +33,7 @@ export async function syncSavedFpbBundleStorefrontState({
   directBoxSelection: any;
   discountData: any;
   finalStatus: BundleStatus;
+  shopDomain: string;
   stepConditionsData: Record<string, any[]>;
   stepsData: any[];
   updatedBundle: any;
@@ -47,6 +52,22 @@ export async function syncSavedFpbBundleStorefrontState({
   }
 
   if (updatedBundle.shopifyPageId) {
+    const bodyRefresh = await refreshFullPageBundlePageBody(
+      admin,
+      updatedBundle.shopifyPageId,
+      updatedBundle.id ?? bundleId,
+      shopDomain,
+      updatedBundle,
+    );
+    if (!bodyRefresh.success) {
+      AppLogger.warn("Failed to refresh full-page bundle page body on save (non-fatal)", {
+        component: "FullPageBundleSave",
+        bundleId,
+        pageId: updatedBundle.shopifyPageId,
+        error: bodyRefresh.error,
+      });
+    }
+
     await writeBundleConfigPageMetafield(
       admin,
       updatedBundle.shopifyPageId,

@@ -349,7 +349,7 @@ describe('getPreviewPageUrl', () => {
 describe('refreshFullPageBundlePageBody', () => {
   beforeEach(() => { jest.clearAllMocks(); });
 
-  it('writes one clean hidden marker with escaped bundle config and no app-proxy assets', async () => {
+  it('writes one clean hidden marker with a compact bundle config pointer and no app-proxy assets', async () => {
     const admin = { graphql: jest.fn() };
     admin.graphql.mockResolvedValueOnce(
       createMockGraphQLResponse({
@@ -369,10 +369,11 @@ describe('refreshFullPageBundlePageBody', () => {
     const body = admin.graphql.mock.calls[0]?.[1]?.variables?.page?.body;
     expect((body.match(/data-wpb-full-page-bundle/g) ?? []).length).toBe(1);
     expect(body).toContain(`data-bundle-id="${bundleId}"`);
-    expect(body).toContain('data-bundle-config="{&quot;id&quot;:&quot;bundle-abc123&quot;');
+    expect(body).toContain('data-bundle-config="{&quot;v&quot;:2,&quot;type&quot;:&quot;full_page&quot;,&quot;bundleType&quot;:&quot;full_page&quot;,&quot;id&quot;:&quot;bundle-abc123&quot;');
     expect(body).toContain('&quot;bundleType&quot;:&quot;full_page&quot;');
-    expect(body).toContain('&quot;name&quot;:&quot;My Kit&quot;');
-    expect(body).toContain('&quot;steps&quot;:');
+    expect(body).not.toContain('&quot;name&quot;:&quot;My Kit&quot;');
+    expect(body).not.toContain('&quot;steps&quot;:');
+    expect(body).not.toContain('&quot;bundleDesignPresetId&quot;:');
     expect(body).toContain('data-bundle-settings="{');
     expect(body).not.toContain('hidden\n>');
     expect(body).not.toContain('/apps/product-bundles/assets/');

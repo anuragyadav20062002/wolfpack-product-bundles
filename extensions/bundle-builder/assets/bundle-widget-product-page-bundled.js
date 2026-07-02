@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.15
+ * Version : 5.0.20
  * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.15';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.20';
 (function() {
   'use strict';
 
@@ -1881,7 +1881,7 @@ class VariantSelectorComponent {
     if (variants.length <= 1 || options.length === 0) return '';
 
     const primaryIdx = VariantSelectorComponent._primaryIdx(options, primaryOptionName);
-    const primaryValues = VariantSelectorComponent._uniqueValues(variants, primaryIdx);
+    const primaryValues = VariantSelectorComponent._uniqueSelectableValues(variants, primaryIdx);
     if (primaryValues.length === 0) return '';
 
     const selectedVariant = variants.find(v => v.id === product.variantId);
@@ -1894,10 +1894,9 @@ class VariantSelectorComponent {
     const overflowCount = primaryValues.length - MAX_VISIBLE;
 
     const btnGroupHtml = visible.map(val => {
-      const avail = variants.some(v => v[`option${primaryIdx}`] === val && v.available !== false);
       const sel = val === selectedPrimaryVal;
-      const cls = ['vs-btn', sel ? 'vs-btn--selected' : '', !avail ? 'vs-btn--oos' : ''].filter(Boolean).join(' ');
-      return `<button type="button" class="${cls}" data-primary-opt-idx="${primaryIdx}" data-primary-value="${VariantSelectorComponent._esc(val)}"${!avail ? ' disabled' : ''}>${VariantSelectorComponent._esc(val)}</button>`;
+      const cls = ['vs-btn', sel ? 'vs-btn--selected' : ''].filter(Boolean).join(' ');
+      return `<button type="button" class="${cls}" data-primary-opt-idx="${primaryIdx}" data-primary-value="${VariantSelectorComponent._esc(val)}">${VariantSelectorComponent._esc(val)}</button>`;
     }).join('');
 
     const overflowHtml = overflowCount > 0
@@ -2065,6 +2064,17 @@ class VariantSelectorComponent {
     return out;
   }
 
+  static _uniqueSelectableValues(variants, optIdx) {
+    return VariantSelectorComponent._uniqueValues(
+      (variants || []).filter(VariantSelectorComponent._isSelectableVariant),
+      optIdx
+    );
+  }
+
+  static _isSelectableVariant(variant) {
+    return variant?.available !== false;
+  }
+
   static _esc(str) {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -2077,11 +2087,9 @@ class VariantSelectorComponent {
   static _findBestVariant(variants, primaryOptIdx, primaryValue, currentVariantId) {
     const current = variants.find(v => v.id === currentVariantId);
     const candidates = variants.filter(v =>
-      v[`option${primaryOptIdx}`] === primaryValue && v.available !== false
+      v[`option${primaryOptIdx}`] === primaryValue && VariantSelectorComponent._isSelectableVariant(v)
     );
-    if (candidates.length === 0) {
-      return variants.find(v => v[`option${primaryOptIdx}`] === primaryValue) || null;
-    }
+    if (candidates.length === 0) return null;
     if (candidates.length === 1 || !current) return candidates[0];
 
     for (let i = 1; i <= 3; i++) {
@@ -2133,7 +2141,7 @@ class VariantSelectorComponent {
     const primaryOptIdx = parseInt(overflowBtn.dataset.primaryOptIdx, 10);
     let allValues;
     try { allValues = JSON.parse(overflowBtn.dataset.allValues); }
-    catch (_) { allValues = VariantSelectorComponent._uniqueValues(product.variants || [], primaryOptIdx); }
+    catch (_) { allValues = VariantSelectorComponent._uniqueSelectableValues(product.variants || [], primaryOptIdx); }
 
     const currentVariant = (product.variants || []).find(v => v.id === product.variantId);
     const currentPrimary = currentVariant ? currentVariant[`option${primaryOptIdx}`] : null;
@@ -2141,9 +2149,8 @@ class VariantSelectorComponent {
     const panel = VariantSelectorComponent._makePanel();
 
     allValues.forEach(val => {
-      const avail = (product.variants || []).some(v => v[`option${primaryOptIdx}`] === val && v.available !== false);
       const sel = val === currentPrimary;
-      const tile = VariantSelectorComponent._makeTile(val, sel, !avail);
+      const tile = VariantSelectorComponent._makeTile(val, sel, false);
       tile.addEventListener('click', (e) => {
         e.stopPropagation();
         VariantSelectorComponent._selectPrimary(cardEl, product, primaryOptIdx, val, onVariantChange);
@@ -2161,7 +2168,6 @@ class VariantSelectorComponent {
     VariantSelectorComponent._closePanel(cardEl);
 
     const optIdx = parseInt(pill.dataset.optIdx, 10);
-    const values = VariantSelectorComponent._uniqueValues(product.variants || [], optIdx);
     const currentVariant = (product.variants || []).find(v => v.id === product.variantId);
     const currentVal = currentVariant ? currentVariant[`option${optIdx}`] : null;
 
@@ -2169,13 +2175,17 @@ class VariantSelectorComponent {
     const primaryBtn = wrapper?.querySelector('.vs-btn--selected');
     const primaryOptIdx = primaryBtn ? parseInt(primaryBtn.dataset.primaryOptIdx, 10) : 1;
     const currentPrimary = currentVariant ? currentVariant[`option${primaryOptIdx}`] : null;
+    const values = VariantSelectorComponent._uniqueValues((product.variants || []).filter(v => {
+      const matchesPrimary = !currentPrimary || v[`option${primaryOptIdx}`] === currentPrimary;
+      return matchesPrimary && VariantSelectorComponent._isSelectableVariant(v);
+    }), optIdx);
 
     const panel = VariantSelectorComponent._makePanel('vs-panel--secondary');
 
     values.forEach(val => {
       const candidate = (product.variants || []).find(v => {
         const matchesPrimary = !currentPrimary || v[`option${primaryOptIdx}`] === currentPrimary;
-        return matchesPrimary && v[`option${optIdx}`] === val && v.available !== false;
+        return matchesPrimary && v[`option${optIdx}`] === val && VariantSelectorComponent._isSelectableVariant(v);
       });
       const sel = val === currentVal;
       const tile = VariantSelectorComponent._makeTile(val, sel, !candidate);

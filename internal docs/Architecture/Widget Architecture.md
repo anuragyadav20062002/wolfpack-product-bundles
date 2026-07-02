@@ -32,7 +32,7 @@ The shared Bundle Product Modal is intentionally a single-image product details 
 
 ## Storefront Surfaces
 
-- Theme Editor now exposes one body app embed: `bundle-app-embed` (`Wolfpack Bundle`). It is the activation/status surface and hydrates app-created full-page bundle page markers only when a dedicated full-page app block has not already rendered a widget container.
+- Theme Editor now exposes one body app embed: `bundle-app-embed` (`Wolfpack Bundle`). It is the activation/status surface and hydrates app-created full-page bundle page markers only when a dedicated full-page app block has not already rendered a widget container. Those hidden page-body markers must also carry only the compact bootstrap pointer, never a formatted full bundle payload.
 - Product-page builder placement uses the `bundle-product-page` app block.
 - Product-page upsell placement uses `bundle-upsell-block` or `bundle-upsell-button`.
 - Full-page bundle public links use Shopify page URLs (`/pages/{handle}`) so the store theme and theme-extension assets own rendering. Legacy signed app-proxy links redirect to the linked Shopify page when possible.
@@ -42,8 +42,8 @@ The shared Bundle Product Modal is intentionally a single-image product details 
 
 > **Do not modify the load order** — see `CLAUDE.md` → "Do Not Touch" section.
 
-### Shopify Page Block Stage — Metafield Cache
-The Liquid block writes a compact bootstrap marker as JSON into `data-bundle-config` on the widget container:
+### Shopify Page Block / Marker Stage — Bootstrap Pointer
+The Liquid block and app-embed page-body marker both write a compact bootstrap marker as JSON into `data-bundle-config`:
 ```liquid
 data-bundle-config='{"v":2,"type":"full_page","bundleType":"full_page","id":"{{ bundle_id }}"}'
 ```
@@ -51,7 +51,7 @@ Widget currently loads in API-first mode for full-page bundles:
 1. Compact bootstrap marker (`v`, `type`, `bundleType`, `id`) is treated as a stable pointer.
 2. If marker is missing or invalid → API fetch.
 
-`data-bundle-config` is not used to transport full bundle payload for first paint in this path. A legacy full payload marker is not required and is not relied upon for initialization.
+`data-bundle-config` is not used to transport full bundle payload for first paint in this path. A legacy full payload marker is not required and is not relied upon for initialization. This applies to both the section app block and the hidden `data-wpb-full-page-bundle` marker written by `app/services/widget-installation/widget-full-page-bundle.server.ts`.
 
 ### Legacy App Proxy Redirect — Public FPB Route
 
@@ -63,8 +63,11 @@ This route must not render a standalone storefront shell or load `/apps/product-
 If metafield cache is absent/malformed → `GET /apps/product-bundles/api/bundle/{id}.json`
 - Single retry after 3s for `503`/`504` responses (Render cold-start tolerance)
 
-`/api/bundle/{id}.json` also supports a bootstrap projection via `?fields=bootstrap`.
-Projection response returns compact marker shape (`v`, `type`, `bundleType`, `id`, and timestamps/template defaults) while default response remains full bundle payload.
+The full-page Liquid block and app-embed marker write only a compact bootstrap marker into `data-bundle-config`:
+```liquid
+{"v":2,"type":"full_page","bundleType":"full_page","id":"..."}
+```
+The widget hydrates current bundle data from `/api/bundle/{id}.json`. The route also supports a bootstrap projection via `?fields=bootstrap`; projection response returns compact marker shape (`v`, `type`, `bundleType`, `id`, and timestamps/template defaults) while default response remains full bundle payload.
 
 Response headers include `Cache-Control`, `ETag`, and `Last-Modified`; unchanged bundles return `304` when validators match.
 

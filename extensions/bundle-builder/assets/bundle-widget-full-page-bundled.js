@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.15
+ * Version : 5.0.20
  * Built   : 2026-07-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.15';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.20';
 (function() {
   'use strict';
 
@@ -1881,7 +1881,7 @@ class VariantSelectorComponent {
     if (variants.length <= 1 || options.length === 0) return '';
 
     const primaryIdx = VariantSelectorComponent._primaryIdx(options, primaryOptionName);
-    const primaryValues = VariantSelectorComponent._uniqueValues(variants, primaryIdx);
+    const primaryValues = VariantSelectorComponent._uniqueSelectableValues(variants, primaryIdx);
     if (primaryValues.length === 0) return '';
 
     const selectedVariant = variants.find(v => v.id === product.variantId);
@@ -1894,10 +1894,9 @@ class VariantSelectorComponent {
     const overflowCount = primaryValues.length - MAX_VISIBLE;
 
     const btnGroupHtml = visible.map(val => {
-      const avail = variants.some(v => v[`option${primaryIdx}`] === val && v.available !== false);
       const sel = val === selectedPrimaryVal;
-      const cls = ['vs-btn', sel ? 'vs-btn--selected' : '', !avail ? 'vs-btn--oos' : ''].filter(Boolean).join(' ');
-      return `<button type="button" class="${cls}" data-primary-opt-idx="${primaryIdx}" data-primary-value="${VariantSelectorComponent._esc(val)}"${!avail ? ' disabled' : ''}>${VariantSelectorComponent._esc(val)}</button>`;
+      const cls = ['vs-btn', sel ? 'vs-btn--selected' : ''].filter(Boolean).join(' ');
+      return `<button type="button" class="${cls}" data-primary-opt-idx="${primaryIdx}" data-primary-value="${VariantSelectorComponent._esc(val)}">${VariantSelectorComponent._esc(val)}</button>`;
     }).join('');
 
     const overflowHtml = overflowCount > 0
@@ -2065,6 +2064,17 @@ class VariantSelectorComponent {
     return out;
   }
 
+  static _uniqueSelectableValues(variants, optIdx) {
+    return VariantSelectorComponent._uniqueValues(
+      (variants || []).filter(VariantSelectorComponent._isSelectableVariant),
+      optIdx
+    );
+  }
+
+  static _isSelectableVariant(variant) {
+    return variant?.available !== false;
+  }
+
   static _esc(str) {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -2077,11 +2087,9 @@ class VariantSelectorComponent {
   static _findBestVariant(variants, primaryOptIdx, primaryValue, currentVariantId) {
     const current = variants.find(v => v.id === currentVariantId);
     const candidates = variants.filter(v =>
-      v[`option${primaryOptIdx}`] === primaryValue && v.available !== false
+      v[`option${primaryOptIdx}`] === primaryValue && VariantSelectorComponent._isSelectableVariant(v)
     );
-    if (candidates.length === 0) {
-      return variants.find(v => v[`option${primaryOptIdx}`] === primaryValue) || null;
-    }
+    if (candidates.length === 0) return null;
     if (candidates.length === 1 || !current) return candidates[0];
 
     for (let i = 1; i <= 3; i++) {
@@ -2133,7 +2141,7 @@ class VariantSelectorComponent {
     const primaryOptIdx = parseInt(overflowBtn.dataset.primaryOptIdx, 10);
     let allValues;
     try { allValues = JSON.parse(overflowBtn.dataset.allValues); }
-    catch (_) { allValues = VariantSelectorComponent._uniqueValues(product.variants || [], primaryOptIdx); }
+    catch (_) { allValues = VariantSelectorComponent._uniqueSelectableValues(product.variants || [], primaryOptIdx); }
 
     const currentVariant = (product.variants || []).find(v => v.id === product.variantId);
     const currentPrimary = currentVariant ? currentVariant[`option${primaryOptIdx}`] : null;
@@ -2141,9 +2149,8 @@ class VariantSelectorComponent {
     const panel = VariantSelectorComponent._makePanel();
 
     allValues.forEach(val => {
-      const avail = (product.variants || []).some(v => v[`option${primaryOptIdx}`] === val && v.available !== false);
       const sel = val === currentPrimary;
-      const tile = VariantSelectorComponent._makeTile(val, sel, !avail);
+      const tile = VariantSelectorComponent._makeTile(val, sel, false);
       tile.addEventListener('click', (e) => {
         e.stopPropagation();
         VariantSelectorComponent._selectPrimary(cardEl, product, primaryOptIdx, val, onVariantChange);
@@ -2161,7 +2168,6 @@ class VariantSelectorComponent {
     VariantSelectorComponent._closePanel(cardEl);
 
     const optIdx = parseInt(pill.dataset.optIdx, 10);
-    const values = VariantSelectorComponent._uniqueValues(product.variants || [], optIdx);
     const currentVariant = (product.variants || []).find(v => v.id === product.variantId);
     const currentVal = currentVariant ? currentVariant[`option${optIdx}`] : null;
 
@@ -2169,13 +2175,17 @@ class VariantSelectorComponent {
     const primaryBtn = wrapper?.querySelector('.vs-btn--selected');
     const primaryOptIdx = primaryBtn ? parseInt(primaryBtn.dataset.primaryOptIdx, 10) : 1;
     const currentPrimary = currentVariant ? currentVariant[`option${primaryOptIdx}`] : null;
+    const values = VariantSelectorComponent._uniqueValues((product.variants || []).filter(v => {
+      const matchesPrimary = !currentPrimary || v[`option${primaryOptIdx}`] === currentPrimary;
+      return matchesPrimary && VariantSelectorComponent._isSelectableVariant(v);
+    }), optIdx);
 
     const panel = VariantSelectorComponent._makePanel('vs-panel--secondary');
 
     values.forEach(val => {
       const candidate = (product.variants || []).find(v => {
         const matchesPrimary = !currentPrimary || v[`option${primaryOptIdx}`] === currentPrimary;
-        return matchesPrimary && v[`option${optIdx}`] === val && v.available !== false;
+        return matchesPrimary && v[`option${optIdx}`] === val && VariantSelectorComponent._isSelectableVariant(v);
       });
       const sel = val === currentVal;
       const tile = VariantSelectorComponent._makeTile(val, sel, !candidate);
@@ -10663,6 +10673,108 @@ function isTrackedZeroStock(product) {
   return product?.quantityAvailable === 0 && product?.currentlyNotInStock !== true;
 }
 
+function getVariantSelectedOptionValue(variant, index) {
+  const directValue = variant?.[`option${index}`];
+  if (directValue) return directValue;
+
+  const selectedOptions = Array.isArray(variant?.selectedOptions) ? variant.selectedOptions : [];
+  const selectedOption = selectedOptions[index - 1];
+  if (selectedOption?.value) return selectedOption.value;
+
+  const titleParts = typeof variant?.title === 'string'
+    ? variant.title.split(' / ').map(part => part.trim()).filter(Boolean)
+    : [];
+  return titleParts[index - 1] || null;
+}
+
+function deriveProductOptionNames(product) {
+  const explicitOptions = (Array.isArray(product?.options) ? product.options : [])
+    .map(option => {
+      if (typeof option === 'string') return option;
+      return option?.name || option;
+    })
+    .filter(Boolean);
+  if (explicitOptions.length > 0) return explicitOptions;
+
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  const optionNames = [];
+  variants.forEach(variant => {
+    const selectedOptions = Array.isArray(variant?.selectedOptions) ? variant.selectedOptions : [];
+    selectedOptions.forEach((option, index) => {
+      if (!optionNames[index] && option?.name) optionNames[index] = option.name;
+    });
+  });
+  if (optionNames.filter(Boolean).length > 0) return optionNames.filter(Boolean);
+
+  const maxTitleParts = variants.reduce((max, variant) => {
+    if (typeof variant?.title !== 'string' || variant.title === 'Default Title') return max;
+    return Math.max(max, variant.title.split(' / ').filter(Boolean).length);
+  }, 0);
+
+  return Array.from({ length: maxTitleParts }, (_, index) => `Option ${index + 1}`);
+}
+
+function collectCategoryProducts(step) {
+  if (!Array.isArray(step?.categories)) return [];
+
+  const products = [];
+  step.categories.forEach(category => {
+    if (!category || typeof category !== 'object') return;
+    if (Array.isArray(category.products)) products.push(...category.products);
+    if (Array.isArray(category.selectedProducts)) products.push(...category.selectedProducts);
+  });
+  return products;
+}
+
+function productLookupKey(product) {
+  return extractFullPageId(product?.id || product?.productId || product?.graphqlId);
+}
+
+function variantLookupKey(variant) {
+  return extractFullPageId(
+    variant?.id
+    || variant?.variantId
+    || variant?.variantGraphqlId
+    || variant?.graphqlId
+    || variant?.admin_graphql_api_id
+  );
+}
+
+function mergeVariantRuntimeAvailability(product, categoryProduct) {
+  if (!Array.isArray(product?.variants) || !Array.isArray(categoryProduct?.variants)) return product;
+
+  const categoryVariantsById = new Map();
+  categoryProduct.variants.forEach(variant => {
+    const key = variantLookupKey(variant);
+    if (key) categoryVariantsById.set(key, variant);
+  });
+  if (categoryVariantsById.size === 0) return product;
+
+  let changed = false;
+  const variants = product.variants.map(variant => {
+    const source = categoryVariantsById.get(variantLookupKey(variant));
+    if (!source) return variant;
+
+    const patch = {};
+    if (source.available === true || source.available === false) patch.available = source.available;
+    if (typeof source.quantityAvailable === 'number') patch.quantityAvailable = source.quantityAvailable;
+    if (source.currentlyNotInStock === true || source.currentlyNotInStock === false) {
+      patch.currentlyNotInStock = source.currentlyNotInStock;
+    }
+    if (Object.keys(patch).length === 0) return variant;
+
+    changed = true;
+    return { ...variant, ...patch };
+  });
+
+  if (!changed) return product;
+  return {
+    ...product,
+    variants,
+    available: variants.some(variant => variant.available !== false),
+  };
+}
+
 function normalizeFullPageDirectDefaultProduct(product) {
   const variant = Array.isArray(product?.variants) ? product.variants[0] : null;
   const variantId = extractFullPageId(variant?.variantGraphqlId || variant?.variantId || variant?.id);
@@ -10709,6 +10821,23 @@ function normalizeFullPageDirectDefaultProduct(product) {
 }
 
 const fullPageProductProcessingMethods = {
+mergeCategoryProductVariantAvailability(products, step) {
+  if (!Array.isArray(products) || products.length === 0) return products;
+
+  const categoryProductsByKey = new Map();
+  collectCategoryProducts(step).forEach(product => {
+    const key = productLookupKey(product);
+    if (key && !categoryProductsByKey.has(key)) categoryProductsByKey.set(key, product);
+  });
+  if (categoryProductsByKey.size === 0) return products;
+
+  return products.map(product => {
+    const key = productLookupKey(product);
+    const categoryProduct = key ? categoryProductsByKey.get(key) : null;
+    return categoryProduct ? mergeVariantRuntimeAvailability(product, categoryProduct) : product;
+  });
+},
+
 async loadStepProducts(stepIndex) {
   const step = this.selectedBundle.steps[stepIndex];
 
@@ -10892,6 +11021,8 @@ async loadStepProducts(stepIndex) {
     }
   }
 
+  allProducts = this.mergeCategoryProductVariantAvailability(allProducts, step);
+
   const processedProducts = this._mergeDirectDefaultProductsIntoStep(
     stepIndex,
     this.processProductsForStep(allProducts, step),
@@ -11059,9 +11190,9 @@ processProductsForStep(products, step) {
       currentlyNotInStock,
       weight: normalizeWeightToGrams(v.weight, v.weightUnit),
       weightUnit: 'GRAMS',
-      option1: v.option1 || null,
-      option2: v.option2 || null,
-      option3: v.option3 || null,
+      option1: getVariantSelectedOptionValue(v, 1),
+      option2: getVariantSelectedOptionValue(v, 2),
+      option3: getVariantSelectedOptionValue(v, 3),
       image: v.image || null
     };
   };
@@ -11071,10 +11202,7 @@ processProductsForStep(products, step) {
 
       const processedVariants = (product.variants || []).map(normalizeVariant);
 
-      const processedOptions = (product.options || []).map(opt => {
-        if (typeof opt === 'string') return opt;
-        return opt.name || opt;
-      });
+      const processedOptions = deriveProductOptionNames(product);
 
       return product.variants
         .filter(variant => this.isVariantSelectableForInventory(variant))
@@ -11134,10 +11262,7 @@ processProductsForStep(products, step) {
 
       const processedVariants = (product.variants || []).map(normalizeVariant);
 
-      const processedOptions = (product.options || []).map(opt => {
-        if (typeof opt === 'string') return opt;
-        return opt.name || opt;
-      });
+      const processedOptions = deriveProductOptionNames(product);
 
       return [{
         id: this.extractId(product.id),
@@ -12389,6 +12514,34 @@ resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
   return showTextOnAddButton ? 'text' : 'icon';
 },
 
+syncFullPageTemplateStylesheets(activeTemplateKey, activeHref) {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return;
+
+  const normalizedActiveKey = String(activeTemplateKey || 'STANDARD').trim().toUpperCase();
+  const urls = window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ || {};
+  const knownTemplateEntries = Object.entries(urls)
+    .map(([key, href]) => [String(key).trim().toUpperCase(), href])
+    .filter(([, href]) => typeof href === 'string' && href !== '');
+
+  Array.from(document.querySelectorAll('link[rel="stylesheet"]')).forEach((link) => {
+    if (!(link instanceof HTMLLinkElement)) return;
+
+    const linkTemplateKey = String(link.dataset.wpbFpbTemplateCss || '').trim().toUpperCase();
+    const linkedTemplateKey = linkTemplateKey || knownTemplateEntries.find(([, href]) =>
+      link.getAttribute('href') === href || link.href === href
+    )?.[0];
+
+    if (!linkedTemplateKey) return;
+
+    const isActive =
+      linkedTemplateKey === normalizedActiveKey
+      || link.getAttribute('href') === activeHref
+      || link.href === activeHref;
+
+    link.disabled = !isActive;
+  });
+},
+
 ensureFullPageTemplateStylesheet(preset) {
   const presetKey = String(preset || 'STANDARD').trim().toUpperCase() || 'STANDARD';
   const templateKey = presetKey;
@@ -12430,14 +12583,17 @@ ensureFullPageTemplateStylesheet(preset) {
   };
 
   if (existingLink) {
+    existingLink.disabled = false;
     if (isStylesheetLoaded(existingLink)) {
       markLoaded(existingLink);
+      this.syncFullPageTemplateStylesheets(templateKey, href);
       return Promise.resolve();
     }
 
     const promise = new Promise((resolve) => {
       const done = () => {
         markLoaded(existingLink);
+        this.syncFullPageTemplateStylesheets(templateKey, href);
         this._fpbTemplateStylesheetPromises.delete(href);
         resolve();
       };
@@ -12458,6 +12614,7 @@ ensureFullPageTemplateStylesheet(preset) {
   const promise = new Promise((resolve) => {
     const done = () => {
       markLoaded(link);
+      this.syncFullPageTemplateStylesheets(templateKey, href);
       this._fpbTemplateStylesheetPromises.delete(href);
       resolve();
     };
@@ -12618,6 +12775,33 @@ _mergeBundleSettings(settings) {
   ];
   for (const key of keys) {
     if (settings[key] !== undefined) this.selectedBundle[key] = settings[key];
+  }
+},
+
+async hydrateCurrentFullPageBundleBeforeRender() {
+  const bundleId = this.container?.dataset?.bundleId;
+  if (!bundleId || this._bundleConfigCacheMode !== 'full') return false;
+
+  try {
+    const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
+    const response = await fetch(apiUrl, {
+      cache: 'no-store',
+      credentials: 'same-origin',
+    });
+    if (!response.ok) return false;
+
+    const data = await response.json();
+    if (!data?.bundle?.id) return false;
+
+    this.bundleData = {
+      ...(this.bundleData || {}),
+      [data.bundle.id]: data.bundle,
+    };
+    this.selectedBundle = data.bundle;
+    this._bundleConfigCacheMode = 'proxy';
+    return true;
+  } catch (_error) {
+    return false;
   }
 },
 
@@ -13008,6 +13192,8 @@ class BundleWidgetFullPage {
         this.showFallbackUI();
         return;
       }
+
+      await this.hydrateCurrentFullPageBundleBeforeRender();
 
       this._mergeBundleSettings(this.bundleSettings);
       this.applyPersonalizationAddonProducts();

@@ -43,7 +43,7 @@ function buildBundleConfigBootstrap(bundleId: string, bundle?: any): object {
 function buildFullPageBundleBodyHtml(bundleId: string, shop: string, bundle?: any): string {
   const escapedBundleId = escapeHtmlAttribute(bundleId);
   const escapedShop = escapeHtmlAttribute(shop);
-  const bundleConfig = JSON.stringify(bundle ? formatBundleForWidget(bundle) : buildBundleConfigBootstrap(bundleId, bundle));
+  const bundleConfig = JSON.stringify(buildBundleConfigBootstrap(bundleId, bundle));
   const bundleSettings = bundle ? JSON.stringify(buildBundleSettings(bundle)) : "null";
 
   return `

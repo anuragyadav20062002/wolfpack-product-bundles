@@ -13,18 +13,20 @@ sources: extensions/bundle-builder/blocks/bundle-full-page.liquid, app/services/
 **Owner type**: Page
 **Access**: `page.metafields.custom.bundle_config`
 
-Used as the primary (zero-latency) data source for the FPB widget. The entire bundle configuration is serialised to JSON and stored here when a merchant clicks "Place Widget Now" or "Sync Bundle".
+Stores the full FPB bundle configuration written by "Place Widget Now" and "Sync Bundle". Current full-page storefront markup does not serialize this full payload into page HTML; both the section app block and the hidden app-embed marker emit a compact bootstrap pointer and hydrate current bundle data through the app-proxy bundle API. This avoids stale page metafields or stale page-body marker HTML rendering an old template or product/category set before the API refresh corrects it.
 
 ### Writer
 `app/services/bundles/metafield-sync/bundle-config-metafield.server.ts`
 
-### Reader (Liquid)
+### Readers (Liquid / Page Body Marker)
 ```liquid
-data-bundle-config="{{ page.metafields.custom.bundle_config | escape }}"
+data-bundle-config='{"v":2,"type":"full_page","bundleType":"full_page","id":"..."}'
 ```
 
+The hidden `data-wpb-full-page-bundle` marker written by `app/services/widget-installation/widget-full-page-bundle.server.ts` uses the same compact payload.
+
 ### Reader (Widget JS)
-`app/assets/bundle-widget-full-page.js` → `loadBundleConfig()` (~line 325)
+`app/assets/bundle-widget-full-page.js` → `loadBundleData()`
 
 ## Sync Rule
 
@@ -34,9 +36,11 @@ If the bundle config structure changes:
 3. Both must be updated in the same change — never one without the other
 4. Bump `WIDGET_VERSION` and show a sync prompt banner so merchants re-sync
 
-## Why Metafield Caching
+## Why Bootstrap Hydration
 
-Before this pattern, widgets on cold-start Render instances would silently fail — the proxy call timed out. The metafield cache eliminates the network round-trip for the common case. The proxy fallback with 3s retry handles edge cases.
+Full-page storefront markup uses a compact bootstrap marker so first render hydrates from the current app-proxy payload. The proxy path keeps a 3s retry for `503`/`504` responses to handle Render cold starts. The page metafield and hidden page-body marker remain useful for sync/install state, but neither must be treated as the first-paint full payload because Shopify page HTML can outlive a template change and flash an old preset such as Standard before switching to Classic.
+
+Saving a placed FPB refreshes the hidden page-body marker before writing page metafields. This keeps template changes visible through the dev tunnel without requiring an app deploy or a separate placement refresh.
 
 ## Size Constraints
 

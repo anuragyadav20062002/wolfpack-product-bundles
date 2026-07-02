@@ -35,12 +35,9 @@
 {% endif %}
 
 {% if should_show_widget %}
-  {% comment %} Prefer the page metafield cache. Fall back to a compact bootstrap pointer. {% endcomment %}
+  {% comment %} Emit a compact bootstrap pointer; the widget hydrates current bundle data via app proxy. {% endcomment %}
   {% assign bundle_config_json = 'null' %}
-  {% assign bundle_config_metafield = page.metafields.custom.bundle_config %}
-  {% if bundle_config_metafield.value != blank %}
-    {% assign bundle_config_json = bundle_config_metafield.value | json %}
-  {% elsif bundle_id != blank %}
+  {% if bundle_id != blank %}
     {% capture bundle_config_payload %}
       {"v":2,"type":"full_page","bundleType":"full_page","id":{{ bundle_id | json }}}
     {% endcapture %}

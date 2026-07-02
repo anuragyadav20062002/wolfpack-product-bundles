@@ -471,6 +471,7 @@ export async function handleSaveBundle(
       directBoxSelection,
       discountData,
       finalStatus: finalStatus as BundleStatus,
+      shopDomain: session.shop,
       stepConditionsData,
       stepsData,
       updatedBundle: {
