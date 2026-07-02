@@ -140,10 +140,10 @@ Use this only when a row requires code changes:
 6. Run focused Jest only for behavior/data contracts.
 7. Run ESLint on modified source files with `npx eslint --max-warnings 9999 <files>`.
 8. Run `npm run graphify:rebuild` after code changes.
-9. User performs SIT deploy with `npm run deploy:sit`.
-10. Hard reload the storefront with cache bypass.
-11. Verify live `window.__BUNDLE_WIDGET_VERSION__`.
-12. Capture desktop/mobile proof and mark the row complete.
+9. Hard reload the dev-preview or live storefront with cache bypass.
+10. Verify `window.__BUNDLE_WIDGET_VERSION__`.
+11. If the served asset version is stale, record that as an asset-refresh gap instead of treating the row as verified.
+12. Capture desktop/mobile proof and mark the row complete only after the row-specific fixture is loaded.
 
 ## Cross-Row Evidence Notes
 
@@ -201,7 +201,7 @@ Status values:
 - `pending`: row is selected but not yet captured.
 - `eb-captured`: EB evidence exists; Wolfpack mirror pending.
 - `gap-open`: gap found and implementation pending.
-- `fixed-awaiting-deploy`: source fixed; SIT deploy needed.
+- `fixed-awaiting-live-proof`: source fixed; row-specific cache-bypassed EB/WPB proof still needed.
 - `verified`: row has EB/WPB evidence and any needed fix is verified live.
 - `collapsed`: row was proven redundant by evidence and notes explain why.
 
@@ -209,7 +209,7 @@ Status values:
 
 | Field | Value |
 |---|---|
-| Status | fixed-awaiting-deploy |
+| Status | fixed-awaiting-live-proof |
 | EB config | Captured EB Standard bundle `Daily Essentials`, bundle ID `1`, `FBP_SIDE_FOOTER` + `DEFAULT_FBP` |
 | WPB config | Captured Wolfpack Standard bundle `Daily Essentials`, bundle ID `cmqwx0k3u0000v08brgbhh6aa`, `FBP_SIDE_FOOTER` + `STANDARD` |
 | Matrix coverage | Single-step, one category, manual products, no variants, all in stock, step min 4, discount/progress copy for one 100% off item at threshold, add-ons disabled, no defaults, no slots, default text, no banner, default settings, desktop sidebar open, mobile summary tray, add to cart blocked before min, desktop/mobile first load and after one add |
@@ -219,13 +219,13 @@ Acceptance:
 - EB and WPB initial desktop/mobile captures exist.
 - Runtime snapshots confirm EB `FBP_SIDE_FOOTER` + `DEFAULT_FBP` and WPB `STANDARD`.
 - `delta.md` separates visual gaps, behavior gaps, and data/runtime gaps.
-- Source fix exists for the mobile final-step CTA label gap; live verification is pending SIT deploy of widget version `3.0.53`.
+- Source fix exists for the mobile final-step CTA label gap; live verification is pending row-specific cache-bypassed proof on a current served widget.
 
 ### P01 Multi-Category Tabs With Step Min
 
 | Field | Value |
 |---|---|
-| Status | fixed-awaiting-deploy |
+| Status | fixed-awaiting-live-proof |
 | EB config | Single step `Choose Full-Size Products` with categories `Full-Size Earrings` and `Statement Earrings`; step quantity rule is greater than or equal to 4; discount progress from the shared fixture remains visible |
 | WPB config | Mirrored Standard bundle with categories `Full-Size Earrings` and `Statement Earrings`; three Statement products added through Admin resource picker; step quantity rule is greater than or equal to 4 |
 | Matrix coverage | Single-step, multiple categories, manual products, no variants, mixed inventory evidence, step min 4, discount progress inherited from baseline fixture, add-ons disabled, no defaults, quantity slots, default text, no banner, variant selector off, desktop sidebar open, mobile tray open, add to cart blocked before min |
@@ -237,13 +237,13 @@ Acceptance:
 - Mobile tray reflects the same selected count and blocked state as desktop sidebar.
 - EB help links for Step Setup and Rules were read before configuration; no new durable EB facts were found beyond the existing implementation reference.
 - Desktop WPB category tabs switch product sets correctly after Admin save; evidence exists for initial desktop, Statement category switch, mobile initial, mobile category switch, and add-one state.
-- Source fix exists for the Standard mobile top-tab interaction: top category tabs no longer switch the expanded product body on mobile; lower category rows remain the body expansion control, matching EB evidence. Live verification is pending SIT deploy of widget version `3.0.53`.
+- Source fix exists for the Standard mobile top-tab interaction: top category tabs no longer switch the expanded product body on mobile; lower category rows remain the body expansion control, matching EB evidence. Live verification is pending row-specific cache-bypassed proof on a current served widget.
 
 ### P02 Multi-Step Exact Auto-Next With Defaults
 
 | Field | Value |
 |---|---|
-| Status | fixed-awaiting-deploy |
+| Status | fixed-awaiting-live-proof |
 | EB config | Two steps; step 1 exact quantity 2 with auto-next enabled; 5% quantity discount at 2; default product `14k Dangling Obsidian Earrings`; product slots, text-on-plus, and bundle cart title/subtitle enabled |
 | WPB config | Mirrored Standard bundle through Admin UI; source fix added direct default-product hydration and step-rule auto-next persistence |
 | Matrix coverage | Multi-step, one category per step, manual products, no variants, all in stock, step exact with auto-next, percentage tier, add-ons disabled, default product, quantity slots, edited bundle summary title/subtitle, no banner, text on add button, desktop sidebar open, mobile final-step cart state |
@@ -255,7 +255,7 @@ Acceptance:
 - Final-step CTA label and summary title/subtitle match configured EB behavior.
 - Desktop WPB first load now shows the default product selected, `Add 1 product(s) to save 5%`, `1 item(s)`, and `Daily kit` / `Two essentials unlock savings` on widget version `3.0.55`.
 - Desktop WPB one-manual-add state now matches EB discount/progress behavior and keeps exact step validation independent from the direct default product; Next shows `Add exactly 2 products on this step`.
-- Source fix adds durable `BundleStep.autoNextStepOnConditionMet` persistence and exposes it to runtime/metafield config. Live auto-next proof remains pending Prisma migration application, app server reload, WPB Admin re-save, and SIT deploy/hard reload.
+- Source fix adds durable `BundleStep.autoNextStepOnConditionMet` persistence and exposes it to runtime/metafield config. Live auto-next proof remains pending Prisma migration application, app server reload, WPB Admin re-save, and cache-bypassed storefront proof on a current served widget.
 
 ### P03 Category Exact With Variant Selector
 
@@ -316,7 +316,7 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | fixed-awaiting-deploy |
+| Status | fixed-awaiting-live-proof |
 | EB config | Cloned second step with max quantity rule |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Multi-step, cloned step, manual products, no variants, all in stock, step max, no discount, add-ons disabled, no defaults, over-max blocked, default text, no banner, default settings, desktop sidebar collapsed or compact, mobile tray open, next/back |
@@ -331,8 +331,8 @@ Notes:
 - EB configured and captured with two cloned steps, `Quantity <= 1` step rules, no discount, no default/preselected products, product slots disabled, variant selector on, and plus-button text on.
 - WPB mirrored through Chrome DevTools MCP. Desktop proof confirms two-step flow, preserved prior-step selections, and over-max blocking with `This step allows at most 1 product only.`
 - Product cards remain uniform in WPB capture and product image fade is present via `fpb-standard-product-image-fade`.
-- Gap found: Standard desktop summary sidebar height stayed at `20.94375rem` (~335px) while EB measured ~476px with selected products. Source fix sets `--standard-desktop-side-panel-height` to `29.76855rem` and is built into widget version `3.0.69`; live proof is pending SIT deploy and cache-bypassed reload.
-- Follow-up product-card pricing evidence is captured in `/private/tmp/fpb-standard-agentic-parity/product-card-pricing-row/`. EB `Solid Bloom` sale-card proof shows the title divider on the title row, Assistant typography, one-line compare/current pricing, 14px/700 compare price, and 16px/700 current price. Source fix restores those Standard desktop product-card rules in widget version `3.0.70`; live proof is pending SIT deploy and cache-bypassed reload.
+- Gap found: Standard desktop summary sidebar height stayed at `20.94375rem` (~335px) while EB measured ~476px with selected products. Source fix sets `--standard-desktop-side-panel-height` to `29.76855rem` and is built into widget version `3.0.69`; live proof is pending row-specific cache-bypassed proof on a current served widget.
+- Follow-up product-card pricing evidence is captured in `/private/tmp/fpb-standard-agentic-parity/product-card-pricing-row/`. EB `Solid Bloom` sale-card proof shows the title divider on the title row, Assistant typography, one-line compare/current pricing, 14px/700 compare price, and 16px/700 current price. Source fix restores those Standard desktop product-card rules in widget version `3.0.70`; live proof is pending row-specific cache-bypassed proof on a current served widget.
 
 ### P06 Out Of Stock Visible
 
@@ -652,7 +652,7 @@ The goal is not yet closeable. Current source and generated assets are committed
 Current blockers to closing:
 
 - The current WPB dev preview harness has been restored with replacement FPB Standard bundle `cmr361mz50000v00yrdeyxpf7` and storefront page `/pages/preview-daily-essentials-2`, but it is only a minimal one-step, one-category, four-product fixture. It is sufficient for focused widget proof such as the mobile summary footer empty-state fix, but it does not replace the row-specific EB/WPB mirrored fixtures required below.
-- P00, P01, P02, and P05 remain `fixed-awaiting-deploy`; each needs cache-bypassed live proof on the current served widget after the relevant saved fixtures are loaded.
+- P00, P01, P02, and P05 remain `fixed-awaiting-live-proof`; each needs cache-bypassed live proof on the current served widget after the relevant saved fixtures are loaded.
 - P06 has help/reference and current-fixture-drift evidence only. It still needs a mirrored OOS-visible EB/WPB fixture and desktop/mobile storefront proof.
 - P07 has current WPB source/control proof for widget `5.0.3`, but still needs a mirrored EB/WPB inventory-tracking/OOS-blocked fixture with tracking enabled.
 - P11 has source/test evidence and failed direct EB fixture loads, but still needs a live mirrored empty-category fixture through the UI.
@@ -679,12 +679,12 @@ The parity loop is complete when:
 
 | Row | Status | Evidence path |
 |---|---|---|
-| P00 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P00-baseline/` |
-| P01 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P01-multi-category-step-min/` |
-| P02 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P02-auto-next-defaults/` |
+| P00 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P00-baseline/` |
+| P01 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P01-multi-category-step-min/` |
+| P02 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P02-auto-next-defaults/` |
 | P03 | verified | `/private/tmp/fpb-standard-agentic-parity/P03-category-exact-variants/` |
 | P04 | verified | `/private/tmp/fpb-standard-agentic-parity/P04-collection-amount-rule/` |
-| P05 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P05-cloned-step-max/` |
+| P05 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P05-cloned-step-max/` |
 | P06 | pending | `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/` |
 | P07 | pending | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |
 | P08 | verified | `/private/tmp/fpb-standard-agentic-parity/P08-gifting-step-only/` |
