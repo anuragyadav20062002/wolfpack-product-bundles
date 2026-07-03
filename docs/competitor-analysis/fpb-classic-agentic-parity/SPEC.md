@@ -355,7 +355,7 @@ Acceptance:
 | Status | pending |
 | Scenario | Multi-step Classic bundle combining variants, discount progress, and add-on/free-gift qualification |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS1-multi-step-variants-discount-addon/` |
-| Current delta | Not captured. `delta.md` must identify whether any gap belongs to Classic CSS, shared variant logic, shared discount logic, or add-on/cart logic. |
+| Current delta | Current WPB proxy capability probe on `5.0.21` shows a Classic two-step product fixture with variants, but no active discount rules and no add-on/free-gift step: `hasDiscountRules: false`, `pricing.enabled: false`, `pricing.rules.length: 0`, `hasAddOnOrGiftStep: false`, and `personalizationData: null`. Evidence: `/private/tmp/fpb-classic-agentic-parity/current-classic-proxy-capabilities-5021.json`. CS1 cannot be exercised until a Classic fixture combines multi-step products, variants, active discount progress, and add-on/free-gift qualification. No source change is justified yet. |
 
 Acceptance:
 - Step navigation, variant state, discount progress, and add-on eligibility stay synchronized across desktop and mobile.
@@ -368,7 +368,7 @@ Acceptance:
 | Status | pending |
 | Scenario | Long product titles and multi-image cards on mobile Classic |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS2-mobile-long-titles-multi-image-cards/` |
-| Current delta | Not captured. `delta.md` must compare title wrapping, image treatment, card height stability, and tray overlap. |
+| Current delta | Current WPB Classic fixture has a long category label but not the CS2 product-card fixture. Proxy/DOM probes on `5.0.21` show longest product title `Black Crew Neck T-Shirt - Kite App`, each visible product card renders one image, and `hasMultiImageCardInDom: false`. Evidence: `/private/tmp/fpb-classic-agentic-parity/current-classic-proxy-capabilities-5021.json` and `current-classic-fixture-capabilities-dom-5021.json`. CS2 cannot validate long product-title wrapping plus multi-image card behavior until the storefront fixture includes those states. |
 
 Acceptance:
 - Long titles remain readable without overlapping price, variant, CTA, or tray controls.
@@ -382,7 +382,7 @@ Acceptance:
 | Status | pending |
 | Scenario | Empty or no-product category plus reload and first-load Classic state |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS3-empty-category-reload-first-load/` |
-| Current delta | Not captured. `delta.md` must compare first-load active category, empty state, reload state, and preserved selections in non-empty categories. |
+| Current delta | Current WPB Classic proxy payload on `5.0.21` has two product-backed steps, each with one product-backed category; `hasEmptyCategory: false`, Step 1 category product count `6`, and Step 2 category product count `4`. Evidence: `/private/tmp/fpb-classic-agentic-parity/current-classic-proxy-capabilities-5021.json`. CS3 cannot validate empty/no-product category first-load or reload behavior until the Classic fixture includes an empty category alongside a non-empty category. No source change is justified yet. |
 
 Acceptance:
 - Empty category state matches EB on first load and after reload.
