@@ -53,7 +53,8 @@ export const stepSetupChildItems = [
 ];
 
 export const ADDON_MESSAGE_KEY = "addons-direct";
-export const ADDONS_HELP_ARTICLE_URL = "https://wolfpackapps.com";
+export const ADDONS_HELP_ARTICLE_URL =
+  "https://www.youtube.com/watch?v=5p_B81I7tWE";
 
 export const bundleVisibilityChildItems = [
   { id: "bundle_widget", label: "Bundle Widget" },
