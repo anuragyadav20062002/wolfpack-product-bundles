@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.25
+ * Version : 5.0.26
  * Built   : 2026-07-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.25';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.26';
 (function() {
   'use strict';
 
@@ -9412,6 +9412,7 @@ getAddonEligibilityState(step) {
   const remainingRaw = Math.max(0, thresholdCents - currentValue);
   const remainingQuantity = conditionType === 'AMOUNT' ? 0 : remainingRaw;
   const remainingAmount = conditionType === 'AMOUNT' ? remainingRaw : 0;
+  const displayedRemainingAmount = Math.ceil(remainingAmount / 100);
   const discountValue = Number(discount.value || 0);
   const discountUnit = discount.type === 'PERCENTAGE' ? '%' : currencyInfo.display.symbol;
 
@@ -9427,11 +9428,15 @@ getAddonEligibilityState(step) {
     remainingAmount,
     variables: {
       addonsConditionDiff: conditionType === 'AMOUNT'
-        ? String(Math.ceil(remainingAmount / 100))
+        ? String(displayedRemainingAmount)
         : String(remainingQuantity),
       currencyUnit: currencyInfo.display.symbol,
       addonsDiscountValue: String(discountValue),
       addonsDiscountValueUnit: discountUnit,
+      remainingQuantity: String(remainingQuantity),
+      remainingAmount: String(displayedRemainingAmount),
+      discountValue: String(discountValue),
+      discountValueUnit: discountUnit,
     },
   };
 },
@@ -9532,7 +9537,8 @@ renderAddonEligibilityMessage(step, eligibilityState) {
   return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
     return message
       .replaceAll(`##${key}##`, value)
-      .replaceAll(`{{${key}}}`, value);
+      .replaceAll(`{{${key}}}`, value)
+      .replaceAll(`{${key}}`, value);
   }, messageTemplate);
 },
 

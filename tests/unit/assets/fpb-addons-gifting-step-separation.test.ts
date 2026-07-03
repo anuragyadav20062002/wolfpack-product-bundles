@@ -327,6 +327,51 @@ describe("FPB add-ons / gifting step separation", () => {
     );
   });
 
+  it("resolves saved single-brace add-on message aliases", () => {
+    (global as any).window = {
+      Shopify: { currency: { active: "USD", format: "${{amount}}" } },
+      shopMoneyFormat: "${{amount}}",
+    };
+    const step = {
+      isFreeGift: true,
+      addonMessaging: {
+        tier1: {
+          ineligibleState:
+            "Add {remainingQuantity} more product(s) to claim {discountValue}% off on Add ons",
+          eligibleState:
+            "Congrats you are eligible for {discountValue}% off on Add ons",
+        },
+      },
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 2 },
+          discount: { type: "PERCENTAGE", value: 100 },
+          selectedAddonProducts: [makeProduct()],
+        },
+      ],
+    };
+    const baseCtx = {
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+      selectedBundle: { steps: [{ id: "paid" }, step] },
+    };
+
+    const ineligibleState = getAddonEligibilityState.call(
+      { ...baseCtx, selectedProducts: [{ paidVariant: 1 }] },
+      step,
+    );
+    expect(renderAddonEligibilityMessage.call(baseCtx, step, ineligibleState)).toBe(
+      "Add 1 more product(s) to claim 100% off on Add ons",
+    );
+
+    const eligibleState = getAddonEligibilityState.call(
+      { ...baseCtx, selectedProducts: [{ paidVariant: 2 }] },
+      step,
+    );
+    expect(renderAddonEligibilityMessage.call(baseCtx, step, eligibleState)).toBe(
+      "Congrats you are eligible for 100% off on Add ons",
+    );
+  });
+
   it("does not return an add-on line discount before the active tier is eligible", () => {
     (global as any).window = {
       Shopify: { currency: { active: "USD", format: "${{amount}}" } },

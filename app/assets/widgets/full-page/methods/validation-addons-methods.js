@@ -300,6 +300,7 @@ getAddonEligibilityState(step) {
   const remainingRaw = Math.max(0, thresholdCents - currentValue);
   const remainingQuantity = conditionType === 'AMOUNT' ? 0 : remainingRaw;
   const remainingAmount = conditionType === 'AMOUNT' ? remainingRaw : 0;
+  const displayedRemainingAmount = Math.ceil(remainingAmount / 100);
   const discountValue = Number(discount.value || 0);
   const discountUnit = discount.type === 'PERCENTAGE' ? '%' : currencyInfo.display.symbol;
 
@@ -315,11 +316,15 @@ getAddonEligibilityState(step) {
     remainingAmount,
     variables: {
       addonsConditionDiff: conditionType === 'AMOUNT'
-        ? String(Math.ceil(remainingAmount / 100))
+        ? String(displayedRemainingAmount)
         : String(remainingQuantity),
       currencyUnit: currencyInfo.display.symbol,
       addonsDiscountValue: String(discountValue),
       addonsDiscountValueUnit: discountUnit,
+      remainingQuantity: String(remainingQuantity),
+      remainingAmount: String(displayedRemainingAmount),
+      discountValue: String(discountValue),
+      discountValueUnit: discountUnit,
     },
   };
 },
@@ -420,7 +425,8 @@ renderAddonEligibilityMessage(step, eligibilityState) {
   return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
     return message
       .replaceAll(`##${key}##`, value)
-      .replaceAll(`{{${key}}}`, value);
+      .replaceAll(`{{${key}}}`, value)
+      .replaceAll(`{${key}}`, value);
   }, messageTemplate);
 },
 
