@@ -265,12 +265,12 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | in-progress-runtime-fixture-gap |
+| Status | eb-box-proofed-wpb-slot-fixture-gap |
 | EB config | Classic product slots with custom slot icon, under-min, exact-max, and over-max validation |
-| WPB config | Classic storefront payload is active, but live proxy payload still reports `productSlotsEnabled: false`, `productSlotIconUrl: null`, and `boxSelection: null` |
+| WPB config | Current dev-tunnel Classic storefront fixture only; Admin flow/business logic remains locked for now |
 | Matrix coverage | Quantity slots, custom slot icon, under-min blocked, exact-max blocked, over-max blocked, desktop sidebar, mobile expanded tray |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/C04-slots-box-validation/` |
-| Current delta | `C04-slots-box-validation/delta.md` updated with live EB/WPB evidence. EB C04 was configured through Admin UI and captured on desktop/mobile; in this exact fixture EB allowed a third item and accepted checkout despite the planned `Box of 2` over-max expectation. WPB root cause for the Standard-first flash was stale full `data-bundle-config` (`bundleDesignPresetId: "STANDARD"`) followed by proxy `CLASSIC`; committed source/build now includes pre-render hydration. Fresh cache-bypassed probe `wpb-live-c04-slot-payload-probe-5020.json` shows version `5.0.20`, root Classic payload, but still `productSlotsEnabled: false`, `productSlotIconUrl: null`, and `boxSelection: null`. Classic desktop sidebar slot CSS was fixed for the actual `.bw-selected-slot*` DOM in the current worktree but cannot complete C04 until the live storefront payload persists product-slot/box-selection data. |
+| Current delta | `C04-slots-box-validation/delta.md` updated with current EB/WPB evidence. EB bundle `1` mobile proof shows Classic box selection enabled with active `Box of 2`, `₹5 off`, `items_quantity: 1`, and `validateBoxSelectionQuantity: false`; per the documented EB runtime, this fixture does not block under-min or over-max checkout. Evidence: `eb-bundle1-current-box-slot-runtime-20260703.json`, `eb-bundle1-current-box-slot-mobile-20260703.png`, and `eb-bundle1-current-box-slot-mobile-a11y-20260703.txt`. WPB cache-cleared mobile proof on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.21"` shows the rendered root is `CLASSIC`, but the storefront config still reports `productSlotsEnabled: false`, `productSlotIconUrl: null`, and `boxSelection: null`; no visible slot/validation text is present. Evidence: `wpb-current-slot-payload-probe-5021-20260703.json`, `wpb-current-slot-fixture-mobile-5021-20260703.png`, and `wpb-current-slot-fixture-mobile-a11y-5021-20260703.txt`. C04 remains blocked on a storefront fixture that exposes product slots, a custom slot icon, and quantity validation enabled. |
 
 Acceptance:
 - Empty slots use the configured slot icon when EB does.
