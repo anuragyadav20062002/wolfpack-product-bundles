@@ -287,7 +287,7 @@ Acceptance:
 | WPB config | Mirrored Classic bundle through Admin UI |
 | Matrix coverage | Percentage tier, fixed amount tier, fixed price bundle, buy X get Y, progress below threshold, highest eligible tier, sidebar progress, mobile progress |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/C05-discounts-progress/` |
-| Current delta | Not captured. `delta.md` must compare progress text placement, discount state transitions, highest-tier selection, sidebar progress, and mobile tray progress. |
+| Current delta | Current WPB Classic fixture probe on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.21"` shows `pricing.enabled: false`, empty `pricing.rules`, and disabled progress-bar settings. C05 remains pending until EB and WPB are configured with active discount tiers; do not infer discount progress behavior from this baseline fixture. |
 
 Acceptance:
 - Progress below threshold updates after each relevant product quantity change.
@@ -304,7 +304,7 @@ Acceptance:
 | WPB config | Mirrored Classic bundle through Admin UI |
 | Matrix coverage | Multi-step with add-on/gifting step, add-ons with paid tier, add-ons with free tier, multiple eligible tiers, highest eligible tier, add-on summary visibility, cart proof |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/C06-addons-free-gift/` |
-| Current delta | Not captured. `delta.md` must compare pre-eligible state, eligible paid tier, eligible free tier, add-on step entry, add-on summary visibility, and cart/checkout savings proof. |
+| Current delta | Current WPB Classic fixture probe on `5.0.21` shows `personalizationData: null` and no add-on/gift step. C06 remains pending until the storefront fixture contains an enabled gifting/add-on step with paid and free tiers. |
 
 Acceptance:
 - Eligibility and ineligibility transitions match EB before and after entering the add-on step.
@@ -321,7 +321,7 @@ Acceptance:
 | WPB config | Mirrored Classic bundle through Admin UI |
 | Matrix coverage | Manual products, collection-backed category, mixed manual plus collection, out of stock visible, out of stock blocked, track inventory on add-to-cart, collection hydration |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/C07-product-source-inventory/` |
-| Current delta | Not captured. `delta.md` must compare manual/collection order, collection hydration calls, OOS visible state, OOS blocked state, and inventory network proof. |
+| Current delta | Current WPB Classic fixture probe on `5.0.21` has two manual categories, no collection-backed category, and no unavailable product/variant signal in the proxy payload. C07 remains pending until a fixture exposes manual plus collection-backed products and tracked/OOS inventory states. |
 
 Acceptance:
 - Collection products hydrate by the EB-documented ID/batch behavior, not cursor-pagination assumptions.
@@ -338,7 +338,7 @@ Acceptance:
 | WPB config | Mirrored Classic bundle through Admin UI |
 | Matrix coverage | Add to cart success, add to cart blocked, cart properties, `bundle_details`, discount/cart-line savings UI, reload after selection |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/C08-cart-lines/` |
-| Current delta | Not captured. `delta.md` must compare add-to-cart blocked state, successful cart response, cart properties, `bundle_details`, and storefront/cart savings UI. |
+| Current delta | WPB-only mobile proof captured on `5.0.21`: final CTA is disabled after Step 1 selection and before Step 2 selection; after Step 2 selection, `cart/add.js` posts two component lines with `_wolfpackProductBundle:OfferId` and `_bundle_display_properties`; Cart Transform produces one parent cart line with `_is_bundle_parent`, component count, retail/price/savings cents, and no discount allocation; `/apps/product-bundles/api/cart-bundle-details` receives `bundleDetailsKey: "FBP-cmr361mz50000v00yrdeyxpf7_UYM"` and display properties. Evidence: `/private/tmp/fpb-classic-agentic-parity/C08-cart-lines/wpb-cart-proof-5021.json`, `wpb-cart-add-5021.network-request`, and `wpb-cart-bundle-details-5021.network-request`. EB cart proof and discount/cart-line savings comparison are still pending. |
 
 Acceptance:
 - Blocked add-to-cart state appears at the same interaction point as EB.
