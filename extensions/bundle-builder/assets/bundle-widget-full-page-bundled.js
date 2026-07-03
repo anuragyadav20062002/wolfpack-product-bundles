@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.24
+ * Version : 5.0.25
  * Built   : 2026-07-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.24';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.25';
 (function() {
   'use strict';
 
@@ -5843,6 +5843,15 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
     header.appendChild(clearBtn);
   }
   bundleItems.appendChild(header);
+
+  if (this.getFullPageDesignPreset() === 'CLASSIC') {
+    const selectedBoxSelectionQuantity = this.getSelectedBoxSelectionQuantity();
+    const boxSelection = this.renderBoxSelectionOptions(selectedBoxSelectionQuantity);
+    if (boxSelection) {
+      boxSelection.classList.add('fpb-mobile-summary-box-selection');
+      bundleItems.appendChild(boxSelection);
+    }
+  }
 
   const productsList = document.createElement('div');
   productsList.className = 'fpb-mobile-summary-products-list';

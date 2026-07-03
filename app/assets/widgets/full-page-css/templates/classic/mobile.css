@@ -658,10 +658,23 @@
   .fpb-mobile-classic-footer .fpb-mobile-summary-bundle-items {
     display: grid;
     grid-template-columns: var(--fpb-mobile-footer-inner-width, 360px);
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
     width: var(--fpb-mobile-footer-inner-width, 360px);
     height: auto;
     min-height: 0;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-box-selection {
+    grid-template-columns: 1fr;
+    width: var(--fpb-mobile-footer-inner-width, 360px);
+    margin: 8px 0 10px;
+  }
+
+  .fpb-mobile-classic-footer
+    .fpb-mobile-summary-box-selection
+    .fpb-box-selection-option {
+    min-height: 54px;
+    padding: 8px 10px;
   }
 
   .fpb-mobile-classic-footer .fpb-mobile-summary-products-list {

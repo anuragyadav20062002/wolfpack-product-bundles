@@ -212,6 +212,15 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
   }
   bundleItems.appendChild(header);
 
+  if (this.getFullPageDesignPreset() === 'CLASSIC') {
+    const selectedBoxSelectionQuantity = this.getSelectedBoxSelectionQuantity();
+    const boxSelection = this.renderBoxSelectionOptions(selectedBoxSelectionQuantity);
+    if (boxSelection) {
+      boxSelection.classList.add('fpb-mobile-summary-box-selection');
+      bundleItems.appendChild(boxSelection);
+    }
+  }
+
   const productsList = document.createElement('div');
   productsList.className = 'fpb-mobile-summary-products-list';
   const shouldRenderStandardSlotTiles = this._shouldRenderProductSlots()
