@@ -30,6 +30,7 @@ Lock EB parity for the two separate Free Gift & Add Ons controls:
 | 9 | Active add-on step summary | Current step is `isFreeGift=true` | Standard summary sidebar does not render the add-on eligibility section | EB only shows the add-on summary section before the shopper is on the add-on step. |
 | 10 | 100% add-on discount amount | Add-on step displays as free but has an eligible `PERCENTAGE:100` tier | Selected add-on discount amount contributes the full add-on price | Supports native Add On discount proof for free-tier add-ons. |
 | 11 | Saved single-brace message aliases | Tier message uses `{remainingQuantity}` and `{discountValue}` | Runtime resolves aliases to the active tier values instead of rendering literal tokens | WPB Admin can save single-brace aliases while EB-style defaults use `##addons...##` / `{{addons...}}`. |
+| 12 | Next locked tier progress message | Tier 1 is eligible at quantity `1`; Tier 2 is locked at quantity `2` | Summary message uses Tier 2 ineligible copy while add-on line discount remains Tier 1 `10%` | EB Classic shows progress toward the next free tier instead of repeating the already-earned tier. |
 
 ## Acceptance Criteria
 - [x] All listed test cases pass

@@ -34,6 +34,8 @@ const calculateSelectedAddonDiscountAmount =
   fullPageValidationAddonsMethods.calculateSelectedAddonDiscountAmount;
 const renderAddonEligibilityMessage =
   fullPageValidationAddonsMethods.renderAddonEligibilityMessage;
+const getAddonMessageEligibilityState =
+  fullPageValidationAddonsMethods.getAddonMessageEligibilityState;
 const buildPaidAddonProductDisplayData =
   fullPageProductCardFooterMethods.buildPaidAddonProductDisplayData;
 const createProductCard =
@@ -370,6 +372,55 @@ describe("FPB add-ons / gifting step separation", () => {
     expect(renderAddonEligibilityMessage.call(baseCtx, step, eligibleState)).toBe(
       "Congrats you are eligible for 100% off on Add ons",
     );
+  });
+
+  it("shows next locked add-on tier progress while keeping the active discount tier", () => {
+    (global as any).window = {
+      Shopify: { currency: { active: "USD", format: "${{amount}}" } },
+      shopMoneyFormat: "${{amount}}",
+    };
+    const step = {
+      isFreeGift: true,
+      addonMessaging: {
+        tier1: {
+          eligibleState: "Congrats you are eligible for {discountValue}% off on Add ons",
+        },
+        tier2: {
+          ineligibleState:
+            "Add {remainingQuantity} more product(s) to claim {discountValue}% off on Add ons",
+          eligibleState:
+            "Congrats you are eligible for {discountValue}% off on Add ons",
+        },
+      },
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 10 },
+          selectedAddonProducts: [makeProduct("gid://shopify/Product/1")],
+        },
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 2 },
+          discount: { type: "PERCENTAGE", value: 100 },
+          selectedAddonProducts: [makeProduct("gid://shopify/Product/2")],
+        },
+      ],
+    };
+    const ctx = {
+      selectedProducts: [{ paidVariant: 1 }],
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+      selectedBundle: { steps: [{ id: "paid" }, step] },
+    };
+
+    const messageState = typeof getAddonMessageEligibilityState === "function"
+      ? getAddonMessageEligibilityState.call(ctx, step)
+      : getAddonEligibilityState.call(ctx, step);
+    expect(renderAddonEligibilityMessage.call(ctx, step, messageState)).toBe(
+      "Add 1 more product(s) to claim 100% off on Add ons",
+    );
+    expect(getAddonLineDiscount.call(ctx, step)).toEqual({
+      type: "PERCENTAGE",
+      value: 10,
+    });
   });
 
   it("does not return an add-on line discount before the active tier is eligible", () => {
