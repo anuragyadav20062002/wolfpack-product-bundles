@@ -282,12 +282,12 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | eb-partial-captured-wpb-fixture-gap |
 | EB config | Classic percentage, fixed amount, fixed-price, and highest-eligible discount tiers with progress below threshold |
-| WPB config | Mirrored Classic bundle through Admin UI |
+| WPB config | Current dev-tunnel Classic storefront fixture only; Admin flow/business logic remains locked for now |
 | Matrix coverage | Percentage tier, fixed amount tier, fixed price bundle, buy X get Y, progress below threshold, highest eligible tier, sidebar progress, mobile progress |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/C05-discounts-progress/` |
-| Current delta | Current WPB Classic fixture probe on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.21"` shows `pricing.enabled: false`, empty `pricing.rules`, and disabled progress-bar settings. C05 remains pending until EB and WPB are configured with active discount tiers; do not infer discount progress behavior from this baseline fixture. |
+| Current delta | EB bundle `1` is the current recoverable Classic storefront evidence source for this row: it renders `bundleDesignPresetId: "CLASSIC"` with box selection enabled, default `Box of 2` / `₹5 off` copy, default product selection, and add-on percentage tier messaging (`Congrats you are eligible for 10% off on Add ons`). Evidence: `eb-bundle1-mobile-runtime-20260703.json`, `eb-bundle1-desktop-runtime-20260703.json`, `eb-bundle1-discount-config-probe-20260703.json`, and `eb-bundle1-after-second-add-20260703.json`. This is partial C05 proof only: `progressKeys` is empty and the live EB fixture does not prove fixed-price tiers, fixed-amount tiers beyond the box-selection subtext, buy-X-get-Y, or highest-eligible discount conflict behavior. Current WPB Classic fixture probe on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.21"` still shows `pricing.enabled: false`, empty `pricing.rules`, and disabled progress-bar settings, so no source change is justified until the storefront fixture exposes equivalent discount data. |
 
 Acceptance:
 - Progress below threshold updates after each relevant product quantity change.
@@ -299,12 +299,12 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | eb-partial-captured-wpb-fixture-gap |
 | EB config | Classic add-on step with free gift tier, paid add-on tier, eligibility and ineligibility transitions, and add-on summary visibility |
-| WPB config | Mirrored Classic bundle through Admin UI |
+| WPB config | Current dev-tunnel Classic storefront fixture only; Admin flow/business logic remains locked for now |
 | Matrix coverage | Multi-step with add-on/gifting step, add-ons with paid tier, add-ons with free tier, multiple eligible tiers, highest eligible tier, add-on summary visibility, cart proof |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/C06-addons-free-gift/` |
-| Current delta | Current WPB Classic fixture probe on `5.0.21` shows `personalizationData: null` and no add-on/gift step. C06 remains pending until the storefront fixture contains an enabled gifting/add-on step with paid and free tiers. |
+| Current delta | EB bundle `1` proves the Classic paid add-on step surface on desktop and mobile. Step 2 renders add-on products, collapsed mobile footer (`View Selected Products`, CTA, price, count), expanded mobile summary (`Daily kit`, `Two essentials unlock savings`, `Box of 2`, `₹5 off`, add-on eligibility message), and paid add-on selection. After clicking the first Step 2 add-on, the product button changes from `Add To Box` to quantity `1`, the footer total changes from `₹1158.00` to `₹1687.00`, and the footer count changes from `2` to `3`. Evidence: `eb-bundle1-step2-runtime-20260703.json`, `eb-bundle1-step2-desktop-20260703.png`, `eb-bundle1-step2-mobile-collapsed-20260703.png`, `eb-bundle1-step2-mobile-expanded-20260703.png`, `eb-bundle1-after-addon-click-runtime-20260703.json`, and `eb-bundle1-after-addon-click-mobile-20260703.png`. This is partial C06 proof only: the live EB fixture currently proves a paid percentage add-on tier, not a free gift tier, multiple eligible tiers, or highest-eligible add-on conflict behavior. Current WPB Classic fixture probe on `5.0.21` still shows `personalizationData: null` and no add-on/gift step, so no source change is justified until the storefront payload exposes equivalent add-on data. |
 
 Acceptance:
 - Eligibility and ineligibility transitions match EB before and after entering the add-on step.
@@ -355,7 +355,7 @@ Acceptance:
 | Status | pending |
 | Scenario | Multi-step Classic bundle combining variants, discount progress, and add-on/free-gift qualification |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS1-multi-step-variants-discount-addon/` |
-| Current delta | Current WPB proxy capability probe on `5.0.21` shows a Classic two-step product fixture with variants, but no active discount rules and no add-on/free-gift step: `hasDiscountRules: false`, `pricing.enabled: false`, `pricing.rules.length: 0`, `hasAddOnOrGiftStep: false`, and `personalizationData: null`. Evidence: `/private/tmp/fpb-classic-agentic-parity/current-classic-proxy-capabilities-5021.json`. CS1 cannot be exercised until a Classic fixture combines multi-step products, variants, active discount progress, and add-on/free-gift qualification. No source change is justified yet. |
+| Current delta | EB bundle `1` now partially exercises the stress shape: Classic multi-step storefront, default product, box-selection discount copy, and paid percentage add-on eligibility/selection on Step 2. It still does not prove variants in the same EB stress fixture, free gifts, fixed/fixed-price discount tiers, or highest-eligible conflicts. Current WPB proxy capability probe on `5.0.21` shows a Classic two-step product fixture with variants, but no active discount rules and no add-on/free-gift step: `hasDiscountRules: false`, `pricing.enabled: false`, `pricing.rules.length: 0`, `hasAddOnOrGiftStep: false`, and `personalizationData: null`. Evidence: `/private/tmp/fpb-classic-agentic-parity/current-classic-proxy-capabilities-5021.json`, `/private/tmp/fpb-classic-agentic-parity/C05-discounts-progress/`, and `/private/tmp/fpb-classic-agentic-parity/C06-addons-free-gift/`. CS1 cannot be completed until a Classic fixture combines multi-step products, variants, active discount progress, and add-on/free-gift qualification in WPB and EB. No source change is justified yet. |
 
 Acceptance:
 - Step navigation, variant state, discount progress, and add-on eligibility stay synchronized across desktop and mobile.
