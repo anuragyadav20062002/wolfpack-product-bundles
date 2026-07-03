@@ -69,7 +69,7 @@ describe('Full Page widget category hydration behavior', () => {
     ]);
   });
 
-  it('uses the active category variant display flag for category tabs', () => {
+  it('uses the saved FPB step-level variant display flag for category tabs', () => {
     const step = {
       displayVariantsAsIndividual: true,
       categories: [
@@ -89,7 +89,7 @@ describe('Full Page widget category hydration behavior', () => {
         step,
         activeCategory,
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('expands category tab products only when the active category display flag is on', () => {

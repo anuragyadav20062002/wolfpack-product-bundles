@@ -415,7 +415,7 @@ shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
     step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
 
   if (activeCategory) {
-    return activeCategory.displayVariantsAsIndividualProducts === true;
+    return activeCategory.displayVariantsAsIndividualProducts === true || stepDisplaysVariantsAsIndividual;
   }
 
   const hasCategoryEntries = this.getStepCategoryTabEntries(step).length > 0;
