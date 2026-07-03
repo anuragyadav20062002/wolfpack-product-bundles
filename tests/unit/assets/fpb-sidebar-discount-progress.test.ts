@@ -222,3 +222,27 @@ describe('FPB Standard summary sidebar add-ons', () => {
     expect(renderCount).toBe(0);
   });
 });
+
+describe('FPB sidebar add-on CTA copy', () => {
+  it('keeps add-to-cart copy on the active add-on step when tier CTA text is configured', () => {
+    const panel = document.createElement('aside') as unknown as FakeElement;
+    const context = makeContext('CLASSIC', 'simple');
+    context.currentStepIndex = 1;
+    context.selectedProducts = [[{}], [{}]];
+    context.selectedBundle.steps = [
+      { id: 'step-1', enabled: true },
+      { id: 'personalization-addons', name: 'Add On', enabled: true, isFreeGift: true },
+    ];
+    context.areBundleConditionsMet = () => true;
+    context.getSidebarTierCtaContent = () => ({ label: 'Box of 2', subtext: '$5 off' });
+    context._resolveText = (key: string, fallback: string) => (
+      key === 'addToCartButton' ? 'Add To Cart' : fallback
+    );
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    const cta = panel.querySelector('.side-panel-btn-next');
+    expect(cta?.textContent).toBe('Add To Cart');
+    expect(cta?.className).not.toContain('side-panel-btn-has-tier-cta');
+  });
+});

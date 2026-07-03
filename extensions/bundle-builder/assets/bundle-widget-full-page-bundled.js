@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.28
+ * Version : 5.0.29
  * Built   : 2026-07-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.28';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.29';
 (function() {
   'use strict';
 
@@ -6192,6 +6192,7 @@ renderSidePanel(panel) {
   const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
   const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
   const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
+  const isActiveAddonStep = activeStep?.isFreeGift === true;
   const summaryText = this.getBundleSummaryText();
   const isClassicDesktopSidebar =
     this.resolveFullPageLayout() === 'footer_side' &&
@@ -6505,7 +6506,7 @@ renderSidePanel(panel) {
   const conditionless = this.bundleHasNoConditions();
   const canReturnToPreviousStep = !conditionless && this.currentStepIndex > 0;
   const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
-  const sidebarTierCtaContent = (conditionless || isLastStep)
+  const sidebarTierCtaContent = (conditionless || isLastStep) && !isActiveAddonStep
     ? this.getSidebarTierCtaContent(nextRule)
     : null;
 

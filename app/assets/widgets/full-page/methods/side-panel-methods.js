@@ -48,6 +48,7 @@ renderSidePanel(panel) {
   const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
   const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
   const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
+  const isActiveAddonStep = activeStep?.isFreeGift === true;
   const summaryText = this.getBundleSummaryText();
   const isClassicDesktopSidebar =
     this.resolveFullPageLayout() === 'footer_side' &&
@@ -370,7 +371,7 @@ renderSidePanel(panel) {
   const conditionless = this.bundleHasNoConditions();
   const canReturnToPreviousStep = !conditionless && this.currentStepIndex > 0;
   const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
-  const sidebarTierCtaContent = (conditionless || isLastStep)
+  const sidebarTierCtaContent = (conditionless || isLastStep) && !isActiveAddonStep
     ? this.getSidebarTierCtaContent(nextRule)
     : null;
 
