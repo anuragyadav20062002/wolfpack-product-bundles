@@ -316,12 +316,12 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | eb-wpb-manual-mobile-proofed-fixture-gap |
 | EB config | Classic manual, collection-backed, mixed-source, visible OOS, blocked OOS, and inventory tracking at add-to-cart |
-| WPB config | Mirrored Classic bundle through Admin UI |
+| WPB config | Current dev-tunnel Classic storefront fixture only; Admin flow/business logic remains locked for now |
 | Matrix coverage | Manual products, collection-backed category, mixed manual plus collection, out of stock visible, out of stock blocked, track inventory on add-to-cart, collection hydration |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/C07-product-source-inventory/` |
-| Current delta | Current WPB Classic fixture probe on `5.0.21` has two manual categories, no collection-backed category, and no unavailable product/variant signal in the proxy payload. C07 remains pending until a fixture exposes manual plus collection-backed products and tracked/OOS inventory states. |
+| Current delta | EB bundle `1` mobile proof captured at `390 x 844` with cache/storage cleared. It proves Classic tabbed manual product rendering, long pill sizing, variant DOM data, and no visible OOS/unavailable storefront signal in the current fixture. Evidence: `eb-bundle1-product-source-mobile-runtime-20260703.json`, `eb-bundle1-product-source-mobile-20260703.png`, and `eb-bundle1-product-source-mobile-a11y-20260703.txt`. WPB mobile proof captured after cache/storage clear on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.21"` and `data-fpb-design-preset="CLASSIC"`; current fixture shows one long category pill, product cards, variants, no `Empty Category` text, and no visible OOS/unavailable text. Evidence: `wpb-product-source-mobile-runtime-20260703.json`, `wpb-product-source-mobile-20260703.png`, and `wpb-product-source-mobile-a11y-20260703.txt`. C07 remains fixture-gated for collection-backed, mixed-source, visible OOS, blocked OOS, and inventory tracking at add-to-cart. Desktop capture was not completed in this pass because the current DevTools target remained in mobile emulation; do not treat this row as accepted. |
 
 Acceptance:
 - Collection products hydrate by the EB-documented ID/batch behavior, not cursor-pagination assumptions.
@@ -365,10 +365,10 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | mobile-long-title-partial-fixture-gap |
 | Scenario | Long product titles and multi-image cards on mobile Classic |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS2-mobile-long-titles-multi-image-cards/` |
-| Current delta | Current WPB Classic fixture has a long category label but not the CS2 product-card fixture. Proxy/DOM probes on `5.0.21` show longest product title `Black Crew Neck T-Shirt - Kite App`, each visible product card renders one image, and `hasMultiImageCardInDom: false`. Evidence: `/private/tmp/fpb-classic-agentic-parity/current-classic-proxy-capabilities-5021.json` and `current-classic-fixture-capabilities-dom-5021.json`. CS2 cannot validate long product-title wrapping plus multi-image card behavior until the storefront fixture includes those states. |
+| Current delta | EB bundle `1` mobile proof at `390 x 844` captures long Classic category pills and product cards with visible image carousel arrows (`❮❯`), variant option lists, and long mobile category title wrapping. Evidence: `eb-bundle1-mobile-card-runtime-20260703.json`, `eb-bundle1-mobile-cards-20260703.png`, and `eb-bundle1-mobile-cards-a11y-20260703.txt`. WPB mobile proof on `5.0.21` captures `Black Crew Neck T-Shirt - Kite App`, Classic category pill sizing, product-card image nodes, and variant controls. Evidence: `wpb-mobile-card-runtime-20260703.json`, `wpb-mobile-cards-20260703.png`, and `wpb-mobile-cards-a11y-20260703.txt`. This is still partial: the current WPB fixture does not expose the same EB-style multi-image carousel interaction state, and desktop proof was not completed because the DevTools target stayed in mobile emulation. No source change is justified yet. |
 
 Acceptance:
 - Long titles remain readable without overlapping price, variant, CTA, or tray controls.
@@ -379,10 +379,10 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | eb-label-not-empty-wpb-fixture-gap |
 | Scenario | Empty or no-product category plus reload and first-load Classic state |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS3-empty-category-reload-first-load/` |
-| Current delta | Current WPB Classic proxy payload on `5.0.21` has two product-backed steps, each with one product-backed category; `hasEmptyCategory: false`, Step 1 category product count `6`, and Step 2 category product count `4`. Evidence: `/private/tmp/fpb-classic-agentic-parity/current-classic-proxy-capabilities-5021.json`. CS3 cannot validate empty/no-product category first-load or reload behavior until the Classic fixture includes an empty category alongside a non-empty category. No source change is justified yet. |
+| Current delta | EB bundle `1` contains a category named `Empty Category With An Exceptionally Long Name For Classic Pills`, but live mobile proof shows it is not a reliable empty-state fixture: after the category click probe, product text count remained `122` and visible product cards were still present. Evidence: `eb-bundle1-empty-label-click-probe-20260703.json`, `eb-bundle1-empty-label-after-click-mobile-20260703.png`, and `eb-bundle1-empty-label-after-click-a11y-20260703.txt`. WPB proof on `5.0.21` still has no `Empty Category` text and no empty/no-product category in the current storefront fixture. Evidence: `wpb-mobile-empty-category-runtime-20260703.json`, `wpb-mobile-current-category-20260703.png`, and `wpb-mobile-current-category-a11y-20260703.txt`. CS3 cannot validate empty/no-product category first-load or reload behavior until EB and WPB expose a true empty category. No source change is justified yet. |
 
 Acceptance:
 - Empty category state matches EB on first load and after reload.
