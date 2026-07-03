@@ -352,7 +352,7 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | eb-partial-wpb-stress-fixture-gap |
 | Scenario | Multi-step Classic bundle combining variants, discount progress, and add-on/free-gift qualification |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS1-multi-step-variants-discount-addon/` |
 | Current delta | EB bundle `1` now partially exercises the stress shape: Classic multi-step storefront, default product, box-selection discount copy, and paid percentage add-on eligibility/selection on Step 2. It still does not prove variants in the same EB stress fixture, free gifts, fixed/fixed-price discount tiers, or highest-eligible conflicts. Current WPB proxy capability probe on `5.0.21` shows a Classic two-step product fixture with variants, but no active discount rules and no add-on/free-gift step: `hasDiscountRules: false`, `pricing.enabled: false`, `pricing.rules.length: 0`, `hasAddOnOrGiftStep: false`, and `personalizationData: null`. Evidence: `/private/tmp/fpb-classic-agentic-parity/current-classic-proxy-capabilities-5021.json`, `/private/tmp/fpb-classic-agentic-parity/C05-discounts-progress/`, and `/private/tmp/fpb-classic-agentic-parity/C06-addons-free-gift/`. CS1 cannot be completed until a Classic fixture combines multi-step products, variants, active discount progress, and add-on/free-gift qualification in WPB and EB. No source change is justified yet. |
