@@ -407,10 +407,10 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | wpb-eb-load-proofed-spinner-detector-limited |
 | Scenario | Classic loading state: spinner only, no theme bundle title flash |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS5-loading-state/` |
-| Current delta | WPB first-paint proof captured on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.21"` after clearing Cache Storage/local/session and hard reloading with a document-start mutation probe. Evidence includes `wpb-load-probe-safe-5021.json`, `wpb-network-summary-5021.json`, `wpb-a11y-5021.txt`, and `wpb-desktop-5021.png`. WPB root states were only an unpreset `bundle-widget-container bundle-widget-full-page` loading overlay followed by `CLASSIC`; `sawStandardPreset: false`, `visibleThemeBundleTitleEvents: 0`, and only base + Classic CSS remained active. No source change is justified. EB current loading proof is still pending because the live EB bundle used in this loop currently crashes before controls render with `Cannot read properties of null (reading 'personalizationData')`, already recorded under C08. |
+| Current delta | WPB first-paint proof captured on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.21"` after clearing Cache Storage/local/session and hard reloading with a document-start mutation probe. Evidence includes `wpb-load-probe-safe-5021.json`, `wpb-network-summary-5021.json`, `wpb-a11y-5021.txt`, and `wpb-desktop-5021.png`. WPB root states were only an unpreset `bundle-widget-container bundle-widget-full-page` loading overlay followed by `CLASSIC`; `sawStandardPreset: false`, `visibleThemeBundleTitleEvents: 0`, and only base + Classic CSS remained active. EB bundle `1` loading proof was captured with cache/storage cleared and a document-start probe: `sawClassic: true`, `sawStandardLike: false`, `sawThemeTitleOnly: false`, and final root class `gbbPageBody gbbMinimilisticLayout gbbProductsCardLayoutV2 bundle-1`. EB final active bundle styles are `easy-bundle-min.css` and `easy-bundle-full-page-min.css`. Evidence: `eb-bundle1-load-probe-20260703.json`, `eb-bundle1-loaded-mobile-20260703.png`, and `eb-bundle1-loaded-mobile-a11y-20260703.txt`. Caveat: the EB probe's generic spinner detector stays true after render because EB leaves spinner assets/classes in the DOM, so it proves no Standard-like or theme-title-only flash, but not exact spinner visibility duration. No source change is justified. |
 
 Acceptance:
 - Initial loading state shows only EB-equivalent loading UI.
