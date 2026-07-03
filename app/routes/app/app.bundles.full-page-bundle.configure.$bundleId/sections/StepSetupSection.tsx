@@ -38,9 +38,22 @@ export function StepSetupSection({
             </span>
             <button
               type="button"
-              className={fullPageBundleStyles.linkButton}
-              onClick={() => window.open("https://wolfpackapps.com", "_blank")}
+              className={fullPageBundleStyles.videoHelpButton}
+              onClick={() =>
+                window.open(
+                  "https://www.youtube.com/watch?v=5p_B81I7tWE",
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
             >
+              <svg
+                className={fullPageBundleStyles.videoHelpIcon}
+                viewBox="0 0 10 10"
+                aria-hidden="true"
+              >
+                <path d="M2 1 L9 5 L2 9 Z" />
+              </svg>
               How to setup?
             </button>
           </div>
