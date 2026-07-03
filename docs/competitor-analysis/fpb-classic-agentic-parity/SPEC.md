@@ -410,7 +410,7 @@ Acceptance:
 | Status | pending |
 | Scenario | Classic loading state: spinner only, no theme bundle title flash |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS5-loading-state/` |
-| Current delta | Not captured. `delta.md` must compare EB and WPB initial paint, loading skeleton/spinner, and any theme title flash. |
+| Current delta | WPB first-paint proof captured on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.21"` after clearing Cache Storage/local/session and hard reloading with a document-start mutation probe. Evidence includes `wpb-load-probe-safe-5021.json`, `wpb-network-summary-5021.json`, `wpb-a11y-5021.txt`, and `wpb-desktop-5021.png`. WPB root states were only an unpreset `bundle-widget-container bundle-widget-full-page` loading overlay followed by `CLASSIC`; `sawStandardPreset: false`, `visibleThemeBundleTitleEvents: 0`, and only base + Classic CSS remained active. No source change is justified. EB current loading proof is still pending because the live EB bundle used in this loop currently crashes before controls render with `Cannot read properties of null (reading 'personalizationData')`, already recorded under C08. |
 
 Acceptance:
 - Initial loading state shows only EB-equivalent loading UI.
