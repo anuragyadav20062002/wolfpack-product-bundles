@@ -200,6 +200,9 @@ buildPaidAddonProductDisplayData(product, step) {
 getProductCardAddButtonText(step) {
   const isPaidAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
   if (isPaidAddonStep) {
+    if (this.getFullPageDesignPreset?.() === 'CLASSIC') {
+      return this.getProductAddButtonText();
+    }
     return this._resolveText('addToCartButton', this.config?.addToCartText || 'Add to Cart');
   }
 

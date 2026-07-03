@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.22
+ * Version : 5.0.23
  * Built   : 2026-07-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.22';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.23';
 (function() {
   'use strict';
 
@@ -5983,8 +5983,7 @@ _createMobileSummaryActionButton({
 }) {
   const ctaBtn = document.createElement('button');
   ctaBtn.className = 'side-panel-btn side-panel-btn-next';
-  const hasUpcomingAddonStep = this.freeGiftStepIndex > this.currentStepIndex;
-  const shouldAdvance = hasUpcomingAddonStep || (!conditionlessMobile && !isLastStep);
+  const shouldAdvance = !conditionlessMobile && !isLastStep;
   const shouldAddToCart = !shouldAdvance && (conditionlessMobile || isLastStep);
   const actionText = shouldAddToCart
     ? this._resolveText('addToCartButton', 'Add to Cart')
@@ -6009,7 +6008,7 @@ _createMobileSummaryActionButton({
       }
       await this.addBundleToCart(ctaBtn);
     } else {
-      const targetStepIndex = hasUpcomingAddonStep ? this.freeGiftStepIndex : this.currentStepIndex + 1;
+      const targetStepIndex = this.currentStepIndex + 1;
       if (this.canNavigateToStep(targetStepIndex) && this.canProceedToNextStep()) {
         const previousStepIndex = this.currentStepIndex;
         this.activeCollectionId = null;
@@ -8440,6 +8439,9 @@ buildPaidAddonProductDisplayData(product, step) {
 getProductCardAddButtonText(step) {
   const isPaidAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
   if (isPaidAddonStep) {
+    if (this.getFullPageDesignPreset?.() === 'CLASSIC') {
+      return this.getProductAddButtonText();
+    }
     return this._resolveText('addToCartButton', this.config?.addToCartText || 'Add to Cart');
   }
 

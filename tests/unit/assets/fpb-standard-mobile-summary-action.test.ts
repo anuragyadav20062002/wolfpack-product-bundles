@@ -22,6 +22,7 @@ class FakeElement {
   disabled = false;
   private ownText = '';
   private children: FakeElement[] = [];
+  private listeners: Record<string, Array<(event?: { preventDefault?: () => void; key?: string }) => void | Promise<void>>> = {};
 
   get textContent() {
     return [this.ownText, ...this.children.map((child) => child.textContent)].join('');
@@ -35,7 +36,16 @@ class FakeElement {
     this.children.push(...children);
   }
 
-  addEventListener() {}
+  addEventListener(type: string, listener: (event?: { preventDefault?: () => void; key?: string }) => void | Promise<void>) {
+    this.listeners[type] ||= [];
+    this.listeners[type].push(listener);
+  }
+
+  async click() {
+    for (const listener of this.listeners.click || []) {
+      await listener({});
+    }
+  }
 }
 
 const originalDocument = global.document;
@@ -111,6 +121,42 @@ describe('FPB Standard mobile summary action', () => {
     expect(button.textContent?.includes('Add To Cart')).toBe(false);
   });
 
+  it('advances the compact summary one step at a time before an add-on step', async () => {
+    const context = {
+      ...createContext(),
+      currentStepIndex: 0,
+      freeGiftStepIndex: 2,
+      canNavigateToStep: jest.fn((stepIndex: number) => stepIndex === 1),
+      canProceedToNextStep: jest.fn(() => true),
+      _withWidgetActionBusy: jest.fn(async (callback: () => Promise<void>) => {
+        await callback();
+      }),
+    };
+
+    const button = fullPageMobileSummaryMethods._createMobileSummaryActionButton.call(
+      context,
+      {
+        finalPrice: 829,
+        currencyInfo,
+        conditionlessMobile: false,
+        hasSelectionMobile: false,
+        isLastStep: false,
+        isComplete: false,
+      },
+    );
+
+    await button.click();
+
+    expect(context.canNavigateToStep).toHaveBeenCalledWith(1);
+    expect(context.currentStepIndex).toBe(1);
+    expect(context._emitStorefrontEvent).toHaveBeenCalledWith('step-changed', {
+      previousStepIndex: 0,
+      currentStepIndex: 1,
+      direction: 'next',
+    });
+    expect(context.renderFullPageLayoutWithSidebar).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps the alternate mobile bottom bar final-step action as add to cart when conditions are not complete', () => {
     const actionState = getMobileBottomBarActionState({
       conditionlessMobile: false,
@@ -145,6 +191,7 @@ describe('FPB Standard mobile summary action', () => {
       compactMobileSummaryTrayAnimationTimeout: null,
       getAllSelectedProductsData: () => [],
       _populateCompactMobileSummaryTray: jest.fn(),
+      _syncCompactMobileSummaryScrollLock: jest.fn(),
     };
 
     fullPageMobileSummaryMethods._toggleCompactMobileSummaryTray.call(

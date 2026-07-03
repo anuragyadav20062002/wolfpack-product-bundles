@@ -23,6 +23,7 @@ Lock the storefront behavior observed in EB Standard: a one-step FPB mobile foot
 | 9 | Direct default merge | Step product list excludes default product | Default product is merged into step data for totals/cart lookup | Lets a preselected product count for discount/cart totals even when absent from the active step products. |
 | 10 | Exact step validation message | Step condition `is = 2`, one manually selected product, one direct default product | Validation returns `Add exactly 2 products on this step` | Matches EB: direct defaults count toward discount/cart, but exact step validation requires explicit step selections. |
 | 11 | Step-level auto-next predicate | Step condition quantity reached and `autoNextStepOnConditionMet=true` | Auto-next predicate resolves true | Persists EB's step-rule auto-next behavior independently from category auto-next. |
+| 12 | Add-on step after multiple paid steps | Current mobile step is before another paid step and an add-on step exists later | Summary CTA targets the next paid step, not the add-on step | Prevents the visible mobile footer from skipping locked paid steps. |
 
 ## Acceptance Criteria
 

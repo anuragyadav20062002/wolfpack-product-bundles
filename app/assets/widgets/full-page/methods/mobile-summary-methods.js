@@ -351,8 +351,7 @@ _createMobileSummaryActionButton({
 }) {
   const ctaBtn = document.createElement('button');
   ctaBtn.className = 'side-panel-btn side-panel-btn-next';
-  const hasUpcomingAddonStep = this.freeGiftStepIndex > this.currentStepIndex;
-  const shouldAdvance = hasUpcomingAddonStep || (!conditionlessMobile && !isLastStep);
+  const shouldAdvance = !conditionlessMobile && !isLastStep;
   const shouldAddToCart = !shouldAdvance && (conditionlessMobile || isLastStep);
   const actionText = shouldAddToCart
     ? this._resolveText('addToCartButton', 'Add to Cart')
@@ -377,7 +376,7 @@ _createMobileSummaryActionButton({
       }
       await this.addBundleToCart(ctaBtn);
     } else {
-      const targetStepIndex = hasUpcomingAddonStep ? this.freeGiftStepIndex : this.currentStepIndex + 1;
+      const targetStepIndex = this.currentStepIndex + 1;
       if (this.canNavigateToStep(targetStepIndex) && this.canProceedToNextStep()) {
         const previousStepIndex = this.currentStepIndex;
         this.activeCollectionId = null;

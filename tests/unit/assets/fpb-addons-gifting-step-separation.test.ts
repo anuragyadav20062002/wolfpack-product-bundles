@@ -504,11 +504,12 @@ describe("FPB add-ons / gifting step separation", () => {
     });
   });
 
-  it("uses the cart CTA label for paid add-on product cards", () => {
+  it("uses the product add label for Classic paid add-on product cards", () => {
     const ctx = {
       _resolveText: (key: string, fallback: string) =>
         key === "addToCartButton" ? "Add To Cart" : fallback,
       getProductAddButtonText: () => "Add To Box",
+      getFullPageDesignPreset: () => "CLASSIC",
     };
 
     expect(
@@ -516,7 +517,7 @@ describe("FPB add-ons / gifting step separation", () => {
         isFreeGift: true,
         addonDisplayFree: false,
       }),
-    ).toBe("Add To Cart");
+    ).toBe("Add To Box");
     expect(getProductCardAddButtonText.call(ctx, {})).toBe("Add To Box");
   });
 
