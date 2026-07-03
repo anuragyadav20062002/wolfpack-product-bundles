@@ -36,6 +36,8 @@ const renderAddonEligibilityMessage =
   fullPageValidationAddonsMethods.renderAddonEligibilityMessage;
 const buildPaidAddonProductDisplayData =
   fullPageProductCardFooterMethods.buildPaidAddonProductDisplayData;
+const createProductCard =
+  fullPageProductCardFooterMethods.createProductCard;
 const getProductCardAddButtonText =
   fullPageProductCardFooterMethods.getProductCardAddButtonText;
 const loadStepProducts = fullPageProductProcessingMethods.loadStepProducts;
@@ -49,6 +51,7 @@ if (
   typeof calculateSelectedAddonDiscountAmount !== "function" ||
   typeof renderAddonEligibilityMessage !== "function" ||
   typeof buildPaidAddonProductDisplayData !== "function" ||
+  typeof createProductCard !== "function" ||
   typeof getProductCardAddButtonText !== "function" ||
   typeof loadStepProducts !== "function"
 ) {
@@ -519,6 +522,62 @@ describe("FPB add-ons / gifting step separation", () => {
       }),
     ).toBe("Add To Box");
     expect(getProductCardAddButtonText.call(ctx, {})).toBe("Add To Box");
+  });
+
+  it("renders the active tier badge on Classic paid add-on product cards", () => {
+    const step = { isFreeGift: true, addonDisplayFree: false };
+    const ctx = {
+      selectedProducts: [{}],
+      selectedBundle: {
+        variantSelectorEnabled: false,
+        steps: [step],
+      },
+      getFullPageDesignPreset: () => "CLASSIC",
+      getProductAddButtonText: () => "Add To Box",
+      getProductCardAddButtonText,
+      buildPaidAddonProductDisplayData,
+      getAddonLineDiscount: () => ({ type: "PERCENTAGE", value: 10 }),
+      applyStandardExpandedVariantTitle: () => undefined,
+      attachProductCardListeners: () => undefined,
+    };
+    const originalDocument = (global as any).document;
+    (global as any).document = {
+      createElement: () => {
+        const wrapper: { firstChild: { textContent: string }; innerHTML: string } = {
+          firstChild: { textContent: "" },
+          innerHTML: "",
+        };
+        Object.defineProperty(wrapper, "innerHTML", {
+          set(value: string) {
+            this.firstChild = {
+              textContent: value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(),
+            };
+          },
+          get() {
+            return this.firstChild.textContent;
+          },
+        });
+        return wrapper;
+      },
+    };
+
+    try {
+      const card = createProductCard.call(
+        ctx,
+        {
+          id: "addon-product",
+          title: "Gift product",
+          price: 82900,
+          imageUrl: "https://cdn.example.test/gift.png",
+        },
+        0,
+      );
+
+      expect(card.textContent).toContain("10% off");
+      expect(card.textContent).toContain("Add To Box");
+    } finally {
+      (global as any).document = originalDocument;
+    }
   });
 
   it("exposes the eligible tier and index from tier evaluation", () => {

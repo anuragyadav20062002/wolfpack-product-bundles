@@ -121,6 +121,7 @@
   }
 
   .fpb-preset-classic .sidebar-content .product-card {
+    position: relative;
     width: 100%;
     min-width: 0;
     max-width: none;
@@ -137,6 +138,22 @@
       var(--bundle-global-primary-text, currentColor)
     );
     overflow: visible;
+  }
+
+  .fpb-preset-classic .sidebar-content .fpb-addon-discount-badge {
+    position: absolute;
+    inset-block-start: 1rem;
+    inset-inline-end: 0;
+    z-index: 2;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.3125rem 0 0 0.3125rem;
+    background: var(--bundle-add-btn-color, #000);
+    color: var(--bundle-button-text-color, #fff);
+    font-family: Assistant, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.8;
+    letter-spacing: 0;
   }
 
   .fpb-preset-classic .sidebar-content .product-image {

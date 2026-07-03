@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.23
+ * Version : 5.0.24
  * Built   : 2026-07-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.23';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.24';
 (function() {
   'use strict';
 
@@ -8311,8 +8311,9 @@ createProductCard(product, stepIndex, options = {}) {
     : '';
 
   const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
-  const hasStandardAddonDiscountBadge = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText;
-  const stockBadgeHtml = hasStandardAddonDiscountBadge
+  const supportsAddonDiscountBadge = ['STANDARD', 'CLASSIC'].includes(designPreset);
+  const hasAddonDiscountBadge = supportsAddonDiscountBadge && displayProduct.addonDiscountBadgeText;
+  const stockBadgeHtml = hasAddonDiscountBadge
     ? `<span class="fpb-addon-discount-badge">${ComponentGenerator.escapeHtml(displayProduct.addonDiscountBadgeText)}</span>`
     : '';
   let htmlString;
@@ -8375,7 +8376,7 @@ createProductCard(product, stepIndex, options = {}) {
     }
   }
 
-  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true && !hasStandardAddonDiscountBadge) {
+  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true && !hasAddonDiscountBadge) {
     const imgEl = cardElement.querySelector('.product-image, .product-img, img');
     if (imgEl && imgEl.parentElement) {
       imgEl.parentElement.classList.add('fpb-card-image-wrapper');

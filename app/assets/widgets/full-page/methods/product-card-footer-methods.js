@@ -68,8 +68,9 @@ createProductCard(product, stepIndex, options = {}) {
     : '';
 
   const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
-  const hasStandardAddonDiscountBadge = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText;
-  const stockBadgeHtml = hasStandardAddonDiscountBadge
+  const supportsAddonDiscountBadge = ['STANDARD', 'CLASSIC'].includes(designPreset);
+  const hasAddonDiscountBadge = supportsAddonDiscountBadge && displayProduct.addonDiscountBadgeText;
+  const stockBadgeHtml = hasAddonDiscountBadge
     ? `<span class="fpb-addon-discount-badge">${ComponentGenerator.escapeHtml(displayProduct.addonDiscountBadgeText)}</span>`
     : '';
   let htmlString;
@@ -135,7 +136,7 @@ createProductCard(product, stepIndex, options = {}) {
   }
 
   // Free gift step: add "Free" badge and override price display to $0.00
-  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true && !hasStandardAddonDiscountBadge) {
+  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true && !hasAddonDiscountBadge) {
     const imgEl = cardElement.querySelector('.product-image, .product-img, img');
     if (imgEl && imgEl.parentElement) {
       imgEl.parentElement.classList.add('fpb-card-image-wrapper');
