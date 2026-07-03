@@ -30,9 +30,22 @@ export function PpbStepFlowCard() {
           </span>
           <button
             type="button"
-            className={productPageBundleStyles.linkButton}
-            onClick={() => window.open("https://wolfpackapps.com", "_blank")}
+            className={productPageBundleStyles.videoHelpButton}
+            onClick={() =>
+              window.open(
+                "https://www.youtube.com/watch?v=5ClNNtFybHo",
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
           >
+            <svg
+              className={productPageBundleStyles.videoHelpIcon}
+              viewBox="0 0 10 10"
+              aria-hidden="true"
+            >
+              <path d="M2 1 L9 5 L2 9 Z" />
+            </svg>
             How to setup?
           </button>
         </div>
