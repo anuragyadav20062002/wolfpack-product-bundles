@@ -1043,6 +1043,8 @@ function validateBoxSelectionOnCheckout() {
 
 When `validateBoxSelectionQuantity: false` (the default), the ATC button is **never blocked** regardless of how many items are selected.
 
+2026-07-03 Classic C04 gotcha: the EB Admin Bundle Settings surface can show the visible "Enable Quantity Validation" checkbox as checked while the cache-bypassed storefront still emits `boxSelection.validateBoxSelectionQuantity: false` and `gbbBoxSelection.state.validateBoxSelectionQuantity: false`. Treat the storefront runtime/config value as authoritative for parity and blocking proof; do not infer validation behavior from the Admin checkbox alone. Evidence: `/private/tmp/fpb-classic-agentic-parity/C04-slots-box-validation/eb-admin-c04-recheck-initial-20260703.txt` and `eb-c04-validation-recheck-desktop-runtime-20260703.json`.
+
 **ATC button DOM:** A `div.gbbFooterNextButton` (not a native `<button>`). Enforcement is CSS-class-based — `.gbbBoxSelectionMaxQtyLimitReached` is added to `.gbbPageBody` when max is reached. The button never gets a native `disabled` attribute.
 
 **Box tier selector DOM:**
