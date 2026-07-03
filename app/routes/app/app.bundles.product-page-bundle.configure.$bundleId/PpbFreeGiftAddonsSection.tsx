@@ -227,14 +227,26 @@ export function PpbFreeGiftAddonsSection() {
                   </div>
                   <s-stack direction="block" gap="small">
                     <s-stack direction="inline" gap="small">
-                      <s-button
-                        variant="secondary"
+                      <button
+                        type="button"
+                        className={productPageBundleStyles.videoHelpButton}
                         onClick={() =>
-                          window.open("https://wolfpackapps.com", "_blank")
+                          window.open(
+                            "https://www.youtube.com/watch?v=5ClNNtFybHo",
+                            "_blank",
+                            "noopener,noreferrer",
+                          )
                         }
                       >
+                        <svg
+                          className={productPageBundleStyles.videoHelpIcon}
+                          viewBox="0 0 10 10"
+                          aria-hidden="true"
+                        >
+                          <path d="M2 1 L9 5 L2 9 Z" />
+                        </svg>
                         How to setup?
-                      </s-button>
+                      </button>
                       <s-button variant="secondary" icon="globe" disabled>
                         Multi Language
                       </s-button>
