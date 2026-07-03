@@ -27,21 +27,32 @@ describe('FPB full-page metafield cache', () => {
     jest.restoreAllMocks();
   });
 
-  it('uses a full cached bundle payload without fetching the app proxy', async () => {
+  it('hydrates through the app proxy when a legacy full cached payload is present', async () => {
     const cachedBundle = {
       id: 'bundle-1',
       bundleType: 'full_page',
+      bundleDesignPresetId: 'STANDARD',
       name: 'Daily Essentials',
       steps: [{ id: 'step-1', name: 'Choose Products', products: [] }],
     };
-    const fetchSpy = jest.spyOn(global, 'fetch' as any);
+    const currentBundle = {
+      id: 'bundle-1',
+      bundleType: 'full_page',
+      bundleDesignPresetId: 'CLASSIC',
+      name: 'Daily Essentials',
+      steps: [{ id: 'step-1', name: 'Full Size Earrings With A Very Long Classic Pill Label', products: [] }],
+    };
+    const fetchSpy = jest.spyOn(global, 'fetch' as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, bundle: currentBundle }),
+    });
     const widget = makeWidgetContext(cachedBundle);
 
     await widget.loadBundleData();
 
-    expect(widget.bundleData).toEqual({ 'bundle-1': cachedBundle });
-    expect(widget._bundleConfigCacheMode).toBe('full');
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(widget.bundleData).toEqual({ 'bundle-1': currentBundle });
+    expect(widget._bundleConfigCacheMode).toBe('proxy');
+    expect(fetchSpy).toHaveBeenCalledWith('/apps/product-bundles/api/bundle/bundle-1.json');
   });
 
   it('hydrates through the app proxy when the cached payload is only a bootstrap pointer', async () => {
@@ -69,7 +80,7 @@ describe('FPB full-page metafield cache', () => {
     expect(fetchSpy).toHaveBeenCalledWith('/apps/product-bundles/api/bundle/bundle-1.json');
   });
 
-  it('hydrates current bundle data before first render when the full cached payload is stale', async () => {
+  it('does not need a second pre-render hydrate after a legacy full payload is resolved through the proxy', async () => {
     const staleBundle = {
       id: 'bundle-1',
       bundleType: 'full_page',
@@ -92,15 +103,13 @@ describe('FPB full-page metafield cache', () => {
     Object.assign(widget, fullPageTierFloatingRuntimeMethods);
 
     await widget.loadBundleData();
-    widget.selectedBundle = staleBundle;
+    widget.selectedBundle = widget.bundleData['bundle-1'];
     const view = await widget.hydrateCurrentFullPageBundleBeforeRender();
 
-    expect(view).toBe(true);
+    expect(view).toBe(false);
     expect(widget.selectedBundle).toEqual(currentBundle);
     expect(widget.bundleData).toEqual({ 'bundle-1': currentBundle });
-    expect(fetchSpy).toHaveBeenCalledWith(
-      '/apps/product-bundles/api/bundle/bundle-1.json',
-      { cache: 'no-store', credentials: 'same-origin' },
-    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith('/apps/product-bundles/api/bundle/bundle-1.json');
   });
 });

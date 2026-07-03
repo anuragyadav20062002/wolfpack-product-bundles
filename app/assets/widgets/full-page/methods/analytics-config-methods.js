@@ -578,21 +578,20 @@ async loadBundleData() {
 
   if (bundleType === 'full_page' && bundleId) {
 
-    // Prefer metafield cache (data-bundle-config) over proxy API call.
-    // The metafield is written by the app when "Place Widget Now" or "Sync Bundle"
-    // is clicked — it eliminates the proxy round-trip for first paint.
+    // Full-page bundle markers should be compact pointers. Legacy page HTML can
+    // still contain a full stale payload, so never render that payload directly.
     const cachedConfig = this.container.dataset.bundleConfig;
     const cachedPayload = this._parseBundleConfigPayload(cachedConfig);
     if (cachedPayload) {
       if (this._isBundleConfigBootstrapPayload(cachedPayload)) {
         this._bundleConfigCacheMode = 'bootstrap';
       } else if (typeof cachedPayload.id === 'string' && cachedPayload.id.trim() !== '') {
-        this._bundleConfigCacheMode = 'full';
-        bundleData = { [cachedPayload.id]: cachedPayload };
+        this._bundleConfigCacheMode = 'legacy-full';
       }
     }
 
-    // Fall back to proxy API if metafield cache was absent or unparseable.
+    // Hydrate current bundle data through the app proxy when the marker is
+    // compact, absent, or a legacy full payload.
     if (!bundleData) {
       this._bundleConfigCacheMode = 'proxy';
 
