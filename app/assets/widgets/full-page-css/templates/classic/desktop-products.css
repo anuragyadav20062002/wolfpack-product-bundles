@@ -46,43 +46,46 @@
   }
 
   .fpb-preset-classic .category-tabs {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    grid-template-columns: repeat(2, max-content);
-    grid-template-rows: 50.797px;
+    display: flex;
+    flex-wrap: nowrap;
     justify-content: start;
     gap: 20px;
-    height: 50.797px;
     margin: 0;
     padding: 0;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .fpb-preset-classic .category-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .fpb-preset-classic .category-tab {
-    height: 50.797px;
-    display: grid;
-    grid-template-columns: max-content 0;
-    grid-template-rows: 28.797px;
-    gap: 5px;
+    min-height: var(--classic-category-pill-min-height);
+    display: inline-flex;
     align-items: center;
-    justify-content: start;
-    padding: 10px;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    color: rgba(18, 18, 18, 0.75);
+    justify-content: center;
+    flex: 0 0 auto;
+    max-width: min(100%, 34rem);
+    padding: var(--classic-category-pill-padding);
+    border: var(--classic-category-pill-border);
+    border-radius: 999px;
+    background: #fff;
+    color: #000;
     font-family: Assistant, sans-serif;
     font-size: 16px;
-    line-height: 28.8px;
-    font-weight: 400;
+    line-height: 1.2;
+    font-weight: 700;
     box-shadow: none;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   .fpb-preset-classic .category-tab.active {
-    background: transparent;
-    color: #000;
-    border: 0;
+    background: #000;
+    color: #fff;
+    border-color: #000;
   }
 
   .fpb-preset-classic .category-tab::after,
@@ -95,8 +98,11 @@
     font-family: Assistant, sans-serif;
     font-size: 16px;
     font-weight: 700;
-    line-height: 28.8px;
+    line-height: 1.2;
     letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .fpb-preset-classic .sidebar-content .full-page-product-grid-container {

@@ -11,43 +11,47 @@
   }
 
   .fpb-preset-classic > .category-tabs {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    grid-template-columns: repeat(2, max-content);
-    grid-template-rows: 49px;
+    display: flex;
+    flex-wrap: nowrap;
     gap: 20px;
-    align-items: stretch;
+    align-items: center;
     justify-content: start;
     width: calc(100vw - 20px);
-    height: 49px;
     margin: 20px 0 15px;
     padding: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .fpb-preset-classic > .category-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .fpb-preset-classic > .category-tabs .category-tab {
-    display: grid;
-    grid-template-columns: max-content 0;
-    grid-template-rows: 27px;
-    gap: 5px;
+    display: inline-flex;
     align-items: center;
-    justify-content: start;
-    height: 49px;
-    padding: 10px;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    color: rgba(18, 18, 18, 0.75);
+    justify-content: center;
+    flex: 0 0 auto;
+    max-width: min(92vw, 34rem);
+    min-height: var(--classic-category-pill-min-height);
+    padding: var(--classic-category-pill-padding);
+    border: var(--classic-category-pill-border);
+    border-radius: 999px;
+    background: #fff;
+    color: #000;
     font-family: Assistant, sans-serif;
     font-size: 15px;
-    font-weight: 400;
-    line-height: 27px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   .fpb-preset-classic > .category-tabs .category-tab.active {
-    border: 0;
-    background: transparent;
-    color: #000;
+    border-color: #000;
+    background: #000;
+    color: #fff;
   }
 
   .fpb-preset-classic > .category-tabs .category-tab .tab-label {
@@ -55,8 +59,11 @@
     font-family: Assistant, sans-serif;
     font-size: 15px;
     font-weight: 700;
-    line-height: 27px;
+    line-height: 1.2;
     letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .fpb-preset-classic > .category-tabs .category-tab .tab-indicator {

@@ -32,4 +32,11 @@
   --classic-icon-button-size: clamp(30px, 4.2vw, 38px);
   --classic-text-button-height: clamp(34px, 4.5vw, 40px);
   --classic-desktop-icon-action-width: clamp(56px, 20%, 74px);
+  --classic-category-pill-min-height: 2.5rem;
+  --classic-category-pill-padding: 0.45rem 1.5rem;
+  --classic-category-pill-border: 0.125rem solid #000;
+}
+
+.fpb-preset-classic .fpb-category-section-rows {
+  display: none;
 }
