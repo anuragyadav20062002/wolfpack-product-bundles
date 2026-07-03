@@ -396,7 +396,7 @@ Acceptance:
 | Status | pending |
 | Scenario | Mobile Classic footer expanded scroll lock, collapsed empty state, and EB-style height animation |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS4-mobile-footer-scroll-lock/` |
-| Current delta | Not captured. `delta.md` must compare collapsed height, expanded height, animation timing, scroll lock, and background page scroll behavior. |
+| Current delta | WPB mobile proof captured on `5.0.21` at `390 x 844` with cache/storage cleared. Evidence includes `wpb-mobile-collapsed-5021.json/png`, `wpb-mobile-expanded-scroll-probe-5021.json`, `wpb-mobile-expanded-a11y-5021.txt`, and `wpb-mobile-expanded-5021.png`. The collapsed empty Classic tray sits at the viewport bottom with `Review your bundle` and `Next • $0.00`, measures `370 x 116.1875`, and uses the Classic footer transition `height 0.28s cubic-bezier(0.22, 1, 0.36, 1), grid-template-rows 0.28s ...`. Expanding adds `fpb-mobile-summary-tray-expanded` and exposes `Your Bundle` in a11y, but the empty fixture keeps the same measured height. A forced `window.scrollBy(0, 350)` while expanded changed `scrollY` from `0` to `343`; computed body overflow was `auto hidden`. EB comparison is still pending because the current live EB bundle crashes before controls render with `Cannot read properties of null (reading 'personalizationData')`; do not classify scroll-lock or expanded-height behavior as a parity gap until EB mobile proof is captured. |
 
 Acceptance:
 - Collapsed empty state is captured before any product selection.
