@@ -424,7 +424,7 @@ Acceptance:
 | Status | pending |
 | Scenario | Standard, Compact, and Horizontal smoke after Classic changes |
 | Evidence path | `/private/tmp/fpb-classic-agentic-parity/CS6-non-classic-smoke/` |
-| Current delta | Not captured. `delta.md` must list each non-Classic preset checked, current widget version, active preset, loaded stylesheet, product-card count, summary/footer state, variant selector state, and cart-add result when exercised. |
+| Current delta | `delta.md` captured a current fixture blocker. The WPB Admin dashboard currently exposes only one full-page bundle, `Daily Essentials`, page `1 of 1`, and the user has intentionally saved that bundle as Classic for this storefront loop. Older Standard, Compact, and Horizontal proof exists under `/private/tmp/fpb-standard-agentic-parity/regression-smoke/`, but those proofs used the same `/pages/preview-daily-essentials-2` page while the single bundle was temporarily switched between presets and are on older widget versions (`5.0.3`/`5.0.8`). That page now serves the Classic fixture, so CS6 cannot verify the `5.0.21` shared bootstrap change unless a second non-Classic full-page fixture exists or the user explicitly approves temporarily switching the current bundle away from Classic and restoring it. No source change is justified from CS6 yet. |
 
 Acceptance:
 - Standard, Compact, and Horizontal load their expected preset roots and template CSS assets.
