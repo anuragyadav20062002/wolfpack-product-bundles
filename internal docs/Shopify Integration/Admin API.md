@@ -50,7 +50,7 @@ Shopify requires public apps to use expiring offline access tokens for new apps 
 
 Wolfpack's offline token contract:
 - `Session` persists `expires`, `refreshToken`, and `refreshTokenExpiresAt` in Prisma.
-- `CachedSessionStorage.loadSession()` refreshes expiring offline sessions before returning them to `unauthenticated.admin(...)` or app-proxy callers.
+- `CachedSessionStorage.loadSession()` and `findSessionsByShop()` hydrate offline rows before returning them to `unauthenticated.admin(...)` or app-proxy callers: legacy rows with no refresh token are migrated to expiring offline tokens first, rows missing expiration metadata are refreshed, and rows that cannot be made compliant are withheld instead of returning a non-expiring token.
 - `app/services/offline-token.server.ts` requests new expiring offline tokens from embedded Admin `id_token` values with `expiring=1`.
 - Existing non-expiring offline tokens are migrated by token exchange with `subject_token_type=urn:shopify:params:oauth:token-type:offline-access-token`, `requested_token_type=urn:shopify:params:oauth:token-type:offline-access-token`, and `expiring=1`.
 - If a refresh token expires or Shopify rejects it with `invalid_grant`/401, the stale session row is dropped so the next merchant app launch can re-acquire an expiring offline token from the browser session ID token.
