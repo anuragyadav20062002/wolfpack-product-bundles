@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.27
+ * Version : 5.0.28
  * Built   : 2026-07-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.27';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.28';
 (function() {
   'use strict';
 
@@ -5655,6 +5655,13 @@ usesCompactMobileSummaryTray() {
 },
 };
 
+function shouldUseMobileSummarySlotTiles({ designPreset, productSlotsEnabled } = {}) {
+  if (productSlotsEnabled !== true) return false;
+
+  const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
+  return preset === 'STANDARD' || preset === 'CLASSIC';
+}
+
 const fullPageMobileSummaryMethods = {
 _populateCompactMobileSummaryTray(sheet) {
   sheet.innerHTML = '';
@@ -5701,7 +5708,10 @@ _populateCompactMobileSummaryTray(sheet) {
   this._syncCompactMobileSummaryScrollLock();
   sheet.classList.toggle(
     'fpb-mobile-summary-tray--slots',
-    this.getFullPageDesignPreset() === 'STANDARD' && this._shouldRenderProductSlots()
+    shouldUseMobileSummarySlotTiles({
+      designPreset: this.getFullPageDesignPreset(),
+      productSlotsEnabled: this._shouldRenderProductSlots(),
+    })
   );
   sheet.classList.remove('fpb-mobile-summary-tray--has-discount-summary');
 
@@ -5855,10 +5865,12 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
   const productsList = document.createElement('div');
   productsList.className = 'fpb-mobile-summary-products-list';
-  const shouldRenderStandardSlotTiles = this._shouldRenderProductSlots()
-    && this.getFullPageDesignPreset() === 'STANDARD';
+  const shouldRenderSlotTiles = shouldUseMobileSummarySlotTiles({
+    designPreset: this.getFullPageDesignPreset(),
+    productSlotsEnabled: this._shouldRenderProductSlots(),
+  });
 
-  if (shouldRenderStandardSlotTiles) {
+  if (shouldRenderSlotTiles) {
     productsList.classList.add('fpb-mobile-summary-products-list--slots');
     this._renderCompactMobileSummarySlotTiles(productsList, allSelectedProducts, activeStep, totalQuantity);
     bundleItems.appendChild(productsList);

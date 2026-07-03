@@ -690,6 +690,64 @@
     box-sizing: border-box;
   }
 
+  .fpb-mobile-classic-footer
+    .fpb-mobile-summary-products-list.fpb-mobile-summary-products-list--slots {
+    grid-template-columns: repeat(auto-fit, minmax(65px, 65px));
+    grid-auto-rows: 60px;
+    justify-content: start;
+    align-items: start;
+    gap: 8px;
+    width: var(--fpb-mobile-footer-inner-width, 360px);
+    height: 70px;
+    max-height: none;
+    padding: 5px 0;
+    overflow: hidden;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-slot-card {
+    display: grid;
+    place-items: center;
+    width: 65px;
+    height: 60px;
+    min-width: 65px;
+    min-height: 60px;
+    border-radius: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-slot-card--filled {
+    border: 0;
+    background: transparent;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-slot-card--empty {
+    border: 2px dashed #000;
+    background: transparent;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-slot-image,
+  .fpb-mobile-classic-footer .fpb-mobile-summary-slot-image-placeholder {
+    display: block;
+    width: 65px;
+    height: 80px;
+    object-fit: cover;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-slot-icon-img {
+    display: block;
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-slot-plus {
+    color: #000;
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 1;
+  }
+
   .fpb-mobile-classic-footer .fpb-mobile-summary-empty-product-card {
     display: grid;
     grid-template-columns:

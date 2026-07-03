@@ -3,6 +3,8 @@ export {};
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageMobileSummaryMethods } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const { shouldUseMobileSummarySlotTiles } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getMobileBottomBarActionState } = require('../../../app/assets/widgets/full-page/methods/responsive-layout-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldCategoryTabActivateProducts } = require('../../../app/assets/widgets/full-page/methods/product-grid-methods.js');
@@ -202,6 +204,28 @@ describe('FPB Standard mobile summary action', () => {
     expect(context.compactMobileSummaryTrayExpanded).toBe(true);
     expect(context._populateCompactMobileSummaryTray).toHaveBeenCalledTimes(1);
     expect(classList.add).toHaveBeenCalledWith('fpb-mobile-summary-tray-animating-open');
+  });
+
+  it('uses slot tiles for slot-enabled Classic and Standard compact summaries only', () => {
+    expect(shouldUseMobileSummarySlotTiles({
+      designPreset: 'CLASSIC',
+      productSlotsEnabled: true,
+    })).toBe(true);
+
+    expect(shouldUseMobileSummarySlotTiles({
+      designPreset: 'STANDARD',
+      productSlotsEnabled: true,
+    })).toBe(true);
+
+    expect(shouldUseMobileSummarySlotTiles({
+      designPreset: 'COMPACT',
+      productSlotsEnabled: true,
+    })).toBe(false);
+
+    expect(shouldUseMobileSummarySlotTiles({
+      designPreset: 'CLASSIC',
+      productSlotsEnabled: false,
+    })).toBe(false);
   });
 
   it('keeps Standard mobile category tabs from switching the expanded product body', () => {

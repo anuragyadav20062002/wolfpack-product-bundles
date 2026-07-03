@@ -22,6 +22,12 @@ import {
   buildCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
 
+export function shouldUseMobileSummarySlotTiles({ designPreset, productSlotsEnabled } = {}) {
+  if (productSlotsEnabled !== true) return false;
+
+  const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
+  return preset === 'STANDARD' || preset === 'CLASSIC';
+}
 
 export const fullPageMobileSummaryMethods = {
 _populateCompactMobileSummaryTray(sheet) {
@@ -69,7 +75,10 @@ _populateCompactMobileSummaryTray(sheet) {
   this._syncCompactMobileSummaryScrollLock();
   sheet.classList.toggle(
     'fpb-mobile-summary-tray--slots',
-    this.getFullPageDesignPreset() === 'STANDARD' && this._shouldRenderProductSlots()
+    shouldUseMobileSummarySlotTiles({
+      designPreset: this.getFullPageDesignPreset(),
+      productSlotsEnabled: this._shouldRenderProductSlots(),
+    })
   );
   sheet.classList.remove('fpb-mobile-summary-tray--has-discount-summary');
 
@@ -223,10 +232,12 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
   const productsList = document.createElement('div');
   productsList.className = 'fpb-mobile-summary-products-list';
-  const shouldRenderStandardSlotTiles = this._shouldRenderProductSlots()
-    && this.getFullPageDesignPreset() === 'STANDARD';
+  const shouldRenderSlotTiles = shouldUseMobileSummarySlotTiles({
+    designPreset: this.getFullPageDesignPreset(),
+    productSlotsEnabled: this._shouldRenderProductSlots(),
+  });
 
-  if (shouldRenderStandardSlotTiles) {
+  if (shouldRenderSlotTiles) {
     productsList.classList.add('fpb-mobile-summary-products-list--slots');
     this._renderCompactMobileSummarySlotTiles(productsList, allSelectedProducts, activeStep, totalQuantity);
     bundleItems.appendChild(productsList);
