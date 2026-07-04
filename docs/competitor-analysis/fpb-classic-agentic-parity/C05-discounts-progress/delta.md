@@ -49,10 +49,11 @@ EB Classic fixed-bundle-price evidence keeps the same visible Bundle Quantity Op
 - Source tests for `5.0.35` verify Classic fixed-price `/cart/add.js` metadata is display-only and the cart transform keeps the merged parent total at the raw selected-products total.
 - Live WPB `5.0.35` proof serves root `CLASSIC`; `/cart/add.js` carries `_bundle_step_type: "fixed_price_display_only"` and no `youSave`, `cart-bundle-details` carries only `Box`/`Items`, and `/cart.js` records parent `total_price: 144800`, `_bundle_total_price_cents: "144800"`, `_bundle_total_savings_cents: "0"`, and no discount allocations.
 - Fresh cache-bypassed structure proof records `window.__BUNDLE_WIDGET_VERSION__ === "5.0.35"`, embedded preset `CLASSIC`, active root `CLASSIC`, no captured `STANDARD` preset sample, only base + Classic full-page stylesheets active, a `447px` Classic sidebar, four product-grid columns, and shared summary content with Classic Box/slot differences. Evidence: `/private/tmp/fpb-classic-agentic-parity/C05-discounts-progress/wpb-current-structure-preset-sequence-20260704.json`.
+- EB Admin progress-on setup remains fixture-gated through the UI: current Discount & Pricing state shows Bundle Quantity Options checked and Progress Bar disabled. Keyboard focus reached the BQO switch wrapper, but Space and Enter left it checked, and direct click on the inner checkbox did not become interactive. Evidence: `eb-admin-c05-structure-progress-attempt-snapshot-20260704.txt`, `eb-admin-c05-focus-before-bqo-space-20260704.txt`, and the live DevTools interaction log.
 
 ## Remaining Gaps
 
 - Buy-X-get-Y.
 - Multiple/highest-eligible discount conflicts.
-- EB progress-bar-on storefront behavior.
+- EB progress-bar-on storefront behavior, gated on EB Admin exposing a UI-reconfigurable fixture or explicit approval for a backend shortcut.
 - Cart-line savings proof for fixed-amount rules.
