@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.32
+ * Version : 5.0.33
  * Built   : 2026-07-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.32';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.33';
 (function() {
   'use strict';
 
@@ -4897,7 +4897,9 @@ updateMessagesFromBundle() {
       this.config.successMessageTemplate = firstRuleMsg.successMessage;
     }
 
-    this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
+    this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging === false
+      ? false
+      : this.selectedBundle?.pricing?.enabled || false;
     this.config.showDiscountProgressBar =
       progressBarOptions.enabled === true ||
       pricingMessages.showDiscountProgressBar === true ||
@@ -5716,33 +5718,33 @@ _populateCompactMobileSummaryTray(sheet) {
   sheet.classList.remove('fpb-mobile-summary-tray--has-discount-summary');
 
   if (this.selectedBundle?.pricing?.enabled) {
-    const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
     const discountBlock = document.createElement('div');
     discountBlock.className = 'side-panel-discount-message';
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
-    );
-    let discountMessage = '';
-    if (combinedDiscountInfo.hasDiscount) {
-      discountMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-        variables
+    if (this.config.showDiscountMessaging) {
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
-    } else if (nextRule) {
-      discountMessage = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
-        variables
-      );
-    }
-    if (discountMessage) {
-      const msgEl = document.createElement('div');
-      msgEl.className = 'fpb-mobile-summary-discount-text';
-      msgEl.innerHTML = discountMessage;
-      discountBlock.appendChild(msgEl);
+      let discountMessage = '';
+      if (combinedDiscountInfo.hasDiscount) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          variables
+        );
+      } else if (nextRule) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          variables
+        );
+      }
+      if (discountMessage) {
+        const msgEl = document.createElement('div');
+        msgEl.className = 'fpb-mobile-summary-discount-text';
+        msgEl.innerHTML = discountMessage;
+        discountBlock.appendChild(msgEl);
+      }
     }
 
-    const shouldShowProgressBar = this.config.showDiscountProgressBar || usesCompactMobileSummaryTray;
-    if (shouldShowProgressBar) {
+    if (this.config.showDiscountProgressBar) {
       const progressBar = this._renderDiscountProgress({
         placement: "sidebar",
         combinedDiscountInfo,
@@ -6268,27 +6270,29 @@ renderSidePanel(panel) {
   summaryContent.className = 'side-panel-summary-content';
 
   if (this.selectedBundle?.pricing?.enabled) {
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
-    );
-    let discountMessage = '';
-    if (combinedDiscountInfo.hasDiscount) {
-      discountMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-        variables
+    if (this.config.showDiscountMessaging) {
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
-    } else if (nextRule) {
-      discountMessage = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
-        variables
-      );
-    }
-    if (discountMessage) {
-      discountMessage = this._formatSidebarDiscountMessage(discountMessage);
-      const msgEl = document.createElement('div');
-      msgEl.className = 'side-panel-discount-message';
-      msgEl.innerHTML = discountMessage;
-      summaryContent.appendChild(msgEl);
+      let discountMessage = '';
+      if (combinedDiscountInfo.hasDiscount) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          variables
+        );
+      } else if (nextRule) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          variables
+        );
+      }
+      if (discountMessage) {
+        discountMessage = this._formatSidebarDiscountMessage(discountMessage);
+        const msgEl = document.createElement('div');
+        msgEl.className = 'side-panel-discount-message';
+        msgEl.innerHTML = discountMessage;
+        summaryContent.appendChild(msgEl);
+      }
     }
 
     if (this.config.showDiscountProgressBar) {

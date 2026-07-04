@@ -10,6 +10,7 @@ import { buildStepCategoryCreateInput } from "../../../../lib/bundle-config/cate
 import {
   normalizePricingDisplayOptions,
   serializeBoxSelectionFromPricingDisplayOptions,
+  serializePricingDisplayOptions,
 } from "../../../../lib/pricing-display-options";
 import { parseConditionValue } from "../../../../lib/parse-condition-value";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
@@ -197,6 +198,10 @@ export async function handleSaveBundle(
       showProgressBar: discountData.showDiscountProgressBar === true,
       method: discountData.discountType,
     });
+    const canonicalPricingDisplayOptions = serializePricingDisplayOptions({
+      existingMessages: {},
+      options: normalizedPricingDisplayOptions,
+    }).displayOptions;
     const directBoxSelection =
       discountData.discountEnabled === true &&
       discountData.discountType !== "buy_x_get_y"
@@ -425,7 +430,7 @@ export async function handleSaveBundle(
                   showDiscountMessaging:
                     discountData.discountMessagingEnabled || false,
                   ruleMessages: discountData.ruleMessages || {},
-                  displayOptions: discountData.pricingDisplayOptions || null,
+                  displayOptions: canonicalPricingDisplayOptions,
                   tierTextByRuleId: discountData.tierTextByRuleId || null,
                   tierTextByLocaleByRuleId:
                     discountData.tierTextByLocaleByRuleId || null,
@@ -443,7 +448,7 @@ export async function handleSaveBundle(
                   showDiscountMessaging:
                     discountData.discountMessagingEnabled || false,
                   ruleMessages: discountData.ruleMessages || {},
-                  displayOptions: discountData.pricingDisplayOptions || null,
+                  displayOptions: canonicalPricingDisplayOptions,
                   tierTextByRuleId: discountData.tierTextByRuleId || null,
                   tierTextByLocaleByRuleId:
                     discountData.tierTextByLocaleByRuleId || null,

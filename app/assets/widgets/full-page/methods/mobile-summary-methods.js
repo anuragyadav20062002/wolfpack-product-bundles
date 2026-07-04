@@ -83,33 +83,33 @@ _populateCompactMobileSummaryTray(sheet) {
   sheet.classList.remove('fpb-mobile-summary-tray--has-discount-summary');
 
   if (this.selectedBundle?.pricing?.enabled) {
-    const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
     const discountBlock = document.createElement('div');
     discountBlock.className = 'side-panel-discount-message';
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
-    );
-    let discountMessage = '';
-    if (combinedDiscountInfo.hasDiscount) {
-      discountMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-        variables
+    if (this.config.showDiscountMessaging) {
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
-    } else if (nextRule) {
-      discountMessage = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
-        variables
-      );
-    }
-    if (discountMessage) {
-      const msgEl = document.createElement('div');
-      msgEl.className = 'fpb-mobile-summary-discount-text';
-      msgEl.innerHTML = discountMessage;
-      discountBlock.appendChild(msgEl);
+      let discountMessage = '';
+      if (combinedDiscountInfo.hasDiscount) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          variables
+        );
+      } else if (nextRule) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          variables
+        );
+      }
+      if (discountMessage) {
+        const msgEl = document.createElement('div');
+        msgEl.className = 'fpb-mobile-summary-discount-text';
+        msgEl.innerHTML = discountMessage;
+        discountBlock.appendChild(msgEl);
+      }
     }
 
-    const shouldShowProgressBar = this.config.showDiscountProgressBar || usesCompactMobileSummaryTray;
-    if (shouldShowProgressBar) {
+    if (this.config.showDiscountProgressBar) {
       const progressBar = this._renderDiscountProgress({
         placement: "sidebar",
         combinedDiscountInfo,

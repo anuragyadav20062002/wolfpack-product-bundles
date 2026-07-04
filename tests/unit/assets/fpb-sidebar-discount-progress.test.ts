@@ -122,6 +122,7 @@ function makeContext(preset: string, progressType: 'simple' | 'step_based'): any
       },
     },
     config: {
+      showDiscountMessaging: true,
       showDiscountProgressBar: true,
       discountProgressBarType: progressType,
       discountTextTemplate: 'Add {{conditionText}} to get {{discountText}}',
@@ -207,6 +208,18 @@ describe('FPB summary sidebar discount progress', () => {
       expect(renderProgressCount).toBe(1);
     },
   );
+
+  it('does not format a sidebar discount message when discount messaging is disabled', () => {
+    const panel = document.createElement('aside');
+    const context = makeContext('CLASSIC', 'simple');
+    context.config.showDiscountMessaging = false;
+    context.config.showDiscountProgressBar = false;
+    context._formatSidebarDiscountMessage = jest.fn((message: string) => message);
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    expect(context._formatSidebarDiscountMessage).not.toHaveBeenCalled();
+  });
 });
 
 describe('FPB Standard summary sidebar add-ons', () => {

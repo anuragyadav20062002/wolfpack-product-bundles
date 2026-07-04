@@ -633,6 +633,8 @@ Opens modal "Customize Text for Multiple Languages":
 - Toggle: `isShowDiscountsEnabled` / Progress Bar on/off
 - "Multi Language" button: **disabled** when Simple Bar selected; **enabled** when Step-Based Bar selected
 - Radio group: `"Simple Bar"` | `"Step-Based Bar"`
+
+**Classic C05 storefront note (2026-07-04):** In the verified Classic fixed-amount quantity fixture, EB Admin had Bundle Quantity Options enabled (`Box of 2` / `₹5 off`) while Progress Bar and Discount Messaging were disabled. Cache-bypassed EB desktop and mobile storefront proof kept the box selector visible, hid `gbbDiscountComponent`, and rendered no discount-progress/message copy; only the step timeline progress remained visible. Treat Bundle Quantity Options as separate from Progress Bar/Discount Messaging display toggles.
 - When Simple Bar is selected, no per-rule tier-text fields appear.
 
 **When Step-Based Bar is selected, per-rule fields appear:**

@@ -117,27 +117,29 @@ renderSidePanel(panel) {
 
   // Discount messaging
   if (this.selectedBundle?.pricing?.enabled) {
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
-    );
-    let discountMessage = '';
-    if (combinedDiscountInfo.hasDiscount) {
-      discountMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-        variables
+    if (this.config.showDiscountMessaging) {
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
-    } else if (nextRule) {
-      discountMessage = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
-        variables
-      );
-    }
-    if (discountMessage) {
-      discountMessage = this._formatSidebarDiscountMessage(discountMessage);
-      const msgEl = document.createElement('div');
-      msgEl.className = 'side-panel-discount-message';
-      msgEl.innerHTML = discountMessage;
-      summaryContent.appendChild(msgEl);
+      let discountMessage = '';
+      if (combinedDiscountInfo.hasDiscount) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          variables
+        );
+      } else if (nextRule) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          variables
+        );
+      }
+      if (discountMessage) {
+        discountMessage = this._formatSidebarDiscountMessage(discountMessage);
+        const msgEl = document.createElement('div');
+        msgEl.className = 'side-panel-discount-message';
+        msgEl.innerHTML = discountMessage;
+        summaryContent.appendChild(msgEl);
+      }
     }
 
     if (this.config.showDiscountProgressBar) {

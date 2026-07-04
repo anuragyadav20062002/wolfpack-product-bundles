@@ -749,6 +749,46 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     });
   });
 
+  it("persists the progress display option as disabled when the progress checkbox is off", async () => {
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "fixed_amount_off",
+      discountRules: [
+        {
+          id: "rule-2",
+          conditionType: "quantity",
+          conditionValue: 2,
+          discountValue: 5,
+        },
+      ],
+      showDiscountProgressBar: false,
+      pricingDisplayOptions: {
+        bundleQuantityOptions: {
+          enabled: true,
+          defaultRuleId: "rule-2",
+          optionsByRuleId: {
+            "rule-2": { label: "Box of 2", subtext: "$5 off" },
+          },
+          optionsByLocaleByRuleId: {},
+        },
+        progressBar: {
+          enabled: true,
+          type: "step_based",
+          progressText: "Add {{conditionText}} to unlock {{discountText}}",
+          successText: "{{discountText}} unlocked",
+        },
+      },
+    });
+    const fd = makeFormData({ discountData: JSON.stringify(discountData) });
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(
+      updateCall.data.pricing.upsert.update.messages.displayOptions.progressBar.enabled,
+    ).toBe(false);
+  });
+
   it("wires Bundle Settings quantity validation into direct box-selection config", async () => {
     const discountData = makeDiscountData({
       discountEnabled: true,

@@ -24,9 +24,43 @@ const {
 class FakeElement {
   className = '';
   disabled = false;
+  innerHTML = '';
+  attributes: Record<string, string> = {};
   private ownText = '';
   private children: FakeElement[] = [];
   private listeners: Record<string, Array<(event?: { preventDefault?: () => void; key?: string }) => void | Promise<void>>> = {};
+
+  get childElementCount() {
+    return this.children.length;
+  }
+
+  get classList() {
+    return {
+      add: (...classNames: string[]) => {
+        const classes = new Set(this.className.split(/\s+/).filter(Boolean));
+        classNames.forEach((className) => classes.add(className));
+        this.className = Array.from(classes).join(' ');
+      },
+      remove: (...classNames: string[]) => {
+        const removeSet = new Set(classNames);
+        this.className = this.className
+          .split(/\s+/)
+          .filter((className) => className && !removeSet.has(className))
+          .join(' ');
+      },
+      toggle: (className: string, force?: boolean) => {
+        const classes = new Set(this.className.split(/\s+/).filter(Boolean));
+        const shouldHaveClass = force ?? !classes.has(className);
+        if (shouldHaveClass) {
+          classes.add(className);
+        } else {
+          classes.delete(className);
+        }
+        this.className = Array.from(classes).join(' ');
+      },
+      contains: (className: string) => this.className.split(/\s+/).includes(className),
+    };
+  }
 
   get textContent() {
     return [this.ownText, ...this.children.map((child) => child.textContent)].join('');
@@ -38,6 +72,15 @@ class FakeElement {
 
   append(...children: FakeElement[]) {
     this.children.push(...children);
+  }
+
+  appendChild(child: FakeElement) {
+    this.children.push(child);
+    return child;
+  }
+
+  setAttribute(name: string, value: string) {
+    this.attributes[name] = value;
   }
 
   addEventListener(type: string, listener: (event?: { preventDefault?: () => void; key?: string }) => void | Promise<void>) {
@@ -55,6 +98,16 @@ class FakeElement {
 const originalDocument = global.document;
 
 beforeEach(() => {
+  const shopMoneyFormat = ['$', '{{amount}}'].join('');
+  (global as any).window = {
+    Shopify: {
+      currency: {
+        active: 'USD',
+        format: shopMoneyFormat,
+      },
+    },
+    shopMoneyFormat,
+  };
   global.document = {
     createElement: () => new FakeElement(),
   } as unknown as Document;
@@ -93,6 +146,52 @@ const currencyInfo = {
 };
 
 describe('FPB Standard mobile summary action', () => {
+  it('does not force compact mobile summary progress when discount progress is disabled', () => {
+    const sheet = new FakeElement();
+    const renderProgress = jest.fn(() => new FakeElement());
+    const context = {
+      ...createContext(),
+      selectedProducts: [{}],
+      stepProductData: [[]],
+      selectedBundle: {
+        bundleDesignPresetId: 'CLASSIC',
+        steps: [{ id: 'step-1', enabled: true }],
+        pricing: {
+          enabled: true,
+          method: 'fixed_amount',
+          rules: [
+            {
+              id: 'rule-1',
+              conditionType: 'quantity',
+              conditionOperator: 'gte',
+              conditionValue: 2,
+              discountValue: 5,
+            },
+          ],
+        },
+      },
+      config: {
+        showDiscountMessaging: false,
+        showDiscountProgressBar: false,
+        discountTextTemplate: 'Add {{conditionText}} to save {{discountText}}',
+      },
+      compactMobileSummaryTrayExpanded: false,
+      currentStepIndex: 0,
+      getDiscountInfoWithSelectedAddonDiscount: (discountInfo: unknown) => discountInfo,
+      getAllSelectedProductsData: () => [],
+      usesCompactMobileSummaryTray: () => true,
+      _shouldRenderProductSlots: () => false,
+      _syncCompactMobileSummaryScrollLock: jest.fn(),
+      _renderDiscountProgress: renderProgress,
+      _createMobileSummaryActionButton: fullPageMobileSummaryMethods._createMobileSummaryActionButton,
+      bundleHasNoConditions: () => false,
+    };
+
+    fullPageMobileSummaryMethods._populateCompactMobileSummaryTray.call(context, sheet);
+
+    expect(renderProgress).not.toHaveBeenCalled();
+  });
+
   it('keeps the final-step action as add to cart even when conditions are not complete', () => {
     const button = fullPageMobileSummaryMethods._createMobileSummaryActionButton.call(
       createContext(),
