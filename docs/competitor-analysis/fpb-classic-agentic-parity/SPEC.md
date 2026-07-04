@@ -53,6 +53,14 @@ Read these before every row:
 
 These are the expected Classic-owned boundaries. Re-check current files before editing because the graph and generated assets may have changed.
 
+Classic should reuse the same storefront structure as Standard wherever the shared
+renderer already matches EB's `FBP_SIDE_FOOTER` contract. Treat Classic as a
+preset variant of the shared sidebar, product grid, product card, discount
+progress, selected-product, cart, and mobile-tray flows. Fork only the content or
+presentation that is proven Classic-specific, such as Box selector placement,
+slot/empty-state treatment, column counts, CTA mode, timeline style, and
+Classic-scoped CSS.
+
 | Area | Primary ownership |
 |---|---|
 | Preset config | `app/assets/widgets/full-page/templates/classic.config.js` |

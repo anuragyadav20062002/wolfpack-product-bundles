@@ -48,6 +48,7 @@ EB Classic fixed-bundle-price evidence keeps the same visible Bundle Quantity Op
 - WPB Classic fixed-price compact mobile footer shows `Add To Cart • $1448.00` and no `$5.00` fixed-final-price text.
 - Source tests for `5.0.35` verify Classic fixed-price `/cart/add.js` metadata is display-only and the cart transform keeps the merged parent total at the raw selected-products total.
 - Live WPB `5.0.35` proof serves root `CLASSIC`; `/cart/add.js` carries `_bundle_step_type: "fixed_price_display_only"` and no `youSave`, `cart-bundle-details` carries only `Box`/`Items`, and `/cart.js` records parent `total_price: 144800`, `_bundle_total_price_cents: "144800"`, `_bundle_total_savings_cents: "0"`, and no discount allocations.
+- Fresh cache-bypassed structure proof records `window.__BUNDLE_WIDGET_VERSION__ === "5.0.35"`, embedded preset `CLASSIC`, active root `CLASSIC`, no captured `STANDARD` preset sample, only base + Classic full-page stylesheets active, a `447px` Classic sidebar, four product-grid columns, and shared summary content with Classic Box/slot differences. Evidence: `/private/tmp/fpb-classic-agentic-parity/C05-discounts-progress/wpb-current-structure-preset-sequence-20260704.json`.
 
 ## Remaining Gaps
 

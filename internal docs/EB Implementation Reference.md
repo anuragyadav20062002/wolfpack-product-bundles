@@ -752,6 +752,12 @@ Reference URLs:
 
 Rendering logic applies `DEFAULT_FBP`/`CLASSIC`/`COMPACT`/`HORIZONTAL` via the body attribute `gbb-bundle-design-preset-id="{presetId}"` — CSS scopes design differences under that selector. Older captured notes used `DEFAULT` for Standard Design, but a 2026-06-05 live reset of `WPB Research Landing Bundle 2026-05-22` confirmed EB storefront runtime now exposes Standard Design as `stepsConfigurationData.bundleDesignPresetId: "DEFAULT_FBP"` and body attribute `gbb-bundle-design-preset-id="DEFAULT_FBP"`.
 
+2026-07-04 Classic parity guidance: EB Standard and Classic both use the same
+`FBP_SIDE_FOOTER` wrapper classes (`gbbMinimilisticLayout` and
+`gbbProductsCardLayoutV2`) and differ through `gbb-bundle-design-preset-id`.
+Wolfpack Classic should therefore reuse shared FPB side-footer structure unless
+live EB proof shows a Classic-only content or presentation difference.
+
 ### PPB Templates (Two-Field System)
 
 | Display Name | `bundleDesignTemplate` | `templateId` | Storefront module |
