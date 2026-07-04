@@ -387,4 +387,132 @@ describe("FPB checkout cart-line properties", () => {
       retailPrice: "$829.00",
     });
   });
+
+  it("marks Classic fixed bundle price cart lines as display-only pricing", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    });
+    const originalFetch = (global as any).fetch;
+    const originalWindow = (global as any).window;
+    const originalDocument = (global as any).document;
+    const originalGetComputedStyle = (global as any).getComputedStyle;
+    const originalSetTimeout = (global as any).setTimeout;
+    (global as any).fetch = fetchMock;
+    (global as any).window = {
+      Shopify: {
+        currency: { active: "USD", format: ["$", "{{amount}}"].join("") },
+      },
+    };
+    (global as any).document = {
+      documentElement: {},
+      getElementById: () => null,
+      createElement: () => ({
+        id: "",
+        className: "",
+        innerHTML: "",
+        remove: jest.fn(),
+        querySelector: () => ({
+          addEventListener: jest.fn(),
+        }),
+      }),
+      body: {
+        appendChild: jest.fn(),
+      },
+    };
+    (global as any).getComputedStyle = () => ({
+      getPropertyValue: () => "",
+    });
+    (global as any).setTimeout = jest.fn();
+
+    try {
+      await fullPageStepFooterMethods.addBundleToCart.call({
+        _isWidgetActionBusy: false,
+        container: null,
+        selectedBundle: {
+          name: "Daily Essentials",
+          pricing: {
+            enabled: true,
+            method: "fixed_bundle_price",
+            rules: [{
+              method: "fixed_bundle_price",
+              conditionType: "quantity",
+              conditionOperator: "gte",
+              conditionValue: 2,
+              discountValue: 500,
+            }],
+          },
+          steps: [{ id: "paid-step", isFreeGift: false }],
+        },
+        selectedProducts: [
+          {
+            "gid://shopify/ProductVariant/111": 1,
+            "gid://shopify/ProductVariant/222": 1,
+          },
+        ],
+        stepProductData: [
+          [
+            {
+              variantId: "gid://shopify/ProductVariant/111",
+              title: "First product",
+              price: 82900,
+            },
+            {
+              variantId: "gid://shopify/ProductVariant/222",
+              title: "Second product",
+              price: 61900,
+            },
+          ],
+        ],
+        areBundleConditionsMet: () => true,
+        expandProductsByVariant: (products: unknown[]) => products,
+        extractId: (value: string) => value.split("/").pop(),
+        generateBundleSessionKey: () => "ABC",
+        resolveFullPageOfferId: () => "FBP-1",
+        getAddonTierEvaluation: () => ({}),
+        getAddonLineDiscount: () => null,
+        getSelectedSellingPlanAllocationId: () => null,
+        getFullPageDesignPreset: () => "CLASSIC",
+        buildCartLineSourceProperties:
+          fullPageStepFooterMethods.buildCartLineSourceProperties,
+        buildCartLineDisplayProperties:
+          fullPageStepFooterMethods.buildCartLineDisplayProperties,
+        getCartLineLabels: () => ({
+          items: "Items",
+          retailPrice: "Retail Price",
+          youSave: "You Save",
+        }),
+        _setWidgetBusy: jest.fn(),
+        showLoadingOverlay: jest.fn(),
+        hideLoadingOverlay: jest.fn(),
+        syncBundleDetailsCartMetafield: jest.fn(),
+        _emitStorefrontEvent: jest.fn(),
+        _handlePostAddToCartAction: jest.fn(),
+        _getLandingPageControls: () => ({ checkout: null }),
+      });
+    } finally {
+      (global as any).fetch = originalFetch;
+      (global as any).window = originalWindow;
+      (global as any).document = originalDocument;
+      (global as any).getComputedStyle = originalGetComputedStyle;
+      (global as any).setTimeout = originalSetTimeout;
+    }
+
+    const addRequest = fetchMock.mock.calls.find(([url]) => url === "/cart/add.js");
+    expect(addRequest).toBeDefined();
+    const body = JSON.parse(addRequest[1].body);
+    const displayProperties = JSON.parse(body.items[0].properties._bundle_display_properties);
+
+    expect(body.items).toHaveLength(2);
+    expect(body.items.every((item: { properties: Record<string, string> }) =>
+      item.properties._bundle_step_type === "fixed_price_display_only"
+    )).toBe(true);
+    expect(body.items[0].properties._bundle_price_adjustment_mode).toBe("display_only");
+    expect(displayProperties).toEqual({
+      box: "1",
+      items: "1 x First product, 1 x Second product",
+      retailPrice: "",
+    });
+    expect(displayProperties).not.toHaveProperty("youSave");
+  });
 });

@@ -47,6 +47,19 @@ fn non_empty(value: &Option<String>) -> Option<String> {
         .map(|value| value.to_string())
 }
 
+fn has_fixed_price_display_only_marker(
+    lines: &[schema::run::input::cart::Lines],
+    line_indices: &[usize],
+) -> bool {
+    line_indices.iter().any(|&idx| {
+        lines[idx]
+            .step_type()
+            .and_then(|a| a.value())
+            .map(|value| value.as_str() == "fixed_price_display_only")
+            .unwrap_or(false)
+    })
+}
+
 /// Process all MERGE operations for one cart pass.
 ///
 fn wolfpack_product_bundle_offer_group_id(value: &str) -> Option<String> {
@@ -215,7 +228,20 @@ pub fn process_merge_operations(
         // -------------------------------------------------------------------------
         // Step 4: Calculate effective discount percentage.
         // -------------------------------------------------------------------------
-        let paid_discount_percentage = if let Some(ref pa) = parent.price_adjustment {
+        let fixed_price_display_only = has_fixed_price_display_only_marker(lines, &merge_line_indices)
+            && parent
+                .price_adjustment
+                .as_ref()
+                .map(|pa| pa.method == PricingMethod::FixedBundlePrice)
+                .unwrap_or(false);
+
+        let effective_price_adjustment = if fixed_price_display_only {
+            None
+        } else {
+            parent.price_adjustment.as_ref()
+        };
+
+        let paid_discount_percentage = if let Some(pa) = effective_price_adjustment {
             if pa.method == PricingMethod::BuyXGetY {
                 calculate_buy_x_get_y_discount_percentage(
                     pa,

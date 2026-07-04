@@ -21,6 +21,7 @@ import {
   buildCartLineDisplayProperties as buildSharedCartLineDisplayProperties,
   buildCartLineSourceProperties as buildSharedCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
+import { shouldDisplayClassicFixedBundleRawTotal } from '../shared/summary-pricing-display.js';
 
 function isFullPageCartLineOutOfStock(context, product) {
   if (!product) return false;
@@ -78,15 +79,24 @@ export const fullPageStepFooterMethods = {
     const discountAmount = Math.max(0, Number(discountInfo.discountAmount || 0));
     const discountPercentage = Number(discountInfo.discountPercentage || 0)
       || (totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0);
+    const useDisplayOnlyFixedPrice = shouldDisplayClassicFixedBundleRawTotal(this, discountInfo);
 
-    return buildSharedCartLineSourceProperties({
+    const sourceProperties = buildSharedCartLineSourceProperties({
       selectedLines: parentSelectedLines,
-      retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
-      discountAmount: discountAmount > 0
+      retailPrice: useDisplayOnlyFixedPrice
+        ? ''
+        : CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
+      discountAmount: !useDisplayOnlyFixedPrice && discountAmount > 0
         ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
         : '',
       discountPercentage,
     });
+
+    if (useDisplayOnlyFixedPrice) {
+      sourceProperties._bundle_price_adjustment_mode = 'display_only';
+    }
+
+    return sourceProperties;
   },
 
 buildCartLineDisplayProperties(displayProperties) {
@@ -199,8 +209,12 @@ async addBundleToCart(clickedButton = null) {
     }
 
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
+    const useDisplayOnlyFixedPrice = sourceProperties._bundle_price_adjustment_mode === 'display_only';
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
+      if (useDisplayOnlyFixedPrice && !item.properties._bundle_step_type) {
+        item.properties._bundle_step_type = 'fixed_price_display_only';
+      }
       if (hasSelectedAddonLine && hasAddonStepConfigured) {
         item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
       }

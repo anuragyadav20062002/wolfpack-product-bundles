@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.34
+ * Version : 5.0.35
  * Built   : 2026-07-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.34';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.35';
 (function() {
   'use strict';
 
@@ -9947,15 +9947,24 @@ const fullPageStepFooterMethods = {
     const discountAmount = Math.max(0, Number(discountInfo.discountAmount || 0));
     const discountPercentage = Number(discountInfo.discountPercentage || 0)
       || (totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0);
+    const useDisplayOnlyFixedPrice = shouldDisplayClassicFixedBundleRawTotal(this, discountInfo);
 
-    return buildSharedCartLineSourceProperties({
+    const sourceProperties = buildSharedCartLineSourceProperties({
       selectedLines: parentSelectedLines,
-      retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
-      discountAmount: discountAmount > 0
+      retailPrice: useDisplayOnlyFixedPrice
+        ? ''
+        : CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
+      discountAmount: !useDisplayOnlyFixedPrice && discountAmount > 0
         ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
         : '',
       discountPercentage,
     });
+
+    if (useDisplayOnlyFixedPrice) {
+      sourceProperties._bundle_price_adjustment_mode = 'display_only';
+    }
+
+    return sourceProperties;
   },
 
 buildCartLineDisplayProperties(displayProperties) {
@@ -10060,8 +10069,12 @@ async addBundleToCart(clickedButton = null) {
     }
 
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
+    const useDisplayOnlyFixedPrice = sourceProperties._bundle_price_adjustment_mode === 'display_only';
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
+      if (useDisplayOnlyFixedPrice && !item.properties._bundle_step_type) {
+        item.properties._bundle_step_type = 'fixed_price_display_only';
+      }
       if (hasSelectedAddonLine && hasAddonStepConfigured) {
         item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
       }

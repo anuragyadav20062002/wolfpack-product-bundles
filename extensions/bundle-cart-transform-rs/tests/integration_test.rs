@@ -468,6 +468,114 @@ mod tests {
     }
 
     #[test]
+    fn test_merge_keeps_display_only_fixed_price_at_component_total() {
+        let cp = serde_json::json!([{
+            "id": "gid://shopify/ProductVariant/999",
+            "component_reference": {
+                "value": [
+                    "gid://shopify/ProductVariant/101",
+                    "gid://shopify/ProductVariant/102"
+                ]
+            },
+            "price_adjustment": { "method": "fixed_bundle_price", "value": 500.0 }
+        }])
+        .to_string();
+        let display_properties = serde_json::json!({
+            "box": "1",
+            "items": "1 x First product, 1 x Second product"
+        })
+        .to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-fixed_1" }},
+                        "wolfpackProductBundleName": {{ "value": "Daily Essentials" }},
+                        "stepType": {{ "value": "fixed_price_display_only" }},
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": {{ "value": {cp:?} }},
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "First product" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "829.00" }},
+                            "totalAmount": {{ "amount": "829.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "line2", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-fixed_2" }},
+                        "wolfpackProductBundleName": {{ "value": "Daily Essentials" }},
+                        "stepType": {{ "value": "fixed_price_display_only" }},
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/102",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/2", "title": "Second product" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "619.00" }},
+                            "totalAmount": {{ "amount": "619.00" }}
+                        }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+
+        let merge = match &output.operations[0] {
+            schema::CartOperation::LinesMerge(m) => m,
+            _ => panic!("expected Merge operation"),
+        };
+        let pct = merge
+            .price
+            .as_ref()
+            .and_then(|p| p.percentage_decrease.as_ref())
+            .map(|v| v.value.to_string());
+        assert_eq!(pct.as_deref(), Some("0.0"));
+
+        let attributes = merge_attributes(&output);
+        assert_eq!(
+            attributes.get("_bundle_total_retail_cents").map(String::as_str),
+            Some("144800")
+        );
+        assert_eq!(
+            attributes.get("_bundle_total_price_cents").map(String::as_str),
+            Some("144800")
+        );
+        assert_eq!(
+            attributes.get("_bundle_total_savings_cents").map(String::as_str),
+            Some("0")
+        );
+        assert_eq!(
+            attributes.get("_bundle_discount_percent").map(String::as_str),
+            Some("0.00")
+        );
+        assert_eq!(
+            attributes.get("Items").map(String::as_str),
+            Some("1 x First product, 1 x Second product")
+        );
+        assert!(!attributes.contains_key("Retail Price"));
+        assert!(!attributes.contains_key("You Save"));
+    }
+
+    #[test]
     fn test_merge_uses_cart_line_messaging_settings_from_function_owner() {
         let settings = serde_json::json!({
             "isEnabled": true,
