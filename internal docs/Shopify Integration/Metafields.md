@@ -20,10 +20,10 @@ Stores the full FPB bundle configuration written by "Place Widget Now" and "Sync
 
 ### Readers (Liquid / Page Body Marker)
 ```liquid
-data-bundle-config='{"v":2,"type":"full_page","bundleType":"full_page","id":"..."}'
+data-bundle-config='{"v":2,"type":"full_page","bundleType":"full_page","id":"...","bundleDesignTemplate":"FBP_SIDE_FOOTER","bundleDesignPresetId":"CLASSIC"}'
 ```
 
-The hidden `data-wpb-full-page-bundle` marker written by `app/services/widget-installation/widget-full-page-bundle.server.ts` uses the same compact payload.
+The hidden `data-wpb-full-page-bundle` marker written by `app/services/widget-installation/widget-full-page-bundle.server.ts` uses the same compact payload. The template and preset fields are lightweight visual route hints only; the widget still hydrates current products, steps, rules, and pricing through the app-proxy bundle API before rendering.
 
 ### Reader (Widget JS)
 `app/assets/bundle-widget-full-page.js` → `loadBundleData()`
@@ -38,7 +38,7 @@ If the bundle config structure changes:
 
 ## Why Bootstrap Hydration
 
-Full-page storefront markup uses a compact bootstrap marker so first render hydrates from the current app-proxy payload. The proxy path keeps a 3s retry for `503`/`504` responses to handle Render cold starts. The page metafield and hidden page-body marker remain useful for sync/install state, but neither must be treated as the first-paint full payload because Shopify page HTML can outlive a template change and flash an old preset such as Standard before switching to Classic.
+Full-page storefront markup uses a compact bootstrap marker so first render hydrates from the current app-proxy payload. The proxy path keeps a 3s retry for `503`/`504` responses to handle Render cold starts. The page metafield and hidden page-body marker remain useful for sync/install state, but neither must be treated as the first-paint full payload because Shopify page HTML can outlive a template change. The compact marker may carry `bundleDesignTemplate` and `bundleDesignPresetId` so the app embed can stamp the initial shell and load the correct preset stylesheet before proxy hydration, preventing a Standard-looking shell before Classic initializes.
 
 Saving a placed FPB refreshes the hidden page-body marker before writing page metafields. This keeps template changes visible through the dev tunnel without requiring an app deploy or a separate placement refresh.
 
