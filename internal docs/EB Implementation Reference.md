@@ -1255,6 +1255,14 @@ Captured from the EB in-app `Know More` article on 2026-06-01 while auditing Set
 - If `Track Quantity` is not enabled, the product can still appear in the bundle builder, but customers cannot add it to cart when it is out of stock.
 - If Shopify `Allow out-of-stock` is enabled and inventory is above 0, EB may not identify the product as digital, which can restrict add-to-cart behavior.
 
+### Storefront OOS Refinement
+
+Captured from FPB Classic storefront GraphQL and DOM evidence on 2026-07-04 while auditing product-source and inventory parity.
+
+- Zero quantity alone is not enough to hide or label a variant on the storefront. EB rendered variants with `quantityAvailable: 0` when Shopify Storefront API reported `availableForSale: true`, including `currentlyNotInStock: true` variants.
+- A true unavailable variant is filtered before customer selection. In the captured fixture, `Fragrance Candle / Peach` had `availableForSale: false`, `quantityAvailable: 0`, and `currentlyNotInStock: false`; Classic storefront output omitted that option/card rather than rendering an out-of-stock label.
+- Treat the Settings help statement "Products with zero inventory are not shown in the bundle" as shorthand for non-sellable Storefront API availability, not a raw `quantityAvailable === 0` rule.
+
 ## Checkout Integration Discount-Code Handoff
 
 Captured from the EB checkout/side-cart functions article on 2026-07-02:
