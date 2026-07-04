@@ -1,15 +1,15 @@
 ---
 title: Cart Transform Function
 type: architecture
-audited: 2026-04-16
-source: extensions/bundle-cart-transform-ts/shopify.extension.toml
+audited: 2026-07-04
+source: extensions/bundle-cart-transform-rs/shopify.extension.toml; extensions/bundle-cart-transform-rs/src/merge.rs
 ---
 
 # Cart Transform Function
 
 ## Overview
 
-The cart transform function intercepts Shopify's checkout flow to merge individual product variants into logical bundle line items and apply bundle pricing. It is a **TypeScript** function compiled to **WASM** via Shopify's standard TypeScript build toolchain.
+The cart transform function intercepts Shopify's checkout flow to merge individual product variants into logical bundle line items and apply bundle pricing. The active implementation is the Rust Shopify Function in `extensions/bundle-cart-transform-rs`, compiled to WASM.
 
 > ⚠️ The original `docs/CART_TRANSFORM_FUNCTION.md` contained multiple critical errors. This note is the authoritative reference.
 
@@ -17,21 +17,21 @@ The cart transform function intercepts Shopify's checkout flow to merge individu
 
 ## Extension Config (authoritative)
 
-From `extensions/bundle-cart-transform-ts/shopify.extension.toml`:
+From `extensions/bundle-cart-transform-rs/shopify.extension.toml`:
 
 ```toml
 api_version = "2025-10"
 [[extensions]]
-name = "Bundle Cart Transform"
-handle = "bundle-cart-transform"
+name = "Bundle Cart Transform (Rust)"
+handle = "bundle-cart-transform-rs"
 type = "function"
 [[extensions.targeting]]
-target = "purchase.cart-transform.run"
+target = "cart.transform.run"
 ```
 
 ### Migration Note — Target Deprecation
 
-`purchase.cart-transform.run` was **deprecated in the 2025-07 API release**. The new target is:
+`purchase.cart-transform.run` was **deprecated in the 2025-07 API release**. The current Rust extension uses:
 ```
 cart.transform.run
 ```
@@ -41,10 +41,10 @@ Migrate before the deprecation sunset. The function still works on `2025-10` wit
 
 ## Language & Build
 
-- **Language**: TypeScript (not Rust — the original doc was wrong)
-- **Compiled to**: WASM via Shopify's default TypeScript function build
-- **Build command**: `cd extensions/bundle-cart-transform-ts && npm run build`
-- **Output**: `extensions/bundle-cart-transform-ts/dist/` (gitignored)
+- **Language**: Rust
+- **Compiled to**: WASM via Cargo and Shopify Functions
+- **Build command**: `cd extensions/bundle-cart-transform-rs && rustup run stable cargo build --target=wasm32-unknown-unknown --release`
+- **Output**: `extensions/bundle-cart-transform-rs/target/wasm32-unknown-unknown/release/`
 
 ---
 
@@ -79,6 +79,14 @@ The function groups cart lines by EB's public `_wolfpackProductBundle:OfferId` c
 - `calculateDiscountPercentage()` clamps result to 0–100
 - Supported discount methods: `percentage_off`, `fixed_amount_off`, `fixed_bundle_price`
 - See [[Features/Pricing Pipeline]] for full unit conversion chain
+
+### BXY rounding
+
+Shopify `linesMerge` can apply only one parent `percentageDecrease`, so mixed-price Buy X Get Y bundles use a percentage equivalent to the exact reward value. Component detail rows may need proportional allocation, but parent cart metadata must use whole-bundle cents derived from the rounded discount amount. Do not sum rounded per-component bundle cents into `_bundle_total_price_cents`; that can drift by one cent for mixed-price BXY groups. The authoritative parent attributes are:
+
+- `_bundle_total_retail_cents`
+- `_bundle_total_price_cents`
+- `_bundle_total_savings_cents`
 
 ---
 

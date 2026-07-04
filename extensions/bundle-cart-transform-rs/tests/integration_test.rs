@@ -444,6 +444,133 @@ mod tests {
     }
 
     #[test]
+    fn test_merge_buy_x_get_y_mixed_prices_uses_exact_parent_totals() {
+        let cp = serde_json::json!([{
+            "id": "gid://shopify/ProductVariant/999",
+            "component_reference": {
+                "value": [
+                    "gid://shopify/ProductVariant/101",
+                    "gid://shopify/ProductVariant/102",
+                    "gid://shopify/ProductVariant/103"
+                ]
+            },
+            "component_quantities": { "value": [1, 1, 1] },
+            "price_adjustment": {
+                "method": "buy_x_get_y",
+                "value": 100.0,
+                "customerBuys": 2,
+                "customerGets": 1,
+                "discountType": "percentage",
+                "applyDiscountTo": "lowest_priced",
+                "conditions": { "type": "quantity", "operator": "gte", "value": 3 }
+            }
+        }])
+        .to_string();
+        let display_properties = serde_json::json!({
+            "items": "1 x First product, 1 x Second product, 1 x Third product",
+            "retailPrice": "$1777.00",
+            "youSave": {
+                "amount": "$329.00",
+                "percentage": "19%",
+                "amountPercentage": "$329.00 (19%)"
+            }
+        })
+        .to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-bxy_1" }},
+                        "wolfpackProductBundleName": {{ "value": "BXY Bundle" }},
+                        "stepType": null,
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": {{ "value": {cp:?} }},
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "First product" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "829.00" }},
+                            "totalAmount": {{ "amount": "829.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "line2", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-bxy_2" }},
+                        "wolfpackProductBundleName": {{ "value": "BXY Bundle" }},
+                        "stepType": null,
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/102",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/2", "title": "Second product" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "619.00" }},
+                            "totalAmount": {{ "amount": "619.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "line3", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-bxy_3" }},
+                        "wolfpackProductBundleName": {{ "value": "BXY Bundle" }},
+                        "stepType": null,
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/103",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/3", "title": "Third product" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "329.00" }},
+                            "totalAmount": {{ "amount": "329.00" }}
+                        }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+
+        let attributes = merge_attributes(&output);
+        assert_eq!(
+            attributes
+                .get("_bundle_total_retail_cents")
+                .map(String::as_str),
+            Some("177700")
+        );
+        assert_eq!(
+            attributes
+                .get("_bundle_total_price_cents")
+                .map(String::as_str),
+            Some("144800")
+        );
+        assert_eq!(
+            attributes
+                .get("_bundle_total_savings_cents")
+                .map(String::as_str),
+            Some("32900")
+        );
+    }
+
+    #[test]
     fn test_merge_emits_public_cart_line_messaging_by_default() {
         let input = messaging_merge_input("");
         let output: schema::FunctionRunResult =

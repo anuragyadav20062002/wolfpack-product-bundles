@@ -299,7 +299,6 @@ pub fn process_merge_operations(
         // -------------------------------------------------------------------------
         let mut component_details: Vec<serde_json::Value> = Vec::new();
         let mut total_retail_cents: i64 = 0;
-        let mut total_bundle_cents: i64 = 0;
         for (i, &idx) in merge_line_indices.iter().enumerate() {
             let line = &lines[idx];
             let qty = *line.quantity() as i64;
@@ -327,7 +326,6 @@ pub fn process_merge_operations(
                 0.0
             };
             total_retail_cents += retail_cents * qty;
-            total_bundle_cents += line_bundle_cents_total;
             let title = match lines[idx].merchandise() {
                 schema::run::input::cart::lines::Merchandise::ProductVariant(_) => {
                     format!("Component {}", i + 1)
@@ -346,7 +344,9 @@ pub fn process_merge_operations(
         }
 
         let original_total_cents = total_retail_cents;
-        let discounted_total_cents = total_bundle_cents;
+        let exact_discount_cents =
+            ((total_discount_amount * 100.0).round() as i64).clamp(0, original_total_cents);
+        let discounted_total_cents = original_total_cents - exact_discount_cents;
         let savings_cents = original_total_cents - discounted_total_cents;
 
         let components_json = serde_json::to_string(&component_details).unwrap_or_default();
