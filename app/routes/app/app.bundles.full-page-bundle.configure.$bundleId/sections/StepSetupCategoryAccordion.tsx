@@ -35,9 +35,11 @@ export function FpbStepCategoryAccordion({
   } = flow;
   const catKey = `${step.id}__${cat.id ?? catIndex}`;
   const catActiveTab = categoryActiveTabs[catKey] ?? 0;
+  const stepCategories = ((step.StepCategory as any[]) ?? []);
   const catProducts = (cat.products as any[]) ?? [];
   const catCollections = (cat.collections as any[]) ?? [];
   const isOpen = categoryOpen[catKey] ?? false;
+  const shouldRenderCategoryNameField = stepCategories.length > 1;
   const modalIdBase = `fpb-category-${catKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
   const selectedProductsModalId = `${modalIdBase}-selected-products-modal`;
   const selectedCollectionsModalId = `${modalIdBase}-selected-collections-modal`;
@@ -212,14 +214,13 @@ export function FpbStepCategoryAccordion({
             aria-label="Clone"
             title="Clone"
             onClick={() => {
-              const cats = (step.StepCategory as any[]) ?? [];
               stepsState.updateStepField(step.id, "StepCategory", [
-                ...cats,
+                ...stepCategories,
                 {
-                  ...cats[catIndex],
+                  ...stepCategories[catIndex],
                   id: `cat-${Date.now()}`,
-                  name: `${cats[catIndex].name || `Category ${catIndex + 1}`} Copy`,
-                  sortOrder: cats.length,
+                  name: `${stepCategories[catIndex].name || `Category ${catIndex + 1}`} Copy`,
+                  sortOrder: stepCategories.length,
                 },
               ]);
               markAsDirty();
@@ -292,25 +293,25 @@ export function FpbStepCategoryAccordion({
       </div>
       {isOpen && (
         <div className={fullPageBundleStyles.categoryAccordionBody}>
-          <div className={fullPageBundleStyles.categoryFieldGroup}>
-            <label
-              className={fullPageBundleStyles.categoryFieldLabel}
-              htmlFor={`fpb-category-name-${catKey}`}
-            >
-              Category Name
-            </label>
-            <div className={fullPageBundleStyles.catNameRow}>
-              <div className={fullPageBundleStyles.categoryInputStack}>
-                <input
-                  id={`fpb-category-name-${catKey}`}
-                  className={fullPageBundleStyles.categoryNameInput}
-                  type="text"
-                  value={cat.name ?? ""}
-                  placeholder={`Category ${catIndex + 1}`}
-                  aria-label="Category name"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const updated = ((step.StepCategory as any[]) ?? []).map(
-                      (c: any, i: number) =>
+          {shouldRenderCategoryNameField && (
+            <div className={fullPageBundleStyles.categoryFieldGroup}>
+              <label
+                className={fullPageBundleStyles.categoryFieldLabel}
+                htmlFor={`fpb-category-name-${catKey}`}
+              >
+                Category Name
+              </label>
+              <div className={fullPageBundleStyles.catNameRow}>
+                <div className={fullPageBundleStyles.categoryInputStack}>
+                  <input
+                    id={`fpb-category-name-${catKey}`}
+                    className={fullPageBundleStyles.categoryNameInput}
+                    type="text"
+                    value={cat.name ?? ""}
+                    placeholder={`Category ${catIndex + 1}`}
+                    aria-label="Category name"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const updated = stepCategories.map((c: any, i: number) =>
                         i === catIndex
                           ? {
                               ...c,
@@ -318,42 +319,43 @@ export function FpbStepCategoryAccordion({
                               title: e.target.value,
                             }
                           : c,
-                    );
-                    stepsState.updateStepField(
-                      step.id,
-                      "StepCategory",
-                      updated,
-                    );
-                    markAsDirty();
-                  }}
-                />
-              </div>
-              <button
-                type="button"
-                className={fullPageBundleStyles.categoryTextButton}
-                onClick={() =>
-                  openStepCategoryMultiLanguageModal(step.id, catIndex)
-                }
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M2 3.25h5.25M4.63 2v1.25M6.5 3.25c-.38 1.97-1.75 3.5-3.75 4.25M3.38 4.75c.55 1.1 1.45 1.95 2.72 2.55M7.25 12l.7-1.75m0 0L9.5 6.5l1.55 3.75m-3.1 0h3.1M12 12l-.95-1.75"
-                    stroke="currentColor"
-                    strokeWidth="1.15"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                      );
+                      stepsState.updateStepField(
+                        step.id,
+                        "StepCategory",
+                        updated,
+                      );
+                      markAsDirty();
+                    }}
                   />
-                </svg>
-                Multi Language
-              </button>
+                </div>
+                <button
+                  type="button"
+                  className={fullPageBundleStyles.categoryTextButton}
+                  onClick={() =>
+                    openStepCategoryMultiLanguageModal(step.id, catIndex)
+                  }
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2 3.25h5.25M4.63 2v1.25M6.5 3.25c-.38 1.97-1.75 3.5-3.75 4.25M3.38 4.75c.55 1.1 1.45 1.95 2.72 2.55M7.25 12l.7-1.75m0 0L9.5 6.5l1.55 3.75m-3.1 0h3.1M12 12l-.95-1.75"
+                      stroke="currentColor"
+                      strokeWidth="1.15"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Multi Language
+                </button>
+              </div>
             </div>
-          </div>
+          )}
           <div className={fullPageBundleStyles.tabRow}>
             <button
               className={
