@@ -25,6 +25,7 @@
   --classic-desktop-text-card-extra: clamp(130px, 11.5vw, 152px);
 
   --classic-mobile-card-width: clamp(140px, 40vw, 177.5px);
+  --classic-mobile-shell-gutter: 0.625rem;
   --classic-mobile-icon-card-height: clamp(220px, 52vw, 263px);
   --classic-mobile-text-card-height: clamp(248px, 56vw, 300px);
   --classic-mobile-image-height: clamp(118px, 37vw, 150px);
