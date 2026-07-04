@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.35
+ * Version : 5.0.36
  * Built   : 2026-07-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.35';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.36';
 (function() {
   'use strict';
 
@@ -3274,14 +3274,18 @@ function buildCartLineSourceProperties({
   discountAmount = '',
   discountPercentage = null,
   box = '1',
+  includeBox = true,
 } = {}) {
   const displayProperties = {
-    box: String(box || '1'),
     items: selectedLines
       .map(({ product = {}, quantity = 0 }) => `${Number(quantity || 0)} x ${product.title || product.id}`)
       .join(', '),
     retailPrice: String(retailPrice || ''),
   };
+
+  if (includeBox !== false) {
+    displayProperties.box = String(box || '1');
+  }
 
   if (discountAmount) {
     const percentage = `${Math.round(Number(discountPercentage || 0))}%`;

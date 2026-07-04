@@ -468,6 +468,25 @@ mod tests {
     }
 
     #[test]
+    fn test_merge_omits_box_when_source_display_metadata_has_no_box() {
+        let input = messaging_merge_input("").replace("\\\"box\\\":\\\"1\\\",", "");
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+
+        let attributes = merge_attributes(&output);
+        assert!(!attributes.contains_key("Box"));
+        assert_eq!(
+            attributes.get("Items").map(String::as_str),
+            Some("1 x 18k Bloom Earrings, 2 x 18k Pedal Ring - 6 (6)")
+        );
+        assert_eq!(
+            attributes.get("Retail Price").map(String::as_str),
+            Some("₹50")
+        );
+    }
+
+    #[test]
     fn test_merge_keeps_display_only_fixed_price_at_component_total() {
         let cp = serde_json::json!([{
             "id": "gid://shopify/ProductVariant/999",
@@ -552,19 +571,27 @@ mod tests {
 
         let attributes = merge_attributes(&output);
         assert_eq!(
-            attributes.get("_bundle_total_retail_cents").map(String::as_str),
+            attributes
+                .get("_bundle_total_retail_cents")
+                .map(String::as_str),
             Some("144800")
         );
         assert_eq!(
-            attributes.get("_bundle_total_price_cents").map(String::as_str),
+            attributes
+                .get("_bundle_total_price_cents")
+                .map(String::as_str),
             Some("144800")
         );
         assert_eq!(
-            attributes.get("_bundle_total_savings_cents").map(String::as_str),
+            attributes
+                .get("_bundle_total_savings_cents")
+                .map(String::as_str),
             Some("0")
         );
         assert_eq!(
-            attributes.get("_bundle_discount_percent").map(String::as_str),
+            attributes
+                .get("_bundle_discount_percent")
+                .map(String::as_str),
             Some("0.00")
         );
         assert_eq!(

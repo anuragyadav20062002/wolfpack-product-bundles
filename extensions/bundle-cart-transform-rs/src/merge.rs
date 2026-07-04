@@ -228,12 +228,13 @@ pub fn process_merge_operations(
         // -------------------------------------------------------------------------
         // Step 4: Calculate effective discount percentage.
         // -------------------------------------------------------------------------
-        let fixed_price_display_only = has_fixed_price_display_only_marker(lines, &merge_line_indices)
-            && parent
-                .price_adjustment
-                .as_ref()
-                .map(|pa| pa.method == PricingMethod::FixedBundlePrice)
-                .unwrap_or(false);
+        let fixed_price_display_only =
+            has_fixed_price_display_only_marker(lines, &merge_line_indices)
+                && parent
+                    .price_adjustment
+                    .as_ref()
+                    .map(|pa| pa.method == PricingMethod::FixedBundlePrice)
+                    .unwrap_or(false);
 
         let effective_price_adjustment = if fixed_price_display_only {
             None
@@ -417,11 +418,12 @@ pub fn process_merge_operations(
             key: "_Items".into(),
             value: "".into(),
         });
-        attributes.push(schema::AttributeOutput {
-            key: "Box".into(),
-            value: non_empty(&source_display_properties.box_label)
-                .unwrap_or_else(|| "1".to_string()),
-        });
+        if let Some(box_label) = non_empty(&source_display_properties.box_label) {
+            attributes.push(schema::AttributeOutput {
+                key: "Box".into(),
+                value: box_label,
+            });
+        }
 
         if cart_line_messaging.is_enabled {
             let source_items = non_empty(&source_display_properties.items);

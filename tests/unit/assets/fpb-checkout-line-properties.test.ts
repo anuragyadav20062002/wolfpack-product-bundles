@@ -48,17 +48,133 @@ describe("FPB checkout cart-line properties", () => {
       (global as any).window = originalWindow;
     }
 
-    expect(sourceProperties).toEqual({
-      _bundle_display_properties: JSON.stringify({
-        box: "1",
-        items: "1 x Paid product",
-        retailPrice: "$829.00",
-      }),
+    expect(JSON.parse(sourceProperties._bundle_display_properties)).toEqual({
+      box: "1",
+      items: "1 x Paid product",
+      retailPrice: "$829.00",
     });
     expect(sourceProperties).not.toHaveProperty("Items");
     expect(sourceProperties).not.toHaveProperty("Retail Price");
     expect(sourceProperties).not.toHaveProperty("You Save");
     expect(sourceProperties).not.toHaveProperty("Box");
+  });
+
+  it("omits Box cart properties for BXY when bundle quantity options are hidden", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    });
+    const originalFetch = (global as any).fetch;
+    const originalWindow = (global as any).window;
+    const originalDocument = (global as any).document;
+    const originalGetComputedStyle = (global as any).getComputedStyle;
+    const originalSetTimeout = (global as any).setTimeout;
+    (global as any).fetch = fetchMock;
+    (global as any).window = {
+      Shopify: {
+        currency: { active: "USD", format: ["$", "{{amount}}"].join("") },
+      },
+    };
+    (global as any).document = {
+      documentElement: {},
+      getElementById: () => null,
+      createElement: () => ({
+        id: "",
+        className: "",
+        innerHTML: "",
+        remove: jest.fn(),
+        querySelector: () => ({
+          addEventListener: jest.fn(),
+        }),
+      }),
+      body: {
+        appendChild: jest.fn(),
+      },
+    };
+    (global as any).getComputedStyle = () => ({
+      getPropertyValue: () => "",
+    });
+    (global as any).setTimeout = jest.fn();
+
+    try {
+      await fullPageStepFooterMethods.addBundleToCart.call({
+        _isWidgetActionBusy: false,
+        container: null,
+        selectedBundle: {
+          id: "bundle-1",
+          name: "Daily Essentials",
+          pricing: {
+            enabled: true,
+            method: "buy_x_get_y",
+            rules: [{
+              id: "rule-1",
+              conditionType: "quantity",
+              conditionValue: 2,
+              customerBuys: 2,
+              customerGets: 1,
+              discountValue: 100,
+              bxyDiscountType: "percentage",
+              bxyApplyMode: "lowest_priced",
+            }],
+            messages: {
+              displayOptions: {
+                bundleQuantityOptions: { enabled: false },
+              },
+            },
+          },
+          steps: [{ id: "paid-step", isFreeGift: false }],
+        },
+        selectedProducts: [
+          {
+            "gid://shopify/ProductVariant/111": 1,
+            "gid://shopify/ProductVariant/222": 1,
+          },
+        ],
+        stepProductData: [
+          [
+            { variantId: "gid://shopify/ProductVariant/111", title: "First product", price: 82900 },
+            { variantId: "gid://shopify/ProductVariant/222", title: "Second product", price: 61900 },
+          ],
+        ],
+        areBundleConditionsMet: () => true,
+        expandProductsByVariant: (products: unknown[]) => products,
+        extractId: (value: string) => value.split("/").pop(),
+        generateBundleSessionKey: () => "ABC",
+        resolveFullPageOfferId: () => "FBP-1",
+        getAddonTierEvaluation: () => ({}),
+        getAddonLineDiscount: () => null,
+        getSelectedSellingPlanAllocationId: () => null,
+        buildCartLineSourceProperties:
+          fullPageStepFooterMethods.buildCartLineSourceProperties,
+        _setWidgetBusy: jest.fn(),
+        showLoadingOverlay: jest.fn(),
+        hideLoadingOverlay: jest.fn(),
+        syncBundleDetailsCartMetafield: jest.fn(),
+        _emitStorefrontEvent: jest.fn(),
+        _handlePostAddToCartAction: jest.fn(),
+        _getLandingPageControls: () => ({ checkout: null }),
+      });
+    } finally {
+      (global as any).fetch = originalFetch;
+      (global as any).window = originalWindow;
+      (global as any).document = originalDocument;
+      (global as any).getComputedStyle = originalGetComputedStyle;
+      (global as any).setTimeout = originalSetTimeout;
+    }
+
+    const addRequest = fetchMock.mock.calls.find(([url]) => url === "/cart/add.js");
+    expect(addRequest).toBeDefined();
+    const body = JSON.parse(addRequest[1].body);
+
+    expect(body.items).toHaveLength(2);
+    body.items.forEach((item: { properties: Record<string, string> }) => {
+      expect(item.properties).not.toHaveProperty("Box");
+      expect(item.properties).toHaveProperty("_bundle_display_properties");
+      expect(JSON.parse(item.properties._bundle_display_properties)).toEqual({
+        items: "1 x First product, 1 x Second product",
+        retailPrice: "$1448.00",
+      });
+    });
   });
 
   it("uses bundle box numbering and hidden bundle metadata for paid add-on lines", async () => {

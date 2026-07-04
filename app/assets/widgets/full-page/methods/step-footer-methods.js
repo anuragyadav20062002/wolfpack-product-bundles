@@ -38,6 +38,13 @@ function isFullPageCartLineOutOfStock(context, product) {
     && product.currentlyNotInStock !== true;
 }
 
+function shouldIncludeBundleQuantityCartProperties(context) {
+  const pricing = context?.selectedBundle?.pricing || {};
+  const method = String(pricing.method || '').toLowerCase();
+  const bundleQuantityOptions = pricing.messages?.displayOptions?.bundleQuantityOptions;
+  return !(method === 'buy_x_get_y' && bundleQuantityOptions?.enabled === false);
+}
+
 export const fullPageStepFooterMethods = {
   isSelectedAddonCartLine(step) {
     if (step?.isFreeGift !== true) return false;
@@ -90,6 +97,7 @@ export const fullPageStepFooterMethods = {
         ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
         : '',
       discountPercentage,
+      includeBox: shouldIncludeBundleQuantityCartProperties(this),
     });
 
     if (useDisplayOnlyFixedPrice) {
@@ -155,11 +163,13 @@ async addBundleToCart(clickedButton = null) {
 
           itemNumber += 1;
           const properties = {
-            Box: String(itemNumber),
             '_bundleName': bundleName,
             '_wolfpackProductBundle:prodQty': String(quantity),
             '_wolfpackProductBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
           };
+          if (shouldIncludeBundleQuantityCartProperties(this)) {
+            properties.Box = String(itemNumber);
+          }
           const addonEval = this.getAddonTierEvaluation?.(step) || {};
           const addonDiscount = this.getAddonLineDiscount(step);
           const isAddonCartLine = fullPageStepFooterMethods.isSelectedAddonCartLine.call(this, step);

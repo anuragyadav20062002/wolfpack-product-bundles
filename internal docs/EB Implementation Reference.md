@@ -630,6 +630,12 @@ the rule object for the BXY threshold semantics.
 - Non-BXY states show the toggle, "Multi Language" action, and note: "Note: Bundle Quantity Options can only be enabled when discount rules are based on quantity."
 - When enabled for quantity-based rules, each rule renders "Box Label" and "Box Subtext" fields plus a "Make this rule default" star action.
 
+**Wolfpack implementation note (2026-07-04):** Because EB hides Bundle
+Quantity Options for BXY, Wolfpack storefront/cart code must not synthesize
+public `Box` cart display properties when the source `_bundle_display_properties`
+payload omits `box`. This applies both to `/cart/add.js` component properties
+and to the cart-transform merged parent attributes.
+
 **"Multi Language" button:**
 
 Opens modal "Customize Text for Multiple Languages":
