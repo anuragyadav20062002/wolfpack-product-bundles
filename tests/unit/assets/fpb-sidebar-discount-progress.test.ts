@@ -2,6 +2,8 @@ export {};
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageSidePanelMethods } = require('../../../app/assets/widgets/full-page/methods/side-panel-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ToastManager } = require('../../../app/assets/bundle-widget-components.js');
 
 class FakeElement {
   tagName: string;
@@ -10,6 +12,7 @@ class FakeElement {
   innerHTML = '';
   children: FakeElement[] = [];
   style: Record<string, string> = {};
+  listeners: Record<string, Array<() => unknown>> = {};
 
   constructor(tagName: string) {
     this.tagName = tagName.toUpperCase();
@@ -39,7 +42,17 @@ class FakeElement {
     return child;
   }
 
-  addEventListener() {}
+  addEventListener(eventName: string, handler: () => unknown) {
+    this.listeners[eventName] = this.listeners[eventName] || [];
+    this.listeners[eventName].push(handler);
+  }
+
+  async click() {
+    const handlers = this.listeners.click || [];
+    for (const handler of handlers) {
+      await handler();
+    }
+  }
 
   setAttribute() {}
 
@@ -60,6 +73,15 @@ class FakeElement {
 
     return null;
   }
+}
+
+function collectButtons(root: FakeElement): FakeElement[] {
+  const buttons: FakeElement[] = [];
+  if (root.tagName === 'BUTTON') buttons.push(root);
+  for (const child of root.children) {
+    buttons.push(...collectButtons(child));
+  }
+  return buttons;
 }
 
 beforeEach(() => {
@@ -224,6 +246,51 @@ describe('FPB Standard summary sidebar add-ons', () => {
 });
 
 describe('FPB sidebar add-on CTA copy', () => {
+  it('keeps Classic final-step add-to-cart copy when box tier text is configured', () => {
+    const panel = document.createElement('aside') as unknown as FakeElement;
+    const context = makeContext('CLASSIC', 'simple');
+    context.selectedProducts = [[{}], [{}]];
+    context.resolveFullPageLayout = () => 'sidebar';
+    context.areBundleConditionsMet = () => true;
+    context.getSidebarTierCtaContent = () => ({ label: 'Box of 2', subtext: '$5 off' });
+    context._resolveText = (key: string, fallback: string) => (
+      key === 'addToCartButton' ? 'Add To Cart' : fallback
+    );
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    const buttons = collectButtons(panel);
+    expect(buttons.some((button) => button.textContent === 'Add To Cart')).toBe(true);
+    expect(buttons.some((button) => button.textContent === 'Box of 2 $5 off')).toBe(false);
+  });
+
+  it('validates Classic final-step quantity before desktop add-to-cart', async () => {
+    const toastSpy = jest.spyOn(ToastManager, 'show').mockImplementation(() => {});
+    const panel = document.createElement('aside') as unknown as FakeElement;
+    const context = makeContext('CLASSIC', 'simple');
+    context.selectedProducts = [[]];
+    context.resolveFullPageLayout = () => 'sidebar';
+    context.areBundleConditionsMet = jest.fn(() => false);
+    context.getStepConditionValidationMessage = jest.fn(() => 'Add exactly 2 products on this step');
+    context.addBundleToCart = jest.fn();
+    context._resolveText = (key: string, fallback: string) => (
+      key === 'addToCartButton' ? 'Add To Cart' : fallback
+    );
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    const addToCartButton = collectButtons(panel).find((button) => button.textContent === 'Add To Cart');
+    expect(addToCartButton).toBeDefined();
+    await addToCartButton?.click();
+
+    expect(context.areBundleConditionsMet).toHaveBeenCalledTimes(1);
+    expect(context.getStepConditionValidationMessage).toHaveBeenCalledTimes(1);
+    expect(toastSpy).toHaveBeenCalledWith('Add exactly 2 products on this step');
+    expect(context.addBundleToCart).not.toHaveBeenCalled();
+
+    toastSpy.mockRestore();
+  });
+
   it('keeps add-to-cart copy on the active add-on step when tier CTA text is configured', () => {
     const panel = document.createElement('aside') as unknown as FakeElement;
     const context = makeContext('CLASSIC', 'simple');

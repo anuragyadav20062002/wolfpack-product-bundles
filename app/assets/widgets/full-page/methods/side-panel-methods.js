@@ -47,6 +47,7 @@ renderSidePanel(panel) {
   const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
   const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
   const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
+  const isClassicDesktopPreset = this.getFullPageDesignPreset() === 'CLASSIC' && !isMobileSheet;
   const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
   const isActiveAddonStep = activeStep?.isFreeGift === true;
   const summaryText = this.getBundleSummaryText();
@@ -414,7 +415,7 @@ renderSidePanel(panel) {
     nextBtn.textContent = (conditionless || isLastStep)
       ? this._resolveText('addToCartButton', 'Add to Cart')
       : nextStepLabel;
-  if (sidebarTierCtaContent) {
+  if (sidebarTierCtaContent && !isClassicDesktopPreset) {
     const labelText = sidebarTierCtaContent.label || '';
     const subtextText = sidebarTierCtaContent.subtext || '';
     const ctaTextParts = [labelText, subtextText].filter((item) => item !== '');
@@ -431,6 +432,10 @@ renderSidePanel(panel) {
     if (this._isWidgetActionBusy) return;
 
     if (conditionless || isLastStep) {
+      if (isClassicDesktopPreset && !conditionless && !this.areBundleConditionsMet()) {
+        ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
+        return;
+      }
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
