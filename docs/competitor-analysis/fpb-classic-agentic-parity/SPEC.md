@@ -331,6 +331,8 @@ Acceptance:
 - Inventory-related network proof is captured for both apps.
 - OOS presentation and blocking point match EB without conflicting with rule validation messages.
 
+2026-07-04 recheck: fresh cache-cleared EB proof at the available Chrome DevTools MCP viewport (`500 x 725`) still shows manual products plus the long/empty category fixture only; `collectionsSelectedData` is absent from the inline runtime script probe, no collection/mixed-source label is visible, and no OOS/sold-out storefront copy appears. Evidence: `eb-c07-current-runtime-20260704.json`, `eb-c07-current-20260704.png`, and `eb-c07-current-a11y-20260704.txt`. Fresh WPB proof on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.32"` still serves `FBP_SIDE_FOOTER + CLASSIC`; the current C07 fixture API has `C07 Manual Products` with 6 manual products, `C07 Collection Source` with 1 collection and 20 visible hydrated cards, and `C07 Mixed Source` with 6 manual products plus 1 collection and 23 visible cards. Evidence: `wpb-c07-current-states-5032-20260704.json`, `wpb-c07-current-mixed-5032-20260704.png`, and `wpb-c07-current-mixed-a11y-5032-20260704.txt`. No source change is justified; C07 remains gated on EB collection/mixed/OOS fixture proof and inventory blocking.
+
 ### C08 Cart Lines
 
 | Field | Value |
