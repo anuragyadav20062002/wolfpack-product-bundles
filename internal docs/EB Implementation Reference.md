@@ -818,6 +818,12 @@ Per-product attributes: `productid="{numericId}"` `firstvariantid="{numericVaria
 
 Per-category attribute: `categoryid="{categoryId}"`
 
+### FPB Classic Mobile Footer Tray
+
+2026-07-04 Classic mobile evidence at `390 x 844` confirms the `FBP_SIDE_FOOTER + CLASSIC` footer tray is sticky, not fixed, and does not lock page scroll while expanded. In the empty-selection fixture, the collapsed footer (`.gbbAddProductsPageFooterHTML`) measured `370 x 101`, showed `View Selected Products`, `Next`, total `₹0.00`, and count `0`. Clicking `.showBoxProductsInFooter` expanded the same footer to `370 x 357`, kept `position: sticky`, `bottom: 0`, `overflow: visible`, and `body` overflow `auto hidden`; a forced `window.scrollBy(0, 350)` changed `scrollY` from `0` to `350` while the footer stayed pinned to the viewport bottom. Treat background scroll during expanded Classic footer state as EB-matching behavior unless a later fixture proves EB locks it.
+
+Evidence: `/private/tmp/fpb-classic-agentic-parity/CS4-mobile-footer-scroll-lock/eb-cs4-before-toggle-runtime-20260704.json`, `eb-cs4-empty-expanded-runtime-20260704.json`, and `eb-cs4-empty-expanded-scroll-probe-20260704.json`.
+
 ### FPB Standard Variant Selector UI
 
 For Standard Design (`FBP_SIDE_FOOTER` + `DEFAULT_FBP`), grouped variant products render an inline `Choose Options` dropdown on desktop when variants are not displayed as individual products.
