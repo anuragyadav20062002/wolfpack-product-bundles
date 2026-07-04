@@ -3,7 +3,7 @@ export {};
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageSidePanelMethods } = require('../../../app/assets/widgets/full-page/methods/side-panel-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { ToastManager } = require('../../../app/assets/bundle-widget-components.js');
+const { PricingCalculator, ToastManager } = require('../../../app/assets/bundle-widget-components.js');
 
 class FakeElement {
   tagName: string;
@@ -219,6 +219,39 @@ describe('FPB summary sidebar discount progress', () => {
     fullPageSidePanelMethods.renderSidePanel.call(context, panel);
 
     expect(context._formatSidebarDiscountMessage).not.toHaveBeenCalled();
+  });
+
+  it('shows only the raw Classic total for fixed bundle price summary display', () => {
+    const panel = document.createElement('aside');
+    const context = makeContext('CLASSIC', 'simple');
+    context.selectedBundle.pricing.method = 'fixed_bundle_price';
+    context.selectedBundle.pricing.rules[0].method = 'fixed_bundle_price';
+    context.config.showDiscountMessaging = false;
+    context.config.showDiscountProgressBar = false;
+    context.getAllSelectedProductsData = () => [{}, {}];
+    const totalSpy = jest.spyOn(PricingCalculator, 'calculateBundleTotal').mockReturnValue({
+      totalPrice: 144800,
+      totalQuantity: 2,
+      unitPrices: [82900, 61900],
+    });
+    const discountSpy = jest.spyOn(PricingCalculator, 'calculateDiscount').mockReturnValue({
+      hasDiscount: true,
+      finalPrice: 500,
+      discountAmount: 144300,
+      applicableRule: { method: 'fixed_bundle_price' },
+    });
+
+    try {
+      fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+    } finally {
+      totalSpy.mockRestore();
+      discountSpy.mockRestore();
+    }
+
+    const total = panel.querySelector('.side-panel-total');
+    expect(total?.innerHTML).toContain('side-panel-total-final');
+    expect(total?.innerHTML).not.toContain('side-panel-total-original');
+    expect(total?.innerHTML).not.toContain('$5.00');
   });
 });
 

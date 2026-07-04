@@ -635,6 +635,8 @@ Opens modal "Customize Text for Multiple Languages":
 - Radio group: `"Simple Bar"` | `"Step-Based Bar"`
 
 **Classic C05 storefront note (2026-07-04):** In the verified Classic fixed-amount quantity fixture, EB Admin had Bundle Quantity Options enabled (`Box of 2` / `₹5 off`) while Progress Bar and Discount Messaging were disabled. Cache-bypassed EB desktop and mobile storefront proof kept the box selector visible, hid `gbbDiscountComponent`, and rendered no discount-progress/message copy; only the step timeline progress remained visible. Treat Bundle Quantity Options as separate from Progress Bar/Discount Messaging display toggles.
+
+**Classic C05 fixed bundle price storefront note (2026-07-04):** After EB Admin saved `Fixed Bundle Price` through `/api/discount/updateFixedBundle`, the current Classic storefront still kept the existing Bundle Quantity Options label/subtext (`Box of 2` / `₹5 off`). With two products selected, the Classic desktop sidebar and mobile footer showed the raw selected-products total (`₹1158.00`) and did not render the fixed bundle price as a separate final summary total. Treat this as a Classic summary display rule only; cart/discount calculation still needs separate cart proof.
 - When Simple Bar is selected, no per-rule tier-text fields appear.
 
 **When Step-Based Bar is selected, per-rule fields appear:**

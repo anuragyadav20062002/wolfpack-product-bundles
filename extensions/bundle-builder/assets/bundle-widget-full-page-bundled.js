@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.33
+ * Version : 5.0.34
  * Built   : 2026-07-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.33';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.34';
 (function() {
   'use strict';
 
@@ -4204,6 +4204,21 @@ const compactTemplateMethods = {};
 
 const horizontalTemplateMethods = {};
 
+function shouldDisplayClassicFixedBundleRawTotal(widget, discountInfo) {
+  if (widget?.getFullPageDesignPreset?.() !== 'CLASSIC') return false;
+  if (!discountInfo?.hasDiscount) return false;
+
+  const method = String(
+    discountInfo?.applicableRule?.method
+      || discountInfo?.applicableRule?.discountType
+      || widget?.selectedBundle?.pricing?.method
+      || widget?.selectedBundle?.pricing?.discountType
+      || ''
+  ).toLowerCase();
+
+  return method === 'fixed_bundle_price' || method === 'fixed_bundle' || method === 'fixed_price';
+}
+
 const buildSharedCartLineDisplayProperties = buildCartLineDisplayProperties;
 const buildSharedCartLineSourceProperties = buildCartLineSourceProperties;
 
@@ -5682,6 +5697,9 @@ _populateCompactMobileSummaryTray(sheet) {
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
+  const displayFinalPrice = shouldDisplayClassicFixedBundleRawTotal(this, combinedDiscountInfo)
+    ? totalPrice
+    : finalPrice;
   const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
   const selectedFooterQuantity = this.getAllSelectedProductsData().reduce(
     (sum, item) => sum + (Number(item.quantity) || 1),
@@ -5770,7 +5788,7 @@ _populateCompactMobileSummaryTray(sheet) {
   const conditionlessMobile = this.bundleHasNoConditions();
   const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
   const actionButton = this._createMobileSummaryActionButton({
-    finalPrice,
+    finalPrice: displayFinalPrice,
     currencyInfo,
     conditionlessMobile,
     hasSelectionMobile,
@@ -6198,6 +6216,9 @@ renderSidePanel(panel) {
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
+  const shouldShowRawTotalOnly = shouldDisplayClassicFixedBundleRawTotal(this, combinedDiscountInfo);
+  const displayFinalPrice = shouldShowRawTotalOnly ? totalPrice : finalPrice;
+  const shouldShowOriginalTotal = combinedDiscountInfo.hasDiscount && !shouldShowRawTotalOnly;
   const allSelectedProducts = this.getAllSelectedProductsData();
   const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
   const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
@@ -6498,8 +6519,8 @@ renderSidePanel(panel) {
   totalSection.innerHTML = `
     <span class="side-panel-total-label">Total</span>
     <div class="side-panel-total-prices">
-      ${combinedDiscountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
-      <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
+      ${shouldShowOriginalTotal ? `<span class="side-panel-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
+      <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(displayFinalPrice, currencyInfo)}</span>
     </div>
   `;
   if (isMobileSheet) {

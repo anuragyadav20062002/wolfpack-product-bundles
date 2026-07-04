@@ -3,7 +3,7 @@ export {};
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageMobileSummaryMethods } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { ToastManager } = require('../../../app/assets/bundle-widget-components.js');
+const { PricingCalculator, ToastManager } = require('../../../app/assets/bundle-widget-components.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldUseMobileSummarySlotTiles } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -190,6 +190,68 @@ describe('FPB Standard mobile summary action', () => {
     fullPageMobileSummaryMethods._populateCompactMobileSummaryTray.call(context, sheet);
 
     expect(renderProgress).not.toHaveBeenCalled();
+  });
+
+  it('uses the raw Classic total in compact mobile fixed bundle price action display', () => {
+    const sheet = new FakeElement();
+    const context = {
+      ...createContext(),
+      selectedProducts: [{}, {}],
+      stepProductData: [[]],
+      selectedBundle: {
+        bundleDesignPresetId: 'CLASSIC',
+        steps: [{ id: 'step-1', enabled: true }],
+        pricing: {
+          enabled: true,
+          method: 'fixed_bundle_price',
+          rules: [
+            {
+              id: 'rule-1',
+              conditionType: 'quantity',
+              conditionOperator: 'gte',
+              conditionValue: 2,
+              discountValue: 5,
+              method: 'fixed_bundle_price',
+            },
+          ],
+        },
+      },
+      config: {
+        showDiscountMessaging: false,
+        showDiscountProgressBar: false,
+      },
+      compactMobileSummaryTrayExpanded: false,
+      currentStepIndex: 0,
+      getDiscountInfoWithSelectedAddonDiscount: (discountInfo: unknown) => discountInfo,
+      getAllSelectedProductsData: () => [{}, {}],
+      _shouldRenderProductSlots: () => false,
+      _syncCompactMobileSummaryScrollLock: jest.fn(),
+      _renderDiscountProgress: jest.fn(),
+      _createMobileSummaryActionButton: fullPageMobileSummaryMethods._createMobileSummaryActionButton,
+      bundleHasNoConditions: () => false,
+      getFullPageDesignPreset: () => 'CLASSIC',
+    };
+    const totalSpy = jest.spyOn(PricingCalculator, 'calculateBundleTotal').mockReturnValue({
+      totalPrice: 144800,
+      totalQuantity: 2,
+      unitPrices: [82900, 61900],
+    });
+    const discountSpy = jest.spyOn(PricingCalculator, 'calculateDiscount').mockReturnValue({
+      hasDiscount: true,
+      finalPrice: 500,
+      discountAmount: 144300,
+      applicableRule: { method: 'fixed_bundle_price' },
+    });
+
+    try {
+      fullPageMobileSummaryMethods._populateCompactMobileSummaryTray.call(context, sheet);
+    } finally {
+      totalSpy.mockRestore();
+      discountSpy.mockRestore();
+    }
+
+    expect(sheet.textContent).toContain('Add To Cart');
+    expect(sheet.textContent).not.toContain('$5.00');
   });
 
   it('keeps the final-step action as add to cart even when conditions are not complete', () => {

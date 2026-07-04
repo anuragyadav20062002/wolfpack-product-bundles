@@ -21,6 +21,7 @@ import {
   buildCartLineDisplayProperties,
   buildCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
+import { shouldDisplayClassicFixedBundleRawTotal } from '../shared/summary-pricing-display.js';
 
 export function shouldUseMobileSummarySlotTiles({ designPreset, productSlotsEnabled } = {}) {
   if (productSlotsEnabled !== true) return false;
@@ -47,6 +48,9 @@ _populateCompactMobileSummaryTray(sheet) {
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
+  const displayFinalPrice = shouldDisplayClassicFixedBundleRawTotal(this, combinedDiscountInfo)
+    ? totalPrice
+    : finalPrice;
   const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
   const selectedFooterQuantity = this.getAllSelectedProductsData().reduce(
     (sum, item) => sum + (Number(item.quantity) || 1),
@@ -135,7 +139,7 @@ _populateCompactMobileSummaryTray(sheet) {
   const conditionlessMobile = this.bundleHasNoConditions();
   const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
   const actionButton = this._createMobileSummaryActionButton({
-    finalPrice,
+    finalPrice: displayFinalPrice,
     currencyInfo,
     conditionlessMobile,
     hasSelectionMobile,
