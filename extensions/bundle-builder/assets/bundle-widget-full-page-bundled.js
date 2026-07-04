@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.29
- * Built   : 2026-07-03
+ * Version : 5.0.30
+ * Built   : 2026-07-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.29';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.30';
 (function() {
   'use strict';
 
@@ -6020,9 +6020,19 @@ _createMobileSummaryActionButton({
   priceSpan.className = 'fpb-mobile-summary-action-price';
   priceSpan.textContent = priceText;
   ctaBtn.append(labelSpan, separatorSpan, priceSpan);
-  if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
+  const isClassicPreset = this.getFullPageDesignPreset?.() === 'CLASSIC';
+  const shouldKeepClassicValidationClickable = isClassicPreset && shouldAddToCart && !conditionlessMobile && !isComplete;
+  if (
+    shouldAddToCart
+    && !shouldKeepClassicValidationClickable
+    && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))
+  ) ctaBtn.disabled = true;
   ctaBtn.addEventListener('click', async () => {
     if (shouldAddToCart) {
+      if (!conditionlessMobile && !this.areBundleConditionsMet()) {
+        ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
+        return;
+      }
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;

@@ -387,9 +387,19 @@ _createMobileSummaryActionButton({
   priceSpan.className = 'fpb-mobile-summary-action-price';
   priceSpan.textContent = priceText;
   ctaBtn.append(labelSpan, separatorSpan, priceSpan);
-  if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
+  const isClassicPreset = this.getFullPageDesignPreset?.() === 'CLASSIC';
+  const shouldKeepClassicValidationClickable = isClassicPreset && shouldAddToCart && !conditionlessMobile && !isComplete;
+  if (
+    shouldAddToCart
+    && !shouldKeepClassicValidationClickable
+    && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))
+  ) ctaBtn.disabled = true;
   ctaBtn.addEventListener('click', async () => {
     if (shouldAddToCart) {
+      if (!conditionlessMobile && !this.areBundleConditionsMet()) {
+        ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
+        return;
+      }
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;

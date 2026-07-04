@@ -3,6 +3,8 @@ export {};
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageMobileSummaryMethods } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ToastManager } = require('../../../app/assets/bundle-widget-components.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldUseMobileSummarySlotTiles } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getMobileBottomBarActionState } = require('../../../app/assets/widgets/full-page/methods/responsive-layout-methods.js');
@@ -73,6 +75,9 @@ function createContext() {
     canCheckoutWithBoxSelection: () => true,
     canNavigateToStep: () => false,
     canProceedToNextStep: () => false,
+    areBundleConditionsMet: () => false,
+    getFullPageDesignPreset: () => 'STANDARD',
+    getStepConditionValidationMessage: () => 'Add exactly 2 products on this step',
     addBundleToCart: jest.fn(),
     showBoxSelectionValidationMessage: jest.fn(),
     _emitStorefrontEvent: jest.fn(),
@@ -104,6 +109,40 @@ describe('FPB Standard mobile summary action', () => {
     expect(button.textContent?.includes('Add To Cart')).toBe(true);
     expect(button.textContent?.includes('Next')).toBe(false);
     expect(button.disabled).toBe(true);
+  });
+
+  it('keeps Classic final-step underfilled add-to-cart clickable and validates on press', async () => {
+    const toastSpy = jest.spyOn(ToastManager, 'show').mockImplementation(() => {});
+    const context = {
+      ...createContext(),
+      getFullPageDesignPreset: () => 'CLASSIC',
+      areBundleConditionsMet: jest.fn(() => false),
+      getStepConditionValidationMessage: jest.fn(() => 'Add exactly 2 products on this step'),
+    };
+
+    const button = fullPageMobileSummaryMethods._createMobileSummaryActionButton.call(
+      context,
+      {
+        finalPrice: 829,
+        currencyInfo,
+        conditionlessMobile: false,
+        hasSelectionMobile: false,
+        isLastStep: true,
+        isComplete: false,
+      },
+    );
+
+    expect(button.textContent?.includes('Add To Cart')).toBe(true);
+    expect(button.disabled).toBe(false);
+
+    await button.click();
+
+    expect(context.areBundleConditionsMet).toHaveBeenCalledTimes(1);
+    expect(context.getStepConditionValidationMessage).toHaveBeenCalledTimes(1);
+    expect(toastSpy).toHaveBeenCalledWith('Add exactly 2 products on this step');
+    expect(context.addBundleToCart).not.toHaveBeenCalled();
+
+    toastSpy.mockRestore();
   });
 
   it('uses next for non-final steps without an add-on step', () => {
