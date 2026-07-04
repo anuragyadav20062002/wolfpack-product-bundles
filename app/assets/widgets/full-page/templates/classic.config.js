@@ -28,6 +28,6 @@ export const FPB_CLASSIC_TEMPLATE_CONFIG = {
     placement: ['sidebar', 'mobileTray'],
   },
   timeline: {
-    mode: 'classic',
+    mode: 'standard',
   },
 };

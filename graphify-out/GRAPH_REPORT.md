@@ -1,16 +1,16 @@
 # Graph Report - wolfpack-product-bundles  (2026-07-04)
 
 ## Corpus Check
-- 6773 files · ~4,697,716 words
+- 6773 files · ~4,697,769 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 40256 nodes · 47230 edges · 3855 communities (3267 shown, 588 thin omitted)
+- 40256 nodes · 47230 edges · 3850 communities (3274 shown, 576 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 143 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d2093c15`
+- Built from commit: `e2ea6cd0`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -2946,7 +2946,6 @@
 - [[_COMMUNITY_Community 2932|Community 2932]]
 - [[_COMMUNITY_Community 2933|Community 2933]]
 - [[_COMMUNITY_Community 2934|Community 2934]]
-- [[_COMMUNITY_Community 2935|Community 2935]]
 - [[_COMMUNITY_Community 2936|Community 2936]]
 - [[_COMMUNITY_Community 2937|Community 2937]]
 - [[_COMMUNITY_Community 2938|Community 2938]]
@@ -3147,11 +3146,8 @@
 - [[_COMMUNITY_Community 3138|Community 3138]]
 - [[_COMMUNITY_Community 3139|Community 3139]]
 - [[_COMMUNITY_Community 3140|Community 3140]]
-- [[_COMMUNITY_Community 3141|Community 3141]]
-- [[_COMMUNITY_Community 3144|Community 3144]]
 - [[_COMMUNITY_Community 3145|Community 3145]]
 - [[_COMMUNITY_Community 3146|Community 3146]]
-- [[_COMMUNITY_Community 3148|Community 3148]]
 - [[_COMMUNITY_Community 3149|Community 3149]]
 - [[_COMMUNITY_Community 3150|Community 3150]]
 - [[_COMMUNITY_Community 3151|Community 3151]]
@@ -3167,7 +3163,6 @@
 - [[_COMMUNITY_Community 3165|Community 3165]]
 - [[_COMMUNITY_Community 3166|Community 3166]]
 - [[_COMMUNITY_Community 3167|Community 3167]]
-- [[_COMMUNITY_Community 3168|Community 3168]]
 - [[_COMMUNITY_Community 3170|Community 3170]]
 - [[_COMMUNITY_Community 3171|Community 3171]]
 - [[_COMMUNITY_Community 3172|Community 3172]]
@@ -3177,7 +3172,6 @@
 - [[_COMMUNITY_Community 3178|Community 3178]]
 - [[_COMMUNITY_Community 3179|Community 3179]]
 - [[_COMMUNITY_Community 3180|Community 3180]]
-- [[_COMMUNITY_Community 3182|Community 3182]]
 - [[_COMMUNITY_Community 3184|Community 3184]]
 - [[_COMMUNITY_Community 3185|Community 3185]]
 - [[_COMMUNITY_Community 3186|Community 3186]]
@@ -3843,21 +3837,21 @@
 - 1-file cycle: `extensions/bundle-cart-transform-rs/src/run.rs -> extensions/bundle-cart-transform-rs/src/run.rs`
 - 1-file cycle: `extensions/bundle-discount-function/src/cart_lines_discounts_generate_run.rs -> extensions/bundle-discount-function/src/cart_lines_discounts_generate_run.rs`
 - 2-file cycle: `app/services/cart-transform-service.server.ts -> app/shopify.server.ts -> app/services/cart-transform-service.server.ts`
-- 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/ImagesVisibilitySection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
-- 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureSidebar.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureSidebar.tsx`
-- 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/FreeGiftAddonsSection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
-- 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureCanvasHeader.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureCanvasHeader.tsx`
 - 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/ConfigureRouteModals.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
+- 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/FreeGiftAddonsSection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
+- 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/BundleWidgetSection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
+- 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureCanvasHeader.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureCanvasHeader.tsx`
+- 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureSidebar.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureSidebar.tsx`
 - 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureHiddenInputs.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/ConfigureHiddenInputs.tsx`
 - 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/BundleSettingsSection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
-- 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/BundleWidgetSection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
 - 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/DiscountPricingSection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
+- 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/ImagesVisibilitySection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
 - 3-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/StepSetupSection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
-- 3-file cycle: `app/lib/auth-guards.server.ts -> app/shopify.server.ts -> app/services/theme-colors.server.ts -> app/lib/auth-guards.server.ts`
 - 3-file cycle: `app/lib/auth-guards.server.ts -> app/shopify.server.ts -> app/services/billing.server.ts -> app/lib/auth-guards.server.ts`
+- 3-file cycle: `app/lib/auth-guards.server.ts -> app/shopify.server.ts -> app/services/theme-colors.server.ts -> app/lib/auth-guards.server.ts`
 - 4-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/BundleSettingsSection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/BundleSettingsQuantity.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
-- 4-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/StepSetupSection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/StepSetupConfigCard.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
-- 4-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/ImagesVisibilitySection.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/BundleVisibilityPanel.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
+- 4-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/ConfigureRouteModals.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/ConfigureGlobalOverlays.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
+- 4-file cycle: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/ConfigureRouteModals.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/ConfigurePageSelectionModal.tsx -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureBundleFlow.ts -> app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/configure-flow-statics.ts`
 
 ## Hyperedges (group relationships)
 - **Ad-Ready Phase 1: Bundle Creation Price + Inventory Fix** — handlers_server_ts, service_pricing_calculation, service_inventory_sync, ad_ready_bundle_price_fix, ad_ready_inventory_mgmt [EXTRACTED 1.00]
@@ -3879,7 +3873,7 @@
 - **Analytics Redesign Bundle Revenue Components** — analytics_redesign_bundle_kpi_row, analytics_redesign_bundle_trend_chart, analytics_redesign_bundle_leaderboard, analytics_helpers_ts, route_app_attribution [EXTRACTED 1.00]
 - **Pixel Toggle Service + Action Chain** — analytics_pixel_toggle_getpixelstatus, analytics_pixel_toggle_deactivate, service_pixel_activation, route_app_attribution, shopify_server_ts [EXTRACTED 1.00]
 
-## Communities (3855 total, 588 thin omitted)
+## Communities (3850 total, 576 thin omitted)
 
 ### Community 1 - "Product-Page Bundle Widget (Bundled)"
 Cohesion: 0.01
@@ -3930,7 +3924,7 @@ Nodes (21): { getSelectedProductEntries }, currencyInfo, { PricingCalculator }, 
 
 ### Community 11 - "Bundle Configuration Handlers"
 Cohesion: 0.03
-Nodes (64): Storefront Collections API Route (api.storefront-collections.tsx), Bottom-Sheet Panel DCP CSS Targeting Fix, component-product.server.ts — component_parents Writer, _createBecoBar() — Compact Sticky Bar, _createBecoPanel() — Expanding Product List Panel, createStepTimeline() — FPB Sidebar Tab Renderer, Feature: Custom Polaris Delete Confirmation Modal (Dashboard), Fix: Remove Duplicate Bundle Title Headers (+56 more)
+Nodes (76): Storefront Collections API Route (api.storefront-collections.tsx), File: bundle-full-page-embed.liquid (App Embed Block, target: body), File: bundle-product-page-embed.liquid (App Embed Block, target: body), Bottom-Sheet Panel DCP CSS Targeting Fix, component-product.server.ts — component_parents Writer, _createBecoBar() — Compact Sticky Bar, _createBecoPanel() — Expanding Product List Panel, createStepTimeline() — FPB Sidebar Tab Renderer (+68 more)
 
 ### Community 12 - "App State Hooks"
 Cohesion: 0.04
@@ -4745,8 +4739,8 @@ Cohesion: 0.11
 Nodes (17): Business Requirement: Analytics Page Redesign, Executive Summary, Functional Requirements, In Scope (MVP), Non-Functional Requirements, Option A — Redesign page using existing `OrderAttribution` data only (Recommended MVP), Option B — Add widget event tracking to unlock funnel metrics, Option C — Third-party analytics integration (Amplitude, Segment, etc.) (+9 more)
 
 ### Community 216 - "Community 216"
-Cohesion: 0.06
-Nodes (28): ensureExpiringOfflineSessionInBackground(), loader(), changeAdminI18nLanguage(), isSupportedLocale(), loadAdminLocaleResources(), LocaleCatalog, LocaleLoader, localeLoaders (+20 more)
+Cohesion: 0.07
+Nodes (18): Concept: BundleStatus/BundleType Enums, Connections, Concept: Unlisted Bundle Status, Connections, Connections, Issue: Centralize Constants & Mappings (Phase 2), Connections, Issue: Remove Console Logs from Widget Files (+10 more)
 
 ### Community 217 - "Community 217"
 Cohesion: 0.11
@@ -5047,8 +5041,8 @@ Nodes (47): {
 }, appendBannerImage(), createBundleBannerElement() (+39 more)
 
 ### Community 291 - "Community 291"
-Cohesion: 0.13
-Nodes (12): Analytics Pixel Toggle Architecture, Connections, Connections, deactivateUtmPixel Service Function, Connections, getPixelStatus Service Function, Connections, pixel-activation.server.ts Service (+4 more)
+Cohesion: 0.12
+Nodes (14): Analytics Pixel Toggle Architecture, Connections, app/shopify.server.ts (Shopify Auth & Lifecycle Hooks), Connections, Connections, deactivateUtmPixel Service Function, Connections, getPixelStatus Service Function (+6 more)
 
 ### Community 292 - "Community 292"
 Cohesion: 0.10
@@ -5150,7 +5144,7 @@ Nodes (14): { cogniveTemplateMethods }, { modalSlotTemplateMethods }, ProductPag
 
 ### Community 315 - "Community 315"
 Cohesion: 0.09
-Nodes (33): handleSyncProduct(), addBundleProductPlaceholderMedia(), loadBundleProductMediaNodes(), loadShopName(), ProductSyncOptions, ProductSyncResult, syncGeneratedBundleProductMedia(), updateBundleProductMediaFiles() (+25 more)
+Nodes (34): handleSyncBundle(), handleSyncProduct(), addBundleProductPlaceholderMedia(), loadBundleProductMediaNodes(), loadShopName(), ProductSyncOptions, ProductSyncResult, syncGeneratedBundleProductMedia() (+26 more)
 
 ### Community 316 - "Community 316"
 Cohesion: 0.13
@@ -5333,12 +5327,12 @@ Cohesion: 0.07
 Nodes (13): { shouldAutoAdvanceProductPageStep }, { resolveProductPageCardButtonText }, createSharedProductCard(), FakeClassList, FakeElement, { ProductPageModalMethods }, { ProductPageSelectionMethods }, ProductPageModalMethods (+5 more)
 
 ### Community 361 - "Community 361"
-Cohesion: 0.02
-Nodes (96): action(), action(), loader(), action(), loader(), CORS_HEADERS, CORS_HEADERS, getHealCache() (+88 more)
+Cohesion: 0.03
+Nodes (68): action(), action(), loader(), action(), loader(), CORS_HEADERS, loader(), loader() (+60 more)
 
 ### Community 362 - "Community 362"
-Cohesion: 0.04
-Nodes (32): api.preview.$type.tsx (DCP Storefront Preview Route), Connections, app/lib/dcp-config/base.config.ts (DCP Navigation Config), Connections, Connections, DCP Audit Medium Priority Fixes, Connections, DCP Component: BadgePreviewCard.tsx (+24 more)
+Cohesion: 0.08
+Nodes (16): api.preview.$type.tsx (DCP Storefront Preview Route), Connections, app/lib/dcp-config/base.config.ts (DCP Navigation Config), Connections, Connections, Dashboard Route (route.tsx), Connections, DCP Audit Medium Priority Fixes (+8 more)
 
 ### Community 363 - "Community 363"
 Cohesion: 0.15
@@ -5449,8 +5443,8 @@ Cohesion: 0.15
 Nodes (12): Confirmed This Slice, Controls, Create Guided Tour, Design, EB Bundle Edit Page Findings, EB Edit and Settings Gap Audit 2026-06-04, EB Settings Page Findings, Edit Visibility Modal (+4 more)
 
 ### Community 390 - "Community 390"
-Cohesion: 0.07
-Nodes (22): BundleStep Prisma Model, Connections, Concept: ConditionValidator (Shared Module), Connections, Concept: Step Conditions (Bundle Widget), Connections, condition-validator.js, Connections (+14 more)
+Cohesion: 0.04
+Nodes (36): api.design-settings.$shopDomain.tsx Route, Connections, BundleStep Prisma Model, Connections, Concept: ConditionValidator (Shared Module), Connections, Concept: Default Lottie/SVG Loading Animation, Connections (+28 more)
 
 ### Community 391 - "Community 391"
 Cohesion: 0.10
@@ -5461,16 +5455,16 @@ Cohesion: 0.04
 Nodes (70): Admin Tier Config Architecture Decision Record, Admin Tier Config BR, Admin Tier Config PO Requirements, PricingTiersSection UI Component, Rationale: Option C (tierConfig on Bundle DB + existing API) Selected, Admin Tier Config SDE Implementation Plan, Bundle.tierConfig JSON Field, validateTierConfig Server Function (+62 more)
 
 ### Community 393 - "Community 393"
-Cohesion: 0.06
-Nodes (32): loader(), sanitizeBundleType(), handleSaveBundle(), bool(), int(), jsonObject(), normalizeIndividualSellingPlanSelection(), normalizeSellingPlanSelectionShowFor() (+24 more)
+Cohesion: 0.09
+Nodes (23): loader(), sanitizeBundleType(), bool(), int(), jsonObject(), normalizeIndividualSellingPlanSelection(), normalizeSellingPlanSelectionShowFor(), parseBundleDesignTemplate() (+15 more)
 
 ### Community 394 - "Community 394"
 Cohesion: 0.06
-Nodes (52): Billing / Subscription Service, BroadcastChannel IPC for DCP Preview, Shared Bundle Formatter (bundle-formatter.server.ts), Bundle Configure Handlers (handlers.server.ts), CSS Variables / DCP CSS Variable System, Concept: Design Control Panel (DCP), Concept: Full-Page Bundle Widget (FPB), Free Gift Step in PDP Widget (+44 more)
+Nodes (53): Billing / Subscription Service, BroadcastChannel IPC for DCP Preview, Shared Bundle Formatter (bundle-formatter.server.ts), Bundle Configure Handlers (handlers.server.ts), CSS Variables / DCP CSS Variable System, Concept: Design Control Panel (DCP), Concept: FPB Default Step (isDefault, defaultVariantId), Concept: Full-Page Bundle Widget (FPB) (+45 more)
 
 ### Community 395 - "Community 395"
 Cohesion: 0.01
-Nodes (126): Ad-Ready Bundle Infrastructure Feature Specification, Connections, Ad-Ready Bundles Architecture Decision Record, Connections, Ad-Ready Bundles PO Requirements, Connections, Ad-Ready Bundles SDE Implementation Plan, Connections (+118 more)
+Nodes (134): Ad-Ready Bundle Infrastructure Feature Specification, Connections, Ad-Ready Bundles Architecture Decision Record, Connections, Ad-Ready Bundles PO Requirements, Connections, Ad-Ready Bundles SDE Implementation Plan, Connections (+126 more)
 
 ### Community 396 - "Community 396"
 Cohesion: 0.08
@@ -5597,8 +5591,8 @@ Cohesion: 0.04
 Nodes (48): BundleStep Prisma Model, Concept: ConditionValidator (Shared Module), Concept: Step Conditions (Bundle Widget), condition-validator.js, Test: condition-validator.test.ts, 2026-02-24 11:00 - Starting Investigation, 2026-02-24 12:00 - Bugs Found & Fixed, 2026-02-24 12:30 - Build, Verify & Commit (+40 more)
 
 ### Community 427 - "Community 427"
-Cohesion: 0.10
-Nodes (14): Beco BYOB Expandable Floating Footer — Business Requirement, Connections, Beco BYOB Expandable Floating Footer — PO Requirements, Connections, Compact Sticky Footer Bar (72px height, fixed to bottom of viewport), Connections, Connections, CSS is-open Class Toggle for Footer Expand/Collapse (no inline style manipulation) (+6 more)
+Cohesion: 0.05
+Nodes (34): app/assets/bundle-widget-full-page.js (FPB Widget Source), Connections, Beco BYOB Expandable Floating Footer — Architecture Decision Record, Connections, Beco BYOB Expandable Floating Footer — Business Requirement, Connections, Beco BYOB Expandable Floating Footer — PO Requirements, Connections (+26 more)
 
 ### Community 428 - "Community 428"
 Cohesion: 0.10
@@ -5606,7 +5600,7 @@ Nodes (14): cart-transform-run.test.ts, Connections, cart-transform-service.test
 
 ### Community 429 - "Community 429"
 Cohesion: 0.05
-Nodes (47): action(), BillingPage(), FAQSection(), FAQSectionProps, FeatureComparisonTable(), FeatureComparisonTableProps, FreePlanCard(), FreePlanCardProps (+39 more)
+Nodes (46): action(), BillingPage(), FAQSection(), FAQSectionProps, FeatureComparisonTable(), FeatureComparisonTableProps, FreePlanCard(), FreePlanCardProps (+38 more)
 
 ### Community 430 - "Community 430"
 Cohesion: 0.18
@@ -5649,8 +5643,8 @@ Cohesion: 0.09
 Nodes (18): Document Index, EB | Easy Bundle Builder — Competitor Analysis Index, Key Competitive Highlights, Screenshots, Architectural Notes, Dashboard Home, Dashboard & Navigation, Hero Section (+10 more)
 
 ### Community 440 - "Community 440"
-Cohesion: 0.06
-Nodes (27): action(), headers(), links(), loader(), buildPersonalizationData(), buildPersonalizationDataWithZeroThreshold(), createAdmin, db (+19 more)
+Cohesion: 0.07
+Nodes (26): action(), headers(), links(), loader(), buildPersonalizationData(), buildPersonalizationDataWithZeroThreshold(), createAdmin, db (+18 more)
 
 ### Community 441 - "Community 441"
 Cohesion: 0.18
@@ -5841,8 +5835,8 @@ Cohesion: 0.20
 Nodes (10): Analytics Route /app/attribution, App API Routes Reference, Create Bundle Modal, Dashboard Route /app/dashboard, Design Control Panel Route /app/design-control-panel, FPB Bundle Configure Route, FPB DCP Customization Modal (3-column max overlay), App Navigation Map (+2 more)
 
 ### Community 488 - "Community 488"
-Cohesion: 0.05
-Nodes (38): METAFIELD_KEYS, METAFIELD_NAMESPACE, BundleTextOverrides, BundleUiConfig, BundleUiMessaging, BundleUiPricing, BundleUiPricingRule, BundleUiStep (+30 more)
+Cohesion: 0.04
+Nodes (74): handleSaveBundle(), handleSaveBundle(), asObjectArray(), buildStepCategoryCreateInput(), numberValue(), objectRecord(), stringValue(), ConversionResult (+66 more)
 
 ### Community 489 - "Community 489"
 Cohesion: 0.13
@@ -5888,8 +5882,8 @@ Cohesion: 0.20
 Nodes (9): Checkout, Integrations Hub, Key Observations, Overview, Page Builders, Pre-orders, Pickup & Delivery, Reviews, Subscriptions (+1 more)
 
 ### Community 499 - "Community 499"
-Cohesion: 0.17
-Nodes (15): BundleRevenueSummary, formatCompactCountAxisTick(), formatCompactCurrencyAxisTick(), formatCompactNumber(), EngagementTrendPoint, EngagementPulse(), EngagementPulseProps, formatPctDelta() (+7 more)
+Cohesion: 0.16
+Nodes (16): BundleRevenueSummary, TrendPoint, formatCompactCountAxisTick(), formatCompactCurrencyAxisTick(), formatCompactNumber(), EngagementTrendPoint, EngagementPulse(), EngagementPulseProps (+8 more)
 
 ### Community 500 - "Community 500"
 Cohesion: 0.20
@@ -6192,8 +6186,8 @@ Cohesion: 0.05
 Nodes (41): scripts, build, build-dev, build:sdk, build:widgets, build:widgets:full-page, build:widgets:product-page, bulk-sync (+33 more)
 
 ### Community 575 - "Community 575"
-Cohesion: 0.05
-Nodes (55): { authenticate }, resolveUniqueHandle(), makeAdmin(), ensureCustomPageBundleIdDefinition(), ensurePageBundleIdMetafieldDefinition(), mockAdmin, mockCreateFullPageBundle, mockGetPreviewPageUrl (+47 more)
+Cohesion: 0.04
+Nodes (61): { authenticate }, resolveUniqueHandle(), makeAdmin(), ensureCustomPageBundleIdDefinition(), ensurePageBundleIdMetafieldDefinition(), { AppLogger }, { authenticate }, { ensureShopHasExpiringOfflineSession } (+53 more)
 
 ### Community 576 - "Community 576"
 Cohesion: 0.07
@@ -6204,8 +6198,8 @@ Cohesion: 0.04
 Nodes (48): custom:bundle_config Shopify Page Metafield, data-bundle-config HTML Attribute (Liquid injection for zero-proxy load), FPB Auto Widget Install - Architecture Decision Record, FPB Auto Widget Install - Business Requirement, FPB Auto Widget Install Feature, FPB Auto Widget Install - PO Requirements, FPB Config Metafield Cache - Architecture Decision Record, FPB Config Metafield Cache - Business Requirement (+40 more)
 
 ### Community 578 - "Community 578"
-Cohesion: 0.07
-Nodes (28): File: bundle-full-page-embed.liquid (App Embed Block, target: body), File: bundle-product-page-embed.liquid (App Embed Block, target: body), Bottom-Sheet Product Selection Modal, Component: BundleFooterPreview.tsx (DCP Footer Preview), CSS: Bottom-Sheet Classes (.bw-bs-overlay, .bw-bs-panel, .bw-slot-card), DCP CSS Custom Properties / Variables, Issue: DCP Discount Text & Progress Bar Preview Fix (dcp-discount-progress-fix-1), Default/Compulsory Product Step in PDP Widget (+20 more)
+Cohesion: 0.10
+Nodes (22): Bottom-Sheet Product Selection Modal, Component: BundleFooterPreview.tsx (DCP Footer Preview), CSS: Bottom-Sheet Classes (.bw-bs-overlay, .bw-bs-panel, .bw-slot-card), DCP CSS Custom Properties / Variables, Issue: DCP Discount Text & Progress Bar Preview Fix (dcp-discount-progress-fix-1), Default/Compulsory Product Step in PDP Widget, Floating Footer Prev/Next Navigation Pill, Issue: Free Gift Card CSS Non-Uniform (free-gift-card-css-uniform-1) (+14 more)
 
 ### Community 579 - "Community 579"
 Cohesion: 0.22
@@ -6528,8 +6522,8 @@ Cohesion: 0.13
 Nodes (10): Connections, Full-Page Bundle Unified Flow, Connections, Metafield to Database Migration Plan, Connections, Shopify Page Creation via GraphQL, Connections, Theme Editor Deep Link Generator (+2 more)
 
 ### Community 658 - "Community 658"
-Cohesion: 0.08
-Nodes (38): CartLineDisplayProperties, CartLineMessagingSettings, CartLineMessagingValues, serializeCartLineDisplayProperties(), buildCategoryContract(), CategoryBundleType, CategoryCollectionContract, CategoryConditionContract (+30 more)
+Cohesion: 0.06
+Nodes (49): CartLineDisplayProperties, CartLineMessagingSettings, CartLineMessagingValues, serializeCartLineDisplayProperties(), buildCategoryContract(), CategoryBundleType, CategoryCollectionContract, CategoryConditionContract (+41 more)
 
 ### Community 659 - "Community 659"
 Cohesion: 0.25
@@ -7017,7 +7011,7 @@ Nodes (8): BundlePricing.messages JSON Field, i18n Discount Messaging — Archit
 
 ### Community 780 - "Community 780"
 Cohesion: 0.05
-Nodes (35): Bug: selectedBundleType Defaults to product_page with No UI Toggle (all saves target product_page silently), Connections, Community 13, Connections to other communities, Live Query (requires Dataview plugin), Members, Top bridge nodes, Concept: Shopify App Proxy (30s timeout) (+27 more)
+Nodes (36): app.state.service.ts — Singleton State Service, Connections, Bug: selectedBundleType Defaults to product_page with No UI Toggle (all saves target product_page silently), Connections, Centralized State Service Implementation Issue, Connections, Concept: Shopify App Proxy (30s timeout), Connections (+28 more)
 
 ### Community 781 - "Community 781"
 Cohesion: 0.10
@@ -7040,8 +7034,8 @@ Cohesion: 0.08
 Nodes (18): component-product.server.ts — component_parents Writer, Connections, Connections, createStepTimeline() — FPB Sidebar Tab Renderer, Connections, FPB Widget Bundled JS (bundle-widget-full-page-bundled.js), Connections, FPB Widget JS Source (bundle-widget-full-page.js) (+10 more)
 
 ### Community 786 - "Community 786"
-Cohesion: 0.10
-Nodes (20): API Route: api.bundle.$bundleId.json.tsx, Concept: Pricing Tiers / Tier Pills, 2026-03-17 18:00 - Phases 1–5 Completed, 2026-03-17 18:30 - All Phases Completed, 2026-03-17 18:30 - Phase 6 Completed + All Phases Done, 2026-03-17 - Starting Phase 1, Impact:, Issue: Admin UI Tier Configuration for Full-Page Bundle Widget (+12 more)
+Cohesion: 0.05
+Nodes (37): Add-to-Bundle Button Selected-State Colour DCP Control, API Route: api.bundle.$bundleId.json.tsx, Centralize Constants & Mappings (Phase 1), Concept: Pricing Tiers / Tier Pills, app/constants/bundle.ts (Centralized Bundle Constants), app/constants/errors.ts (Centralized Error Messages), app/constants/metafields.ts (Centralized Metafield Keys), defaultSettings.ts (PRODUCT_PAGE_DEFAULTS / FULL_PAGE_DEFAULTS) (+29 more)
 
 ### Community 787 - "Community 787"
 Cohesion: 0.11
@@ -7433,15 +7427,15 @@ Nodes (11): BxyApplyMode, BxyDiscountType, migrateNestedRule(), parseMessages(),
 
 ### Community 884 - "Community 884"
 Cohesion: 0.04
-Nodes (56): BundleActionsButtons, shouldRenderDashboardActionMenu(), queueDashboardBackgroundTask(), DashboardInitialImagePreload, DashboardMediaState, DashboardMediaStateInput, getDashboardInitialImagePreloads(), getDashboardMediaState() (+48 more)
+Nodes (63): BundleActionsButtons, shouldRenderDashboardActionMenu(), queueDashboardBackgroundTask(), DashboardInitialImagePreload, DashboardMediaState, DashboardMediaStateInput, getDashboardInitialImagePreloads(), getDashboardMediaState() (+55 more)
 
 ### Community 885 - "Community 885"
-Cohesion: 0.06
-Nodes (23): FAQS_AND_TUTORIALS, LATEST_EVENTS, FEATURES, STEP_TITLES, generateThemeEditorLink(), handleOpenThemeEditor(), handleStepAction(), markStepComplete() (+15 more)
+Cohesion: 0.04
+Nodes (34): ensureExpiringOfflineSessionInBackground(), FAQS_AND_TUTORIALS, LATEST_EVENTS, FEATURES, loader(), STEP_TITLES, generateThemeEditorLink(), handleOpenThemeEditor() (+26 more)
 
 ### Community 886 - "Community 886"
-Cohesion: 0.05
-Nodes (40): Concept: CurrencyManager (Widget Module), Concept: Floating Footer (FPB Widget), 2026-04-02 14:00 - Starting fix, 2026-04-02 14:30 - Completed all four fixes, Bug 1: Footer counter shown when no step conditions are configured, Bug 2: Footer counter label says "Products" instead of "Steps", Bug 3: `totalRequired` denominator includes free gift steps, Bug 4: Free gift price renders `$0.00` (hardcoded USD symbol) (+32 more)
+Cohesion: 0.07
+Nodes (26): Concept: CurrencyManager (Widget Module), Concept: Floating Footer (FPB Widget), 2026-04-02 14:00 - Starting fix, 2026-04-02 14:30 - Completed all four fixes, Bug 1: Footer counter shown when no step conditions are configured, Bug 2: Footer counter label says "Products" instead of "Steps", Bug 3: `totalRequired` denominator includes free gift steps, Bug 4: Free gift price renders `$0.00` (hardcoded USD symbol) (+18 more)
 
 ### Community 887 - "Community 887"
 Cohesion: 0.12
@@ -7473,11 +7467,11 @@ Nodes (8): App Proxy 504 / Render Cold-Start Issue, Connections, cached-session-
 
 ### Community 894 - "Community 894"
 Cohesion: 0.01
-Nodes (137): Add-to-Bundle Button Selected Color BR, Connections, Add-to-Bundle Button Selected Color PO Requirements, Connections, Add-to-Bundle Button Selected-State Colour DCP Control, Connections, app/constants/bundle.ts (Centralized Bundle Constants), Connections (+129 more)
+Nodes (147): Add-to-Bundle Button Selected-State Colour DCP Control, Connections, app/constants/bundle.ts (Centralized Bundle Constants), Connections, app/constants/errors.ts (Centralized Error Messages), Connections, app/constants/metafields.ts (Centralized Metafield Keys), Connections (+139 more)
 
 ### Community 895 - "Community 895"
-Cohesion: 0.24
-Nodes (17): buildBundleLeaderboard(), buildBundleTrendSeries(), computeBundleRevenueSummary(), DeltaDirection, formatDelta(), FormattedDelta, getWeekStart(), OrderAttributionRow (+9 more)
+Cohesion: 0.25
+Nodes (16): buildBundleLeaderboard(), buildBundleTrendSeries(), computeBundleRevenueSummary(), DeltaDirection, formatDelta(), FormattedDelta, getWeekStart(), OrderAttributionRow (+8 more)
 
 ### Community 896 - "Community 896"
 Cohesion: 0.29
@@ -7524,8 +7518,8 @@ Cohesion: 0.08
 Nodes (18): Connections, Feature: PromoBannerSettings (DCP CSS Variables), Connections, File: bundle-widget-full-page.js (FPB Widget Source), Connections, Fix: Remove Duplicate Bundle Title Headers, Connections, Fix: Undefined Discount Message (getNextDiscountRule nested structure) (+10 more)
 
 ### Community 906 - "Community 906"
-Cohesion: 0.04
-Nodes (55): bundle-modal-component.js, Design Settings CSS API Endpoint, DesignSettings Prisma Model, Font Inheritance from Store Theme, Full-Page Bundle Widget Design Gap Analysis, Full-Page Bundle Implementation Plan 2026, getProductImages() Helper, 2026-01-28 23:45 - Started Issue Tracking (+47 more)
+Cohesion: 0.09
+Nodes (21): 2026-01-28 23:45 - Started Issue Tracking, 2026-01-29 00:30 - All Phases Complete, 2026-01-29 01:15 - Additional Bug Fixes, Build Output, Completed (Verification Only), Files to Modify, Integration Testing, Issue: Full-Page Bundle Widget Enhancements (+13 more)
 
 ### Community 907 - "Community 907"
 Cohesion: 0.06
@@ -7533,7 +7527,7 @@ Nodes (24): API Endpoints Reference, Connections, Bug: Pub/Sub Topic Name Mismat
 
 ### Community 908 - "Community 908"
 Cohesion: 0.02
-Nodes (104): api.storefront-products Route, bundle-full-page.liquid Block, Per-Bundle Images & GIFs, --bundle-promo-banner-bg-image CSS Variable, Source: bundle-widget-components.js, bundle-widget-full-page.css, bundle-widget-full-page.js Widget Source, Concept: Full-Page Bundle (FPB) (+96 more)
+Nodes (112): api.storefront-products Route, Beco BYOB Design Alignment — FPB Widget, BundleFooterPreview.tsx, bundle-full-page.liquid Block, Source: bundle-widget-components.js, bundle-widget-full-page.css, bundle-widget-full-page.js Widget Source, Card Dimming State (Step Full) (+104 more)
 
 ### Community 909 - "Community 909"
 Cohesion: 0.07
@@ -7565,11 +7559,11 @@ Nodes (8): Concept: Webhook Worker (HTTP server on Render), Connections, Connect
 
 ### Community 916 - "Community 916"
 Cohesion: 0.03
-Nodes (53): app.billing.tsx Route, Connections, app.pricing.tsx Route, Connections, Billing returnUrl Embedded App Pattern, Connections, Community 19, Connections to other communities (+45 more)
+Nodes (51): app.billing.tsx Route, Connections, app.pricing.tsx Route, Connections, Billing returnUrl Embedded App Pattern, Connections, Community 19, Connections to other communities (+43 more)
 
 ### Community 917 - "Community 917"
-Cohesion: 0.04
-Nodes (59): Add-to-Bundle Button Selected Color Architecture, Add-to-Bundle Button Selected-State Colour DCP Control, CSS Variable --bundle-button-added-bg, CSS Variable --bundle-button-added-text, buttonAddedBgColor / buttonAddedTextColor Prisma Fields, Add-to-Bundle Button Selected Color SDE Plan, api.design-settings.$shopDomain.tsx Route, Beco BYOB Design Alignment — FPB Widget (+51 more)
+Cohesion: 0.03
+Nodes (78): Add-to-Bundle Button Selected Color Architecture, CSS Variable --bundle-button-added-bg, CSS Variable --bundle-button-added-text, buttonAddedBgColor / buttonAddedTextColor Prisma Fields, Add-to-Bundle Button Selected Color SDE Plan, api.design-settings.$shopDomain.tsx Route, Bottom-Sheet CSS Variable Output Fix in CSS Generator, --bundle-drawer-bg CSS Variable (+70 more)
 
 ### Community 918 - "Community 918"
 Cohesion: 0.02
@@ -7592,8 +7586,8 @@ Cohesion: 0.18
 Nodes (11): api.install-pdp-widget Route, BundleProductModal — Variant Selection UI Component, expandProductsByVariant(), Fix Variant Selection Modal & PDP State Cards Issue, freeGiftBadgeUrl DCP Setting, Free Gift Step Support, PDP Bundle Redesign, PDP State Cards — One Card Per Selected Product (+3 more)
 
 ### Community 923 - "Community 923"
-Cohesion: 0.02
-Nodes (119): bundle-cart-transform-ts Extension (cart_transform_run.ts), Connections, Bundle.fullPageLayout Prisma Field, Connections, Bundle JSON API Endpoint (/api/bundle/:id.json), Connections, Bundle.shopifyPreviewPageId/Handle Fields, Connections (+111 more)
+Cohesion: 0.01
+Nodes (137): bundle-cart-transform-ts Extension (cart_transform_run.ts), Connections, Bundle.fullPageLayout Prisma Field, Connections, Bundle JSON API Endpoint (/api/bundle/:id.json), Connections, Bundle.shopifyPreviewPageId/Handle Fields, Connections (+129 more)
 
 ### Community 924 - "Community 924"
 Cohesion: 0.20
@@ -7612,8 +7606,8 @@ Cohesion: 0.08
 Nodes (21): app/lib/auth-guards.server.ts — Centralized Auth Helper Functions, Connections, app/routes/api/api.webhooks.pubsub.tsx (unprotected, needs requireInternalSecret), Connections, Community 31, Connections to other communities, Live Query (requires Dataview plugin), Members (+13 more)
 
 ### Community 928 - "Community 928"
-Cohesion: 0.22
-Nodes (8): Concept: FPB Default Step (isDefault, defaultVariantId), 2026-04-09 16:30 - Phase 1 Completed, 2026-04-09 17:00 - All Phases Completed, Issue: FPB Default Product Selection — Grid, Footer & Tab UX, Overview, Phases Checklist, Progress Log, Root Cause (confirmed via Chrome DevTools)
+Cohesion: 0.10
+Nodes (14): Bundle Prisma Model, Connections, BundleAnalytics Preservation During Sync, Connections, Connections, handleSyncBundle Handler Function, Connections, Sync Bundle (Hard Reset) — Architecture ADR (+6 more)
 
 ### Community 929 - "Community 929"
 Cohesion: 0.11
@@ -7628,8 +7622,8 @@ Cohesion: 0.06
 Nodes (32): appendBundleWidgetSection() Helper, Connections, Connections, Create Bundle Modal, Connections, ensureBundlePageTemplate() Function (Full-Page), Connections, ensureProductBundleTemplate() Function (+24 more)
 
 ### Community 932 - "Community 932"
-Cohesion: 0.12
-Nodes (12): app/assets/bundle-widget-full-page.js (FPB Widget Source), Connections, Beco BYOB Expandable Floating Footer — Architecture Decision Record, Connections, Beco BYOB Expandable Floating Footer — SDE Implementation Plan, Connections, --bundle-promo-banner-bg-image CSS Variable Applied via Widget JS, Connections (+4 more)
+Cohesion: 0.16
+Nodes (4): fn, mergeServerTimingHeaders(), ServerTiming, ServerTimingEntry
 
 ### Community 933 - "Community 933"
 Cohesion: 0.17
@@ -8184,8 +8178,8 @@ Cohesion: 0.19
 Nodes (16): minifyCSS(), resolveCssImports(), minifyJS(), readQuoted(), removeJSBlockComments(), removeJSSingleLineComments(), stripLineComment(), fmtBytes() (+8 more)
 
 ### Community 1072 - "Community 1072"
-Cohesion: 0.22
-Nodes (6): app/shopify.server.ts (Shopify Auth & Lifecycle Hooks), Connections, Connections, Web Pixel Disconnected Fix, Connections, wolfpack-utm-pixel Extension (Web Pixel)
+Cohesion: 0.33
+Nodes (4): Connections, Web Pixel Disconnected Fix, Connections, wolfpack-utm-pixel Extension (Web Pixel)
 
 ### Community 1073 - "Community 1073"
 Cohesion: 0.10
@@ -8214,16 +8208,16 @@ Cohesion: 0.07
 Nodes (29): 1. Create Test File, 1. Metafield Namespace Mismatch, 2. Add to Test Runner, 2. Invalid Product ID Format, 3. Add npm Script, 3. Discount Calculation Error, 4. Bundle Structure Validation, Adding New Tests (+21 more)
 
 ### Community 1079 - "Community 1079"
-Cohesion: 0.17
-Nodes (8): api.bundle.$bundleId.json Route, Connections, BundleStatus.UNLISTED, Connections, Connections, Issue: Promo Banner API Fields Missing from Bundle JSON Endpoint, Connections, Unlisted Bundle API Fix
+Cohesion: 0.11
+Nodes (12): api.bundle.$bundleId.json Route, Connections, BundleStatus.UNLISTED, Connections, Connections, FPB Widget Bundle API 404 on Storefront Issue, Connections, Issue: Promo Banner API Fields Missing from Bundle JSON Endpoint (+4 more)
 
 ### Community 1080 - "Community 1080"
 Cohesion: 0.14
 Nodes (12): FunctionRunResult, String, HashMap, merge_attributes(), messaging_merge_input(), test_merge_applies_free_gift_component_attributes(), test_merge_buy_x_get_y_component_parent(), test_merge_buy_x_get_y_mixed_prices_uses_exact_parent_totals() (+4 more)
 
 ### Community 1081 - "Community 1081"
-Cohesion: 0.07
-Nodes (11): mockAdmin, mockRecordFirstBundlePreviewEvent, mockSession, MOCK_SESSION, ProductRecord, SESSION, ThemeTemplateService, defaultRouteFamily() (+3 more)
+Cohesion: 0.13
+Nodes (10): Beco-Style Pricing Tier Selection for FPB Widget, Connections, Connections, data-tier-config Attribute, Connections, initTierPills(), Connections, parseTierConfig() (+2 more)
 
 ### Community 1082 - "Community 1082"
 Cohesion: 0.17
@@ -8251,7 +8245,7 @@ Nodes (4): Checkout UI Extension, Prerequisites, Useful Links, Your new Extensio
 
 ### Community 1088 - "Community 1088"
 Cohesion: 0.12
-Nodes (12): app.design-control-panel.tsx (DCP Route), Connections, app.state.service.ts — Singleton State Service, Connections, Centralized State Service Implementation Issue, Connections, Connections, DCP Preview — Option 3 App-Served Preview Page (+4 more)
+Nodes (12): app.design-control-panel.tsx (DCP Route), Connections, Concept: Custom CSS Sanitization (XSS Prevention), Connections, Connections, DCP Preview — Option 3 App-Served Preview Page, Connections, DCP Preview Option 3 — App-Served Same-Origin Preview (+4 more)
 
 ### Community 1089 - "Community 1089"
 Cohesion: 0.40
@@ -8334,8 +8328,8 @@ Cohesion: 0.07
 Nodes (28): **1. `discount-validation-test.js`**, **1. Enhanced Discount Calculation Logging**, **2. Fixed Qualification Validation**, **2. `percentage-off-amount-debug.js`**, **3. Improved Condition Data Calculation**, **3. `live-debug-test.js`**, **4. Enhanced Variable Creation**, **5. Comprehensive Cart Data Validation** (+20 more)
 
 ### Community 1116 - "Community 1116"
-Cohesion: 0.06
-Nodes (34): npm run build:widgets Command, Bundle Auto Re-sync — Requirements & Discussion Notes, Core Use Case, Mental Model: Version-Gated Lazy Migration, Open Questions (to resolve before building), Proposed Data Model Changes, Proposed Infrastructure, Role of `shop.metafields.app.lastSync` (+26 more)
+Cohesion: 0.05
+Nodes (44): npm run build:widgets Command, Bundle Auto Re-sync — Requirements & Discussion Notes, Core Use Case, Mental Model: Version-Gated Lazy Migration, Open Questions (to resolve before building), Proposed Data Model Changes, Proposed Infrastructure, Role of `shop.metafields.app.lastSync` (+36 more)
 
 ### Community 1117 - "Community 1117"
 Cohesion: 0.18
@@ -8866,7 +8860,7 @@ Cohesion: 0.33
 Nodes (3): Community 1092, Live Query (requires Dataview plugin), Members
 
 ### Community 1249 - "Community 1249"
-Cohesion: 0.50
+Cohesion: 0.33
 Nodes (3): Community 1093, Live Query (requires Dataview plugin), Members
 
 ### Community 1250 - "Community 1250"
@@ -8874,7 +8868,7 @@ Cohesion: 0.33
 Nodes (3): Community 1094, Live Query (requires Dataview plugin), Members
 
 ### Community 1251 - "Community 1251"
-Cohesion: 0.33
+Cohesion: 0.50
 Nodes (3): Community 1095, Live Query (requires Dataview plugin), Members
 
 ### Community 1252 - "Community 1252"
@@ -9177,6 +9171,10 @@ Nodes (18): Community 1162, Live Query (requires Dataview plugin), Members, Comm
 Cohesion: 0.20
 Nodes (26): CartLinesDiscountsGenerateRunResult, Decimal, Input, Option, Result, String, Vec, ProductDiscountCandidate (+18 more)
 
+### Community 1327 - "Community 1327"
+Cohesion: 0.12
+Nodes (8): CORS_HEADERS, getHealCache(), HealCache, loader(), AdminApiContext, CartTransformActivationResult, CartTransformMetafieldSyncResult, CartTransformService
+
 ### Community 1328 - "Community 1328"
 Cohesion: 0.50
 Nodes (3): Community 1165, Live Query (requires Dataview plugin), Members
@@ -9238,7 +9236,7 @@ Cohesion: 0.33
 Nodes (3): Community 1178, Live Query (requires Dataview plugin), Members
 
 ### Community 1343 - "Community 1343"
-Cohesion: 0.50
+Cohesion: 0.33
 Nodes (3): Community 1179, Live Query (requires Dataview plugin), Members
 
 ### Community 1344 - "Community 1344"
@@ -9270,7 +9268,7 @@ Cohesion: 0.33
 Nodes (3): Community 1185, Live Query (requires Dataview plugin), Members
 
 ### Community 1351 - "Community 1351"
-Cohesion: 0.33
+Cohesion: 0.50
 Nodes (3): Community 1186, Live Query (requires Dataview plugin), Members
 
 ### Community 1352 - "Community 1352"
@@ -9306,7 +9304,7 @@ Cohesion: 0.50
 Nodes (3): Community 1193, Live Query (requires Dataview plugin), Members
 
 ### Community 1360 - "Community 1360"
-Cohesion: 0.50
+Cohesion: 0.33
 Nodes (3): Community 1194, Live Query (requires Dataview plugin), Members
 
 ### Community 1361 - "Community 1361"
@@ -9326,7 +9324,7 @@ Cohesion: 0.33
 Nodes (3): Community 1198, Live Query (requires Dataview plugin), Members
 
 ### Community 1365 - "Community 1365"
-Cohesion: 0.33
+Cohesion: 0.50
 Nodes (3): Community 1199, Live Query (requires Dataview plugin), Members
 
 ### Community 1366 - "Community 1366"
@@ -10502,8 +10500,8 @@ Cohesion: 0.33
 Nodes (3): Community 1465, Live Query (requires Dataview plugin), Members
 
 ### Community 1659 - "Community 1659"
-Cohesion: 0.11
-Nodes (20): Shopify afterAuth Hook (shopify.server.ts), BundleAnalytics Preservation During Sync, Bundle Prisma Model, GET /api/design-settings/{shopDomain} CSS Endpoint, Free Plan Feature Gating, generateCSSFromSettings() CSS Generator Function, 6 Global Color Anchors (globalPrimaryButton, globalButtonText, etc.), handleSyncBundle Handler Function (+12 more)
+Cohesion: 0.12
+Nodes (18): Shopify afterAuth Hook (shopify.server.ts), BundleAnalytics Preservation During Sync, GET /api/design-settings/{shopDomain} CSS Endpoint, Free Plan Feature Gating, generateCSSFromSettings() CSS Generator Function, 6 Global Color Anchors (globalPrimaryButton, globalButtonText, etc.), handleSyncBundle Handler Function, read_themes Shopify API Scope (+10 more)
 
 ### Community 1661 - "Community 1661"
 Cohesion: 0.33
@@ -10542,8 +10540,8 @@ Cohesion: 0.33
 Nodes (3): Community 1475, Live Query (requires Dataview plugin), Members
 
 ### Community 1670 - "Community 1670"
-Cohesion: 0.05
-Nodes (28): bundle-widget.css / bundle-widget-full-page.css, Connections, Connections, Discount Percentage Pill on Add to Cart Button, Connections, Floating Footer for Product-Page Bundle Widget, Connections, Full-Page Widget Bug Fixes (+20 more)
+Cohesion: 0.14
+Nodes (13): 2026-02-27 14:00 - Starting audit and fixes, 2026-02-27 15:00 - All fixes implemented, Critical Fixes, Files in Scope, Files Modified, Hardcoded Placeholder URLs, Issue: Widget Asset Files — Bug Fixes & Simplification, Other (+5 more)
 
 ### Community 1671 - "Community 1671"
 Cohesion: 0.33
@@ -10578,7 +10576,7 @@ Cohesion: 0.23
 Nodes (11): CachedPrice, cacheStats, calculateBundlePrice(), calculateBundleTotalPrice(), cleanExpiredCache(), clearPriceCache(), getCachedPrice(), getPriceCacheStats() (+3 more)
 
 ### Community 1679 - "Community 1679"
-Cohesion: 0.29
+Cohesion: 0.33
 Nodes (3): Community 1484, Live Query (requires Dataview plugin), Members
 
 ### Community 1680 - "Community 1680"
@@ -10906,8 +10904,8 @@ Cohesion: 0.22
 Nodes (9): bundleConfigureSlice, defaultBundleConfigureState, pricing, step, BundleConfigurationState, BundleStep, Collection, ConditionRule (+1 more)
 
 ### Community 1763 - "Community 1763"
-Cohesion: 0.07
-Nodes (25): $app Namespace Reserved Prefix, Connections, BundleIsolationService (bundle-isolation.server.ts), Connections, Community 21, Connections to other communities, Live Query (requires Dataview plugin), Members (+17 more)
+Cohesion: 0.09
+Nodes (20): $app Namespace Reserved Prefix, Connections, BundleIsolationService (bundle-isolation.server.ts), Connections, component_reference Metafield (list.variant_reference), Connections, Connections, Legacy Metafield Cleanup (+12 more)
 
 ### Community 1764 - "Community 1764"
 Cohesion: 0.33
@@ -12022,8 +12020,8 @@ Cohesion: 0.50
 Nodes (3): Community 304, Live Query (requires Dataview plugin), Members
 
 ### Community 2042 - "Community 2042"
-Cohesion: 0.20
-Nodes (6): App State Hooks, Live Query (requires Dataview plugin), Members, Community 305, Live Query (requires Dataview plugin), Members
+Cohesion: 0.33
+Nodes (3): Community 305, Live Query (requires Dataview plugin), Members
 
 ### Community 2043 - "Community 2043"
 Cohesion: 0.33
@@ -12046,8 +12044,8 @@ Cohesion: 0.33
 Nodes (3): Community 310, Live Query (requires Dataview plugin), Members
 
 ### Community 2048 - "Community 2048"
-Cohesion: 0.33
-Nodes (3): Community 311, Live Query (requires Dataview plugin), Members
+Cohesion: 0.20
+Nodes (6): App State Hooks, Live Query (requires Dataview plugin), Members, Community 311, Live Query (requires Dataview plugin), Members
 
 ### Community 2049 - "Community 2049"
 Cohesion: 0.33
@@ -13058,8 +13056,8 @@ Cohesion: 0.33
 Nodes (3): Community 540, Live Query (requires Dataview plugin), Members
 
 ### Community 2301 - "Community 2301"
-Cohesion: 0.20
-Nodes (6): Community 541, Live Query (requires Dataview plugin), Members, Full-Page Bundle Widget (Source), Live Query (requires Dataview plugin), Members
+Cohesion: 0.33
+Nodes (3): Community 541, Live Query (requires Dataview plugin), Members
 
 ### Community 2302 - "Community 2302"
 Cohesion: 0.33
@@ -13154,8 +13152,8 @@ Cohesion: 0.33
 Nodes (3): Community 562, Live Query (requires Dataview plugin), Members
 
 ### Community 2325 - "Community 2325"
-Cohesion: 0.33
-Nodes (3): Community 563, Live Query (requires Dataview plugin), Members
+Cohesion: 0.20
+Nodes (6): Community 563, Live Query (requires Dataview plugin), Members, Full-Page Bundle Widget (Source), Live Query (requires Dataview plugin), Members
 
 ### Community 2326 - "Community 2326"
 Cohesion: 0.50
@@ -13806,7 +13804,7 @@ Cohesion: 0.22
 Nodes (7): Analytics Pixel Toggle Feature Issue, Connections, Community 71, Live Query (requires Dataview plugin), Members, Connections, PixelStatusCard UI Component — UTM Pixel Toggle
 
 ### Community 2488 - "Community 2488"
-Cohesion: 0.50
+Cohesion: 0.33
 Nodes (3): Community 710, Live Query (requires Dataview plugin), Members
 
 ### Community 2489 - "Community 2489"
@@ -13822,7 +13820,7 @@ Cohesion: 0.33
 Nodes (3): Community 713, Live Query (requires Dataview plugin), Members
 
 ### Community 2492 - "Community 2492"
-Cohesion: 0.33
+Cohesion: 0.50
 Nodes (3): Community 714, Live Query (requires Dataview plugin), Members
 
 ### Community 2493 - "Community 2493"
@@ -14050,8 +14048,8 @@ Cohesion: 0.33
 Nodes (3): Community 765, Live Query (requires Dataview plugin), Members
 
 ### Community 2549 - "Community 2549"
-Cohesion: 0.11
-Nodes (12): app._index.tsx Welcome Landing Screen, Connections, Connections, FPB Widget Bundle API 404 on Storefront Issue, Connections, Login Screen Fix 2 — Token Exchange Auth Flow Issue, Connections, Restore Landing Screen + Update Onboarding Page Issue (+4 more)
+Cohesion: 0.17
+Nodes (8): app._index.tsx Welcome Landing Screen, Connections, Connections, Login Screen Fix 2 — Token Exchange Auth Flow Issue, Connections, Restore Landing Screen + Update Onboarding Page Issue, Connections, unstable_newEmbeddedAuthStrategy Token-Based Auth Pattern
 
 ### Community 2550 - "Community 2550"
 Cohesion: 0.33
@@ -15074,8 +15072,8 @@ Cohesion: 0.33
 Nodes (3): Community 999, Live Query (requires Dataview plugin), Members
 
 ### Community 2806 - "Community 2806"
-Cohesion: 0.33
-Nodes (4): Connections, Currency Handling Implementation v108, Connections, Dynamic Currency Symbol (replacing hardcoded Rs.)
+Cohesion: 0.22
+Nodes (6): Connections, Currency Handling Implementation v108, Connections, Dynamic Currency Symbol (replacing hardcoded Rs.), Connections, Multi-Currency Implementation v110
 
 ### Community 2807 - "Community 2807"
 Cohesion: 0.33
@@ -15094,8 +15092,8 @@ Cohesion: 0.33
 Nodes (3): Community 1483, Live Query (requires Dataview plugin), Members
 
 ### Community 2811 - "Community 2811"
-Cohesion: 0.06
-Nodes (50): handler, calculateBundleInventory(), calculateMinInventory(), ComponentInventory, setInventoryLevel(), syncBundleInventory(), SyncResult, SubscriptionStatus (+42 more)
+Cohesion: 0.04
+Nodes (73): handler, action(), categorizeWidgetError(), CORS_HEADERS, sanitizeOptionalString(), sanitizeShopDomain(), sanitizeWidgetMessage(), handleSyncBundle() (+65 more)
 
 ### Community 2812 - "Community 2812"
 Cohesion: 0.33
@@ -15194,8 +15192,8 @@ Cohesion: 0.16
 Nodes (12): FunnelSnapshot, FunnelHero(), FunnelHeroProps, ActivityEvent, LiveActivityFeed(), LiveActivityFeedProps, TopCampaigns(), TopCampaignsProps (+4 more)
 
 ### Community 2837 - "Community 2837"
-Cohesion: 0.17
-Nodes (11): 2026-02-22 12:00 - Completed Full Removal, 2026-02-22 - Starting Complete Removal, Issue: Remove showProgressBar Dead Code, Overview, Phases Checklist, Previous Commits (from discount-messaging-templates-fix-1), Progress Log, Progress Log (+3 more)
+Cohesion: 0.33
+Nodes (4): collectRouteSourceFiles(), FPB_CONFIGURE_ROUTE_DIR, readFpbConfigureRouteFamilySource(), routeSource
 
 ### Community 2838 - "Community 2838"
 Cohesion: 0.18
@@ -15342,8 +15340,8 @@ Cohesion: 0.33
 Nodes (5): Acceptance Criteria, DashboardMediaState, Purpose, Test Cases, Test Spec: Dashboard Media Deferral
 
 ### Community 2875 - "Community 2875"
-Cohesion: 0.28
-Nodes (4): buildProductsQuery(), CORS_HEADERS, loader(), mockFetch
+Cohesion: 0.22
+Nodes (6): Add Bundle to Cart Button, Connections, Connections, showLoadingOverlay() Method, Connections, Step Transition Loading State
 
 ### Community 2876 - "Community 2876"
 Cohesion: 0.17
@@ -15386,8 +15384,8 @@ Cohesion: 0.25
 Nodes (8): 4.1.1 Discover Installed Sales Channels, 4.1.2 Extend Publication Logic, 4.1 Multi-Channel Publication, 4.2.1 Add `unlisted` to BundleStatus Enum, 4.2.2 Campaign Bundle Creation Flow, 4.2.3 QA Requirement, 4.2 Campaign Bundles (UNLISTED Status), 4. Phase 2: Multi-Channel Publication + Campaign Bundles
 
 ### Community 2886 - "Community 2886"
-Cohesion: 0.25
-Nodes (7): 12. Template Variable Replacement, 14. Product Data Structure, 1. Bundle Widget Purpose, Available Variables:, Complete Bundle Widget Analysis, Core Functionality Overview, Product Object:
+Cohesion: 0.18
+Nodes (10): 12. Template Variable Replacement, 14. Product Data Structure, 1. Bundle Widget Purpose, 4. Cart Transform Integration, Available Variables:, Bundle Instance ID Generation:, Cart Properties Added:, Complete Bundle Widget Analysis (+2 more)
 
 ### Community 2887 - "Community 2887"
 Cohesion: 0.25
@@ -15414,8 +15412,8 @@ Cohesion: 0.33
 Nodes (5): Acceptance Criteria, CartTransformListRouteRemoval, Purpose, Test Cases, Test Spec: Cart Transform List Route Removal
 
 ### Community 2895 - "Community 2895"
-Cohesion: 0.03
-Nodes (51): 6 Global Color Anchors (globalPrimaryButton, globalButtonText, etc.), Connections, Bundle Prisma Model, Connections, BundleAnalytics Preservation During Sync, Connections, Community 8, Connections to other communities (+43 more)
+Cohesion: 0.05
+Nodes (37): 6 Global Color Anchors (globalPrimaryButton, globalButtonText, etc.), Connections, Community 8, Connections to other communities, Live Query (requires Dataview plugin), Members, Top bridge nodes, Connections (+29 more)
 
 ### Community 2896 - "Community 2896"
 Cohesion: 0.22
@@ -15455,7 +15453,7 @@ Nodes (4): ConfigureModalKey, ConfigureRouteState, configureRouteStateSlice, def
 
 ### Community 2905 - "Community 2905"
 Cohesion: 0.01
-Nodes (141): api.store-files.tsx Resource Route, Connections, Beco BYOB Design Alignment — FPB Widget, Connections, --bundle-drawer-bg CSS Variable, Connections, --bundle-promo-banner-bg-image CSS Variable, Connections (+133 more)
+Nodes (143): api.store-files.tsx Resource Route, Connections, Beco BYOB Design Alignment — FPB Widget, Connections, --bundle-drawer-bg CSS Variable, Connections, bundle-modal-component.js, Connections (+135 more)
 
 ### Community 2906 - "Community 2906"
 Cohesion: 0.29
@@ -15573,10 +15571,6 @@ Nodes (6): Connections, ensureBundleMetafieldDefinitions (deprecated), Connectio
 Cohesion: 0.25
 Nodes (8): Layer 1: Storefront bootstrap, Layer 2: Normalized bundle config, Layer 3: Context adapters, Layer 4: Renderer registry, Layer 5: Feature modules, Layer 6: Design template system, Principle, Recommended Wolfpack Target Architecture
 
-### Community 2935 - "Community 2935"
-Cohesion: 0.26
-Nodes (4): Cart Bundle ID Property Fix (_wolfpack_bundle_id → _bundle_id), Connections, Connections, Discount Qualification Validation (alreadyQualified flag)
-
 ### Community 2936 - "Community 2936"
 Cohesion: 0.29
 Nodes (7): Phase 8 / Gap 1 Resolution — Multi-step FPB Cart Add Payload (RESOLVED), Phase 8 / Gap 3 Resolution — FPB Storefront Config Runtime Shape (RESOLVED), Phase 8 / Gap 4 Resolution — PPB COGNIVE Live DOM (RESOLVED), Phase 8 / Gap 5 Resolution — PPB MODAL and SIMPLIFIED Live DOM (RESOLVED), Phase 8 / Gap 6 Partial Resolution — `useSingleStepCategoriesAsBundleSteps` (PARTIALLY RESOLVED), Phase 8 / Gap 7 Resolution — FPB `productsData2` Storefront Shape (RESOLVED), Phase 8 — Gap Resolution Session (2026-05-23)
@@ -15610,8 +15604,8 @@ Cohesion: 0.50
 Nodes (3): "public"."Bundle", "public"."BundleStep", "public"."Subscription"
 
 ### Community 2945 - "Community 2945"
-Cohesion: 0.25
-Nodes (6): Concept: Custom CSS Sanitization (XSS Prevention), Connections, Connections, Issue: Custom CSS Textarea Feature, Connections, Source: app/lib/css-sanitizer.ts
+Cohesion: 0.22
+Nodes (6): BUNDLE_SYNC_VERSION Environment Variable (triggers bundle re-sync when bumped), Connections, Connections, syncedAtVersion Field on Bundle Model (tracks last synced code version), Connections, Version-Gated Lazy Migration Pattern (syncedAtVersion vs BUNDLE_SYNC_VERSION)
 
 ### Community 2948 - "Community 2948"
 Cohesion: 0.22
@@ -15626,7 +15620,7 @@ Cohesion: 0.22
 Nodes (6): Connections, DCP Preview — Inject Storefront Theme Fonts, Connections, fetchThemeFontAssets() Helper — Storefront Font Extraction, Connections, Preview API Route (app/routes/api/api.preview.$type.tsx)
 
 ### Community 2951 - "Community 2951"
-Cohesion: 0.39
+Cohesion: 0.38
 Nodes (5): loader(), requireAppProxy(), getDb(), mockFindMany(), mockRequireAppProxy
 
 ### Community 2952 - "Community 2952"
@@ -15667,7 +15661,7 @@ Nodes (6): 1. Bundle Creation Flow, 2. Customer Purchase Flow, 3. Subscription B
 
 ### Community 2967 - "Community 2967"
 Cohesion: 0.02
-Nodes (77): app.upload-store-file.tsx Action Route, Connections, bundle-product-page.liquid Block, Connections, Cache-Busting for Widget API + Page Layout UI Fix, Connections, Community 17, Connections to other communities (+69 more)
+Nodes (77): app.upload-store-file.tsx Action Route, Connections, AppLogger (Structured Logger Utility), Connections, bundle-product-page.liquid Block, Connections, Cache-Busting for Widget API + Page Layout UI Fix, Connections (+69 more)
 
 ### Community 2968 - "Community 2968"
 Cohesion: 0.33
@@ -15823,15 +15817,15 @@ Nodes (5): 3. Bundle Visibility Page (Full Detail), App Embed Status section, Pu
 
 ### Community 3059 - "Community 3059"
 Cohesion: 0.04
-Nodes (118): loader(), sanitizeBundleType(), action(), action(), prismaClientOptions, handleSaveBundle(), asObjectArray(), buildStepCategoryCreateInput() (+110 more)
+Nodes (87): loader(), sanitizeBundleType(), loader(), sanitizeBundleType(), action(), action(), BundleWithPreview, prismaClientOptions (+79 more)
 
 ### Community 3061 - "Community 3061"
 Cohesion: 0.33
 Nodes (5): Acceptance Criteria, FullPageRuntimeCartSettingsMethods, Purpose, Test Cases, Test Spec: FPB Template Stylesheet Switch
 
 ### Community 3062 - "Community 3062"
-Cohesion: 0.04
-Nodes (36): Concept: BundleStatus/BundleType Enums, Connections, Concept: Unlisted Bundle Status, Connections, Connections, Handler: app.design-control-panel/handlers.server.ts, Connections, Handler: FPB configure handlers.server.ts (+28 more)
+Cohesion: 0.05
+Nodes (26): bundle-formatter.server.ts (formatBundleForWidget), Connections, Connections, custom:bundle_config Shopify Page Metafield, Connections, FPB Config Metafield Cache - Architecture Decision Record, Connections, Handler: app.design-control-panel/handlers.server.ts (+18 more)
 
 ### Community 3063 - "Community 3063"
 Cohesion: 0.40
@@ -15881,6 +15875,10 @@ Nodes (3): Building the function, Dependencies, Shopify Function development wit
 Cohesion: 0.12
 Nodes (12): bundleParentVariantId (Critical Field for MERGE), Connections, Cart Transform 10KB Metafield Query Limit, Connections, Cart Transform Optimization - InstructionCountLimitExceededError (2025-10-06), Connections, Connections, InstructionCountLimitExceededError Fix (Oct 2025) (+4 more)
 
+### Community 3078 - "Community 3078"
+Cohesion: 0.29
+Nodes (7): January 22, 2026 16:00 - Issue Created, January 22, 2026 16:15 - Phase 1: Category Tabs as Pill Buttons, January 22, 2026 16:30 - Phase 2: Inline Quantity Selectors on Cards, January 22, 2026 16:45 - Phase 3: Footer Redesign, January 22, 2026 16:55 - Phase 4: Promotional Banner, January 22, 2026 17:00 - Phase 5: Build & Test, Progress Log
+
 ### Community 3080 - "Community 3080"
 Cohesion: 0.17
 Nodes (8): Cart Transform Debug & Fix Implementation Summary, Connections, Connections, Service: metafield-validation.server.ts, Connections, Shop Metafield: $app:all_bundles, Connections, Shop Metafield Optimization (87% size reduction)
@@ -15910,8 +15908,8 @@ Cohesion: 0.13
 Nodes (13): loader(), action(), mockActivate, mockAuthenticate, mockDeactivate, mockGetPixelStatus, mockRequireAdminSession, activateUtmPixel() (+5 more)
 
 ### Community 3089 - "Community 3089"
-Cohesion: 0.40
-Nodes (5): Connections to other communities, Full-Page Modal (Bundled), Live Query (requires Dataview plugin), Members, Top bridge nodes
+Cohesion: 0.50
+Nodes (3): loader(), NO_STORE_HEADERS, mockDb
 
 ### Community 3090 - "Community 3090"
 Cohesion: 0.33
@@ -15933,6 +15931,10 @@ Nodes (5): Acceptance Criteria, Purpose, Runtime Prefixes, Test Cases, Test Spec
 Cohesion: 0.33
 Nodes (5): Acceptance Criteria, FullPageTitleHiding, Purpose, Test Cases, Test Spec: FPB Loading Page Title
 
+### Community 3095 - "Community 3095"
+Cohesion: 0.40
+Nodes (5): Community 13, Connections to other communities, Live Query (requires Dataview plugin), Members, Top bridge nodes
+
 ### Community 3096 - "Community 3096"
 Cohesion: 0.33
 Nodes (4): BundlePricing Prisma Model, Connections, Connections, Unused Database Columns Analysis
@@ -15942,12 +15944,20 @@ Cohesion: 0.67
 Nodes (3): 7. Bundle Selection Priority, Cart Transform Bundles:, Discount Function Bundles:
 
 ### Community 3098 - "Community 3098"
-Cohesion: 0.18
-Nodes (8): Complete Multi-Currency Implementation v111, Connections, Connections, Currency Detection Priority (Shopify Markets → cookie → URL → localStorage → fallback), Connections, Dual Currency System (calculation vs display), Connections, Multi-Currency Implementation v110
+Cohesion: 0.33
+Nodes (4): Complete Multi-Currency Implementation v111, Connections, Connections, Currency Detection Priority (Shopify Markets → cookie → URL → localStorage → fallback)
 
-### Community 3101 - "Community 3101"
-Cohesion: 0.67
-Nodes (3): 4. Cart Transform Integration, Bundle Instance ID Generation:, Cart Properties Added:
+### Community 3099 - "Community 3099"
+Cohesion: 0.40
+Nodes (5): Community 21, Connections to other communities, Live Query (requires Dataview plugin), Members, Top bridge nodes
+
+### Community 3100 - "Community 3100"
+Cohesion: 0.18
+Nodes (8): Analytics Custom Date Range Architecture, Connections, analytics-helpers.ts, Connections, buildBundleTrendSeries Function (until param), Connections, Connections, DateRangeSelector Polaris Component
+
+### Community 3102 - "Community 3102"
+Cohesion: 0.33
+Nodes (4): Connections, Dual Currency System (calculation vs display), Connections, Progress Bar Display Fix
 
 ### Community 3104 - "Community 3104"
 Cohesion: 0.33
@@ -15960,6 +15970,10 @@ Nodes (3): 8. Error Handling & Fallbacks, Debug Information:, Graceful Degradati
 ### Community 3107 - "Community 3107"
 Cohesion: 0.40
 Nodes (5): Community 14, Connections to other communities, Live Query (requires Dataview plugin), Members, Top bridge nodes
+
+### Community 3108 - "Community 3108"
+Cohesion: 0.33
+Nodes (4): analytics-helpers.ts Pure Functions, Connections, Connections, Rationale: Option A (In-Memory Aggregation) Selected for Analytics
 
 ### Community 3109 - "Community 3109"
 Cohesion: 0.40
@@ -15975,19 +15989,23 @@ Nodes (5): Community 12, Connections to other communities, Live Query (requires 
 
 ### Community 3113 - "Community 3113"
 Cohesion: 0.01
-Nodes (214): api.design-settings.$shopDomain.css.tsx (CSS API Generator), Connections, api.design-settings.$shopDomain.tsx Route, Connections, api.storefront-products Route, Connections, app/assets/widgets/shared/ — Shared Widget Component Modules, Connections (+206 more)
+Nodes (182): api.design-settings.$shopDomain.css.tsx (CSS API Generator), Connections, api.storefront-products Route, Connections, app/assets/widgets/shared/ — Shared Widget Component Modules, Connections, bundle-full-page.liquid Block, Connections (+174 more)
 
 ### Community 3115 - "Community 3115"
 Cohesion: 0.33
 Nodes (4): Connections, Feature: FPB Auto-Advance to Next Step on Condition Met (400ms delay), Connections, Issue: FPB Widget UX Improvements (fpb-widget-ux-1)
 
+### Community 3116 - "Community 3116"
+Cohesion: 0.33
+Nodes (4): app.attribution.tsx Route, Connections, Connections, Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle
+
 ### Community 3118 - "Community 3118"
-Cohesion: 0.04
-Nodes (44): Add Bundle to Cart Button, Connections, Bundle Auto Re-sync — Requirements & Discussion Notes, Connections, BUNDLE_SYNC_VERSION Environment Variable (triggers bundle re-sync when bumped), Connections, bundle_ui_config Metafield, Connections (+36 more)
+Cohesion: 0.08
+Nodes (18): Bundle Auto Re-sync — Requirements & Discussion Notes, Connections, bundle_ui_config Metafield, Connections, BundleUiConfig Types (metafield-sync/types.ts), Connections, Connections, Cron Endpoint POST /api/cron/sync-bundles (shared secret auth) (+10 more)
 
 ### Community 3120 - "Community 3120"
-Cohesion: 0.22
-Nodes (6): Backend Fix: Map discountOn to conditionType in Cart Transform Config, Connections, Connections, Multiple Field Names Problem (discountValue vs percentageOff etc.), Connections, Pricing Rules Standardization Plan
+Cohesion: 0.33
+Nodes (4): Connections, Multiple Field Names Problem (discountValue vs percentageOff etc.), Connections, Pricing Rules Standardization Plan
 
 ### Community 3121 - "Community 3121"
 Cohesion: 0.40
@@ -15996,6 +16014,10 @@ Nodes (5): Community 22, Connections to other communities, Live Query (requires 
 ### Community 3122 - "Community 3122"
 Cohesion: 0.40
 Nodes (5): Community 9, Connections to other communities, Live Query (requires Dataview plugin), Members, Top bridge nodes
+
+### Community 3123 - "Community 3123"
+Cohesion: 0.08
+Nodes (16): .bundle-loading-overlay CSS Component, Connections, Connections, Full-Page Bundle Widget (FPB), Connections, hideLoadingOverlay() Method, Connections, Loading GIF Overlay Feature (+8 more)
 
 ### Community 3128 - "Community 3128"
 Cohesion: 0.33
@@ -16013,13 +16035,9 @@ Nodes (4): Phase 7: Backward Compatibility & Rollback (Week 4), Step 7.1: Featur
 Cohesion: 0.40
 Nodes (5): Community 3, Connections to other communities, Live Query (requires Dataview plugin), Members, Top bridge nodes
 
-### Community 3133 - "Community 3133"
-Cohesion: 0.33
-Nodes (4): Admin Form Discount Implementation, Connections, Comprehensive Discount Fix Summary, Connections
-
 ### Community 3134 - "Community 3134"
-Cohesion: 0.03
-Nodes (65): Cart Transform Extension (WASM), DCP Modal Bugs & Dead Code Cleanup, DCP Storefront Iframe Preview — Sub-Plan 1 Infrastructure, DCP Preview — Option 3 App-Served Preview Page, DCP Preview Option 3 — App-Served Same-Origin Preview, DCP Mobile Preview Toggle - Architecture Decision Record, DCP Mobile Preview Toggle - Business Requirement, DCP Mobile Preview Toggle Feature (+57 more)
+Cohesion: 0.05
+Nodes (53): bundle-modal-component.js, Cart Transform Extension (WASM), DCP Mobile Preview Toggle - Business Requirement, DCP Mobile Preview Toggle Feature, DCP Mobile Preview Toggle - PO Requirements, DCP Mobile Preview Toggle - SDE Implementation, DCP Phase 1 Additions - Architecture Decision Record, DCP Phase 1 Additions - Business Requirement (+45 more)
 
 ### Community 3135 - "Community 3135"
 Cohesion: 0.33
@@ -16030,8 +16048,8 @@ Cohesion: 0.40
 Nodes (5): Community 23, Connections to other communities, Live Query (requires Dataview plugin), Members, Top bridge nodes
 
 ### Community 3151 - "Community 3151"
-Cohesion: 0.19
-Nodes (6): buildBundleTrendSeries Function (until param), Connections, BundleKpiRow Component, Connections, Connections, Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle
+Cohesion: 0.15
+Nodes (10): Analytics Page Redesign Architecture, Connections, BundleKpiRow Component, Connections, BundleLeaderboardCard Component, Connections, BundleTrendChart Component, Connections (+2 more)
 
 ### Community 3161 - "Community 3161"
 Cohesion: 0.11
@@ -16047,7 +16065,7 @@ Nodes (4): Connections, Rationale: WIDGET_VERSION Bump for CDN Cache Busting, Co
 
 ### Community 3180 - "Community 3180"
 Cohesion: 0.02
-Nodes (93): bundle-checkout-ui Extension (Checkout UI), Connections, bundle-checkout-ui shopify.extension.toml, Connections, _bundle_components Cart Line Attribute, Connections, bundle-product.server.ts (Metafield Sync Operations), Connections (+85 more)
+Nodes (101): bundle-checkout-ui Extension (Checkout UI), Connections, bundle-checkout-ui shopify.extension.toml, Connections, _bundle_components Cart Line Attribute, Connections, bundle-product.server.ts (Metafield Sync Operations), Connections (+93 more)
 
 ### Community 3185 - "Community 3185"
 Cohesion: 0.33
@@ -16058,8 +16076,8 @@ Cohesion: 0.07
 Nodes (20): Connections, Documentation Hub README, Connections, Free Plan (3 bundles max), Connections, Google Cloud Pub/Sub Setup Guide, Connections, Grow Plan (20 bundles, $9.99/month) (+12 more)
 
 ### Community 3213 - "Community 3213"
-Cohesion: 0.33
-Nodes (3): Community 1467, Live Query (requires Dataview plugin), Members
+Cohesion: 0.17
+Nodes (8): Community 1467, Live Query (requires Dataview plugin), Members, Connections to other communities, Full-Page Modal (Bundled), Live Query (requires Dataview plugin), Members, Top bridge nodes
 
 ### Community 3296 - "Community 3296"
 Cohesion: 0.13
@@ -16394,7 +16412,7 @@ Cohesion: 0.40
 Nodes (5): Acceptance criteria, Breakpoint guard, Goal, Loop 11: Cross-Template Regression Matrix, Required matrix
 
 ### Community 6060 - "Community 6060"
-Cohesion: 0.40
+Cohesion: 0.50
 Nodes (4): Acceptance Criteria, Actions, Goal, Loop 0: Discovery And Ownership Map
 
 ### Community 6061 - "Community 6061"
@@ -16574,7 +16592,7 @@ Cohesion: 0.50
 Nodes (4): Acceptance Criteria, Actions, Goal, Loop 1: EB Mobile Reference Capture
 
 ### Community 6138 - "Community 6138"
-Cohesion: 0.50
+Cohesion: 0.40
 Nodes (4): Acceptance Criteria, Actions, Goal, Loop 2: WPB Baseline Capture
 
 ### Community 6139 - "Community 6139"
@@ -16756,7 +16774,7 @@ Nodes (5): code, detectedSources, getGraphifyPythonFromUvTool(), getUvToolDir(),
 ## Knowledge Gaps
 - **22121 isolated node(s):** `CLEAR_CART_CONFIRMATION_COPY`, `CLOSE_ICON`, `DELETE_ICON`, `DEFAULT_CART_LINE_LABELS`, `AccordionItemProps` (+22116 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **588 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **576 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -16765,7 +16783,7 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.004) - this node is a cross-community bridge._
 - **Why does `_getStepRequiredQuantity()` connect `Community 2982` to `Community 488`, `Community 182`?**
   _High betweenness centrality (0.004) - this node is a cross-community bridge._
-- **Why does `bundle-widget-full-page.js Widget Source` connect `Community 908` to `Community 391`, `Community 392`, `Community 904`, `Community 906`, `Community 394`, `Bundle Configuration Handlers`, `Community 910`, `Community 911`, `Community 2958`, `Community 913`, `Community 786`, `Community 3090`, `Community 783`, `Community 917`, `Community 922`, `Community 928`, `Community 426`, `Community 45`, `Community 2993`, `Community 62`, `Community 2878`, `Community 577`, `Community 1103`, `Community 1116`, `Community 98`, `Community 2921`, `Community 886`, `Community 1399`, `Community 1659`, `Community 2814`?**
+- **Why does `bundle-widget-full-page.js Widget Source` connect `Community 908` to `Community 1670`, `Community 391`, `Community 392`, `Community 904`, `Community 394`, `Bundle Configuration Handlers`, `Community 906`, `Community 910`, `Community 911`, `Community 2958`, `Community 913`, `Community 786`, `Community 3090`, `Community 783`, `Community 922`, `Community 426`, `Community 45`, `Community 2993`, `Community 62`, `Community 3134`, `Community 2878`, `Community 577`, `Community 1103`, `Community 1116`, `Community 98`, `Community 2921`, `Community 886`, `Community 1399`, `Community 2814`?**
   _High betweenness centrality (0.004) - this node is a cross-community bridge._
 - **What connects `CLEAR_CART_CONFIRMATION_COPY`, `CLOSE_ICON`, `DELETE_ICON` to the rest of the system?**
   _22121 weakly-connected nodes found - possible documentation gaps or missing edges._

@@ -2,6 +2,7 @@
 @import "./classic/desktop-products.css";
 @import "./classic/desktop-sidebar.css";
 @import "./classic/mobile.css";
+@import "./standard-step-timeline.css";
 
 @media (min-width: 769px) {
   .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-layout-wrapper {
