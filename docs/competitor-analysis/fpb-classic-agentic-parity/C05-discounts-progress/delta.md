@@ -27,6 +27,8 @@ EB Classic fixed-bundle-price evidence keeps the same visible Bundle Quantity Op
 - EB fixed-price Admin save: `eb-c05-fixed-price-discount-update-20260704.network-request`, `eb-c05-fixed-price-discount-update-20260704.network-response`
 - EB fixed-price selected state: `eb-c05-fixed-price-desktop-after-two-20260704.png`, `eb-c05-fixed-price-desktop-after-two-runtime-20260704.json`, `eb-c05-fixed-price-mobile-after-two-collapsed-20260704.png`, `eb-c05-fixed-price-mobile-after-two-runtime-20260704.json`
 - EB fixed-price cart proof: `eb-c05-fixed-price-cart-add-478-20260704.network-request`, `eb-c05-fixed-price-cart-graphql-after-477-20260704.network-request`, `eb-c05-fixed-price-checkout-runtime-cart-20260704.json`
+- EB BXY Admin save: `eb-admin-c05-bxy-saved-snapshot-20260704.txt`, `eb-c05-bxy-discount-update-20260704.network-request`, `eb-c05-bxy-discount-update-20260704.network-response`, `eb-c05-bxy-steps-update-20260704.network-request`, `eb-c05-bxy-steps-update-20260704.network-response`
+- EB BXY storefront proof: `eb-c05-bxy-main-runtime-20260704.json`, `eb-c05-bxy-storefront-runtime-after-save-20260704.json`
 - WPB Admin re-save: `wpb-admin-c05-post-fix-resave-20260704.request.network-request`, `wpb-admin-c05-post-fix-resave-20260704.response.network-response`
 - WPB desktop proof: `wpb-c05-post-save-desktop-20260704.png`, `wpb-c05-post-save-desktop-a11y-20260704.txt`, `wpb-c05-post-save-desktop-runtime-20260704.json`
 - WPB mobile collapsed proof: `wpb-c05-post-save-mobile-collapsed-20260704.png`, `wpb-c05-post-save-mobile-collapsed-a11y-20260704.txt`, `wpb-c05-post-save-mobile-collapsed-runtime-20260704.json`
@@ -50,10 +52,12 @@ EB Classic fixed-bundle-price evidence keeps the same visible Bundle Quantity Op
 - Live WPB `5.0.35` proof serves root `CLASSIC`; `/cart/add.js` carries `_bundle_step_type: "fixed_price_display_only"` and no `youSave`, `cart-bundle-details` carries only `Box`/`Items`, and `/cart.js` records parent `total_price: 144800`, `_bundle_total_price_cents: "144800"`, `_bundle_total_savings_cents: "0"`, and no discount allocations.
 - Fresh cache-bypassed structure proof records `window.__BUNDLE_WIDGET_VERSION__ === "5.0.35"`, embedded preset `CLASSIC`, active root `CLASSIC`, no captured `STANDARD` preset sample, only base + Classic full-page stylesheets active, a `447px` Classic sidebar, four product-grid columns, and shared summary content with Classic Box/slot differences. Evidence: `/private/tmp/fpb-classic-agentic-parity/C05-discounts-progress/wpb-current-structure-preset-sequence-20260704.json`.
 - EB Admin progress-on setup remains fixture-gated through the UI: current Discount & Pricing state shows Bundle Quantity Options checked and Progress Bar disabled. Keyboard focus reached the BQO switch wrapper, but Space and Enter left it checked, and direct click on the inner checkbox did not become interactive. Evidence: `eb-admin-c05-structure-progress-attempt-snapshot-20260704.txt`, `eb-admin-c05-focus-before-bqo-space-20260704.txt`, and the live DevTools interaction log.
+- EB BXY Admin save is now confirmed for the current Classic fixture: Discount Type `Buy X, get Y` posts `discountMode: "BOGO"` through `/api/discount/updateFixedBundle`, with rule `{ type: "quantity", value: "2", getsQuantity: "1", discountType: "percentage", discountValue: "100", applyDiscountTo: "lowest_priced" }`. The same save hides Bundle Quantity Options, leaves Progress Bar and Discount Messaging disabled, and renders the EB BXY info banner that messaging uses buy-plus-get total quantity.
+- EB BXY storefront success/cart proof remains fixture-gated: the current Classic bundle auto-advances from product step to add-on step after two selected products, so the available storefront proof shows add-on eligibility messaging and the raw two-product total, not the three-product BXY success state.
 
 ## Remaining Gaps
 
-- Buy-X-get-Y.
+- Buy-X-get-Y selected-product success/cart proof on an EB fixture that allows three qualifying product selections before add-on auto-next.
 - Multiple/highest-eligible discount conflicts.
 - EB progress-bar-on storefront behavior, gated on EB Admin exposing a UI-reconfigurable fixture or explicit approval for a backend shortcut.
 - Cart-line savings proof for fixed-amount rules.

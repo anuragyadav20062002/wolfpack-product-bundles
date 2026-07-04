@@ -581,7 +581,7 @@ The display-option and rule-field observations below were rechecked in the live 
 - `"Fixed Amount Off"` → `discountMode: "FIXED_AMOUNT"`
 - `"Percentage Off"` → `discountMode: "PERCENTAGE"`
 - `"Fixed Bundle Price"` → `discountMode: "FIXED_BUNDLE_PRICE"`
-- `"Buy X, get Y"` → `discountMode: "BXY_OFFER"` (inferred; not confirmed from API payload)
+- `"Buy X, get Y"` → `discountMode: "BOGO"` (confirmed from current FPB Classic save payload on 2026-07-04)
 
 **Rule fields for Percentage Off / Fixed Amount Off:**
 
@@ -599,17 +599,27 @@ The display-option and rule-field observations below were rechecked in the live 
 | `rule.value` | "Number of Products in Bundle" | Product-count condition |
 | `rule.discountValue` | "Price" | Currency-prefixed price input |
 
-**Rule fields for Buy X, Get Y (`discountMode: "BXY_OFFER"`):**
+**Rule fields for Buy X, Get Y (`discountMode: "BOGO"`):**
 
 | Field | UI Label | Default | Notes |
 |---|---|---|---|
-| `customerBuys` | "Minimum quantity of items" | 2 | Condition threshold — total items needed in cart |
-| `customerGets` | "Quantity" | 1 | Items receiving the discount |
-| `discountValue` | "Discount value" | 100 | Numeric value |
-| `discountType` | "Discount type" | `"% off"` | `"% off"` or `"₹ off"` |
-| `applyDiscountTo` | "Apply Discount to" | `"The lowest priced items"` | `"The lowest priced items"` or `"The latest added items"` |
+| `rule.value` | "Minimum quantity of items" | 2 | Customer-buys quantity |
+| `rule.getsQuantity` | "Quantity" | 1 | Customer-gets / discounted item count |
+| `rule.discountValue` | "Discount value" | 100 | Numeric value |
+| `rule.discountType` | "Discount type" | `"percentage"` | UI shows `"% off"` or `"₹ off"` |
+| `rule.applyDiscountTo` | "Apply Discount to" | `"lowest_priced"` | UI shows `"The lowest priced items"` or `"The latest added items"` |
 
 UI note: "Customer must add the quantity of items specified above to their cart" appears as help text under Customer gets.
+
+2026-07-04 FPB Classic save payload note: EB posts BXY through
+`/api/discount/updateFixedBundle` with top-level `discountMode: "BOGO"` and
+`rules: [{ type: "quantity", value: "2", getsQuantity: "1", discountType:
+"percentage", discountValue: "100", applyDiscountTo: "lowest_priced",
+discountCodePrefix: "EasyBundle" }]`. The same payload carried
+`isDiscountProgressBarEnabled: false`, `isShowDiscountsEnabled: false`, and a
+disabled `discountProgressBar` rule auto-labeled `Add 3` / `1 Product(s) @ 100%
+off`. The top-level `type` was `"amount"` in this save, so consumers should use
+the rule object for the BXY threshold semantics.
 
 **BXY rule note:** The Discount Messaging section shows a banner: "Discount messaging displays the Total Quantity to Claim Offer (Buy + Get) to ensure customers add their rewards to the cart" — meaning `{{discountConditionDiff}}` is based on Buy + Get total. The banner remains rendered when Discount Messaging is switched off.
 

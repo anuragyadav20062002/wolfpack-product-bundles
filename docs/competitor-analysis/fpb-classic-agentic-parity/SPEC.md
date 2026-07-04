@@ -307,6 +307,8 @@ Acceptance:
 
 2026-07-04 progress-on setup attempt: EB Admin still exposes Bundle Quantity Options as checked and Progress Bar as disabled in the current fixed-amount quantity fixture. Chrome DevTools MCP keyboard focus reached the BQO switch wrapper, but Space and Enter did not clear it; direct click on the inner checkbox timed out as non-interactive. EB visible progress-bar-on behavior remains gated on an EB UI path that can expose Progress Bar enabled, or explicit user approval for a backend shortcut.
 
+2026-07-04 BXY setup proof: EB Admin successfully saved `Buy X, get Y` for the current Classic fixture through the visible Discount Type combobox and Save bar. The save payload posts `discountMode: "BOGO"` with rule `{ type: "quantity", value: "2", getsQuantity: "1", discountType: "percentage", discountValue: "100", applyDiscountTo: "lowest_priced" }`, hides Bundle Quantity Options, and leaves Progress Bar / Discount Messaging disabled. The current storefront fixture auto-advances to the add-on step after two selected products, so BXY selected-product success and cart proof remain gated on a fixture that allows three qualifying product selections before add-on auto-next.
+
 ### C06 Addons Free Gift
 
 | Field | Value |
