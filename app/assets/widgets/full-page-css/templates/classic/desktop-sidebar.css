@@ -188,10 +188,15 @@
   }
 
   .fpb-preset-classic .classic-sidebar-slots {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
+    display: inline-grid;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--classic-sidebar-slot-size, 5rem);
+    grid-template-columns: none;
+    gap: var(--classic-sidebar-slot-gap, 0.625rem);
+    width: max-content;
+    max-width: 100%;
     margin: 10px 0 34px;
+    --classic-sidebar-slot-size: 5rem;
     --bw-selected-slot-padding: 0;
     --bw-selected-slot-radius: var(--bundle-side-panel-btn-radius, 5px);
     --bw-selected-slot-empty-min-height: auto;
@@ -201,6 +206,8 @@
   .fpb-preset-classic .classic-sidebar-slots .bw-selected-slot,
   .fpb-preset-classic .classic-sidebar-slot {
     position: relative;
+    width: var(--classic-sidebar-slot-size, 5rem);
+    height: var(--classic-sidebar-slot-size, 5rem);
     aspect-ratio: 1 / 1;
     border-radius: var(--bundle-side-panel-btn-radius, 5px);
     display: grid;

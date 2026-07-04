@@ -2,26 +2,34 @@
 
 ## Status
 
-`in-progress-runtime-fixture-gap`
+`wpb-mobile-slot-card-proofed-desktop-css-proofed-validation-fixture-gated`
 
 The EB C04 fixture was configured through the visible Admin UI and captured on
-desktop and mobile. A fresh WPB hard-reload probe on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.20"`
-still shows that the live WPB proxy payload for `cmr361mz50000v00yrdeyxpf7` reports:
+desktop and mobile. A current WPB storefront probe on
+`window.__BUNDLE_WIDGET_VERSION__ === "5.0.32"` shows that the live WPB proxy
+payload for `cmr361mz50000v00yrdeyxpf7` reports:
 
 - `bundleDesignTemplate: "FBP_SIDE_FOOTER"`
 - `bundleDesignPresetId: "CLASSIC"`
-- `productSlotsEnabled: false`
+- `productSlotsEnabled: true`
 - `productSlotIconUrl: null`
-- `boxSelection: null`
+- `boxSelection.rules[0].boxLabel: "Box of 2"`
+- `boxSelection.rules[0].boxSubtext: "$5 off"`
+- `boxSelection.rules[0].boxQuantity: 2`
+- `boxSelection.validateBoxSelectionQuantity: false`
 
 Fresh proof:
 
-- `wpb-live-c04-slot-payload-probe-5020.json`
+- `reconfigure-check-bundle-api-20260704.json`
+- `wpb-c04-5032-current-mobile-expanded-runtime-20260704.json`
+- `admin-auth-stuck-20260704.json`
 
-This means the storefront template proof is valid for Classic rendering and
-Classic sidebar slot CSS, but C04 cannot be marked complete as a product-slot
-runtime parity row until the fixture persists product slots/box selection in
-the storefront payload.
+This means the storefront template proof is valid for Classic rendering and slot
+CSS, but C04 cannot be marked complete as a full validation row. The active
+bundle still carries the later C07 three-category fixture, and the visible
+Shopify Admin path could not be used to restore the one-category C04 fixture in
+this pass because the app iframe stayed on `/auth/session-token` after the
+dev-tunnel restart. No DB shortcut was used.
 
 Evidence is stored under `/private/tmp/fpb-classic-agentic-parity/C04-slots-box-validation/`.
 
@@ -40,6 +48,10 @@ Evidence is stored under `/private/tmp/fpb-classic-agentic-parity/C04-slots-box-
 - `wpb-mobile-collapsed-empty.png`, `wpb-mobile-expanded-empty.png`, `wpb-mobile-expanded-empty-runtime.json`: WPB mobile tray proof at `390x844x2,mobile,touch`.
 - `wpb-mobile-config-product-slots-runtime.json`: live WPB proxy/runtime config proof for the fixture gap.
 - `wpb-cart-clear-proof.json`: WPB cart cleared after contaminated add-to-cart proof.
+- `eb-c04-current-desktop-runtime-20260704.json` and `eb-c04-current-desktop-20260704.png`: fresh EB desktop proof showing `FBP_SIDE_FOOTER + CLASSIC`, `Box of 2`, `₹5 off`, `validateBoxSelectionQuantity: false`, a `170 x 90` slot rail, and two `80 x 80` slots with no visible custom empty-slot icon/background.
+- `reconfigure-check-bundle-api-20260704.json`: current WPB dev-tunnel proxy proof showing `FBP_SIDE_FOOTER + CLASSIC`, Product Slots enabled, `Box of 2`, `$5 off`, `validateBoxSelectionQuantity: false`, and the later C07 category set.
+- `wpb-c04-5032-current-mobile-expanded-runtime-20260704.json` and `wpb-c04-5032-current-mobile-expanded-20260704.png`: current WPB mobile-width proof showing root `CLASSIC`, one filled `65 x 60` slot with a `65 x 80` image, one `65 x 60` dashed empty slot, and active `Box of 2` / `$5 off`.
+- `admin-auth-stuck-20260704.json`: Shopify Admin proof that the dev-tunnel iframe remained on `/auth/session-token` and did not reach the configure form.
 
 ## EB Facts Read Before Implementation
 
@@ -79,11 +91,14 @@ Source fix:
 - Filled slots hide shared row copy and render thumbnail-only with the remove affordance over the thumbnail.
 - Empty slots render the plus fallback or merchant `productSlotIconUrl` icon with Classic square/dashed treatment.
 - `WIDGET_VERSION` bumped to `5.0.19`.
+- Follow-up `5.0.32` narrows the Classic desktop sidebar rail to EB's current
+  two-slot geometry: `inline-grid`, 5rem slot tracks, 0.625rem gap, explicit
+  5rem slot width/height, and no broad/shared selector changes.
 
 ## Current Deltas
 
-- EB and WPB both allowed selecting three products in this fixture after the second-stage/checkout state, despite the row's planned `Box of 2` over-max block expectation.
-- WPB desktop Classic slot visuals now match the actual shared slot DOM: empty slots are 90.75px square dashed tiles and filled slots are thumbnail-only with visual copy hidden and a 22px remove affordance.
-- WPB mobile footer uses the separate compact mobile tray. Because the live payload still has `productSlotsEnabled: false`, the tray renders skeleton rows instead of product-slot rows. This is fixture/runtime state, not a Classic CSS selector issue.
-- WPB add-to-cart proof was contaminated by a pre-existing cart line (`beforeItemCount: 1`); the cart was cleared after capture. Re-capture clean cart proof after the fixture payload is corrected.
-- The current Admin/business-logic flow is intentionally locked for this storefront loop, so no storefront-only implementation can fabricate missing product-slot or box-selection config. C04 remains open until a live fixture exposes the saved settings in the storefront payload.
+- EB and WPB both emit `validateBoxSelectionQuantity: false` in the current storefront payloads, so the planned under-min/exact-max/over-max blocking expectation remains unproved by this fixture.
+- Current EB desktop evidence shows two `80 x 80` Classic slots in a `170 x 90` rail. WPB `5.0.32` source and generated Classic CSS now use a 5rem Classic-only desktop sidebar rail. Fresh desktop browser proof is still pending because the available Chrome DevTools MCP viewport stayed below the desktop breakpoint in this pass.
+- Current WPB mobile-width proof shows the Classic slot tray rendering the same mobile slot geometry previously matched to EB: a `65 x 60` filled slot with a `65 x 80` image and a `65 x 60` dashed empty slot.
+- The active WPB fixture still has the C07 category set. The Admin iframe blocker prevents restoring the one-category C04 fixture through the approved UI path in this pass.
+- The current Admin/business-logic flow is intentionally locked for this storefront loop, so no storefront-only implementation can fabricate missing validation behavior. C04 remains open until live Admin reconfiguration and validation proof are available.
