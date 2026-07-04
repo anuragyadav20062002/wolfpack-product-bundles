@@ -346,7 +346,7 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | source-proofed-unavailable-variant-filter-gap |
+| Status | source-proofed-oos-inventory-fixture-gated |
 | EB config | Classic manual, collection-backed, mixed-source, visible OOS, blocked OOS, and inventory tracking at add-to-cart |
 | WPB config | Dev-tunnel Classic storefront fixture reconfigured through Admin UI only: manual category, collection-backed category, mixed manual plus collection category, add-ons disabled, Step 1 exact quantity 2 |
 | Matrix coverage | Manual products, collection-backed category, mixed manual plus collection, out of stock visible, out of stock blocked, track inventory on add-to-cart, collection hydration |
