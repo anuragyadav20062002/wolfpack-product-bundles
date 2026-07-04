@@ -295,6 +295,8 @@ Acceptance:
 - Desktop sidebar and mobile tray show the same discount state as EB.
 - Cart proof records whether savings are native discount allocations, cart properties, or display-only state.
 
+2026-07-04 recheck: fresh cache-cleared EB proof at the available Chrome DevTools MCP viewport (`500 x 725`) still shows `Box of 2` / `₹5 off`, the step timeline progress bar, and `gbbDiscountComponent` hidden with `display: none`; evidence: `eb-c05-current-runtime-20260704.json`, `eb-c05-current-20260704.png`, and `eb-c05-current-a11y-20260704.txt`. Fresh WPB proof on `window.__BUNDLE_WIDGET_VERSION__ === "5.0.32"` still serves `FBP_SIDE_FOOTER + CLASSIC`, but its current saved fixture has Progress Bar and Discount Messaging enabled, so the mobile Classic footer shows `Add 2 product(s) to save $5!` plus the green stepped progress track; evidence: `wpb-c05-current-runtime-5032-20260704.json`, `wpb-c05-current-5032-20260704.png`, and `wpb-c05-current-a11y-5032-20260704.txt`. This does not justify a source change: EB and WPB are not on the same progress-display fixture, and the approved Admin UI path remained unavailable from the direct configure URL because the embedded app iframe loaded as `about:blank`.
+
 ### C06 Addons Free Gift
 
 | Field | Value |
