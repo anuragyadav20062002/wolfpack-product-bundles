@@ -162,3 +162,13 @@ The Liquid blocks expose template CSS URL maps and the widget runtime loads the 
 Shopify CDN `asset_url` filter appends `?v=HASH` — this hash only changes on `shopify app deploy`. Custom query params are NOT on the allowlist. Always deploy after widget changes.
 
 Storefront JS/CSS loading strategy: FPB and Product Page bundle blocks load assets from Shopify theme-extension assets with Liquid `asset_url`. App proxy remains for API/data routes only.
+
+### Dev Preview Asset 404 / ORB Failure
+
+When a Shopify CLI dev preview asset hash expires or points at a missing theme-extension build, the storefront can still emit normal Liquid `asset_url` script/link tags while the referenced `https://cdn.shopify.com/extensions/.../dev-.../assets/...` URLs return Shopify `404` HTML. Chrome then reports the subresource loads as `net::ERR_BLOCKED_BY_ORB` or CORB because the browser requested CSS/JS but received `text/html`.
+
+Do not diagnose that state as a widget boot or Classic template bug until the asset URL is checked directly. Required proof:
+- Hard reload the storefront with cache bypass after clearing Cache Storage.
+- Verify `window.__BUNDLE_WIDGET_VERSION__`; a missing value means the widget JS did not execute.
+- Open or fetch the exact blocked asset URL. If it returns Shopify `404: Page not found` with `content-type: text/html`, the live proof is blocked by the dev-extension asset state, not by storefront source.
+- Compare against any older already-open tab before trusting it. A stale tab can keep a previous dev asset hash and `window.__BUNDLE_WIDGET_VERSION__` while fresh tabs point at a newer missing hash.
