@@ -7,6 +7,10 @@
   }
 
   .fpb-preset-classic .sidebar-layout-wrapper .sidebar-content {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    align-self: stretch;
     padding: 0 0 120px !important;
   }
 
@@ -68,6 +72,12 @@
 
   .fpb-preset-classic > .category-tabs .category-tab .tab-indicator {
     display: none;
+  }
+
+  .fpb-preset-classic .fpb-step-category-title {
+    width: 100%;
+    align-self: stretch;
+    text-align: start;
   }
 
   .fpb-preset-classic .sidebar-content .full-page-product-grid-container {

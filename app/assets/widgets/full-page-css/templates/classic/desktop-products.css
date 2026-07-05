@@ -10,9 +10,15 @@
 
   .fpb-preset-classic
     > :is(.bundle-banners, .category-tabs, .sidebar-layout-wrapper) {
-    width: calc(100% - 71.1875px);
-    margin-left: 33.59375px;
-    margin-right: 37.59375px;
+    width: calc(
+      100% -
+        (
+          var(--classic-desktop-layout-left) +
+            var(--classic-desktop-layout-right)
+        )
+    );
+    margin-left: var(--classic-desktop-layout-left);
+    margin-right: var(--classic-desktop-layout-right);
   }
 
   .fpb-preset-classic .sidebar-content {
@@ -55,6 +61,11 @@
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
+  }
+
+  .fpb-preset-classic > .category-tabs {
+    margin-left: var(--classic-desktop-layout-left);
+    margin-right: var(--classic-desktop-layout-right);
   }
 
   .fpb-preset-classic .category-tabs::-webkit-scrollbar {
