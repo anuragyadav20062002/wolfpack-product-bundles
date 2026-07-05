@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.43
+ * Version : 5.0.44
  * Built   : 2026-07-05
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.43';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.44';
 (function() {
   'use strict';
 
@@ -8381,13 +8381,14 @@ createProductCard(product, stepIndex, options = {}) {
       ? options.displayVariantsAsIndividualProducts
       : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
   const designPreset = this.getFullPageDesignPreset();
+  const usesStandardVariantSelector = designPreset === 'STANDARD' || designPreset === 'CLASSIC';
   const shouldRenderVariantSelector = shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
     displayVariantsAsIndividualProducts,
   });
   const variantSelectorHtml = shouldRenderVariantSelector
-    ? designPreset === 'STANDARD'
+    ? usesStandardVariantSelector
       ? VariantSelectorComponent.renderDropdownHtml(product, primaryOptionName, {
         placeholder: this._resolveText('chooseOptionsButton', 'Choose Options'),
       })
@@ -8411,7 +8412,7 @@ createProductCard(product, stepIndex, options = {}) {
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         addButtonText: this.getProductCardAddButtonText(step),
         cardBadgeHtml: stockBadgeHtml,
-        variantSelectorPlacement: designPreset === 'STANDARD' ? 'beforePrice' : undefined,
+        variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,
       }
     );
   } else {

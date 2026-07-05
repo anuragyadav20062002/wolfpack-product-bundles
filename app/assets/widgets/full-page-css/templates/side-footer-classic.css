@@ -2,6 +2,7 @@
 @import "./classic/desktop-products.css";
 @import "./classic/desktop-sidebar.css";
 @import "./classic/mobile.css";
+@import "./classic/variant-selector.css";
 @import "./standard-step-timeline.css";
 
 @media (min-width: 769px) {
