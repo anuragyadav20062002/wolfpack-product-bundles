@@ -43,3 +43,19 @@
 .fpb-preset-classic .fpb-category-section-rows {
   display: none;
 }
+
+@keyframes fpb-classic-product-image-fade {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.layout-sidebar[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .full-page-product-grid
+  .bw-product-card__image {
+  animation: fpb-classic-product-image-fade 1.5s ease;
+}
