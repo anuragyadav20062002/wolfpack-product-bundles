@@ -27,6 +27,7 @@ class BundleProductModal {
     this.selectedVariant = null;
     this.selectedQuantity = 1;
     this.currentImageIndex = 0;
+    this.readOnly = false;
 
     this.init();
   }
@@ -227,6 +228,7 @@ class BundleProductModal {
     this.currentProduct = product;
     this.currentStep = step;
     this.selectedQuantity = 1;
+    this.readOnly = options.readOnly === true;
     const imageCount = this.getProductImages().length;
     const initialImageIndex = Number(options.initialImageIndex || 0);
     this.currentImageIndex = imageCount > 0
@@ -235,6 +237,7 @@ class BundleProductModal {
 
     // Populate modal content
     this.populateModal();
+    this.updateReadOnlyState();
 
     // Show modal
     this.modalElement.classList.add('active');
@@ -254,6 +257,8 @@ class BundleProductModal {
     this.selectedVariant = null;
     this.selectedQuantity = 1;
     this.currentImageIndex = 0;
+    this.readOnly = false;
+    this.updateReadOnlyState();
   }
 
   /**
@@ -284,6 +289,23 @@ class BundleProductModal {
 
     // Reset quantity display
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
+  }
+
+  updateReadOnlyState() {
+    if (!this.modalElement) return;
+
+    this.modalElement.dataset.readOnly = this.readOnly ? 'true' : 'false';
+    [
+      '#modal-product-price',
+      '#modal-variants-container',
+      '.bundle-modal-quantity',
+      '#modal-add-to-box',
+    ].forEach((selector) => {
+      const element = this.modalElement.querySelector(selector);
+      if (element) {
+        element.hidden = this.readOnly;
+      }
+    });
   }
 
   /**
@@ -356,6 +378,10 @@ class BundleProductModal {
    * Add product to bundle
    */
   addToBundle() {
+    if (this.readOnly) {
+      return;
+    }
+
     if (!this.currentProduct || !this.currentStep) {
       return;
     }

@@ -338,7 +338,11 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
     if (!this.productModal) return;
 
     const initialImageIndex = Number(cardElement.dataset.bwCardImageIndex || 0);
-    this.productModal.open(product, step, { initialImageIndex });
+    const isClassicQuickView = this.getFullPageDesignPreset?.() === 'CLASSIC';
+    this.productModal.open(product, step, {
+      initialImageIndex,
+      readOnly: isClassicQuickView,
+    });
   });
 
   // Inline quantity increase/decrease buttons (delegated via card element)

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.49
+ * Version : 5.0.50
  * Built   : 2026-07-05
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.49';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.50';
 (function() {
   'use strict';
 
@@ -3716,6 +3716,7 @@ class BundleProductModal {
     this.selectedVariant = null;
     this.selectedQuantity = 1;
     this.currentImageIndex = 0;
+    this.readOnly = false;
 
     this.init();
   }
@@ -3906,6 +3907,7 @@ class BundleProductModal {
     this.currentProduct = product;
     this.currentStep = step;
     this.selectedQuantity = 1;
+    this.readOnly = options.readOnly === true;
     const imageCount = this.getProductImages().length;
     const initialImageIndex = Number(options.initialImageIndex || 0);
     this.currentImageIndex = imageCount > 0
@@ -3913,6 +3915,7 @@ class BundleProductModal {
       : 0;
 
     this.populateModal();
+    this.updateReadOnlyState();
 
     this.modalElement.classList.add('active');
     document.body.classList.add('modal-open');
@@ -3930,6 +3933,8 @@ class BundleProductModal {
     this.selectedVariant = null;
     this.selectedQuantity = 1;
     this.currentImageIndex = 0;
+    this.readOnly = false;
+    this.updateReadOnlyState();
   }
 
   /**
@@ -3955,6 +3960,23 @@ class BundleProductModal {
     this.updatePrice();
 
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
+  }
+
+  updateReadOnlyState() {
+    if (!this.modalElement) return;
+
+    this.modalElement.dataset.readOnly = this.readOnly ? 'true' : 'false';
+    [
+      '#modal-product-price',
+      '#modal-variants-container',
+      '.bundle-modal-quantity',
+      '#modal-add-to-box',
+    ].forEach((selector) => {
+      const element = this.modalElement.querySelector(selector);
+      if (element) {
+        element.hidden = this.readOnly;
+      }
+    });
   }
 
   /**
@@ -4027,6 +4049,10 @@ class BundleProductModal {
    * Add product to bundle
    */
   addToBundle() {
+    if (this.readOnly) {
+      return;
+    }
+
     if (!this.currentProduct || !this.currentStep) {
       return;
     }
@@ -8660,7 +8686,11 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
     if (!this.productModal) return;
 
     const initialImageIndex = Number(cardElement.dataset.bwCardImageIndex || 0);
-    this.productModal.open(product, step, { initialImageIndex });
+    const isClassicQuickView = this.getFullPageDesignPreset?.() === 'CLASSIC';
+    this.productModal.open(product, step, {
+      initialImageIndex,
+      readOnly: isClassicQuickView,
+    });
   });
 
   cardElement.addEventListener('click', (e) => {
@@ -11764,7 +11794,11 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
     if (product && step) {
       const initialImageIndex = Number(productCard.dataset.bwCardImageIndex || 0);
-      this.productModal.open(product, step, { initialImageIndex });
+      const isClassicQuickView = this.getFullPageDesignPreset?.() === 'CLASSIC';
+      this.productModal.open(product, step, {
+        initialImageIndex,
+        readOnly: isClassicQuickView,
+      });
     }
   };
 
