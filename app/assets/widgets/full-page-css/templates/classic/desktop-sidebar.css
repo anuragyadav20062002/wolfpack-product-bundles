@@ -8,12 +8,12 @@
     height: auto;
     min-height: 0;
     max-height: none;
-    display: grid !important;
+    display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto minmax(0, 1fr) auto;
     gap: 0.3125rem;
     margin-top: 0;
-    padding: 20px;
+    padding: 1.25rem;
     border: 0;
     border-radius: var(--bundle-side-panel-btn-radius, 10px);
     background: var(--bundle-side-panel-bg, #fff);
@@ -24,6 +24,7 @@
     top: 80px;
     box-sizing: border-box;
     box-shadow: none;
+    font-family: Assistant, sans-serif;
   }
 
   .fpb-preset-classic .side-panel-header {
@@ -43,7 +44,8 @@
   }
 
   .fpb-preset-classic .side-panel-title {
-    font-size: 20px;
+    font-family: Assistant, sans-serif;
+    font-size: 1.5625rem;
     line-height: 30px;
     font-weight: 700;
     color: var(
@@ -53,6 +55,7 @@
   }
 
   .fpb-preset-classic .side-panel-subtitle {
+    font-family: Assistant, sans-serif;
     font-size: 14px;
     line-height: 20px;
     margin: 0;
@@ -78,7 +81,7 @@
         in srgb,
         var(
             --bundle-side-panel-clear-color,
-            var(--bundle-global-primary-button, currentColor)
+            var(--classic-side-panel-clear-color, #d13d54)
           )
           12%,
         transparent
@@ -86,8 +89,12 @@
     );
     color: var(
       --bundle-side-panel-clear-color,
-      var(--bundle-global-primary-button, currentColor)
+      var(--classic-side-panel-clear-color, #d13d54)
     );
+    font-family: Assistant, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.8;
     align-items: center;
     justify-content: center;
   }
@@ -553,6 +560,9 @@
     .layout-sidebar[data-fpb-design-preset="CLASSIC"]
     .side-panel-addon-title,
   .fpb-preset-classic .side-panel-addon-title {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
     margin: 0;
     padding: 0;
     color: var(
@@ -560,9 +570,18 @@
       var(--bundle-global-primary-text, #000)
     );
     font-size: 0.875rem;
-    font-weight: 600;
-    line-height: 1.25;
+    font-weight: 700;
+    line-height: 1.8;
     text-align: start;
+  }
+
+  .bundle-widget-full-page
+    .layout-sidebar[data-fpb-design-preset="CLASSIC"]
+    .side-panel-addon-title::after,
+  .fpb-preset-classic .side-panel-addon-title::after {
+    content: "";
+    flex: 1 1 auto;
+    border-top: 0.0625rem solid var(--bundle-side-panel-border, #d9d9d9);
   }
 
   .bundle-widget-full-page
@@ -580,7 +599,7 @@
       var(--bundle-global-primary-text, #000)
     );
     overflow: hidden;
-    min-height: 2.75rem;
+    min-height: 5.125rem;
   }
 
   .bundle-widget-full-page
@@ -591,8 +610,8 @@
     grid-template-columns: minmax(0, 1fr) 1.671875rem;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.375rem 0.625rem;
-    min-height: 2.375rem;
+    padding: 0.625rem;
+    min-height: 4.375rem;
   }
 
   .bundle-widget-full-page
@@ -712,7 +731,7 @@
     font-family: Assistant, sans-serif;
     font-size: 0.875rem;
     font-weight: 400;
-    line-height: 1.35;
+    line-height: 1.8;
     text-align: start;
   }
 
@@ -728,11 +747,11 @@
     .side-panel-action-container,
   .fpb-preset-classic .side-panel-action-container {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(9.5rem, max-content);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: auto;
-    gap: 12px;
-    margin: 0 !important;
-    padding: 15px 0 0 !important;
+    gap: 0;
+    margin: 0;
+    padding: 0.9375rem 0 0;
     border-top: 0.0625rem solid var(--bundle-side-panel-border, #d9d9d9);
     align-items: end;
   }
@@ -748,6 +767,7 @@
   }
 
   .fpb-preset-classic .side-panel-total-label {
+    font-family: Assistant, sans-serif;
     font-size: 14px;
     font-weight: 700;
     line-height: normal;
@@ -807,6 +827,7 @@
       --bundle-sidebar-button-text,
       var(--bundle-global-button-text, #ffffff)
     );
+    font-family: Assistant, sans-serif;
     font-size: 16px;
     font-weight: 700;
     line-height: 25px;
