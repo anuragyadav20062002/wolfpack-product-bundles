@@ -295,6 +295,27 @@ getAddonMessageTierEvaluation(step) {
   };
 },
 
+getAddonSummaryEligibilityStates(step) {
+  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const withState = getAddonTierCandidatesWithState(step, totalPrice, totalQuantity);
+  const getEligibilityState = typeof this.getAddonEligibilityState === 'function'
+    ? this.getAddonEligibilityState
+    : fullPageValidationAddonsMethods.getAddonEligibilityState;
+
+  return withState.map(candidate => getEligibilityState.call(this, step, {
+    tier: candidate.tier,
+    tierIndex: candidate.index,
+    isEligible: candidate.isEligible === true,
+    totalPrice,
+    totalQuantity,
+    currentValue: candidate.currentValue,
+  }));
+},
+
 _getFreeGiftRemainingCount() {
   const steps = this.selectedBundle?.steps || [];
   const paidStepsComplete = this.paidSteps.every(paidStep => {
@@ -566,21 +587,35 @@ _renderFreeGiftSection(container) {
   const hasDirectAddonTiers = step.addonEligibilityCondition || Array.isArray(step.addonTiers);
 
   if (hasDirectAddonTiers) {
-    const eligibilityState = typeof this.getAddonMessageEligibilityState === 'function'
-      ? this.getAddonMessageEligibilityState(step)
-      : this.getAddonEligibilityState(step);
-    const message = this.renderAddonEligibilityMessage(step, eligibilityState);
-    if (!message) return;
+    const summaryStates = typeof this.getAddonSummaryEligibilityStates === 'function'
+      ? this.getAddonSummaryEligibilityStates(step)
+      : [];
+    const fallbackState = summaryStates.length > 0
+      ? null
+      : (typeof this.getAddonMessageEligibilityState === 'function'
+          ? this.getAddonMessageEligibilityState(step)
+          : this.getAddonEligibilityState(step));
+    const states = summaryStates.length > 0 ? summaryStates : [fallbackState].filter(Boolean);
+    const messages = states
+      .map(eligibilityState => ({
+        eligibilityState,
+        message: this.renderAddonEligibilityMessage(step, eligibilityState),
+      }))
+      .filter(({ message }) => Boolean(message));
+    if (messages.length === 0) return;
 
     const title = this.renderAddonSectionTitle(step);
-    section.className = eligibilityState.isEligible
+    const hasEligibleTier = messages.some(({ eligibilityState }) => eligibilityState.isEligible);
+    section.className = hasEligibleTier
       ? 'side-panel-addon-summary side-panel-free-gift unlocked'
       : 'side-panel-addon-summary side-panel-free-gift';
     if (title) section.appendChild(title);
     const createMessageElement = typeof this.createAddonTierMessageElement === 'function'
       ? this.createAddonTierMessageElement
       : fullPageValidationAddonsMethods.createAddonTierMessageElement;
-    section.appendChild(createMessageElement(message, eligibilityState.isEligible));
+    messages.forEach(({ message, eligibilityState }) => {
+      section.appendChild(createMessageElement.call(this, message, eligibilityState.isEligible));
+    });
     container.appendChild(section);
     return;
   }

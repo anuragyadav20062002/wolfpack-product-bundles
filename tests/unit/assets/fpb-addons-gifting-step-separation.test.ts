@@ -36,6 +36,8 @@ const renderAddonEligibilityMessage =
   fullPageValidationAddonsMethods.renderAddonEligibilityMessage;
 const getAddonMessageEligibilityState =
   fullPageValidationAddonsMethods.getAddonMessageEligibilityState;
+const getAddonSummaryEligibilityStates =
+  fullPageValidationAddonsMethods.getAddonSummaryEligibilityStates;
 const buildPaidAddonProductDisplayData =
   fullPageProductCardFooterMethods.buildPaidAddonProductDisplayData;
 const createProductCard =
@@ -71,6 +73,19 @@ function makeProduct(id = "gid://shopify/Product/1") {
       },
     ],
   };
+}
+
+class FakeElement {
+  className = "";
+  textContent = "";
+  children: FakeElement[] = [];
+
+  appendChild(child: FakeElement) {
+    this.children.push(child);
+    return child;
+  }
+
+  setAttribute() {}
 }
 
 function buildStep(personalizationData: Record<string, unknown>) {
@@ -421,6 +436,108 @@ describe("FPB add-ons / gifting step separation", () => {
       type: "PERCENTAGE",
       value: 10,
     });
+  });
+
+  it("exposes every add-on tier state for stacked summary sidebar messages", () => {
+    (global as any).window = {
+      Shopify: { currency: { active: "USD", format: "${{amount}}" } },
+      shopMoneyFormat: "${{amount}}",
+    };
+    const step = {
+      isFreeGift: true,
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 10 },
+          selectedAddonProducts: [makeProduct("gid://shopify/Product/1")],
+        },
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 2 },
+          discount: { type: "PERCENTAGE", value: 100 },
+          selectedAddonProducts: [makeProduct("gid://shopify/Product/2")],
+        },
+      ],
+    };
+    const ctx = {
+      selectedProducts: [{ paidVariant: 1 }],
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+      selectedBundle: { steps: [{ id: "paid" }, step] },
+    };
+
+    const summaryStates = getAddonSummaryEligibilityStates.call(ctx, step);
+
+    expect(summaryStates).toHaveLength(2);
+    expect(summaryStates.map((state: { tierIndex: number }) => state.tierIndex)).toEqual([0, 1]);
+    expect(summaryStates.map((state: { isEligible: boolean }) => state.isEligible)).toEqual([true, false]);
+    expect(getAddonLineDiscount.call(ctx, step)).toEqual({
+      type: "PERCENTAGE",
+      value: 10,
+    });
+  });
+
+  it("renders every configured add-on tier message into the summary section", () => {
+    (global as any).window = {
+      Shopify: { currency: { active: "USD", format: "${{amount}}" } },
+      shopMoneyFormat: "${{amount}}",
+    };
+    const originalDocument = (global as any).document;
+    (global as any).document = {
+      createElement: () => new FakeElement(),
+    };
+    const step = {
+      isFreeGift: true,
+      addonProductsEnabled: true,
+      addonTitle: "Add On",
+      addonMessaging: {
+        tier1: {
+          eligibleState: "Tier 1 unlocked",
+          ineligibleState: "Tier 1 locked",
+        },
+        tier2: {
+          eligibleState: "Tier 2 unlocked",
+          ineligibleState: "Tier 2 locked",
+        },
+      },
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 10 },
+          selectedAddonProducts: [makeProduct("gid://shopify/Product/1")],
+        },
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 2 },
+          discount: { type: "PERCENTAGE", value: 100 },
+          selectedAddonProducts: [makeProduct("gid://shopify/Product/2")],
+        },
+      ],
+    };
+    const messageTexts: string[] = [];
+    const ctx = {
+      ...fullPageValidationAddonsMethods,
+      selectedProducts: [{ paidVariant: 1 }],
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+      selectedBundle: { steps: [{ id: "paid" }, step] },
+      freeGiftStep: step,
+      isFreeGiftUnlocked: true,
+      createAddonTierMessageElement: (message: string) => {
+        messageTexts.push(message);
+        const element = new FakeElement();
+        element.className = "side-panel-addon-message";
+        element.textContent = message;
+        return element;
+      },
+    };
+    const container = new FakeElement();
+
+    try {
+      fullPageValidationAddonsMethods._renderFreeGiftSection.call(ctx, container);
+    } finally {
+      (global as any).document = originalDocument;
+    }
+
+    expect(messageTexts).toEqual(["Tier 1 unlocked", "Tier 2 locked"]);
+    expect(container.children).toHaveLength(1);
+    expect(container.children[0].children).toHaveLength(3);
   });
 
   it("does not return an add-on line discount before the active tier is eligible", () => {
