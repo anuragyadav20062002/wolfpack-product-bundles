@@ -414,7 +414,7 @@ resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
   || bundle?.showTextOnPlusEnabled === true;
 
   if (this.resolveFullPageLayout(bundle) === 'footer_side' && this.getFullPageDesignPreset(bundle) === 'CLASSIC') {
-    return showTextOnAddButton ? 'text' : 'icon';
+    return 'text';
   }
 
   return showTextOnAddButton ? 'text' : 'icon';
@@ -536,9 +536,12 @@ ensureFullPageTemplateStylesheet(preset) {
 },
 
 getProductAddButtonText() {
-  return this.resolveFullPageCardCtaMode() === 'text'
-    ? this._resolveText('productAddButton', 'Add +')
-    : '+';
+  if (this.resolveFullPageCardCtaMode() !== 'text') return '+';
+
+  const textButtonFallback = this.getFullPageDesignPreset() === 'CLASSIC'
+    ? 'Add To Box'
+    : 'Add +';
+  return this._resolveText('productAddButton', textButtonFallback);
 },
 
 applyFullPageDesignPresetMarker() {

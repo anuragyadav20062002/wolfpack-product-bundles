@@ -54,13 +54,14 @@ createProductCard(product, stepIndex, options = {}) {
       ? options.displayVariantsAsIndividualProducts
       : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
   const designPreset = this.getFullPageDesignPreset();
+  const usesStandardVariantSelector = designPreset === 'STANDARD' || designPreset === 'CLASSIC';
   const shouldRenderVariantSelector = shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
     displayVariantsAsIndividualProducts,
   });
   const variantSelectorHtml = shouldRenderVariantSelector
-    ? designPreset === 'STANDARD'
+    ? usesStandardVariantSelector
       ? VariantSelectorComponent.renderDropdownHtml(product, primaryOptionName, {
         placeholder: this._resolveText('chooseOptionsButton', 'Choose Options'),
       })
@@ -84,7 +85,7 @@ createProductCard(product, stepIndex, options = {}) {
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         addButtonText: this.getProductCardAddButtonText(step),
         cardBadgeHtml: stockBadgeHtml,
-        variantSelectorPlacement: designPreset === 'STANDARD' ? 'beforePrice' : undefined,
+        variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,
       }
     );
   } else {
@@ -337,7 +338,11 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
     if (!this.productModal) return;
 
     const initialImageIndex = Number(cardElement.dataset.bwCardImageIndex || 0);
-    this.productModal.open(product, step, { initialImageIndex });
+    const isClassicQuickView = this.getFullPageDesignPreset?.() === 'CLASSIC';
+    this.productModal.open(product, step, {
+      initialImageIndex,
+      readOnly: isClassicQuickView,
+    });
   });
 
   // Inline quantity increase/decrease buttons (delegated via card element)

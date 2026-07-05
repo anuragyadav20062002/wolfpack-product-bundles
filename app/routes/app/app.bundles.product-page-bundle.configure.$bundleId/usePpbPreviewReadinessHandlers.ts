@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { AppLogger } from "../../../lib/logger";
 import { navigateBackOrFallback } from "../../../lib/navigation";
 import productPageBundleStyles from "../../../styles/routes/product-page-bundle-configure.module.css";
+import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { pickPpbPreviewUrl } from "../../../lib/ppb-preview-url";
 import type { BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
@@ -117,6 +118,11 @@ export function usePpbPreviewReadinessHandlers({
         const message = isPreviewUrl
           ? "Bundle product preview opened in new tab"
           : "Bundle product opened in new tab";
+        markBundlePreviewComplete({
+          bundleId: base.bundle.id,
+          storage: window.localStorage,
+          setHasPreview: templateState.setHasPreview,
+        });
         base.shopify.toast.show(message, { isError: false });
         return true;
       } finally {
@@ -124,7 +130,7 @@ export function usePpbPreviewReadinessHandlers({
       }
     });
     return result instanceof Promise ? result : result === true;
-  }, [base, enablePreviewGate]);
+  }, [base, enablePreviewGate, templateState.setHasPreview]);
   const readinessItems = useMemo<BundleReadinessItem[]>(() => {
     const hasProducts =
       base.stepsState.steps.reduce((totalProducts: number, step: any) => {
@@ -304,8 +310,6 @@ export function usePpbPreviewReadinessHandlers({
           break;
         case "preview":
           void handlePreviewBundle();
-          localStorage.setItem(`wpb_preview_${base.bundle.id}`, "1");
-          templateState.setHasPreview(true);
           break;
         case "widget":
           handleSectionChange("bundle_visibility");

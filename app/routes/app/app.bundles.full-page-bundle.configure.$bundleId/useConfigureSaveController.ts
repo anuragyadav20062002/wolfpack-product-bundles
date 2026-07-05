@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import { AppLogger } from "../../../lib/logger";
 import { validateSlug } from "../../../lib/slug-utils";
 import { serializePricingDisplayOptions } from "../../../lib/pricing-display-options";
+import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness";
 import { DiscountMethod } from "../../../types/pricing";
 import { ADDON_MESSAGE_KEY } from "./configure-constants";
 import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
@@ -386,6 +387,11 @@ export function useConfigureSaveController(flow: ConfigureBundleFlowDraft) {
             duration: 2000,
           });
           window.open(result.shareablePreviewUrl as string, "_blank");
+          markBundlePreviewComplete({
+            bundleId: flow.bundle.id,
+            storage: window.localStorage,
+            setHasPreview: flow.setHasPreview,
+          });
           flow.revalidator.revalidate();
         } else if ("synced" in result && result.synced) {
           flow.shopify.toast.show(

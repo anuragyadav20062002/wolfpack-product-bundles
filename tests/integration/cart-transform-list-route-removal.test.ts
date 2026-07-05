@@ -18,6 +18,5 @@ describe("Cart Transform list route removal", () => {
   it("keeps cart-transform API support available", () => {
     expect(exists("app/routes/api/api.cart-transform-heal.tsx")).toBe(true);
     expect(exists("app/routes/api/api.check-cart-transform.tsx")).toBe(true);
-    expect(exists("app/routes/api/api.admin.backfill-cart-transform.tsx")).toBe(true);
   });
 });

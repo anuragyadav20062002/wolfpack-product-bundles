@@ -2,17 +2,23 @@
 @import "./classic/desktop-products.css";
 @import "./classic/desktop-sidebar.css";
 @import "./classic/mobile.css";
+@import "./classic/product-modal.css";
+@import "./classic/variant-selector.css";
 @import "./standard-step-timeline.css";
 
 @media (min-width: 769px) {
   .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-layout-wrapper {
-    grid-template-columns: minmax(0, 1fr) 447px;
+    --classic-desktop-sidebar-width: clamp(20rem, 28.65vw, 22.9375rem);
+
+    grid-template-columns: minmax(0, 1fr)
+      minmax(20rem, var(--classic-desktop-sidebar-width));
   }
 
   .layout-sidebar[data-fpb-design-preset="CLASSIC"] .full-page-side-panel {
-    width: 447px;
-    max-width: 447px;
-    flex-basis: 447px;
+    width: min(100%, var(--classic-desktop-sidebar-width));
+    max-width: var(--classic-desktop-sidebar-width);
+    flex-basis: var(--classic-desktop-sidebar-width);
+    justify-self: end;
     box-sizing: border-box;
     overflow: hidden;
   }

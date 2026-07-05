@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.42
+ * Version : 5.0.54
  * Built   : 2026-07-05
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.42';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.54';
 (function() {
   'use strict';
 
@@ -3716,6 +3716,7 @@ class BundleProductModal {
     this.selectedVariant = null;
     this.selectedQuantity = 1;
     this.currentImageIndex = 0;
+    this.readOnly = false;
 
     this.init();
   }
@@ -3906,6 +3907,7 @@ class BundleProductModal {
     this.currentProduct = product;
     this.currentStep = step;
     this.selectedQuantity = 1;
+    this.readOnly = options.readOnly === true;
     const imageCount = this.getProductImages().length;
     const initialImageIndex = Number(options.initialImageIndex || 0);
     this.currentImageIndex = imageCount > 0
@@ -3913,6 +3915,7 @@ class BundleProductModal {
       : 0;
 
     this.populateModal();
+    this.updateReadOnlyState();
 
     this.modalElement.classList.add('active');
     document.body.classList.add('modal-open');
@@ -3930,6 +3933,8 @@ class BundleProductModal {
     this.selectedVariant = null;
     this.selectedQuantity = 1;
     this.currentImageIndex = 0;
+    this.readOnly = false;
+    this.updateReadOnlyState();
   }
 
   /**
@@ -3955,6 +3960,23 @@ class BundleProductModal {
     this.updatePrice();
 
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
+  }
+
+  updateReadOnlyState() {
+    if (!this.modalElement) return;
+
+    this.modalElement.dataset.readOnly = this.readOnly ? 'true' : 'false';
+    [
+      '#modal-product-price',
+      '#modal-variants-container',
+      '.bundle-modal-quantity',
+      '#modal-add-to-box',
+    ].forEach((selector) => {
+      const element = this.modalElement.querySelector(selector);
+      if (element) {
+        element.hidden = this.readOnly;
+      }
+    });
   }
 
   /**
@@ -4027,6 +4049,10 @@ class BundleProductModal {
    * Add product to bundle
    */
   addToBundle() {
+    if (this.readOnly) {
+      return;
+    }
+
     if (!this.currentProduct || !this.currentStep) {
       return;
     }
@@ -5724,16 +5750,12 @@ _populateCompactMobileSummaryTray(sheet) {
   const countBadge = document.createElement('div');
   countBadge.className = 'fpb-mobile-summary-count-badge';
   countBadge.textContent = String(selectedFooterQuantity);
-  if (isClassicPreset) {
-    countBadge.setAttribute('aria-hidden', 'true');
-  } else {
-    countBadge.setAttribute('role', 'button');
-    countBadge.setAttribute('tabindex', '0');
-    countBadge.setAttribute('aria-label', summaryToggleLabel);
-    countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
-    countBadge.addEventListener('click', toggleSummaryTray);
-    countBadge.addEventListener('keydown', handleSummaryToggleKeydown);
-  }
+  countBadge.setAttribute('role', 'button');
+  countBadge.setAttribute('tabindex', '0');
+  countBadge.setAttribute('aria-label', summaryToggleLabel);
+  countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
+  countBadge.addEventListener('click', toggleSummaryTray);
+  countBadge.addEventListener('keydown', handleSummaryToggleKeydown);
   sheet.appendChild(countBadge);
 
   sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
@@ -6878,6 +6900,10 @@ renderBoxSelectionOptions(totalQuantity = 0) {
   const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
   const wrapper = document.createElement('div');
   wrapper.className = 'fpb-box-selection-wrapper';
+  wrapper.dataset.totalRules = String(rules.length);
+  if (activeRule?.ruleId) {
+    wrapper.dataset.activeRuleId = activeRule.ruleId;
+  }
 
   rules.forEach(rule => {
     const option = document.createElement('button');
@@ -6886,6 +6912,8 @@ renderBoxSelectionOptions(totalQuantity = 0) {
     option.className = 'fpb-box-selection-option' + (isActive ? ' fpb-box-selection-option-active' : '');
     option.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     option.dataset.ruleId = rule.ruleId;
+    option.dataset.boxQuantity = String(rule.boxQuantity);
+    option.dataset.isActive = isActive ? 'true' : 'false';
 
     const title = document.createElement('span');
     title.className = 'fpb-box-selection-title';
@@ -8381,13 +8409,14 @@ createProductCard(product, stepIndex, options = {}) {
       ? options.displayVariantsAsIndividualProducts
       : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
   const designPreset = this.getFullPageDesignPreset();
+  const usesStandardVariantSelector = designPreset === 'STANDARD' || designPreset === 'CLASSIC';
   const shouldRenderVariantSelector = shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
     displayVariantsAsIndividualProducts,
   });
   const variantSelectorHtml = shouldRenderVariantSelector
-    ? designPreset === 'STANDARD'
+    ? usesStandardVariantSelector
       ? VariantSelectorComponent.renderDropdownHtml(product, primaryOptionName, {
         placeholder: this._resolveText('chooseOptionsButton', 'Choose Options'),
       })
@@ -8411,7 +8440,7 @@ createProductCard(product, stepIndex, options = {}) {
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         addButtonText: this.getProductCardAddButtonText(step),
         cardBadgeHtml: stockBadgeHtml,
-        variantSelectorPlacement: designPreset === 'STANDARD' ? 'beforePrice' : undefined,
+        variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,
       }
     );
   } else {
@@ -8657,7 +8686,11 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
     if (!this.productModal) return;
 
     const initialImageIndex = Number(cardElement.dataset.bwCardImageIndex || 0);
-    this.productModal.open(product, step, { initialImageIndex });
+    const isClassicQuickView = this.getFullPageDesignPreset?.() === 'CLASSIC';
+    this.productModal.open(product, step, {
+      initialImageIndex,
+      readOnly: isClassicQuickView,
+    });
   });
 
   cardElement.addEventListener('click', (e) => {
@@ -9482,6 +9515,27 @@ getAddonMessageTierEvaluation(step) {
   };
 },
 
+getAddonSummaryEligibilityStates(step) {
+  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const withState = getAddonTierCandidatesWithState(step, totalPrice, totalQuantity);
+  const getEligibilityState = typeof this.getAddonEligibilityState === 'function'
+    ? this.getAddonEligibilityState
+    : fullPageValidationAddonsMethods.getAddonEligibilityState;
+
+  return withState.map(candidate => getEligibilityState.call(this, step, {
+    tier: candidate.tier,
+    tierIndex: candidate.index,
+    isEligible: candidate.isEligible === true,
+    totalPrice,
+    totalQuantity,
+    currentValue: candidate.currentValue,
+  }));
+},
+
 _getFreeGiftRemainingCount() {
   const steps = this.selectedBundle?.steps || [];
   const paidStepsComplete = this.paidSteps.every(paidStep => {
@@ -9653,6 +9707,15 @@ renderAddonEligibilityMessage(step, eligibilityState) {
   if (!messageTemplate) return '';
 
   return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
+    if (key === 'discountValue') {
+      const unit = eligibilityState.variables.discountValueUnit || '';
+      const displayValue = unit ? `${value}${unit}` : value;
+      return message
+        .replaceAll(`##${key}##`, value)
+        .replaceAll(`{{${key}}}`, value)
+        .replace(/\{discountValue\}(?!\s*(?:\{discountValueUnit\}|%|\$|€|£|₹|¥))/g, displayValue)
+        .replaceAll(`{${key}}`, value);
+    }
     return message
       .replaceAll(`##${key}##`, value)
       .replaceAll(`{{${key}}}`, value)
@@ -9751,21 +9814,35 @@ _renderFreeGiftSection(container) {
   const hasDirectAddonTiers = step.addonEligibilityCondition || Array.isArray(step.addonTiers);
 
   if (hasDirectAddonTiers) {
-    const eligibilityState = typeof this.getAddonMessageEligibilityState === 'function'
-      ? this.getAddonMessageEligibilityState(step)
-      : this.getAddonEligibilityState(step);
-    const message = this.renderAddonEligibilityMessage(step, eligibilityState);
-    if (!message) return;
+    const summaryStates = typeof this.getAddonSummaryEligibilityStates === 'function'
+      ? this.getAddonSummaryEligibilityStates(step)
+      : [];
+    const fallbackState = summaryStates.length > 0
+      ? null
+      : (typeof this.getAddonMessageEligibilityState === 'function'
+          ? this.getAddonMessageEligibilityState(step)
+          : this.getAddonEligibilityState(step));
+    const states = summaryStates.length > 0 ? summaryStates : [fallbackState].filter(Boolean);
+    const messages = states
+      .map(eligibilityState => ({
+        eligibilityState,
+        message: this.renderAddonEligibilityMessage(step, eligibilityState),
+      }))
+      .filter(({ message }) => Boolean(message));
+    if (messages.length === 0) return;
 
     const title = this.renderAddonSectionTitle(step);
-    section.className = eligibilityState.isEligible
+    const hasEligibleTier = messages.some(({ eligibilityState }) => eligibilityState.isEligible);
+    section.className = hasEligibleTier
       ? 'side-panel-addon-summary side-panel-free-gift unlocked'
       : 'side-panel-addon-summary side-panel-free-gift';
     if (title) section.appendChild(title);
     const createMessageElement = typeof this.createAddonTierMessageElement === 'function'
       ? this.createAddonTierMessageElement
       : fullPageValidationAddonsMethods.createAddonTierMessageElement;
-    section.appendChild(createMessageElement(message, eligibilityState.isEligible));
+    messages.forEach(({ message, eligibilityState }) => {
+      section.appendChild(createMessageElement.call(this, message, eligibilityState.isEligible));
+    });
     container.appendChild(section);
     return;
   }
@@ -11726,7 +11803,11 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
     if (product && step) {
       const initialImageIndex = Number(productCard.dataset.bwCardImageIndex || 0);
-      this.productModal.open(product, step, { initialImageIndex });
+      const isClassicQuickView = this.getFullPageDesignPreset?.() === 'CLASSIC';
+      this.productModal.open(product, step, {
+        initialImageIndex,
+        readOnly: isClassicQuickView,
+      });
     }
   };
 
@@ -12668,7 +12749,7 @@ resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
   || bundle?.showTextOnPlusEnabled === true;
 
   if (this.resolveFullPageLayout(bundle) === 'footer_side' && this.getFullPageDesignPreset(bundle) === 'CLASSIC') {
-    return showTextOnAddButton ? 'text' : 'icon';
+    return 'text';
   }
 
   return showTextOnAddButton ? 'text' : 'icon';
@@ -12790,9 +12871,12 @@ ensureFullPageTemplateStylesheet(preset) {
 },
 
 getProductAddButtonText() {
-  return this.resolveFullPageCardCtaMode() === 'text'
-    ? this._resolveText('productAddButton', 'Add +')
-    : '+';
+  if (this.resolveFullPageCardCtaMode() !== 'text') return '+';
+
+  const textButtonFallback = this.getFullPageDesignPreset() === 'CLASSIC'
+    ? 'Add To Box'
+    : 'Add +';
+  return this._resolveText('productAddButton', textButtonFallback);
 },
 
 applyFullPageDesignPresetMarker() {

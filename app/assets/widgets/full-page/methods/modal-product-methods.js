@@ -231,7 +231,11 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
     if (product && step) {
       const initialImageIndex = Number(productCard.dataset.bwCardImageIndex || 0);
-      this.productModal.open(product, step, { initialImageIndex });
+      const isClassicQuickView = this.getFullPageDesignPreset?.() === 'CLASSIC';
+      this.productModal.open(product, step, {
+        initialImageIndex,
+        readOnly: isClassicQuickView,
+      });
     }
   };
 

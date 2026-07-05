@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { AppLogger } from "../../../lib/logger";
 import { navigateBackOrFallback } from "../../../lib/navigation";
 import { validateSlug } from "../../../lib/slug-utils";
+import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
 import { type TourStep } from "../../../components/bundle-configure/tourSteps";
@@ -97,6 +98,11 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
         const pageUrl = `https://${shopDomain}.myshopify.com/pages/${flow.bundle.shopifyPageHandle}`;
         open(pageUrl, "_blank");
         recordBundlePreview(pageUrl, "fpb_configure");
+        markBundlePreviewComplete({
+          bundleId: flow.bundle.id,
+          storage: window.localStorage,
+          setHasPreview: flow.setHasPreview,
+        });
         flow.shopify.toast.show("Bundle page opened in new tab", {
           isError: false,
         });
@@ -141,6 +147,11 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
         const message = isPreviewUrl
           ? "Bundle product preview opened in new tab"
           : "Bundle product opened in new tab";
+        markBundlePreviewComplete({
+          bundleId: flow.bundle.id,
+          storage: window.localStorage,
+          setHasPreview: flow.setHasPreview,
+        });
         flow.shopify.toast.show(message, { isError: false });
       } else {
         AppLogger.error("Bundle product data:", {}, flow.bundleProduct);
@@ -236,8 +247,6 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
           break;
         case "preview":
           void handlePreviewBundle();
-          localStorage.setItem(`wpb_preview_${flow.bundle.id}`, "1");
-          flow.setHasPreview(true);
           break;
         case "visible":
           handleSectionChange("bundle_visibility");
