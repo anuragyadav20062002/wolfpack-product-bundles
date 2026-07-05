@@ -533,29 +533,33 @@
     --fpb-mobile-footer-progress-width: calc(
       var(--fpb-mobile-footer-inner-width) - 3.125rem
     );
+    --classic-mobile-footer-block-padding: 0.3125rem;
     --classic-mobile-footer-toggle-row: 2rem;
     --classic-mobile-footer-summary-row: 2.0625rem;
     --classic-mobile-footer-action-row: 2.375rem;
+    --classic-mobile-footer-nav-row: calc(
+      var(--classic-mobile-footer-action-row) + 1.25rem
+    );
     --classic-mobile-footer-expanded-height: clamp(20rem, 42vh, 22.5rem);
     --classic-mobile-footer-expanded-inner-height: calc(
       var(--classic-mobile-footer-expanded-height)
       - var(--classic-mobile-footer-toggle-row)
-      - 0.625rem
+      - (var(--classic-mobile-footer-block-padding) * 2)
     );
     display: grid;
     position: sticky;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
     grid-template-rows:
       var(--classic-mobile-footer-toggle-row)
-      var(--classic-mobile-footer-action-row);
+      var(--classic-mobile-footer-nav-row);
     bottom: 0;
     left: 0.625rem;
     right: auto;
     width: var(--fpb-mobile-footer-shell-width);
     height: calc(
       var(--classic-mobile-footer-toggle-row)
-      + var(--classic-mobile-footer-action-row)
-      + 0.3125rem
+      + var(--classic-mobile-footer-nav-row)
+      + (var(--classic-mobile-footer-block-padding) * 2)
     );
     min-height: 0;
     max-height: none;
@@ -563,10 +567,13 @@
       (100vw - var(--fpb-mobile-footer-shell-width)) / 2
       - (100vw - 100%) / 2
     );
-    padding: 0.3125rem 0.3125rem 0;
+    padding: var(--classic-mobile-footer-block-padding);
     border-radius: 0;
     box-shadow: none;
-    background: var(--bundle-side-panel-bg, var(--bundle-full-page-bg-color));
+    background: var(
+      --bundle-full-page-footer-bg-color,
+      var(--bundle-side-panel-bg, #ffffff)
+    );
     overflow: visible;
     z-index: 9999;
     transform: none !important;
@@ -740,6 +747,14 @@
     height: auto;
     padding: 0;
     box-sizing: border-box;
+  }
+
+  .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray.fpb-mobile-classic-footer:not(
+      .fpb-mobile-summary-tray-expanded
+    )
+    .side-panel-nav {
+    height: var(--classic-mobile-footer-nav-row);
+    padding: 0.625rem 0;
   }
 
   .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray.fpb-mobile-classic-footer
