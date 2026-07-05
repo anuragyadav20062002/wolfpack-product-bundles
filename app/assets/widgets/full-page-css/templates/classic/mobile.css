@@ -15,7 +15,7 @@
     flex-wrap: nowrap;
     gap: 20px;
     align-items: center;
-    justify-content: start;
+    justify-content: safe center;
     width: calc(100vw - 20px);
     margin: 20px 0 15px;
     padding: 0;
