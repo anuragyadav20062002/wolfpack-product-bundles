@@ -533,21 +533,30 @@
     --fpb-mobile-footer-progress-width: calc(
       var(--fpb-mobile-footer-inner-width) - 3.125rem
     );
+    --classic-mobile-footer-toggle-row: 2rem;
     --classic-mobile-footer-summary-row: 2.0625rem;
     --classic-mobile-footer-action-row: 2.375rem;
-    --classic-mobile-footer-expanded-height: clamp(18rem, 36vh, 20rem);
+    --classic-mobile-footer-expanded-height: clamp(20rem, 42vh, 22.5rem);
     --classic-mobile-footer-expanded-inner-height: calc(
-      var(--classic-mobile-footer-expanded-height) - 0.625rem
+      var(--classic-mobile-footer-expanded-height)
+      - var(--classic-mobile-footer-toggle-row)
+      - 0.625rem
     );
     display: grid;
     position: sticky;
     grid-template-columns: var(--fpb-mobile-footer-inner-width);
-    grid-template-rows: var(--classic-mobile-footer-action-row);
+    grid-template-rows:
+      var(--classic-mobile-footer-toggle-row)
+      var(--classic-mobile-footer-action-row);
     bottom: 0;
     left: 0.625rem;
     right: auto;
     width: var(--fpb-mobile-footer-shell-width);
-    height: calc(var(--classic-mobile-footer-action-row) + 0.3125rem);
+    height: calc(
+      var(--classic-mobile-footer-toggle-row)
+      + var(--classic-mobile-footer-action-row)
+      + 0.3125rem
+    );
     min-height: 0;
     max-height: none;
     margin-left: calc(
@@ -570,10 +579,12 @@
   .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray.fpb-mobile-classic-footer.fpb-mobile-summary-tray--has-discount-summary {
     --classic-mobile-footer-summary-row: 3.0121875rem;
     grid-template-rows:
+      var(--classic-mobile-footer-toggle-row)
       var(--classic-mobile-footer-summary-row)
       var(--classic-mobile-footer-action-row);
     height: calc(
-      var(--classic-mobile-footer-summary-row)
+      var(--classic-mobile-footer-toggle-row)
+      + var(--classic-mobile-footer-summary-row)
       + var(--classic-mobile-footer-action-row)
       + 0.625rem
     );
@@ -604,6 +615,31 @@
       transform 220ms ease,
       margin 220ms ease;
     transform-origin: center;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--fpb-mobile-footer-inner-width);
+    height: var(--classic-mobile-footer-toggle-row);
+    min-height: var(--classic-mobile-footer-toggle-row);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--bundle-side-panel-bg, var(--bundle-full-page-bg-color));
+    color: var(
+      --bundle-side-panel-text-color,
+      var(--bundle-global-primary-text, #000000)
+    );
+    font: inherit;
+    font-size: clamp(0.8125rem, 3.5vw, 0.9375rem);
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: center;
+    cursor: pointer;
+    box-sizing: border-box;
   }
 
   .fpb-mobile-summary-tray.fpb-mobile-classic-footer.fpb-mobile-summary-tray-expanded
@@ -846,7 +882,9 @@
   .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray.fpb-mobile-classic-footer.fpb-mobile-summary-tray-expanded:not(
       .fpb-mobile-summary-tray--has-discount-summary
     ) {
-    grid-template-rows: var(--classic-mobile-footer-expanded-inner-height);
+    grid-template-rows:
+      var(--classic-mobile-footer-toggle-row)
+      var(--classic-mobile-footer-expanded-inner-height);
     height: var(--classic-mobile-footer-expanded-height);
   }
 

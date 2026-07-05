@@ -56,23 +56,31 @@ _populateCompactMobileSummaryTray(sheet) {
     (sum, item) => sum + (Number(item.quantity) || 1),
     0
   );
+  const isClassicPreset = this.getFullPageDesignPreset?.() === 'CLASSIC';
+  const summaryToggleLabel = isClassicPreset ? 'View Selected Products' : 'Review your bundle';
+  const toggleSummaryTray = () => {
+    this._toggleCompactMobileSummaryTray(sheet);
+  };
+  const handleSummaryToggleKeydown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleSummaryTray();
+    }
+  };
 
   const countBadge = document.createElement('div');
   countBadge.className = 'fpb-mobile-summary-count-badge';
-  countBadge.setAttribute('role', 'button');
-  countBadge.setAttribute('tabindex', '0');
-  countBadge.setAttribute('aria-label', 'Review your bundle');
-  countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
   countBadge.textContent = String(selectedFooterQuantity);
-  countBadge.addEventListener('click', () => {
-    this._toggleCompactMobileSummaryTray(sheet);
-  });
-  countBadge.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      this._toggleCompactMobileSummaryTray(sheet);
-    }
-  });
+  if (isClassicPreset) {
+    countBadge.setAttribute('aria-hidden', 'true');
+  } else {
+    countBadge.setAttribute('role', 'button');
+    countBadge.setAttribute('tabindex', '0');
+    countBadge.setAttribute('aria-label', summaryToggleLabel);
+    countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
+    countBadge.addEventListener('click', toggleSummaryTray);
+    countBadge.addEventListener('keydown', handleSummaryToggleKeydown);
+  }
   sheet.appendChild(countBadge);
 
   sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
@@ -85,6 +93,16 @@ _populateCompactMobileSummaryTray(sheet) {
     })
   );
   sheet.classList.remove('fpb-mobile-summary-tray--has-discount-summary');
+
+  if (isClassicPreset) {
+    const toggleRow = document.createElement('button');
+    toggleRow.className = 'fpb-mobile-summary-toggle-row';
+    toggleRow.type = 'button';
+    toggleRow.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
+    toggleRow.textContent = summaryToggleLabel;
+    toggleRow.addEventListener('click', toggleSummaryTray);
+    sheet.appendChild(toggleRow);
+  }
 
   if (this.selectedBundle?.pricing?.enabled) {
     const discountBlock = document.createElement('div');
