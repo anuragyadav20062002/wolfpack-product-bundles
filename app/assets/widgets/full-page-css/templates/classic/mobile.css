@@ -7,6 +7,10 @@
   }
 
   .fpb-preset-classic .sidebar-layout-wrapper .sidebar-content {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    align-self: stretch;
     padding: 0 0 120px !important;
   }
 
@@ -68,6 +72,12 @@
 
   .fpb-preset-classic > .category-tabs .category-tab .tab-indicator {
     display: none;
+  }
+
+  .fpb-preset-classic .fpb-step-category-title {
+    width: 100%;
+    align-self: stretch;
+    text-align: start;
   }
 
   .fpb-preset-classic .sidebar-content .full-page-product-grid-container {
@@ -176,10 +186,10 @@
       --bundle-product-card-font-color,
       var(--bundle-global-primary-text, currentColor)
     );
-    font-size: 12px !important;
-    line-height: normal !important;
-    font-weight: 400 !important;
-    letter-spacing: 0 !important;
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 700;
+    letter-spacing: 0;
     overflow: visible;
   }
 
@@ -200,10 +210,10 @@
       --bundle-product-final-price-color,
       var(--bundle-global-primary-text, currentColor)
     );
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    line-height: 35px !important;
-    letter-spacing: 0 !important;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: normal;
+    letter-spacing: 0;
   }
 
   .fpb-preset-classic .sidebar-content .product-price-strike {
@@ -211,8 +221,9 @@
       --bundle-product-strike-price-color,
       var(--bundle-side-panel-text-color, currentColor)
     );
-    font-size: 12px !important;
-    line-height: 35px !important;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: normal;
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
@@ -282,7 +293,7 @@
     height: auto;
     min-height: 0;
     padding: 0 0 5px;
-    border-bottom: 1px solid #e3e3e3;
+    border-bottom: 0;
     overflow: hidden;
   }
   .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
@@ -422,6 +433,29 @@
     .product-content-wrapper {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    gap: 8px;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
+    .product-card-price-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto var(--classic-text-button-height);
+    gap: 5px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
+    .product-card-price-action:has(.vs-wrapper) {
     grid-template-rows: auto auto var(--classic-text-button-height);
     gap: 8px;
   }
@@ -439,15 +473,26 @@
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]
     .sidebar-content
     .product-price-row {
-    grid-row: 2;
+    grid-row: 1;
+    height: auto;
+    min-height: 0;
+    margin: 0;
     justify-content: center;
     text-align: center;
+    line-height: normal;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
+    .product-card-price-action:has(.vs-wrapper)
+    .product-price-row {
+    grid-row: 2;
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]
     .sidebar-content
     .product-card-action {
-    grid-row: 3;
+    grid-row: 2;
     width: 100%;
     height: var(--classic-text-button-height);
     min-height: var(--classic-text-button-height);
@@ -459,13 +504,20 @@
 
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]
     .sidebar-content
+    .product-card-price-action:has(.vs-wrapper)
+    .product-card-action {
+    grid-row: 3;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
     .product-add-btn {
     width: 100%;
     min-width: 0;
     height: var(--classic-text-button-height);
     padding: 0 14px;
-    border-radius: var(--bundle-button-border-radius, 99px);
-    font-size: 14px;
+    border-radius: var(--bundle-add-btn-radius, 5px);
+    font-size: 16px;
     line-height: var(--classic-text-button-height);
     font-weight: 700;
   }
@@ -932,5 +984,10 @@
     height: 100%;
     max-height: none;
     min-height: 0;
+  }
+
+  body:has(.layout-sidebar[data-fpb-design-preset="CLASSIC"], .fpb-preset-classic)
+    .bundle-modal-add-btn {
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
 }

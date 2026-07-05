@@ -15,6 +15,26 @@ function makeRuntime(selectedBundle: Record<string, unknown>) {
 }
 
 describe('FPB product card CTA mode', () => {
+  it('defaults Classic product cards to EB-style text CTA copy', () => {
+    const runtime = makeRuntime({ bundleDesignPresetId: 'CLASSIC' });
+
+    expect(runtime.resolveFullPageCardCtaMode()).toBe('text');
+    expect(runtime.getProductAddButtonText()).toBe('Add To Box');
+  });
+
+  it('keeps Classic product card text overrides merchant-controlled', () => {
+    const runtime = {
+      ...makeRuntime({ bundleDesignPresetId: 'CLASSIC' }),
+      config: { textOverrides: { productAddButton: 'Add To Gift Box' } },
+      _resolveText(key: string, fallback: string) {
+        return this.config?.textOverrides?.[key] || fallback;
+      },
+    };
+
+    expect(runtime.resolveFullPageCardCtaMode()).toBe('text');
+    expect(runtime.getProductAddButtonText()).toBe('Add To Gift Box');
+  });
+
   it('uses persisted showTextOnPlusEnabled to render text button copy', () => {
     const runtime = makeRuntime({ showTextOnPlusEnabled: true });
 

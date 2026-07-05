@@ -10,9 +10,15 @@
 
   .fpb-preset-classic
     > :is(.bundle-banners, .category-tabs, .sidebar-layout-wrapper) {
-    width: calc(100% - 71.1875px);
-    margin-left: 33.59375px;
-    margin-right: 37.59375px;
+    width: calc(
+      100% -
+        (
+          var(--classic-desktop-layout-left) +
+            var(--classic-desktop-layout-right)
+        )
+    );
+    margin-left: var(--classic-desktop-layout-left);
+    margin-right: var(--classic-desktop-layout-right);
   }
 
   .fpb-preset-classic .sidebar-content {
@@ -55,6 +61,11 @@
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
+  }
+
+  .fpb-preset-classic > .category-tabs {
+    margin-left: var(--classic-desktop-layout-left);
+    margin-right: var(--classic-desktop-layout-right);
   }
 
   .fpb-preset-classic .category-tabs::-webkit-scrollbar {
@@ -181,10 +192,10 @@
       --bundle-product-card-font-color,
       var(--bundle-global-primary-text, currentColor)
     );
-    font-size: 16px !important;
-    line-height: 22px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0 !important;
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 700;
+    letter-spacing: 0;
     overflow: hidden;
   }
 
@@ -193,10 +204,10 @@
       --bundle-product-final-price-color,
       var(--bundle-global-primary-text, currentColor)
     );
-    font-size: 16px !important;
-    font-weight: 700 !important;
-    line-height: 35px !important;
-    letter-spacing: 0 !important;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 35px;
+    letter-spacing: 0;
   }
 
   .fpb-preset-classic .sidebar-content .product-price-strike {
@@ -204,8 +215,9 @@
       --bundle-product-strike-price-color,
       var(--bundle-side-panel-text-color, currentColor)
     );
-    font-size: 14px !important;
-    line-height: 35px !important;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 35px;
   }
 
   .fpb-preset-classic .sidebar-content .product-variant-badge,
@@ -538,6 +550,29 @@
     .product-content-wrapper {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    gap: 8px;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
+    .product-card-price-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto var(--classic-text-button-height);
+    gap: 5px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
+    .product-card-price-action:has(.vs-wrapper) {
     grid-template-rows: auto auto var(--classic-text-button-height);
     gap: 8px;
   }
@@ -554,12 +589,61 @@
 
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]
     .sidebar-content
+    .product-price-row {
+    grid-row: 1;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    justify-content: center;
+    text-align: center;
+    line-height: normal;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
+    .product-card-price-action:has(.vs-wrapper)
+    .product-price-row {
+    grid-row: 2;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
+    .product-price,
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
+    .product-price-strike {
+    line-height: normal;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
+    .product-card-action {
+    grid-row: 2;
+    width: 100%;
+    height: var(--classic-text-button-height);
+    min-height: var(--classic-text-button-height);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
+    .product-card-price-action:has(.vs-wrapper)
+    .product-card-action {
+    grid-row: 3;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="text"]
+    .sidebar-content
     .product-add-btn {
     width: 100%;
     height: var(--classic-text-button-height);
     min-width: 0;
     padding: 0 16px;
-    border-radius: var(--bundle-button-border-radius, 99px);
+    border-radius: var(--bundle-add-btn-radius, 5px);
     font-size: 16px;
     line-height: var(--classic-text-button-height);
     font-weight: 700;

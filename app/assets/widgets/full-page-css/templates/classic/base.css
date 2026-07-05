@@ -23,6 +23,8 @@
   --classic-desktop-card-image-extra: clamp(10px, 1.2vw, 12px);
   --classic-desktop-icon-card-extra: clamp(80px, 8vw, 104px);
   --classic-desktop-text-card-extra: clamp(130px, 11.5vw, 152px);
+  --classic-desktop-layout-left: 33.59375px;
+  --classic-desktop-layout-right: 37.59375px;
 
   --classic-mobile-card-width: clamp(140px, 40vw, 177.5px);
   --classic-mobile-shell-gutter: 0.625rem;
@@ -31,13 +33,51 @@
   --classic-mobile-image-height: clamp(118px, 37vw, 150px);
 
   --classic-icon-button-size: clamp(30px, 4.2vw, 38px);
-  --classic-text-button-height: clamp(34px, 4.5vw, 40px);
+  --classic-text-button-height: 2.1875rem;
   --classic-desktop-icon-action-width: clamp(56px, 20%, 74px);
   --classic-category-pill-min-height: 2.5rem;
   --classic-category-pill-padding: 0.45rem 1.5rem;
   --classic-category-pill-border: 0.125rem solid #000;
+  --bundle-product-strike-price-font-weight: 700;
+  --classic-product-card-button-bg: var(--bundle-add-btn-color, #000);
+  --classic-product-card-button-text: var(
+    --bundle-product-card-button-text-color,
+    #fff
+  );
 }
 
 .fpb-preset-classic .fpb-category-section-rows {
   display: none;
+}
+
+.bundle-widget-full-page[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card
+  .product-add-btn {
+  background: var(--classic-product-card-button-bg);
+  color: var(--classic-product-card-button-text);
+}
+
+.bundle-widget-full-page[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card
+  .product-price-row
+  .product-price-strike {
+  font-weight: 700;
+}
+
+@keyframes fpb-classic-product-image-fade {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.layout-sidebar[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .full-page-product-grid
+  .bw-product-card__image {
+  animation: fpb-classic-product-image-fade 1.5s ease;
 }

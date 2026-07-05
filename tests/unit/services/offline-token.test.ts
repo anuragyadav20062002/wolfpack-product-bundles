@@ -152,4 +152,36 @@ describe("offline token service", () => {
     expect(global.fetch).not.toHaveBeenCalled();
     expect(storage.storeSession).not.toHaveBeenCalled();
   });
+
+  it("refreshes an offline session with incomplete expiring token metadata during ensure", async () => {
+    const prisma = makePrisma({
+      id: "offline_test-shop.myshopify.com",
+      shop: "test-shop.myshopify.com",
+      state: "",
+      isOnline: false,
+      scope: "read_products",
+      expires: null,
+      accessToken: "shpat_partial",
+      refreshToken: "shprt_existing",
+      refreshTokenExpiresAt: null,
+      storefrontAccessToken: null,
+    });
+    const storage = makeStorage();
+
+    const result = await ensureShopHasExpiringOfflineSession(
+      prisma as any,
+      "test-shop.myshopify.com",
+      storage,
+    );
+
+    expect(result?.accessToken).toBe("shpat_expiring");
+    expect(postedBody()).toMatchObject({
+      grant_type: "refresh_token",
+      refresh_token: "shprt_existing",
+    });
+    expect(storage.storeSession).toHaveBeenCalledWith(expect.objectContaining({
+      accessToken: "shpat_expiring",
+      refreshToken: "shprt_refresh",
+    }));
+  });
 });

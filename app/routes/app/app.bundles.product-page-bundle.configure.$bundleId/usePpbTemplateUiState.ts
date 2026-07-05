@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "@remix-run/react";
+import { getPreviewReadinessStorageKey } from "../../../lib/bundle-preview-readiness";
 
 export function usePpbTemplateUiState({ bundle }: { bundle: any }) {
   const [bundleDesignTemplate, setBundleDesignTemplate] = useState<
@@ -50,7 +51,9 @@ export function usePpbTemplateUiState({ bundle }: { bundle: any }) {
   );
 
   useEffect(() => {
-    setHasPreview(!!localStorage.getItem(`wpb_preview_${bundle.id}`));
+    setHasPreview(
+      !!localStorage.getItem(getPreviewReadinessStorageKey(bundle.id)),
+    );
   }, [bundle.id]);
 
   return {
