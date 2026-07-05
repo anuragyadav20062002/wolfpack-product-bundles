@@ -130,6 +130,33 @@ _mergeBundleSettings(settings) {
   }
 },
 
+async hydrateCurrentFullPageBundleBeforeRender() {
+  const bundleId = this.container?.dataset?.bundleId;
+  if (!bundleId || this._bundleConfigCacheMode !== 'full') return false;
+
+  try {
+    const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
+    const response = await fetch(apiUrl, {
+      cache: 'no-store',
+      credentials: 'same-origin',
+    });
+    if (!response.ok) return false;
+
+    const data = await response.json();
+    if (!data?.bundle?.id) return false;
+
+    this.bundleData = {
+      ...(this.bundleData || {}),
+      [data.bundle.id]: data.bundle,
+    };
+    this.selectedBundle = data.bundle;
+    this._bundleConfigCacheMode = 'proxy';
+    return true;
+  } catch (_error) {
+    return false;
+  }
+},
+
 _initFloatingBadge() {
   const enabled = this.selectedBundle && this.selectedBundle.floatingBadgeEnabled;
   const text = this.selectedBundle && this.selectedBundle.floatingBadgeText;

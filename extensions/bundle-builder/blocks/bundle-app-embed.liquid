@@ -34,6 +34,28 @@
       document.head.appendChild(link);
     }
 
+    function parseBundleConfig(value) {
+      if (!value || value === 'null' || value === 'undefined') return {};
+
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function normalizePreset(value) {
+      var preset = String(value || 'STANDARD').trim().toUpperCase();
+      if (preset === 'DEFAULT' || preset === 'DEFAULT_FBP') return 'STANDARD';
+      if (preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL') return preset;
+      return 'STANDARD';
+    }
+
+    function getTemplateStylesheetUrl(preset) {
+      var urls = window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ || {};
+      return urls[preset] || urls.STANDARD || urls.DEFAULT;
+    }
+
     function initializeHydratedFullPageBundle() {
       if (
         window.WolfpackFullPageBundle &&
@@ -64,12 +86,20 @@
 
       var bundleId = marker.dataset.bundleId;
       if (!bundleId) return;
+      var bundleConfig = parseBundleConfig(marker.dataset.bundleConfig);
+      var initialTemplate = marker.dataset.fpbTemplateType || bundleConfig.bundleDesignTemplate || 'FBP_SIDE_FOOTER';
+      var initialPreset = normalizePreset(marker.dataset.fpbDesignPreset || bundleConfig.bundleDesignPresetId);
+      var initialTabStyle = initialPreset === 'CLASSIC' || initialPreset === 'COMPACT' ? 'pill' : 'underline';
+      var presetClass = 'fpb-preset-' + initialPreset.toLowerCase();
 
       var container = document.createElement('div');
       container.id = 'bundle-builder-app';
-      container.className = 'bundle-widget-container bundle-widget-full-page';
+      container.className = 'bundle-widget-container bundle-widget-full-page ' + presetClass;
       container.dataset.bundleId = bundleId;
       container.dataset.bundleType = marker.dataset.bundleType || 'full_page';
+      container.dataset.fpbTemplateType = initialTemplate;
+      container.dataset.fpbDesignPreset = initialPreset;
+      container.dataset.fpbTabStyle = initialTabStyle;
       container.dataset.bundleConfig = marker.dataset.bundleConfig || 'null';
       container.dataset.bundleSettings = marker.dataset.bundleSettings || 'null';
       container.dataset.shop = marker.dataset.shop || '';
@@ -79,6 +109,7 @@
       marker.dataset.wpbHydrated = 'true';
 
       ensureStylesheet(fullPageStyleUrl);
+      ensureStylesheet(getTemplateStylesheetUrl(initialPreset));
       ensureScript(fullPageScriptUrl);
       initializeHydratedFullPageBundle();
     }

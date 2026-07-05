@@ -361,7 +361,7 @@ describe("FPB create + configure parity flow (scaffolded E2E path)", () => {
       mockSession,
       buildCreateFormData(),
     );
-    const createBody = await createResponse.json();
+    const createBody = await createResponse.json() as { success: boolean; bundleId: string };
 
     expect(createResponse.status).toBe(200);
     expect(createBody.success).toBe(true);
@@ -443,7 +443,7 @@ describe("FPB create + configure parity flow (scaffolded E2E path)", () => {
       mockSession,
       buildCreateFormData(),
     );
-    const createBody = await createResponse.json();
+    const createBody = await createResponse.json() as { success: boolean; bundleId: string };
 
     expect(createResponse.status).toBe(200);
     expect(createBody.success).toBe(true);

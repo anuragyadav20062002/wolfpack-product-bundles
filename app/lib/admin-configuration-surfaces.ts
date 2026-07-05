@@ -1,3 +1,5 @@
+import { CHECKOUT_INTEGRATION_PROVIDER_OPTIONS } from "./checkout-integrations";
+
 export type SettingsCardId = "design" | "language" | "controls";
 
 export type SettingsCard = {
@@ -20,6 +22,8 @@ export type SettingsField = {
   state?: string;
   group?: string;
 };
+
+export const CHECKOUT_INTEGRATION_OPTIONS = CHECKOUT_INTEGRATION_PROVIDER_OPTIONS;
 
 export type SettingsTab = {
   title: string;
@@ -606,7 +610,14 @@ export const CONTROL_LAYOUTS: ControlsLayout[] = [
             description: "Customize the checkout behavior for all the bundle flows",
             options: ["Redirect to Checkout", "Redirect to Cart"],
           },
-          { label: "Execute Script", kind: "script", group: "Checkout Settings" },
+          {
+            label: "Checkout Integration",
+            kind: "select",
+            value: "Shopify checkout",
+            group: "Checkout Settings",
+            description: "Select the checkout app installed on this store.",
+            options: CHECKOUT_INTEGRATION_OPTIONS,
+          },
           { label: "Font Settings", kind: "text", group: "Font Settings", description: "Customize the font of the bundle builder." },
           { label: "Custom Font", kind: "text", group: "Font Settings", description: "Note: By default, your storefront theme font will be picked." },
         ],
@@ -748,7 +759,7 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
     cards: [
       {
         id: "gokwik",
-        title: "Gokwik",
+        title: "GoKwik",
         description: "Streamlined Indian checkout experience for bundles",
         logoLabel: "Gokwik",
         logoUrl: "/icons/Gokwik.avif",

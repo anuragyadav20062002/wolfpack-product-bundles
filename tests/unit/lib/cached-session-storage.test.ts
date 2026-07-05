@@ -5,11 +5,13 @@ jest.mock("../../../app/services/offline-token.server", () => {
   const actual = jest.requireActual("../../../app/services/offline-token.server");
   return {
     ...actual,
+    migrateOfflineSessionToExpiring: jest.fn(),
     refreshOfflineSession: jest.fn(),
   };
 });
 
 const offlineTokenModule = jest.requireMock("../../../app/services/offline-token.server") as {
+  migrateOfflineSessionToExpiring: jest.Mock;
   refreshOfflineSession: jest.Mock;
 };
 
@@ -48,6 +50,26 @@ function makeRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function makeCompliantOfflineRow(overrides: Record<string, unknown> = {}) {
+  return makeRow({
+    expires: new Date(Date.now() + 60 * 60 * 1000),
+    refreshToken: "refresh-token",
+    refreshTokenExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+    ...overrides,
+  });
+}
+
+function buildCompliantOfflineSession(id = "offline_test.myshopify.com") {
+  const session = buildSession(id) as Session & {
+    refreshToken?: string;
+    refreshTokenExpiresAt?: Date;
+  };
+  session.expires = new Date(Date.now() + 60 * 60 * 1000);
+  session.refreshToken = "refresh-token";
+  session.refreshTokenExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+  return session;
+}
+
 function makePrisma(row: ReturnType<typeof makeRow> | null = makeRow()) {
   return {
     session: {
@@ -60,6 +82,11 @@ function makePrisma(row: ReturnType<typeof makeRow> | null = makeRow()) {
     },
   };
 }
+
+beforeEach(() => {
+  offlineTokenModule.migrateOfflineSessionToExpiring.mockReset();
+  offlineTokenModule.refreshOfflineSession.mockReset();
+});
 
 describe("CachedSessionStorage.loadSession", () => {
   it("returns undefined and does not cache when the row is missing", async () => {
@@ -74,7 +101,7 @@ describe("CachedSessionStorage.loadSession", () => {
   });
 
   it("fetches from Prisma once and returns cached result on the second call", async () => {
-    const prisma = makePrisma();
+    const prisma = makePrisma(makeCompliantOfflineRow());
     const storage = new CachedSessionStorage(prisma as any, 60_000);
 
     const first = await storage.loadSession("offline_test.myshopify.com");
@@ -83,6 +110,19 @@ describe("CachedSessionStorage.loadSession", () => {
     expect(first?.accessToken).toBe("shpat_test");
     expect(second?.accessToken).toBe("shpat_test");
     expect(prisma.session.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries once when Prisma reports a stale closed connection", async () => {
+    const prisma = makePrisma();
+    prisma.session.findUnique
+      .mockRejectedValueOnce(new Error("Invalid `prisma.session.findUnique()` invocation:\n\nServer has closed the connection."))
+      .mockResolvedValueOnce(makeCompliantOfflineRow());
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+
+    const result = await storage.loadSession("offline_test.myshopify.com");
+
+    expect(result?.accessToken).toBe("shpat_test");
+    expect(prisma.session.findUnique).toHaveBeenCalledTimes(2);
   });
 
   it("refreshes an expiring offline session before returning it", async () => {
@@ -109,13 +149,53 @@ describe("CachedSessionStorage.loadSession", () => {
     expect(offlineTokenModule.refreshOfflineSession).toHaveBeenCalledTimes(1);
     expect(result?.accessToken).toBe("shpat_refreshed");
   });
+
+  it("migrates a legacy non-expiring offline session before returning it", async () => {
+    const prisma = makePrisma(makeRow());
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+    const migratedRow = makeRow({
+      accessToken: "shpat_expiring",
+      expires: new Date(Date.now() + 60 * 60 * 1000),
+      refreshToken: "refresh-token",
+      refreshTokenExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+    });
+    offlineTokenModule.migrateOfflineSessionToExpiring.mockResolvedValue(migratedRow);
+
+    const result = await storage.loadSession("offline_test.myshopify.com");
+
+    expect(offlineTokenModule.migrateOfflineSessionToExpiring).toHaveBeenCalledTimes(1);
+    expect(offlineTokenModule.migrateOfflineSessionToExpiring).toHaveBeenCalledWith(
+      prisma,
+      expect.objectContaining({
+        id: "offline_test.myshopify.com",
+        accessToken: "shpat_test",
+        refreshToken: null,
+      }),
+      storage,
+    );
+    expect(result?.accessToken).toBe("shpat_expiring");
+    expect((result as any).refreshToken).toBe("refresh-token");
+  });
+
+  it("does not return a legacy non-expiring offline session when migration fails", async () => {
+    const prisma = makePrisma(makeRow());
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+    offlineTokenModule.migrateOfflineSessionToExpiring.mockRejectedValueOnce(
+      new Error("fetch failed"),
+    );
+
+    const result = await storage.loadSession("offline_test.myshopify.com");
+
+    expect(result).toBeUndefined();
+    expect(prisma.session.delete).not.toHaveBeenCalled();
+  });
 });
 
 describe("CachedSessionStorage.storeSession", () => {
   it("upserts the session row and populates the cache", async () => {
     const prisma = makePrisma();
     const storage = new CachedSessionStorage(prisma as any, 60_000);
-    const session = buildSession();
+    const session = buildCompliantOfflineSession();
 
     const result = await storage.storeSession(session);
     const cached = await storage.loadSession(session.id);
@@ -124,6 +204,28 @@ describe("CachedSessionStorage.storeSession", () => {
     expect(prisma.session.upsert).toHaveBeenCalledTimes(1);
     expect(prisma.session.findUnique).not.toHaveBeenCalled();
     expect(cached?.accessToken).toBe("shpat_test");
+  });
+
+  it("does not serve a cached legacy offline session without migration", async () => {
+    const prisma = makePrisma(makeRow());
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+    const session = buildSession();
+    const migratedRow = makeRow({
+      accessToken: "shpat_expiring",
+      expires: new Date(Date.now() + 60 * 60 * 1000),
+      refreshToken: "refresh-token",
+      refreshTokenExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+    });
+    offlineTokenModule.migrateOfflineSessionToExpiring.mockResolvedValue(migratedRow);
+
+    await storage.storeSession(session);
+    const loaded = await storage.loadSession(session.id);
+
+    expect(offlineTokenModule.migrateOfflineSessionToExpiring).toHaveBeenCalledTimes(1);
+    expect(prisma.session.findUnique).toHaveBeenCalledWith({
+      where: { id: session.id },
+    });
+    expect(loaded?.accessToken).toBe("shpat_expiring");
   });
 });
 
@@ -160,7 +262,8 @@ describe("CachedSessionStorage deletes", () => {
 describe("CachedSessionStorage passthrough methods", () => {
   it("loads sessions by shop from Prisma", async () => {
     const prisma = makePrisma();
-    prisma.session.findMany.mockResolvedValue([makeRow()]);
+    const expiringRow = makeCompliantOfflineRow();
+    prisma.session.findMany.mockResolvedValue([expiringRow]);
     const storage = new CachedSessionStorage(prisma as any, 60_000);
 
     const result = await storage.findSessionsByShop("test.myshopify.com");
@@ -171,6 +274,25 @@ describe("CachedSessionStorage passthrough methods", () => {
       take: 25,
       orderBy: [{ expires: "desc" }],
     });
+  });
+
+  it("migrates legacy offline rows in findSessionsByShop before returning them", async () => {
+    const prisma = makePrisma();
+    prisma.session.findMany.mockResolvedValue([makeRow()]);
+    const migratedRow = makeRow({
+      accessToken: "shpat_expiring",
+      expires: new Date(Date.now() + 60 * 60 * 1000),
+      refreshToken: "refresh-token",
+      refreshTokenExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+    });
+    offlineTokenModule.migrateOfflineSessionToExpiring.mockResolvedValue(migratedRow);
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+
+    const result = await storage.findSessionsByShop("test.myshopify.com");
+
+    expect(result).toHaveLength(1);
+    expect(result[0].accessToken).toBe("shpat_expiring");
+    expect(offlineTokenModule.migrateOfflineSessionToExpiring).toHaveBeenCalledTimes(1);
   });
 
   it("checks readiness via Prisma", async () => {
@@ -239,7 +361,7 @@ describe("CachedSessionStorage refresh resilience", () => {
       ...makeExpiringRow(),
       id: "offline_bad.myshopify.com",
     };
-    const goodRow = makeRow({
+    const goodRow = makeCompliantOfflineRow({
       id: "offline_good.myshopify.com",
       accessToken: "shpat_good",
     });

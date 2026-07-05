@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
-const WIDGET_VERSION = '4.0.5';
+const WIDGET_VERSION = '5.0.42';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
@@ -100,6 +100,7 @@ const FULL_PAGE_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/full-page/templates/classic-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/full-page/templates/compact-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/full-page/templates/horizontal-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/shared/summary-pricing-display.js'),
   join(ROOT_DIR, 'app/assets/widgets/full-page/methods/analytics-config-methods.js'),
   join(ROOT_DIR, 'app/assets/widgets/full-page/methods/initial-render-methods.js'),
   join(ROOT_DIR, 'app/assets/widgets/full-page/methods/responsive-layout-methods.js'),

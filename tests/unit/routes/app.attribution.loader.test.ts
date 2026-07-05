@@ -40,6 +40,22 @@ const mockRequireAdminSession = requireAdminSession as jest.MockedFunction<
 const mockGetPixelStatus = getPixelStatus as jest.MockedFunction<typeof getPixelStatus>;
 const getDb = () => require("../../../app/db.server").default;
 
+function getDeferredPayload(response: unknown) {
+  const data = (response as { data?: unknown }).data;
+  if (!data || typeof data !== "object") {
+    throw new Error("Expected Remix deferred response data");
+  }
+  return data as Record<string, Promise<unknown>>;
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
 describe("app.attribution loader — campaign aggregation", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -94,7 +110,7 @@ describe("app.attribution loader — campaign aggregation", () => {
       context: {},
     } as any);
 
-    const payload = (await response.json()) as any;
+    const payload = (await getDeferredPayload(response).analytics) as any;
 
     expect(payload.summary.totalOrders).toBe(2);
     expect(payload.summary.bundleOrders).toBe(1);
@@ -114,5 +130,58 @@ describe("app.attribution loader — campaign aggregation", () => {
       },
     ]);
   });
-});
 
+  it("returns pixel status separately so the first status card does not wait for analytics", async () => {
+    getDb().orderAttribution.findMany.mockReset();
+    getDb().bundleAnalytics.findMany.mockReset();
+    getDb().bundleEngagement.findMany.mockReset();
+    getDb().bundle.findMany.mockReset();
+
+    const pixelStatus = createDeferred<{ active: boolean }>();
+    mockGetPixelStatus.mockReturnValueOnce(pixelStatus.promise as any);
+
+    const currentAttributions = createDeferred<any[]>();
+    getDb().orderAttribution.findMany
+      .mockReturnValueOnce(currentAttributions.promise)
+      .mockResolvedValueOnce([]);
+
+    getDb().bundleAnalytics.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    getDb().bundleEngagement.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    getDb().bundle.findMany.mockResolvedValueOnce([]);
+
+    const response = await loader({
+      request: new Request("https://test.myshopify.com/app/attribution?days=1"),
+      params: {},
+      context: {},
+    } as any);
+
+    const payload = getDeferredPayload(response);
+
+    expect(payload.pixelStatus).toBeDefined();
+    expect(payload.analytics).toBeDefined();
+    expect(getDb().orderAttribution.findMany).toHaveBeenCalledTimes(2);
+
+    pixelStatus.resolve({ active: true });
+    await expect(payload.pixelStatus).resolves.toEqual({ active: true });
+
+    const analyticsSettled = jest.fn();
+    void payload.analytics.then(analyticsSettled);
+    await Promise.resolve();
+    expect(analyticsSettled).not.toHaveBeenCalled();
+
+    currentAttributions.resolve([]);
+    await expect(payload.analytics).resolves.toMatchObject({
+      summary: {
+        totalOrders: 0,
+        bundleOrders: 0,
+      },
+    });
+  });
+});

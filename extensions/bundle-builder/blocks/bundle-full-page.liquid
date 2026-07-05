@@ -35,7 +35,7 @@
 {% endif %}
 
 {% if should_show_widget %}
-  {% comment %} Compact bootstrap payload for storefront runtime (minimal markup footprint). {% endcomment %}
+  {% comment %} Emit a compact bootstrap pointer; the widget hydrates current bundle data via app proxy. {% endcomment %}
   {% assign bundle_config_json = 'null' %}
   {% if bundle_id != blank %}
     {% capture bundle_config_payload %}
@@ -44,6 +44,27 @@
     {% assign bundle_config_json = bundle_config_payload | strip %}
   {% else %}
     {% assign bundle_config_json = 'null' %}
+  {% endif %}
+
+  {% assign bootstrap_template = 'FBP_SIDE_FOOTER' %}
+  {% assign bootstrap_preset = 'STANDARD' %}
+  {% assign bundle_config_metafield = page.metafields.custom.bundle_config %}
+  {% if bundle_config_metafield.value.bundleDesignTemplate != blank %}
+    {% assign bootstrap_template = bundle_config_metafield.value.bundleDesignTemplate %}
+  {% endif %}
+  {% if bundle_config_metafield.value.bundleDesignPresetId != blank %}
+    {% assign bootstrap_preset = bundle_config_metafield.value.bundleDesignPresetId %}
+  {% endif %}
+  {% assign bootstrap_preset_key = bootstrap_preset | upcase %}
+  {% if bootstrap_preset_key == 'DEFAULT' or bootstrap_preset_key == 'DEFAULT_FBP' %}
+    {% assign bootstrap_preset_key = 'STANDARD' %}
+  {% elsif bootstrap_preset_key != 'CLASSIC' and bootstrap_preset_key != 'COMPACT' and bootstrap_preset_key != 'HORIZONTAL' %}
+    {% assign bootstrap_preset_key = 'STANDARD' %}
+  {% endif %}
+  {% if bootstrap_preset_key == 'CLASSIC' or bootstrap_preset_key == 'COMPACT' %}
+    {% assign bootstrap_tab_style = 'pill' %}
+  {% else %}
+    {% assign bootstrap_tab_style = 'underline' %}
   {% endif %}
 
   {% comment %} Bundle settings metafield — Settings design display settings (promoBanner, badge, etc.) {% endcomment %}
@@ -80,6 +101,9 @@
     id="bundle-builder-app"
     data-bundle-id="{{ bundle_id }}"
     data-bundle-type="full_page"
+    data-fpb-template-type="{{ bootstrap_template }}"
+    data-fpb-design-preset="{{ bootstrap_preset_key }}"
+    data-fpb-tab-style="{{ bootstrap_tab_style }}"
     data-bundle-config="{{ bundle_config_json | escape }}"
     data-bundle-settings="{{ bundle_settings_json | escape }}"
     data-show-title="{{ block.settings.show_bundle_title }}"
@@ -91,7 +115,7 @@
     data-product-cards-per-row="{{ block.settings.product_cards_per_row }}"
     data-show-promo-banner="{{ block.settings.show_promo_banner | default: true }}"
     data-tier-config="{{ tier_config_json | escape }}"
-    class="bundle-widget-container bundle-widget-full-page"
+    class="bundle-widget-container bundle-widget-full-page fpb-preset-{{ bootstrap_preset_key | downcase }}"
   >
     <div class="bundle-loading">
       <div class="loading-spinner"></div>
@@ -106,7 +130,8 @@
     .page-title h1,
     h1.page-title,
     .page-header h1,
-    .main-page-title { display: none !important; }
+    .main-page-title,
+    .shopify-section:has(#bundle-builder-app) h1 { display: none !important; }
     /* Hide the section wrapper padding that creates a blank gray gap */
     .shopify-section:has(.main-page-title) { display: none !important; }
   </style>
@@ -153,6 +178,16 @@
   {% # theme-check-enable RemoteAsset %}
 
   <link rel="stylesheet" href="{{ 'bundle-widget-full-page.css' | asset_url }}">
+  {% case bootstrap_preset_key %}
+    {% when 'CLASSIC' %}
+      <link rel="stylesheet" href="{{ 'bundle-widget-full-page-classic.css' | asset_url }}" data-wpb-fpb-template-css="CLASSIC">
+    {% when 'COMPACT' %}
+      <link rel="stylesheet" href="{{ 'bundle-widget-full-page-compact.css' | asset_url }}" data-wpb-fpb-template-css="COMPACT">
+    {% when 'HORIZONTAL' %}
+      <link rel="stylesheet" href="{{ 'bundle-widget-full-page-horizontal.css' | asset_url }}" data-wpb-fpb-template-css="HORIZONTAL">
+    {% else %}
+      <link rel="stylesheet" href="{{ 'bundle-widget-full-page-standard.css' | asset_url }}" data-wpb-fpb-template-css="STANDARD">
+  {% endcase %}
   <script src="{{ 'bundle-widget-full-page-bundled.js' | asset_url }}" defer></script>
 
 {% else %}

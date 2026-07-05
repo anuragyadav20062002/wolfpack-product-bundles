@@ -22,6 +22,7 @@ import {
   getProgressBarTone,
 } from "../../utils/pricing";
 import { navigateBackOrFallback } from "../../lib/navigation";
+import { openSupportChat } from "../../lib/support-chat.client";
 
 // Import shared billing components
 import {
@@ -405,11 +406,7 @@ export default function BillingPage() {
                 {t("billing.route.helpBody")}
               </p>
               <s-button
-                onClick={() => {
-                  if (window.$crisp) {
-                    window.$crisp.push(["do", "chat:open"]);
-                  }
-                }}
+                onClick={() => openSupportChat()}
               >
                 {t("billing.actions.contactSupport")}
               </s-button>
@@ -420,10 +417,4 @@ export default function BillingPage() {
       </div>
     </>
   );
-}
-
-declare global {
-  interface Window {
-    $crisp?: any[];
-  }
 }

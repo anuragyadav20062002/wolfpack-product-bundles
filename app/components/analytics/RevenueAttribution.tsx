@@ -11,6 +11,7 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "rec
 import type { ValueType } from "recharts/types/component/DefaultTooltipContent";
 import { KpiTile } from "./shared/KpiTile";
 import type { BundleRevenueSummary, TrendPoint } from "../../lib/analytics";
+import { formatCompactCurrencyAxisTick } from "../../lib/analytics/chart-axis-formatters";
 
 export interface RevenueAttributionProps {
   summary: BundleRevenueSummary;
@@ -77,7 +78,13 @@ export function RevenueAttribution({ summary, trend, formatRevenue }: RevenueAtt
               </linearGradient>
             </defs>
             <XAxis dataKey="date" hide />
-            <YAxis hide />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "var(--wpb-ink-500)", fontSize: 11 }}
+              tickFormatter={(value: number) => formatCompactCurrencyAxisTick(value)}
+              width={48}
+            />
             <Tooltip
               labelStyle={{ font: "var(--wpb-micro)", color: "var(--wpb-ink-700)" }}
               contentStyle={{

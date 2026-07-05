@@ -88,8 +88,71 @@ jest.mock("@shopify/polaris/build/esm/styles.css?url", () => "polaris.css", {
 });
 
 const { useLoaderData } = require("@remix-run/react");
+const { authenticate } = require("../../../app/shopify.server");
+const { buildMantleProviderConfig } = require("../../../app/services/mantle.server");
+const { loadShopAdminLocale } = require("../../../app/services/admin-locale.server");
+const { getPolarisLocale } = require("../../../app/i18n/polaris-locales.server");
+const { loaderCache } = require("../../../app/lib/loader-cache.server");
+const { ensureShopHasExpiringOfflineSession } = require("../../../app/services/offline-token.server");
 
 describe("app Mantle provider", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    loaderCache.reset();
+  });
+
+  it("passes the Mantle API key to the server identify flow", async () => {
+    const previousEnv = {
+      MANTLE_APP_ID: process.env.MANTLE_APP_ID,
+      MANTLE_API_KEY: process.env.MANTLE_API_KEY,
+      MANTLE_API_URL: process.env.MANTLE_API_URL,
+      SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY,
+    };
+    process.env.MANTLE_APP_ID = "mantle-app-id";
+    process.env.MANTLE_API_KEY = "mantle-api-key";
+    process.env.MANTLE_API_URL = "https://mantle.example.test/v1";
+    process.env.SHOPIFY_API_KEY = "shopify-client-id";
+
+    const admin = { graphql: jest.fn() };
+    authenticate.admin.mockResolvedValue({
+      admin,
+      session: {
+        shop: "test-shop.myshopify.com",
+        accessToken: "shopify-access-token",
+      },
+    });
+    ensureShopHasExpiringOfflineSession.mockResolvedValue(undefined);
+    loadShopAdminLocale.mockResolvedValue("en");
+    getPolarisLocale.mockReturnValue({});
+    buildMantleProviderConfig.mockResolvedValue(null);
+
+    try {
+      const { loader } = await import("../../../app/routes/app/app");
+      await loader({
+        request: new Request("https://admin.shopify.com/store/test/apps/wpb/app"),
+        context: {},
+        params: {},
+      });
+
+      expect(buildMantleProviderConfig).toHaveBeenCalledWith({
+        appId: "mantle-app-id",
+        apiKey: "mantle-api-key",
+        apiUrl: "https://mantle.example.test/v1",
+        shopDomain: "test-shop.myshopify.com",
+        accessToken: "shopify-access-token",
+        admin,
+      });
+    } finally {
+      for (const [key, value] of Object.entries(previousEnv)) {
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      }
+    }
+  });
+
   it("wraps the Admin app tree with MantleProvider when loader data includes Mantle config", async () => {
     useLoaderData.mockReturnValue({
       apiKey: "shopify-api-key",

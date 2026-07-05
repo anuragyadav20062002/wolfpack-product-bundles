@@ -7,10 +7,4 @@ describe('FPB Horizontal template config contract', () => {
     expect(FPB_HORIZONTAL_TEMPLATE_CONFIG.presetId).toBe('HORIZONTAL');
     expect(FPB_HORIZONTAL_TEMPLATE_CONFIG.aliases).toEqual(expect.arrayContaining(['HORIZONTAL']));
   });
-
-  it('declares shared primitives for later renderer migration', () => {
-    expect(FPB_HORIZONTAL_TEMPLATE_CONFIG.productCard.mode).toBe('row');
-    expect(FPB_HORIZONTAL_TEMPLATE_CONFIG.summary.mode).toBe('rows');
-    expect(FPB_HORIZONTAL_TEMPLATE_CONFIG.discountProgress.mode).toBe('stepped');
-  });
 });

@@ -1,6 +1,13 @@
 import { BUNDLE_WIDGET, PricingCalculator } from '../../../bundle-widget-components.js';
 
 export const ProductPageSelectionDataMethods = {
+isInventoryTrackingOnAddToCartEnabled() {
+  const controls = typeof this._getProductPageControls === 'function'
+    ? this._getProductPageControls()
+    : null;
+  return controls?.trackInventoryOnAddToCart === true;
+},
+
 /**
  * Look up real stock for a variant. See full-page widget's getVariantAvailable
  * for field semantics.
@@ -16,10 +23,16 @@ getVariantAvailable(stepIndex, variantId) {
   }
   const qty = typeof product.quantityAvailable === 'number' ? product.quantityAvailable : null;
   const backorder = product.currentlyNotInStock === true;
-  if (qty === 0 && !backorder) {
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : ProductPageSelectionDataMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  if (!trackInventoryOnAddToCart) {
+    return { available: null, outOfStock: false, acceptsBackorder: backorder };
+  }
+  if (trackInventoryOnAddToCart && qty === 0 && !backorder) {
     return { available: 0, outOfStock: true, acceptsBackorder: false };
   }
-  return { available: qty, outOfStock: false, acceptsBackorder: backorder };
+  return { available: qty === 0 ? null : qty, outOfStock: false, acceptsBackorder: backorder };
 },
 
 findProductBySelectionKey(products, selectionKey) {

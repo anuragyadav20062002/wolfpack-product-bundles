@@ -61,7 +61,9 @@ updateMessagesFromBundle() {
       this.config.successMessageTemplate = firstRuleMsg.successMessage;
     }
 
-    this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
+    this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging === false
+      ? false
+      : this.selectedBundle?.pricing?.enabled || false;
     this.config.showDiscountProgressBar =
       progressBarOptions.enabled === true ||
       pricingMessages.showDiscountProgressBar === true ||

@@ -68,8 +68,9 @@ createProductCard(product, stepIndex, options = {}) {
     : '';
 
   const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
-  const hasStandardAddonDiscountBadge = designPreset === 'STANDARD' && displayProduct.addonDiscountBadgeText;
-  const stockBadgeHtml = hasStandardAddonDiscountBadge
+  const supportsAddonDiscountBadge = ['STANDARD', 'CLASSIC'].includes(designPreset);
+  const hasAddonDiscountBadge = supportsAddonDiscountBadge && displayProduct.addonDiscountBadgeText;
+  const stockBadgeHtml = hasAddonDiscountBadge
     ? `<span class="fpb-addon-discount-badge">${ComponentGenerator.escapeHtml(displayProduct.addonDiscountBadgeText)}</span>`
     : '';
   let htmlString;
@@ -135,7 +136,7 @@ createProductCard(product, stepIndex, options = {}) {
   }
 
   // Free gift step: add "Free" badge and override price display to $0.00
-  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true && !hasStandardAddonDiscountBadge) {
+  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true && !hasAddonDiscountBadge) {
     const imgEl = cardElement.querySelector('.product-image, .product-img, img');
     if (imgEl && imgEl.parentElement) {
       imgEl.parentElement.classList.add('fpb-card-image-wrapper');
@@ -200,6 +201,9 @@ buildPaidAddonProductDisplayData(product, step) {
 getProductCardAddButtonText(step) {
   const isPaidAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;
   if (isPaidAddonStep) {
+    if (this.getFullPageDesignPreset?.() === 'CLASSIC') {
+      return this.getProductAddButtonText();
+    }
     return this._resolveText('addToCartButton', this.config?.addToCartText || 'Add to Cart');
   }
 
@@ -388,11 +392,14 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
         // Clamp against new variant's stock
         const newQtyAvail = product.quantityAvailable; // already updated by component
         const newOOS = this.isVariantOutOfStock(product);
+        const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+          ? this.isInventoryTrackingOnAddToCartEnabled()
+          : false;
         let migratedQty = oldQty;
         if (newOOS) {
           ToastManager.show('Selected variant is out of stock — selection cleared.');
           migratedQty = 0;
-        } else if (newQtyAvail !== null && oldQty > newQtyAvail) {
+        } else if (trackInventoryOnAddToCart && newQtyAvail !== null && oldQty > newQtyAvail) {
           migratedQty = newQtyAvail;
           ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
         }

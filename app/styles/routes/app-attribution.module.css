@@ -74,6 +74,59 @@
 }
 
 /* ── Header row ────────────────────────────────────────────── */
+.pixelStatusBoundary {
+  margin-block-end: 1rem;
+}
+
+.pixelStatusCard {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-block-size: 3.625rem;
+  border: 1px solid #e1e3e5;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: 0.875rem 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.pixelStatusCard > s-stack {
+  width: 100%;
+}
+
+.pixelStatusDot {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  flex: 0 0 0.625rem;
+  border-radius: 50%;
+  background: #b0b8c1;
+}
+
+.pixelStatusCard[data-status="online"] {
+  border-color: #a8e6c1;
+}
+
+.pixelStatusCard[data-status="online"] .pixelStatusDot {
+  background: #00a47c;
+  box-shadow: 0 0 0 0.1875rem rgba(0, 164, 124, 0.18);
+}
+
+.pixelStatusTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.pixelDisclosureText {
+  margin: 0;
+  color: #3d4045;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 .headerRow {
   display: flex;
   align-items: center;

@@ -24,7 +24,7 @@ Verify the bundle-level Variant Selector setting is saved and emitted separately
 ### FullPageCategoryVariantSelector
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | Category checkbox off keeps multi-variant product grouped | category-backed FPB step with `displayVariantsAsIndividualProducts=false` and stale step-level display flag true | product grid does not expand variants into separate cards | EB stores the checkbox per category; grouped card can render the variant selector |
+| 1 | FPB step-level selector expands category products | category-backed FPB step with `displayVariantsAsIndividual=true` and category `displayVariantsAsIndividualProducts=false` | product grid expands variants into separate cards | FPB Admin emits the locked step-level selector; storefront must honor the saved FPB flag without requiring a per-category Admin control |
 | 2 | Category checkbox on expands multi-variant product | active category with `displayVariantsAsIndividualProducts=true` | product grid expands variants as individual cards | Expanded cards suppress the inline selector |
 
 ## Acceptance Criteria

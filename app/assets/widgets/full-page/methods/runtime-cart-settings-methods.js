@@ -420,6 +420,34 @@ resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
   return showTextOnAddButton ? 'text' : 'icon';
 },
 
+syncFullPageTemplateStylesheets(activeTemplateKey, activeHref) {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return;
+
+  const normalizedActiveKey = String(activeTemplateKey || 'STANDARD').trim().toUpperCase();
+  const urls = window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ || {};
+  const knownTemplateEntries = Object.entries(urls)
+    .map(([key, href]) => [String(key).trim().toUpperCase(), href])
+    .filter(([, href]) => typeof href === 'string' && href !== '');
+
+  Array.from(document.querySelectorAll('link[rel="stylesheet"]')).forEach((link) => {
+    if (!(link instanceof HTMLLinkElement)) return;
+
+    const linkTemplateKey = String(link.dataset.wpbFpbTemplateCss || '').trim().toUpperCase();
+    const linkedTemplateKey = linkTemplateKey || knownTemplateEntries.find(([, href]) =>
+      link.getAttribute('href') === href || link.href === href
+    )?.[0];
+
+    if (!linkedTemplateKey) return;
+
+    const isActive =
+      linkedTemplateKey === normalizedActiveKey
+      || link.getAttribute('href') === activeHref
+      || link.href === activeHref;
+
+    link.disabled = !isActive;
+  });
+},
+
 ensureFullPageTemplateStylesheet(preset) {
   const presetKey = String(preset || 'STANDARD').trim().toUpperCase() || 'STANDARD';
   const templateKey = presetKey;
@@ -461,14 +489,17 @@ ensureFullPageTemplateStylesheet(preset) {
   };
 
   if (existingLink) {
+    existingLink.disabled = false;
     if (isStylesheetLoaded(existingLink)) {
       markLoaded(existingLink);
+      this.syncFullPageTemplateStylesheets(templateKey, href);
       return Promise.resolve();
     }
 
     const promise = new Promise((resolve) => {
       const done = () => {
         markLoaded(existingLink);
+        this.syncFullPageTemplateStylesheets(templateKey, href);
         this._fpbTemplateStylesheetPromises.delete(href);
         resolve();
       };
@@ -489,6 +520,7 @@ ensureFullPageTemplateStylesheet(preset) {
   const promise = new Promise((resolve) => {
     const done = () => {
       markLoaded(link);
+      this.syncFullPageTemplateStylesheets(templateKey, href);
       this._fpbTemplateStylesheetPromises.delete(href);
       resolve();
     };

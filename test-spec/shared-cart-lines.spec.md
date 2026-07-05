@@ -14,9 +14,11 @@ Introduce shared cart-line metadata helpers before replacing FPB and PPB cart su
 | 1 | Source metadata | Selected lines, retail price, discount | `_bundle_display_properties` JSON | Matches current cart-line messaging source metadata. |
 | 2 | Visible labels | Display metadata and label map | Cart line label properties | Supports FPB visible labels and future shared use. |
 | 3 | Build inclusion | Build script | Shared helper bundled before widgets | Needed for storefront bundle builds. |
+| 4 | Box metadata opt-out | Selected lines with `includeBox: false` | `_bundle_display_properties` has no `box` field | Prevents BXY/BQO-off storefronts from leaking Box labels into cart/checkout display metadata. |
 
 ## Acceptance Criteria
 
 - [x] Source metadata helper exists.
 - [x] Visible cart-line label helper exists.
 - [x] Helper is included in widget shared bundle.
+- [x] Box display metadata can be explicitly omitted by callers.

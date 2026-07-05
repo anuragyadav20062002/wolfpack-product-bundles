@@ -46,43 +46,46 @@
   }
 
   .fpb-preset-classic .category-tabs {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    grid-template-columns: repeat(2, max-content);
-    grid-template-rows: 50.797px;
-    justify-content: start;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: safe center;
     gap: 20px;
-    height: 50.797px;
     margin: 0;
     padding: 0;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .fpb-preset-classic .category-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .fpb-preset-classic .category-tab {
-    height: 50.797px;
-    display: grid;
-    grid-template-columns: max-content 0;
-    grid-template-rows: 28.797px;
-    gap: 5px;
+    min-height: var(--classic-category-pill-min-height);
+    display: inline-flex;
     align-items: center;
-    justify-content: start;
-    padding: 10px;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    color: rgba(18, 18, 18, 0.75);
+    justify-content: center;
+    flex: 0 0 auto;
+    max-width: min(100%, 34rem);
+    padding: var(--classic-category-pill-padding);
+    border: var(--classic-category-pill-border);
+    border-radius: 999px;
+    background: #fff;
+    color: #000;
     font-family: Assistant, sans-serif;
     font-size: 16px;
-    line-height: 28.8px;
-    font-weight: 400;
+    line-height: 1.2;
+    font-weight: 700;
     box-shadow: none;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   .fpb-preset-classic .category-tab.active {
-    background: transparent;
-    color: #000;
-    border: 0;
+    background: #000;
+    color: #fff;
+    border-color: #000;
   }
 
   .fpb-preset-classic .category-tab::after,
@@ -95,8 +98,11 @@
     font-family: Assistant, sans-serif;
     font-size: 16px;
     font-weight: 700;
-    line-height: 28.8px;
+    line-height: 1.2;
     letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .fpb-preset-classic .sidebar-content .full-page-product-grid-container {
@@ -115,6 +121,7 @@
   }
 
   .fpb-preset-classic .sidebar-content .product-card {
+    position: relative;
     width: 100%;
     min-width: 0;
     max-width: none;
@@ -131,6 +138,22 @@
       var(--bundle-global-primary-text, currentColor)
     );
     overflow: visible;
+  }
+
+  .fpb-preset-classic .sidebar-content .fpb-addon-discount-badge {
+    position: absolute;
+    inset-block-start: 1rem;
+    inset-inline-end: 0;
+    z-index: 2;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.3125rem 0 0 0.3125rem;
+    background: var(--bundle-add-btn-color, #000);
+    color: var(--bundle-button-text-color, #fff);
+    font-family: Assistant, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.8;
+    letter-spacing: 0;
   }
 
   .fpb-preset-classic .sidebar-content .product-image {
@@ -382,6 +405,64 @@
     text-align: left;
     flex-direction: row;
     overflow: visible;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card
+    .product-content-wrapper:has(.vs-wrapper) {
+    grid-template-rows: auto auto;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card
+    .product-card-price-action:has(.vs-wrapper) {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      var(--classic-desktop-icon-action-width, clamp(56px, 20%, 74px));
+    grid-template-rows: auto var(--classic-icon-button-size);
+    gap: 8px 5px;
+    width: 100%;
+    min-width: 0;
+    align-items: start;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card
+    .product-card-price-action:has(.vs-wrapper)
+    .vs-wrapper {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card
+    .product-card-price-action:has(.vs-wrapper)
+    .product-price-row {
+    grid-row: 2;
+    grid-column: 1;
+    width: 100%;
+    min-width: 0;
+    align-self: center;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card
+    .product-card-price-action:has(.vs-wrapper)
+    .product-card-action {
+    grid-row: 2;
+    grid-column: 2;
+    justify-self: end;
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="icon"]

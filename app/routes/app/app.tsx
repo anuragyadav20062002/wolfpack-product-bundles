@@ -9,7 +9,7 @@ import prisma from "../../db.server";
 import { ErrorPage } from "../../components/ErrorPage";
 import { I18nextProvider, useTranslation } from "react-i18next";
 import { type ReactNode, useEffect } from "react";
-import { i18n } from "../../i18n/config";
+import { changeAdminI18nLanguage, i18n } from "../../i18n/config";
 import { getPolarisLocale } from "../../i18n/polaris-locales.server";
 import { ensureShopHasExpiringOfflineSession } from "../../services/offline-token.server";
 import { AppLogger } from "../../lib/logger";
@@ -38,12 +38,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const polarisTranslations = getPolarisLocale(locale);
   const mantleCacheKey = `mantle-provider:${session.shop}:${session.accessToken}:${
     process.env.MANTLE_APP_ID || ""
-  }:${process.env.SHOPIFY_API_KEY || ""}:${process.env.MANTLE_API_URL || ""}`;
+  }:${process.env.MANTLE_API_KEY || ""}:${process.env.MANTLE_API_URL || ""}`;
   const mantleProvider = await loaderCache.memo(
     mantleCacheKey,
     () => buildMantleProviderConfig({
       appId: process.env.MANTLE_APP_ID,
-      apiKey: process.env.SHOPIFY_API_KEY,
+      apiKey: process.env.MANTLE_API_KEY,
       apiUrl: process.env.MANTLE_API_URL,
       shopDomain: session.shop,
       accessToken: session.accessToken,
@@ -101,7 +101,7 @@ export default function App() {
 
   useEffect(() => {
     if (i18n.language !== locale) {
-      void i18n.changeLanguage(locale);
+      void changeAdminI18nLanguage(locale);
     }
   }, [locale]);
 

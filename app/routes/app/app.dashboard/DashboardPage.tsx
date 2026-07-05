@@ -8,6 +8,7 @@ import { DashboardBannerSkeleton } from "../../../components/skeletons/Dashboard
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
 import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
+import { openSupportChat } from "../../../lib/support-chat.client";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { normalizeAdminLocale } from "../../../i18n/config";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
@@ -111,9 +112,7 @@ export function DashboardPage() {
   }, [fetcher.state, fetcher.data, navigate, shopify, t]);
 
   const handleDirectChat = () => {
-    if (typeof window !== 'undefined' && (window as any).$crisp) {
-      (window as any).$crisp.push(["do", "chat:open"]);
-    }
+    openSupportChat();
   };
 
   const handleEditBundle = useCallback((bundle: typeof bundles[number]) => {
@@ -295,12 +294,20 @@ export function DashboardPage() {
   useEffect(() => {
     if (localeFetcher.state !== "idle" || !localeFetcher.data) return;
     const data = localeFetcher.data;
-    if ("success" in data && data.success && "locale" in data) {
-      localStorage.setItem("wolfpack-locale", data.locale);
-      void i18n.changeLanguage(data.locale);
+    if (
+      typeof data === "object" &&
+      data !== null &&
+      "success" in data &&
+      data.success === true &&
+      "locale" in data &&
+      typeof data.locale === "string"
+    ) {
+      const locale = data.locale;
+      localStorage.setItem("wolfpack-locale", locale);
+      void i18n.changeLanguage(locale);
       setSearchParams(prev => {
         const next = new URLSearchParams(prev);
-        next.set("locale", data.locale);
+        next.set("locale", locale);
         return next;
       });
       shopify.toast.show(t("dashboard.language.saveSuccess"));
@@ -596,30 +603,32 @@ export function DashboardPage() {
                       <div className={dashboardStyles.paginationBar}>
                         <span className={dashboardStyles.paginationSpacer} />
                         <div className={dashboardStyles.paginationControls}>
-                          <s-button
-                            className={dashboardStyles.paginationArrow}
-                            variant="tertiary"
-                            disabled={effectivePage <= 1 || undefined}
-                            onClick={() => setCurrentPage(p => p - 1)}
-                            accessibilityLabel={t("dashboard.pagination.prev")}
-                          >
-                            ‹
-                          </s-button>
-                          <s-text size="small" className={dashboardStyles.paginationPageText}>
+                          <span className={dashboardStyles.paginationArrow}>
+                            <s-button
+                              variant="tertiary"
+                              disabled={effectivePage <= 1 || undefined}
+                              onClick={() => setCurrentPage(p => p - 1)}
+                              accessibilityLabel={t("dashboard.pagination.prev")}
+                            >
+                              ‹
+                            </s-button>
+                          </span>
+                          <span className={dashboardStyles.paginationPageText}>
                             {t("dashboard.pagination.page", { current: effectivePage, total: totalPages })}
-                          </s-text>
-                          <s-button
-                            className={dashboardStyles.paginationArrow}
-                            variant="tertiary"
-                            disabled={effectivePage >= totalPages || undefined}
-                            onClick={() => setCurrentPage(p => p + 1)}
-                            accessibilityLabel={t("dashboard.pagination.next")}
-                          >
-                            ›
-                          </s-button>
+                          </span>
+                          <span className={dashboardStyles.paginationArrow}>
+                            <s-button
+                              variant="tertiary"
+                              disabled={effectivePage >= totalPages || undefined}
+                              onClick={() => setCurrentPage(p => p + 1)}
+                              accessibilityLabel={t("dashboard.pagination.next")}
+                            >
+                              ›
+                            </s-button>
+                          </span>
                         </div>
                         <div className={dashboardStyles.perPageControls}>
-                          <s-text size="small" tone="subdued">{t("dashboard.pagination.perPageLabel")}</s-text>
+                          <span>{t("dashboard.pagination.perPageLabel")}</span>
                           <div className={dashboardStyles.perPageSelectWrap}>
                             <s-select
                               ref={perPageSelectRef}

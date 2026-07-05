@@ -374,6 +374,51 @@ describe("formatStepCategoryForRuntime", () => {
     expect(runtime.selectedProducts).toEqual(runtime.products);
   });
 
+  it("derives compact option fields from selectedOptions without exposing the raw array", () => {
+    const hydratedProduct = {
+      id: "gid://shopify/Product/222",
+      title: "Black Crew Neck T-Shirt",
+      variants: [
+        {
+          id: "gid://shopify/ProductVariant/333",
+          title: "S / Black",
+          price: "30.00",
+          availableForSale: true,
+          selectedOptions: [
+            { name: "Size", value: "S" },
+            { name: "Color", value: "Black" },
+          ],
+        },
+        {
+          id: "gid://shopify/ProductVariant/444",
+          title: "M / Navy",
+          price: "30.00",
+          availableForSale: true,
+          selectedOptions: [
+            { name: "Size", value: "M" },
+            { name: "Color", value: "Navy" },
+          ],
+        },
+      ],
+    };
+
+    const runtime = formatStepCategoryForRuntime({
+      id: "category-db-1",
+      name: "Shirts",
+      products: [hydratedProduct],
+    }, 0);
+
+    expect(runtime.products[0].options).toEqual([
+      { name: "Size" },
+      { name: "Color" },
+    ]);
+    expect(runtime.products[0].variants).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "gid://shopify/ProductVariant/333", option1: "S", option2: "Black" }),
+      expect.objectContaining({ id: "gid://shopify/ProductVariant/444", option1: "M", option2: "Navy" }),
+    ]));
+    expect(JSON.stringify(runtime.products[0])).not.toContain("selectedOptions");
+  });
+
   it("enriches category product stubs from raw step product sources", () => {
     const runtime = formatStepCategoriesForRuntime({
       StepCategory: [

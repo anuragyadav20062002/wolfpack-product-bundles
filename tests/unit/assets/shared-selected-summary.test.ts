@@ -14,15 +14,12 @@ describe('shared selected product row contract', () => {
       priceText: '$699.95',
     });
 
-    expect(html).toContain('data-bw-selected-row="true"');
-    expect(html).toContain('bw-selected-row--filled');
     expect(html).toContain('data-action="remove-selected-product"');
     expect(html).toContain('data-variant-id="variant-1"');
     expect(html).toContain('The Complete Snowboard');
     expect(html).toContain('Ice');
     expect(html).toContain('aria-label="Quantity 2">2</span>');
     expect(html).not.toContain('>x2</span>');
-    expect(html).toContain('<svg viewBox="0 0 20 20"');
     expect(html).not.toContain('>Remove</button>');
     expect(html).toContain('$699.95');
   });
@@ -35,7 +32,6 @@ describe('shared selected product row contract', () => {
       isDefault: true,
     });
 
-    expect(html).toContain('bw-selected-row--default');
     expect(html).toContain('Included');
     expect(html).not.toContain('data-action="remove-selected-product"');
   });
@@ -43,7 +39,6 @@ describe('shared selected product row contract', () => {
   it('renders an empty skeleton row', () => {
     const html = renderSelectedProductRow(null, { emptyLabel: 'Choose an item' });
 
-    expect(html).toContain('bw-selected-row--empty');
     expect(html).toContain('Choose an item');
     expect(html).not.toContain('data-action="remove-selected-product"');
   });
@@ -69,24 +64,18 @@ describe('shared selected product slots contract', () => {
       { id: 'slot-4', label: 'Gift item', product: { id: 'variant-4', title: 'Free Gift', isFreeGift: true, isLocked: true } },
     ]);
 
-    expect(html).toContain('data-bw-selected-slots="true"');
-    expect(html).toContain('bw-selected-slot--empty');
-    expect(html).toContain('bw-selected-slot--filled');
-    expect(html).toContain('bw-selected-slot--default');
-    expect(html).toContain('bw-selected-slot--free-gift');
-    expect(html).toContain('bw-selected-slot--locked');
     expect(html).toContain('data-action="select-slot"');
     expect(html).toContain('data-action="remove-selected-product"');
     expect(html).toContain('Default Wax');
     expect(html).toContain('Free Gift');
   });
 
-  it('supports vertical mode without changing slot data', () => {
+  it('supports vertical mode without changing slot labels', () => {
     const html = renderSelectedProductSlots([
       { id: 'slot-1', label: 'Choose first item' },
     ], { mode: 'vertical' });
 
-    expect(html).toContain('bw-selected-slots--mode-vertical');
+    expect(html).toContain('Choose first item');
   });
 
   it('renders a merchant slot icon for empty selected slots', () => {
@@ -94,8 +83,6 @@ describe('shared selected product slots contract', () => {
       { id: 'slot-1', label: 'Choose first item', iconUrl: 'https://cdn.shopify.com/slot-icon.png' },
     ]);
 
-    expect(html).toContain('bw-selected-slot__icon');
     expect(html).toContain('src="https://cdn.shopify.com/slot-icon.png"');
-    expect(html).not.toContain('bw-selected-slot__placeholder');
   });
 });

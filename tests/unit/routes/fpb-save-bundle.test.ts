@@ -12,6 +12,10 @@ import {
   updateComponentProductMetafields,
 } from "../../../app/services/bundles/metafield-sync.server";
 import { convertBundleToStandardMetafields } from "../../../app/services/bundles/standard-metafields.server";
+import {
+  refreshFullPageBundlePageBody,
+  writeBundleConfigPageMetafield,
+} from "../../../app/services/widget-installation/widget-full-page-bundle.server";
 
 jest.mock("../../../app/db.server", () => ({
   __esModule: true,
@@ -75,6 +79,7 @@ jest.mock(
   "../../../app/services/widget-installation/widget-full-page-bundle.server",
   () => ({
     writeBundleConfigPageMetafield: jest.fn().mockResolvedValue(undefined),
+    refreshFullPageBundlePageBody: jest.fn().mockResolvedValue({ success: true }),
     renamePageHandle: jest.fn(),
     publishPreviewPage: jest.fn(),
     getPreviewPageUrl: jest.fn(),
@@ -344,6 +349,38 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", makeFormData());
     expect(updateBundleProductMetafields).not.toHaveBeenCalled();
     expect(updateComponentProductMetafields).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the full-page marker body when saving a placed full-page bundle", async () => {
+    const updatedBundle = makeUpdatedBundle({
+      shopifyPageId: "gid://shopify/Page/123",
+      shopifyPageHandle: "test-bundle",
+      bundleDesignPresetId: "CLASSIC",
+    });
+    getDb().bundle.update.mockResolvedValue(updatedBundle);
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", makeFormData());
+
+    expect(refreshFullPageBundlePageBody).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      "gid://shopify/Page/123",
+      "bundle-1",
+      MOCK_SESSION.shop,
+      expect.objectContaining({
+        id: "bundle-1",
+        shopifyPageId: "gid://shopify/Page/123",
+        bundleDesignPresetId: "CLASSIC",
+      }),
+    );
+    expect(writeBundleConfigPageMetafield).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      "gid://shopify/Page/123",
+      expect.objectContaining({
+        id: "bundle-1",
+        shopifyPageId: "gid://shopify/Page/123",
+        bundleDesignPresetId: "CLASSIC",
+      }),
+    );
   });
 
   it("passes variantSelectorEnabled=false to DB when form has false", async () => {
@@ -710,6 +747,46 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
         },
       ],
     });
+  });
+
+  it("persists the progress display option as disabled when the progress checkbox is off", async () => {
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "fixed_amount_off",
+      discountRules: [
+        {
+          id: "rule-2",
+          conditionType: "quantity",
+          conditionValue: 2,
+          discountValue: 5,
+        },
+      ],
+      showDiscountProgressBar: false,
+      pricingDisplayOptions: {
+        bundleQuantityOptions: {
+          enabled: true,
+          defaultRuleId: "rule-2",
+          optionsByRuleId: {
+            "rule-2": { label: "Box of 2", subtext: "$5 off" },
+          },
+          optionsByLocaleByRuleId: {},
+        },
+        progressBar: {
+          enabled: true,
+          type: "step_based",
+          progressText: "Add {{conditionText}} to unlock {{discountText}}",
+          successText: "{{discountText}} unlocked",
+        },
+      },
+    });
+    const fd = makeFormData({ discountData: JSON.stringify(discountData) });
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(
+      updateCall.data.pricing.upsert.update.messages.displayOptions.progressBar.enabled,
+    ).toBe(false);
   });
 
   it("wires Bundle Settings quantity validation into direct box-selection config", async () => {

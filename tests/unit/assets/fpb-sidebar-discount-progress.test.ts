@@ -2,6 +2,8 @@ export {};
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageSidePanelMethods } = require('../../../app/assets/widgets/full-page/methods/side-panel-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { PricingCalculator, ToastManager } = require('../../../app/assets/bundle-widget-components.js');
 
 class FakeElement {
   tagName: string;
@@ -10,6 +12,7 @@ class FakeElement {
   innerHTML = '';
   children: FakeElement[] = [];
   style: Record<string, string> = {};
+  listeners: Record<string, Array<() => unknown>> = {};
 
   constructor(tagName: string) {
     this.tagName = tagName.toUpperCase();
@@ -39,7 +42,17 @@ class FakeElement {
     return child;
   }
 
-  addEventListener() {}
+  addEventListener(eventName: string, handler: () => unknown) {
+    this.listeners[eventName] = this.listeners[eventName] || [];
+    this.listeners[eventName].push(handler);
+  }
+
+  async click() {
+    const handlers = this.listeners.click || [];
+    for (const handler of handlers) {
+      await handler();
+    }
+  }
 
   setAttribute() {}
 
@@ -62,6 +75,15 @@ class FakeElement {
   }
 }
 
+function collectButtons(root: FakeElement): FakeElement[] {
+  const buttons: FakeElement[] = [];
+  if (root.tagName === 'BUTTON') buttons.push(root);
+  for (const child of root.children) {
+    buttons.push(...collectButtons(child));
+  }
+  return buttons;
+}
+
 beforeEach(() => {
   const shopMoneyFormat = ['$', '{{amount}}'].join('');
   (global as any).window = {
@@ -78,7 +100,7 @@ beforeEach(() => {
   };
 });
 
-function makeContext(preset: string, progressType: 'simple' | 'step_based') {
+function makeContext(preset: string, progressType: 'simple' | 'step_based'): any {
   return {
     selectedProducts: [{}],
     stepProductData: [[]],
@@ -100,6 +122,7 @@ function makeContext(preset: string, progressType: 'simple' | 'step_based') {
       },
     },
     config: {
+      showDiscountMessaging: true,
       showDiscountProgressBar: true,
       discountProgressBarType: progressType,
       discountTextTemplate: 'Add {{conditionText}} to get {{discountText}}',
@@ -155,7 +178,7 @@ describe('FPB summary sidebar discount progress', () => {
   it.each(['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'])(
     'requests step-based progress rendering in the %s summary sidebar',
     (preset) => {
-      const panel = document.createElement('aside');
+      const panel = document.createElement('aside') as unknown as FakeElement;
       let renderProgressCount = 0;
       const context = makeContext(preset, 'step_based');
       context._renderDiscountProgress = () => {
@@ -185,6 +208,51 @@ describe('FPB summary sidebar discount progress', () => {
       expect(renderProgressCount).toBe(1);
     },
   );
+
+  it('does not format a sidebar discount message when discount messaging is disabled', () => {
+    const panel = document.createElement('aside');
+    const context = makeContext('CLASSIC', 'simple');
+    context.config.showDiscountMessaging = false;
+    context.config.showDiscountProgressBar = false;
+    context._formatSidebarDiscountMessage = jest.fn((message: string) => message);
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    expect(context._formatSidebarDiscountMessage).not.toHaveBeenCalled();
+  });
+
+  it('shows only the raw Classic total for fixed bundle price summary display', () => {
+    const panel = document.createElement('aside');
+    const context = makeContext('CLASSIC', 'simple');
+    context.selectedBundle.pricing.method = 'fixed_bundle_price';
+    context.selectedBundle.pricing.rules[0].method = 'fixed_bundle_price';
+    context.config.showDiscountMessaging = false;
+    context.config.showDiscountProgressBar = false;
+    context.getAllSelectedProductsData = () => [{}, {}];
+    const totalSpy = jest.spyOn(PricingCalculator, 'calculateBundleTotal').mockReturnValue({
+      totalPrice: 144800,
+      totalQuantity: 2,
+      unitPrices: [82900, 61900],
+    });
+    const discountSpy = jest.spyOn(PricingCalculator, 'calculateDiscount').mockReturnValue({
+      hasDiscount: true,
+      finalPrice: 500,
+      discountAmount: 144300,
+      applicableRule: { method: 'fixed_bundle_price' },
+    });
+
+    try {
+      fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+    } finally {
+      totalSpy.mockRestore();
+      discountSpy.mockRestore();
+    }
+
+    const total = panel.querySelector('.side-panel-total');
+    expect(total?.innerHTML).toContain('side-panel-total-final');
+    expect(total?.innerHTML).not.toContain('side-panel-total-original');
+    expect(total?.innerHTML).not.toContain('$5.00');
+  });
 });
 
 describe('FPB Standard summary sidebar add-ons', () => {
@@ -192,9 +260,9 @@ describe('FPB Standard summary sidebar add-ons', () => {
     const panel = document.createElement('aside');
     const context = makeContext('STANDARD', 'simple');
     let renderCount = 0;
-    context._renderFreeGiftSection = (container: FakeElement) => {
+      context._renderFreeGiftSection = (container: FakeElement) => {
       renderCount += 1;
-      const addon = document.createElement('div');
+      const addon = document.createElement('div') as unknown as FakeElement;
       addon.className = 'side-panel-addon-message side-panel-free-gift';
       addon.textContent = 'Add 1 more product(s) to claim 100% off on Add ons';
       container.appendChild(addon);
@@ -206,7 +274,7 @@ describe('FPB Standard summary sidebar add-ons', () => {
   });
 
   it('does not render the add-on summary block when the active step is the add-on step', () => {
-    const panel = document.createElement('aside');
+      const panel = document.createElement('aside') as unknown as FakeElement;
     const context = makeContext('STANDARD', 'simple');
     let renderCount = 0;
     context.currentStepIndex = 1;
@@ -220,5 +288,74 @@ describe('FPB Standard summary sidebar add-ons', () => {
 
     fullPageSidePanelMethods.renderSidePanel.call(context, panel);
     expect(renderCount).toBe(0);
+  });
+});
+
+describe('FPB sidebar add-on CTA copy', () => {
+  it('keeps Classic final-step add-to-cart copy when box tier text is configured', () => {
+    const panel = document.createElement('aside') as unknown as FakeElement;
+    const context = makeContext('CLASSIC', 'simple');
+    context.selectedProducts = [[{}], [{}]];
+    context.resolveFullPageLayout = () => 'sidebar';
+    context.areBundleConditionsMet = () => true;
+    context.getSidebarTierCtaContent = () => ({ label: 'Box of 2', subtext: '$5 off' });
+    context._resolveText = (key: string, fallback: string) => (
+      key === 'addToCartButton' ? 'Add To Cart' : fallback
+    );
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    const buttons = collectButtons(panel);
+    expect(buttons.some((button) => button.textContent === 'Add To Cart')).toBe(true);
+    expect(buttons.some((button) => button.textContent === 'Box of 2 $5 off')).toBe(false);
+  });
+
+  it('validates Classic final-step quantity before desktop add-to-cart', async () => {
+    const toastSpy = jest.spyOn(ToastManager, 'show').mockImplementation(() => {});
+    const panel = document.createElement('aside') as unknown as FakeElement;
+    const context = makeContext('CLASSIC', 'simple');
+    context.selectedProducts = [[]];
+    context.resolveFullPageLayout = () => 'sidebar';
+    context.areBundleConditionsMet = jest.fn(() => false);
+    context.getStepConditionValidationMessage = jest.fn(() => 'Add exactly 2 products on this step');
+    context.addBundleToCart = jest.fn();
+    context._resolveText = (key: string, fallback: string) => (
+      key === 'addToCartButton' ? 'Add To Cart' : fallback
+    );
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    const addToCartButton = collectButtons(panel).find((button) => button.textContent === 'Add To Cart');
+    expect(addToCartButton).toBeDefined();
+    await addToCartButton?.click();
+
+    expect(context.areBundleConditionsMet).toHaveBeenCalledTimes(1);
+    expect(context.getStepConditionValidationMessage).toHaveBeenCalledTimes(1);
+    expect(toastSpy).toHaveBeenCalledWith('Add exactly 2 products on this step');
+    expect(context.addBundleToCart).not.toHaveBeenCalled();
+
+    toastSpy.mockRestore();
+  });
+
+  it('keeps add-to-cart copy on the active add-on step when tier CTA text is configured', () => {
+    const panel = document.createElement('aside') as unknown as FakeElement;
+    const context = makeContext('CLASSIC', 'simple');
+    context.currentStepIndex = 1;
+    context.selectedProducts = [[{}], [{}]];
+    context.selectedBundle.steps = [
+      { id: 'step-1', enabled: true },
+      { id: 'personalization-addons', name: 'Add On', enabled: true, isFreeGift: true },
+    ];
+    context.areBundleConditionsMet = () => true;
+    context.getSidebarTierCtaContent = () => ({ label: 'Box of 2', subtext: '$5 off' });
+    context._resolveText = (key: string, fallback: string) => (
+      key === 'addToCartButton' ? 'Add To Cart' : fallback
+    );
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    const cta = panel.querySelector('.side-panel-btn-next');
+    expect(cta?.textContent).toBe('Add To Cart');
+    expect(cta?.className).not.toContain('side-panel-btn-has-tier-cta');
   });
 });

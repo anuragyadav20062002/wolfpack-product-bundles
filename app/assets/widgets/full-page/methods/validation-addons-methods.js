@@ -38,6 +38,26 @@ function hasConfiguredAddonRule(step) {
   });
 }
 
+function getAddonTierCandidatesWithState(step, totalPrice, totalQuantity) {
+  const directTier = step?.addonEligibilityCondition || step?.addonDiscount
+    ? [{
+        eligibilityCondition: step?.addonEligibilityCondition || {},
+        discount: step?.addonDiscount || {},
+      }]
+    : [];
+  const tiers = getAddonTiersForStep(step);
+  const candidates = tiers.length > 0 ? tiers : directTier;
+
+  return candidates.map((tier, index) => {
+    const condition = tier?.eligibilityCondition || {};
+    const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
+    const conditionValue = Number(condition.value || 0);
+    const threshold = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
+    const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
+    return { tier, index, conditionType, threshold, currentValue, isEligible: currentValue >= threshold };
+  });
+}
+
 function createFreeGiftStatusIcon(state) {
   const icon = document.createElement('span');
   icon.className = `side-panel-free-gift-icon side-panel-free-gift-icon--${state}`;
@@ -223,26 +243,10 @@ getAddonTierEvaluation(step) {
     this.stepProductData,
     this.selectedBundle?.steps
   );
-  const directTier = step?.addonEligibilityCondition || step?.addonDiscount
-    ? [{
-        eligibilityCondition: step?.addonEligibilityCondition || {},
-        discount: step?.addonDiscount || {},
-      }]
-    : [];
-  const tiers = getAddonTiersForStep(step);
-  const candidates = tiers.length > 0 ? tiers : directTier;
-  if (candidates.length === 0) {
+  const withState = getAddonTierCandidatesWithState(step, totalPrice, totalQuantity);
+  if (withState.length === 0) {
     return { tier: null, totalPrice, totalQuantity, currentValue: totalQuantity };
   }
-
-  const withState = candidates.map((tier, index) => {
-    const condition = tier?.eligibilityCondition || {};
-    const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
-    const conditionValue = Number(condition.value || 0);
-    const threshold = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
-    const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
-    return { tier, index, conditionType, threshold, currentValue, isEligible: currentValue >= threshold };
-  });
 
   const eligible = withState
     .filter(candidate => candidate.isEligible)
@@ -251,6 +255,35 @@ getAddonTierEvaluation(step) {
     .filter(candidate => !candidate.isEligible)
     .sort((a, b) => (a.threshold - b.threshold) || (a.index - b.index));
   const selected = eligible[eligible.length - 1] || next[0] || withState[0];
+
+  return {
+    tier: selected?.tier || null,
+    tierIndex: selected?.index ?? -1,
+    isEligible: selected?.isEligible === true,
+    totalPrice,
+    totalQuantity,
+    currentValue: selected?.currentValue ?? totalQuantity,
+  };
+},
+
+getAddonMessageTierEvaluation(step) {
+  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const withState = getAddonTierCandidatesWithState(step, totalPrice, totalQuantity);
+  if (withState.length === 0) {
+    return { tier: null, totalPrice, totalQuantity, currentValue: totalQuantity };
+  }
+
+  const next = withState
+    .filter(candidate => !candidate.isEligible)
+    .sort((a, b) => (a.threshold - b.threshold) || (a.index - b.index));
+  const eligible = withState
+    .filter(candidate => candidate.isEligible)
+    .sort((a, b) => (a.threshold - b.threshold) || (a.index - b.index));
+  const selected = next[0] || eligible[eligible.length - 1] || withState[0];
 
   return {
     tier: selected?.tier || null,
@@ -285,10 +318,10 @@ _getFreeGiftRemainingCount() {
   return Math.max(0, total - selected);
 },
 
-getAddonEligibilityState(step) {
-  const evaluation = typeof this.getAddonTierEvaluation === 'function'
+getAddonEligibilityState(step, evaluationOverride = null) {
+  const evaluation = evaluationOverride || (typeof this.getAddonTierEvaluation === 'function'
     ? this.getAddonTierEvaluation(step)
-    : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
+    : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step));
   const tier = evaluation.tier;
   const condition = tier?.eligibilityCondition || step?.addonEligibilityCondition || {};
   const discount = tier?.discount || step?.addonDiscount || {};
@@ -300,6 +333,7 @@ getAddonEligibilityState(step) {
   const remainingRaw = Math.max(0, thresholdCents - currentValue);
   const remainingQuantity = conditionType === 'AMOUNT' ? 0 : remainingRaw;
   const remainingAmount = conditionType === 'AMOUNT' ? remainingRaw : 0;
+  const displayedRemainingAmount = Math.ceil(remainingAmount / 100);
   const discountValue = Number(discount.value || 0);
   const discountUnit = discount.type === 'PERCENTAGE' ? '%' : currencyInfo.display.symbol;
 
@@ -315,13 +349,27 @@ getAddonEligibilityState(step) {
     remainingAmount,
     variables: {
       addonsConditionDiff: conditionType === 'AMOUNT'
-        ? String(Math.ceil(remainingAmount / 100))
+        ? String(displayedRemainingAmount)
         : String(remainingQuantity),
       currencyUnit: currencyInfo.display.symbol,
       addonsDiscountValue: String(discountValue),
       addonsDiscountValueUnit: discountUnit,
+      remainingQuantity: String(remainingQuantity),
+      remainingAmount: String(displayedRemainingAmount),
+      discountValue: String(discountValue),
+      discountValueUnit: discountUnit,
     },
   };
+},
+
+getAddonMessageEligibilityState(step) {
+  const evaluation = typeof this.getAddonMessageTierEvaluation === 'function'
+    ? this.getAddonMessageTierEvaluation(step)
+    : fullPageValidationAddonsMethods.getAddonMessageTierEvaluation.call(this, step);
+  const getEligibilityState = typeof this.getAddonEligibilityState === 'function'
+    ? this.getAddonEligibilityState
+    : fullPageValidationAddonsMethods.getAddonEligibilityState;
+  return getEligibilityState.call(this, step, evaluation);
 },
 
 getAddonLineDiscount(step) {
@@ -420,7 +468,8 @@ renderAddonEligibilityMessage(step, eligibilityState) {
   return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
     return message
       .replaceAll(`##${key}##`, value)
-      .replaceAll(`{{${key}}}`, value);
+      .replaceAll(`{{${key}}}`, value)
+      .replaceAll(`{${key}}`, value);
   }, messageTemplate);
 },
 
@@ -517,7 +566,9 @@ _renderFreeGiftSection(container) {
   const hasDirectAddonTiers = step.addonEligibilityCondition || Array.isArray(step.addonTiers);
 
   if (hasDirectAddonTiers) {
-    const eligibilityState = this.getAddonEligibilityState(step);
+    const eligibilityState = typeof this.getAddonMessageEligibilityState === 'function'
+      ? this.getAddonMessageEligibilityState(step)
+      : this.getAddonEligibilityState(step);
     const message = this.renderAddonEligibilityMessage(step, eligibilityState);
     if (!message) return;
 

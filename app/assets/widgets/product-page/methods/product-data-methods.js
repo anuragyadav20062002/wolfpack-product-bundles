@@ -145,6 +145,17 @@ async loadStepProducts(stepIndex) {
 processProductsForStep(products, step) {
   // See full-page widget for the same fields. quantityAvailable is number|null
   // (null = untracked / scope ungranted → treat as unlimited in the clamp).
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : this._getProductPageControls?.()?.trackInventoryOnAddToCart === true;
+  const isTrackedZeroStock = (variant) => (
+    variant?.quantityAvailable === 0 && variant?.currentlyNotInStock !== true
+  );
+  const isVariantSelectableForInventory = (variant) => (
+    variant?.available === true && (
+      !trackInventoryOnAddToCart || !isTrackedZeroStock(variant)
+    )
+  );
   const normalizeVariant = (v) => ({
     id: this.extractId(v.id),
     title: v.title,
@@ -153,7 +164,7 @@ processProductsForStep(products, step) {
     sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
       ? v.sellingPlanAllocations
       : [],
-    available: v.available === true,
+    available: isVariantSelectableForInventory(v),
     quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
     currentlyNotInStock: v.currentlyNotInStock === true,
     option1: v.option1 || null,
@@ -174,7 +185,7 @@ processProductsForStep(products, step) {
       });
 
       return product.variants
-        .filter(variant => variant.available === true) // Only show available variants
+        .filter(isVariantSelectableForInventory)
         .map(variant => {
           // Storefront API: prioritize variant image, fallback to product featured image
           const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
@@ -186,7 +197,7 @@ processProductsForStep(products, step) {
             price: parseFloat(variant.price || '0') * 100,
             compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
             variantId: this.extractId(variant.id),
-            available: variant.available === true,
+            available: isVariantSelectableForInventory(variant),
             quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
             currentlyNotInStock: variant.currentlyNotInStock === true,
             sellingPlanAllocations: variant.sellingPlanAllocations || [],
@@ -203,7 +214,13 @@ processProductsForStep(products, step) {
       // Display product with the first available variant when variants are not separate cards.
       // If all variants are unavailable, keep the configured product visible and
       // render it as out of stock instead of turning a valid DTO into a load error.
-      const defaultVariant = product.variants?.find(variant => variant.available === true) || product.variants?.[0];
+      const defaultVariant = product.variants?.find(isVariantSelectableForInventory) || (
+        trackInventoryOnAddToCart ? null : product.variants?.[0]
+      );
+
+      if (product.variants?.length > 0 && !defaultVariant) {
+        return [];
+      }
 
       // Storefront API: prioritize variant image, fallback to product featured image
       const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
@@ -225,7 +242,7 @@ processProductsForStep(products, step) {
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
           sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
-          available: defaultVariant?.available === true,
+          available: defaultVariant ? isVariantSelectableForInventory(defaultVariant) : false,
           quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
           currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
           // Preserve variants and options for variant selection in modal

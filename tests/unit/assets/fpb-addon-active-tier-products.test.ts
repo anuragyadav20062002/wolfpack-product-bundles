@@ -25,7 +25,12 @@ describe("FPB add-on active tier products", () => {
       displayVariantsAsIndividualProducts_addons: true,
       selectedAddonProducts: [tier2Product],
     };
-    const step = {
+    const step: {
+      isFreeGift: boolean;
+      addonTiers: Array<Record<string, unknown>>;
+      displayVariantsAsIndividual?: boolean;
+      addonDisplayFree?: boolean;
+    } = {
       isFreeGift: true,
       addonTiers: [
         {
@@ -48,6 +53,7 @@ describe("FPB add-on active tier products", () => {
       normalizePersonalizationAddonProduct:
         fullPageInitialRenderMethods.normalizePersonalizationAddonProduct,
       processProductsForStep: (products: unknown[]) => products,
+      _mergeDirectDefaultProductsIntoStep: (_stepIndex: number, products: unknown[]) => products,
       collectStepProductIds: () => [],
       collectStepCollectionHandles: () => [],
       shouldExpandStepProductsDuringLoad: () => false,
@@ -93,6 +99,7 @@ describe("FPB add-on active tier products", () => {
       normalizePersonalizationAddonProduct:
         fullPageInitialRenderMethods.normalizePersonalizationAddonProduct,
       processProductsForStep: (products: unknown[]) => products,
+      _mergeDirectDefaultProductsIntoStep: (_stepIndex: number, products: unknown[]) => products,
       collectStepProductIds: () => [],
       collectStepCollectionHandles: () => [],
       shouldExpandStepProductsDuringLoad: () => false,

@@ -13,7 +13,7 @@ const { applyMethodMixins } = require('../../../app/assets/widgets/shared/mixin-
 describe('applyMethodMixins', () => {
   it('preserves getter descriptors instead of flattening getter values', () => {
     const target: Record<string, unknown> = {};
-    const source = {
+    const source: { steps?: Array<{ isFreeGift?: boolean }>; readonly freeGiftStepIndex: number } = {
       get freeGiftStepIndex() {
         return Array.isArray(this.steps)
           ? this.steps.findIndex((step: { isFreeGift?: boolean }) => step.isFreeGift === true)
