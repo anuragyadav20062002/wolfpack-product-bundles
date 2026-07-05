@@ -943,4 +943,9 @@
     max-height: none;
     min-height: 0;
   }
+
+  body:has(.layout-sidebar[data-fpb-design-preset="CLASSIC"], .fpb-preset-classic)
+    .bundle-modal-add-btn {
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
 }
