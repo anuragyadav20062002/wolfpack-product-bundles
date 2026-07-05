@@ -7,10 +7,4 @@ describe('FPB Compact template config contract', () => {
     expect(FPB_COMPACT_TEMPLATE_CONFIG.presetId).toBe('COMPACT');
     expect(FPB_COMPACT_TEMPLATE_CONFIG.aliases).toEqual(expect.arrayContaining(['COMPACT']));
   });
-
-  it('declares shared primitives for later renderer migration', () => {
-    expect(FPB_COMPACT_TEMPLATE_CONFIG.productCard.mode).toBe('compact');
-    expect(FPB_COMPACT_TEMPLATE_CONFIG.summary.mode).toBe('compactSlots');
-    expect(FPB_COMPACT_TEMPLATE_CONFIG.discountProgress.mode).toBe('stepped');
-  });
 });

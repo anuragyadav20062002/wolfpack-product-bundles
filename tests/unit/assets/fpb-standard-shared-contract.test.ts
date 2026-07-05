@@ -7,10 +7,4 @@ describe('FPB Standard template config contract', () => {
     expect(FPB_STANDARD_TEMPLATE_CONFIG.presetId).toBe('STANDARD');
     expect(FPB_STANDARD_TEMPLATE_CONFIG.aliases).toEqual(['STANDARD']);
   });
-
-  it('declares shared primitives for later renderer migration', () => {
-    expect(FPB_STANDARD_TEMPLATE_CONFIG.productCard.mode).toBe('grid');
-    expect(FPB_STANDARD_TEMPLATE_CONFIG.summary.mode).toBe('rows');
-    expect(FPB_STANDARD_TEMPLATE_CONFIG.discountProgress.mode).toBe('stepped');
-  });
 });

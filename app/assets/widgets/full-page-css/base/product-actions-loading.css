@@ -1,3 +1,8 @@
+.section-content-wrapper:has(#bundle-builder-app[data-bundle-type="full_page"])
+  > .text-block:has(> h1:first-of-type) {
+  display: none;
+}
+
 .product-card-action.is-expanded {
   justify-content: center;
 }

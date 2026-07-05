@@ -44,8 +44,8 @@ describe('buildCartItems', () => {
     expect(itemA.quantity).toBe(2);
     expect(itemA.properties.Box).toBe('1');
     expect(itemA.properties._bundleName).toBe('Test Bundle');
-    expect(itemA.properties['_easyBundle:OfferId']).toMatch(/^MIX-894502_[A-Z0-9]{3}_1$/);
-    expect(itemA.properties['_easyBundle:prodQty']).toBe('2');
+    expect(itemA.properties['_wolfpackProductBundle:OfferId']).toMatch(/^MIX-894502_[A-Z0-9]{3}_1$/);
+    expect(itemA.properties['_wolfpackProductBundle:prodQty']).toBe('2');
     expect(itemA.properties).not.toHaveProperty('_bundle_id');
     expect(itemA.properties).not.toHaveProperty('_bundle_name');
     expect(itemA.properties).not.toHaveProperty('_step_index');
@@ -54,7 +54,7 @@ describe('buildCartItems', () => {
   it('all items in one call share the same EB offer-session key with unique item indexes', () => {
     const state = makeState();
     const { items } = buildCartItems(state);
-    const offerIds = items.map((i: { properties: { '_easyBundle:OfferId': string } }) => i.properties['_easyBundle:OfferId']);
+    const offerIds = items.map((i: { properties: { '_wolfpackProductBundle:OfferId': string } }) => i.properties['_wolfpackProductBundle:OfferId']);
     const bases = offerIds.map((value: string) => value.replace(/_[0-9]+$/, ''));
     expect(new Set(bases).size).toBe(1);
     expect(offerIds).toEqual([
@@ -89,7 +89,7 @@ describe('buildCartItems', () => {
   it('prefixes numeric product-page offers with MIX-', () => {
     const state = makeState({ offerId: '894502' });
     const { items } = buildCartItems(state);
-    expect(items[0].properties['_easyBundle:OfferId']).toMatch(/^MIX-894502_[A-Z0-9]{3}_1$/);
+    expect(items[0].properties['_wolfpackProductBundle:OfferId']).toMatch(/^MIX-894502_[A-Z0-9]{3}_1$/);
   });
 
   it('adds preformatted private source properties for cart-line messaging', () => {

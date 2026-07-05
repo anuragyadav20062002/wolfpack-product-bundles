@@ -268,9 +268,6 @@ function CategoryNameField({
               markAsDirty();
             }}
           />
-          <p className={productPageBundleStyles.categoryInputHelp}>
-            Will be visible on the storefront
-          </p>
         </div>
         <button
           type="button"

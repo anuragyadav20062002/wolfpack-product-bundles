@@ -24,7 +24,7 @@ Merchants currently have no way to choose between visual layout presets for thei
 ## Out of Scope
 - Storefront widget rendering differences per preset (separate issue — this slice is admin-only persistence).
 - DCP controls for template selection (template is per-bundle, not theme-level).
-- Cart property rename (`_easyBundle:OfferId` → WPB prefix) — separate storefront issue.
+- Cart property rename (`_wolfpackProductBundle:OfferId` → WPB prefix) — separate storefront issue.
 - Bundle Settings and Bundle Visibility UI rewrites — separate slices.
 
 ---

@@ -140,10 +140,10 @@ Use this only when a row requires code changes:
 6. Run focused Jest only for behavior/data contracts.
 7. Run ESLint on modified source files with `npx eslint --max-warnings 9999 <files>`.
 8. Run `npm run graphify:rebuild` after code changes.
-9. User performs SIT deploy with `npm run deploy:sit`.
-10. Hard reload the storefront with cache bypass.
-11. Verify live `window.__BUNDLE_WIDGET_VERSION__`.
-12. Capture desktop/mobile proof and mark the row complete.
+9. Hard reload the dev-preview or live storefront with cache bypass.
+10. Verify `window.__BUNDLE_WIDGET_VERSION__`.
+11. If the served asset version is stale, record that as an asset-refresh gap instead of treating the row as verified.
+12. Capture desktop/mobile proof and mark the row complete only after the row-specific fixture is loaded.
 
 ## Cross-Row Evidence Notes
 
@@ -178,13 +178,32 @@ Evidence path: `/private/tmp/fpb-standard-agentic-parity/category-tab-font-weigh
 - WPB pre-fix evidence on widget `3.0.103` showed Standard `.category-tab .tab-label` at `400`. Source fix built into widget version `3.0.104` sets only the Standard tab label node to `700`.
 - Current WPB dev-preview storefront still served Shopify CDN widget `3.0.103` after cache clear, so live browser proof remains pending asset refresh/deploy.
 
+### Current WPB Standard Hard-Reload Check
+
+Evidence path: `/private/tmp/fpb-standard-agentic-parity/final-wrap-current-wpb/`
+
+- Chrome DevTools MCP hard-reload proof on the current dev-tunnel preview confirms WPB Standard widget `4.0.5`, preset `STANDARD`, and the active two-entry add-on fixture (`Choose Full-Size Products`, `Add On`).
+- Desktop first-load proof `wpb-desktop-runtime-and-metrics.json` confirms product images keep `fpb-standard-product-image-fade 1.5s` and visible product cards are uniform in the current wide-desktop viewport.
+- Desktop post-selection proof `wpb-desktop-after-one-selection.json` confirms the selected product card uses `outline: rgb(0, 0, 0) solid 2px`, `border: 0`, and unchanged card dimensions, so the selected black state does not resize the card.
+- The same post-selection proof confirms the Standard sidebar displays the add-on summary block and moves to `1 item(s)` with the selected product row, total, and Next action.
+- Follow-up hard-reload evidence `wpb-current-hard-reload-desktop-metrics-2.json`, `wpb-current-selected-desktop-metrics-2.json`, `wpb-current-four-selected-next-blocked.json`, `wpb-current-statement-category-next-blocked.json`, and `wpb-current-narrow-container-probe.json` reconfirms widget `4.0.5`, product image fade animation, visible full product titles, selected-card outline behavior, and the add-on qualification summary on the base step. The active fixture still blocks Add On navigation with `Complete all steps to unlock Add On!` after four selected base products, including after switching to the long-label Statement category, so add-on-step sidebar removal is not proven by this current fixture.
+- 2026-07-02 hard-reload evidence after widget `5.0.1`: `/private/tmp/fpb-standard-agentic-parity/final-e2e-current-2026-07-02/wpb-after-page-marker-fix-runtime.json` confirms the WPB preview still renders `Bundle unavailable`, has zero product cards, and the generated Shopify page marker is still an old bootstrap payload (`configLength: 154`) because the page body has not been refreshed through the Admin save/sync path. The same file shows the app-proxy bundle fallback returning `500` with theme HTML. Admin configure retry evidence `wpb-admin-configure-loaded.snapshot.txt` first showed the embedded configure route failing with `Invalid prisma.session.findUnique() invocation: Server has closed the connection`; after the session-storage retry source fix, Chrome evidence showed the next failure as `Can't reach database server at dpg-d8f5g20g4nts738i88c0-a.ohio-postgres.render.com:5432`, so current UI save/sync proof could not be completed in this pass.
+- 2026-07-02 follow-up Chrome DevTools MCP retry: `wpb-admin-retry-20260702-current.snapshot.txt` shows the Shopify Admin shell embedding the WPB app iframe, but the iframe root remains `Error — Wolfpack Bundles` with `Unexpected Error`. Network proof `wpb-admin-app-iframe-500-current.response.txt` shows the app iframe request to the dev tunnel returning `500`; the response body was no longer available from DevTools. Storefront proof after Cache Storage clear and hard reload, `wpb-storefront-current-runtime.json`, still shows widget `5.0.1`, `Bundle unavailable`, zero product cards, and the same bootstrap-only `data-bundle-config` payload length `154`. This confirms the source fixes are built but the current live page still cannot refresh or render the full config through the UI path.
+- Post-commit retry after `630c7b5c`: Admin snapshot `wpb-admin-retry-after-630c7b5c.snapshot.txt` and network proof `wpb-admin-app-iframe-500-after-630c7b5c.response.txt` again show the WPB app iframe returning `500`. Storefront proof `wpb-storefront-runtime-after-630c7b5c.json`, after Cache Storage clear and cache-bypassed reload, still shows widget `5.0.1`, `Bundle unavailable`, zero product cards, and the stale bootstrap payload. No row can be advanced from this live state.
+- Post-Prisma-fix retry on 2026-07-02: Admin hard reload evidence `wpb-admin-prisma-solved-dom-summary.json` shows the Shopify Admin URL still points at the configure route and embeds the current dev-tunnel iframe, but the accessible outer shell remains the Shopify dev preview/extensions surface and no configure content (`Step Setup`, `Bundle Settings`, or `Daily Essentials`) appeared within the 15s Chrome DevTools MCP wait window. Storefront proof after Cache Storage clear and cache-bypassed reload, `wpb-storefront-prisma-solved-runtime.json`, still shows widget `5.0.1`, `Bundle unavailable`, zero product cards, and a bootstrap-only `data-bundle-config` payload length `154` with no `steps` array. This removes the stale-Prisma text from the observed failure but still leaves final parity proof unavailable.
+- SIT DB reset follow-up on 2026-07-02: Chrome DevTools MCP dashboard proof `wpb-admin-dashboard-after-db-change.snapshot.txt` and screenshot `wpb-admin-dashboard-empty-after-db-change.png` show the WPB dashboard is reachable again but has no bundles in the current SIT DB (`You haven't created any bundles for your store`). The old configure URL for `cmqwx0k3u0000v08brgbhh6aa` now renders the app's `404 Page Not Found`, so there is no existing bundle row to re-save through the UI. The stale Shopify page at `/pages/preview-daily-essentials` still points at that removed bundle id and therefore keeps rendering `Bundle unavailable`.
+- Replacement SIT fixture follow-up on 2026-07-02: Chrome DevTools MCP Admin proof in `/private/tmp/fpb-standard-agentic-parity/final-e2e-current-2026-07-02/` shows a new FPB Standard bundle `Daily Essentials` saved through the Admin UI with bundle id `cmr361mz50000v00yrdeyxpf7`, one step, one category, and four products. `wpb-new-fpb-products-persist-after-admin-reload.snapshot.txt` confirms the saved Admin state persists after hard reload with parent product status `Active` and `4 Selected`. The new storefront page `/pages/preview-daily-essentials-2` renders again after Cache Storage clear and hard reload; `wpb-new-preview-desktop-runtime.json` and `wpb-new-preview-mobile-runtime.json` confirm widget `5.0.1`, `bundleUnavailable: false`, bundle id `cmr361mz50000v00yrdeyxpf7`, one configured step, full `data-bundle-config` length `6550`, and all four products visible on mobile. `wpb-preview-current-recheck-runtime.json` later confirms widget `5.0.2` on the same preview after this mobile summary footer slice.
+- 2026-07-02 hard-reload proof after widget `5.0.8`: `wpb-standard-sidebar-footer-measurement-5.0.8.json` confirms the current WPB Standard preview serves the scoped sidebar footer sizing tokens and renders the desktop action row with a 1px top divider, `17px` top spacing, a `151px x 41px` Add To Cart button, and the back-button token at `2.6875rem` (`43px`) for the EB-sized paired state. `wpb-standard-runtime-addon-check-5.0.8.json` confirms this current one-step preview does not render the add-on summary block (`addonCount: 0`), so this proof closes the latest footer/button sizing check but does not prove add-on-summary interaction parity from a real add-on fixture.
+- 2026-07-02 hard-reload proof after widget `5.0.9`: EB current add-on-step evidence `addon-slim-eb-current-probe.json` and `addon-slim-eb-current.png` confirms the Standard add-on page sidebar footer is a slim `475.796875px` card with a `60px` action row, `1px` divider, `151.5px x 41px` Add To Cart button, and `16px` / `700` button typography. WPB current desktop proof `addon-slim-wpb-5.0.9-desktop-probe.json` and `addon-slim-wpb-5.0.9-desktop.png` confirms the rebuilt Standard preview serves widget `5.0.9`, uses the scoped add-on sidebar tokens (`--standard-desktop-side-panel-addon-height: 29.76855rem`, `--standard-desktop-side-panel-addon-summary-row: 4.5rem`), and renders the desktop footer action row at `62px` with `17px` top spacing and a `152px x 41px` Add To Cart button. The active WPB replacement fixture still has no add-on summary node (`addonSummaryCount: 0`), so this proof validates the footer/button sizing and source-token correction but does not close a row-level add-on-summary fixture.
+- This proof does not close any pending pairwise or stress row by itself because the browser was at a wide desktop viewport, the store cart already contained older lines, and the active fixture is not the OOS, cloned-step, weight-rule, empty-category, or long-content row-specific fixture.
+
 ## Pairwise Run Set
 
 Status values:
 - `pending`: row is selected but not yet captured.
 - `eb-captured`: EB evidence exists; Wolfpack mirror pending.
 - `gap-open`: gap found and implementation pending.
-- `fixed-awaiting-deploy`: source fixed; SIT deploy needed.
+- `fixed-awaiting-live-proof`: source fixed; row-specific cache-bypassed EB/WPB proof still needed.
 - `verified`: row has EB/WPB evidence and any needed fix is verified live.
 - `collapsed`: row was proven redundant by evidence and notes explain why.
 
@@ -192,7 +211,7 @@ Status values:
 
 | Field | Value |
 |---|---|
-| Status | verified |
+| Status | fixed-awaiting-live-proof |
 | EB config | Captured EB Standard bundle `Daily Essentials`, bundle ID `1`, `FBP_SIDE_FOOTER` + `DEFAULT_FBP` |
 | WPB config | Captured Wolfpack Standard bundle `Daily Essentials`, bundle ID `cmqwx0k3u0000v08brgbhh6aa`, `FBP_SIDE_FOOTER` + `STANDARD` |
 | Matrix coverage | Single-step, one category, manual products, no variants, all in stock, step min 4, discount/progress copy for one 100% off item at threshold, add-ons disabled, no defaults, no slots, default text, no banner, default settings, desktop sidebar open, mobile summary tray, add to cart blocked before min, desktop/mobile first load and after one add |
@@ -202,13 +221,13 @@ Acceptance:
 - EB and WPB initial desktop/mobile captures exist.
 - Runtime snapshots confirm EB `FBP_SIDE_FOOTER` + `DEFAULT_FBP` and WPB `STANDARD`.
 - `delta.md` separates visual gaps, behavior gaps, and data/runtime gaps.
-- Source fix exists for the mobile final-step CTA label gap; live verification is pending SIT deploy of widget version `3.0.53`.
+- Source fix exists for the mobile final-step CTA label gap; live verification is pending row-specific cache-bypassed proof on a current served widget.
 
 ### P01 Multi-Category Tabs With Step Min
 
 | Field | Value |
 |---|---|
-| Status | fixed-awaiting-deploy |
+| Status | fixed-awaiting-live-proof |
 | EB config | Single step `Choose Full-Size Products` with categories `Full-Size Earrings` and `Statement Earrings`; step quantity rule is greater than or equal to 4; discount progress from the shared fixture remains visible |
 | WPB config | Mirrored Standard bundle with categories `Full-Size Earrings` and `Statement Earrings`; three Statement products added through Admin resource picker; step quantity rule is greater than or equal to 4 |
 | Matrix coverage | Single-step, multiple categories, manual products, no variants, mixed inventory evidence, step min 4, discount progress inherited from baseline fixture, add-ons disabled, no defaults, quantity slots, default text, no banner, variant selector off, desktop sidebar open, mobile tray open, add to cart blocked before min |
@@ -220,13 +239,13 @@ Acceptance:
 - Mobile tray reflects the same selected count and blocked state as desktop sidebar.
 - EB help links for Step Setup and Rules were read before configuration; no new durable EB facts were found beyond the existing implementation reference.
 - Desktop WPB category tabs switch product sets correctly after Admin save; evidence exists for initial desktop, Statement category switch, mobile initial, mobile category switch, and add-one state.
-- Source fix exists for the Standard mobile top-tab interaction: top category tabs no longer switch the expanded product body on mobile; lower category rows remain the body expansion control, matching EB evidence. Live verification is pending SIT deploy of widget version `3.0.53`.
+- Source fix exists for the Standard mobile top-tab interaction: top category tabs no longer switch the expanded product body on mobile; lower category rows remain the body expansion control, matching EB evidence. Live verification is pending row-specific cache-bypassed proof on a current served widget.
 
 ### P02 Multi-Step Exact Auto-Next With Defaults
 
 | Field | Value |
 |---|---|
-| Status | fixed-awaiting-deploy |
+| Status | fixed-awaiting-live-proof |
 | EB config | Two steps; step 1 exact quantity 2 with auto-next enabled; 5% quantity discount at 2; default product `14k Dangling Obsidian Earrings`; product slots, text-on-plus, and bundle cart title/subtitle enabled |
 | WPB config | Mirrored Standard bundle through Admin UI; source fix added direct default-product hydration and step-rule auto-next persistence |
 | Matrix coverage | Multi-step, one category per step, manual products, no variants, all in stock, step exact with auto-next, percentage tier, add-ons disabled, default product, quantity slots, edited bundle summary title/subtitle, no banner, text on add button, desktop sidebar open, mobile final-step cart state |
@@ -238,7 +257,7 @@ Acceptance:
 - Final-step CTA label and summary title/subtitle match configured EB behavior.
 - Desktop WPB first load now shows the default product selected, `Add 1 product(s) to save 5%`, `1 item(s)`, and `Daily kit` / `Two essentials unlock savings` on widget version `3.0.55`.
 - Desktop WPB one-manual-add state now matches EB discount/progress behavior and keeps exact step validation independent from the direct default product; Next shows `Add exactly 2 products on this step`.
-- Source fix adds durable `BundleStep.autoNextStepOnConditionMet` persistence and exposes it to runtime/metafield config. Live auto-next proof remains pending Prisma migration application, app server reload, WPB Admin re-save, and SIT deploy/hard reload.
+- Source fix adds durable `BundleStep.autoNextStepOnConditionMet` persistence and exposes it to runtime/metafield config. Live auto-next proof remains pending Prisma migration application, app server reload, WPB Admin re-save, and cache-bypassed storefront proof on a current served widget.
 
 ### P03 Category Exact With Variant Selector
 
@@ -299,7 +318,7 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | fixed-awaiting-deploy |
+| Status | fixed-awaiting-live-proof |
 | EB config | Cloned second step with max quantity rule |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Multi-step, cloned step, manual products, no variants, all in stock, step max, no discount, add-ons disabled, no defaults, over-max blocked, default text, no banner, default settings, desktop sidebar collapsed or compact, mobile tray open, next/back |
@@ -314,8 +333,8 @@ Notes:
 - EB configured and captured with two cloned steps, `Quantity <= 1` step rules, no discount, no default/preselected products, product slots disabled, variant selector on, and plus-button text on.
 - WPB mirrored through Chrome DevTools MCP. Desktop proof confirms two-step flow, preserved prior-step selections, and over-max blocking with `This step allows at most 1 product only.`
 - Product cards remain uniform in WPB capture and product image fade is present via `fpb-standard-product-image-fade`.
-- Gap found: Standard desktop summary sidebar height stayed at `20.94375rem` (~335px) while EB measured ~476px with selected products. Source fix sets `--standard-desktop-side-panel-height` to `29.76855rem` and is built into widget version `3.0.69`; live proof is pending SIT deploy and cache-bypassed reload.
-- Follow-up product-card pricing evidence is captured in `/private/tmp/fpb-standard-agentic-parity/product-card-pricing-row/`. EB `Solid Bloom` sale-card proof shows the title divider on the title row, Assistant typography, one-line compare/current pricing, 14px/700 compare price, and 16px/700 current price. Source fix restores those Standard desktop product-card rules in widget version `3.0.70`; live proof is pending SIT deploy and cache-bypassed reload.
+- Gap found: Standard desktop summary sidebar height stayed at `20.94375rem` (~335px) while EB measured ~476px with selected products. Source fix sets `--standard-desktop-side-panel-height` to `29.76855rem` and is built into widget version `3.0.69`; live proof is pending row-specific cache-bypassed proof on a current served widget.
+- Follow-up product-card pricing evidence is captured in `/private/tmp/fpb-standard-agentic-parity/product-card-pricing-row/`. EB `Solid Bloom` sale-card proof shows the title divider on the title row, Assistant typography, one-line compare/current pricing, 14px/700 compare price, and 16px/700 current price. Source fix restores those Standard desktop product-card rules in widget version `3.0.70`; live proof is pending row-specific cache-bypassed proof on a current served widget.
 
 ### P06 Out Of Stock Visible
 
@@ -336,12 +355,13 @@ Notes:
 - EB Settings > Additional Configurations inventory help confirms product-level inventory tracking is global, zero-stock tracked products are hidden, and untracked out-of-stock products may remain visible but must be blocked at cart add. Evidence: `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/eb-additional-configurations.snapshot.txt` and `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/eb-inventory-help.snapshot.txt`.
 - Source guard added in widget version `3.0.77`: the shared inline variant selector now carries the selected variant `available` flag onto the product model, and the FPB Standard card migration path uses `isVariantOutOfStock(product)` instead of checking `quantityAvailable === 0`. This prevents unavailable fallback variants from preserving stale available state. Live EB/WPB fixture capture is still pending.
 - 2026-07-01 current-fixture drift proof: Chrome DevTools MCP recapture of the current EB and WPB storefront URLs shows both are still on the multi-step add-on fixture, not an OOS-visible row. EB evidence `eb-current-desktop-addProductsPage1-runtime.json` shows six visible first-category addable cards and no OOS/disabled card state. WPB evidence `wpb-current-desktop-addProductsPage1-runtime.json` shows widget `4.0.3`, the same add-on/multi-category fixture, and no OOS/disabled card state. Delta note: `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/current-fixture-drift-delta.md`. P06 remains pending until EB/WPB are configured into a row-specific OOS-visible fixture through the Admin UI.
+- 2026-07-02 current-fixture refresh: Chrome DevTools MCP cache-bypassed audits again show the open EB and WPB storefronts are not P06/P07 OOS fixtures. EB evidence `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/current-eb-fixture-audit-2026-07-02.json` shows bundle `1`, normal addable products, and no visible OOS card state. WPB evidence `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/current-wpb-5.0.5-fpb-controls-audit.json` shows widget `5.0.5`, FPB controls endpoint `bundleType: "full_page"`, `activeControls.trackInventoryOnAddToCart=false`, and eight addable product-card/button nodes with no disabled/OOS state.
 
 ### P07 Out Of Stock Blocked With Inventory Tracking
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | fixed-awaiting-live-proof |
 | EB config | Track inventory on add-to-cart enabled with OOS blocked state |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Single-step, one category, manual products, one option variant, out of stock blocked, step min, buy X get Y, add-ons disabled, no defaults, under-min blocked, default text, no banner, track inventory on add-to-cart, add to cart blocked, mobile 390 x 844 |
@@ -352,11 +372,23 @@ Acceptance:
 - Inventory-related network proof is captured for both apps.
 - Rule blocking and inventory blocking messages do not conflict.
 
+Notes:
+- EB help article refreshed on 2026-07-02 from `https://easybundles-help.skailama.app/en/article/enabling-product-level-inventory-tracking-while-building-a-bundle-works-for-full-page-and-product-bundles-codyqn/`: product-level inventory tracking is a global Additional Configurations toggle; Shopify child products must use Track Quantity for physical stock; tracked zero-inventory products are not shown/blocked; untracked products remain unbounded; backorder/digital handling must not be inferred from quantity alone.
+- Source fix built into widget version `5.0.3`: FPB and PPB now honor the runtime `trackInventoryOnAddToCart` control before treating Storefront API `quantityAvailable: 0` as out of stock. With the toggle disabled, zero quantity remains unbounded, preserving the prior Storefront stock-gate fix; with the toggle enabled and `currentlyNotInStock !== true`, zero quantity blocks selection/cart behavior. Behavior proof: `npx jest tests/unit/assets/fpb-standard-variant-availability.test.ts tests/unit/assets/bundle-widget-product-page-products.test.ts --runInBand`.
+- Inventory logic review on 2026-07-02 found and fixed a collection-source gap: `/api/storefront-products` already requested `quantityAvailable/currentlyNotInStock` only when `unauthenticated_read_product_inventory` exists, but `/api/storefront-collections` did not. Collection-sourced products now follow the same scope-gated payload contract and map missing inventory fields to `quantityAvailable: null` and `currentlyNotInStock: false`, so the storefront toggle can enforce tracked zero-stock collection products without breaking stores missing the inventory scope. Behavior proof: `npx jest tests/unit/routes/storefront-collections.test.ts --runInBand`.
+- Follow-up inventory logic review on 2026-07-02 found and fixed two additional source-level gaps. First, the `/api/storefront-products` fallback first-variant query now requests and maps `quantityAvailable/currentlyNotInStock` when `unauthenticated_read_product_inventory` is present, so inventory enforcement still works if the paginated all-variants request fails. Second, PPB product normalization now filters tracked zero-stock non-backorderable variants before card render when `trackInventoryOnAddToCart` is enabled, chooses the first sellable variant for grouped product cards, and omits grouped products when every variant is tracked zero stock. This matches the EB help behavior that tracked zero-inventory child products are not shown. Behavior proof: `npx jest tests/unit/assets/bundle-widget-product-page-products.test.ts tests/unit/routes/storefront-products.test.ts --runInBand`. Source is built into widget version `5.0.4`; live browser proof remains pending because the current open storefront preview still served `5.0.3` after reload.
+- Additional inventory logic review on 2026-07-02 found and fixed the direct default-products path. Saved default-product DTOs no longer invent `inventoryQuantity: 0` when Shopify picker data omits inventory, and FPB/PPB widget normalizers now preserve explicit `inventoryQuantity: 0` as `quantityAvailable: 0` instead of converting it to unbounded `null`. This lets the global `trackInventoryOnAddToCart` toggle block real zero-stock default products while preserving unknown inventory as unbounded. Behavior proof: `npx jest tests/unit/assets/fpb-standard-mobile-summary-action.test.ts tests/unit/assets/bundle-widget-product-page-products.test.ts tests/unit/lib/default-products-contract.test.ts --runInBand`. Source is built into widget version `5.0.5`; Chrome DevTools MCP version proof after cache-bypassed reload: `/private/tmp/fpb-standard-agentic-parity/final-wrap-current-wpb/wpb-version-probe-after-5.0.5-local-build.json`.
+- Final inventory logic review on 2026-07-02 found and fixed the FPB cart-submit gap: stale selected products from defaults or prior hydrated state are rechecked before `/cart/add.js`, so tracked zero-stock or unavailable variants cannot be posted if selection state survives the card-level guard. Behavior proof: `npx jest tests/unit/assets/fpb-checkout-line-properties.test.ts tests/unit/assets/fpb-standard-variant-availability.test.ts tests/unit/assets/fpb-standard-mobile-summary-action.test.ts tests/unit/assets/bundle-widget-product-page-products.test.ts tests/unit/routes/storefront-products.test.ts tests/unit/routes/storefront-collections.test.ts tests/unit/lib/default-products-contract.test.ts --runInBand`. Source is built into widget version `5.0.6`; Chrome DevTools MCP version proof: `/private/tmp/fpb-standard-agentic-parity/inventory-tracking-final-cart-guard/runtime-version-and-controls.json`.
+- Earlier Chrome DevTools MCP asset probe on 2026-07-02 captured a stale Shopify extension CDN asset, not a browser Cache Storage issue. Evidence file `/private/tmp/fpb-standard-agentic-parity/final-wrap-current-wpb/wpb-asset-version-probe.json` showed the storefront loading `https://cdn.shopify.com/extensions/.../assets/bundle-widget-full-page-bundled.js` with `cache-control: public, max-age=31557600`; the fetched script body started with `Version : 5.0.3`, contained `window.__BUNDLE_WIDGET_VERSION__ = '5.0.3'`, and did not contain later local widget versions.
+- Current WPB source-state proof captured with Chrome DevTools MCP after Cache Storage clear and hard reload on 2026-07-02: `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/current-wpb-source-proof/wpb-runtime-controls-5.0.3.json` confirms widget `5.0.3`, bundle `cmr361mz50000v00yrdeyxpf7`, one-step current fixture, controls endpoint `200`, and `activeControls.trackInventoryOnAddToCart=false`; `wpb-network-summary-5.0.3.json` captures the bundle widget asset, controls endpoint, bundle JSON endpoint, and view endpoint; `wpb-mobile-current-fixture-5.0.3.png` captures the current mobile Standard fixture. This is source/control proof only because the active fixture contains no OOS products and tracking is disabled.
+- Corrected WPB current-fixture proof after local widget rebuild: `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/current-wpb-5.0.5-fpb-controls-audit.json` uses the actual full-page controls URL with `?bundleType=full_page`, confirms `window.__BUNDLE_WIDGET_VERSION__ = "5.0.5"`, confirms `activeControls.trackInventoryOnAddToCart=false`, and shows the current page still contains only addable product cards. A prior ad hoc probe without `bundleType=full_page` returned the PPB controls branch and should not be used as P07 evidence.
+- Live EB/WPB P07 fixture capture remains pending; this source slice does not mark P07 verified.
+
 ### P08 Add-On Gifting Step Only
 
 | Field | Value |
 |---|---|
-| Status | fixed-awaiting-deploy |
+| Status | verified |
 | EB config | Add-Ons and Gifting Step enabled; Add-Ons with Bundles disabled |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Multi-step with add-on/gifting step, one category, manual products, no variants, all in stock, no rule, no discount, gifting step only, no defaults, no slots, edited bundle summary title/subtitle, no banner, personalization or message controls, next/back, mobile final-step cart state |
@@ -406,6 +438,7 @@ Acceptance:
 - Source fix built into widget version `3.0.105`: Standard add-on discount badges now render as a direct product-card child instead of inside the image/media slot, so the ribbon starts at the product-card edge like EB. Evidence path: `/private/tmp/fpb-standard-agentic-parity/addon-card-badge-card-edge/`; EB measured `badgeRightMinusCardRight: 0`, WPB before measured `-8`, and WPB after hard reload measured `0` on live widget `3.0.105`.
 - Source fix built into widget version `3.0.106`: Standard product image hover magnifier moves to the left only when the product card has a direct add-on savings badge, avoiding overlap with the right-edge ribbon. Evidence path: `/private/tmp/fpb-standard-agentic-parity/magnifier-badge-overlap/`; WPB before measured `overlap: true`, and WPB after hard reload measured `overlap: false` on live dev-tunnel widget `3.0.106`.
 - Source fix built into widget version `3.0.108`: Standard desktop summary sidebar add-on messaging now keeps the EB-style add-on section only before the shopper is on the add-on step, uses a black border plus entry animation for the eligible message container, and disables summary remove buttons for products from non-current steps while showing the EB copy `Remove This Product From <Step Name>`. The same slice restores the EB selected product-card black outline without changing card dimensions, tightens the Admin category name row so the help text sits below the input/button row, and keeps mobile summary footer count/expanded states rendering after the shared removal handler. Evidence path: `/private/tmp/fpb-standard-agentic-parity/addon-summary-sidebar-current/`; key files include `eb-desktop-addon-summary-eligible-before-next.json`, `eb-desktop-addon-step-summary-hidden.json`, `wpb-desktop-postfix-selected.json`, `wpb-desktop-postfix-addon-step.json`, `wpb-desktop-postfix-disabled-remove-toast.json`, `wpb-mobile-footer-collapsed-postfix.json`, `wpb-mobile-footer-expanded-postfix.json`, and `wpb-admin-category-row-postfix.png`. Verification: `npx jest tests/unit/assets/fpb-summary-current-step-removal.test.ts tests/unit/assets/fpb-addons-gifting-step-separation.test.ts tests/unit/assets/fpb-sidebar-discount-progress.test.ts --runInBand`, widget build/minify, node syntax checks, ESLint, Chrome DevTools MCP desktop/mobile/Admin proof.
+- Mobile summary footer empty-state follow-up built into widget version `5.0.2`: the compact Standard mobile summary tray can now expand before any product is selected, matching EB's empty-state drawer behavior, and the `fpb-mobile-summary-count-badge` stays above the expanded drawer content. Evidence path: `/private/tmp/fpb-standard-agentic-parity/mobile-summary-footer-empty-expanded/`; `wpb-after-empty-expanded-state.json` confirms widget `5.0.2`, `expanded: true`, `ariaExpanded: "true"`, badge text `0`, summary content present, `badgeZIndex: "1"`, and `elementFromPoint` at the badge center returning `.fpb-mobile-summary-count-badge`. Screenshot: `wpb-after-empty-expanded.png`. Selected-state follow-up evidence in `/private/tmp/fpb-standard-agentic-parity/mobile-summary-footer-selected-expanded/` confirms the same behavior with one selected product: `wpb-after-one-selected-expanded-state.json` shows badge text `1`, one selected summary row, expanded drawer height `228px`, and `elementFromPoint` at the badge center returning `.fpb-mobile-summary-count-badge`; screenshot `wpb-after-one-selected-expanded.png`. Behavior test: `npx jest tests/unit/assets/fpb-standard-mobile-summary-action.test.ts --runInBand`.
 - Source follow-up built into widget version `4.0.0`: Standard desktop add-on-summary sidebars expand to the EB measured add-on-summary height, keep the normal fixed height after entering the add-on step, and render the eligible add-on check icon as a smaller centered tick inside the circle. Final Chrome DevTools MCP proof is captured in `/private/tmp/fpb-standard-agentic-parity/final-wrap/`: `eb-desktop-addon-descendants.json`, `wpb-desktop-after-addons-summary.json`, `wpb-desktop-after-category-and-addon-step.json`, `wpb-mobile-after-accordion-addon-step.json`, and paired screenshots.
 - Source follow-up built into widget version `4.0.1`: Standard selected product cards keep the EB-style black outline but offset it inward so WPB's scrollable product grid no longer clips the first-row/left-edge selected marker. Evidence path: `/private/tmp/fpb-standard-agentic-parity/selected-card-border-clipping/`; key files are `eb-desktop-selected-card.json`, `wpb-desktop-before.json`, `wpb-desktop-after-4.0.1.json`, `wpb-mobile-after-4.0.1.json`, and paired screenshots.
 - Current badge follow-up: `eb-current-selected-page-badge-probe.json`, `eb-current-selected-page-badge-probe.png`, `eb-current-selected-page-badge-probe-2026-06-30.json`, and `eb-current-selected-page-badge-probe-2026-06-30.png` refresh EB mobile partial-tier proof at `390 x 844`; the badge remains `10% off`, absolute right-edge, blue, Assistant `12px` / `700`, `21.6px` line-height, `2px 8px` padding, and no free badge. Focused Jest `npx jest tests/unit/assets/fpb-addons-gifting-step-separation.test.ts --runInBand` passes and covers partial paid add-on display pricing, `100% off` add-on display pricing, highest eligible tier selection, and selected add-on discount math. Current live WPB add-on recapture is pending restored P09/P10 Admin fixture access; the open WPB storefront is still the P04 collection fixture.
@@ -414,7 +447,7 @@ Acceptance:
 
 | Field | Value |
 |---|---|
-| Status | partial-live-proof |
+| Status | verified |
 | EB config | Multiple add-on tiers; highest eligible tier gives free add-on |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Multi-step with add-on/gifting step, multiple categories, collection-backed category, multiple option variants, all in stock, category exact, highest eligible tier, add-ons with free tier, no defaults, custom slot icon, multi-language labels, mobile banner, variant selector enabled, `bundle_details` cart metafield, desktop/mobile reload after selection |
@@ -441,7 +474,7 @@ Notes:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | fixed-awaiting-live-proof |
 | EB config | Multi-category step with one empty category |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Single-step, empty category, no products, no variants, all in stock for non-empty category, no rule, no discount, add-ons disabled, no defaults, no slots, long labels, no banner, default settings, mobile tray closed, next/back only |
@@ -460,7 +493,7 @@ Notes:
 
 | Field | Value |
 |---|---|
-| Status | pending |
+| Status | fixed-awaiting-live-proof |
 | EB config | Category minimum weight rule with weighted products |
 | WPB config | Mirrored Standard bundle |
 | Matrix coverage | Single-step, multiple categories, manual products, no variants, all in stock, category min weight, fixed amount tier, add-ons disabled, no defaults, quantity slots, default text, no banner, default settings, desktop sidebar open, add to cart blocked below weight |
@@ -607,6 +640,38 @@ Required proof:
 - Cart add proof for Standard and at least one non-Standard preset.
 - Source isolation note in `regression-smoke/delta.md`.
 
+Current proof:
+- 2026-07-02 Standard smoke proof is captured in `/private/tmp/fpb-standard-agentic-parity/regression-smoke/current-standard-5.0.3/`. Chrome DevTools MCP desktop and mobile captures after hard reload show the current Standard FPB preview `Daily Essentials` on widget `5.0.3` with bundle id `cmr361mz50000v00yrdeyxpf7`: `wpb-standard-desktop-runtime.json`, `wpb-standard-desktop.png`, `wpb-standard-mobile-runtime.json`, and `wpb-standard-mobile.png`.
+- Standard cart-add smoke proof in the same folder: after `/cart/clear.js`, the mobile storefront selected `14k Dangling Obsidian Earrings`, clicked the widget `Add To Cart • $829.00`, and redirected to checkout. `wpb-standard-cart-after-add.json` shows one parent bundle line titled `Daily Essentials`, `itemCount: 1`, `totalPrice: 82900`, `_is_bundle_parent: "true"`, `_bundle_component_count: "1"`, and `Box: "1"`. `wpb-standard-cart-add-devtools-network.txt` records the DevTools network proof for `/cart/add.js`, `/cart.js?app=wolfpackProductBundles`, and `/apps/product-bundles/api/cart-bundle-details`, all `200`; `wpb-standard-checkout-after-add.snapshot.txt` and `.png` capture the checkout redirect with total `$829.00`.
+- 2026-07-02 non-Standard smoke proof is captured in `/private/tmp/fpb-standard-agentic-parity/regression-smoke/non-standard-5.0.3/`. Admin UI template switching was used for Classic, Compact, and Horizontal. `wpb-classic-desktop-runtime.json`, `wpb-compact-desktop-runtime.json`, and `wpb-horizontal-desktop-runtime.json` confirm widget `5.0.3`, matching `dataPreset/configPreset`, four rendered product cards, preset-specific root classes, and `standardSelectorApplied: false`; matching desktop screenshots are present for each preset.
+- Horizontal cart-add smoke proof in the same folder: after `/cart/clear.js`, the Horizontal storefront selected `14k Dangling Obsidian Earrings` and reached checkout. `wpb-horizontal-cart-after-add.json` shows one parent bundle line titled `Daily Essentials`, `item_count: 1`, `total_price: 82900`, `_is_bundle_parent: "true"`, `_bundle_component_count: "1"`, and `Box: "1"`. DevTools request body proof is saved as `wpb-horizontal-cart-add.network-request` and `wpb-horizontal-cart-bundle-details.network-request`; the preserved network list showed `/cart/add.js`, `/cart.js?app=wolfpackProductBundles`, and `/apps/product-bundles/api/cart-bundle-details` all returned `200`. `wpb-horizontal-checkout-after-add.snapshot.txt` and `.png` capture the checkout redirect with the parent bundle line expanded to `1 × 14k Dangling Obsidian Earrings`.
+- After smoke switching, the Admin UI was set back to Standard and the storefront was hard reloaded after Cache Storage clear. `wpb-restored-standard-runtime.json` confirms widget `5.0.3`, active `dataPreset: "STANDARD"`, root class `fpb-d fpb-preset-standard`, and `standardSelectorApplied: true`. Note: the page still had a Horizontal stylesheet URL loaded alongside Standard, but the active runtime preset/class was Standard.
+- 2026-07-02 follow-up smoke artifact: `regression-smoke/delta.md` now records the source-isolation decision for the current smoke evidence set. `current-standard-5.0.5/wpb-standard-desktop-runtime.json` and `current-standard-5.0.5/wpb-standard-desktop.png` refresh the Standard desktop hard-reload proof on widget `5.0.5`; non-Standard proof remains the Classic, Compact, Horizontal `5.0.3` runtime/screenshot/cart-add set above, where each non-Standard runtime recorded `standardSelectorApplied: false`.
+- 2026-07-02 final current-source smoke refresh: `current-standard-5.0.6/wpb-standard-desktop-runtime.json`, `wpb-standard-desktop-network.json`, and `wpb-standard-desktop.png` refresh the Standard desktop proof on widget `5.0.6`; `current-standard-5.0.6/wpb-standard-mobile-runtime.json`, `wpb-standard-mobile-network.json`, and `wpb-standard-mobile.png` refresh the mobile proof at `390x844`. Both runtime captures confirm active `fpb-preset-standard`, bundle `cmr361mz50000v00yrdeyxpf7`, controls endpoint `bundleType: "full_page"`, and `activeControls.trackInventoryOnAddToCart=false`; the mobile proof also confirms the product image fade remains `fpb-standard-product-image-fade 1.5s`.
+- 2026-07-02 current Standard smoke refresh on widget `5.0.8`: `current-standard-5.0.8-runtime.json`, `current-standard-5.0.8-network.json`, and `current-standard-5.0.8.png` confirm the replacement Standard preview still renders after Cache Storage clear and hard reload. Runtime proof shows `dataPreset: "STANDARD"`, root class `fpb-d fpb-preset-standard`, `bundleUnavailable: false`, eight visible product cards, product image fade `fpb-standard-product-image-fade 1.5s`, and the desktop sidebar CTA at `151px x 41px` with the EB-aligned divider and typography. Network proof records `200` responses for the full-page widget CSS/JS, Standard stylesheet, controls endpoint, language endpoint, bundle JSON, and view endpoint. This refresh does not replace the earlier Standard cart-add or non-Standard Classic/Compact/Horizontal smoke proof.
+- 2026-07-02 current Standard mobile smoke refresh on widget `5.0.8`: `current-standard-mobile-5.0.8-runtime.json`, `current-standard-mobile-5.0.8-network.json`, and `current-standard-mobile-5.0.8.png` confirm the same replacement Standard preview at `390x844` mobile emulation. Runtime proof shows `dataPreset: "STANDARD"`, root class `fpb-preset-standard fpb-d`, `bundleUnavailable: false`, four visible product cards, product image fade `fpb-standard-product-image-fade 1.5s`, the compact mobile summary tray at `370px x 81px`, and the count badge above the tray with `z-index: 1`. Network proof records widget CSS/JS, Standard stylesheet, controls endpoint, language endpoint, bundle JSON, and view endpoint resources loaded for the mobile pass.
+- 2026-07-02 current Standard cart-add smoke refresh on widget `5.0.8`: after `cart/clear.js`, mobile proof selected `14k Dangling Obsidian Earrings` and clicked the widget footer Add To Cart. `current-standard-cart-5.0.8-after-footer-add.json` shows one Shopify cart line titled `Daily Essentials`, `item_count: 1`, `total_price: 82900`, `_is_bundle_parent: "true"`, `_bundle_component_count: "1"`, `_bundle_components`, retail/price/savings cents, and `Box: "1"`. DevTools request proof is saved as `current-standard-cart-5.0.8-cart-add.network-request` and `current-standard-cart-5.0.8-cart-bundle-details.network-request`; the matching Network panel records show `/cart/add.js`, `/cart.js?app=wolfpackProductBundles`, and `/apps/product-bundles/api/cart-bundle-details` all returned `200`. Screenshot: `current-standard-cart-5.0.8-after-add.png`.
+- 2026-07-02 current Standard desktop smoke refresh on widget `5.0.9`: after Cache Storage clear and hard reload at `1280x800`, `addon-slim-wpb-5.0.9-desktop-probe.json` and `addon-slim-wpb-5.0.9-desktop.png` confirm the replacement Standard preview still renders with eight product cards, `bundleUnavailable: false`, `dataPreset: "STANDARD"`, the scoped sidebar height token at `29.76855rem`, the add-on sidebar height token reduced to the same value, and the desktop Add To Cart action at `152px x 41px`.
+- 2026-07-02 current Standard mobile collapsed-footer refresh on widget `5.0.10`: after Cache Storage clear and hard reload at `390x844`, `mobile-footer-collapsed-gap-before.json` showed the collapsed no-discount mobile summary tray reserving an empty `38px` row below the Add To Cart button (`bottomGap: 38`). Source fix changes the collapsed no-discount Standard tray to one action row and removes the bottom padding while preserving two-row padding for discount and expanded states. Final Chrome proof `mobile-footer-collapsed-gap-final-2.json` and `mobile-footer-collapsed-gap-final-2.png` shows widget `5.0.10`, tray height `43px`, `gridTemplateRows: "38px"`, `paddingBottom: "0px"`, and `bottomGap: 0`.
+
+## Closeout Audit 2026-07-02
+
+The goal is not yet closeable. Current source and generated assets are committed, but the parity evidence set is still incomplete against this spec's completion criteria.
+
+Current blockers to closing:
+
+- The current WPB dev preview harness has been restored with replacement FPB Standard bundle `cmr361mz50000v00yrdeyxpf7` and storefront page `/pages/preview-daily-essentials-2`, but it is only a minimal one-step, one-category, four-product fixture. It is sufficient for focused widget proof such as the mobile summary footer empty-state fix, but it does not replace the row-specific EB/WPB mirrored fixtures required below.
+- P00, P01, P02, and P05 remain `fixed-awaiting-live-proof`; each needs cache-bypassed live proof on the current served widget after the relevant saved fixtures are loaded.
+- P06 has help/reference and current-fixture-drift evidence only. It still needs a mirrored OOS-visible EB/WPB fixture and desktop/mobile storefront proof.
+- P07 is `fixed-awaiting-live-proof`: it has current WPB source/control proof for widget `5.0.6`, but still needs a mirrored EB/WPB inventory-tracking/OOS-blocked fixture with tracking enabled.
+- P11 is `fixed-awaiting-live-proof`: it has source/test evidence and failed direct EB fixture loads, but still needs a live mirrored empty-category fixture through the UI.
+- P12 is `fixed-awaiting-live-proof`: it has source/test/Admin evidence and Storefront API weight payload proof, but still needs a live mirrored category-weight storefront fixture with below-threshold, threshold, quantity-change, and cart-blocking proof.
+- P13 has substantial mobile, long-title, variant-selector, and selected-card evidence, but the active EB/WPB fixtures differ and multi-image carousel/click proof still needs a dedicated mirrored fixture.
+- S01, S02, S03, S04, and S05 remain pending and have no completed evidence folders.
+- Regression smoke runtime/cart proof is complete for the current replacement fixture across Standard, Classic, Compact, and Horizontal. Standard has refreshed widget `5.0.8` desktop, mobile, and cart-add proof; Classic, Compact, and Horizontal remain covered by the earlier non-Standard `5.0.3` runtime/screenshot set, Horizontal cart-add proof, and the source-isolation delta note. This smoke proof does not replace the row-specific mirrored EB/WPB fixtures still listed above.
+
+No row should be marked complete from source-only evidence. Each remaining row requires the case evidence contract above: EB and WPB desktop/mobile captures, runtime snapshots, computed probes, accessibility/network evidence, interaction log, and cart proof where relevant.
+
 ## Completion Criteria
 
 The parity loop is complete when:
@@ -623,19 +688,19 @@ The parity loop is complete when:
 
 | Row | Status | Evidence path |
 |---|---|---|
-| P00 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P00-baseline/` |
-| P01 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P01-multi-category-step-min/` |
-| P02 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P02-auto-next-defaults/` |
+| P00 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P00-baseline/` |
+| P01 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P01-multi-category-step-min/` |
+| P02 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P02-auto-next-defaults/` |
 | P03 | verified | `/private/tmp/fpb-standard-agentic-parity/P03-category-exact-variants/` |
 | P04 | verified | `/private/tmp/fpb-standard-agentic-parity/P04-collection-amount-rule/` |
-| P05 | fixed-awaiting-deploy | `/private/tmp/fpb-standard-agentic-parity/P05-cloned-step-max/` |
+| P05 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P05-cloned-step-max/` |
 | P06 | pending | `/private/tmp/fpb-standard-agentic-parity/P06-oos-visible/` |
-| P07 | pending | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |
+| P07 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P07-oos-blocked-inventory/` |
 | P08 | verified | `/private/tmp/fpb-standard-agentic-parity/P08-gifting-step-only/` |
 | P09 | verified | `/private/tmp/fpb-standard-agentic-parity/P09-paid-addon-tier/`; `/private/tmp/fpb-standard-agentic-parity/cart-lines-post-save/` |
 | P10 | verified | `/private/tmp/fpb-standard-agentic-parity/P10-free-addon-highest-tier/`; `/private/tmp/fpb-standard-agentic-parity/P10-free-addon-highest-tier/current-wpb/` |
-| P11 | pending | `/private/tmp/fpb-standard-agentic-parity/P11-empty-category/` |
-| P12 | pending | `/private/tmp/fpb-standard-agentic-parity/P12-category-weight-rule/` |
+| P11 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P11-empty-category/` |
+| P12 | fixed-awaiting-live-proof | `/private/tmp/fpb-standard-agentic-parity/P12-category-weight-rule/` |
 | P13 | pending | `/private/tmp/fpb-standard-agentic-parity/P13-mobile-long-content/` |
 | S01 | pending | `/private/tmp/fpb-standard-agentic-parity/S01-multi-step-variants-discounts-addons/` |
 | S02 | pending | `/private/tmp/fpb-standard-agentic-parity/S02-free-gift-tier-boundary/` |

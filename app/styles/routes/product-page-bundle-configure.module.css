@@ -1677,10 +1677,6 @@
   composes: categoryInputStack from "./bundle-configure-shared.module.css";
 }
 
-.categoryInputHelp {
-  composes: categoryInputHelp from "./bundle-configure-shared.module.css";
-}
-
 .categoryDragOver {
   composes: categoryDragOver from "./bundle-configure-shared.module.css";
 }

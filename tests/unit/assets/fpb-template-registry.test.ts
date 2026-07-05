@@ -28,6 +28,13 @@ describe('FPB template registry resolver', () => {
     ]);
   });
 
+  it('uses the Standard step timeline renderer for Classic', () => {
+    expect(FPB_TEMPLATE_CONFIGS.CLASSIC.timeline.mode).toBe(
+      FPB_TEMPLATE_CONFIGS.STANDARD.timeline.mode,
+    );
+    expect(FPB_TEMPLATE_CONFIGS.CLASSIC.timeline.mode).toBe('standard');
+  });
+
   it('inlines the registry before full-page template method modules', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require('node:fs');

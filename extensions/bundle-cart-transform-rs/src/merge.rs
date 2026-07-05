@@ -1,12 +1,9 @@
 use shopify_function::scalars::Decimal;
 use std::collections::HashMap;
 
-use crate::helpers::{
-    decimal_to_f64, is_addon_line, is_free_gift_line, parse_json_or_default,
-};
+use crate::helpers::{decimal_to_f64, is_addon_line, is_free_gift_line, parse_json_or_default};
 use crate::pricing::{
-    calculate_buy_x_get_y_discount_percentage, calculate_discount_percentage,
-    rounded_percentage,
+    calculate_buy_x_get_y_discount_percentage, calculate_discount_percentage, rounded_percentage,
 };
 use crate::schema;
 use crate::types::{CartLineMessagingSettings, ComponentParent, PricingMethod};
@@ -50,9 +47,22 @@ fn non_empty(value: &Option<String>) -> Option<String> {
         .map(|value| value.to_string())
 }
 
+fn has_fixed_price_display_only_marker(
+    lines: &[schema::run::input::cart::Lines],
+    line_indices: &[usize],
+) -> bool {
+    line_indices.iter().any(|&idx| {
+        lines[idx]
+            .step_type()
+            .and_then(|a| a.value())
+            .map(|value| value.as_str() == "fixed_price_display_only")
+            .unwrap_or(false)
+    })
+}
+
 /// Process all MERGE operations for one cart pass.
 ///
-fn easy_bundle_offer_group_id(value: &str) -> Option<String> {
+fn wolfpack_product_bundle_offer_group_id(value: &str) -> Option<String> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
         return None;
@@ -69,7 +79,7 @@ fn easy_bundle_offer_group_id(value: &str) -> Option<String> {
     Some(base.to_string())
 }
 
-/// Groups cart lines by EB `_easyBundle:OfferId` base (O(n) pass), then for each group builds one
+/// Groups cart lines by EB `_wolfpackProductBundle:OfferId` base (O(n) pass), then for each group builds one
 /// MERGE operation using the component_parents metafield for parent variant ID
 /// and pricing config.
 ///
@@ -89,7 +99,7 @@ pub fn process_merge_operations(
     let mut bundle_name_counts: HashMap<String, u32> = HashMap::new();
 
     // -------------------------------------------------------------------------
-    // Step 1: Group cart lines by EB `_easyBundle:OfferId` base in a single O(n) pass.
+    // Step 1: Group cart lines by EB `_wolfpackProductBundle:OfferId` base in a single O(n) pass.
     // Using indices to avoid borrow conflicts with `lines` slice.
     // -------------------------------------------------------------------------
     let lines = input.cart().lines();
@@ -102,9 +112,9 @@ pub fn process_merge_operations(
         }
 
         let offer_group_id = match line
-            .easy_bundle_offer_id()
+            .wolfpack_product_bundle_offer_id()
             .and_then(|a| a.value())
-            .and_then(|value| easy_bundle_offer_group_id(value.as_str()))
+            .and_then(|value| wolfpack_product_bundle_offer_group_id(value.as_str()))
         {
             Some(v) => v,
             None => continue,
@@ -218,7 +228,21 @@ pub fn process_merge_operations(
         // -------------------------------------------------------------------------
         // Step 4: Calculate effective discount percentage.
         // -------------------------------------------------------------------------
-        let paid_discount_percentage = if let Some(ref pa) = parent.price_adjustment {
+        let fixed_price_display_only =
+            has_fixed_price_display_only_marker(lines, &merge_line_indices)
+                && parent
+                    .price_adjustment
+                    .as_ref()
+                    .map(|pa| pa.method == PricingMethod::FixedBundlePrice)
+                    .unwrap_or(false);
+
+        let effective_price_adjustment = if fixed_price_display_only {
+            None
+        } else {
+            parent.price_adjustment.as_ref()
+        };
+
+        let paid_discount_percentage = if let Some(pa) = effective_price_adjustment {
             if pa.method == PricingMethod::BuyXGetY {
                 calculate_buy_x_get_y_discount_percentage(
                     pa,
@@ -254,7 +278,7 @@ pub fn process_merge_operations(
         // Step 5: Build unique bundle title.
         // -------------------------------------------------------------------------
         let base_name = lines[line_indices[0]]
-            .easy_bundle_name()
+            .wolfpack_product_bundle_name()
             .and_then(|a| a.value())
             .map(|s| s.as_str().to_string())
             .unwrap_or_else(|| "Bundle".to_string());
@@ -275,7 +299,6 @@ pub fn process_merge_operations(
         // -------------------------------------------------------------------------
         let mut component_details: Vec<serde_json::Value> = Vec::new();
         let mut total_retail_cents: i64 = 0;
-        let mut total_bundle_cents: i64 = 0;
         for (i, &idx) in merge_line_indices.iter().enumerate() {
             let line = &lines[idx];
             let qty = *line.quantity() as i64;
@@ -303,7 +326,6 @@ pub fn process_merge_operations(
                 0.0
             };
             total_retail_cents += retail_cents * qty;
-            total_bundle_cents += line_bundle_cents_total;
             let title = match lines[idx].merchandise() {
                 schema::run::input::cart::lines::Merchandise::ProductVariant(_) => {
                     format!("Component {}", i + 1)
@@ -322,7 +344,9 @@ pub fn process_merge_operations(
         }
 
         let original_total_cents = total_retail_cents;
-        let discounted_total_cents = total_bundle_cents;
+        let exact_discount_cents =
+            ((total_discount_amount * 100.0).round() as i64).clamp(0, original_total_cents);
+        let discounted_total_cents = original_total_cents - exact_discount_cents;
         let savings_cents = original_total_cents - discounted_total_cents;
 
         let components_json = serde_json::to_string(&component_details).unwrap_or_default();
@@ -394,11 +418,12 @@ pub fn process_merge_operations(
             key: "_Items".into(),
             value: "".into(),
         });
-        attributes.push(schema::AttributeOutput {
-            key: "Box".into(),
-            value: non_empty(&source_display_properties.box_label)
-                .unwrap_or_else(|| "1".to_string()),
-        });
+        if let Some(box_label) = non_empty(&source_display_properties.box_label) {
+            attributes.push(schema::AttributeOutput {
+                key: "Box".into(),
+                value: box_label,
+            });
+        }
 
         if cart_line_messaging.is_enabled {
             let source_items = non_empty(&source_display_properties.items);

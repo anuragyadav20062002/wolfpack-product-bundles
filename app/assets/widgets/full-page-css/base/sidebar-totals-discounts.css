@@ -526,6 +526,11 @@
     display: block;
   }
 
+  body.fpb-mobile-summary-scroll-locked {
+    height: 100dvh;
+    overflow-y: hidden;
+  }
+
   .fpb-mobile-summary-tray {
     --fpb-mobile-footer-shell-width: calc(100vw - 20px);
     --fpb-mobile-footer-inner-width: calc(100vw - 30px);
@@ -550,8 +555,8 @@
     z-index: 1001;
     transform: translateY(0) !important;
     transition:
-      height 280ms cubic-bezier(0.22, 1, 0.36, 1),
-      grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1);
+      height 360ms ease,
+      grid-template-rows 360ms ease;
     will-change: height, grid-template-rows;
   }
 
@@ -625,8 +630,6 @@
     padding: 10px 0;
     background: #ffffff;
     box-sizing: border-box;
-    animation: fpb-mobile-summary-drawer-in 280ms cubic-bezier(0.22, 1, 0.36, 1)
-      both;
   }
 
   .fpb-mobile-summary-bundle-items {

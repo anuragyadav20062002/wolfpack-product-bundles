@@ -581,7 +581,7 @@ The display-option and rule-field observations below were rechecked in the live 
 - `"Fixed Amount Off"` → `discountMode: "FIXED_AMOUNT"`
 - `"Percentage Off"` → `discountMode: "PERCENTAGE"`
 - `"Fixed Bundle Price"` → `discountMode: "FIXED_BUNDLE_PRICE"`
-- `"Buy X, get Y"` → `discountMode: "BXY_OFFER"` (inferred; not confirmed from API payload)
+- `"Buy X, get Y"` → `discountMode: "BOGO"` (confirmed from current FPB Classic save payload on 2026-07-04)
 
 **Rule fields for Percentage Off / Fixed Amount Off:**
 
@@ -599,17 +599,27 @@ The display-option and rule-field observations below were rechecked in the live 
 | `rule.value` | "Number of Products in Bundle" | Product-count condition |
 | `rule.discountValue` | "Price" | Currency-prefixed price input |
 
-**Rule fields for Buy X, Get Y (`discountMode: "BXY_OFFER"`):**
+**Rule fields for Buy X, Get Y (`discountMode: "BOGO"`):**
 
 | Field | UI Label | Default | Notes |
 |---|---|---|---|
-| `customerBuys` | "Minimum quantity of items" | 2 | Condition threshold — total items needed in cart |
-| `customerGets` | "Quantity" | 1 | Items receiving the discount |
-| `discountValue` | "Discount value" | 100 | Numeric value |
-| `discountType` | "Discount type" | `"% off"` | `"% off"` or `"₹ off"` |
-| `applyDiscountTo` | "Apply Discount to" | `"The lowest priced items"` | `"The lowest priced items"` or `"The latest added items"` |
+| `rule.value` | "Minimum quantity of items" | 2 | Customer-buys quantity |
+| `rule.getsQuantity` | "Quantity" | 1 | Customer-gets / discounted item count |
+| `rule.discountValue` | "Discount value" | 100 | Numeric value |
+| `rule.discountType` | "Discount type" | `"percentage"` | UI shows `"% off"` or `"₹ off"` |
+| `rule.applyDiscountTo` | "Apply Discount to" | `"lowest_priced"` | UI shows `"The lowest priced items"` or `"The latest added items"` |
 
 UI note: "Customer must add the quantity of items specified above to their cart" appears as help text under Customer gets.
+
+2026-07-04 FPB Classic save payload note: EB posts BXY through
+`/api/discount/updateFixedBundle` with top-level `discountMode: "BOGO"` and
+`rules: [{ type: "quantity", value: "2", getsQuantity: "1", discountType:
+"percentage", discountValue: "100", applyDiscountTo: "lowest_priced",
+discountCodePrefix: "EasyBundle" }]`. The same payload carried
+`isDiscountProgressBarEnabled: false`, `isShowDiscountsEnabled: false`, and a
+disabled `discountProgressBar` rule auto-labeled `Add 3` / `1 Product(s) @ 100%
+off`. The top-level `type` was `"amount"` in this save, so consumers should use
+the rule object for the BXY threshold semantics.
 
 **BXY rule note:** The Discount Messaging section shows a banner: "Discount messaging displays the Total Quantity to Claim Offer (Buy + Get) to ensure customers add their rewards to the cart" — meaning `{{discountConditionDiff}}` is based on Buy + Get total. The banner remains rendered when Discount Messaging is switched off.
 
@@ -619,6 +629,12 @@ UI note: "Customer must add the quantity of items specified above to their cart"
 - Not rendered for Buy X, Get Y.
 - Non-BXY states show the toggle, "Multi Language" action, and note: "Note: Bundle Quantity Options can only be enabled when discount rules are based on quantity."
 - When enabled for quantity-based rules, each rule renders "Box Label" and "Box Subtext" fields plus a "Make this rule default" star action.
+
+**Wolfpack implementation note (2026-07-04):** Because EB hides Bundle
+Quantity Options for BXY, Wolfpack storefront/cart code must not synthesize
+public `Box` cart display properties when the source `_bundle_display_properties`
+payload omits `box`. This applies both to `/cart/add.js` component properties
+and to the cart-transform merged parent attributes.
 
 **"Multi Language" button:**
 
@@ -633,6 +649,12 @@ Opens modal "Customize Text for Multiple Languages":
 - Toggle: `isShowDiscountsEnabled` / Progress Bar on/off
 - "Multi Language" button: **disabled** when Simple Bar selected; **enabled** when Step-Based Bar selected
 - Radio group: `"Simple Bar"` | `"Step-Based Bar"`
+
+**Classic C05 storefront note (2026-07-04):** In the verified Classic fixed-amount quantity fixture, EB Admin had Bundle Quantity Options enabled (`Box of 2` / `₹5 off`) while Progress Bar and Discount Messaging were disabled. Cache-bypassed EB desktop and mobile storefront proof kept the box selector visible, hid `gbbDiscountComponent`, and rendered no discount-progress/message copy; only the step timeline progress remained visible. Treat Bundle Quantity Options as separate from Progress Bar/Discount Messaging display toggles.
+
+**Classic C05 progress gate note (2026-07-05):** In the current EB Admin state, switching the Discount Type combobox from `Fixed Bundle Price` to `Fixed Amount Off` is not sufficient to create a discount-enabled/progress-enabled storefront fixture when the master Discount & Pricing checkbox is off. The save payload still carried `isDiscountEnabled: false`, `discountMode: "FIXED"`, `isDiscountProgressBarEnabled: false`, `isShowDiscountsEnabled: false`, and a disabled `discountProgressBar`; cache-cleared desktop/mobile storefront proof continued to show the add-on/box fixture with no visible discount-progress component. Treat visible progress-bar-on Classic parity as gated until EB exposes an interactable master discount toggle/progress UI path or a backend shortcut is explicitly approved.
+
+**Classic C05 fixed bundle price storefront/cart note (2026-07-04):** After EB Admin saved `Fixed Bundle Price` through `/api/discount/updateFixedBundle`, the current Classic storefront still kept the existing Bundle Quantity Options label/subtext (`Box of 2` / `₹5 off`). With two products selected, the Classic desktop sidebar and mobile footer showed the raw selected-products total (`₹1158.00`) and did not render the fixed bundle price as a separate final summary total. Fresh cart proof for the same Classic fixed-price path posted two component items, then checkout/cart showed one `Daily Essentials` parent line at the raw selected-products total (`₹1158.00`) with no native discount allocation, no `You Save` cart-line property, and no fixed final price. Treat this fixture's Classic fixed-bundle-price value as display-only for summary/cart presentation, not as a cart-price override.
 - When Simple Bar is selected, no per-rule tier-text fields appear.
 
 **When Step-Based Bar is selected, per-rule fields appear:**
@@ -748,6 +770,12 @@ Reference URLs:
 
 Rendering logic applies `DEFAULT_FBP`/`CLASSIC`/`COMPACT`/`HORIZONTAL` via the body attribute `gbb-bundle-design-preset-id="{presetId}"` — CSS scopes design differences under that selector. Older captured notes used `DEFAULT` for Standard Design, but a 2026-06-05 live reset of `WPB Research Landing Bundle 2026-05-22` confirmed EB storefront runtime now exposes Standard Design as `stepsConfigurationData.bundleDesignPresetId: "DEFAULT_FBP"` and body attribute `gbb-bundle-design-preset-id="DEFAULT_FBP"`.
 
+2026-07-04 Classic parity guidance: EB Standard and Classic both use the same
+`FBP_SIDE_FOOTER` wrapper classes (`gbbMinimilisticLayout` and
+`gbbProductsCardLayoutV2`) and differ through `gbb-bundle-design-preset-id`.
+Wolfpack Classic should therefore reuse shared FPB side-footer structure unless
+live EB proof shows a Classic-only content or presentation difference.
+
 ### PPB Templates (Two-Field System)
 
 | Display Name | `bundleDesignTemplate` | `templateId` | Storefront module |
@@ -791,6 +819,12 @@ Body attribute: `gbb-bundle-design-preset-id="{DEFAULT_FBP | CLASSIC | COMPACT |
 Per-product attributes: `productid="{numericId}"` `firstvariantid="{numericVariantId}"`
 
 Per-category attribute: `categoryid="{categoryId}"`
+
+### FPB Classic Mobile Footer Tray
+
+2026-07-04 Classic mobile evidence at `390 x 844` confirms the `FBP_SIDE_FOOTER + CLASSIC` footer tray is sticky, not fixed, and does not lock page scroll while expanded. In the empty-selection fixture, the collapsed footer (`.gbbAddProductsPageFooterHTML`) measured `370 x 101`, showed `View Selected Products`, `Next`, total `₹0.00`, and count `0`. Clicking `.showBoxProductsInFooter` expanded the same footer to `370 x 357`, kept `position: sticky`, `bottom: 0`, `overflow: visible`, and `body` overflow `auto hidden`; a forced `window.scrollBy(0, 350)` changed `scrollY` from `0` to `350` while the footer stayed pinned to the viewport bottom. Treat background scroll during expanded Classic footer state as EB-matching behavior unless a later fixture proves EB locks it.
+
+Evidence: `/private/tmp/fpb-classic-agentic-parity/CS4-mobile-footer-scroll-lock/eb-cs4-before-toggle-runtime-20260704.json`, `eb-cs4-empty-expanded-runtime-20260704.json`, and `eb-cs4-empty-expanded-scroll-probe-20260704.json`.
 
 ### FPB Standard Variant Selector UI
 
@@ -915,8 +949,8 @@ Admin location: Settings → Controls → Product Page Layout section.
       "properties": {
         "Box": "1",
         "_bundleName": "WPB Research Landing Bundle 2026-05-22",
-        "_easyBundle:prodQty": 1,
-        "_easyBundle:OfferId": "FBP-2_K6C_1"
+        "_wolfpackProductBundle:prodQty": 1,
+        "_wolfpackProductBundle:OfferId": "FBP-2_K6C_1"
       }
     }
   ]
@@ -939,13 +973,13 @@ Admin location: Settings → Controls → Product Page Layout section.
 items[0][id]                              = 45038877868228
 items[0][quantity]                        = 1
 items[0][properties][Box]                 = 1
-items[0][properties][_easyBundle:OfferId] = MIX-894502_K1K_1
-items[0][properties][_easyBundle:prodQty] = 1
+items[0][properties][_wolfpackProductBundle:OfferId] = MIX-894502_K1K_1
+items[0][properties][_wolfpackProductBundle:prodQty] = 1
 ```
 
 PPB Cart Transform responds with OVERWRITE_LINE_ITEM — the `/cart/add` response already contains the parent bundle line item (Cart Transform fires synchronously in Shopify's pipeline).
 
-### `_easyBundle:OfferId` Format
+### `_wolfpackProductBundle:OfferId` Format
 
 ```
 FBP  → "FBP-{bundleId}_{sessionKey}_{itemIndex}"
@@ -1042,6 +1076,8 @@ function validateBoxSelectionOnCheckout() {
 ```
 
 When `validateBoxSelectionQuantity: false` (the default), the ATC button is **never blocked** regardless of how many items are selected.
+
+2026-07-03 Classic C04 gotcha, strengthened 2026-07-05: the EB Admin Bundle Settings surface can show the visible "Enable Quantity Validation" checkbox as checked while the cache-bypassed storefront still emits `boxSelection.validateBoxSelectionQuantity: false` and `gbbBoxSelection.state.validateBoxSelectionQuantity: false`. This remained true after disabling `Pre Selected Product`, changing the Step Rule to exact quantity `2`, and confirming Discount & Pricing only exposed Bundle Quantity Options with `Box of 2` / `₹5 off`. A 2026-07-04 storefront recheck temporarily found the current EB bundle had drifted away from the exact C04 fixture entirely: `gbbBoxSelection.state.isEnabled` was `false`, no `Box of 2` / `₹5 off` label was visible, and zero-selected `Next` did not show validation copy. A later 2026-07-05 recheck found `Box of 2` / `₹5 off` visible again with `boxSelection.isEnabled: true`, but `validateBoxSelectionQuantity` still remained `false`; clicking `Next` at zero selected still produced no direct visible validation copy. Treat the storefront runtime/config value as authoritative for parity and blocking proof; do not infer validation behavior from the Admin checkbox alone or from the visible box tier selector alone. Evidence: `/private/tmp/fpb-classic-agentic-parity/C04-slots-box-validation/eb-admin-c04-recheck-initial-20260703.txt`, `eb-c04-validation-recheck-desktop-runtime-20260703.json`, `eb-admin-c04-validation-reconfigured-20260704.txt`, `eb-c04-validation-desktop-runtime-before-next-20260704.json`, `eb-c04-validation-mobile-expanded-runtime-20260704.json`, `eb-c04-current-recheck-runtime-20260704.json`, `eb-c04-current-zero-next-click-20260704.json`, `eb-c04-current-20260705b-runtime-before-zero-next.json`, `eb-c04-current-20260705b-zero-next-click.json`, and `eb-c04-current-20260705b-visible-validation-probe.json`.
 
 **ATC button DOM:** A `div.gbbFooterNextButton` (not a native `<button>`). Enforcement is CSS-class-based — `.gbbBoxSelectionMaxQtyLimitReached` is added to `.gbbPageBody` when max is reached. The button never gets a native `disabled` attribute.
 
@@ -1226,3 +1262,24 @@ Captured from the EB in-app `Know More` article on 2026-06-01 while auditing Set
 - Digital products should have inventory set to `0 or below` so EB can recognize them as digital.
 - If `Track Quantity` is not enabled, the product can still appear in the bundle builder, but customers cannot add it to cart when it is out of stock.
 - If Shopify `Allow out-of-stock` is enabled and inventory is above 0, EB may not identify the product as digital, which can restrict add-to-cart behavior.
+
+### Storefront OOS Refinement
+
+Captured from FPB Classic storefront GraphQL and DOM evidence on 2026-07-04 while auditing product-source and inventory parity.
+
+- Zero quantity alone is not enough to hide or label a variant on the storefront. EB rendered variants with `quantityAvailable: 0` when Shopify Storefront API reported `availableForSale: true`, including `currentlyNotInStock: true` variants.
+- A true unavailable variant is filtered before customer selection. In the captured fixture, `Fragrance Candle / Peach` had `availableForSale: false`, `quantityAvailable: 0`, and `currentlyNotInStock: false`; Classic storefront output omitted that option/card rather than rendering an out-of-stock label.
+- Treat the Settings help statement "Products with zero inventory are not shown in the bundle" as shorthand for non-sellable Storefront API availability, not a raw `quantityAvailable === 0` rule.
+
+## Checkout Integration Discount-Code Handoff
+
+Captured from the EB checkout/side-cart functions article on 2026-07-02:
+
+- EB lists post-add callbacks for checkout and cart apps. Article-listed entries are Theme cart drawer, GoKwik, Shopflo, Zecpay, Rebuy, Shiprocket/Fastrr, Monster cart, Upcart, and Kaching Cart.
+- Checkout handoff examples include GoKwik `window.gokwikSdk.initCheckout(merchantInfo);`, Shopflo `window.Shopflo.openCheckout()`, Zecpay `zecpeCheckFunctionAndCall("handleOcc")`, and Shiprocket/Fastrr `shiprocketCheckoutBuyCartHandler()`.
+- Side-cart/cart-refresh examples include Rebuy `Cart.getCart()`, Upcart `window.upcartOpenCart()`, and Kaching Cart `kachingCartApi.openCart()` plus `kachingCartApi.refreshCart()`. Theme cart drawer and Monster cart use EB-owned helper code in the article; WPB implements those as WPB-owned cart refresh/open callbacks rather than depending on competitor-owned globals.
+- For some checkout apps EB persists the generated discount code into `sessionStorage` and the `discount_code` cookie before invoking the checkout app.
+- When the checkout handoff bypasses the native Shopify checkout path where Cart Transform grouping is applied, WPB uses the Discount Function to recreate the bundle price modification through a generated Shopify app discount code.
+- WPB-generated checkout-integration codes are created only for GoKwik, Shopflo, Zecpay, and Shiprocket/Fastrr. They use the `WPB-` prefix, one use, `PRODUCT` discount class, and a 30 minute expiry. The EB help article did not reveal a precise TTL, so 30 minutes is the documented default until live network/Admin discount evidence proves another value.
+- Theme cart drawer, Rebuy, Monster cart, Upcart, and Kaching Cart do not create discount codes through the app-proxy endpoint because they keep the customer in a cart drawer/cart refresh flow.
+- The automatic add-on discount path remains add-on-only. When a generated `WPB-` code is entered, the automatic branch suppresses add-on candidates so the code-triggered branch can apply base bundle and add-on savings without double discounting.

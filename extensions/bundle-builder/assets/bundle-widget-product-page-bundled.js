@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 4.0.5
- * Built   : 2026-07-01
+ * Version : 5.0.42
+ * Built   : 2026-07-05
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '4.0.5';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.42';
 (function() {
   'use strict';
 
@@ -1881,7 +1881,7 @@ class VariantSelectorComponent {
     if (variants.length <= 1 || options.length === 0) return '';
 
     const primaryIdx = VariantSelectorComponent._primaryIdx(options, primaryOptionName);
-    const primaryValues = VariantSelectorComponent._uniqueValues(variants, primaryIdx);
+    const primaryValues = VariantSelectorComponent._uniqueSelectableValues(variants, primaryIdx);
     if (primaryValues.length === 0) return '';
 
     const selectedVariant = variants.find(v => v.id === product.variantId);
@@ -1894,10 +1894,9 @@ class VariantSelectorComponent {
     const overflowCount = primaryValues.length - MAX_VISIBLE;
 
     const btnGroupHtml = visible.map(val => {
-      const avail = variants.some(v => v[`option${primaryIdx}`] === val && v.available !== false);
       const sel = val === selectedPrimaryVal;
-      const cls = ['vs-btn', sel ? 'vs-btn--selected' : '', !avail ? 'vs-btn--oos' : ''].filter(Boolean).join(' ');
-      return `<button type="button" class="${cls}" data-primary-opt-idx="${primaryIdx}" data-primary-value="${VariantSelectorComponent._esc(val)}"${!avail ? ' disabled' : ''}>${VariantSelectorComponent._esc(val)}</button>`;
+      const cls = ['vs-btn', sel ? 'vs-btn--selected' : ''].filter(Boolean).join(' ');
+      return `<button type="button" class="${cls}" data-primary-opt-idx="${primaryIdx}" data-primary-value="${VariantSelectorComponent._esc(val)}">${VariantSelectorComponent._esc(val)}</button>`;
     }).join('');
 
     const overflowHtml = overflowCount > 0
@@ -2065,6 +2064,17 @@ class VariantSelectorComponent {
     return out;
   }
 
+  static _uniqueSelectableValues(variants, optIdx) {
+    return VariantSelectorComponent._uniqueValues(
+      (variants || []).filter(VariantSelectorComponent._isSelectableVariant),
+      optIdx
+    );
+  }
+
+  static _isSelectableVariant(variant) {
+    return variant?.available !== false;
+  }
+
   static _esc(str) {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -2077,11 +2087,9 @@ class VariantSelectorComponent {
   static _findBestVariant(variants, primaryOptIdx, primaryValue, currentVariantId) {
     const current = variants.find(v => v.id === currentVariantId);
     const candidates = variants.filter(v =>
-      v[`option${primaryOptIdx}`] === primaryValue && v.available !== false
+      v[`option${primaryOptIdx}`] === primaryValue && VariantSelectorComponent._isSelectableVariant(v)
     );
-    if (candidates.length === 0) {
-      return variants.find(v => v[`option${primaryOptIdx}`] === primaryValue) || null;
-    }
+    if (candidates.length === 0) return null;
     if (candidates.length === 1 || !current) return candidates[0];
 
     for (let i = 1; i <= 3; i++) {
@@ -2133,7 +2141,7 @@ class VariantSelectorComponent {
     const primaryOptIdx = parseInt(overflowBtn.dataset.primaryOptIdx, 10);
     let allValues;
     try { allValues = JSON.parse(overflowBtn.dataset.allValues); }
-    catch (_) { allValues = VariantSelectorComponent._uniqueValues(product.variants || [], primaryOptIdx); }
+    catch (_) { allValues = VariantSelectorComponent._uniqueSelectableValues(product.variants || [], primaryOptIdx); }
 
     const currentVariant = (product.variants || []).find(v => v.id === product.variantId);
     const currentPrimary = currentVariant ? currentVariant[`option${primaryOptIdx}`] : null;
@@ -2141,9 +2149,8 @@ class VariantSelectorComponent {
     const panel = VariantSelectorComponent._makePanel();
 
     allValues.forEach(val => {
-      const avail = (product.variants || []).some(v => v[`option${primaryOptIdx}`] === val && v.available !== false);
       const sel = val === currentPrimary;
-      const tile = VariantSelectorComponent._makeTile(val, sel, !avail);
+      const tile = VariantSelectorComponent._makeTile(val, sel, false);
       tile.addEventListener('click', (e) => {
         e.stopPropagation();
         VariantSelectorComponent._selectPrimary(cardEl, product, primaryOptIdx, val, onVariantChange);
@@ -2161,7 +2168,6 @@ class VariantSelectorComponent {
     VariantSelectorComponent._closePanel(cardEl);
 
     const optIdx = parseInt(pill.dataset.optIdx, 10);
-    const values = VariantSelectorComponent._uniqueValues(product.variants || [], optIdx);
     const currentVariant = (product.variants || []).find(v => v.id === product.variantId);
     const currentVal = currentVariant ? currentVariant[`option${optIdx}`] : null;
 
@@ -2169,13 +2175,17 @@ class VariantSelectorComponent {
     const primaryBtn = wrapper?.querySelector('.vs-btn--selected');
     const primaryOptIdx = primaryBtn ? parseInt(primaryBtn.dataset.primaryOptIdx, 10) : 1;
     const currentPrimary = currentVariant ? currentVariant[`option${primaryOptIdx}`] : null;
+    const values = VariantSelectorComponent._uniqueValues((product.variants || []).filter(v => {
+      const matchesPrimary = !currentPrimary || v[`option${primaryOptIdx}`] === currentPrimary;
+      return matchesPrimary && VariantSelectorComponent._isSelectableVariant(v);
+    }), optIdx);
 
     const panel = VariantSelectorComponent._makePanel('vs-panel--secondary');
 
     values.forEach(val => {
       const candidate = (product.variants || []).find(v => {
         const matchesPrimary = !currentPrimary || v[`option${primaryOptIdx}`] === currentPrimary;
-        return matchesPrimary && v[`option${optIdx}`] === val && v.available !== false;
+        return matchesPrimary && v[`option${optIdx}`] === val && VariantSelectorComponent._isSelectableVariant(v);
       });
       const sel = val === currentVal;
       const tile = VariantSelectorComponent._makeTile(val, sel, !candidate);
@@ -2865,7 +2875,7 @@ function renderSelectedProductRow(product = null, options = {}) {
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
-        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">${quantity}</span>
+        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">x${quantity}</span>
         ${removable ? `
           <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Delete ${escapeAttribute(title)}">
             ${renderTrashIcon()}
@@ -3264,14 +3274,18 @@ function buildCartLineSourceProperties({
   discountAmount = '',
   discountPercentage = null,
   box = '1',
+  includeBox = true,
 } = {}) {
   const displayProperties = {
-    box: String(box || '1'),
     items: selectedLines
       .map(({ product = {}, quantity = 0 }) => `${Number(quantity || 0)} x ${product.title || product.id}`)
       .join(', '),
     retailPrice: String(retailPrice || ''),
   };
+
+  if (includeBox !== false) {
+    displayProperties.box = String(box || '1');
+  }
 
   if (discountAmount) {
     const percentage = `${Math.round(Number(discountPercentage || 0))}%`;
@@ -3333,8 +3347,8 @@ function buildProductPageCartFormData(cartItems = [], {
     });
     formData.append(`items[${index}][properties][Box]`, String(itemNumber));
     formData.append(`items[${index}][properties][_bundleName]`, bundleName);
-    formData.append(`items[${index}][properties][_easyBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
-    formData.append(`items[${index}][properties][_easyBundle:prodQty]`, String(item.quantity));
+    formData.append(`items[${index}][properties][_wolfpackProductBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
+    formData.append(`items[${index}][properties][_wolfpackProductBundle:prodQty]`, String(item.quantity));
   });
 
   return {
@@ -4146,7 +4160,7 @@ _normalizeDirectDefaultProduct(product) {
   const requiredQuantity = Number(product.requiredQuantity || 1) || 1;
   const explicitlyUnavailable = variant?.availableForSale === false || variant?.available === false;
   const available = !explicitlyUnavailable;
-  const quantityAvailable = available && inventoryQuantity === 0 ? null : inventoryQuantity;
+  const quantityAvailable = inventoryQuantity;
 
   return {
     id: this.extractId(product.graphqlId || product.productId) || product.productId || variantId,
@@ -6198,6 +6212,17 @@ async loadStepProducts(stepIndex) {
 
 processProductsForStep(products, step) {
 
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : this._getProductPageControls?.()?.trackInventoryOnAddToCart === true;
+  const isTrackedZeroStock = (variant) => (
+    variant?.quantityAvailable === 0 && variant?.currentlyNotInStock !== true
+  );
+  const isVariantSelectableForInventory = (variant) => (
+    variant?.available === true && (
+      !trackInventoryOnAddToCart || !isTrackedZeroStock(variant)
+    )
+  );
   const normalizeVariant = (v) => ({
     id: this.extractId(v.id),
     title: v.title,
@@ -6206,7 +6231,7 @@ processProductsForStep(products, step) {
     sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
       ? v.sellingPlanAllocations
       : [],
-    available: v.available === true,
+    available: isVariantSelectableForInventory(v),
     quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
     currentlyNotInStock: v.currentlyNotInStock === true,
     option1: v.option1 || null,
@@ -6226,7 +6251,7 @@ processProductsForStep(products, step) {
       });
 
       return product.variants
-        .filter(variant => variant.available === true)
+        .filter(isVariantSelectableForInventory)
         .map(variant => {
 
           const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
@@ -6238,7 +6263,7 @@ processProductsForStep(products, step) {
             price: parseFloat(variant.price || '0') * 100,
             compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
             variantId: this.extractId(variant.id),
-            available: variant.available === true,
+            available: isVariantSelectableForInventory(variant),
             quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
             currentlyNotInStock: variant.currentlyNotInStock === true,
             sellingPlanAllocations: variant.sellingPlanAllocations || [],
@@ -6253,7 +6278,13 @@ processProductsForStep(products, step) {
         });
     } else {
 
-      const defaultVariant = product.variants?.find(variant => variant.available === true) || product.variants?.[0];
+      const defaultVariant = product.variants?.find(isVariantSelectableForInventory) || (
+        trackInventoryOnAddToCart ? null : product.variants?.[0]
+      );
+
+      if (product.variants?.length > 0 && !defaultVariant) {
+        return [];
+      }
 
       const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
@@ -6272,7 +6303,7 @@ processProductsForStep(products, step) {
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
           sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
-          available: defaultVariant?.available === true,
+          available: defaultVariant ? isVariantSelectableForInventory(defaultVariant) : false,
           quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
           currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
 
@@ -6288,6 +6319,13 @@ processProductsForStep(products, step) {
 };
 
 const ProductPageSelectionDataMethods = {
+isInventoryTrackingOnAddToCartEnabled() {
+  const controls = typeof this._getProductPageControls === 'function'
+    ? this._getProductPageControls()
+    : null;
+  return controls?.trackInventoryOnAddToCart === true;
+},
+
 /**
  * Look up real stock for a variant. See full-page widget's getVariantAvailable
  * for field semantics.
@@ -6303,10 +6341,16 @@ getVariantAvailable(stepIndex, variantId) {
   }
   const qty = typeof product.quantityAvailable === 'number' ? product.quantityAvailable : null;
   const backorder = product.currentlyNotInStock === true;
-  if (qty === 0 && !backorder) {
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : ProductPageSelectionDataMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  if (!trackInventoryOnAddToCart) {
+    return { available: null, outOfStock: false, acceptsBackorder: backorder };
+  }
+  if (trackInventoryOnAddToCart && qty === 0 && !backorder) {
     return { available: 0, outOfStock: true, acceptsBackorder: false };
   }
-  return { available: qty, outOfStock: false, acceptsBackorder: backorder };
+  return { available: qty === 0 ? null : qty, outOfStock: false, acceptsBackorder: backorder };
 },
 
 findProductBySelectionKey(products, selectionKey) {
@@ -6690,6 +6734,16 @@ function resolveProductPageCardButtonText({
     .replace(/\{\{\s*quantity\s*\}\}/g, String(currentQuantity));
 }
 
+function shouldDisableProductPageVariantOption(variant, trackInventoryOnAddToCart = false) {
+  if (variant?.available !== true) {
+    return true;
+  }
+
+  return trackInventoryOnAddToCart === true
+    && variant?.quantityAvailable === 0
+    && variant?.currentlyNotInStock !== true;
+}
+
 const ProductPageModalMethods = {
 renderModalTabs() {
   const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
@@ -6889,13 +6943,15 @@ renderVariantSelector(product) {
     return '';
   }
 
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : false;
+
   return `
     <div class="variant-selector-wrapper">
       <select class="variant-selector" data-base-product-id="${product.id}">
         ${product.variants.map(v => {
-
-          const isHardOOS = v.available !== true
-            || (v.quantityAvailable === 0 && v.currentlyNotInStock !== true);
+          const isHardOOS = shouldDisableProductPageVariantOption(v, trackInventoryOnAddToCart);
           const label = isHardOOS ? `${v.title} — out of stock` : v.title;
           const selected = v.id === product.variantId ? 'selected' : '';
           const disabled = isHardOOS ? 'disabled' : '';
@@ -7037,12 +7093,15 @@ attachProductEventHandlers(productGrid, stepIndex) {
             this.setSelectedQuantity(stepIndex, product.variantId, 0);
 
             const newQtyAvail = product.quantityAvailable;
-            const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+            const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+              ? this.isInventoryTrackingOnAddToCartEnabled()
+              : false;
+            const newOOS = shouldDisableProductPageVariantOption(product, trackInventoryOnAddToCart);
             let migratedQty = oldQuantity;
             if (newOOS) {
               ToastManager.show('Selected variant is out of stock — selection cleared.');
               migratedQty = 0;
-            } else if (newQtyAvail !== null && oldQuantity > newQtyAvail) {
+            } else if (trackInventoryOnAddToCart && newQtyAvail !== null && oldQuantity > newQtyAvail) {
               migratedQty = newQtyAvail;
               ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
             }

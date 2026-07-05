@@ -21,7 +21,29 @@ import {
   buildCartLineDisplayProperties as buildSharedCartLineDisplayProperties,
   buildCartLineSourceProperties as buildSharedCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
+import { shouldDisplayClassicFixedBundleRawTotal } from '../shared/summary-pricing-display.js';
 
+function isFullPageCartLineOutOfStock(context, product) {
+  if (!product) return false;
+  if (typeof context?.isVariantOutOfStock === 'function') {
+    return context.isVariantOutOfStock(product);
+  }
+  if (product.available === false) return true;
+
+  const controls = typeof context?._getLandingPageControls === 'function'
+    ? context._getLandingPageControls()
+    : null;
+  return controls?.trackInventoryOnAddToCart === true
+    && product.quantityAvailable === 0
+    && product.currentlyNotInStock !== true;
+}
+
+function shouldIncludeBundleQuantityCartProperties(context) {
+  const pricing = context?.selectedBundle?.pricing || {};
+  const method = String(pricing.method || '').toLowerCase();
+  const bundleQuantityOptions = pricing.messages?.displayOptions?.bundleQuantityOptions;
+  return !(method === 'buy_x_get_y' && bundleQuantityOptions?.enabled === false);
+}
 
 export const fullPageStepFooterMethods = {
   isSelectedAddonCartLine(step) {
@@ -64,15 +86,25 @@ export const fullPageStepFooterMethods = {
     const discountAmount = Math.max(0, Number(discountInfo.discountAmount || 0));
     const discountPercentage = Number(discountInfo.discountPercentage || 0)
       || (totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0);
+    const useDisplayOnlyFixedPrice = shouldDisplayClassicFixedBundleRawTotal(this, discountInfo);
 
-    return buildSharedCartLineSourceProperties({
+    const sourceProperties = buildSharedCartLineSourceProperties({
       selectedLines: parentSelectedLines,
-      retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
-      discountAmount: discountAmount > 0
+      retailPrice: useDisplayOnlyFixedPrice
+        ? ''
+        : CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
+      discountAmount: !useDisplayOnlyFixedPrice && discountAmount > 0
         ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
         : '',
       discountPercentage,
+      includeBox: shouldIncludeBundleQuantityCartProperties(this),
     });
+
+    if (useDisplayOnlyFixedPrice) {
+      sourceProperties._bundle_price_adjustment_mode = 'display_only';
+    }
+
+    return sourceProperties;
   },
 
 buildCartLineDisplayProperties(displayProperties) {
@@ -104,6 +136,7 @@ async addBundleToCart(clickedButton = null) {
     const offerId = this.resolveFullPageOfferId();
     const baseOfferId = `${offerId}_${sessionKey}`;
     const selectedLines = [];
+    const unavailableLines = [];
     let itemNumber = 0;
     const hasAddonStepConfigured = (this.selectedBundle?.steps || []).some((candidateStep) => {
       return fullPageStepFooterMethods.isSelectedAddonCartLine.call(this, candidateStep);
@@ -123,14 +156,20 @@ async addBundleToCart(clickedButton = null) {
           const product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId))
             || { id: variantId, title: variantId };
 
+          if (isFullPageCartLineOutOfStock(this, product)) {
+            unavailableLines.push(product.title || variantId);
+            return;
+          }
 
           itemNumber += 1;
           const properties = {
-            Box: String(itemNumber),
             '_bundleName': bundleName,
-            '_easyBundle:prodQty': String(quantity),
-            '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
+            '_wolfpackProductBundle:prodQty': String(quantity),
+            '_wolfpackProductBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
           };
+          if (shouldIncludeBundleQuantityCartProperties(this)) {
+            properties.Box = String(itemNumber);
+          }
           const addonEval = this.getAddonTierEvaluation?.(step) || {};
           const addonDiscount = this.getAddonLineDiscount(step);
           const isAddonCartLine = fullPageStepFooterMethods.isSelectedAddonCartLine.call(this, step);
@@ -169,14 +208,23 @@ async addBundleToCart(clickedButton = null) {
       });
     });
 
+    if (unavailableLines.length > 0) {
+      ToastManager.show(`${unavailableLines[0]} is out of stock.`);
+      return;
+    }
+
     if (items.length === 0) {
       ToastManager.show('Please select products before adding to cart');
       return;
     }
 
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
+    const useDisplayOnlyFixedPrice = sourceProperties._bundle_price_adjustment_mode === 'display_only';
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
+      if (useDisplayOnlyFixedPrice && !item.properties._bundle_step_type) {
+        item.properties._bundle_step_type = 'fixed_price_display_only';
+      }
       if (hasSelectedAddonLine && hasAddonStepConfigured) {
         item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
       }
@@ -208,7 +256,7 @@ async addBundleToCart(clickedButton = null) {
 
       // Show success message
       ToastManager.show('Bundle added to cart successfully!');
-      this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
+      await this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
 
     } catch (fetchError) {
       this._emitStorefrontEvent('bundle-add-to-cart-failed', { reason: 'fetch-error', message: String(fetchError && fetchError.message || fetchError) });

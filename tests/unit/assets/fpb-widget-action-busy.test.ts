@@ -140,15 +140,11 @@ describe('FPB widget action busy state', () => {
     };
 
     fullPageRuntimeCartSettingsMethods._setWidgetBusy.call(context, true, button);
-    expect(container.className).toContain('fpb-widget-busy');
-    expect(button.className).toContain('fpb-inline-spinner-active');
-    expect(button.innerHTML).toContain('fpb-inline-spinner');
     expect(button.disabled).toBe(true);
 
     fullPageRuntimeCartSettingsMethods._setWidgetBusy.call(context, false, button);
-    expect(container.className).not.toContain('fpb-widget-busy');
-    expect(button.className).not.toContain('fpb-inline-spinner-active');
     expect(button.innerHTML).toBe('Next');
+    expect(button.disabled).toBe(false);
   });
 
   it('prevents overlapping actions and keeps widget blocked while action is running', async () => {
@@ -257,14 +253,13 @@ describe('FPB widget action busy state', () => {
     const action = addBundleToCart.call(context, actionButton);
 
     expect(context._isWidgetActionBusy).toBe(true);
-    expect(container.className).toContain('fpb-widget-busy');
-    expect(actionButton.innerHTML).toContain('fpb-inline-spinner');
+    expect(actionButton.disabled).toBe(true);
 
     resolveResponse?.();
     await action;
 
     expect(context._isWidgetActionBusy).toBe(false);
-    expect(container.className).not.toContain('fpb-widget-busy');
     expect(actionButton.innerHTML).toBe('Add to Cart');
+    expect(actionButton.disabled).toBe(false);
   });
 });

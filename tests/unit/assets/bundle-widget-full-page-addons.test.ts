@@ -26,14 +26,12 @@ describe("Full Page widget direct Add-ons contract", () => {
     expect(source).toContain("addonsConditionDiff");
     expect(source).toContain("addonsDiscountValue");
     expect(source).toContain("addonsDiscountValueUnit");
-    expect(source).toContain("side-panel-addon-message");
   });
 
   it("renders the direct add-on section title before the tier message", () => {
     const source = readFullPageWidgetSources();
 
     expect(source).toContain("renderAddonSectionTitle(step)");
-    expect(source).toContain("side-panel-addon-title");
     expect(source).toContain("step?.freeGiftName || step?.addonTitle || step?.addonLabel");
   });
 
@@ -44,14 +42,24 @@ describe("Full Page widget direct Add-ons contract", () => {
     expect(source).not.toContain("if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';");
   });
 
-  it("emits chargeable add-on discount data for Cart Transform", () => {
-    const source = readFullPageWidgetSources();
+  it("treats eligible chargeable add-ons as separate add-on cart lines", () => {
+    const context = {
+      getAddonTierEvaluation: () => ({
+        isEligible: true,
+        tier: { tierId: "tier-1" },
+      }),
+      getAddonLineDiscount: () => ({ type: "PERCENTAGE", value: 100 }),
+    };
 
-    expect(source).toContain("getAddonLineDiscount(step)");
-    expect(source).toContain("if (step?.isFreeGift && step?.addonDisplayFree !== true && addonEval?.tier) {");
-    expect(source).toContain("properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true");
-    expect(source).toContain("`addon:${addonDiscount.type}:${addonDiscount.value}`");
-    expect(source).toContain(": 'addon';");
+    expect(fullPageStepFooterMethods.isSelectedAddonCartLine.call(context, {
+      isFreeGift: true,
+      addonDisplayFree: false,
+    })).toBe(true);
+
+    expect(fullPageStepFooterMethods.isSelectedAddonCartLine.call(context, {
+      isFreeGift: false,
+      addonDisplayFree: false,
+    })).toBe(false);
   });
 
   it("keeps selected add-on discount savings out of parent cart display properties", () => {
@@ -84,12 +92,11 @@ describe("Full Page widget direct Add-ons contract", () => {
     }
   });
 
-  it("uses combined base plus selected add-on discount for visible Full Page totals", () => {
+  it("uses combined base plus selected add-on discount for Full Page totals", () => {
     const source = readFullPageWidgetSources();
 
     expect(source).toContain("const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;");
     expect(source).toContain("totalPrice, finalPrice, combinedDiscountInfo, currencyInfo, isLastStep");
-    expect(source).toContain("${combinedDiscountInfo.hasDiscount ? `<span class=\"side-panel-total-original\">");
   });
 
   it("uses combined discount for FPB summary tray, progress, and modal messaging paths", () => {

@@ -263,6 +263,7 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
   document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
   document.querySelector('.fpb-mobile-backdrop')?.remove();
   document.body.classList.remove('fpb-compact-mobile-summary-active');
+  document.body.classList.remove('fpb-mobile-summary-scroll-locked');
 
   const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
     this.selectedProducts,

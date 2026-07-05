@@ -13,7 +13,16 @@ Keep Shopify offline Admin API access compliant with expiring offline access tok
 | 3 | Ensure helper acquires when no offline row exists | No DB row + ID token | Expiring offline session is persisted | Covers first embedded app launch |
 | 4 | Ensure helper leaves missing row alone without ID token | No DB row + no ID token | Returns null without token request | Avoids fabricated auth state |
 
+### CachedSessionStorage
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Legacy offline row is loaded by Shopify SDK session storage | Offline row with no `refreshToken` and no `expires` | Storage migrates the row before returning a session | Prevents `unauthenticated.admin(...)` from using a non-expiring token |
+| 2 | Legacy offline row migration fails transiently | Offline row with no `refreshToken`, migration throws network error | Storage returns `undefined` and keeps the row for later retry | Avoids serving the legacy token |
+| 3 | Legacy offline session is already cached | Cached offline `Session` with no refresh metadata | Storage re-reads and migrates instead of serving cache | Covers SDK callback/cache path |
+| 4 | `findSessionsByShop` sees legacy rows | Shop lookup returns legacy offline rows | Rows are migrated before being returned | Covers batch/session lookup callers |
+
 ## Acceptance Criteria
-- [ ] New installs can acquire expiring offline tokens from an ID token.
-- [ ] Existing non-expiring offline tokens still migrate with `expiring=1`.
-- [ ] Token responses persist access-token and refresh-token expiration metadata.
+- [x] New installs can acquire expiring offline tokens from an ID token.
+- [x] Existing non-expiring offline tokens still migrate with `expiring=1`.
+- [x] Token responses persist access-token and refresh-token expiration metadata.
+- [x] Session storage never returns a non-expiring offline token to Admin API callers.

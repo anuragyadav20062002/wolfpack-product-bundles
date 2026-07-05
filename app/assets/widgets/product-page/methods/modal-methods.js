@@ -18,6 +18,16 @@ export function resolveProductPageCardButtonText({
     .replace(/\{\{\s*quantity\s*\}\}/g, String(currentQuantity));
 }
 
+export function shouldDisableProductPageVariantOption(variant, trackInventoryOnAddToCart = false) {
+  if (variant?.available !== true) {
+    return true;
+  }
+
+  return trackInventoryOnAddToCart === true
+    && variant?.quantityAvailable === 0
+    && variant?.currentlyNotInStock !== true;
+}
+
 export const ProductPageModalMethods = {
 renderModalTabs() {
   const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
@@ -230,15 +240,15 @@ renderVariantSelector(product) {
     return '';
   }
 
+  const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+    ? this.isInventoryTrackingOnAddToCartEnabled()
+    : false;
+
   return `
     <div class="variant-selector-wrapper">
       <select class="variant-selector" data-base-product-id="${product.id}">
         ${product.variants.map(v => {
-          // Grey out variants that are hard out of stock. quantityAvailable === 0
-          // only disables when the variant does NOT accept backorders
-          // (currentlyNotInStock === true means "sold out but backorderable").
-          const isHardOOS = v.available !== true
-            || (v.quantityAvailable === 0 && v.currentlyNotInStock !== true);
+          const isHardOOS = shouldDisableProductPageVariantOption(v, trackInventoryOnAddToCart);
           const label = isHardOOS ? `${v.title} — out of stock` : v.title;
           const selected = v.id === product.variantId ? 'selected' : '';
           const disabled = isHardOOS ? 'disabled' : '';
@@ -400,12 +410,15 @@ attachProductEventHandlers(productGrid, stepIndex) {
             this.setSelectedQuantity(stepIndex, product.variantId, 0);
 
             const newQtyAvail = product.quantityAvailable;
-            const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+            const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+              ? this.isInventoryTrackingOnAddToCartEnabled()
+              : false;
+            const newOOS = shouldDisableProductPageVariantOption(product, trackInventoryOnAddToCart);
             let migratedQty = oldQuantity;
             if (newOOS) {
               ToastManager.show('Selected variant is out of stock — selection cleared.');
               migratedQty = 0;
-            } else if (newQtyAvail !== null && oldQuantity > newQtyAvail) {
+            } else if (trackInventoryOnAddToCart && newQtyAvail !== null && oldQuantity > newQtyAvail) {
               migratedQty = newQtyAvail;
               ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
             }

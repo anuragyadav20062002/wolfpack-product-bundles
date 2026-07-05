@@ -193,6 +193,21 @@ Do not run dev against the standard PROD `shopify.web.toml` / production Shopify
 
 ---
 
+## 🔐 Shopify Expiring Offline Token Rule
+
+Public apps must use Shopify expiring offline access tokens. Before changing auth, session storage, background Admin API clients, app-proxy Admin API callers, or install/reauthorization code, check the official Shopify offline token docs:
+`https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/offline-access-tokens`
+
+Required checks:
+- Offline token acquisition and migration requests to `/admin/oauth/access_token` must include `expiring=1`.
+- Persist `expires`, `refreshToken`, and `refreshTokenExpiresAt` for offline sessions.
+- Session storage must never return a non-expiring offline session to Admin API callers. Legacy offline rows with no refresh token must be migrated first, or withheld if migration fails.
+- Background Admin API work must use `unauthenticated.admin(shopDomain)` or `getOfflineSessionForShop(...)`; do not read `Session.accessToken` directly from Prisma.
+- Token refresh must use `grant_type=refresh_token` and persist the newly returned access token, refresh token, and expiration metadata.
+- Add or update focused behavior tests for any auth/session change that could reintroduce non-expiring offline tokens.
+
+---
+
 ## 🧪 Admin LCP Debug Bridge Rule
 
 For major Admin UI changes, recreate and use the temporary Admin LCP debug bridge in dev/SIT to optimize route-level LCP before relying on Shopify field data.
@@ -448,7 +463,7 @@ This doc is the distilled, topic-organized reference captured from a live authen
 | Default/preselected products | `defaultProductsData` full shape |
 | Template system | FPB two-field (`bundleDesignTemplate` + `bundleDesignPresetId`) — all 4 presets confirmed; PPB two-field (`bundleDesignTemplate` + `templateId`) — all 4 templates confirmed |
 | Storefront globals | FPB `window.gbb.*` + `stepsConfigurationData`; PPB `window.gbbMix.*` + `mixAndMatchBundleSettings` (25+ fields) |
-| Cart add format | FPB JSON + PPB multipart; `_easyBundle:OfferId` format; `bundle_details` metafield accumulation |
+| Cart add format | FPB JSON + PPB multipart; `_wolfpackProductBundle:OfferId` format; `bundle_details` metafield accumulation |
 | Box selection | `gbbBoxSelection.state` schema; ATC enforcement logic (decompiled); DOM structure |
 | Text config | `bundleTextConfig.bundleSummary.{title,subTitle}` — confirmed only two fields |
 | Collection pagination | Batch `nodes(ids:[...])` architecture — NOT cursor-based |

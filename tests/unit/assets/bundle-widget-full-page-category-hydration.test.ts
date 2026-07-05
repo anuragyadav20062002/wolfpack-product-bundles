@@ -10,6 +10,10 @@ const {
 const {
   fullPageModalProductMethods,
 } = require('../../../app/assets/widgets/full-page/methods/modal-product-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const {
+  fullPageProductProcessingMethods,
+} = require('../../../app/assets/widgets/full-page/methods/product-processing-methods.js');
 
 describe('Full Page widget category hydration behavior', () => {
   const getStepCategoryTabEntries = fullPageSearchCategoryMethods.getStepCategoryTabEntries;
@@ -18,6 +22,8 @@ describe('Full Page widget category hydration behavior', () => {
   const expandProductsByVariant = fullPageProductGridMethods.expandProductsByVariant;
   const orderProductsForActiveCategory = fullPageProductGridMethods.orderProductsForActiveCategory;
   const getNoProductsAvailableMessage = fullPageProductGridMethods.getNoProductsAvailableMessage;
+  const mergeCategoryProductVariantAvailability =
+    fullPageProductProcessingMethods.mergeCategoryProductVariantAvailability;
 
   function categoryContext() {
     return {
@@ -63,7 +69,7 @@ describe('Full Page widget category hydration behavior', () => {
     ]);
   });
 
-  it('uses the active category variant display flag for category tabs', () => {
+  it('uses the saved FPB step-level variant display flag for category tabs', () => {
     const step = {
       displayVariantsAsIndividual: true,
       categories: [
@@ -83,7 +89,7 @@ describe('Full Page widget category hydration behavior', () => {
         step,
         activeCategory,
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('expands category tab products only when the active category display flag is on', () => {
@@ -205,6 +211,35 @@ describe('Full Page widget category hydration behavior', () => {
       'Manual second',
       'Collection first',
       'Collection second',
+    ]);
+  });
+
+  it('uses category product variant availability for duplicate grouped step products', () => {
+    const merged = mergeCategoryProductVariantAvailability([
+      {
+        id: 'gid://shopify/Product/1',
+        title: 'Fragrance Candle',
+        variants: [
+          { id: '11', title: 'Cherry', available: true },
+          { id: '12', title: 'Peach', available: true },
+        ],
+      },
+    ], {
+      categories: [{
+        products: [{
+          id: 'gid://shopify/Product/1',
+          title: 'Fragrance Candle',
+          variants: [
+            { id: 'gid://shopify/ProductVariant/11', title: 'Cherry', available: true },
+            { id: 'gid://shopify/ProductVariant/12', title: 'Peach', available: false },
+          ],
+        }],
+      }],
+    });
+
+    expect(merged[0].variants).toEqual([
+      expect.objectContaining({ id: '11', available: true }),
+      expect.objectContaining({ id: '12', available: false }),
     ]);
   });
 

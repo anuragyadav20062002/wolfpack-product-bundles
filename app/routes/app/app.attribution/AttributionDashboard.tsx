@@ -19,6 +19,15 @@ import { ChartCardSkeleton } from "../../../components/skeletons/ChartCardSkelet
 import styles from "../../../styles/routes/app-attribution.module.css";
 import type { AttributionDashboardData, loader } from "../app.attribution";
 
+type PixelStatusPayload = {
+  active: boolean;
+};
+
+type AttributionDashboardViewData = Omit<AttributionDashboardData, "from" | "to"> & {
+  from?: string;
+  to?: string;
+};
+
 // ─── Helpers ─────────────────────────────────────────────────
 
 function formatRevenue(cents: number, currency = "USD"): string {
@@ -348,7 +357,6 @@ function AttributionDashboardSkeleton() {
   return (
     <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <ChartCardSkeleton height={96} label="Loading tracking status" />
         <ChartCardSkeleton height={180} label="Loading funnel summary" />
         <div
           style={{
@@ -365,11 +373,69 @@ function AttributionDashboardSkeleton() {
   );
 }
 
-function AttributionDashboardContent({ data }: { data: AttributionDashboardData }) {
+function PixelStatusBoundary({ pixelStatus }: { pixelStatus: Promise<PixelStatusPayload> }) {
+  return (
+    <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 0" }}>
+      <Suspense fallback={<ChartCardSkeleton height={96} label="Loading tracking status" />}>
+        <Await resolve={pixelStatus}>
+          {(status) => <PixelStatusCard pixelActive={Boolean(status.active)} />}
+        </Await>
+      </Suspense>
+    </div>
+  );
+}
+
+function NoDataBanner({
+  hasNoData,
+  pixelStatus,
+}: {
+  hasNoData: boolean;
+  pixelStatus: Promise<PixelStatusPayload>;
+}) {
+  if (!hasNoData) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <Await resolve={pixelStatus}>
+        {(status) => (
+          <s-banner
+            heading={status.active ? "No data for this period" : "UTM tracking is not enabled"}
+            tone={status.active ? "info" : "warning"}
+          >
+            {status.active ? (
+              <s-stack direction="block" gap="small-100">
+                <p style={{ margin: 0, fontSize: 14 }}>
+                  Tracking is active but no attributed orders were recorded yet. Values will populate once customers arrive via UTM-tagged links and complete a purchase.
+                </p>
+                <p style={{ margin: 0, fontSize: 14 }}>
+                  Make sure your ad links include UTM parameters — e.g.{" "}
+                  <code style={{ background: "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 3, fontSize: 12 }}>
+                    ?utm_source=facebook&utm_campaign=bundles
+                  </code>
+                </p>
+              </s-stack>
+            ) : (
+              <p style={{ margin: 0, fontSize: 14 }}>
+                Enable tracking below to start capturing UTM parameters from visitor sessions. Once active, orders from tagged ad links will be attributed and shown here.
+              </p>
+            )}
+          </s-banner>
+        )}
+      </Await>
+    </Suspense>
+  );
+}
+
+function AttributionDashboardContent({
+  data,
+  pixelStatus,
+}: {
+  data: AttributionDashboardViewData;
+  pixelStatus: Promise<PixelStatusPayload>;
+}) {
   const {
     days, from, to, prevFrom, prevTo, summary, timeSeries,
     byPlatform, byMedium, byCampaign, byBundle, byLandingPage,
-    pixelActive,
     bundleRevenueSummary, bundleLeaderboard, bundleRevenueTrend,
     views,
     funnelSnapshot, engagementTrend, engagedSessions, prevEngagedSessions,
@@ -416,33 +482,7 @@ function AttributionDashboardContent({ data }: { data: AttributionDashboardData 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
           {/* No data banner */}
-          {hasNoData && (
-            <s-banner
-              heading={pixelActive ? "No data for this period" : "UTM tracking is not enabled"}
-              tone={pixelActive ? "info" : "warning"}
-            >
-              {pixelActive ? (
-                <s-stack direction="block" gap="small-100">
-                  <p style={{ margin: 0, fontSize: 14 }}>
-                    Tracking is active but no attributed orders were recorded yet. Values will populate once customers arrive via UTM-tagged links and complete a purchase.
-                  </p>
-                  <p style={{ margin: 0, fontSize: 14 }}>
-                    Make sure your ad links include UTM parameters — e.g.{" "}
-                    <code style={{ background: "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 3, fontSize: 12 }}>
-                      ?utm_source=facebook&utm_campaign=bundles
-                    </code>
-                  </p>
-                </s-stack>
-              ) : (
-                <p style={{ margin: 0, fontSize: 14 }}>
-                  Enable tracking below to start capturing UTM parameters from visitor sessions. Once active, orders from tagged ad links will be attributed and shown here.
-                </p>
-              )}
-            </s-banner>
-          )}
-
-          {/* Pixel tracking toggle */}
-          <PixelStatusCard pixelActive={pixelActive} />
+          <NoDataBanner hasNoData={hasNoData} pixelStatus={pixelStatus} />
 
           {/* Date range selector + Compare toggle + Export */}
           <div className={styles.headerRow}>
@@ -548,7 +588,7 @@ function AttributionDashboardContent({ data }: { data: AttributionDashboardData 
 }
 
 export default function AttributionDashboard() {
-  const { analytics } = useLoaderData<typeof loader>();
+  const { analytics, pixelStatus } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
 
   return (
@@ -563,9 +603,12 @@ export default function AttributionDashboard() {
           Dashboard
         </button>
       </ui-title-bar>
+      <div className={styles.pixelStatusBoundary}>
+        <PixelStatusBoundary pixelStatus={pixelStatus} />
+      </div>
       <Suspense fallback={<AttributionDashboardSkeleton />}>
         <Await resolve={analytics}>
-          {(data) => <AttributionDashboardContent data={data} />}
+          {(data) => <AttributionDashboardContent data={data} pixelStatus={pixelStatus} />}
         </Await>
       </Suspense>
     </>

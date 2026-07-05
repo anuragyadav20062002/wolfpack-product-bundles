@@ -71,6 +71,28 @@ describe("default products direct contract", () => {
     ]);
   });
 
+  it("does not invent zero inventory when the picker omits inventory quantity", () => {
+    const entry = buildDefaultProductEntryFromPicker({
+      id: "gid://shopify/Product/9427287703811",
+      title: "Unknown Inventory Case",
+      variants: [
+        {
+          id: "gid://shopify/ProductVariant/48191691456771",
+          price: "123.00",
+          availableForSale: true,
+        },
+      ],
+    });
+
+    expect(entry?.variants).toEqual([
+      {
+        variantId: "48191691456771",
+        variantGraphqlId: "gid://shopify/ProductVariant/48191691456771",
+        price: "123.00",
+      },
+    ]);
+  });
+
   it("normalizes disabled default products without carrying stale products", () => {
     expect(normalizeDefaultProductsData({
       isDefaultProductsEnabled: false,

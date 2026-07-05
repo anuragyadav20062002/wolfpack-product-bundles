@@ -34,8 +34,8 @@ export function buildProductPageCartFormData(cartItems = [], {
     });
     formData.append(`items[${index}][properties][Box]`, String(itemNumber));
     formData.append(`items[${index}][properties][_bundleName]`, bundleName);
-    formData.append(`items[${index}][properties][_easyBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
-    formData.append(`items[${index}][properties][_easyBundle:prodQty]`, String(item.quantity));
+    formData.append(`items[${index}][properties][_wolfpackProductBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
+    formData.append(`items[${index}][properties][_wolfpackProductBundle:prodQty]`, String(item.quantity));
   });
 
   return {

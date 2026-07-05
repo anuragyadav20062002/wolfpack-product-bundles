@@ -46,8 +46,9 @@ function normalizeVariant(variant: any): DefaultProductVariant | null {
   const normalizedVariant: DefaultProductVariant = {
     variantId: numericVariantId,
     variantGraphqlId: variantGid,
-    inventoryQuantity: Number(variant.inventoryQuantity ?? variant.inventory_quantity ?? 0),
   };
+  const inventoryQuantity = variant.inventoryQuantity ?? variant.inventory_quantity;
+  if (inventoryQuantity != null) normalizedVariant.inventoryQuantity = Number(inventoryQuantity);
   if (variant.price != null) normalizedVariant.price = String(variant.price);
 
   return normalizedVariant;

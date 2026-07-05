@@ -8,6 +8,10 @@ import {
   FullPageLayout,
 } from "../../../../constants/bundle";
 import { formatStepCategoriesForRuntime } from "../../../../lib/bundle-config/category-runtime";
+import {
+  normalizePricingDisplayOptions,
+  serializePricingDisplayOptions,
+} from "../../../../lib/pricing-display-options";
 
 const DEFAULT_PROGRESS_MESSAGE = "Add {conditionText} to get {discountText}";
 const DEFAULT_SUCCESS_MESSAGE = "Congratulations! You got {discountText}";
@@ -319,6 +323,16 @@ export function buildFpbBaseConfig(
 
   const firstRuleId = discountData.discountRules?.[0]?.id;
   const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
+  const normalizedPricingDisplayOptions = normalizePricingDisplayOptions({
+    rules: discountData.discountRules || [],
+    messages: { displayOptions: discountData.pricingDisplayOptions || null },
+    showProgressBar: discountData.showDiscountProgressBar === true,
+    method: discountData.discountType,
+  });
+  const canonicalPricingDisplayOptions = serializePricingDisplayOptions({
+    existingMessages: {},
+    options: normalizedPricingDisplayOptions,
+  }).displayOptions;
 
   return {
     bundleId: updatedBundle.id,
@@ -364,7 +378,7 @@ export function buildFpbBaseConfig(
           "Congratulations! You got {discountText}",
         showDiscountMessaging: discountData.discountMessagingEnabled || false,
         showInCart: true,
-        displayOptions: discountData.pricingDisplayOptions || null,
+        displayOptions: canonicalPricingDisplayOptions,
         ruleMessagesByLocale: discountData.ruleMessagesByLocale || null,
         tierTextByRuleId: discountData.tierTextByRuleId || null,
         tierTextByLocaleByRuleId: discountData.tierTextByLocaleByRuleId || null,

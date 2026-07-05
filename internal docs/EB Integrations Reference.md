@@ -1,8 +1,8 @@
 ---
 title: EB Integrations Reference
 type: implementation-reference
-last_audited: 2026-06-04
-source: live EB Shopify Admin route and quick setup links
+last_audited: 2026-07-02
+source: live EB Shopify Admin route and checkout functions help article
 ---
 
 # EB Integrations Reference
@@ -18,12 +18,17 @@ Visible page contract:
 - Category panels: white cards, 8px radius, light grey border, compact title and description.
 - Integration tiles: grey cards inside each category, 8px radius, 36px logo at left, app name and description at right, full-width white `View Setup ->` button below the description.
 
-Integration inventory:
+Original live EB integration inventory from 2026-06-04:
 - Pre-orders, Pickup & Delivery: Stoq, Zapiet
 - Subscriptions: Skio, Appstle, Bold
 - Reviews: Judge.me
 - Page Builders: PageFly, GemPages
 - Checkout: Gokwik, Shopflo
+
+Current WPB Admin inventory:
+- Checkout only.
+- Integrations page cards: GoKwik and Shopflo only.
+- Settings > Controls > Checkout Integration dropdown keeps the complete redirect/cart callback provider list: Shopify checkout, Theme cart drawer, GoKwik, Shopflo, Zecpay, Rebuy, Shiprocket/Fastrr, Monster cart, Upcart, and Kaching Cart.
 
 WPB interim setup destination:
 - All card setup actions and `Request Integration` should point to `https://wolfpackapps.com` until WPB-hosted guides are written.
@@ -91,26 +96,34 @@ Both cards open the same product-page page-builder article:
 
 Setup requirements:
 - For a parent product page, merchant embeds a wrapper div for the product-page bundle app block and loads EB product-page bundle JS/CSS.
-- For a home page or other non-product page, merchant adds `window.easyBundlesPDPConfig = { productHandle: "..." }` before loading the same JS/CSS.
+- For a home page or other non-product page, merchant adds `window.wolfpackProductBundlesPDPConfig = { productHandle: "..." }` before loading the same JS/CSS.
 - Article names Ecomposer, GemPages, PageFly, and other page builders.
 
 WPB supportability:
 - Supportable if WPB exposes an equivalent embeddable product-page bundle wrapper and documented `productHandle` override for non-product pages.
 - Current implementation should be verified against WPB storefront script loading before publishing final WPB guide copy.
 
-### Gokwik and Shopflo
+### Checkout and Side-Cart Handoff Providers
 
-Both cards open the same checkout/side-cart article:
+The checkout cards use the same checkout/side-cart article:
 `https://easybundles-help.skailama.app/en/article/redirecting-the-customers-to-a-different-checkout-app-or-side-cart-using-the-app-functions-15cl0fo/`
 
 Setup requirements:
 - EB uses custom functions/callbacks after bundle add-to-cart to redirect or open third-party checkout/cart apps.
 - GoKwik example: `window.gokwikSdk.initCheckout(merchantInfo);`
 - Shopflo example: `window.Shopflo.openCheckout()`
-- The same article lists side-cart refresh/open functions and discount persistence snippets for some checkout apps.
+- Zecpay example: `zecpeCheckFunctionAndCall("handleOcc")`
+- Shiprocket/Fastrr example: persist discount state, then call `shiprocketCheckoutBuyCartHandler()`.
+- Rebuy example: refresh cart state through `Cart.getCart()`.
+- Upcart example: `window.upcartOpenCart()`.
+- Kaching Cart example: `kachingCartApi.openCart()` and `kachingCartApi.refreshCart()`.
+- Theme cart drawer and Monster cart examples in EB use an EB-owned helper. WPB implements those through WPB-owned cart refresh/open behavior instead of referencing competitor-owned globals in runtime code.
 
 WPB supportability:
-- Partially supportable. WPB can provide the Integrations page provision now, but full runtime support needs a documented post-add-to-cart callback hook and discount persistence behavior equivalent to EB before claiming complete GoKwik/Shopflo support.
+- Supported through the FPB Checkout Settings provider dropdown.
+- WPB creates a short-lived Shopify app discount code only before invoking checkout handoff providers that bypass native Shopify checkout pricing: GoKwik, Shopflo, Zecpay, and Shiprocket/Fastrr.
+- WPB does not call the discount-code endpoint for Theme cart drawer, Rebuy, Monster cart, Upcart, or Kaching Cart because those entries keep the customer in cart drawer/cart refresh flows.
+- The exact EB discount-code TTL was not exposed by the help article; WPB defaults generated codes to one use and 30 minutes unless live EB network/Admin evidence proves a different TTL.
 
 ## Implementation Notes
 

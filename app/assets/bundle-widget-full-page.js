@@ -210,6 +210,8 @@ class BundleWidgetFullPage {
         return;
       }
 
+      await this.hydrateCurrentFullPageBundleBeforeRender();
+
       // Merge bundle_settings metafield into selectedBundle (Settings design display settings)
       this._mergeBundleSettings(this.bundleSettings);
       this.applyPersonalizationAddonProducts();

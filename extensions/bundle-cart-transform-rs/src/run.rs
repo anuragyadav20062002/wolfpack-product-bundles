@@ -1,11 +1,11 @@
-use std::collections::HashSet;
 use shopify_function::prelude::*;
 use shopify_function::Result;
+use std::collections::HashSet;
 
-use crate::schema;
+use crate::expand::process_expand_operations;
 use crate::helpers::{decimal_to_f64, parse_json_or_default};
 use crate::merge::process_merge_operations;
-use crate::expand::process_expand_operations;
+use crate::schema;
 use crate::types::CartLineMessagingSettings;
 
 /// Inner cart transform logic — called by the #[shopify_function] wrapper and
@@ -18,7 +18,11 @@ pub fn cart_transform_run(input: schema::run::Input) -> Result<schema::FunctionR
     // presentmentCurrencyRate is Decimal! — convert to f64 once.
     // Returns 0.0 if non-finite or <= 0 so amount-based discount paths bail out cleanly.
     let rate = decimal_to_f64(input.presentment_currency_rate());
-    let presentment_currency_rate = if rate.is_finite() && rate > 0.0 { rate } else { 0.0 };
+    let presentment_currency_rate = if rate.is_finite() && rate > 0.0 {
+        rate
+    } else {
+        0.0
+    };
 
     let mut processed_line_ids: HashSet<String> = HashSet::new();
     let cart_line_messaging: CartLineMessagingSettings = parse_json_or_default(
@@ -28,7 +32,7 @@ pub fn cart_transform_run(input: schema::run::Input) -> Result<schema::FunctionR
             .map(|metafield| metafield.value().as_str()),
     );
 
-    // Pass 1: MERGE — component lines grouped by EB `_easyBundle:OfferId`
+    // Pass 1: MERGE — component lines grouped by EB `_wolfpackProductBundle:OfferId`
     let mut operations = process_merge_operations(
         &input,
         presentment_currency_rate,

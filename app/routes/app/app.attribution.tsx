@@ -175,11 +175,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 // ─── Loader ──────────────────────────────────────────────────
 
 async function loadAttributionDashboardData({
-  admin,
   shopId,
   url,
 }: {
-  admin: Awaited<ReturnType<typeof requireAdminSession>>["admin"];
   shopId: string;
   url: URL;
 }) {
@@ -212,8 +210,6 @@ async function loadAttributionDashboardData({
   prevUntil.setDate(prevUntil.getDate() - 1);
   const prevFromStr = prevSince.toISOString().split("T")[0];
   const prevToStr   = prevUntil.toISOString().split("T")[0];
-
-  const pixelStatus = await getPixelStatus(admin);
 
   const [currentAttributions, previousAttributions, viewEvents, prevViewEvents, engagementRows, prevEngagementRows, recentActivity] = await Promise.all([
     db.orderAttribution.findMany({
@@ -476,7 +472,6 @@ async function loadAttributionDashboardData({
     to: toStr,
     prevFrom: prevFromStr,
     prevTo: prevToStr,
-    pixelActive: pixelStatus.active,
     summary: {
       totalRevenue, totalOrders, bundleOrders, aov,
       prevTotalRevenue, prevTotalOrders, prevAov,
@@ -510,8 +505,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
 
   return defer({
+    pixelStatus: getPixelStatus(admin),
     analytics: loadAttributionDashboardData({
-      admin,
       shopId: session.shop,
       url,
     }),

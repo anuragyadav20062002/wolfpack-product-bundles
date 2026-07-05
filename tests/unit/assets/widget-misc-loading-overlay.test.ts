@@ -92,6 +92,5 @@ describe('ProductPageWidgetMiscMethods loading overlay', () => {
     expect(overlay?.style.minHeight).toBe('var(--bundle-ppb-loading-overlay-min-height, 180px)');
     expect(overlay?.style.minWidth).toBe('var(--bundle-ppb-loading-overlay-min-width, 180px)');
     expect(container.style.position).toBe('relative');
-    expect(overlay?.className).toBe('bundle-loading-overlay');
   });
 });

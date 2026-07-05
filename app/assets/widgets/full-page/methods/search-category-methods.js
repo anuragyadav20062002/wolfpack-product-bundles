@@ -154,6 +154,22 @@ hidePageTitle() {
     }
   });
 
+  document.querySelectorAll('.shopify-section, [id^="shopify-section"], section').forEach(section => {
+    if (!section.querySelector?.('.bundle-widget-container, #bundle-builder-app')) return;
+
+    section.querySelectorAll?.('h1').forEach(el => {
+      if (el.closest('.bundle-widget-container, #bundle-builder-app, .promo-banner')) return;
+
+      const titleBlock = el.closest('.text-block, .page-width--narrow') || el.parentElement;
+      if (titleBlock && !titleBlock.querySelector('.bundle-widget-container, #bundle-builder-app')) {
+        titleBlock.remove();
+        return;
+      }
+
+      el.remove();
+    });
+  });
+
   if (!normalizedConfigName) return;
 
   document.querySelectorAll('h1').forEach(el => {
@@ -399,7 +415,7 @@ shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
     step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
 
   if (activeCategory) {
-    return activeCategory.displayVariantsAsIndividualProducts === true;
+    return activeCategory.displayVariantsAsIndividualProducts === true || stepDisplaysVariantsAsIndividual;
   }
 
   const hasCategoryEntries = this.getStepCategoryTabEntries(step).length > 0;

@@ -1,13 +1,39 @@
 query Input {
+  presentmentCurrencyRate
   cart {
     lines {
       id
+      quantity
+      wolfpackProductBundleOfferId: attribute(key: "_wolfpackProductBundle:OfferId") {
+        value
+      }
       stepType: attribute(key: "_bundle_step_type") {
         value
+      }
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          id
+          component_parents: metafield(namespace: "$app", key: "component_parents") {
+            value
+          }
+        }
+      }
+      cost {
+        amountPerQuantity {
+          amount
+        }
       }
     }
   }
   discount {
     discountClasses
+    checkoutIntegrationConfig: metafield(namespace: "$app", key: "checkout_integration_config") {
+      jsonValue
+    }
   }
+  enteredDiscountCodes {
+    code
+  }
+  triggeringDiscountCode
 }
