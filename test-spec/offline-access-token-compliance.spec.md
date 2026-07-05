@@ -12,6 +12,7 @@ Keep Shopify offline Admin API access compliant with expiring offline access tok
 | 2 | Existing non-expiring token migration requests expiring offline token | Existing offline session without refresh token | Token exchange request uses offline access token as subject and `expiring=1` | Covers migration path |
 | 3 | Ensure helper acquires when no offline row exists | No DB row + ID token | Expiring offline session is persisted | Covers first embedded app launch |
 | 4 | Ensure helper leaves missing row alone without ID token | No DB row + no ID token | Returns null without token request | Avoids fabricated auth state |
+| 5 | Ensure helper sees incomplete expiring metadata | Offline row has `refreshToken` but missing expiration metadata | Refreshes the token before returning | Avoids treating partial expiring-token rows as compliant |
 
 ### CachedSessionStorage
 | # | Scenario | Input | Expected Output | Notes |

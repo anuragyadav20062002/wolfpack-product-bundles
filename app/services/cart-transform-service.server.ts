@@ -1,8 +1,6 @@
 // Cart Transform Automatic Activation Service
 import type { authenticate } from "~/shopify.server";
 import { AppLogger } from "../lib/logger";
-import db from "../db.server";
-import { ensureShopHasExpiringOfflineSession } from "./offline-token.server";
 
 type AdminApiContext = Awaited<ReturnType<typeof authenticate.admin>>['admin'];
 
@@ -309,125 +307,6 @@ export class CartTransformService {
         error: error instanceof Error ? error.message : 'Unknown error during cart transform activation'
       };
     }
-  }
-
-  /**
-   * Run the backfill for a single shop using its stored offline session.
-   * Returns status 'dead' for shops whose token is invalid (401/402/missing token)
-   * so the caller can purge their sessions.
-   */
-  static async backfillForShop(shopDomain: string): Promise<{
-    shop: string;
-    status: 'skipped' | 'replaced' | 'created' | 'dead' | 'error';
-    cartTransformId?: string;
-    error?: string;
-  }> {
-    try {
-      const { unauthenticated, sessionStorage } = await import("../shopify.server");
-      await ensureShopHasExpiringOfflineSession(db, shopDomain, sessionStorage);
-      const { admin } = await unauthenticated.admin(shopDomain);
-
-      const existing = await this.checkExistingCartTransform(admin);
-      const wasReplacing = existing.exists;
-
-      if (wasReplacing && existing.id) {
-        await this.deleteCartTransform(admin, existing.id);
-      }
-
-      const result = await this.createCartTransform(admin, RUST_FUNCTION_HANDLE);
-      if (!result.success) {
-        return { shop: shopDomain, status: 'error', error: result.error };
-      }
-
-      return {
-        shop: shopDomain,
-        status: wasReplacing ? 'replaced' : 'created',
-        cartTransformId: result.cartTransformId
-      };
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      // 401 = app uninstalled / token revoked, 402 = merchant billing lapsed,
-      // missing token = session record has no token — all indicate a dead install
-      const isDead = /401|402|Missing access token/i.test(msg);
-      return {
-        shop: shopDomain,
-        status: isDead ? 'dead' : 'error',
-        error: msg
-      };
-    }
-  }
-
-  /**
-   * Delete all DB sessions (online + offline) for a list of shop domains.
-   * Used to purge dead installs detected during backfill.
-   */
-  static async purgeDeadSessions(shops: string[]): Promise<number> {
-    if (shops.length === 0) return 0;
-    const { default: db } = await import("../db.server");
-    const { count } = await db.session.deleteMany({
-      where: { shop: { in: shops } }
-    });
-    return count;
-  }
-
-  /**
-   * Backfill ALL installed shops, then purge sessions for dead installs.
-   * Queries every unique offline session (= installed app) from the DB and
-   * runs backfillForShop for each. Includes a 300 ms delay between shops to
-   * stay well within Shopify API rate limits.
-   */
-  static async backfillAllShops(): Promise<{
-    results: Awaited<ReturnType<typeof CartTransformService.backfillForShop>>[];
-    summary: {
-      total: number;
-      skipped: number;
-      replaced: number;
-      created: number;
-      dead: number;
-      errors: number;
-      sessionsPurged: number;
-    };
-  }> {
-    const sessions = await db.session.findMany({
-      where: { isOnline: false },
-      select: { shop: true },
-      distinct: ['shop']
-    });
-
-    AppLogger.info(`Starting cart transform backfill for ${sessions.length} shops`, {
-      component: 'cart-transform',
-      operation: 'backfill-all'
-    });
-
-    const results: Awaited<ReturnType<typeof CartTransformService.backfillForShop>>[] = [];
-
-    for (const { shop } of sessions) {
-      const result = await this.backfillForShop(shop);
-      results.push(result);
-      AppLogger.info('Backfill result', { component: 'cart-transform', operation: 'backfill-all' }, result);
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
-
-    // Purge dead installs from the DB
-    const deadShops = results.filter(r => r.status === 'dead').map(r => r.shop);
-    const sessionsPurged = await this.purgeDeadSessions(deadShops);
-
-    const summary = {
-      total: results.length,
-      skipped: results.filter(r => r.status === 'skipped').length,
-      replaced: results.filter(r => r.status === 'replaced').length,
-      created: results.filter(r => r.status === 'created').length,
-      dead: deadShops.length,
-      errors: results.filter(r => r.status === 'error').length,
-      sessionsPurged
-    };
-
-    AppLogger.info('Cart transform backfill complete', {
-      component: 'cart-transform',
-      operation: 'backfill-all'
-    }, summary);
-
-    return { results, summary };
   }
 
   /**

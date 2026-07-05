@@ -5,6 +5,7 @@ import { DiscountMethod, createNewPricingRule } from "../../../types/pricing";
 import { useBundlePricing } from "../../../hooks/useBundlePricing";
 import type { BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { getBundleWizardConfigurePath } from "../../../lib/bundle-navigation";
+import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness";
 import { buildWizardPreviewUrl } from "../../../lib/wizard-preview-url";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import type { loader } from "./loader.server";
@@ -428,7 +429,10 @@ export default function WizardConfigureStep() {
         return;
       }
       if (typeof window !== "undefined") {
-        localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
+        markBundlePreviewComplete({
+          bundleId: bundle.id,
+          storage: window.localStorage,
+        });
       }
       window.open(result.url, "_blank", "noopener,noreferrer");
     });

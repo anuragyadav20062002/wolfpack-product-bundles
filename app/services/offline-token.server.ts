@@ -273,8 +273,32 @@ export async function ensureShopHasExpiringOfflineSession(
     return null;
   }
 
-  if (record.refreshToken) {
+  if (record.refreshToken && record.expires && record.refreshTokenExpiresAt) {
+    if (shouldRefreshOfflineSession(record)) {
+      try {
+        return await refreshOfflineSession(prisma, record, storage);
+      } catch (error) {
+        AppLogger.error("[OFFLINE_TOKEN] Failed to refresh offline session", {
+          component: "offline-token.server",
+          shop,
+        }, error as Error);
+        return null;
+      }
+    }
+
     return record;
+  }
+
+  if (record.refreshToken) {
+    try {
+      return await refreshOfflineSession(prisma, record, storage);
+    } catch (error) {
+      AppLogger.error("[OFFLINE_TOKEN] Failed to refresh incomplete offline session", {
+        component: "offline-token.server",
+        shop,
+      }, error as Error);
+      return null;
+    }
   }
 
   try {

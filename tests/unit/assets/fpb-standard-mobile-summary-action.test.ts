@@ -79,6 +79,10 @@ class FakeElement {
     return child;
   }
 
+  getChildren() {
+    return this.children;
+  }
+
   setAttribute(name: string, value: string) {
     this.attributes[name] = value;
   }
@@ -404,6 +408,38 @@ describe('FPB Standard mobile summary action', () => {
     expect(context.compactMobileSummaryTrayExpanded).toBe(true);
     expect(context._populateCompactMobileSummaryTray).toHaveBeenCalledTimes(1);
     expect(classList.add).toHaveBeenCalledWith('fpb-mobile-summary-tray-animating-open');
+  });
+
+  it('lets the Classic compact summary count toggle use the same interaction path as Standard', async () => {
+    const sheet = new FakeElement();
+    const toggleTray = jest.fn();
+    const context = {
+      ...createContext(),
+      selectedProducts: [],
+      stepProductData: [[]],
+      selectedBundle: {
+        bundleDesignPresetId: 'CLASSIC',
+        steps: [{ id: 'step-1', enabled: true }],
+        pricing: { enabled: false },
+      },
+      config: {},
+      compactMobileSummaryTrayExpanded: false,
+      currentStepIndex: 0,
+      getDiscountInfoWithSelectedAddonDiscount: (discountInfo: unknown) => discountInfo,
+      getAllSelectedProductsData: () => [],
+      _shouldRenderProductSlots: () => false,
+      _syncCompactMobileSummaryScrollLock: jest.fn(),
+      _renderDiscountProgress: jest.fn(),
+      _createMobileSummaryActionButton: fullPageMobileSummaryMethods._createMobileSummaryActionButton,
+      _toggleCompactMobileSummaryTray: toggleTray,
+      bundleHasNoConditions: () => false,
+      getFullPageDesignPreset: () => 'CLASSIC',
+    };
+
+    fullPageMobileSummaryMethods._populateCompactMobileSummaryTray.call(context, sheet);
+    await sheet.getChildren()[0].click();
+
+    expect(toggleTray).toHaveBeenCalledWith(sheet);
   });
 
   it('uses slot tiles for slot-enabled Classic and Standard compact summaries only', () => {

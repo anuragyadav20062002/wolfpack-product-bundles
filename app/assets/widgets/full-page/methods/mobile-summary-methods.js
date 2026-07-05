@@ -71,16 +71,12 @@ _populateCompactMobileSummaryTray(sheet) {
   const countBadge = document.createElement('div');
   countBadge.className = 'fpb-mobile-summary-count-badge';
   countBadge.textContent = String(selectedFooterQuantity);
-  if (isClassicPreset) {
-    countBadge.setAttribute('aria-hidden', 'true');
-  } else {
-    countBadge.setAttribute('role', 'button');
-    countBadge.setAttribute('tabindex', '0');
-    countBadge.setAttribute('aria-label', summaryToggleLabel);
-    countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
-    countBadge.addEventListener('click', toggleSummaryTray);
-    countBadge.addEventListener('keydown', handleSummaryToggleKeydown);
-  }
+  countBadge.setAttribute('role', 'button');
+  countBadge.setAttribute('tabindex', '0');
+  countBadge.setAttribute('aria-label', summaryToggleLabel);
+  countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
+  countBadge.addEventListener('click', toggleSummaryTray);
+  countBadge.addEventListener('keydown', handleSummaryToggleKeydown);
   sheet.appendChild(countBadge);
 
   sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
