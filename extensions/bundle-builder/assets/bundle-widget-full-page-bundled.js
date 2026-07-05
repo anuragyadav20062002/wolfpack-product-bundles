@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.52
+ * Version : 5.0.53
  * Built   : 2026-07-05
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.52';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.53';
 (function() {
   'use strict';
 
@@ -12749,7 +12749,7 @@ resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
   || bundle?.showTextOnPlusEnabled === true;
 
   if (this.resolveFullPageLayout(bundle) === 'footer_side' && this.getFullPageDesignPreset(bundle) === 'CLASSIC') {
-    return showTextOnAddButton ? 'text' : 'icon';
+    return 'text';
   }
 
   return showTextOnAddButton ? 'text' : 'icon';
@@ -12871,9 +12871,12 @@ ensureFullPageTemplateStylesheet(preset) {
 },
 
 getProductAddButtonText() {
-  return this.resolveFullPageCardCtaMode() === 'text'
-    ? this._resolveText('productAddButton', 'Add +')
-    : '+';
+  if (this.resolveFullPageCardCtaMode() !== 'text') return '+';
+
+  const textButtonFallback = this.getFullPageDesignPreset() === 'CLASSIC'
+    ? 'Add To Box'
+    : 'Add +';
+  return this._resolveText('productAddButton', textButtonFallback);
 },
 
 applyFullPageDesignPresetMarker() {
