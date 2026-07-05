@@ -42,9 +42,22 @@ export function FpbAddonProductsCard({
             </label>
             <button
               type="button"
-              className={fullPageBundleStyles.addonsHelpButton}
-              onClick={() => window.open(ADDONS_HELP_ARTICLE_URL, "_blank")}
+              className={fullPageBundleStyles.videoHelpButton}
+              onClick={() =>
+                window.open(
+                  ADDONS_HELP_ARTICLE_URL,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
             >
+              <svg
+                className={fullPageBundleStyles.videoHelpIcon}
+                viewBox="0 0 10 10"
+                aria-hidden="true"
+              >
+                <path d="M2 1 L9 5 L2 9 Z" />
+              </svg>
               How to setup?
             </button>
           </div>
