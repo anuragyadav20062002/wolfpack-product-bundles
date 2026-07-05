@@ -5,6 +5,7 @@ import {
   getVisibilityDisplayTarget,
 } from "./visibility-helpers";
 import { resolveFpbTemplateSelection } from "../../../lib/fpb-template-selection";
+import { getPreviewReadinessStorageKey } from "../../../lib/bundle-preview-readiness";
 import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
 
 export function useConfigureVisibilityTemplateState(
@@ -285,7 +286,9 @@ export function useConfigureVisibilityTemplateState(
   const [productMenuOpen, setProductMenuOpen] = useState(false);
 
   useEffect(() => {
-    setHasPreview(!!localStorage.getItem(`wpb_preview_${bundle.id}`));
+    setHasPreview(
+      !!localStorage.getItem(getPreviewReadinessStorageKey(bundle.id)),
+    );
   }, [bundle.id]);
 
   Object.assign(flow, {
