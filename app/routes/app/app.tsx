@@ -38,12 +38,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const polarisTranslations = getPolarisLocale(locale);
   const mantleCacheKey = `mantle-provider:${session.shop}:${session.accessToken}:${
     process.env.MANTLE_APP_ID || ""
-  }:${process.env.SHOPIFY_API_KEY || ""}:${process.env.MANTLE_API_URL || ""}`;
+  }:${process.env.MANTLE_API_KEY || ""}:${process.env.MANTLE_API_URL || ""}`;
   const mantleProvider = await loaderCache.memo(
     mantleCacheKey,
     () => buildMantleProviderConfig({
       appId: process.env.MANTLE_APP_ID,
-      apiKey: process.env.SHOPIFY_API_KEY,
+      apiKey: process.env.MANTLE_API_KEY,
       apiUrl: process.env.MANTLE_API_URL,
       shopDomain: session.shop,
       accessToken: session.accessToken,
