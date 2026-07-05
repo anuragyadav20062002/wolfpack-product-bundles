@@ -105,7 +105,7 @@
     border: 0.125rem solid
       var(
         --bundle-sidebar-button-bg,
-        var(--bundle-global-primary-button, currentColor)
+        var(--bundle-global-primary-button, #000)
       );
     border-radius: var(--bundle-side-panel-btn-radius, 10px);
     box-sizing: border-box;
@@ -142,7 +142,7 @@
     background: var(--bundle-side-panel-bg, #fff);
     color: var(
       --bundle-sidebar-button-bg,
-      var(--bundle-global-primary-button, currentColor)
+      var(--bundle-global-primary-button, #000)
     );
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -162,11 +162,14 @@
   .fpb-preset-classic .fpb-box-selection-option-active {
     background: var(
       --bundle-sidebar-button-bg,
-      var(--bundle-global-primary-button, currentColor)
+      var(--bundle-global-primary-button, #000)
     );
     color: var(
       --bundle-sidebar-button-text,
-      var(--bundle-button-text-color, var(--bundle-full-page-bg-color))
+      var(
+        --bundle-button-text-color,
+        var(--bundle-side-panel-bg, var(--bundle-full-page-bg-color, #fff))
+      )
     );
   }
 
@@ -188,7 +191,7 @@
     border: 0.125rem solid
       var(
         --bundle-sidebar-button-bg,
-        var(--bundle-global-primary-button, currentColor)
+        var(--bundle-global-primary-button, #000)
       );
   }
 
