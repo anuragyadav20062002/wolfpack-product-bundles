@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.44
+ * Version : 5.0.45
  * Built   : 2026-07-05
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.44';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.45';
 (function() {
   'use strict';
 
@@ -5724,16 +5724,12 @@ _populateCompactMobileSummaryTray(sheet) {
   const countBadge = document.createElement('div');
   countBadge.className = 'fpb-mobile-summary-count-badge';
   countBadge.textContent = String(selectedFooterQuantity);
-  if (isClassicPreset) {
-    countBadge.setAttribute('aria-hidden', 'true');
-  } else {
-    countBadge.setAttribute('role', 'button');
-    countBadge.setAttribute('tabindex', '0');
-    countBadge.setAttribute('aria-label', summaryToggleLabel);
-    countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
-    countBadge.addEventListener('click', toggleSummaryTray);
-    countBadge.addEventListener('keydown', handleSummaryToggleKeydown);
-  }
+  countBadge.setAttribute('role', 'button');
+  countBadge.setAttribute('tabindex', '0');
+  countBadge.setAttribute('aria-label', summaryToggleLabel);
+  countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
+  countBadge.addEventListener('click', toggleSummaryTray);
+  countBadge.addEventListener('keydown', handleSummaryToggleKeydown);
   sheet.appendChild(countBadge);
 
   sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
