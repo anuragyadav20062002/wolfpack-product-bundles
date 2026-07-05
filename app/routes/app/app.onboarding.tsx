@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from "react";
 import { AppLogger } from "../../lib/logger";
 import styles from "../../styles/routes/app-index.module.css";
 import { navigateBackOrFallback } from "../../lib/navigation";
+import { openSupportChat } from "../../lib/support-chat.client";
 import { type loader as appLoader } from "./app";
 
 const STEP_TITLES = [
@@ -456,11 +457,7 @@ export default function Onboarding() {
               </p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <s-button
-                  onClick={() => {
-                    if (window.$crisp) {
-                      window.$crisp.push(["do", "chat:open"]);
-                    }
-                  }}
+                  onClick={() => openSupportChat()}
                 >
                   Chat with Support
                 </s-button>
@@ -480,10 +477,4 @@ export default function Onboarding() {
       </div>
     </>
   );
-}
-
-declare global {
-  interface Window {
-    $crisp?: any[];
-  }
 }

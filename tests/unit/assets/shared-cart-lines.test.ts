@@ -31,6 +31,24 @@ describe('shared cart-line metadata helpers', () => {
     });
   });
 
+  it('can omit box display metadata when the storefront hides bundle quantity options', () => {
+    const sourceProperties = buildCartLineSourceProperties({
+      selectedLines: [
+        { product: { title: 'Product A' }, quantity: 1 },
+        { product: { title: 'Product B' }, quantity: 1 },
+      ],
+      retailPrice: '$20.00',
+      includeBox: false,
+    });
+
+    const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
+
+    expect(displayProperties).toEqual({
+      items: '1 x Product A, 1 x Product B',
+      retailPrice: '$20.00',
+    });
+  });
+
   it('maps source display metadata to visible cart-line labels', () => {
     const properties = buildCartLineDisplayProperties({
       box: '1',

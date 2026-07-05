@@ -2056,10 +2056,6 @@
   composes: categoryInputStack from "./bundle-configure-shared.module.css";
 }
 
-.categoryInputHelp {
-  composes: categoryInputHelp from "./bundle-configure-shared.module.css";
-}
-
 .categoryDragOver {
   composes: categoryDragOver from "./bundle-configure-shared.module.css";
 }
@@ -2097,6 +2093,23 @@
 
 .categoryNameInput {
   composes: categoryNameInput from "./bundle-configure-shared.module.css";
+}
+
+.categoryAccordionBody .categoryNameInput {
+  height: 32px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  line-height: 20px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.categoryAccordionBody .categoryTextButton {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
 }
 
 .categoryPickerHelp {

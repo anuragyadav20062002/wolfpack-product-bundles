@@ -25,12 +25,28 @@ function escapeHtmlAttribute(value: string): string {
     .replace(/>/g, "&gt;");
 }
 
-function buildBundleConfigBootstrap(bundleId: string, bundle?: any): object {
+type BundleBootstrapHint = {
+  bundleDesignTemplate?: unknown;
+  bundleDesignPresetId?: unknown;
+  updatedAt?: unknown;
+};
+
+function buildBundleConfigBootstrap(bundleId: string, bundle?: BundleBootstrapHint): object {
+  const bundleDesignTemplate =
+    typeof bundle?.bundleDesignTemplate === "string" && bundle.bundleDesignTemplate.trim() !== ""
+      ? bundle.bundleDesignTemplate.trim()
+      : "FBP_SIDE_FOOTER";
+  const bundleDesignPresetId =
+    typeof bundle?.bundleDesignPresetId === "string" && bundle.bundleDesignPresetId.trim() !== ""
+      ? bundle.bundleDesignPresetId.trim().toUpperCase()
+      : "STANDARD";
   const base = {
     v: 2,
     type: "full_page",
     bundleType: "full_page",
     id: bundleId,
+    bundleDesignTemplate,
+    bundleDesignPresetId,
   };
 
   if (bundle?.updatedAt) {
@@ -43,14 +59,22 @@ function buildBundleConfigBootstrap(bundleId: string, bundle?: any): object {
 function buildFullPageBundleBodyHtml(bundleId: string, shop: string, bundle?: any): string {
   const escapedBundleId = escapeHtmlAttribute(bundleId);
   const escapedShop = escapeHtmlAttribute(shop);
-  const bundleConfig = JSON.stringify(buildBundleConfigBootstrap(bundleId, bundle));
+  const bundleConfigPayload = buildBundleConfigBootstrap(bundleId, bundle as BundleBootstrapHint | undefined) as {
+    bundleDesignTemplate: string;
+    bundleDesignPresetId: string;
+  };
+  const bundleConfig = JSON.stringify(bundleConfigPayload);
   const bundleSettings = bundle ? JSON.stringify(buildBundleSettings(bundle)) : "null";
+  const escapedTemplate = escapeHtmlAttribute(bundleConfigPayload.bundleDesignTemplate);
+  const escapedPreset = escapeHtmlAttribute(bundleConfigPayload.bundleDesignPresetId);
 
   return `
 <div
   data-wpb-full-page-bundle
   data-bundle-id="${escapedBundleId}"
   data-bundle-type="full_page"
+  data-fpb-template-type="${escapedTemplate}"
+  data-fpb-design-preset="${escapedPreset}"
   data-bundle-config="${escapeHtmlAttribute(bundleConfig)}"
   data-bundle-settings="${escapeHtmlAttribute(bundleSettings)}"
   data-shop="${escapedShop}"

@@ -237,7 +237,7 @@ function recordDebugLcpSample({
     country,
     candidate: candidateMetadata?.candidate ?? null,
     candidateResource: candidateMetadata?.resource ?? null,
-    candidateType: candidateMetadata?.type ?? null,
+    candidateType: candidateMetadata?.type,
     id: metric.id,
     route,
     routeLoadId,
@@ -296,6 +296,7 @@ export function installAdminWebVitalsDiagnostics({
           loadTime?: number;
           renderTime?: number;
           size?: number;
+          url?: string;
         };
         const candidate = describeLcpElement(latestEntry?.element);
         latestLcpElement = candidate;

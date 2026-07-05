@@ -181,6 +181,23 @@ describe("normalizePricingDisplayOptions", () => {
     expect(result.progressBar.successText).toBe("{{discountText}} unlocked");
   });
 
+  it("lets the top-level progress toggle disable stale nested progress settings", () => {
+    const result = normalizePricingDisplayOptions({
+      rules: [quantityRule("rule-3", 3, 15)],
+      showProgressBar: false,
+      messages: {
+        displayOptions: {
+          progressBar: {
+            enabled: true,
+            type: "step_based",
+          },
+        },
+      },
+    });
+
+    expect(result.progressBar.enabled).toBe(false);
+  });
+
   it("defaults progress bar mode to step based to preserve existing widget behavior", () => {
     const result = normalizePricingDisplayOptions({
       rules: [quantityRule("rule-3", 3, 15)],

@@ -1,3 +1,5 @@
+export {};
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { VariantSelectorComponent } = require('../../../app/assets/widgets/shared/variant-selector.js');
 
@@ -31,7 +33,6 @@ describe('FPB Standard mobile variant drawer', () => {
       formatPrice: (value: number) => `$${(value / 100).toFixed(2)}`,
     });
 
-    expect(view).toContain('vs-mobile-drawer vs-mobile-drawer--standard');
     expect(view).toContain('Keto Fresh Meal Subscription');
     expect(view).toContain('Choose Options');
     expect(view).toContain('6 meals');

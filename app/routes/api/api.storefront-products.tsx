@@ -162,6 +162,47 @@ async function fetchAllVariants(
 
   return variants;
 }
+
+function buildProductsQuery(country: string | null, hasInventoryScope: boolean) {
+  const inventoryFields = hasInventoryScope ? ` ${INVENTORY_FIELDS}` : "";
+
+  return country
+    ? `query getProducts($ids: [ID!]!, $country: CountryCode!) @inContext(country: $country) {
+        nodes(ids: $ids) {
+          ... on Product {
+            id title handle featuredImage { url }
+            variants(first: 1) {
+              edges {
+                node {
+                  id title availableForSale${inventoryFields}
+                  price { amount currencyCode }
+                  compareAtPrice { amount currencyCode }
+                  image { url }
+                }
+              }
+            }
+          }
+        }
+      }`
+    : `query getProducts($ids: [ID!]!) {
+        nodes(ids: $ids) {
+          ... on Product {
+            id title handle featuredImage { url }
+            variants(first: 1) {
+              edges {
+                node {
+                  id title availableForSale${inventoryFields}
+                  price { amount currencyCode }
+                  compareAtPrice { amount currencyCode }
+                  image { url }
+                }
+              }
+            }
+          }
+        }
+      }`;
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const productIds = url.searchParams.get("ids");
@@ -185,44 +226,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   try {
-    // Fetch basic product info. Use @inContext when country is available so
-    // featured image URLs are market-correct (no pricing on this query).
-    const STOREFRONT_QUERY = country
-      ? `query getProducts($ids: [ID!]!, $country: CountryCode!) @inContext(country: $country) {
-          nodes(ids: $ids) {
-            ... on Product {
-              id title handle featuredImage { url }
-              variants(first: 1) {
-                edges {
-                  node {
-                    id title availableForSale
-                    price { amount currencyCode }
-                    compareAtPrice { amount currencyCode }
-                    image { url }
-                  }
-                }
-              }
-            }
-          }
-        }`
-      : `query getProducts($ids: [ID!]!) {
-          nodes(ids: $ids) {
-            ... on Product {
-              id title handle featuredImage { url }
-              variants(first: 1) {
-                edges {
-                  node {
-                    id title availableForSale
-                    price { amount currencyCode }
-                    compareAtPrice { amount currencyCode }
-                    image { url }
-                  }
-                }
-              }
-            }
-          }
-        }`;
-
     // Storefront token is created at install time (lifecycle webhook / auth callback).
     // If it is missing here, the install flow is broken — fail clearly and fast.
     let session = await getOfflineSessionForShop(prisma, shop, sessionStorage);
@@ -279,6 +282,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Scope is synced from Shopify on install and on every app/scopes_update webhook
     // (see handleScopesUpdate in lifecycle.server.ts), so session.scope is authoritative.
     const hasInventoryScope = (session.scope ?? "").includes("unauthenticated_read_product_inventory");
+    const STOREFRONT_QUERY = buildProductsQuery(country, hasInventoryScope);
     const storefrontUrl = `https://${shop}/api/${SHOPIFY_REST_API_VERSION}/graphql.json`;
 
     const mainVariables: Record<string, unknown> = { ids };

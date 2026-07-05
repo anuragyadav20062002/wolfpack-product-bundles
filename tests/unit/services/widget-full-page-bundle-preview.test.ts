@@ -349,7 +349,7 @@ describe('getPreviewPageUrl', () => {
 describe('refreshFullPageBundlePageBody', () => {
   beforeEach(() => { jest.clearAllMocks(); });
 
-  it('writes one clean hidden marker with escaped bundle config and no app-proxy assets', async () => {
+  it('writes one clean hidden marker with a compact bundle config pointer and no app-proxy assets', async () => {
     const admin = { graphql: jest.fn() };
     admin.graphql.mockResolvedValueOnce(
       createMockGraphQLResponse({
@@ -369,12 +369,42 @@ describe('refreshFullPageBundlePageBody', () => {
     const body = admin.graphql.mock.calls[0]?.[1]?.variables?.page?.body;
     expect((body.match(/data-wpb-full-page-bundle/g) ?? []).length).toBe(1);
     expect(body).toContain(`data-bundle-id="${bundleId}"`);
-    expect(body).toContain('data-bundle-config="{&quot;v&quot;:');
+    expect(body).toContain('data-bundle-config="{&quot;v&quot;:2,&quot;type&quot;:&quot;full_page&quot;,&quot;bundleType&quot;:&quot;full_page&quot;,&quot;id&quot;:&quot;bundle-abc123&quot;');
+    expect(body).toContain('&quot;bundleDesignTemplate&quot;:&quot;FBP_SIDE_FOOTER&quot;');
+    expect(body).toContain('&quot;bundleDesignPresetId&quot;:&quot;STANDARD&quot;');
     expect(body).toContain('&quot;bundleType&quot;:&quot;full_page&quot;');
-    expect(body).toContain('&quot;id&quot;:&quot;bundle-abc123&quot;');
+    expect(body).not.toContain('&quot;name&quot;:&quot;My Kit&quot;');
+    expect(body).not.toContain('&quot;steps&quot;:');
+    expect(body).toContain('data-fpb-template-type="FBP_SIDE_FOOTER"');
+    expect(body).toContain('data-fpb-design-preset="STANDARD"');
     expect(body).toContain('data-bundle-settings="{');
     expect(body).not.toContain('hidden\n>');
     expect(body).not.toContain('/apps/product-bundles/assets/');
+  });
+
+  it('writes Classic template hints into the compact hidden marker', async () => {
+    const admin = { graphql: jest.fn() };
+    admin.graphql.mockResolvedValueOnce(
+      createMockGraphQLResponse({
+        pageUpdate: {
+          page: { id: pageId, handle: pageHandle },
+          userErrors: [],
+        },
+      })
+    );
+
+    const result = await refreshFullPageBundlePageBody(admin, pageId, bundleId, mockSession.shop, makeBundle({
+      bundleDesignTemplate: 'FBP_SIDE_FOOTER',
+      bundleDesignPresetId: 'CLASSIC',
+    }));
+
+    expect(result.success).toBe(true);
+    const body = admin.graphql.mock.calls[0]?.[1]?.variables?.page?.body;
+    expect(body).toContain('&quot;bundleDesignTemplate&quot;:&quot;FBP_SIDE_FOOTER&quot;');
+    expect(body).toContain('&quot;bundleDesignPresetId&quot;:&quot;CLASSIC&quot;');
+    expect(body).toContain('data-fpb-template-type="FBP_SIDE_FOOTER"');
+    expect(body).toContain('data-fpb-design-preset="CLASSIC"');
+    expect(body).not.toContain('&quot;steps&quot;:');
   });
 });
 

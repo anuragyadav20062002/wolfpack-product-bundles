@@ -3,6 +3,7 @@ import { useNavigate } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import styles from "../../styles/routes/app-index.module.css";
 import { navigateBackOrFallback } from "../../lib/navigation";
+import { openSupportChat } from "../../lib/support-chat.client";
 
 // This route handles /app → shows the Welcome landing screen for intentional visits,
 // and silently redirects to the dashboard when Shopify's auth flow lands here.
@@ -147,9 +148,7 @@ export default function AppIndex() {
         <button
           className={styles.footerLink}
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-          onClick={() => {
-            if (window.$crisp) window.$crisp.push(["do", "chat:open"]);
-          }}
+          onClick={() => openSupportChat()}
         >
           Contact Support
         </button>
@@ -165,10 +164,4 @@ export default function AppIndex() {
       </div>
     </div>
   );
-}
-
-declare global {
-  interface Window {
-    $crisp?: any[];
-  }
 }

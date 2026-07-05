@@ -32,7 +32,7 @@ The shared Bundle Product Modal is intentionally a single-image product details 
 
 ## Storefront Surfaces
 
-- Theme Editor now exposes one body app embed: `bundle-app-embed` (`Wolfpack Bundle`). It is the activation/status surface and hydrates app-created full-page bundle page markers only when a dedicated full-page app block has not already rendered a widget container.
+- Theme Editor now exposes one body app embed: `bundle-app-embed` (`Wolfpack Bundle`). It is the activation/status surface and hydrates app-created full-page bundle page markers only when a dedicated full-page app block has not already rendered a widget container. Those hidden page-body markers must also carry only the compact bootstrap pointer, never a formatted full bundle payload.
 - Product-page builder placement uses the `bundle-product-page` app block.
 - Product-page upsell placement uses `bundle-upsell-block` or `bundle-upsell-button`.
 - Full-page bundle public links use Shopify page URLs (`/pages/{handle}`) so the store theme and theme-extension assets own rendering. Legacy signed app-proxy links redirect to the linked Shopify page when possible.
@@ -42,8 +42,8 @@ The shared Bundle Product Modal is intentionally a single-image product details 
 
 > **Do not modify the load order** — see `CLAUDE.md` → "Do Not Touch" section.
 
-### Shopify Page Block Stage — Metafield Cache
-The Liquid block writes a compact bootstrap marker as JSON into `data-bundle-config` on the widget container:
+### Shopify Page Block / Marker Stage — Bootstrap Pointer
+The Liquid block and app-embed page-body marker both write a compact bootstrap marker as JSON into `data-bundle-config`:
 ```liquid
 data-bundle-config='{"v":2,"type":"full_page","bundleType":"full_page","id":"{{ bundle_id }}"}'
 ```
@@ -51,7 +51,7 @@ Widget currently loads in API-first mode for full-page bundles:
 1. Compact bootstrap marker (`v`, `type`, `bundleType`, `id`) is treated as a stable pointer.
 2. If marker is missing or invalid → API fetch.
 
-`data-bundle-config` is not used to transport full bundle payload for first paint in this path. A legacy full payload marker is not required and is not relied upon for initialization.
+`data-bundle-config` is not used to transport full bundle payload for first paint in this path. A legacy full payload marker is not required and is not relied upon for initialization. This applies to both the section app block and the hidden `data-wpb-full-page-bundle` marker written by `app/services/widget-installation/widget-full-page-bundle.server.ts`.
 
 ### Legacy App Proxy Redirect — Public FPB Route
 
@@ -63,8 +63,11 @@ This route must not render a standalone storefront shell or load `/apps/product-
 If metafield cache is absent/malformed → `GET /apps/product-bundles/api/bundle/{id}.json`
 - Single retry after 3s for `503`/`504` responses (Render cold-start tolerance)
 
-`/api/bundle/{id}.json` also supports a bootstrap projection via `?fields=bootstrap`.
-Projection response returns compact marker shape (`v`, `type`, `bundleType`, `id`, and timestamps/template defaults) while default response remains full bundle payload.
+The full-page Liquid block and app-embed marker write only a compact bootstrap marker into `data-bundle-config`:
+```liquid
+{"v":2,"type":"full_page","bundleType":"full_page","id":"..."}
+```
+The widget hydrates current bundle data from `/api/bundle/{id}.json`. The route also supports a bootstrap projection via `?fields=bootstrap`; projection response returns compact marker shape (`v`, `type`, `bundleType`, `id`, and timestamps/template defaults) while default response remains full bundle payload.
 
 Response headers include `Cache-Control`, `ETag`, and `Last-Modified`; unchanged bundles return `304` when validators match.
 
@@ -159,3 +162,13 @@ The Liquid blocks expose template CSS URL maps and the widget runtime loads the 
 Shopify CDN `asset_url` filter appends `?v=HASH` — this hash only changes on `shopify app deploy`. Custom query params are NOT on the allowlist. Always deploy after widget changes.
 
 Storefront JS/CSS loading strategy: FPB and Product Page bundle blocks load assets from Shopify theme-extension assets with Liquid `asset_url`. App proxy remains for API/data routes only.
+
+### Dev Preview Asset 404 / ORB Failure
+
+When a Shopify CLI dev preview asset hash expires or points at a missing theme-extension build, the storefront can still emit normal Liquid `asset_url` script/link tags while the referenced `https://cdn.shopify.com/extensions/.../dev-.../assets/...` URLs return Shopify `404` HTML. Chrome then reports the subresource loads as `net::ERR_BLOCKED_BY_ORB` or CORB because the browser requested CSS/JS but received `text/html`.
+
+Do not diagnose that state as a widget boot or Classic template bug until the asset URL is checked directly. Required proof:
+- Hard reload the storefront with cache bypass after clearing Cache Storage.
+- Verify `window.__BUNDLE_WIDGET_VERSION__`; a missing value means the widget JS did not execute.
+- Open or fetch the exact blocked asset URL. If it returns Shopify `404: Page not found` with `content-type: text/html`, the live proof is blocked by the dev-extension asset state, not by storefront source.
+- Compare against any older already-open tab before trusting it. A stale tab can keep a previous dev asset hash and `window.__BUNDLE_WIDGET_VERSION__` while fresh tabs point at a newer missing hash.

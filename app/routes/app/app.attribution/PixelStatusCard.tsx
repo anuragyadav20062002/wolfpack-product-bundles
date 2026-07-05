@@ -2,6 +2,11 @@ import { useFetcher } from "@remix-run/react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { useCallback, useEffect, useState } from "react";
 import type { action } from "../app.attribution";
+import {
+  getUtmPixelStatusBannerModel,
+  UTM_PIXEL_PRIVACY_MESSAGE,
+} from "../../../lib/utm-pixel-status-banner";
+import styles from "../../../styles/routes/app-attribution.module.css";
 
 // ─── Pixel Status Card ────────────────────────────────────────
 
@@ -21,7 +26,7 @@ export function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
     } else if (!data.success && data.error) {
       shopify.toast.show(data.error, { isError: true, duration: 6000 });
     }
-  }, [fetcher.data]);
+  }, [fetcher.data, shopify.toast]);
 
   const handleToggle = useCallback(() => {
     fetcher.submit(
@@ -30,84 +35,67 @@ export function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
     );
   }, [fetcher, active]);
 
-  return (
-    <div
-      style={{
-        borderRadius: 12,
-        border: active ? "1px solid #a8e6c1" : "1px solid #e1e3e5",
-        background: active
-          ? "linear-gradient(135deg, #f0faf4 0%, #ffffff 100%)"
-          : "#ffffff",
-        overflow: "hidden",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-      }}
-    >
-      <div
-        style={{
-          height: 4,
-          background: active
-            ? "linear-gradient(90deg, #00a47c, #34d399)"
-            : "linear-gradient(90deg, #b0b8c1, #d1d5db)",
-        }}
-      />
+  const model = getUtmPixelStatusBannerModel(active);
 
-      <div style={{ padding: "20px 24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "nowrap" }}>
-          <s-stack direction="block" gap="small-100">
-            <s-stack direction="inline" alignItems="center" gap="small">
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: active ? "#00a47c" : "#b0b8c1",
-                  boxShadow: active ? "0 0 0 3px rgba(0,164,124,0.18)" : "none",
-                  flexShrink: 0,
-                }}
-              />
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>UTM Pixel Tracking</h2>
-              <s-badge tone={active ? "success" : "neutral"}>{active ? "Active" : "Not active"}</s-badge>
-            </s-stack>
-            {active ? (
-              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                UTM parameters are being captured and attributed to orders at checkout. Your ad spend is being tracked.
-              </p>
-            ) : (
-              <s-stack direction="block" gap="small">
-                <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                  Enable tracking to start attributing orders to your ad campaigns. Three steps:
-                </p>
-                <s-stack direction="block" gap="small-400">
-                  <p style={{ margin: 0, fontSize: 13 }}>
-                    <strong>1. Enable pixel</strong> — click the button to install the tracking pixel on your store.
-                  </p>
-                  <p style={{ margin: 0, fontSize: 13 }}>
-                    <strong>2. Tag your ad links</strong> — add UTM parameters to any ad URLs, e.g.{" "}
-                    <code style={{ background: "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 3, fontSize: 12 }}>
-                      ?utm_source=facebook&amp;utm_campaign=bundles
-                    </code>
-                  </p>
-                  <p style={{ margin: 0, fontSize: 13 }}>
-                    <strong>3. Watch orders appear</strong> — attributed orders will show up here within minutes of a purchase.
-                  </p>
-                </s-stack>
-              </s-stack>
-            )}
+  return (
+    <>
+      <div className={styles.pixelStatusCard} data-status={model.statusDotTone}>
+        <s-stack direction="inline" alignItems="center" justifyContent="space-between" gap="base">
+          <s-stack direction="inline" alignItems="center" gap="small">
+            <span className={styles.pixelStatusDot} aria-hidden="true" />
+            <h2 className={styles.pixelStatusTitle}>UTM Pixel Tracking</h2>
+            <s-badge tone={model.tone}>{model.statusLabel}</s-badge>
           </s-stack>
 
-          <div style={{ flexShrink: 0 }}>
+          {model.actionLabel ? (
             <s-button
-              onClick={handleToggle}
-              loading={isSubmitting || undefined}
-              disabled={isSubmitting || undefined}
-              variant={active ? "secondary" : "primary"}
+              variant="secondary"
+              commandFor="utm-pixel-tracking-disclosure"
+              command="--show"
             >
-              {active ? "Disable tracking" : "Enable tracking"}
+              {model.actionLabel}
             </s-button>
-          </div>
-        </div>
+          ) : null}
+        </s-stack>
       </div>
-    </div>
+
+      {!active ? (
+        <s-modal
+          id="utm-pixel-tracking-disclosure"
+          heading="UTM Pixel Tracking"
+        >
+          <s-button
+            slot="primary-action"
+            variant="primary"
+            loading={isSubmitting || undefined}
+            disabled={isSubmitting || undefined}
+            onClick={handleToggle}
+          >
+            Activate Tracking
+          </s-button>
+          <s-button
+            slot="secondary-actions"
+            commandFor="utm-pixel-tracking-disclosure"
+            command="--hide"
+          >
+            Close
+          </s-button>
+
+          <s-stack direction="block" gap="base">
+            <s-banner tone="info">
+              {UTM_PIXEL_PRIVACY_MESSAGE}
+            </s-banner>
+            <s-stack direction="block" gap="small">
+              <p className={styles.pixelDisclosureText}>
+                Turn this on to connect ad clicks with bundle orders when shoppers visit through UTM-tagged links.
+              </p>
+              <p className={styles.pixelDisclosureText}>
+                Shopify controls when the pixel can run, so tracking follows each shopper's consent choices.
+              </p>
+            </s-stack>
+          </s-stack>
+        </s-modal>
+      ) : null}
+    </>
   );
 }

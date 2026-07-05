@@ -87,8 +87,8 @@ function buildCartItems(state) {
       var properties = {
         'Box': String(itemNumber),
         '_bundleName': state.bundleName || '',
-        '_easyBundle:OfferId': offerId + '_' + sessionKey + '_' + itemNumber,
-        '_easyBundle:prodQty': String(qty),
+        '_wolfpackProductBundle:OfferId': offerId + '_' + sessionKey + '_' + itemNumber,
+        '_wolfpackProductBundle:prodQty': String(qty),
       };
       if (step.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
       if (step.isDefault) properties['_bundle_step_type'] = 'default';

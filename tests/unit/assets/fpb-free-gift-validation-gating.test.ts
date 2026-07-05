@@ -37,7 +37,7 @@ const canProceedToNextStepFn = fullPageValidationAddonsMethods.canProceedToNextS
 const isFreeGiftUnlockedGetter = Object.getOwnPropertyDescriptor(
   fullPageValidationAddonsMethods,
   'isFreeGiftUnlocked',
-)?.get;
+)?.get as ((this: Record<string, unknown>) => boolean) | undefined;
 if (
   typeof bundleHasNoConditionsFn !== 'function' ||
   typeof canProceedToNextStepFn !== 'function' ||
@@ -288,7 +288,8 @@ describe('isFreeGiftUnlocked', () => {
     ctx.isStepCompleted = (idx: number) => args.completedStepIndexes.includes(idx);
     ctx.getAddonEligibilityState = () => ({ isEligible: args.addonEligible });
 
-    return isFreeGiftUnlockedGetter.call(ctx) as boolean;
+    expect(isFreeGiftUnlockedGetter).toEqual(expect.any(Function));
+    return isFreeGiftUnlockedGetter!.call(ctx);
   }
 
   it('returns true when paid steps are complete even if the add-on threshold is unmet', () => {

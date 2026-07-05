@@ -20,14 +20,18 @@ export function buildCartLineSourceProperties({
   discountAmount = '',
   discountPercentage = null,
   box = '1',
+  includeBox = true,
 } = {}) {
   const displayProperties = {
-    box: String(box || '1'),
     items: selectedLines
       .map(({ product = {}, quantity = 0 }) => `${Number(quantity || 0)} x ${product.title || product.id}`)
       .join(', '),
     retailPrice: String(retailPrice || ''),
   };
+
+  if (includeBox !== false) {
+    displayProperties.box = String(box || '1');
+  }
 
   if (discountAmount) {
     const percentage = `${Math.round(Number(discountPercentage || 0))}%`;

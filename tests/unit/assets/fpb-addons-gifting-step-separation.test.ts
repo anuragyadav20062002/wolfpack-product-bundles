@@ -34,8 +34,12 @@ const calculateSelectedAddonDiscountAmount =
   fullPageValidationAddonsMethods.calculateSelectedAddonDiscountAmount;
 const renderAddonEligibilityMessage =
   fullPageValidationAddonsMethods.renderAddonEligibilityMessage;
+const getAddonMessageEligibilityState =
+  fullPageValidationAddonsMethods.getAddonMessageEligibilityState;
 const buildPaidAddonProductDisplayData =
   fullPageProductCardFooterMethods.buildPaidAddonProductDisplayData;
+const createProductCard =
+  fullPageProductCardFooterMethods.createProductCard;
 const getProductCardAddButtonText =
   fullPageProductCardFooterMethods.getProductCardAddButtonText;
 const loadStepProducts = fullPageProductProcessingMethods.loadStepProducts;
@@ -49,6 +53,7 @@ if (
   typeof calculateSelectedAddonDiscountAmount !== "function" ||
   typeof renderAddonEligibilityMessage !== "function" ||
   typeof buildPaidAddonProductDisplayData !== "function" ||
+  typeof createProductCard !== "function" ||
   typeof getProductCardAddButtonText !== "function" ||
   typeof loadStepProducts !== "function"
 ) {
@@ -324,6 +329,100 @@ describe("FPB add-ons / gifting step separation", () => {
     );
   });
 
+  it("resolves saved single-brace add-on message aliases", () => {
+    (global as any).window = {
+      Shopify: { currency: { active: "USD", format: "${{amount}}" } },
+      shopMoneyFormat: "${{amount}}",
+    };
+    const step = {
+      isFreeGift: true,
+      addonMessaging: {
+        tier1: {
+          ineligibleState:
+            "Add {remainingQuantity} more product(s) to claim {discountValue}% off on Add ons",
+          eligibleState:
+            "Congrats you are eligible for {discountValue}% off on Add ons",
+        },
+      },
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 2 },
+          discount: { type: "PERCENTAGE", value: 100 },
+          selectedAddonProducts: [makeProduct()],
+        },
+      ],
+    };
+    const baseCtx = {
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+      selectedBundle: { steps: [{ id: "paid" }, step] },
+    };
+
+    const ineligibleState = getAddonEligibilityState.call(
+      { ...baseCtx, selectedProducts: [{ paidVariant: 1 }] },
+      step,
+    );
+    expect(renderAddonEligibilityMessage.call(baseCtx, step, ineligibleState)).toBe(
+      "Add 1 more product(s) to claim 100% off on Add ons",
+    );
+
+    const eligibleState = getAddonEligibilityState.call(
+      { ...baseCtx, selectedProducts: [{ paidVariant: 2 }] },
+      step,
+    );
+    expect(renderAddonEligibilityMessage.call(baseCtx, step, eligibleState)).toBe(
+      "Congrats you are eligible for 100% off on Add ons",
+    );
+  });
+
+  it("shows next locked add-on tier progress while keeping the active discount tier", () => {
+    (global as any).window = {
+      Shopify: { currency: { active: "USD", format: "${{amount}}" } },
+      shopMoneyFormat: "${{amount}}",
+    };
+    const step = {
+      isFreeGift: true,
+      addonMessaging: {
+        tier1: {
+          eligibleState: "Congrats you are eligible for {discountValue}% off on Add ons",
+        },
+        tier2: {
+          ineligibleState:
+            "Add {remainingQuantity} more product(s) to claim {discountValue}% off on Add ons",
+          eligibleState:
+            "Congrats you are eligible for {discountValue}% off on Add ons",
+        },
+      },
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discount: { type: "PERCENTAGE", value: 10 },
+          selectedAddonProducts: [makeProduct("gid://shopify/Product/1")],
+        },
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 2 },
+          discount: { type: "PERCENTAGE", value: 100 },
+          selectedAddonProducts: [makeProduct("gid://shopify/Product/2")],
+        },
+      ],
+    };
+    const ctx = {
+      selectedProducts: [{ paidVariant: 1 }],
+      stepProductData: [[{ variantId: "paidVariant", price: 1000 }]],
+      selectedBundle: { steps: [{ id: "paid" }, step] },
+    };
+
+    const messageState = typeof getAddonMessageEligibilityState === "function"
+      ? getAddonMessageEligibilityState.call(ctx, step)
+      : getAddonEligibilityState.call(ctx, step);
+    expect(renderAddonEligibilityMessage.call(ctx, step, messageState)).toBe(
+      "Add 1 more product(s) to claim 100% off on Add ons",
+    );
+    expect(getAddonLineDiscount.call(ctx, step)).toEqual({
+      type: "PERCENTAGE",
+      value: 10,
+    });
+  });
+
   it("does not return an add-on line discount before the active tier is eligible", () => {
     (global as any).window = {
       Shopify: { currency: { active: "USD", format: "${{amount}}" } },
@@ -504,11 +603,12 @@ describe("FPB add-ons / gifting step separation", () => {
     });
   });
 
-  it("uses the cart CTA label for paid add-on product cards", () => {
+  it("uses the product add label for Classic paid add-on product cards", () => {
     const ctx = {
       _resolveText: (key: string, fallback: string) =>
         key === "addToCartButton" ? "Add To Cart" : fallback,
       getProductAddButtonText: () => "Add To Box",
+      getFullPageDesignPreset: () => "CLASSIC",
     };
 
     expect(
@@ -516,8 +616,64 @@ describe("FPB add-ons / gifting step separation", () => {
         isFreeGift: true,
         addonDisplayFree: false,
       }),
-    ).toBe("Add To Cart");
+    ).toBe("Add To Box");
     expect(getProductCardAddButtonText.call(ctx, {})).toBe("Add To Box");
+  });
+
+  it("renders the active tier badge on Classic paid add-on product cards", () => {
+    const step = { isFreeGift: true, addonDisplayFree: false };
+    const ctx = {
+      selectedProducts: [{}],
+      selectedBundle: {
+        variantSelectorEnabled: false,
+        steps: [step],
+      },
+      getFullPageDesignPreset: () => "CLASSIC",
+      getProductAddButtonText: () => "Add To Box",
+      getProductCardAddButtonText,
+      buildPaidAddonProductDisplayData,
+      getAddonLineDiscount: () => ({ type: "PERCENTAGE", value: 10 }),
+      applyStandardExpandedVariantTitle: () => undefined,
+      attachProductCardListeners: () => undefined,
+    };
+    const originalDocument = (global as any).document;
+    (global as any).document = {
+      createElement: () => {
+        const wrapper: { firstChild: { textContent: string }; innerHTML: string } = {
+          firstChild: { textContent: "" },
+          innerHTML: "",
+        };
+        Object.defineProperty(wrapper, "innerHTML", {
+          set(value: string) {
+            this.firstChild = {
+              textContent: value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(),
+            };
+          },
+          get() {
+            return this.firstChild.textContent;
+          },
+        });
+        return wrapper;
+      },
+    };
+
+    try {
+      const card = createProductCard.call(
+        ctx,
+        {
+          id: "addon-product",
+          title: "Gift product",
+          price: 82900,
+          imageUrl: "https://cdn.example.test/gift.png",
+        },
+        0,
+      );
+
+      expect(card.textContent).toContain("10% off");
+      expect(card.textContent).toContain("Add To Box");
+    } finally {
+      (global as any).document = originalDocument;
+    }
   });
 
   it("exposes the eligible tier and index from tier evaluation", () => {

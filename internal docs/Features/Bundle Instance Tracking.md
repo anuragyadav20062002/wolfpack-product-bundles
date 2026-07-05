@@ -11,19 +11,19 @@ sources: app/assets/bundle-widget-full-page.js, extensions/bundle-cart-transform
 
 A customer may add the same bundle to their cart multiple times (e.g., 2 gift sets). Each must remain a distinct, editable line item in the cart and checkout.
 
-## Solution: EB `_easyBundle:OfferId`
+## Solution: EB `_wolfpackProductBundle:OfferId`
 
 Each add-to-cart call generates a unique ID:
 ```javascript
 const offerLineId = `${offerId}_${sessionKey}_${itemIndex}`;
 ```
 
-This ID is added as a **cart attribute** (`_easyBundle:OfferId`) to every component line item in the same bundle add operation. Cart Transform removes the trailing item index and groups by `{offerId}_{sessionKey}`.
+This ID is added as a **cart attribute** (`_wolfpackProductBundle:OfferId`) to every component line item in the same bundle add operation. Cart Transform removes the trailing item index and groups by `{offerId}_{sessionKey}`.
 
 ## Why It Works
 
 - Shopify's `/cart/add.js` does NOT merge lines that have different `properties`/attributes
-- Cart Transform groups component lines by matching the `_easyBundle:OfferId` base for MERGE operations
+- Cart Transform groups component lines by matching the `_wolfpackProductBundle:OfferId` base for MERGE operations
 - Two adds of the same bundle → two different session keys → two separate merged lines
 
 ## MERGE Deduplication

@@ -330,11 +330,14 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
             const newQtyAvail = product.quantityAvailable;
             const newOOS = this.isVariantOutOfStock(product);
+            const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
+              ? this.isInventoryTrackingOnAddToCartEnabled()
+              : false;
             let migratedQty = oldQuantity;
             if (newOOS) {
               ToastManager.show('Selected variant is out of stock — selection cleared.');
               migratedQty = 0;
-            } else if (newQtyAvail !== null && newQtyAvail > 0 && oldQuantity > newQtyAvail) {
+            } else if (trackInventoryOnAddToCart && newQtyAvail !== null && newQtyAvail > 0 && oldQuantity > newQtyAvail) {
               migratedQty = newQtyAvail;
               ToastManager.show('Only ' + newQtyAvail + ' in stock — quantity adjusted.');
             }

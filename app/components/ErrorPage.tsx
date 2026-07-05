@@ -1,4 +1,5 @@
 import { isRouteErrorResponse, useNavigate } from "@remix-run/react";
+import { openSupportChat } from "../lib/support-chat.client";
 
 interface ErrorPageProps {
   error: unknown;
@@ -118,12 +119,6 @@ function IllustrationLocked() {
   );
 }
 
-function openSupportChat() {
-  if (typeof window === "undefined") return;
-  window.$crisp = window.$crisp ?? [];
-  window.$crisp.push(["do", "chat:open"]);
-}
-
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
@@ -215,7 +210,7 @@ export function ErrorPage({ error }: ErrorPageProps) {
             </button>
             <button
               type="button"
-              onClick={openSupportChat}
+              onClick={() => openSupportChat()}
               style={styles.btnSecondary}
             >
               Contact Support
@@ -395,9 +390,3 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: "500",
   },
 };
-
-declare global {
-  interface Window {
-    $crisp?: any[];
-  }
-}

@@ -21,7 +21,14 @@ import {
   buildCartLineDisplayProperties,
   buildCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
+import { shouldDisplayClassicFixedBundleRawTotal } from '../shared/summary-pricing-display.js';
 
+export function shouldUseMobileSummarySlotTiles({ designPreset, productSlotsEnabled } = {}) {
+  if (productSlotsEnabled !== true) return false;
+
+  const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
+  return preset === 'STANDARD' || preset === 'CLASSIC';
+}
 
 export const fullPageMobileSummaryMethods = {
 _populateCompactMobileSummaryTray(sheet) {
@@ -41,65 +48,90 @@ _populateCompactMobileSummaryTray(sheet) {
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
+  const displayFinalPrice = shouldDisplayClassicFixedBundleRawTotal(this, combinedDiscountInfo)
+    ? totalPrice
+    : finalPrice;
   const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
   const selectedFooterQuantity = this.getAllSelectedProductsData().reduce(
     (sum, item) => sum + (Number(item.quantity) || 1),
     0
   );
+  const isClassicPreset = this.getFullPageDesignPreset?.() === 'CLASSIC';
+  const summaryToggleLabel = isClassicPreset ? 'View Selected Products' : 'Review your bundle';
+  const toggleSummaryTray = () => {
+    this._toggleCompactMobileSummaryTray(sheet);
+  };
+  const handleSummaryToggleKeydown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleSummaryTray();
+    }
+  };
 
   const countBadge = document.createElement('div');
   countBadge.className = 'fpb-mobile-summary-count-badge';
-  countBadge.setAttribute('role', 'button');
-  countBadge.setAttribute('tabindex', '0');
-  countBadge.setAttribute('aria-label', 'Review your bundle');
-  countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
   countBadge.textContent = String(selectedFooterQuantity);
-  countBadge.addEventListener('click', () => {
-    this._toggleCompactMobileSummaryTray(sheet);
-  });
-  countBadge.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      this._toggleCompactMobileSummaryTray(sheet);
-    }
-  });
+  if (isClassicPreset) {
+    countBadge.setAttribute('aria-hidden', 'true');
+  } else {
+    countBadge.setAttribute('role', 'button');
+    countBadge.setAttribute('tabindex', '0');
+    countBadge.setAttribute('aria-label', summaryToggleLabel);
+    countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
+    countBadge.addEventListener('click', toggleSummaryTray);
+    countBadge.addEventListener('keydown', handleSummaryToggleKeydown);
+  }
   sheet.appendChild(countBadge);
 
   sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
+  this._syncCompactMobileSummaryScrollLock();
   sheet.classList.toggle(
     'fpb-mobile-summary-tray--slots',
-    this.getFullPageDesignPreset() === 'STANDARD' && this._shouldRenderProductSlots()
+    shouldUseMobileSummarySlotTiles({
+      designPreset: this.getFullPageDesignPreset(),
+      productSlotsEnabled: this._shouldRenderProductSlots(),
+    })
   );
   sheet.classList.remove('fpb-mobile-summary-tray--has-discount-summary');
 
+  if (isClassicPreset) {
+    const toggleRow = document.createElement('button');
+    toggleRow.className = 'fpb-mobile-summary-toggle-row';
+    toggleRow.type = 'button';
+    toggleRow.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
+    toggleRow.textContent = summaryToggleLabel;
+    toggleRow.addEventListener('click', toggleSummaryTray);
+    sheet.appendChild(toggleRow);
+  }
+
   if (this.selectedBundle?.pricing?.enabled) {
-    const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
     const discountBlock = document.createElement('div');
     discountBlock.className = 'side-panel-discount-message';
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
-    );
-    let discountMessage = '';
-    if (combinedDiscountInfo.hasDiscount) {
-      discountMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-        variables
+    if (this.config.showDiscountMessaging) {
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
-    } else if (nextRule) {
-      discountMessage = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
-        variables
-      );
-    }
-    if (discountMessage) {
-      const msgEl = document.createElement('div');
-      msgEl.className = 'fpb-mobile-summary-discount-text';
-      msgEl.innerHTML = discountMessage;
-      discountBlock.appendChild(msgEl);
+      let discountMessage = '';
+      if (combinedDiscountInfo.hasDiscount) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          variables
+        );
+      } else if (nextRule) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          variables
+        );
+      }
+      if (discountMessage) {
+        const msgEl = document.createElement('div');
+        msgEl.className = 'fpb-mobile-summary-discount-text';
+        msgEl.innerHTML = discountMessage;
+        discountBlock.appendChild(msgEl);
+      }
     }
 
-    const shouldShowProgressBar = this.config.showDiscountProgressBar || usesCompactMobileSummaryTray;
-    if (shouldShowProgressBar) {
+    if (this.config.showDiscountProgressBar) {
       const progressBar = this._renderDiscountProgress({
         placement: "sidebar",
         combinedDiscountInfo,
@@ -125,7 +157,7 @@ _populateCompactMobileSummaryTray(sheet) {
   const conditionlessMobile = this.bundleHasNoConditions();
   const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
   const actionButton = this._createMobileSummaryActionButton({
-    finalPrice,
+    finalPrice: displayFinalPrice,
     currencyInfo,
     conditionlessMobile,
     hasSelectionMobile,
@@ -145,15 +177,10 @@ _populateCompactMobileSummaryTray(sheet) {
 },
 
 _toggleCompactMobileSummaryTray(sheet) {
-  const hasSelectedSummaryProducts = this.getAllSelectedProductsData().length > 0;
-  if (!hasSelectedSummaryProducts) {
-    this.compactMobileSummaryTrayExpanded = false;
-    this._populateCompactMobileSummaryTray(sheet);
-    return;
-  }
   const nextExpanded = !this.compactMobileSummaryTrayExpanded;
   this.compactMobileSummaryTrayExpanded = nextExpanded;
   this._populateCompactMobileSummaryTray(sheet);
+  this._syncCompactMobileSummaryScrollLock();
 
   sheet.classList.remove(
     'fpb-mobile-summary-tray-animating-open',
@@ -173,7 +200,14 @@ _toggleCompactMobileSummaryTray(sheet) {
       'fpb-mobile-summary-tray-animating-open',
       'fpb-mobile-summary-tray-animating-closed'
     );
-  }, 260);
+  }, 380);
+},
+
+_syncCompactMobileSummaryScrollLock() {
+  document.body.classList.toggle(
+    'fpb-mobile-summary-scroll-locked',
+    this.compactMobileSummaryTrayExpanded === true
+  );
 },
 
 _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
@@ -209,12 +243,23 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
   }
   bundleItems.appendChild(header);
 
+  if (this.getFullPageDesignPreset() === 'CLASSIC') {
+    const selectedBoxSelectionQuantity = this.getSelectedBoxSelectionQuantity();
+    const boxSelection = this.renderBoxSelectionOptions(selectedBoxSelectionQuantity);
+    if (boxSelection) {
+      boxSelection.classList.add('fpb-mobile-summary-box-selection');
+      bundleItems.appendChild(boxSelection);
+    }
+  }
+
   const productsList = document.createElement('div');
   productsList.className = 'fpb-mobile-summary-products-list';
-  const shouldRenderStandardSlotTiles = this._shouldRenderProductSlots()
-    && this.getFullPageDesignPreset() === 'STANDARD';
+  const shouldRenderSlotTiles = shouldUseMobileSummarySlotTiles({
+    designPreset: this.getFullPageDesignPreset(),
+    productSlotsEnabled: this._shouldRenderProductSlots(),
+  });
 
-  if (shouldRenderStandardSlotTiles) {
+  if (shouldRenderSlotTiles) {
     productsList.classList.add('fpb-mobile-summary-products-list--slots');
     this._renderCompactMobileSummarySlotTiles(productsList, allSelectedProducts, activeStep, totalQuantity);
     bundleItems.appendChild(productsList);
@@ -243,7 +288,7 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
         <span class="fpb-mobile-summary-product-price">${priceText}</span>
       </div>
       <div class="fpb-mobile-summary-product-action">
-        <span class="fpb-mobile-summary-product-qty">×${item.quantity}</span>
+        <span class="fpb-mobile-summary-product-qty">x${item.quantity}</span>
       </div>
     `;
 
@@ -265,6 +310,15 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
     productsList.appendChild(row);
   });
+
+  if (
+    allSelectedProducts.length === 0
+    && !this._shouldRenderProductSlots()
+    && typeof this._renderSidebarProductSkeletons === 'function'
+  ) {
+    productsList.classList.add('fpb-mobile-summary-products-list--skeletons');
+    this._renderSidebarProductSkeletons(productsList);
+  }
 
   const requiredSlots = Math.max(
     allSelectedProducts.length + 1,
@@ -339,8 +393,7 @@ _createMobileSummaryActionButton({
 }) {
   const ctaBtn = document.createElement('button');
   ctaBtn.className = 'side-panel-btn side-panel-btn-next';
-  const hasUpcomingAddonStep = this.freeGiftStepIndex > this.currentStepIndex;
-  const shouldAdvance = hasUpcomingAddonStep || (!conditionlessMobile && !isLastStep);
+  const shouldAdvance = !conditionlessMobile && !isLastStep;
   const shouldAddToCart = !shouldAdvance && (conditionlessMobile || isLastStep);
   const actionText = shouldAddToCart
     ? this._resolveText('addToCartButton', 'Add to Cart')
@@ -356,16 +409,26 @@ _createMobileSummaryActionButton({
   priceSpan.className = 'fpb-mobile-summary-action-price';
   priceSpan.textContent = priceText;
   ctaBtn.append(labelSpan, separatorSpan, priceSpan);
-  if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
+  const isClassicPreset = this.getFullPageDesignPreset?.() === 'CLASSIC';
+  const shouldKeepClassicValidationClickable = isClassicPreset && shouldAddToCart && !conditionlessMobile && !isComplete;
+  if (
+    shouldAddToCart
+    && !shouldKeepClassicValidationClickable
+    && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))
+  ) ctaBtn.disabled = true;
   ctaBtn.addEventListener('click', async () => {
     if (shouldAddToCart) {
+      if (!conditionlessMobile && !this.areBundleConditionsMet()) {
+        ToastManager.show(this.getStepConditionValidationMessage?.() || 'Please meet the quantity conditions for the current step before proceeding.');
+        return;
+      }
       if (!this.canCheckoutWithBoxSelection()) {
         this.showBoxSelectionValidationMessage();
         return;
       }
       await this.addBundleToCart(ctaBtn);
     } else {
-      const targetStepIndex = hasUpcomingAddonStep ? this.freeGiftStepIndex : this.currentStepIndex + 1;
+      const targetStepIndex = this.currentStepIndex + 1;
       if (this.canNavigateToStep(targetStepIndex) && this.canProceedToNextStep()) {
         const previousStepIndex = this.currentStepIndex;
         this.activeCollectionId = null;

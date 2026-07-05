@@ -1,3 +1,5 @@
+export {};
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageProductCardFooterMethods } = require('../../../app/assets/widgets/full-page/methods/product-card-footer-methods.js');
 
@@ -40,7 +42,9 @@ class FakeCard {
       target,
       stopPropagation: jest.fn(),
     };
-    this.listeners.click[0](event);
+    for (const listener of this.listeners.click || []) {
+      listener(event);
+    }
     return event;
   }
 }

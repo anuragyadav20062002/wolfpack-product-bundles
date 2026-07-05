@@ -11,6 +11,7 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "rec
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 import { KpiTile } from "./shared/KpiTile";
 import type { EngagementTrendPoint } from "../../lib/analytics";
+import { formatCompactCountAxisTick } from "../../lib/analytics/chart-axis-formatters";
 
 export interface EngagementPulseProps {
   engagedSessions: number;
@@ -84,7 +85,13 @@ export function EngagementPulse({
               dataKey="date"
               hide
             />
-            <YAxis hide />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "var(--wpb-ink-500)", fontSize: 11 }}
+              tickFormatter={(value: number) => formatCompactCountAxisTick(value)}
+              width={42}
+            />
             <Tooltip
               labelStyle={{ font: "var(--wpb-micro)", color: "var(--wpb-ink-700)" }}
               contentStyle={{

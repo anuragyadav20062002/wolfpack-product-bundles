@@ -50,10 +50,11 @@ Shopify requires public apps to use expiring offline access tokens for new apps 
 
 Wolfpack's offline token contract:
 - `Session` persists `expires`, `refreshToken`, and `refreshTokenExpiresAt` in Prisma.
-- `CachedSessionStorage.loadSession()` refreshes expiring offline sessions before returning them to `unauthenticated.admin(...)` or app-proxy callers.
+- `CachedSessionStorage.loadSession()` and `findSessionsByShop()` hydrate offline rows before returning them to `unauthenticated.admin(...)` or app-proxy callers: legacy rows with no refresh token are migrated to expiring offline tokens first, rows missing expiration metadata are refreshed, and rows that cannot be made compliant are withheld instead of returning a non-expiring token.
 - `app/services/offline-token.server.ts` requests new expiring offline tokens from embedded Admin `id_token` values with `expiring=1`.
 - Existing non-expiring offline tokens are migrated by token exchange with `subject_token_type=urn:shopify:params:oauth:token-type:offline-access-token`, `requested_token_type=urn:shopify:params:oauth:token-type:offline-access-token`, and `expiring=1`.
 - If a refresh token expires or Shopify rejects it with `invalid_grant`/401, the stale session row is dropped so the next merchant app launch can re-acquire an expiring offline token from the browser session ID token.
+- If Prisma reports `Server has closed the connection` during the initial session row lookup, `CachedSessionStorage.loadSession()` retries the read once after reconnecting the Prisma client. This handles stale pooled connections without hiding persistent database outages such as `Can't reach database server`.
 
 Do not make background Admin API calls by reading `Session.accessToken` directly from Prisma. Use `unauthenticated.admin(shopDomain)` or `getOfflineSessionForShop(...)` so the refresh/migration path runs first.
 
@@ -131,3 +132,4 @@ Used by `bundle-config-metafield.server.ts` to cache bundle config for zero-late
 - Rate limit: ~4 req/sec unauthenticated (higher for authenticated/private tokens)
 - Used by widgets for product data when metafield cache is absent
 - Proxy route: `/apps/product-bundles/` (Shopify app proxy)
+- Variant `quantityAvailable` and `currentlyNotInStock` require the `unauthenticated_read_product_inventory` Storefront scope. Public proxy routes must include those fields only when the stored offline session scope contains that grant; otherwise Shopify rejects the whole query. When the scope is absent, map missing inventory quantity to `null` and treat it as unbounded in widgets.

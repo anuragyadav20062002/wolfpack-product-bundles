@@ -8,6 +8,8 @@ import { sessionStorage } from "../../shopify.server";
 
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
+const INVENTORY_FIELDS = "quantityAvailable currentlyNotInStock";
+
 /**
  * Public API endpoint to fetch products from collections using Storefront API
  * This replaces the legacy /collections/{handle}/products.json REST endpoint
@@ -33,6 +35,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   try {
+    const session = await getOfflineSessionForShop(prisma, shop, sessionStorage);
+
+    if (!session?.storefrontAccessToken) {
+      AppLogger.warn("[STOREFRONT_COLLECTIONS] No storefront token found for shop", { component: "api.storefront-collections", shop });
+      return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404 });
+    }
+
+    const hasInventoryScope = (session.scope ?? "").includes("unauthenticated_read_product_inventory");
+    const inventoryFields = hasInventoryScope ? ` ${INVENTORY_FIELDS}` : "";
     // GraphQL query to fetch products from multiple collections
     const STOREFRONT_QUERY = `
       query getCollectionProducts($query: String!) {
@@ -73,7 +84,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
                           }
                           weight
                           weightUnit
-                          availableForSale
+                          availableForSale${inventoryFields}
                           image {
                             url
                           }
@@ -88,14 +99,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
         }
       }
     `;
-
-    // Get storefront access token from database
-    const session = await getOfflineSessionForShop(prisma, shop, sessionStorage);
-
-    if (!session?.storefrontAccessToken) {
-      AppLogger.warn("[STOREFRONT_COLLECTIONS] No storefront token found for shop", { component: "api.storefront-collections", shop });
-      return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404 });
-    }
 
     const storefrontAccessToken = session.storefrontAccessToken;
     const storefrontUrl = `https://${shop}/api/${SHOPIFY_REST_API_VERSION}/graphql.json`;
@@ -161,6 +164,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
               weight: edge.node.weight ?? 0,
               weightUnit: edge.node.weightUnit ?? 'GRAMS',
               available: edge.node.availableForSale,
+              quantityAvailable: typeof edge.node.quantityAvailable === 'number'
+                ? edge.node.quantityAvailable
+                : null,
+              currentlyNotInStock: edge.node.currentlyNotInStock === true,
               image: edge.node.image ? { src: edge.node.image.url } : null
             }))
           });

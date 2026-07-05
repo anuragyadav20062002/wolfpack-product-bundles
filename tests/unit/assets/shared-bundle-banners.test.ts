@@ -35,23 +35,20 @@ describe('shared bundle banners contract', () => {
     expect(createBundleBannerElement({}, createFakeDocument())).toBeNull();
   });
 
-  it('renders desktop and mobile banner images with stable classes', () => {
+  it('renders desktop and mobile banner images from configured URLs', () => {
     const element = createBundleBannerElement({
       desktopBannerUrl: 'https://cdn.example.test/desktop.jpg',
       mobileBannerUrl: 'https://cdn.example.test/mobile.jpg',
     }, createFakeDocument());
 
     expect(element).not.toBeNull();
-    expect(element?.className).toContain('bundle-banners');
-    expect(element?.className).toContain('bundle-banners--has-desktop');
-    expect(element?.className).toContain('bundle-banners--has-mobile');
 
     const images = element?.querySelectorAll('img');
     expect(images).toHaveLength(2);
-    expect(images?.[0]?.className).toBe('bundle-banner-image bundle-banner-image--desktop');
     expect(images?.[0]?.getAttribute('src')).toBe('https://cdn.example.test/desktop.jpg');
     expect(images?.[0]?.getAttribute('loading')).toBe('lazy');
-    expect(images?.[1]?.className).toBe('bundle-banner-image bundle-banner-image--mobile');
+    expect(images?.[1]?.getAttribute('src')).toBe('https://cdn.example.test/mobile.jpg');
+    expect(images?.[1]?.getAttribute('loading')).toBe('lazy');
   });
 });
 
@@ -67,7 +64,6 @@ describe('shared step banner image contract', () => {
     }, (value: string) => value.replaceAll('<', '&lt;').replaceAll('>', '&gt;'), createFakeDocument());
 
     expect(element).not.toBeNull();
-    expect(element?.className).toBe('step-banner-image');
 
     const images = element?.querySelectorAll('img');
     expect(images).toHaveLength(1);

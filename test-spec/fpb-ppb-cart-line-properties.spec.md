@@ -8,8 +8,8 @@ Move storefront cart line properties toward EB parity by emitting the public EB 
 ### StorefrontCartProperties
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | FPB component line properties | Raw full-page widget source | includes `Box`, `_bundleName`, `_easyBundle:prodQty`, `_easyBundle:OfferId` | EB FPB payload |
-| 2 | PPB component line properties | Raw product-page widget source | includes `Box`, `_bundleName`, `_easyBundle:prodQty`, `_easyBundle:OfferId` | EB PPB payload |
+| 1 | FPB component line properties | Raw full-page widget source | includes `Box`, `_bundleName`, `_wolfpackProductBundle:prodQty`, `_wolfpackProductBundle:OfferId` | EB FPB payload |
+| 2 | PPB component line properties | Raw product-page widget source | includes `Box`, `_bundleName`, `_wolfpackProductBundle:prodQty`, `_wolfpackProductBundle:OfferId` | EB PPB payload |
 | 3 | Step details omitted | Raw widget sources | no `_step_index` or `_step_name` cart properties | EB tracks step info client-side only |
 | 4 | WPB transform grouping retained | Raw widget sources | `_bundle_id` still present | Temporary compatibility until transform migration |
 | 5 | FPB paid add-on savings | paid product plus selected paid add-on with native add-on discount | parent bundle display metadata excludes the add-on-only savings; selected add-on owns savings through line discount allocation | EB paid add-on cart parity |

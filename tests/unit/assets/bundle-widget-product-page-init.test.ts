@@ -323,8 +323,8 @@ describe('Product Page bundle cart add transport contract', () => {
     expect(cartSubmitSource).toContain(`items[${indexToken}][id]`);
     expect(cartSubmitSource).toContain(`items[${indexToken}][quantity]`);
     expect(cartSubmitSource).toContain(`items[${indexToken}][properties][Box]`);
-    expect(cartSubmitSource).toContain(`items[${indexToken}][properties][_easyBundle:OfferId]`);
-    expect(cartSubmitSource).toContain(`items[${indexToken}][properties][_easyBundle:prodQty]`);
+    expect(cartSubmitSource).toContain(`items[${indexToken}][properties][_wolfpackProductBundle:OfferId]`);
+    expect(cartSubmitSource).toContain(`items[${indexToken}][properties][_wolfpackProductBundle:prodQty]`);
     expect(cartSubmitSource).toContain(`items[${indexToken}][properties][_bundleName]`);
     expect(source).toContain("const properties = {};");
     expect(source).not.toContain("'_bundle_name': this.selectedBundle.name");

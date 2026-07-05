@@ -1,7 +1,7 @@
-type NavigateLike = (to: string | number, options?: { replace?: boolean }) => void;
+import type { NavigateFunction } from "@remix-run/react";
 
 export function navigateBackOrFallback(
-  navigate: NavigateLike,
+  navigate: NavigateFunction,
   fallbackPath: string,
   options: { replaceFallback?: boolean } = {},
 ): void {
@@ -22,4 +22,3 @@ export function navigateBackOrFallback(
   const navigateOptions = options.replaceFallback ? { replace: true } : undefined;
   navigate(fallbackPath, navigateOptions);
 }
-

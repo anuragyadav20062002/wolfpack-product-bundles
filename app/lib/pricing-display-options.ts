@@ -241,7 +241,7 @@ export function normalizePricingRuleMessages({
 export function normalizePricingDisplayOptions({
   rules = [],
   messages = {},
-  showProgressBar = false,
+  showProgressBar,
   steps,
   currencySymbol = "$",
   method = "percentage_off",
@@ -295,7 +295,9 @@ export function normalizePricingDisplayOptions({
       optionsByLocaleByRuleId: savedOptionsByLocaleByRuleId,
     },
     progressBar: {
-      enabled: progressOptions?.enabled === true || showProgressBar === true,
+      enabled: typeof showProgressBar === "boolean"
+        ? showProgressBar
+        : progressOptions?.enabled === true,
       type: normalizeProgressType(progressOptions?.type),
       progressText: normalizeTemplate(progressOptions?.progressText, DEFAULT_PROGRESS_BAR_PROGRESS_TEXT),
       successText: normalizeTemplate(progressOptions?.successText, DEFAULT_PROGRESS_BAR_SUCCESS_TEXT),

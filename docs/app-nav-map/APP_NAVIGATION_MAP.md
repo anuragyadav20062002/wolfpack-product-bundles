@@ -132,18 +132,6 @@ Recovered Admin Integrations hub:
 ```
 Integrations Hub
 ├── Request Integration action → https://wolfpackapps.com
-├── Pre-orders, Pickup & Delivery
-│   ├── Stoq → View Setup
-│   └── Zapiet → View Setup
-├── Subscriptions
-│   ├── Skio → View Setup
-│   ├── Appstle → View Setup
-│   └── Bold → View Setup
-├── Reviews
-│   └── Judge.me → View Setup
-├── Page Builders
-│   ├── PageFly → View Setup
-│   └── GemPages → View Setup
 └── Checkout
     ├── Gokwik → View Setup
     └── Shopflo → View Setup
@@ -153,7 +141,6 @@ All setup actions currently open `https://wolfpackapps.com` until WPB-owned quic
 
 Setup behavior:
 - `View Setup` expands an internal recovered setup summary for guide-based integrations.
-- `Open Chat Setup` expands the recovered chat-based setup summary for Zapiet.
 - External competitor help URLs are intentionally not embedded in source code; sanitized evidence remains in `docs/competitor-analysis/18-eb-settings-integrations-replication-evidence.md`.
 
 ---
@@ -469,6 +456,7 @@ Billing Page
 | `/apps/product-bundles/api/bundle/:id.json` | Storefront bundle config (HMAC verified) |
 | `/apps/product-bundles/api/bundles.json` | All active bundles for shop |
 | `/apps/product-bundles/api/cart-bundle-details` | Signed storefront route that merges EB-style cart `bundle_details` metafield entries |
+| `/apps/product-bundles/api/checkout-integration-discount-code` | Signed storefront route that creates short-lived app discount codes for third-party FPB checkout integrations |
 | `/apps/product-bundles/api/design-settings/:shop` | CSS vars for storefront widgets |
 | `/apps/product-bundles/api/language-settings/:shop` | Settings -> Language JSON for storefront widget text and cart labels |
 | `/api/billing/create` | Initiate subscription |
