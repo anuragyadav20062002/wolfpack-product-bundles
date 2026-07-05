@@ -626,6 +626,7 @@
       --bundle-full-page-footer-bg-color,
       var(--bundle-side-panel-bg, #ffffff)
     );
+    font-family: Assistant, sans-serif;
     overflow: visible;
     z-index: 9999;
     transform: none !important;
@@ -684,7 +685,7 @@
     height: var(--classic-mobile-footer-toggle-row);
     min-height: var(--classic-mobile-footer-toggle-row);
     margin: 0;
-    padding: 0;
+    padding: 0.3125rem 0 0;
     border: 0;
     border-radius: 0;
     background: var(--bundle-side-panel-bg, var(--bundle-full-page-bg-color));
@@ -692,10 +693,10 @@
       --bundle-side-panel-text-color,
       var(--bundle-global-primary-text, #000000)
     );
-    font: inherit;
-    font-size: clamp(0.8125rem, 3.5vw, 0.9375rem);
-    font-weight: 700;
-    line-height: 1.35;
+    font-family: Assistant, sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 400;
+    line-height: 1.8;
     text-align: center;
     cursor: pointer;
     box-sizing: border-box;
@@ -815,6 +816,7 @@
     height: var(--classic-mobile-footer-action-row);
     border-radius: 5px;
     padding: 8px;
+    font-family: Assistant, sans-serif;
     font-size: 14px;
     line-height: 22px;
     font-weight: 700;
