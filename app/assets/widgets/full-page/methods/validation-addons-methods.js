@@ -487,6 +487,15 @@ renderAddonEligibilityMessage(step, eligibilityState) {
   if (!messageTemplate) return '';
 
   return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
+    if (key === 'discountValue') {
+      const unit = eligibilityState.variables.discountValueUnit || '';
+      const displayValue = unit ? `${value}${unit}` : value;
+      return message
+        .replaceAll(`##${key}##`, value)
+        .replaceAll(`{{${key}}}`, value)
+        .replace(/\{discountValue\}(?!\s*(?:\{discountValueUnit\}|%|\$|€|£|₹|¥))/g, displayValue)
+        .replaceAll(`{${key}}`, value);
+    }
     return message
       .replaceAll(`##${key}##`, value)
       .replaceAll(`{{${key}}}`, value)

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.51
+ * Version : 5.0.52
  * Built   : 2026-07-05
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.51';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.52';
 (function() {
   'use strict';
 
@@ -9707,6 +9707,15 @@ renderAddonEligibilityMessage(step, eligibilityState) {
   if (!messageTemplate) return '';
 
   return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
+    if (key === 'discountValue') {
+      const unit = eligibilityState.variables.discountValueUnit || '';
+      const displayValue = unit ? `${value}${unit}` : value;
+      return message
+        .replaceAll(`##${key}##`, value)
+        .replaceAll(`{{${key}}}`, value)
+        .replace(/\{discountValue\}(?!\s*(?:\{discountValueUnit\}|%|\$|€|£|₹|¥))/g, displayValue)
+        .replaceAll(`{${key}}`, value);
+    }
     return message
       .replaceAll(`##${key}##`, value)
       .replaceAll(`{{${key}}}`, value)

@@ -354,9 +354,9 @@ describe("FPB add-ons / gifting step separation", () => {
       addonMessaging: {
         tier1: {
           ineligibleState:
-            "Add {remainingQuantity} more product(s) to claim {discountValue}% off on Add ons",
+            "Add {remainingQuantity} more product(s) to claim {discountValue} off on Add ons",
           eligibleState:
-            "Congrats you are eligible for {discountValue}% off on Add ons",
+            "Congrats you are eligible for {discountValue} off on Add ons",
         },
       },
       addonTiers: [
