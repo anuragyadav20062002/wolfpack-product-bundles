@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.47
+ * Version : 5.0.48
  * Built   : 2026-07-05
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.47';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.48';
 (function() {
   'use strict';
 
@@ -6874,6 +6874,10 @@ renderBoxSelectionOptions(totalQuantity = 0) {
   const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
   const wrapper = document.createElement('div');
   wrapper.className = 'fpb-box-selection-wrapper';
+  wrapper.dataset.totalRules = String(rules.length);
+  if (activeRule?.ruleId) {
+    wrapper.dataset.activeRuleId = activeRule.ruleId;
+  }
 
   rules.forEach(rule => {
     const option = document.createElement('button');
@@ -6882,6 +6886,8 @@ renderBoxSelectionOptions(totalQuantity = 0) {
     option.className = 'fpb-box-selection-option' + (isActive ? ' fpb-box-selection-option-active' : '');
     option.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     option.dataset.ruleId = rule.ruleId;
+    option.dataset.boxQuantity = String(rule.boxQuantity);
+    option.dataset.isActive = isActive ? 'true' : 'false';
 
     const title = document.createElement('span');
     title.className = 'fpb-box-selection-title';
