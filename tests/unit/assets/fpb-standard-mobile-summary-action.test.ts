@@ -513,6 +513,27 @@ describe('FPB Standard mobile summary action', () => {
     })).toBe(false);
   });
 
+  it('keeps Classic mobile slot tiles free of per-slot remove controls', () => {
+    const container = new FakeElement();
+    const context = {
+      getFullPageDesignPreset: () => 'CLASSIC',
+      getSummaryProductDisplayTitle: () => 'Selected product',
+      _getSelectedProductImageSrc: () => 'https://cdn.example.test/product.jpg',
+      _escapeHTML: (value: string) => value,
+      selectedBundle: {},
+    };
+
+    fullPageMobileSummaryMethods._renderCompactMobileSummarySlotTiles.call(
+      context,
+      container,
+      [{ quantity: 1 }],
+      { minQuantity: 1 },
+      1,
+    );
+
+    expect(container.getChildren()[0].getChildren()).toHaveLength(0);
+  });
+
   it('keeps Standard mobile category tabs from switching the expanded product body', () => {
     expect(shouldCategoryTabActivateProducts({
       designPreset: 'STANDARD',

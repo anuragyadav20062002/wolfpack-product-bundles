@@ -828,6 +828,8 @@ Per-category attribute: `categoryid="{categoryId}"`
 
 Evidence: `/private/tmp/fpb-classic-agentic-parity/CS4-mobile-footer-scroll-lock/eb-cs4-before-toggle-runtime-20260704.json`, `eb-cs4-empty-expanded-runtime-20260704.json`, and `eb-cs4-empty-expanded-scroll-probe-20260704.json`.
 
+2026-07-06 selected-product Classic mobile footer evidence confirms the expanded selected slot strip does not render per-slot trash, delete, or remove controls. With two products selected, the visible removal affordance is the footer header `Clear` control; slot cells contain only the product images. Evidence: `/private/tmp/fpb-classic-agentic-parity/mobile-footer-remove-control/eb-mobile-selected-expanded-remove-probe-20260706.json` and `eb-mobile-selected-expanded-remove-20260706.png`.
+
 ### FPB Standard Variant Selector UI
 
 For Standard Design (`FBP_SIDE_FOOTER` + `DEFAULT_FBP`), grouped variant products render an inline `Choose Options` dropdown on desktop when variants are not displayed as individual products.
