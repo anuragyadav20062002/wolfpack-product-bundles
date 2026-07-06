@@ -71,13 +71,12 @@ export function usePpbConfigureFlow() {
     sharedHandlers,
   });
   const handleAddToStorefront = useCallback(() => {
-    const embedLink = `https://${base.shop}/admin/themes/current/editor?context=apps&activateAppId=${base.apiKey}/bundle-app-embed`;
-    open(embedLink, "_blank");
+    base.openThemeEditorForAppEmbed();
     base.shopify.toast.show(
       "Activate the Wolfpack Bundle embed in Theme Settings to go live.",
       { isError: false, duration: 8000 },
     );
-  }, [base.apiKey, base.shop, base.shopify]);
+  }, [base]);
   const previewReadiness = usePpbPreviewReadinessHandlers({
     base,
     visibility,

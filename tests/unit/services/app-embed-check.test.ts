@@ -18,6 +18,11 @@ function makeAdmin(responses: unknown[]) {
 
 const THEME_LIST_RESPONSE = {
   data: {
+    currentAppInstallation: {
+      app: {
+        handle: "current-test-app",
+      },
+    },
     themes: {
       nodes: [{ id: "gid://shopify/OnlineStoreTheme/123456" }],
     },
@@ -44,11 +49,17 @@ function makeSettingsResponse(blocks: Record<string, unknown>) {
 }
 
 const EMBED_KEY =
-  "shopify://apps/wolfpack-product-bundles/blocks/bundle-full-page-embed/uid-abc";
+  "shopify://apps/current-test-app/blocks/bundle-full-page-embed/uid-abc";
 const SINGLE_EMBED_KEY =
-  "shopify://apps/wolfpack-product-bundles/blocks/bundle-app-embed/uid-single";
+  "shopify://apps/current-test-app/blocks/bundle-app-embed/uid-single";
+const EXTENSION_HANDLE_EMBED_KEY =
+  "shopify://apps/bundle-builder/blocks/bundle-app-embed/uid-single";
 
 describe("checkAppEmbedEnabled", () => {
+  const currentAppOptions = {
+    appHandle: "current-test-app",
+  };
+
   it("returns true when Wolfpack embed block is present and not disabled", async () => {
     const admin = makeAdmin([
       THEME_LIST_RESPONSE,
@@ -63,15 +74,16 @@ describe("checkAppEmbedEnabled", () => {
     expect(result.themeId).toBe("gid://shopify/OnlineStoreTheme/123456");
   });
 
-  it("returns true for the single bundle app embed when scoped by handle", async () => {
+  it("returns true for the single bundle app embed when Shopify stores a numeric block ID", async () => {
     const admin = makeAdmin([
       THEME_LIST_RESPONSE,
       makeSettingsResponse({
-        [SINGLE_EMBED_KEY]: { type: SINGLE_EMBED_KEY, disabled: false },
+        "17878678986028907411": { type: SINGLE_EMBED_KEY, disabled: false },
       }),
     ]);
 
     const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com", {
+      ...currentAppOptions,
       blockHandles: ["bundle-app-embed"],
     });
 
@@ -95,13 +107,68 @@ describe("checkAppEmbedEnabled", () => {
     const admin = makeAdmin([
       THEME_LIST_RESPONSE,
       makeSettingsResponse({
-        [EMBED_KEY]: { type: EMBED_KEY, disabled: true },
+        "17878678986028907411": { type: SINGLE_EMBED_KEY, disabled: true },
       }),
     ]);
 
-    const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com");
+    const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com", {
+      ...currentAppOptions,
+      blockHandles: ["bundle-app-embed"],
+    });
 
     expect(result.enabled).toBe(false);
+  });
+
+  it("returns false for another Wolfpack app handle based on currentAppInstallation app handle", async () => {
+    const otherAppEmbedType =
+      "shopify://apps/other-test-app/blocks/bundle-app-embed/uid-prod";
+    const admin = makeAdmin([
+      THEME_LIST_RESPONSE,
+      makeSettingsResponse({
+        "17878678986028907411": { type: otherAppEmbedType, disabled: false },
+      }),
+    ]);
+
+    const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com", {
+      blockHandles: ["bundle-app-embed"],
+    });
+
+    expect(result.enabled).toBe(false);
+  });
+
+  it("uses Shopify's current app handle when an optional configured handle does not match", async () => {
+    const admin = makeAdmin([
+      THEME_LIST_RESPONSE,
+      makeSettingsResponse({
+        "17878678986028907411": { type: SINGLE_EMBED_KEY, disabled: false },
+      }),
+    ]);
+
+    const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com", {
+      appHandle: "stale-configured-handle",
+      blockHandles: ["bundle-app-embed"],
+    });
+
+    expect(result.enabled).toBe(true);
+  });
+
+  it("preserves configured app handles when matching Shopify's settings_data block type", async () => {
+    const admin = makeAdmin([
+      THEME_LIST_RESPONSE,
+      makeSettingsResponse({
+        "17878678986028907411": {
+          type: EXTENSION_HANDLE_EMBED_KEY,
+          disabled: false,
+        },
+      }),
+    ]);
+
+    const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com", {
+      appHandles: ["bundle-builder"],
+      blockHandles: ["bundle-app-embed"],
+    });
+
+    expect(result.enabled).toBe(true);
   });
 
   it("returns false when no Wolfpack embed block key is in settings_data.json", async () => {
@@ -144,8 +211,6 @@ describe("checkAppEmbedEnabled", () => {
   });
 
   it("returns enabled:true when settings_data.json is malformed JSON (fail-open — likely truncation)", async () => {
-    // settings_data.json can exceed Shopify's ~1MB limit and arrive truncated.
-    // We cannot confirm embed is disabled from a malformed file, so we fail-open.
     const admin = makeAdmin([
       THEME_LIST_RESPONSE,
       {
@@ -192,6 +257,44 @@ describe("checkAppEmbedEnabled", () => {
     expect(result.enabled).toBe(false);
   });
 
+  it("detects enabled app embed blocks when Shopify returns settings_data.json as base64", async () => {
+    const content = JSON.stringify({
+      current: {
+        blocks: {
+          "17878678986028907411": {
+            type: SINGLE_EMBED_KEY,
+            disabled: false,
+          },
+        },
+      },
+    });
+    const admin = makeAdmin([
+      THEME_LIST_RESPONSE,
+      {
+        data: {
+          theme: {
+            files: {
+              nodes: [
+                {
+                  filename: "config/settings_data.json",
+                  body: {
+                    contentBase64: Buffer.from(content, "utf8").toString("base64"),
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com", {
+      blockHandles: ["bundle-app-embed"],
+    });
+
+    expect(result.enabled).toBe(true);
+  });
+
   it("returns false without throwing when Admin graphql call throws", async () => {
     const admin = {
       graphql: jest.fn().mockRejectedValue(new Error("network failure")),
@@ -205,7 +308,7 @@ describe("checkAppEmbedEnabled", () => {
 
   it("detects the product-page embed block key as well", async () => {
     const ppbEmbedKey =
-      "shopify://apps/wolfpack-product-bundles/blocks/bundle-product-page-embed/uid-ppb";
+      "shopify://apps/current-test-app/blocks/bundle-product-page-embed/uid-ppb";
 
     const admin = makeAdmin([
       THEME_LIST_RESPONSE,

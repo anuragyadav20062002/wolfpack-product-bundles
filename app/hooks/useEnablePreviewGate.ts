@@ -3,11 +3,13 @@ import { useCallback, useEffect, useState } from "react";
 export type EnablePreviewGateInput = {
   appEmbedEnabled: boolean;
   themeEditorUrl: string | null;
+  blockBehavior?: "modal" | "feedback";
 };
 
 export type EnablePreviewGateDecision =
   | { mode: "proceed" }
   | { mode: "block_with_modal" }
+  | { mode: "block_with_feedback" }
   | { mode: "block_silent" };
 
 /**
@@ -16,6 +18,7 @@ export type EnablePreviewGateDecision =
  */
 export function decideEnablePreviewGate(input: EnablePreviewGateInput): EnablePreviewGateDecision {
   if (input.appEmbedEnabled) return { mode: "proceed" };
+  if (input.blockBehavior === "feedback") return { mode: "block_with_feedback" };
   if (input.themeEditorUrl) return { mode: "block_with_modal" };
   return { mode: "block_silent" };
 }
@@ -40,6 +43,8 @@ export type UseEnablePreviewGateOptions = EnablePreviewGateInput & {
   sessionKey?: string;
   autoShowOnMount?: boolean;
   onSetupVisibility?: () => void;
+  blockBehavior?: "modal" | "feedback";
+  onBlockedFeedback?: () => void;
 };
 
 /**
@@ -67,15 +72,21 @@ export function useEnablePreviewGate(options: UseEnablePreviewGateOptions) {
     const decision = decideEnablePreviewGate({
       appEmbedEnabled: options.appEmbedEnabled,
       themeEditorUrl: options.themeEditorUrl,
+      blockBehavior: options.blockBehavior,
     });
     if (decision.mode === "proceed") {
       return onProceed();
     }
+    if (decision.mode === "block_with_feedback") {
+      options.onBlockedFeedback?.();
+      return false;
+    }
     if (decision.mode === "block_with_modal") {
       setOpen(true);
-      return;
+      return false;
     }
     options.onSilentBlock?.();
+    return false;
   }, [options]);
 
   const closeModal = useCallback(() => setOpen(false), []);

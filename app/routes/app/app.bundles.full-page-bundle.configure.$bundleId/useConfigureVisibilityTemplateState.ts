@@ -11,7 +11,7 @@ import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
 export function useConfigureVisibilityTemplateState(
   flow: ConfigureBundleFlowDraft,
 ) {
-  const { bundle, markAsDirty, stepsState, textOverrides } = flow;
+  const { appEmbedEnabled, bundle, markAsDirty, stepsState, textOverrides } = flow;
   const [isInstallingWidget, setIsInstallingWidget] = useState(false);
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
   const [searchBarEnabled, setSearchBarEnabled] = useState<boolean>(
@@ -87,9 +87,7 @@ export function useConfigureVisibilityTemplateState(
         (bundle as any).autoSelectBrowsedProduct ??
         false,
     );
-  const isBundleVisibilityPending = !(
-    Boolean(bundle.shopifyPageHandle) || upsellWidgetEnabled
-  );
+  const isBundleVisibilityPending = !appEmbedEnabled;
   const originalUpsellWidgetEnabledRef = useRef<boolean>(
     savedWidgetConfiguration?.isEnabled ??
       (bundle as any).upsellWidgetEnabled ??

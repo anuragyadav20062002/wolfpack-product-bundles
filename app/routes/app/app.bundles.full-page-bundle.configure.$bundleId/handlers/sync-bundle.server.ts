@@ -337,7 +337,7 @@ export async function handleSyncBundle(
     // once in Theme Settings > App Embeds. After that all bundle surfaces can render.
     const shopDomain = session.shop.replace(".myshopify.com", "");
     const widgetInstallationLink = apiKey
-      ? `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-app-embed`
+      ? `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${encodeURIComponent(`${apiKey}/bundle-app-embed`)}`
       : undefined;
 
     await recordBusinessEvent({

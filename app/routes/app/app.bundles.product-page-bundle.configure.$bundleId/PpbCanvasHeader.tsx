@@ -1,8 +1,11 @@
+import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
 import { usePpbConfigureContext } from "./PpbConfigureContext";
 
 export function PpbCanvasHeader() {
   const {
     UnlistedBundleBanner,
+    appEmbedBannerFeedbackTrigger,
+    appEmbedEnabled,
     bundle,
     bundleProduct,
     fetcher,
@@ -10,6 +13,7 @@ export function PpbCanvasHeader() {
     handlePreviewBundle,
     isPreviewBundleLoading,
     loadedBundleProduct,
+    openThemeEditorForAppEmbed,
     openProductInAdmin,
     parentProductStatusUi,
     productPageBundleStyles,
@@ -17,6 +21,7 @@ export function PpbCanvasHeader() {
     readinessScore,
     setReadinessOpen,
     shop,
+    themeEditorUrl,
   } = usePpbConfigureContext();
 
   return (
@@ -63,6 +68,12 @@ export function PpbCanvasHeader() {
           </s-button>
         </div>
       </div>
+      <AppEmbedBanner
+        appEmbedEnabled={appEmbedEnabled}
+        themeEditorUrl={themeEditorUrl}
+        feedbackTrigger={appEmbedBannerFeedbackTrigger}
+        onEnableClick={openThemeEditorForAppEmbed}
+      />
       {parentProductStatusUi.showUnlistedBanner && (
         <UnlistedBundleBanner
           shop={shop}

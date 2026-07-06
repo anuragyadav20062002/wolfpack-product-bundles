@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { AppLogger } from "../../../lib/logger";
+import { openThemeEditorInNewTab } from "../../../lib/theme-editor-navigation.client";
 import {
   buildProductPageThemeEditorDeepLink,
   resolveProductPageTemplateSuffix,
@@ -172,7 +173,6 @@ export function usePpbPlacementHandlers({
   );
   const handlePageSelection = useCallback(
     async (template: any) => {
-      let editorWindow: Window | null = null;
       try {
         if (!template || !template.handle) {
           AppLogger.error(
@@ -190,18 +190,12 @@ export function usePpbPlacementHandlers({
           `Preparing theme editor for "${template.title}"...`,
           { isError: false, duration: 3000 },
         );
-        editorWindow = window.open(
-          "about:blank",
-          "_blank",
-          "noopener,noreferrer",
-        );
         if (!base.apiKey || !base.blockHandle) {
           AppLogger.error("🚨 [THEME_EDITOR] Missing app configuration");
           base.shopify.toast.show(
             "App configuration missing. Please check app setup.",
             { isError: true, duration: 5000 },
           );
-          editorWindow?.close();
           return;
         }
         const placementBlockHandle =
@@ -250,11 +244,7 @@ export function usePpbPlacementHandlers({
           `Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`,
           { isError: false, duration: 5000 },
         );
-        if (editorWindow && !editorWindow.closed) {
-          editorWindow.location.href = themeEditorUrl;
-        } else {
-          window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
-        }
+        openThemeEditorInNewTab(themeEditorUrl);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
@@ -270,7 +260,6 @@ export function usePpbPlacementHandlers({
             duration: 5000,
           },
         );
-        editorWindow?.close();
       }
     },
     [base, visibility.upsellWidgetDisplayMode],

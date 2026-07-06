@@ -27,28 +27,26 @@ export function TopCampaigns({ rows, formatRevenue }: TopCampaignsProps) {
       </header>
 
       {rows.length === 0 ? (
-        <p style={{ color: "var(--wpb-ink-500)", font: "var(--wpb-body)", margin: 0 }}>
+        <p className="wpb-empty-copy">
           No UTM-tagged orders this period.
         </p>
       ) : (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+        <ul className="wpb-list wpb-list--campaigns">
           {rows.slice(0, 5).map(r => {
             const pct = maxRev > 0 ? Math.round((r.revenueCents / maxRev) * 100) : 0;
             return (
-              <li key={r.utmCampaign} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12 }}>
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: 0, font: "var(--wpb-body)", color: "var(--wpb-ink-900)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <li key={r.utmCampaign} className="wpb-campaign-row">
+                <div className="wpb-truncate-cell">
+                  <p className="wpb-row-title">
                     {r.utmCampaign}
                   </p>
-                  <div style={{ marginTop: 6, height: 4, borderRadius: 999, background: "var(--wpb-ink-300)", overflow: "hidden" }}>
-                    <div style={{ width: `${Math.max(2, pct)}%`, height: "100%", background: "var(--wpb-accent-revenue)", borderRadius: 999 }} />
-                  </div>
+                  <progress className="wpb-campaign-meter" value={Math.max(2, pct)} max={100} />
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ margin: 0, font: "var(--wpb-body)", color: "var(--wpb-accent-revenue)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                <div className="wpb-row-align-end">
+                  <p className="wpb-row-value">
                     {formatRevenue(r.revenueCents)}
                   </p>
-                  <p style={{ margin: 0, font: "var(--wpb-micro)", color: "var(--wpb-ink-500)" }}>
+                  <p className="wpb-muted-micro">
                     {r.orders} orders
                   </p>
                 </div>

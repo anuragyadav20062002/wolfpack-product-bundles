@@ -1,0 +1,114 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 8px;
+  margin: 0 0 12px;
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06);
+}
+
+.bannerFeedbackActive {
+  animation: wpb-app-embed-banner-shake 280ms ease-in-out;
+}
+
+.icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #ffb82e;
+  color: #5f3700;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  color: #202223;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.actions s-button:not(:defined),
+.modalActions s-button:not(:defined) {
+  visibility: hidden;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(17, 17, 17, 0.45);
+}
+
+.modal {
+  width: min(680px, 100%);
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.modalTitle {
+  margin: 0 0 16px;
+  color: #202223;
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.guideImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+@keyframes wpb-app-embed-banner-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-8px);
+  }
+
+  40% {
+    transform: translateX(8px);
+  }
+
+  60% {
+    transform: translateX(-5px);
+  }
+
+  80% {
+    transform: translateX(5px);
+  }
+}

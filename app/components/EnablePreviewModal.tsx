@@ -1,4 +1,6 @@
 import { useTranslation } from "react-i18next";
+import { openThemeEditorInNewTab } from "../lib/theme-editor-navigation.client";
+import styles from "./EnablePreviewModal.module.css";
 
 interface EnablePreviewModalProps {
   open: boolean;
@@ -7,7 +9,12 @@ interface EnablePreviewModalProps {
   onSetupVisibility?: () => void;
 }
 
-export function EnablePreviewModal({ open, onClose, themeEditorUrl, onSetupVisibility }: EnablePreviewModalProps) {
+export function EnablePreviewModal({
+  open,
+  onClose,
+  themeEditorUrl,
+  onSetupVisibility,
+}: EnablePreviewModalProps) {
   const { t } = useTranslation();
 
   if (!open) return null;
@@ -17,41 +24,14 @@ export function EnablePreviewModal({ open, onClose, themeEditorUrl, onSetupVisib
       role="dialog"
       aria-modal="true"
       aria-labelledby="enable-preview-modal-title"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(17, 17, 17, 0.45)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 9999,
-        padding: 20,
-      }}
+      className={styles.backdrop}
       onClick={onClose}
     >
       <div
-        style={{
-          background: "#ffffff",
-          borderRadius: 12,
-          width: "min(400px, 100%)",
-          padding: "32px 28px 24px",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.18)",
-          textAlign: "center",
-        }}
+        className={styles.dialog}
         onClick={(event) => event.stopPropagation()}
       >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            background: "#f1f1f1",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 20px",
-          }}
-        >
+        <div className={styles.iconFrame}>
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
             <circle cx="12" cy="12" r="3" />
@@ -59,14 +39,14 @@ export function EnablePreviewModal({ open, onClose, themeEditorUrl, onSetupVisib
         </div>
         <h2
           id="enable-preview-modal-title"
-          style={{ margin: "0 0 10px", fontSize: 16, fontWeight: 700, color: "#111" }}
+          className={styles.title}
         >
           {t("common.previewGate.title")}
         </h2>
-        <p style={{ margin: "0 0 24px", fontSize: 14, color: "#6b7280", lineHeight: 1.55 }}>
+        <p className={styles.body}>
           {t("common.previewGate.body")}
         </p>
-        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+        <div className={styles.actions}>
           <s-button variant="secondary" onClick={onClose}>{t("common.actions.maybeLater")}</s-button>
           <s-button
             variant="primary"
@@ -74,7 +54,7 @@ export function EnablePreviewModal({ open, onClose, themeEditorUrl, onSetupVisib
               if (onSetupVisibility) {
                 onSetupVisibility();
               } else if (themeEditorUrl) {
-                window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
+                openThemeEditorInNewTab(themeEditorUrl);
               }
               onClose();
             }}

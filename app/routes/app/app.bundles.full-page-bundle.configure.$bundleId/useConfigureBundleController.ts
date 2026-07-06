@@ -1,4 +1,4 @@
-import { useCallback, useRef, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
 import {
   useFetcher,
   useLoaderData,
@@ -8,6 +8,11 @@ import {
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { handleAdminSaveLockedEvent } from "../../../lib/admin-save-lock";
 import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
+import { openThemeEditorInNewTab } from "../../../lib/theme-editor-navigation.client";
+import {
+  checkAppEmbedStatusFromCurrentRoute,
+  resolveAppEmbedStatusThemeEditorUrl,
+} from "../../../lib/app-embed-status-check.client";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
 import { useEnsureProductTemplateMutation } from "../../../store/api/adminApi";
 import type { LoaderData } from "./types";
@@ -35,6 +40,12 @@ export function useConfigureBundleController(): ConfigureBundleFlowDraft {
   const shopify = useAppBridge();
   const fetcher = useFetcher<any>();
   const revalidator = useRevalidator();
+  const [currentAppEmbedEnabled, setCurrentAppEmbedEnabled] =
+    useState(appEmbedEnabled);
+  const [currentThemeEditorUrl, setCurrentThemeEditorUrl] =
+    useState(themeEditorUrl);
+  const [appEmbedBannerFeedbackTrigger, setAppEmbedBannerFeedbackTrigger] =
+    useState(0);
   const [ensureProductTemplate] = useEnsureProductTemplateMutation();
   const isSaveInFlight = fetcher.state !== "idle";
   const saveBarRef = useRef<UISaveBarElement | null>(null);
@@ -105,11 +116,13 @@ export function useConfigureBundleController(): ConfigureBundleFlowDraft {
     setForceNavigation,
     originalValuesRef,
   } = configState;
-  const suppressTopAppEmbedBannerForVisibility =
-    activeSection === "bundle_visibility" || activeSection === "bundle_widget";
   const parentProductStatusUi = getParentProductStatusUi(
     productStatus || bundleProduct?.status || loadedBundleProduct?.status,
   );
+  useEffect(() => {
+    setCurrentAppEmbedEnabled(appEmbedEnabled);
+    setCurrentThemeEditorUrl(themeEditorUrl);
+  }, [appEmbedEnabled, themeEditorUrl]);
   const refreshParentProductStatusFromShopify = useCallback(() => {
     const revalidateNow = () => {
       revalidator.revalidate();
@@ -135,12 +148,29 @@ export function useConfigureBundleController(): ConfigureBundleFlowDraft {
     document.addEventListener("visibilitychange", revalidateOnVisible);
     window.setTimeout(cleanup, 30000);
   }, [revalidator]);
+  const openThemeEditorForAppEmbed = useCallback(() => {
+    if (!currentThemeEditorUrl) return;
+    setCurrentAppEmbedEnabled(true);
+    openThemeEditorInNewTab(currentThemeEditorUrl);
+  }, [currentThemeEditorUrl]);
+  const triggerAppEmbedBannerFeedback = useCallback(() => {
+    setAppEmbedBannerFeedbackTrigger((value) => value + 1);
+  }, []);
+  const checkAppEmbedStatusBeforePreview = useCallback(async () => {
+    const status = await checkAppEmbedStatusFromCurrentRoute();
+    setCurrentAppEmbedEnabled(status.appEmbedEnabled);
+    setCurrentThemeEditorUrl((currentUrl) =>
+      resolveAppEmbedStatusThemeEditorUrl(currentUrl, status.themeEditorUrl),
+    );
+    return status.appEmbedEnabled;
+  }, []);
 
   return {
     activeSection,
     activeTabIndex,
     apiKey,
-    appEmbedEnabled,
+    appEmbedBannerFeedbackTrigger,
+    appEmbedEnabled: currentAppEmbedEnabled,
     availableBundles,
     availablePages,
     blockConfigurationChangeWhileSaving,
@@ -181,6 +211,8 @@ export function useConfigureBundleController(): ConfigureBundleFlowDraft {
     productStatus,
     productTitle,
     refreshParentProductStatusFromShopify,
+    openThemeEditorForAppEmbed,
+    checkAppEmbedStatusBeforePreview,
     revalidator,
     ruleMessages,
     saveBarRef,
@@ -204,8 +236,8 @@ export function useConfigureBundleController(): ConfigureBundleFlowDraft {
     shopify,
     shopLocales,
     stepsState,
-    suppressTopAppEmbedBannerForVisibility,
-    themeEditorUrl,
+    themeEditorUrl: currentThemeEditorUrl,
+    triggerAppEmbedBannerFeedback,
     triggerSaveBarIrritation,
   };
 }

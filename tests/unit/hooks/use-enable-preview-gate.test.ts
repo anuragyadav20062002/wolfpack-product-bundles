@@ -22,6 +22,14 @@ describe("decideEnablePreviewGate", () => {
       .toEqual({ mode: "block_with_modal" });
   });
 
+  it("blocks with feedback when embed is disabled and the caller wants EB-style banner feedback", () => {
+    expect(decideEnablePreviewGate({
+      appEmbedEnabled: false,
+      themeEditorUrl: "x",
+      blockBehavior: "feedback",
+    })).toEqual({ mode: "block_with_feedback" });
+  });
+
   it("blocks silently when embed is disabled and we have no theme editor URL", () => {
     expect(decideEnablePreviewGate({ appEmbedEnabled: false, themeEditorUrl: null }))
       .toEqual({ mode: "block_silent" });

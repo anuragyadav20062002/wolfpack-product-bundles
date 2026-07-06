@@ -7,6 +7,7 @@ export function ConfigureSidebar({
 }) {
   const {
     activeSection,
+    appEmbedEnabled,
     bundle,
     bundleProduct,
     bundleSetupItems,
@@ -162,10 +163,7 @@ export function ConfigureSidebar({
                         : { label: "None" };
                     }
                     if (item.id === "bundle_visibility") {
-                      const isOptimised =
-                        Boolean(bundle.shopifyPageHandle) ||
-                        upsellWidgetEnabled;
-                      statusBadge = isOptimised
+                      statusBadge = appEmbedEnabled
                         ? { label: "Optimised", tone: "success" }
                         : { label: "Pending", tone: "warning" };
                     }

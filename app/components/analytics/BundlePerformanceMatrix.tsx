@@ -17,13 +17,6 @@ export interface BundlePerformanceMatrixProps {
   onRowClick?: (bundleId: string) => void;
 }
 
-const PRESET_ACCENT: Record<string, { fg: string; bg: string }> = {
-  DEFAULT:    { fg: "#15140F", bg: "#E8E2D6" },
-  CLASSIC:    { fg: "#15140F", bg: "#E0DACC" },
-  COMPACT:    { fg: "#15140F", bg: "#E0DACC" },
-  HORIZONTAL: { fg: "#0E7C7B", bg: "#CCE5E3" },
-};
-
 type RowKey = keyof Pick<BundleMatrixRow, "bundleName" | "presetId" | "engagedSessions" | "ordersFromBundle" | "revenueCents" | "aovCents" | "engagementToOrderRate">;
 
 export function BundlePerformanceMatrix({ rows, formatRevenue, onRowClick }: BundlePerformanceMatrixProps) {
@@ -57,7 +50,7 @@ export function BundlePerformanceMatrix({ rows, formatRevenue, onRowClick }: Bun
   };
 
   return (
-    <section className="wpb-card" aria-labelledby="wpb-bundle-matrix-title" style={{ overflow: "hidden" }}>
+    <section className="wpb-card wpb-card--flush" aria-labelledby="wpb-bundle-matrix-title">
       <header className="wpb-section-header">
         <div>
           <h2 id="wpb-bundle-matrix-title" className="wpb-section-title">Bundle Performance</h2>
@@ -66,83 +59,70 @@ export function BundlePerformanceMatrix({ rows, formatRevenue, onRowClick }: Bun
       </header>
 
       {rows.length === 0 ? (
-        <div style={{ padding: "32px 0", textAlign: "center", color: "var(--wpb-ink-500)", font: "var(--wpb-body)" }}>
+        <div className="wpb-empty-block">
           No bundle activity yet in this window. Once shoppers engage with a bundle, it appears here.
         </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontVariantNumeric: "tabular-nums" }}>
+        <div className="wpb-matrix-scroll">
+          <table className="wpb-matrix-table">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--wpb-line)" }}>
-                <th style={{ padding: "12px 8px", textAlign: "left", width: "26%" }}>
+              <tr className="wpb-matrix-head-row">
+                <th className="wpb-matrix-th wpb-matrix-th--bundle">
                   <SortableHeader label="Bundle" sortKey="bundleName" activeKey={sortKey} direction={sortDir} onSort={handleSort} />
                 </th>
-                <th style={{ padding: "12px 8px", textAlign: "left", width: "14%" }}>
+                <th className="wpb-matrix-th wpb-matrix-th--preset">
                   <SortableHeader label="Preset" sortKey="presetId" activeKey={sortKey} direction={sortDir} onSort={handleSort} />
                 </th>
-                <th style={{ padding: "12px 8px", textAlign: "right", width: "12%" }}>
+                <th className="wpb-matrix-th wpb-matrix-th--right wpb-matrix-th--engaged">
                   <SortableHeader label="Engaged" sortKey="engagedSessions" activeKey={sortKey} direction={sortDir} onSort={handleSort} align="right" />
                 </th>
-                <th style={{ padding: "12px 8px", textAlign: "right", width: "10%" }}>
+                <th className="wpb-matrix-th wpb-matrix-th--right wpb-matrix-th--orders">
                   <SortableHeader label="Orders" sortKey="ordersFromBundle" activeKey={sortKey} direction={sortDir} onSort={handleSort} align="right" />
                 </th>
-                <th style={{ padding: "12px 8px", textAlign: "right", width: "12%" }}>
+                <th className="wpb-matrix-th wpb-matrix-th--right wpb-matrix-th--conv">
                   <SortableHeader label="Conv." sortKey="engagementToOrderRate" activeKey={sortKey} direction={sortDir} onSort={handleSort} align="right" />
                 </th>
-                <th style={{ padding: "12px 8px", textAlign: "right", width: "12%" }}>
+                <th className="wpb-matrix-th wpb-matrix-th--right wpb-matrix-th--aov">
                   <SortableHeader label="AOV" sortKey="aovCents" activeKey={sortKey} direction={sortDir} onSort={handleSort} align="right" />
                 </th>
-                <th style={{ padding: "12px 8px", textAlign: "right", width: "14%" }}>
+                <th className="wpb-matrix-th wpb-matrix-th--right wpb-matrix-th--revenue">
                   <SortableHeader label="Revenue" sortKey="revenueCents" activeKey={sortKey} direction={sortDir} onSort={handleSort} align="right" />
                 </th>
               </tr>
             </thead>
             <tbody>
-              {sorted.map((row, idx) => {
-                const accent = (row.presetId && PRESET_ACCENT[row.presetId]) || PRESET_ACCENT["DEFAULT"];
+              {sorted.map((row) => {
                 return (
                   <tr
                     key={row.bundleId}
                     onClick={onRowClick ? () => onRowClick(row.bundleId) : undefined}
-                    style={{
-                      borderBottom: idx === sorted.length - 1 ? "none" : "1px solid var(--wpb-line)",
-                      cursor: onRowClick ? "pointer" : "default",
-                    }}
+                    className="wpb-matrix-row"
+                    data-clickable={Boolean(onRowClick)}
                   >
-                    <td style={{ padding: "16px 8px", color: "var(--wpb-ink-900)", font: "var(--wpb-body)", fontWeight: 600 }}>
+                    <td className="wpb-matrix-cell wpb-matrix-cell--primary">
                       {row.bundleName}
                     </td>
-                    <td style={{ padding: "16px 8px" }}>
+                    <td className="wpb-matrix-cell">
                       <span
-                        style={{
-                          display: "inline-block",
-                          padding: "2px 10px",
-                          borderRadius: 999,
-                          background: accent.bg,
-                          color: accent.fg,
-                          font: "var(--wpb-micro)",
-                          fontSize: "var(--wpb-label-size)",
-                          fontWeight: 600,
-                          letterSpacing: "var(--wpb-label-spacing)",
-                          textTransform: "uppercase",
-                        }}
+                        className="wpb-preset-chip"
+                        data-preset={row.presetId ?? "DEFAULT"}
                       >
                         {row.presetId ?? "—"}
                       </span>
                     </td>
-                    <td style={{ padding: "16px 8px", textAlign: "right", font: "var(--wpb-body)", color: "var(--wpb-accent-engagement)", fontWeight: 600 }}>
+                    <td className="wpb-matrix-cell wpb-matrix-cell--right wpb-matrix-cell--engagement">
                       {row.engagedSessions.toLocaleString()}
                     </td>
-                    <td style={{ padding: "16px 8px", textAlign: "right", font: "var(--wpb-body)", color: "var(--wpb-ink-900)" }}>
+                    <td className="wpb-matrix-cell wpb-matrix-cell--right">
                       {row.ordersFromBundle.toLocaleString()}
                     </td>
-                    <td style={{ padding: "16px 8px", textAlign: "right", font: "var(--wpb-body)", color: "var(--wpb-ink-700)" }}>
+                    <td className="wpb-matrix-cell wpb-matrix-cell--right wpb-matrix-cell--muted">
                       {row.engagementToOrderRate === null ? "—" : `${row.engagementToOrderRate}%`}
                     </td>
-                    <td style={{ padding: "16px 8px", textAlign: "right", font: "var(--wpb-body)", color: "var(--wpb-ink-700)" }}>
+                    <td className="wpb-matrix-cell wpb-matrix-cell--right wpb-matrix-cell--muted">
                       {row.aovCents === null ? "—" : formatRevenue(row.aovCents)}
                     </td>
-                    <td style={{ padding: "16px 8px", textAlign: "right", font: "var(--wpb-body)", color: "var(--wpb-accent-revenue)", fontWeight: 700 }}>
+                    <td className="wpb-matrix-cell wpb-matrix-cell--right wpb-matrix-cell--revenue">
                       {formatRevenue(row.revenueCents)}
                     </td>
                   </tr>

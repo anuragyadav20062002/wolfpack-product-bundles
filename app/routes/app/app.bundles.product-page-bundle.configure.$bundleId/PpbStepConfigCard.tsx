@@ -12,15 +12,7 @@ export function PpbStepConfigCard({ step }: { step: any }) {
 
   return (
     <div className={productPageBundleStyles.card}>
-      <h3
-        style={{
-          margin: "0 0 16px",
-          fontSize: 14,
-          fontWeight: 650,
-          color: "#202223",
-          letterSpacing: 0,
-        }}
-      >
+      <h3 className={productPageBundleStyles.stepConfigTitle}>
         Step Config
       </h3>
       <div className={productPageBundleStyles.stepConfigRow}>
@@ -88,6 +80,7 @@ export function PpbStepConfigCard({ step }: { step: any }) {
             />
           )}
           <s-button
+            className={productPageBundleStyles.iconUploadButton}
             onClick={() =>
               setShowIconPickerForStep((prev) =>
                 prev === step.id ? null : step.id,

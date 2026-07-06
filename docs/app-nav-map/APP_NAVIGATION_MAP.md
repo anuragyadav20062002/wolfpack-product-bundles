@@ -466,6 +466,7 @@ Billing Page
 | `/api/install-fpb-widget` | Install FPB widget block to theme |
 | `/api/activate-cart-transform` | Deploy cart transform function |
 | `/api/activate-pixel` | Activate UTM web pixel |
+| `/app/app-embed-status` | Authenticated Admin resource route for Preview-button app embed revalidation |
 | `/apps/product-bundles/api/proxy-health` | Proxy health check |
 | `/health` | Public Render HTTP health check; returns 2xx only when the app and DB are ready |
 | `/api/attribution` | UTM attribution analytics data |
