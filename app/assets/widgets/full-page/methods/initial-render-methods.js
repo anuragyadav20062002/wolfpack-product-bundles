@@ -284,6 +284,11 @@ createHeader() {
   const header = document.createElement('div');
   header.className = 'bundle-header';
 
+  if (this.selectedBundle?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+    header.style.display = 'none';
+    return header;
+  }
+
   // Use custom title if provided, otherwise use bundle name
   const title = this.config.customTitle || this.selectedBundle.name;
 
