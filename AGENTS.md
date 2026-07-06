@@ -105,6 +105,16 @@ Create `test-spec/{module-name}.spec.md` alongside every TDD session.
 
 ---
 
+## 📐 Responsive Storefront CSS Rule
+
+Storefront template CSS must be responsive and content-driven. Do not overfit a template to one store, fixture, viewport, or competitor screenshot by copying precise captured pixel values into layout rules.
+
+Use `clamp()`, `minmax()`, `%`, `fr`, viewport/container units, intrinsic sizing, and named design tokens for shell widths, grid tracks, card heights, sidebars, mobile trays, and spacing. Exact fixed values are acceptable only for true primitives such as hairline borders, icons, control hit targets, or documented Shopify/theme limits.
+
+When visual parity requires measured evidence, keep exact measurements in docs or notes as evidence, then translate them into responsive CSS. Avoid `!important`; fix ownership, scope, or selector specificity instead.
+
+---
+
 ## 🧩 Polaris Web Components First Rule
 
 Use Polaris web components (`s-*`) for **all** Admin-embedded app UI. Fall back to custom HTML only when no Polaris component exists.
