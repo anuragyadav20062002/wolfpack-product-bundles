@@ -8,7 +8,7 @@
         var(--classic-desktop-sidebar-fr)
       );
     gap: var(--classic-grid-gap);
-    max-width: 1455px;
+    max-width: var(--classic-desktop-layout-inner-max, 100%);
     padding: 0;
     align-items: start;
   }
@@ -131,7 +131,7 @@
   }
 
   .fpb-preset-classic .sidebar-content .full-page-product-grid-container {
-    width: 95%;
+    width: 100%;
     max-width: none;
   }
 
@@ -236,7 +236,7 @@
 
   .fpb-preset-classic .sidebar-content .product-variant-badge,
   .fpb-preset-classic .sidebar-content .product-spacer {
-    display: none !important;
+    display: none;
   }
 
   .fpb-preset-classic .sidebar-content .product-add-btn {
