@@ -14,24 +14,31 @@ describe("support chat client", () => {
     jest.useRealTimers();
   });
 
-  it("defers chat configuration until the browser is idle", () => {
+  it("defers automatic chat configuration until the fallback delay", () => {
     const configure = jest.fn();
-    const idleCallbacks: IdleRequestCallback[] = [];
+    const idleCallback = jest.fn(() => 7);
     const win: SupportChatWindow = {
-      requestIdleCallback: jest.fn((callback: IdleRequestCallback) => {
-        idleCallbacks.push(callback);
-        return 7;
-      }),
+      requestIdleCallback: idleCallback,
       cancelIdleCallback: jest.fn(),
+      setTimeout: jest.fn((callback: () => void, delay?: number) => {
+        return setTimeout(callback, delay);
+      }) as typeof setTimeout,
+      clearTimeout: jest.fn((handle?: ReturnType<typeof setTimeout>) => {
+        clearTimeout(handle);
+      }) as typeof clearTimeout,
     };
 
-    installSupportChatLoader({ win, configure });
+    installSupportChatLoader({ win, configure, fallbackDelayMs: 5000 });
 
     expect(configure).not.toHaveBeenCalled();
     expect(win.__wpbLoadSupportChat).toEqual(expect.any(Function));
+    expect(idleCallback).not.toHaveBeenCalled();
+    expect(win.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
 
-    idleCallbacks[0]?.({ didTimeout: false, timeRemaining: () => 0 });
+    jest.advanceTimersByTime(4999);
+    expect(configure).not.toHaveBeenCalled();
 
+    jest.advanceTimersByTime(1);
     expect(configure).toHaveBeenCalledTimes(1);
   });
 

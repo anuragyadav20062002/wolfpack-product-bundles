@@ -13,8 +13,12 @@ const readSource = (file: string) =>
 const componentKeys: Record<string, string[]> = {
   "app/components/AppEmbedBanner.tsx": [
     "common.appEmbed.body",
+    "common.appEmbed.guideImageAlt",
+    "common.appEmbed.guideTitle",
+    "common.actions.close",
+    "common.actions.enable",
     "common.actions.enableHere",
-    "common.actions.dismiss",
+    "common.actions.learnMore",
   ],
   "app/components/EnablePreviewModal.tsx": [
     "common.previewGate.title",

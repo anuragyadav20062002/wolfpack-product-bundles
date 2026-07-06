@@ -1,3 +1,4 @@
+import { openThemeEditorInNewTab } from "../../../lib/theme-editor-navigation.client";
 import { usePpbConfigureContext } from "./PpbConfigureContext";
 
 export function PpbSelectTemplateDialog() {
@@ -421,7 +422,7 @@ export function PpbSelectTemplateDialog() {
                       variant="secondary"
                       onClick={() =>
                         themeEditorUrl
-                          ? window.open(themeEditorUrl, "_blank")
+                          ? openThemeEditorInNewTab(themeEditorUrl)
                           : undefined
                       }
                     >

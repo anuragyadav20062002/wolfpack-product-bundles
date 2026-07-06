@@ -19,15 +19,7 @@ export function FpbStepConfigCard({
   return (
     <>
       <div className={fullPageBundleStyles.card}>
-        <h3
-          style={{
-            margin: "0 0 16px",
-            fontSize: 14,
-            fontWeight: 650,
-            color: "#202223",
-            letterSpacing: 0,
-          }}
-        >
+        <h3 className={fullPageBundleStyles.stepConfigTitle}>
           Step Config
         </h3>
         <div className={fullPageBundleStyles.stepConfigRow}>
@@ -95,6 +87,7 @@ export function FpbStepConfigCard({
               />
             )}
             <s-button
+              className={fullPageBundleStyles.iconUploadButton}
               onClick={() =>
                 setShowIconPickerForStep((prev: string | null) =>
                   prev === step.id ? null : step.id,

@@ -9,6 +9,7 @@ import { useDashboardState } from "../../../hooks/useDashboardState";
 import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
 import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
 import { openSupportChat } from "../../../lib/support-chat.client";
+import { openThemeEditorInNewTab } from "../../../lib/theme-editor-navigation.client";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { normalizeAdminLocale } from "../../../i18n/config";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
@@ -29,6 +30,10 @@ import {
   shouldRenderDashboardDeleteModal,
   shouldRenderDashboardPreviewModal,
 } from "./dashboard-modal-state";
+import {
+  buildDashboardLocaleSearchParams,
+  shouldApplyDashboardLocaleSave,
+} from "./dashboard-locale-state";
 import { BundleActionsButtons } from "./BundleActionsButtons";
 import dashboardStyles from "./dashboard.module.css";
 
@@ -63,6 +68,7 @@ export function DashboardPage() {
   const statusPopoverRef = useRef<any>(null);
   const typePopoverRef = useRef<any>(null);
   const fetcherIntentRef = useRef<string | null>(null);
+  const lastAppliedLocaleSaveRef = useRef<string | null>(null);
   const [previewingBundleId, setPreviewingBundleId] = useState<string | null>(null);
   const [editingBundleId, setEditingBundleId] = useState<string | null>(null);
   const [activeActionMenuBundleId, setActiveActionMenuBundleId] = useState<string | null>(null);
@@ -302,31 +308,29 @@ export function DashboardPage() {
       "locale" in data &&
       typeof data.locale === "string"
     ) {
-      const locale = data.locale;
+      const locale = normalizeAdminLocale(data.locale);
+      if (!shouldApplyDashboardLocaleSave(locale, lastAppliedLocaleSaveRef.current)) return;
+      lastAppliedLocaleSaveRef.current = locale;
       localStorage.setItem("wolfpack-locale", locale);
-      void i18n.changeLanguage(locale);
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev);
-        next.set("locale", locale);
-        return next;
-      });
+      if (normalizeAdminLocale(i18n.language) !== locale) {
+        void i18n.changeLanguage(locale);
+      }
+      const nextParams = buildDashboardLocaleSearchParams(searchParams, locale);
+      if (nextParams) setSearchParams(nextParams, { replace: true });
       shopify.toast.show(t("dashboard.language.saveSuccess"));
       return;
     }
     shopify.toast.show(t("dashboard.language.saveError"), { isError: true });
-  }, [i18n, localeFetcher.data, localeFetcher.state, setSearchParams, shopify, t]);
+  }, [i18n, localeFetcher.data, localeFetcher.state, searchParams, setSearchParams, shopify, t]);
 
   useEffect(() => {
     setSelectedLanguage(normalizeAdminLocale(i18n.language));
   }, [i18n.language]);
 
   useEffect(() => {
-    if (searchParams.get("locale") === activeLanguage) return;
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev);
-      next.set("locale", activeLanguage);
-      return next;
-    });
+    const nextParams = buildDashboardLocaleSearchParams(searchParams, activeLanguage);
+    if (!nextParams) return;
+    setSearchParams(nextParams, { replace: true });
   }, [activeLanguage, searchParams, setSearchParams]);
 
   useEffect(() => {
@@ -399,7 +403,7 @@ export function DashboardPage() {
 
   const handleAppEmbedCardClick = useCallback(() => {
     if (themeEditorUrl) {
-      window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
+      openThemeEditorInNewTab(themeEditorUrl);
       return;
     }
     shopify.toast.show(t("dashboard.actions.themeEditorUnavailable"), { isError: true });

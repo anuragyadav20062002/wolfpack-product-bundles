@@ -15,13 +15,14 @@ export function ConfigureCanvasHeader({
     handleBackClick,
     handlePreviewBundle,
     isPreviewBundleLoading,
+    appEmbedBannerFeedbackTrigger,
+    openThemeEditorForAppEmbed,
     openProductInAdmin,
     parentProductStatusUi,
     readinessClassName,
     readinessScore,
     setReadinessOpen,
     shop,
-    suppressTopAppEmbedBannerForVisibility,
     themeEditorUrl,
     UnlistedBundleBanner,
   } = flow;
@@ -70,12 +71,12 @@ export function ConfigureCanvasHeader({
           </s-button>
         </div>
       </div>
-      {!suppressTopAppEmbedBannerForVisibility && (
-        <AppEmbedBanner
-          appEmbedEnabled={appEmbedEnabled}
-          themeEditorUrl={themeEditorUrl}
-        />
-      )}
+      <AppEmbedBanner
+        appEmbedEnabled={appEmbedEnabled}
+        themeEditorUrl={themeEditorUrl}
+        feedbackTrigger={appEmbedBannerFeedbackTrigger}
+        onEnableClick={openThemeEditorForAppEmbed}
+      />
       {parentProductStatusUi.showUnlistedBanner && (
         <UnlistedBundleBanner
           shop={shop}

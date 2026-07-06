@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState, type MouseEvent } from "react";
+import { useCallback, useState, type MouseEvent } from "react";
 import { AppLogger } from "../../../lib/logger";
 import { navigateBackOrFallback } from "../../../lib/navigation";
 import { validateSlug } from "../../../lib/slug-utils";
 import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness";
-import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
+import { verifyAppEmbedEnabledBeforePreview } from "../../../lib/app-embed-status-check.client";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
 import { type TourStep } from "../../../components/bundle-configure/tourSteps";
 import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
@@ -42,6 +42,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
   Object.assign(flow, sharedHandlers);
   const addonActionHandlers = useConfigureAddonActionHandlers(flow);
   const visibilityActionHandlers = useConfigureVisibilityActionHandlers(flow);
+  const closeDisabledPreviewModal = useCallback(() => undefined, []);
 
   const promptSaveBarBeforeNavigation = useCallback(() => {
     flow.shopify.toast.show(
@@ -57,25 +58,18 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
     }
     navigateBackOrFallback(flow.navigate, "/app/dashboard", { replaceFallback: true });
   }, [flow, promptSaveBarBeforeNavigation]);
-  const enablePreviewGate = useEnablePreviewGate({
-    appEmbedEnabled: flow.appEmbedEnabled,
-    themeEditorUrl: flow.themeEditorUrl,
-    onSilentBlock: () =>
-      flow.shopify.toast.show("Theme editor is unavailable for this shop.", {
-        isError: true,
-      }),
-    sessionKey: flow.bundle.id,
-    autoShowOnMount:
-      flow.loaderData.configureMode === "edit" &&
-      flow.isBundleVisibilityPending,
-    onSetupVisibility: () => flow.setActiveSection("bundle_visibility"),
-  });
-  useEffect(() => {
-    if (!isPreviewBundleLoading || flow.fetcher.state !== "idle") return;
-    const timeout = window.setTimeout(() => setIsPreviewBundleLoading(false), 500);
-    return () => window.clearTimeout(timeout);
-  }, [flow.fetcher.state, isPreviewBundleLoading]);
-  const handlePreviewBundle = useCallback(() => {
+  const enablePreviewGate = {
+    modalProps: {
+      open: false,
+      onClose: closeDisabledPreviewModal,
+      themeEditorUrl: flow.themeEditorUrl,
+      onSetupVisibility: () => flow.setActiveSection("bundle_visibility"),
+    },
+  };
+  const finishPreviewBundleLoading = useCallback(() => {
+    setIsPreviewBundleLoading(false);
+  }, []);
+  const handlePreviewBundle = useCallback(async () => {
     if (flow.isDirty) {
       flow.shopify.toast.show(
         "Please save your changes before previewing the bundle",
@@ -83,14 +77,26 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
       );
       return false;
     }
-    const executePreviewBundle = () => {
-      setIsPreviewBundleLoading(true);
+    setIsPreviewBundleLoading(true);
+    const appEmbedEnabled = await verifyAppEmbedEnabledBeforePreview(
+      flow.appEmbedEnabled,
+      flow.checkAppEmbedStatusBeforePreview,
+      {
+        onValidationBlocked: finishPreviewBundleLoading,
+      },
+    );
+    if (!appEmbedEnabled) {
+      finishPreviewBundleLoading();
+      flow.triggerAppEmbedBannerFeedback();
+      return false;
+    }
+    const executePreviewBundle = (): "opened" | "pending_fetcher" => {
       if (flow.bundle.bundleType === "full_page") {
         if (!flow.bundle.shopifyPageHandle) {
           const formData = new FormData();
           formData.append("intent", "createPreviewPage");
           flow.fetcher.submit(formData, { method: "post" });
-          return true;
+          return "pending_fetcher";
         }
         const shopDomain = flow.shop.includes(".myshopify.com")
           ? flow.shop.replace(".myshopify.com", "")
@@ -106,7 +112,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
         flow.shopify.toast.show("Bundle page opened in new tab", {
           isError: false,
         });
-        return true;
+        return "opened";
       }
       let productUrl = null;
       const productHandle =
@@ -160,13 +166,14 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
           { isError: true, duration: 5000 },
         );
       }
-      return true;
+      return "opened";
     };
-    if (flow.bundle.bundleType === "full_page") {
-      return executePreviewBundle();
+    const previewResult = executePreviewBundle();
+    if (previewResult === "opened") {
+      finishPreviewBundleLoading();
     }
-    return enablePreviewGate.requestPreview(executePreviewBundle) === true;
-  }, [enablePreviewGate, flow]);
+    return true;
+  }, [finishPreviewBundleLoading, flow]);
   const handleSectionChange = useCallback(
     (section: string) => {
       if (section === flow.activeSection) return;
@@ -237,7 +244,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
       flow.setReadinessOpen(false);
       switch (key) {
         case "embed":
-          if (flow.themeEditorUrl) window.open(flow.themeEditorUrl, "_blank");
+          flow.openThemeEditorForAppEmbed();
           break;
         case "products":
           handleSectionChange("step_setup");
@@ -276,8 +283,8 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
     },
     [flow],
   );
-  const handleTemplatePreview = useCallback(() => {
-    const previewStarted = handlePreviewBundle();
+  const handleTemplatePreview = useCallback(async () => {
+    const previewStarted = await handlePreviewBundle();
     if (previewStarted) {
       window.setTimeout(flow.closeSelectTemplateModal, 500);
     }
@@ -362,6 +369,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
     handlePageSelectionBackdropClick,
     handlePlaceWidget,
     handlePreviewBundle,
+    finishPreviewBundleLoading,
     isPreviewBundleLoading,
     handleReadinessItemClick,
     handleSectionChange,

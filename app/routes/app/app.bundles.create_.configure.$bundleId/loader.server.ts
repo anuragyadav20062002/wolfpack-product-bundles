@@ -1,5 +1,6 @@
 import { json, redirect, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
+import { fetchEmbedData } from "../../../lib/bundle-configure-loader.server";
 import db from "../../../db.server";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -37,18 +38,14 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   let appEmbedEnabled = false;
   let themeEditorUrl: string | null = null;
   try {
-    const { checkAppEmbedEnabled } = await import(
-      "../../../services/theme/app-embed-check.server"
+    const embedData = await fetchEmbedData(
+      admin,
+      session.shop,
+      process.env.SHOPIFY_API_KEY || "",
+      "bundle-app-embed",
     );
-    const result = await checkAppEmbedEnabled(admin, session.shop, {
-      blockHandles: ["bundle-app-embed"],
-    });
-    appEmbedEnabled = result.enabled;
-    if (result.themeId) {
-      const apiKey = process.env.SHOPIFY_API_KEY || "";
-      const themeIdShort = result.themeId.split("/").pop();
-      themeEditorUrl = `https://${session.shop}/admin/themes/${themeIdShort}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-app-embed`;
-    }
+    appEmbedEnabled = embedData.appEmbedEnabled;
+    themeEditorUrl = embedData.themeEditorUrl;
   } catch {}
 
   let parentProductActive = false;

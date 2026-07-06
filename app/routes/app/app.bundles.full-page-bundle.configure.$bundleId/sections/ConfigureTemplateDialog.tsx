@@ -1,4 +1,5 @@
 import type { ConfigureBundleFlowContext } from "../useConfigureBundleFlow";
+import { openThemeEditorInNewTab } from "../../../../lib/theme-editor-navigation.client";
 
 export function FpbTemplateDialog({
   flow,
@@ -408,7 +409,7 @@ export function FpbTemplateDialog({
                       variant="secondary"
                       onClick={() =>
                         themeEditorUrl
-                          ? window.open(themeEditorUrl, "_blank")
+                          ? openThemeEditorInNewTab(themeEditorUrl)
                           : undefined
                       }
                     >

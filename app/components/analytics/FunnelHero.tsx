@@ -72,26 +72,21 @@ export function FunnelHero({
 
   return (
     <section
-      className="wpb-card"
+      className="wpb-card wpb-card--hero"
       aria-labelledby="wpb-funnel-hero-title"
-      style={{ padding: 32 }}
     >
       <header className="wpb-section-header">
         <div>
-          <p className="wpb-label" style={{ marginBottom: 4 }}>Bundle Funnel</p>
-          <h2 id="wpb-funnel-hero-title" className="wpb-section-title" style={{ font: "var(--wpb-heading)", fontSize: 22 }}>
+          <p className="wpb-label wpb-section-kicker">Bundle Funnel</p>
+          <h2 id="wpb-funnel-hero-title" className="wpb-section-title wpb-section-title--hero">
             How shoppers move through your bundles
           </h2>
         </div>
         <p className="wpb-section-hint">{windowLabel}</p>
       </header>
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`,
-          gap: 24,
-          marginTop: 8,
-        }}
+        className="wpb-funnel-grid"
+        data-step-count={steps.length}
       >
         {steps.map(s => (
           <FunnelStepBar key={s.label} {...s} maxValue={maxValue} />

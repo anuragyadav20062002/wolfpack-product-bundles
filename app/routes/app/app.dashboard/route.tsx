@@ -41,13 +41,6 @@ export const headers: HeadersFunction = () => {
   });
 };
 
-const SHOP_EMBED_CACHE_TTL_MS = 5 * 60 * 1000;
-
-function buildThemeEditorUrl(shop: string, themeGid: string, apiKey: string): string {
-  const themeNumericId = themeGid.split("/").pop();
-  return `https://${shop}/admin/themes/${themeNumericId}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-app-embed`;
-}
-
 function queueProductHandleBackfill(
   admin: any,
   shopifyProductIds: string[],
@@ -101,16 +94,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     orderBy: { createdAt: "desc" },
   }));
 
-  const shopRecordPromise = timing.track("db.shop", () => db.shop.findUnique({
-    where: { shopDomain: session.shop },
-    select: {
-      appEmbedEnabled: true,
-      appEmbedCheckedAt: true,
-      appEmbedThemeId: true,
-    },
-  }));
+  const apiKey = process.env.SHOPIFY_API_KEY || "";
+  const embedDataPromise = timing.track("shopify.appEmbed", () =>
+    fetchEmbedData(admin, session.shop, apiKey),
+  );
 
-  const [bundles, shopRecord] = await Promise.all([bundlesPromise, shopRecordPromise]);
+  const [bundles, embedData] = await Promise.all([bundlesPromise, embedDataPromise]);
 
   const bundlesNeedingBackfill = bundles.filter(
     b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId && !b.shopifyProductHandle
@@ -127,27 +116,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ...bundle,
     previewHandle: bundle.bundleType === BundleType.PRODUCT_PAGE ? bundle.shopifyProductHandle : bundle.id
   }));
-
-  const apiKey = process.env.SHOPIFY_API_KEY || "63077bb0483a6ce08a2d6139b14d170b";
-
-  const appEmbedCacheFresh = Boolean(
-    shopRecord?.appEmbedCheckedAt &&
-    shopRecord?.appEmbedEnabled !== null &&
-    Date.now() - shopRecord.appEmbedCheckedAt.getTime() < SHOP_EMBED_CACHE_TTL_MS,
-  );
-
-  const cachedThemeEditorUrl = shopRecord?.appEmbedThemeId
-    ? buildThemeEditorUrl(session.shop, shopRecord.appEmbedThemeId, apiKey)
-    : null;
-
-  queueDashboardBackgroundTask(async () => {
-    if (appEmbedCacheFresh) return;
-    try {
-      await fetchEmbedData(admin, session.shop, apiKey);
-    } catch (error) {
-      AppLogger.error("Failed to refresh app embed cache", { component: "app.dashboard", operation: "refresh-app-embed" }, error);
-    }
-  });
 
   // billing + proxy-health are kicked off concurrently here and surfaced via
   // a deferred `banners` promise so the bundles table can paint without
@@ -189,8 +157,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       proxyHealthy,
     };
   })();
-  const appEmbedEnabled = shopRecord?.appEmbedEnabled ?? false;
-  const themeEditorUrl = cachedThemeEditorUrl;
+  const appEmbedEnabled = embedData.appEmbedEnabled;
+  const themeEditorUrl = embedData.themeEditorUrl;
 
   const appUrl = process.env.SHOPIFY_APP_URL;
   if (appUrl) {

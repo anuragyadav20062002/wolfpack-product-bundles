@@ -75,46 +75,27 @@ export function LiveActivityFeed({ initialEvents, pollMs = 0, pollEndpoint }: Li
           <h2 id="wpb-activity-feed-title" className="wpb-section-title">Live Activity</h2>
           <p className="wpb-section-hint">Most recent engagements</p>
         </div>
-        <span
-          aria-hidden
-          style={{
-            display: "inline-block",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "var(--wpb-accent-engagement)",
-            boxShadow: "0 0 0 4px rgba(14,124,123,0.16)",
-          }}
-        />
+        <span aria-hidden className="wpb-live-dot" />
       </header>
 
       {events.length === 0 ? (
-        <p style={{ color: "var(--wpb-ink-500)", font: "var(--wpb-body)", margin: 0 }}>
+        <p className="wpb-empty-copy">
           Nobody has engaged yet. Activity will stream here as shoppers interact with your bundles.
         </p>
       ) : (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12, maxHeight: 360, overflow: "auto" }} aria-live="polite">
+        <ul className="wpb-list wpb-list--scroll" aria-live="polite">
           {events.map(ev => (
-            <li key={ev.id} style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 12, alignItems: "center" }}>
-              <span
-                aria-hidden
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: "var(--wpb-accent-engagement)",
-                  marginLeft: 2,
-                }}
-              />
-              <div style={{ minWidth: 0 }}>
-                <p style={{ margin: 0, font: "var(--wpb-body)", color: "var(--wpb-ink-900)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {ev.bundleName} engaged
+            <li key={ev.id} className="wpb-activity-row">
+              <span aria-hidden className="wpb-activity-dot" />
+              <div className="wpb-truncate-cell">
+                <p className="wpb-row-title wpb-row-title--activity">
+                  {ev.bundleName}
                 </p>
-                <p style={{ margin: 0, font: "var(--wpb-micro)", color: "var(--wpb-ink-500)" }}>
+                <p className="wpb-muted-micro">
                   {ev.presetId ?? "—"} · {shortSession(ev.sessionId)}
                 </p>
               </div>
-              <span data-tick={tick} style={{ font: "var(--wpb-micro)", color: "var(--wpb-ink-500)", whiteSpace: "nowrap" }}>
+              <span data-tick={tick} className="wpb-muted-micro wpb-nowrap">
                 {relativeTime(ev.createdAt)}
               </span>
             </li>

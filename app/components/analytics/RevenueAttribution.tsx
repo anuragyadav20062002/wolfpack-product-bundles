@@ -43,14 +43,7 @@ export function RevenueAttribution({ summary, trend, formatRevenue }: RevenueAtt
         <p className="wpb-section-hint">UTM-tracked bundle revenue</p>
       </header>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 16,
-          marginBottom: 16,
-        }}
-      >
+      <div className="wpb-two-column-grid">
         <KpiTile
           label="Bundle revenue"
           value={formatRevenue(summary.totalBundleRevenue)}
@@ -68,7 +61,7 @@ export function RevenueAttribution({ summary, trend, formatRevenue }: RevenueAtt
         />
       </div>
 
-      <div style={{ height: 160, marginLeft: -8, marginRight: -8, marginBottom: -8 }}>
+      <div className="wpb-chart-strip">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={trend} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>

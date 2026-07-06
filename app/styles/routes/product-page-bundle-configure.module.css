@@ -703,8 +703,16 @@
   composes: iconColumn from "./bundle-configure-shared.module.css";
 }
 
+.stepConfigTitle {
+  composes: stepConfigTitle from "./bundle-configure-shared.module.css";
+}
+
 .iconBox {
   composes: iconBox from "./bundle-configure-shared.module.css";
+}
+
+.iconUploadButton {
+  composes: iconUploadButton from "./bundle-configure-shared.module.css";
 }
 
 .iconImg {

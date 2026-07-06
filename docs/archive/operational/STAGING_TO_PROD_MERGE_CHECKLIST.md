@@ -19,7 +19,7 @@ STAGING branch is **247 commits ahead** of PROD (main) with major new features i
 
 ```bash
 # API Credentials
-SHOPIFY_API_KEY=63077bb0483a6ce08a2d6139b14d170b → a383172f42c2ab283901a663d485a03d
+SHOPIFY_API_KEY=[STAGING_CLIENT_ID] → [PRODUCTION_CLIENT_ID]
 SHOPIFY_API_SECRET=shpss_[STAGING_SECRET] → [PRODUCTION_SECRET]
 
 # App URL
@@ -145,7 +145,7 @@ npm run push:db
 
 **Current Production Config:**
 ```toml
-client_id = "a383172f42c2ab283901a663d485a03d"
+client_id = "[PRODUCTION_CLIENT_ID]"
 application_url = "https://wolfpack-product-bundle-app.onrender.com"
 api_version = "2025-10" ✅
 

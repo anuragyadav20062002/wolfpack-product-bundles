@@ -44,6 +44,18 @@ describe("Preview Bundle button loading state", () => {
     expect(dialogSource).toContain("loading={isPreviewBundleLoading || undefined}");
   });
 
+  it("keeps FPB preview loading owned by the continuous preview flow", () => {
+    const actionControllerSource = readRouteFile(
+      "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/useConfigureActionController.ts",
+    );
+
+    expect(actionControllerSource).toContain("const handlePreviewBundle = useCallback(async () => {");
+    expect(actionControllerSource).toContain("setIsPreviewBundleLoading(true);");
+    expect(actionControllerSource).not.toContain(
+      "if (!isPreviewBundleLoading || flow.fetcher.state !== \"idle\") return;",
+    );
+  });
+
   it("passes shared PPB preview loading state to header and template-dialog preview buttons", () => {
     const previewHandlersSource = readRouteFile(
       "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/usePpbPreviewReadinessHandlers.ts",

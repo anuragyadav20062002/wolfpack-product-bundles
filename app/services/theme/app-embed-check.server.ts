@@ -7,40 +7,62 @@ export interface AppEmbedCheckResult {
 }
 
 interface AppEmbedCheckOptions {
+  appHandle?: string;
+  appHandles?: string[];
   blockHandles?: string[];
 }
 
-const WOLFPACK_APP_HANDLES = [
-  "wolfpack-product-bundles",
-  "wolfpack-product-bundles-4",
-  "wolfpack-product-bundles-sit",
-];
+function getThemeSettingsContent(
+  body: { content?: string; contentBase64?: string } | undefined,
+) {
+  if (typeof body?.content === "string") return body.content;
+  if (typeof body?.contentBase64 !== "string") return undefined;
+
+  try {
+    return Buffer.from(body.contentBase64, "base64").toString("utf8");
+  } catch {
+    return undefined;
+  }
+}
 
 function isWolfpackEmbedBlock(
-  key: string,
   value: { disabled?: boolean; type?: string } | undefined,
-  blockHandles?: string[],
+  options: AppEmbedCheckOptions,
 ) {
   if (value?.disabled === true) return false;
+  if (typeof value?.type !== "string") return false;
 
-  const blockRef = `${key} ${value?.type ?? ""}`;
-  const matchesApp = WOLFPACK_APP_HANDLES.some((handle) =>
-    blockRef.includes(`shopify://apps/${handle}/blocks/`),
+  const appHandles = [
+    options.appHandle,
+    ...(options.appHandles ?? []),
+  ]
+    .map((handle) => handle?.trim())
+    .filter((handle): handle is string => Boolean(handle));
+
+  if (appHandles.length) {
+    const matchesKnownApp = appHandles.some((handle) =>
+      value.type?.startsWith(`shopify://apps/${handle}/blocks/`),
+    );
+    if (!matchesKnownApp) return false;
+  } else if (!value.type.startsWith("shopify://apps/")) {
+    return false;
+  }
+
+  if (!options.blockHandles?.length) return true;
+  const blockType = value.type;
+  return options.blockHandles.some((handle) =>
+    blockType.includes(`/blocks/${handle}/`),
   );
-  if (!matchesApp) return false;
-
-  if (!blockHandles?.length) return true;
-  return blockHandles.some((handle) => blockRef.includes(`/blocks/${handle}`));
 }
 
 /**
  * Checks whether any Wolfpack embed block is active in the merchant's current theme.
  * Reads config/settings_data.json via Admin GraphQL and scans `current.blocks` for
- * a key starting with the Wolfpack app prefix that is not explicitly disabled.
+ * the current app's app-embed block type that is not explicitly disabled.
  *
- * Never throws. On JSON parse failure (e.g. settings_data.json exceeds Shopify's
- * ~1MB response limit and arrives truncated) returns { enabled: true } — fail-open,
- * because we cannot confirm the embed is disabled.
+ * Never throws. If the theme settings cannot be read, fail closed. If the
+ * settings payload is malformed or truncated, fail open because we cannot
+ * confirm that the app embed is disabled.
  */
 export async function checkAppEmbedEnabled(
   admin: ShopifyAdmin,
@@ -49,7 +71,12 @@ export async function checkAppEmbedEnabled(
 ): Promise<AppEmbedCheckResult> {
   try {
     const themeListResult = await admin.graphql(`
-      query GetActiveTheme {
+      query GetAppEmbedStatusSeed {
+        currentAppInstallation {
+          app {
+            handle
+          }
+        }
         themes(first: 5, roles: [MAIN]) {
           nodes { id }
         }
@@ -57,6 +84,8 @@ export async function checkAppEmbedEnabled(
     `);
     const themeListData = await themeListResult.json();
     const themeId: string | undefined = themeListData?.data?.themes?.nodes?.[0]?.id;
+    const currentAppHandle: string | undefined =
+      themeListData?.data?.currentAppInstallation?.app?.handle;
 
     if (!themeId) {
       AppLogger.warn("checkAppEmbedEnabled: no active theme found", { shopDomain });
@@ -73,6 +102,9 @@ export async function checkAppEmbedEnabled(
                 ... on OnlineStoreThemeFileBodyText {
                   content
                 }
+                ... on OnlineStoreThemeFileBodyBase64 {
+                  contentBase64
+                }
               }
             }
           }
@@ -81,8 +113,9 @@ export async function checkAppEmbedEnabled(
     `, { variables: { themeId } });
 
     const settingsData = await settingsResult.json();
-    const fileContent: string | undefined =
-      settingsData?.data?.theme?.files?.nodes?.[0]?.body?.content;
+    const fileContent = getThemeSettingsContent(
+      settingsData?.data?.theme?.files?.nodes?.[0]?.body,
+    );
 
     if (!fileContent) {
       return { enabled: false, themeId };
@@ -92,9 +125,7 @@ export async function checkAppEmbedEnabled(
     try {
       parsed = JSON.parse(fileContent);
     } catch {
-      // settings_data.json likely truncated (exceeds Shopify ~1MB limit). Fail-open:
-      // we cannot confirm embed is disabled, so do not block preview.
-      AppLogger.debug("checkAppEmbedEnabled: failed to parse settings_data.json — failing open", { shopDomain });
+      AppLogger.debug("checkAppEmbedEnabled: failed to parse settings_data.json", { shopDomain });
       return { enabled: true, themeId };
     }
 
@@ -106,8 +137,15 @@ export async function checkAppEmbedEnabled(
       return { enabled: false, themeId };
     }
 
-    const enabled = Object.entries(blocks).some(([key, value]) =>
-      isWolfpackEmbedBlock(key, value, options.blockHandles),
+    const enabled = Object.values(blocks).some((value) =>
+      isWolfpackEmbedBlock(value, {
+        ...options,
+        appHandles: [
+          options.appHandle,
+          ...(options.appHandles ?? []),
+          currentAppHandle,
+        ].filter((handle): handle is string => Boolean(handle?.trim())),
+      }),
     );
 
     return { enabled, themeId };

@@ -8,7 +8,8 @@
 
 import { AppLogger } from "./logger";
 import { checkAppEmbedEnabled } from "../services/theme/app-embed-check.server";
-import db from "../db.server";
+
+const THEME_APP_EXTENSION_HANDLE = "bundle-builder";
 
 const GET_BUNDLE_PRODUCT = `
   query GetBundleProduct($id: ID!) {
@@ -111,67 +112,29 @@ export async function fetchShopLocales(
   }
 }
 
-const EMBED_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — matches EB's HTTP ETag cache pattern
-
 export async function fetchEmbedData(
   admin: any,
   shop: string,
   apiKey: string,
   embedBlockHandle = "bundle-app-embed",
 ): Promise<{ appEmbedEnabled: boolean; themeEditorUrl: string | null }> {
-  // Check DB cache first — avoids hitting Shopify's settings_data.json on every page load
-  const shopRecord = await db.shop.findUnique({
-    where: { shopDomain: shop },
-    select: { appEmbedEnabled: true, appEmbedCheckedAt: true, appEmbedThemeId: true },
-  });
-
-  const isCacheFresh =
-    shopRecord?.appEmbedCheckedAt !== null &&
-    shopRecord?.appEmbedEnabled !== null &&
-    shopRecord?.appEmbedCheckedAt !== undefined &&
-    Date.now() - shopRecord.appEmbedCheckedAt.getTime() < EMBED_CACHE_TTL_MS;
-
-  if (isCacheFresh) {
-    const themeEditorUrl = shopRecord!.appEmbedThemeId
-      ? buildThemeEditorUrl(shop, shopRecord!.appEmbedThemeId, apiKey, embedBlockHandle)
-      : null;
-    return { appEmbedEnabled: shopRecord!.appEmbedEnabled!, themeEditorUrl };
-  }
-
-  // Cache miss or stale — fetch from Shopify
   const embedCheck = await checkAppEmbedEnabled(admin, shop, {
+    appHandles: [THEME_APP_EXTENSION_HANDLE],
     blockHandles: [embedBlockHandle],
   });
 
-  // Only persist when Shopify returned a valid theme ID (guards against network errors
-  // returning { enabled: false, themeId: null } which would poison the cache)
-  if (embedCheck.themeId !== null) {
-    try {
-      await db.shop.update({
-        where: { shopDomain: shop },
-        data: {
-          appEmbedEnabled: embedCheck.enabled,
-          appEmbedCheckedAt: new Date(),
-          appEmbedThemeId: embedCheck.themeId,
-        },
-      });
-    } catch (err) {
-      AppLogger.warn("fetchEmbedData: failed to update app embed cache", { shop, err });
-    }
-  }
-
-  const themeEditorUrl = embedCheck.themeId
-    ? buildThemeEditorUrl(shop, embedCheck.themeId, apiKey, embedBlockHandle)
+  const themeEditorUrl = embedCheck.themeId && apiKey
+    ? buildThemeAppEmbedEditorUrl(shop, embedCheck.themeId, apiKey, embedBlockHandle)
     : null;
   return { appEmbedEnabled: embedCheck.enabled, themeEditorUrl };
 }
 
-function buildThemeEditorUrl(
+export function buildThemeAppEmbedEditorUrl(
   shop: string,
   themeGid: string,
   apiKey: string,
   blockHandle: string,
 ): string {
   const themeNumericId = themeGid.split("/").pop();
-  return `https://${shop}/admin/themes/${themeNumericId}/editor?context=apps&appEmbed=${apiKey}%2F${blockHandle}`;
+  return `https://${shop}/admin/themes/${themeNumericId}/editor?context=apps&activateAppId=${apiKey}%2F${blockHandle}`;
 }
