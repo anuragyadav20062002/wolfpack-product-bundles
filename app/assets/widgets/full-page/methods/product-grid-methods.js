@@ -371,9 +371,26 @@ expandProductsByVariant(products, shouldExpand = true) {
   });
 },
 
-// Create loading skeleton for product grid - solid pulsating cards
-// No internal button/quantity skeletons - just clean solid cards
+shouldUseProductGridSpinnerOnly() {
+  return this.getFullPageDesignPreset?.() === 'CLASSIC';
+},
+
+renderProductGridLoadingState(productGridContainer) {
+  if (!productGridContainer) return;
+
+  productGridContainer.innerHTML = this.createProductGridLoadingState();
+
+  const loadingGif = this.selectedBundle?.loadingGif || null;
+  if (this.shouldUseProductGridSpinnerOnly() || loadingGif) {
+    this.showLoadingOverlay(loadingGif);
+  }
+},
+
+// Create loading skeleton for product grid - solid pulsating cards.
+// Classic uses the overlay spinner only until product data is populated.
 createProductGridLoadingState() {
+  if (this.shouldUseProductGridSpinnerOnly()) return '';
+
   return `
     <div class="full-page-product-grid">
       ${Array(6).fill(0).map(() => `

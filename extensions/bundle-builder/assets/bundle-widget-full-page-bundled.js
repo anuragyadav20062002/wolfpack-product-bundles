@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.65
+ * Version : 5.0.66
  * Built   : 2026-07-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.65';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.66';
 (function() {
   'use strict';
 
@@ -5415,7 +5415,7 @@ async renderFullPageLayout() {
 
   const productGridContainer = document.createElement('div');
   productGridContainer.className = 'full-page-product-grid-container';
-  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  this.renderProductGridLoadingState(productGridContainer);
   contentSection.appendChild(productGridContainer);
   const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
   if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
@@ -5424,9 +5424,6 @@ async renderFullPageLayout() {
 
   this.renderFullPageFooter();
 
-  if (this.selectedBundle?.loadingGif) {
-    this.showLoadingOverlay(this.selectedBundle.loadingGif);
-  }
   try {
     await this.loadStepProducts(this.currentStepIndex);
 
@@ -5507,7 +5504,7 @@ async renderFullPageLayoutWithSidebar() {
 
   const productGridContainer = document.createElement('div');
   productGridContainer.className = 'full-page-product-grid-container';
-  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  this.renderProductGridLoadingState(productGridContainer);
   contentSection.appendChild(productGridContainer);
   const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
   if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
@@ -5521,9 +5518,6 @@ async renderFullPageLayoutWithSidebar() {
 
   this.elements.stepsContainer.appendChild(twoColWrapper);
 
-  if (this.selectedBundle?.loadingGif) {
-    this.showLoadingOverlay(this.selectedBundle.loadingGif);
-  }
   try {
     await this.loadStepProducts(this.currentStepIndex);
     const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
@@ -8523,7 +8517,24 @@ expandProductsByVariant(products, shouldExpand = true) {
   });
 },
 
+shouldUseProductGridSpinnerOnly() {
+  return this.getFullPageDesignPreset?.() === 'CLASSIC';
+},
+
+renderProductGridLoadingState(productGridContainer) {
+  if (!productGridContainer) return;
+
+  productGridContainer.innerHTML = this.createProductGridLoadingState();
+
+  const loadingGif = this.selectedBundle?.loadingGif || null;
+  if (this.shouldUseProductGridSpinnerOnly() || loadingGif) {
+    this.showLoadingOverlay(loadingGif);
+  }
+},
+
 createProductGridLoadingState() {
+  if (this.shouldUseProductGridSpinnerOnly()) return '';
+
   return `
     <div class="full-page-product-grid">
       ${Array(6).fill(0).map(() => `
@@ -9543,12 +9554,11 @@ async _sidebarAdvanceToNextStep() {
     this.renderFullPageLayoutWithSidebar();
     return;
   }
-  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  this.renderProductGridLoadingState(productGridContainer);
 
   const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
   if (sidePanel) this.renderSidePanel(sidePanel);
 
-  if (this.selectedBundle?.loadingGif) this.showLoadingOverlay(this.selectedBundle.loadingGif);
   try {
     await this.loadStepProducts(this.currentStepIndex);
     const productGrid = this.createFullPageProductGrid(this.currentStepIndex);

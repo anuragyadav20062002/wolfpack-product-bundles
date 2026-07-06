@@ -110,7 +110,7 @@ async renderFullPageLayout() {
   // 5. Create product grid container with loading state
   const productGridContainer = document.createElement('div');
   productGridContainer.className = 'full-page-product-grid-container';
-  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  this.renderProductGridLoadingState(productGridContainer);
   contentSection.appendChild(productGridContainer);
   const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
   if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
@@ -120,12 +120,7 @@ async renderFullPageLayout() {
   // 6. Render fixed footer (will be updated after products load)
   this.renderFullPageFooter();
 
-  // Load products asynchronously and update grid
-  // Only show loading overlay when a custom GIF is configured — otherwise the
-  // skeleton loading state (already rendered above) is visible and sufficient.
-  if (this.selectedBundle?.loadingGif) {
-    this.showLoadingOverlay(this.selectedBundle.loadingGif);
-  }
+  // Load products asynchronously and update grid.
   try {
     await this.loadStepProducts(this.currentStepIndex);
 
@@ -216,7 +211,7 @@ async renderFullPageLayoutWithSidebar() {
 
   const productGridContainer = document.createElement('div');
   productGridContainer.className = 'full-page-product-grid-container';
-  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  this.renderProductGridLoadingState(productGridContainer);
   contentSection.appendChild(productGridContainer);
   const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
   if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
@@ -231,11 +226,7 @@ async renderFullPageLayoutWithSidebar() {
 
   this.elements.stepsContainer.appendChild(twoColWrapper);
 
-  // Load products
-  // Only show loading overlay when a custom GIF is configured.
-  if (this.selectedBundle?.loadingGif) {
-    this.showLoadingOverlay(this.selectedBundle.loadingGif);
-  }
+  // Load products.
   try {
     await this.loadStepProducts(this.currentStepIndex);
     const productGrid = this.createFullPageProductGrid(this.currentStepIndex);

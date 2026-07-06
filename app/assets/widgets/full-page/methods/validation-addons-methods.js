@@ -134,20 +134,19 @@ async _sidebarAdvanceToNextStep() {
     if (gridContainer) gridContainer.insertAdjacentElement('afterend', newCategoryRows);
   }
 
-  // 4. Show loading skeleton in product grid
+  // 4. Show product-grid loading state
   const productGridContainer = contentSection.querySelector('.full-page-product-grid-container');
   if (!productGridContainer) {
     this.renderFullPageLayoutWithSidebar();
     return;
   }
-  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  this.renderProductGridLoadingState(productGridContainer);
 
   // 5. Immediately update side panel to reflect current selections
   const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
   if (sidePanel) this.renderSidePanel(sidePanel);
 
   // 6. Async: load products for the new step and swap in the grid
-  if (this.selectedBundle?.loadingGif) this.showLoadingOverlay(this.selectedBundle.loadingGif);
   try {
     await this.loadStepProducts(this.currentStepIndex);
     const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
