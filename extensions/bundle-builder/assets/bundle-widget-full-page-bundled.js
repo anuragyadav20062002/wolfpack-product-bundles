@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.68
+ * Version : 5.0.69
  * Built   : 2026-07-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.68';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.69';
 (function() {
   'use strict';
 
@@ -8479,15 +8479,25 @@ expandProductsByVariant(products, shouldExpand = true) {
   }
 
   return products.flatMap(product => {
+    const isVariantSelectable = (variant) => {
+      if (typeof this.isVariantSelectableForInventory === 'function') {
+        return this.isVariantSelectableForInventory(variant);
+      }
+      return variant?.available !== false;
+    };
 
     if (product.parentProductId && product.variantId) {
-      return [product];
+      return isVariantSelectable(product) ? [product] : [];
     }
 
     if (product.variants && product.variants.length > 1) {
       return product.variants
-        .filter(variant => variant.available !== false)
+        .filter(variant => isVariantSelectable(variant))
         .map(variant => {
+          const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+            ? this.getRuntimeVariantInventory(variant)
+            : null;
+          const inventorySource = runtimeInventory || variant;
 
           const imageUrl = variant.image?.src
             || variant.image?.url
@@ -8509,7 +8519,9 @@ expandProductsByVariant(products, shouldExpand = true) {
             price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
             compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
             variantId: variant.id,
-            available: variant.available !== false,
+            available: isVariantSelectable(variant),
+            quantityAvailable: typeof inventorySource.quantityAvailable === 'number' ? inventorySource.quantityAvailable : null,
+            currentlyNotInStock: inventorySource.currentlyNotInStock === true,
             parentProductId: product.id,
             parentTitle: product.title,
 
@@ -8518,7 +8530,11 @@ expandProductsByVariant(products, shouldExpand = true) {
         });
     }
 
-    return [product];
+    if (Array.isArray(product.variants) && product.variants.length === 1) {
+      const variant = product.variants[0];
+      if (!isVariantSelectable(variant)) return [];
+    }
+    return isVariantSelectable(product) ? [product] : [];
   });
 },
 
@@ -11323,6 +11339,16 @@ async loadStepProducts(stepIndex) {
 
   const stepProductsAlreadyEnriched = !step?.isFreeGift && Array.isArray(step.products) && step.products.length > 0
     && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
+  const shouldRefreshRuntimeInventory = hasEnrichedStepProducts
+    && fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  const refreshedProductKeys = new Set();
+  const productIds = !step?.isFreeGift ? this.collectStepProductIds(step) : [];
+  if (!step?.isFreeGift && Array.isArray(step.StepProduct)) {
+    step.StepProduct.forEach(product => {
+      const id = product?.productId || product?.graphqlId || product?.id;
+      if (id && !productIds.includes(id)) productIds.push(id);
+    });
+  }
 
   if (stepProductsAlreadyEnriched) {
 
@@ -11338,8 +11364,7 @@ async loadStepProducts(stepIndex) {
     }));
     allProducts = allProducts.concat(normalizedProducts);
   } else if (!step?.isFreeGift) {
-    const productIds = this.collectStepProductIds(step);
-    if (!hasEnrichedStepProducts && productIds.length > 0) {
+    if ((!hasEnrichedStepProducts || shouldRefreshRuntimeInventory) && productIds.length > 0) {
       const shop = window.Shopify?.shop || window.location.host;
 
       const apiBaseUrl = this.resolveStorefrontApiBase();
@@ -11359,6 +11384,15 @@ async loadStepProducts(stepIndex) {
 
           if (data.products && data.products.length > 0) {
             allProducts = allProducts.concat(data.products);
+            if (typeof this.rememberRuntimeProductInventory === 'function') {
+              this.rememberRuntimeProductInventory(data.products);
+            }
+            if (shouldRefreshRuntimeInventory) {
+              data.products.forEach(product => {
+                const key = productLookupKey(product);
+                if (key) refreshedProductKeys.add(key);
+              });
+            }
           }
         }
       } catch (error) {
@@ -11411,7 +11445,10 @@ async loadStepProducts(stepIndex) {
           available: true,
           image: sp.imageUrl ? { src: sp.imageUrl } : null
         }]
-      }));
+      })).filter(product => {
+        const key = productLookupKey(product);
+        return !key || !refreshedProductKeys.has(key);
+      });
 
       allProducts = allProducts.concat(enrichedProducts);
     } else {
@@ -11436,6 +11473,9 @@ async loadStepProducts(stepIndex) {
             const data = await response.json();
             if (data.products && data.products.length > 0) {
               allProducts = allProducts.concat(data.products);
+              if (typeof this.rememberRuntimeProductInventory === 'function') {
+                this.rememberRuntimeProductInventory(data.products);
+              }
             }
           }
         } catch (error) {
@@ -11458,6 +11498,9 @@ async loadStepProducts(stepIndex) {
         const data = await response.json();
         if (data.products && data.products.length > 0) {
           allProducts = allProducts.concat(data.products);
+          if (typeof this.rememberRuntimeProductInventory === 'function') {
+            this.rememberRuntimeProductInventory(data.products);
+          }
         }
 
         if (data.byCollection) {
@@ -11601,6 +11644,31 @@ getFirstAvailableVariant(product) {
   return variants.find(variant => this.isVariantSelectableForInventory(variant)) || null;
 },
 
+rememberRuntimeProductInventory(products) {
+  if (!Array.isArray(products) || products.length === 0) return;
+  if (!this._fpbRuntimeVariantInventoryById) {
+    this._fpbRuntimeVariantInventoryById = {};
+  }
+
+  products.forEach(product => {
+    (Array.isArray(product?.variants) ? product.variants : []).forEach(variant => {
+      const key = variantLookupKey(variant);
+      if (!key) return;
+      this._fpbRuntimeVariantInventoryById[key] = {
+        available: variant.available === true,
+        quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
+        currentlyNotInStock: variant.currentlyNotInStock === true,
+      };
+    });
+  });
+},
+
+getRuntimeVariantInventory(productOrVariant) {
+  const key = variantLookupKey(productOrVariant);
+  if (!key) return null;
+  return this._fpbRuntimeVariantInventoryById?.[key] || null;
+},
+
 isInventoryTrackingOnAddToCartEnabled() {
   const controls = typeof this._getLandingPageControls === 'function'
     ? this._getLandingPageControls()
@@ -11609,7 +11677,12 @@ isInventoryTrackingOnAddToCartEnabled() {
 },
 
 isVariantSelectableForInventory(variant) {
-  if (variant?.available !== true) {
+  const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+    ? this.getRuntimeVariantInventory(variant)
+    : null;
+  const candidate = runtimeInventory ? { ...variant, ...runtimeInventory } : variant;
+
+  if (candidate?.available !== true) {
     return false;
   }
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
@@ -11618,7 +11691,7 @@ isVariantSelectableForInventory(variant) {
   if (!trackInventoryOnAddToCart) {
     return true;
   }
-  return !isTrackedZeroStock(variant);
+  return !isTrackedZeroStock(candidate);
 },
 
 processProductsForStep(products, step) {
@@ -11751,13 +11824,18 @@ isVariantOutOfStock(product) {
   if (!product) {
     return false;
   }
-  if (product.available === false) {
+  const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+    ? this.getRuntimeVariantInventory(product)
+    : null;
+  const candidate = runtimeInventory ? { ...product, ...runtimeInventory } : product;
+
+  if (candidate.available === false) {
     return true;
   }
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
-  if (trackInventoryOnAddToCart && isTrackedZeroStock(product)) {
+  if (trackInventoryOnAddToCart && isTrackedZeroStock(candidate)) {
     return true;
   }
   return false;
@@ -11770,15 +11848,19 @@ getVariantAvailable(stepIndex, variantId) {
     return { available: null, outOfStock: false, acceptsBackorder: false };
   }
 
-  const backorder = product.currentlyNotInStock === true;
+  const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+    ? this.getRuntimeVariantInventory(product)
+    : null;
+  const candidate = runtimeInventory ? { ...product, ...runtimeInventory } : product;
+  const backorder = candidate.currentlyNotInStock === true;
   const outOfStock = this.isVariantOutOfStock(product);
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
   const qty = trackInventoryOnAddToCart
-    && typeof product.quantityAvailable === 'number'
-    && product.quantityAvailable > 0
-    ? product.quantityAvailable
+    && typeof candidate.quantityAvailable === 'number'
+    && candidate.quantityAvailable > 0
+    ? candidate.quantityAvailable
     : null;
 
   return { available: qty, outOfStock, acceptsBackorder: backorder };
@@ -11844,6 +11926,9 @@ async enrichMissingProductDescriptions(products) {
     if (!response.ok) return products;
 
     const data = await response.json();
+    if (typeof this.rememberRuntimeProductInventory === 'function') {
+      this.rememberRuntimeProductInventory(data.products);
+    }
     const descriptionsByProductId = new Map();
     (Array.isArray(data.products) ? data.products : []).forEach(product => {
       const description = normalizeProductDescription(product);

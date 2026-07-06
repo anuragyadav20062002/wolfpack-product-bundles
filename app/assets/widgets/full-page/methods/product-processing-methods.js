@@ -329,6 +329,16 @@ async loadStepProducts(stepIndex) {
 
   const stepProductsAlreadyEnriched = !step?.isFreeGift && Array.isArray(step.products) && step.products.length > 0
     && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
+  const shouldRefreshRuntimeInventory = hasEnrichedStepProducts
+    && fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  const refreshedProductKeys = new Set();
+  const productIds = !step?.isFreeGift ? this.collectStepProductIds(step) : [];
+  if (!step?.isFreeGift && Array.isArray(step.StepProduct)) {
+    step.StepProduct.forEach(product => {
+      const id = product?.productId || product?.graphqlId || product?.id;
+      if (id && !productIds.includes(id)) productIds.push(id);
+    });
+  }
 
   if (stepProductsAlreadyEnriched) {
     // Metafield cache path: products have full data, use them directly.
@@ -347,8 +357,7 @@ async loadStepProducts(stepIndex) {
     }));
     allProducts = allProducts.concat(normalizedProducts);
   } else if (!step?.isFreeGift) {
-    const productIds = this.collectStepProductIds(step);
-    if (!hasEnrichedStepProducts && productIds.length > 0) {
+    if ((!hasEnrichedStepProducts || shouldRefreshRuntimeInventory) && productIds.length > 0) {
       const shop = window.Shopify?.shop || window.location.host;
 
       // Get app URL from widget data attribute or window global
@@ -370,6 +379,15 @@ async loadStepProducts(stepIndex) {
 
           if (data.products && data.products.length > 0) {
             allProducts = allProducts.concat(data.products);
+            if (typeof this.rememberRuntimeProductInventory === 'function') {
+              this.rememberRuntimeProductInventory(data.products);
+            }
+            if (shouldRefreshRuntimeInventory) {
+              data.products.forEach(product => {
+                const key = productLookupKey(product);
+                if (key) refreshedProductKeys.add(key);
+              });
+            }
           }
         }
       } catch (error) {
@@ -423,7 +441,10 @@ async loadStepProducts(stepIndex) {
           available: true,
           image: sp.imageUrl ? { src: sp.imageUrl } : null
         }]
-      }));
+      })).filter(product => {
+        const key = productLookupKey(product);
+        return !key || !refreshedProductKeys.has(key);
+      });
 
       allProducts = allProducts.concat(enrichedProducts);
     } else {
@@ -449,6 +470,9 @@ async loadStepProducts(stepIndex) {
             const data = await response.json();
             if (data.products && data.products.length > 0) {
               allProducts = allProducts.concat(data.products);
+              if (typeof this.rememberRuntimeProductInventory === 'function') {
+                this.rememberRuntimeProductInventory(data.products);
+              }
             }
           }
         } catch (error) {
@@ -472,6 +496,9 @@ async loadStepProducts(stepIndex) {
         const data = await response.json();
         if (data.products && data.products.length > 0) {
           allProducts = allProducts.concat(data.products);
+          if (typeof this.rememberRuntimeProductInventory === 'function') {
+            this.rememberRuntimeProductInventory(data.products);
+          }
         }
         // Store per-collection product ID membership for tab filtering
         if (data.byCollection) {
@@ -618,6 +645,31 @@ getFirstAvailableVariant(product) {
   return variants.find(variant => this.isVariantSelectableForInventory(variant)) || null;
 },
 
+rememberRuntimeProductInventory(products) {
+  if (!Array.isArray(products) || products.length === 0) return;
+  if (!this._fpbRuntimeVariantInventoryById) {
+    this._fpbRuntimeVariantInventoryById = {};
+  }
+
+  products.forEach(product => {
+    (Array.isArray(product?.variants) ? product.variants : []).forEach(variant => {
+      const key = variantLookupKey(variant);
+      if (!key) return;
+      this._fpbRuntimeVariantInventoryById[key] = {
+        available: variant.available === true,
+        quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
+        currentlyNotInStock: variant.currentlyNotInStock === true,
+      };
+    });
+  });
+},
+
+getRuntimeVariantInventory(productOrVariant) {
+  const key = variantLookupKey(productOrVariant);
+  if (!key) return null;
+  return this._fpbRuntimeVariantInventoryById?.[key] || null;
+},
+
 isInventoryTrackingOnAddToCartEnabled() {
   const controls = typeof this._getLandingPageControls === 'function'
     ? this._getLandingPageControls()
@@ -626,7 +678,12 @@ isInventoryTrackingOnAddToCartEnabled() {
 },
 
 isVariantSelectableForInventory(variant) {
-  if (variant?.available !== true) {
+  const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+    ? this.getRuntimeVariantInventory(variant)
+    : null;
+  const candidate = runtimeInventory ? { ...variant, ...runtimeInventory } : variant;
+
+  if (candidate?.available !== true) {
     return false;
   }
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
@@ -635,7 +692,7 @@ isVariantSelectableForInventory(variant) {
   if (!trackInventoryOnAddToCart) {
     return true;
   }
-  return !isTrackedZeroStock(variant);
+  return !isTrackedZeroStock(candidate);
 },
 
 processProductsForStep(products, step) {
@@ -777,13 +834,18 @@ isVariantOutOfStock(product) {
   if (!product) {
     return false;
   }
-  if (product.available === false) {
+  const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+    ? this.getRuntimeVariantInventory(product)
+    : null;
+  const candidate = runtimeInventory ? { ...product, ...runtimeInventory } : product;
+
+  if (candidate.available === false) {
     return true;
   }
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
-  if (trackInventoryOnAddToCart && isTrackedZeroStock(product)) {
+  if (trackInventoryOnAddToCart && isTrackedZeroStock(candidate)) {
     return true;
   }
   return false;
@@ -796,15 +858,19 @@ getVariantAvailable(stepIndex, variantId) {
     return { available: null, outOfStock: false, acceptsBackorder: false };
   }
 
-  const backorder = product.currentlyNotInStock === true;
+  const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+    ? this.getRuntimeVariantInventory(product)
+    : null;
+  const candidate = runtimeInventory ? { ...product, ...runtimeInventory } : product;
+  const backorder = candidate.currentlyNotInStock === true;
   const outOfStock = this.isVariantOutOfStock(product);
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
   const qty = trackInventoryOnAddToCart
-    && typeof product.quantityAvailable === 'number'
-    && product.quantityAvailable > 0
-    ? product.quantityAvailable
+    && typeof candidate.quantityAvailable === 'number'
+    && candidate.quantityAvailable > 0
+    ? candidate.quantityAvailable
     : null;
 
   return { available: qty, outOfStock, acceptsBackorder: backorder };
@@ -872,6 +938,9 @@ async enrichMissingProductDescriptions(products) {
     if (!response.ok) return products;
 
     const data = await response.json();
+    if (typeof this.rememberRuntimeProductInventory === 'function') {
+      this.rememberRuntimeProductInventory(data.products);
+    }
     const descriptionsByProductId = new Map();
     (Array.isArray(data.products) ? data.products : []).forEach(product => {
       const description = normalizeProductDescription(product);
