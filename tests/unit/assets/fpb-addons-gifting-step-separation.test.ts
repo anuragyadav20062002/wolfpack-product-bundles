@@ -537,7 +537,8 @@ describe("FPB add-ons / gifting step separation", () => {
 
     expect(messageTexts).toEqual(["Tier 1 unlocked", "Tier 2 locked"]);
     expect(container.children).toHaveLength(1);
-    expect(container.children[0].children).toHaveLength(3);
+    expect(container.children[0].children).toHaveLength(2);
+    expect(container.children[0].children[1].children).toHaveLength(2);
   });
 
   it("does not return an add-on line discount before the active tier is eligible", () => {
@@ -824,6 +825,11 @@ describe("FPB add-ons / gifting step separation", () => {
   });
 
   it("loads products and selection capacity from the active add-on tier only", async () => {
+    (global as any).window = {
+      Shopify: { shop: "test.myshopify.com", currency: { active: "USD", format: "${{amount}}" } },
+      location: { host: "test.myshopify.com" },
+      shopMoneyFormat: "${{amount}}",
+    };
     const tierOneProduct = {
       ...makeProduct("gid://shopify/Product/1"),
       variants: [{ variantGraphqlId: "gid://shopify/ProductVariant/11", price: "10.00" }],
@@ -860,6 +866,7 @@ describe("FPB add-ons / gifting step separation", () => {
       processProductsForStep: (_products: unknown[], _step: unknown) => [
         { variantId: "22", id: "2", price: 2000 },
       ],
+      enrichMissingProductDescriptions: async (products: unknown[]) => products,
       _mergeDirectDefaultProductsIntoStep: (_stepIndex: number, products: unknown[]) => products,
       collectStepCollectionHandles: () => [],
     };

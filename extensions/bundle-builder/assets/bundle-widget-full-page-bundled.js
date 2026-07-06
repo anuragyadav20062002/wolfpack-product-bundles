@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.70
+ * Version : 5.0.71
  * Built   : 2026-07-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.70';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.71';
 (function() {
   'use strict';
 
@@ -10049,12 +10049,15 @@ _renderFreeGiftSection(container) {
       ? 'side-panel-addon-summary side-panel-free-gift unlocked'
       : 'side-panel-addon-summary side-panel-free-gift';
     if (title) section.appendChild(title);
+    const tierList = document.createElement('div');
+    tierList.className = 'side-panel-addon-tier-list';
     const createMessageElement = typeof this.createAddonTierMessageElement === 'function'
       ? this.createAddonTierMessageElement
       : fullPageValidationAddonsMethods.createAddonTierMessageElement;
     messages.forEach(({ message, eligibilityState }) => {
-      section.appendChild(createMessageElement.call(this, message, eligibilityState.isEligible));
+      tierList.appendChild(createMessageElement.call(this, message, eligibilityState.isEligible));
     });
+    section.appendChild(tierList);
     container.appendChild(section);
     return;
   }

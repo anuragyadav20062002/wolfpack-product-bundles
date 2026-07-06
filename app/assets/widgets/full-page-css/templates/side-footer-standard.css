@@ -2544,15 +2544,19 @@ body:has([data-fpb-design-preset]) {
 }
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-addon-summary {
+  --standard-desktop-side-panel-addon-title-row: calc(0.875rem * 1.25 + 0.25rem);
   grid-row: 3;
   grid-column: 1;
   align-self: start;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0.25rem;
   margin: 0;
   padding: 0;
+  max-height: var(--standard-desktop-side-panel-addon-summary-row);
+  min-height: 0;
+  overflow: hidden;
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -2568,6 +2572,26 @@ body:has([data-fpb-design-preset]) {
   font-weight: 600;
   line-height: 1.25;
   text-align: start;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-addon-tier-list {
+  display: grid;
+  grid-auto-rows: max-content;
+  gap: 0.25rem;
+  max-height: calc(
+    var(--standard-desktop-side-panel-addon-summary-row) -
+      var(--standard-desktop-side-panel-addon-title-row)
+  );
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.layout-sidebar[data-fpb-design-preset="STANDARD"]
+  .side-panel-addon-tier-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .layout-sidebar[data-fpb-design-preset="STANDARD"] .side-panel-addon-message {

@@ -618,12 +618,15 @@ _renderFreeGiftSection(container) {
       ? 'side-panel-addon-summary side-panel-free-gift unlocked'
       : 'side-panel-addon-summary side-panel-free-gift';
     if (title) section.appendChild(title);
+    const tierList = document.createElement('div');
+    tierList.className = 'side-panel-addon-tier-list';
     const createMessageElement = typeof this.createAddonTierMessageElement === 'function'
       ? this.createAddonTierMessageElement
       : fullPageValidationAddonsMethods.createAddonTierMessageElement;
     messages.forEach(({ message, eligibilityState }) => {
-      section.appendChild(createMessageElement.call(this, message, eligibilityState.isEligible));
+      tierList.appendChild(createMessageElement.call(this, message, eligibilityState.isEligible));
     });
+    section.appendChild(tierList);
     container.appendChild(section);
     return;
   }
