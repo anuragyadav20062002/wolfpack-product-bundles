@@ -730,7 +730,7 @@
 
 .bundle-widget-full-page .full-page-side-panel,
 .bundle-widget-full-page .layout-sidebar .full-page-side-panel {
-  display: flex !important;
+  display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
@@ -748,8 +748,8 @@
 
 .bundle-widget-full-page .side-panel-action-container,
 .bundle-widget-full-page .layout-sidebar .side-panel-action-container {
-  padding-top: 12px !important;
-  margin-top: auto !important;
+  padding-top: 12px;
+  margin-top: auto;
 }
 
 .bundle-widget-full-page .side-panel-action-divider,
