@@ -1,10 +1,19 @@
 'use strict';
 
 export const BundleModalVariantMethods = {
+  resetVariantSelectionState() {
+    this.selectedOptions = {};
+    const summaryContainer = document.getElementById('modal-selection-summary');
+    const summaryText = document.getElementById('modal-selection-text');
+    if (summaryContainer) summaryContainer.style.display = 'none';
+    if (summaryText) summaryText.textContent = '';
+  },
+
   createVariantSelectors() {
     const variantsContainer = document.getElementById('modal-variants-container');
     const variants = this.currentProduct.variants || [];
 
+    this.resetVariantSelectionState();
 
     // If only one variant (no options) or no variants, hide variant selectors
     if (variants.length <= 1) {

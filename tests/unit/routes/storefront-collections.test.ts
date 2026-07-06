@@ -56,6 +56,7 @@ describe("api.storefront-collections loader", () => {
                           id: "gid://shopify/Product/111",
                           title: "Ring",
                           handle: "ring",
+                          description: "Ring product description",
                           featuredImage: { url: "https://cdn.example/ring.jpg" },
                           variants: {
                             edges: [
@@ -97,6 +98,7 @@ describe("api.storefront-collections loader", () => {
       weight: 4,
       weightUnit: "OUNCES",
     });
+    expect(body.products[0].description).toBe("Ring product description");
   });
 
   it("preserves variant option fields for grouped product variant selectors", async () => {
@@ -117,6 +119,7 @@ describe("api.storefront-collections loader", () => {
                           id: "gid://shopify/Product/111",
                           title: "Meal Subscription",
                           handle: "meal-subscription",
+                          description: "Choose a subscription plan.",
                           featuredImage: { url: "https://cdn.example/meal.jpg" },
                           options: [
                             { name: "Meals", values: ["4 meals", "6 meals"] },

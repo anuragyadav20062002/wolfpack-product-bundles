@@ -326,16 +326,27 @@ expandProductsByVariant(products, shouldExpand = true) {
   }
 
   return products.flatMap(product => {
+    const isVariantSelectable = (variant) => {
+      if (typeof this.isVariantSelectableForInventory === 'function') {
+        return this.isVariantSelectableForInventory(variant);
+      }
+      return variant?.available !== false;
+    };
+
     // If product already has a variantId and parentProductId, it was already expanded
     if (product.parentProductId && product.variantId) {
-      return [product];
+      return isVariantSelectable(product) ? [product] : [];
     }
 
     // If product has multiple variants, expand into separate cards
     if (product.variants && product.variants.length > 1) {
       return product.variants
-        .filter(variant => variant.available !== false) // Only show available variants
+        .filter(variant => isVariantSelectable(variant))
         .map(variant => {
+          const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+            ? this.getRuntimeVariantInventory(variant)
+            : null;
+          const inventorySource = runtimeInventory || variant;
           // Use variant image if available, fallback to product image
           const imageUrl = variant.image?.src
             || variant.image?.url
@@ -357,7 +368,9 @@ expandProductsByVariant(products, shouldExpand = true) {
             price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
             compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
             variantId: variant.id,
-            available: variant.available !== false,
+            available: isVariantSelectable(variant),
+            quantityAvailable: typeof inventorySource.quantityAvailable === 'number' ? inventorySource.quantityAvailable : null,
+            currentlyNotInStock: inventorySource.currentlyNotInStock === true,
             parentProductId: product.id,
             parentTitle: product.title,
             // Remove variants array from individual cards to prevent showing variant selector
@@ -367,13 +380,34 @@ expandProductsByVariant(products, shouldExpand = true) {
     }
 
     // Single variant or no variants - return as-is
-    return [product];
+    if (Array.isArray(product.variants) && product.variants.length === 1) {
+      const variant = product.variants[0];
+      if (!isVariantSelectable(variant)) return [];
+    }
+    return isVariantSelectable(product) ? [product] : [];
   });
 },
 
-// Create loading skeleton for product grid - solid pulsating cards
-// No internal button/quantity skeletons - just clean solid cards
+shouldUseProductGridSpinnerOnly() {
+  return this.getFullPageDesignPreset?.() === 'CLASSIC';
+},
+
+renderProductGridLoadingState(productGridContainer) {
+  if (!productGridContainer) return;
+
+  productGridContainer.innerHTML = this.createProductGridLoadingState();
+
+  const loadingGif = this.selectedBundle?.loadingGif || null;
+  if (this.shouldUseProductGridSpinnerOnly() || loadingGif) {
+    this.showLoadingOverlay(loadingGif);
+  }
+},
+
+// Create loading skeleton for product grid - solid pulsating cards.
+// Classic uses the overlay spinner only until product data is populated.
 createProductGridLoadingState() {
+  if (this.shouldUseProductGridSpinnerOnly()) return '';
+
   return `
     <div class="full-page-product-grid">
       ${Array(6).fill(0).map(() => `
