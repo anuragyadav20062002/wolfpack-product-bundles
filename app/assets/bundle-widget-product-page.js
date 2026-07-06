@@ -223,9 +223,6 @@ class BundleWidgetProductPage {
       await this.loadLanguageSettings();
       await this.loadControlsSettings();
 
-      // Storefront self-heal: make sure the shop has an active CartTransform.
-      this._scheduleCartTransformSelfHeal();
-
       // Load and validate bundle data
       await this.loadBundleData();
 
