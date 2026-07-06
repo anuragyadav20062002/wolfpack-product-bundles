@@ -3,6 +3,7 @@
     .layout-sidebar[data-fpb-design-preset="CLASSIC"]
     .full-page-side-panel,
   .fpb-preset-classic .full-page-side-panel {
+    --classic-sidebar-summary-inset: 0.5rem;
     width: 100%;
     flex: initial;
     height: auto;
@@ -261,7 +262,9 @@
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: max-content;
     row-gap: 0;
+    width: calc(100% - (var(--classic-sidebar-summary-inset, 0.5rem) * 2));
     min-height: 0;
+    margin-inline: var(--classic-sidebar-summary-inset, 0.5rem);
     overflow: hidden;
   }
 
