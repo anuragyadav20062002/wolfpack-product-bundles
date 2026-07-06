@@ -317,7 +317,7 @@
     font-size: 14px;
     line-height: normal;
     font-weight: 700;
-    text-align: left;
+    text-align: center;
     overflow: hidden;
   }
 
@@ -1114,5 +1114,12 @@
   body:has(.layout-sidebar[data-fpb-design-preset="CLASSIC"], .fpb-preset-classic)
     .bundle-modal-add-btn {
     bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .fpb-preset-classic
+    .sidebar-content
+    .product-card.product-card--individual-variant
+    .product-variant-row.bw-product-card__variant {
+    text-align: center;
   }
 }

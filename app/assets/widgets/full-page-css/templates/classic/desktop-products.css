@@ -398,7 +398,7 @@
     font-size: 14px;
     line-height: normal;
     font-weight: 700;
-    text-align: left;
+    text-align: center;
     overflow: hidden;
   }
 
@@ -750,6 +750,13 @@
     font-size: 16px;
     font-weight: 700;
     line-height: var(--fpb-card-quantity-selector-height, 35px);
+    text-align: center;
+  }
+
+  .fpb-preset-classic
+    .sidebar-content
+    .product-card.product-card--individual-variant
+    .product-variant-row.bw-product-card__variant {
     text-align: center;
   }
 }

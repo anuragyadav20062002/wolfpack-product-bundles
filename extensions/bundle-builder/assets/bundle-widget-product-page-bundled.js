@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.71
+ * Version : 5.0.72
  * Built   : 2026-07-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.71';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.72';
 (function() {
   'use strict';
 
@@ -2672,6 +2672,7 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const isSelected = quantity > 0;
   const mode = options.mode || 'grid';
   const variantText = getVariantDisplayText(product);
+  const isIndividualVariantCard = Boolean(product.parentProductId && product.variantId && variantText);
   const title = getDisplayTitle(product, variantText);
   const imageUrls = getProductImageUrls(product);
   const imageUrl = imageUrls[0] || DEFAULT_PLACEHOLDER_IMAGE;
@@ -2684,12 +2685,13 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
     'product-card',
     `bw-product-card--mode-${escapeAttribute(mode)}`,
     variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
+    isIndividualVariantCard ? 'bw-product-card--individual-variant product-card--individual-variant' : '',
     isSelected ? 'bw-product-card--selected' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
 
   return `
-    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}" data-bw-card-image-count="${imageUrls.length}" data-bw-card-image-index="0"${hasMultipleImages ? ' data-bw-card-has-multiple-images="true"' : ''}>
+    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}" data-bw-card-image-count="${imageUrls.length}" data-bw-card-image-index="0"${isIndividualVariantCard ? ' data-bw-card-individual-variant="true"' : ''}${hasMultipleImages ? ' data-bw-card-has-multiple-images="true"' : ''}>
       <div class="bw-product-card__media product-image" data-bw-product-media="true">
         <img class="bw-product-card__image" src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(title)}" loading="lazy">
         ${hasMultipleImages ? renderImageNavButton('prev') : ''}
