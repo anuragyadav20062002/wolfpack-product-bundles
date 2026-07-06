@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.54
- * Built   : 2026-07-05
+ * Version : 5.0.75
+ * Built   : 2026-07-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.54';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.75';
 (function() {
   'use strict';
 
@@ -2672,6 +2672,7 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const isSelected = quantity > 0;
   const mode = options.mode || 'grid';
   const variantText = getVariantDisplayText(product);
+  const isIndividualVariantCard = Boolean(product.parentProductId && product.variantId && variantText);
   const title = getDisplayTitle(product, variantText);
   const imageUrls = getProductImageUrls(product);
   const imageUrl = imageUrls[0] || DEFAULT_PLACEHOLDER_IMAGE;
@@ -2684,12 +2685,13 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
     'product-card',
     `bw-product-card--mode-${escapeAttribute(mode)}`,
     variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
+    isIndividualVariantCard ? 'bw-product-card--individual-variant product-card--individual-variant' : '',
     isSelected ? 'bw-product-card--selected' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
 
   return `
-    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}" data-bw-card-image-count="${imageUrls.length}" data-bw-card-image-index="0"${hasMultipleImages ? ' data-bw-card-has-multiple-images="true"' : ''}>
+    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}" data-bw-card-image-count="${imageUrls.length}" data-bw-card-image-index="0"${isIndividualVariantCard ? ' data-bw-card-individual-variant="true"' : ''}${hasMultipleImages ? ' data-bw-card-has-multiple-images="true"' : ''}>
       <div class="bw-product-card__media product-image" data-bw-product-media="true">
         <img class="bw-product-card__image" src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(title)}" loading="lazy">
         ${hasMultipleImages ? renderImageNavButton('prev') : ''}
@@ -3359,9 +3361,19 @@ function buildProductPageCartFormData(cartItems = [], {
 }
 
 const BundleModalVariantMethods = {
+  resetVariantSelectionState() {
+    this.selectedOptions = {};
+    const summaryContainer = document.getElementById('modal-selection-summary');
+    const summaryText = document.getElementById('modal-selection-text');
+    if (summaryContainer) summaryContainer.style.display = 'none';
+    if (summaryText) summaryText.textContent = '';
+  },
+
   createVariantSelectors() {
     const variantsContainer = document.getElementById('modal-variants-container');
     const variants = this.currentProduct.variants || [];
+
+    this.resetVariantSelectionState();
 
     if (variants.length <= 1) {
       variantsContainer.innerHTML = '';
@@ -3906,6 +3918,8 @@ class BundleProductModal {
 
     this.currentProduct = product;
     this.currentStep = step;
+    this.selectedVariant = null;
+    this.selectedOptions = {};
     this.selectedQuantity = 1;
     this.readOnly = options.readOnly === true;
     const imageCount = this.getProductImages().length;
@@ -5157,6 +5171,11 @@ createHeader() {
   const header = document.createElement('div');
   header.className = 'bundle-header';
 
+  if (this.selectedBundle?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+    header.style.display = 'none';
+    return header;
+  }
+
   const title = this.config.customTitle || this.selectedBundle.name;
 
   const description = this.config.customDescription || this.selectedBundle.description;
@@ -5403,7 +5422,7 @@ async renderFullPageLayout() {
 
   const productGridContainer = document.createElement('div');
   productGridContainer.className = 'full-page-product-grid-container';
-  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  this.renderProductGridLoadingState(productGridContainer);
   contentSection.appendChild(productGridContainer);
   const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
   if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
@@ -5412,9 +5431,6 @@ async renderFullPageLayout() {
 
   this.renderFullPageFooter();
 
-  if (this.selectedBundle?.loadingGif) {
-    this.showLoadingOverlay(this.selectedBundle.loadingGif);
-  }
   try {
     await this.loadStepProducts(this.currentStepIndex);
 
@@ -5495,7 +5511,7 @@ async renderFullPageLayoutWithSidebar() {
 
   const productGridContainer = document.createElement('div');
   productGridContainer.className = 'full-page-product-grid-container';
-  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  this.renderProductGridLoadingState(productGridContainer);
   contentSection.appendChild(productGridContainer);
   const categoryRowsAfter = this.createCategorySectionRows(this.currentStepIndex, 'after');
   if (categoryRowsAfter) contentSection.appendChild(categoryRowsAfter);
@@ -5509,9 +5525,6 @@ async renderFullPageLayoutWithSidebar() {
 
   this.elements.stepsContainer.appendChild(twoColWrapper);
 
-  if (this.selectedBundle?.loadingGif) {
-    this.showLoadingOverlay(this.selectedBundle.loadingGif);
-  }
   try {
     await this.loadStepProducts(this.currentStepIndex);
     const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
@@ -5709,6 +5722,42 @@ function shouldUseMobileSummarySlotTiles({ designPreset, productSlotsEnabled } =
   return preset === 'STANDARD' || preset === 'CLASSIC';
 }
 
+function getMobileAdditionalOffersPulseState({
+  designPreset,
+  currentStepIndex = 0,
+  steps = [],
+  addonStates = [],
+} = {}) {
+  const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
+  if (preset !== 'CLASSIC' && preset !== 'STANDARD') return { shouldPulse: false, signature: '' };
+
+  const bundleSteps = Array.isArray(steps) ? steps : [];
+  const currentStep = bundleSteps[currentStepIndex] || null;
+  if (currentStep?.isFreeGift === true) return { shouldPulse: false, signature: '' };
+
+  const states = Array.isArray(addonStates) ? addonStates.filter(Boolean) : [];
+  const hasEligibleOffer = states.some(state => state.isEligible === true);
+  const hasLockedOffer = states.some(state => state.isEligible !== true);
+  if (!hasEligibleOffer || !hasLockedOffer) return { shouldPulse: false, signature: '' };
+
+  const signature = states
+    .map((state, index) => {
+      const tierId = state.tier?.tierId || state.tier?.id || index;
+      return `${tierId}:${state.isEligible === true ? 'eligible' : 'locked'}`;
+    })
+    .join('|');
+
+  return {
+    shouldPulse: true,
+    signature,
+    message: 'Additional offers to be unlocked',
+  };
+}
+
+const MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;
+const MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS = 800;
+const MOBILE_ADDITIONAL_OFFERS_DURATION_MS = 3000;
+
 const fullPageMobileSummaryMethods = {
 _populateCompactMobileSummaryTray(sheet) {
   sheet.innerHTML = '';
@@ -5737,6 +5786,18 @@ _populateCompactMobileSummaryTray(sheet) {
   );
   const isClassicPreset = this.getFullPageDesignPreset?.() === 'CLASSIC';
   const summaryToggleLabel = isClassicPreset ? 'View Selected Products' : 'Review your bundle';
+  const addonStep = (this.selectedBundle?.steps || []).find(step => step?.isFreeGift === true) || null;
+  const addonStates = addonStep && typeof this.getAddonSummaryEligibilityStates === 'function'
+    ? this.getAddonSummaryEligibilityStates(addonStep)
+    : [];
+  const additionalOffersPulseState = getMobileAdditionalOffersPulseState({
+    designPreset: this.getFullPageDesignPreset?.(),
+    currentStepIndex: this.currentStepIndex,
+    steps: this.selectedBundle?.steps || [],
+    addonStates,
+  });
+  const additionalOffersBadgeState = this._syncMobileAdditionalOffersPulse?.(additionalOffersPulseState)
+    || { active: false, showMessage: false };
   const toggleSummaryTray = () => {
     this._toggleCompactMobileSummaryTray(sheet);
   };
@@ -5749,7 +5810,27 @@ _populateCompactMobileSummaryTray(sheet) {
 
   const countBadge = document.createElement('div');
   countBadge.className = 'fpb-mobile-summary-count-badge';
-  countBadge.textContent = String(selectedFooterQuantity);
+  if (countBadge.dataset) {
+    countBadge.dataset.summaryQuantity = String(selectedFooterQuantity);
+  } else {
+    countBadge.setAttribute('data-summary-quantity', String(selectedFooterQuantity));
+  }
+  if (additionalOffersPulseState.message) {
+    if (countBadge.dataset) {
+      countBadge.dataset.additionalOffersMessage = additionalOffersPulseState.message;
+    } else {
+      countBadge.setAttribute('data-additional-offers-message', additionalOffersPulseState.message);
+    }
+  }
+  if (additionalOffersBadgeState.active) {
+    countBadge.classList.add('fpb-mobile-summary-count-badge--additional-offers');
+  }
+  if (additionalOffersBadgeState.showMessage) {
+    countBadge.classList.add('fpb-mobile-summary-count-badge--additional-offers-message');
+  }
+  countBadge.textContent = additionalOffersBadgeState.showMessage
+    ? additionalOffersPulseState.message
+    : String(selectedFooterQuantity);
   countBadge.setAttribute('role', 'button');
   countBadge.setAttribute('tabindex', '0');
   countBadge.setAttribute('aria-label', summaryToggleLabel);
@@ -5849,6 +5930,99 @@ _populateCompactMobileSummaryTray(sheet) {
   } else {
     sheet.appendChild(navSection);
   }
+},
+
+_syncMobileAdditionalOffersPulse(pulseState = {}) {
+  const now = Date.now();
+  const currentPulse = this.mobileAdditionalOffersPulse;
+  const timerKeys = [
+    'mobileAdditionalOffersGreenTimer',
+    'mobileAdditionalOffersMessageTimer',
+    'mobileAdditionalOffersEndTimer',
+  ];
+
+  const getBadge = () => document.querySelector?.(
+    '.fpb-mobile-summary-tray .fpb-mobile-summary-count-badge'
+  ) || null;
+
+  const applyBadgeState = ({ active = false, showMessage = false } = {}) => {
+    const badge = getBadge();
+    if (!badge || badge.isConnected === false) return;
+
+    const message = pulseState.message
+      || badge.dataset?.additionalOffersMessage
+      || badge.getAttribute?.('data-additional-offers-message')
+      || '';
+    const quantity = badge.dataset?.summaryQuantity
+      || badge.getAttribute?.('data-summary-quantity')
+      || badge.textContent
+      || '';
+    badge.classList.toggle('fpb-mobile-summary-count-badge--additional-offers', active);
+    badge.classList.toggle('fpb-mobile-summary-count-badge--additional-offers-message', showMessage);
+    badge.textContent = showMessage && message ? message : quantity;
+  };
+
+  const clearTimers = () => {
+    timerKeys.forEach((timerKey) => {
+      if (this[timerKey]) {
+        clearTimeout(this[timerKey]);
+        this[timerKey] = null;
+      }
+    });
+  };
+
+  if (pulseState.shouldPulse !== true || !pulseState.signature) {
+    clearTimers();
+    this.mobileAdditionalOffersPulse = null;
+    this.mobileAdditionalOffersCompletedSignature = null;
+    return { active: false, showMessage: false };
+  }
+
+  if (
+    currentPulse
+    && currentPulse.signature === pulseState.signature
+    && currentPulse.expiresAt > now
+  ) {
+    return {
+      active: now >= currentPulse.greenAt,
+      showMessage: now >= currentPulse.messageAt,
+    };
+  }
+
+  if (currentPulse?.signature === pulseState.signature && currentPulse.expiresAt <= now) {
+    this.mobileAdditionalOffersCompletedSignature = pulseState.signature;
+    this.mobileAdditionalOffersPulse = null;
+    return { active: false, showMessage: false };
+  }
+
+  if (this.mobileAdditionalOffersCompletedSignature === pulseState.signature) {
+    return { active: false, showMessage: false };
+  }
+
+  clearTimers();
+  const nextPulse = {
+    signature: pulseState.signature,
+    greenAt: now + MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS,
+    messageAt: now + MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS,
+    expiresAt: now + MOBILE_ADDITIONAL_OFFERS_DURATION_MS,
+  };
+  this.mobileAdditionalOffersPulse = nextPulse;
+
+  this.mobileAdditionalOffersGreenTimer = setTimeout(
+    () => applyBadgeState({ active: true, showMessage: false }),
+    MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS
+  );
+  this.mobileAdditionalOffersMessageTimer = setTimeout(
+    () => applyBadgeState({ active: true, showMessage: true }),
+    MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS
+  );
+  this.mobileAdditionalOffersEndTimer = setTimeout(() => {
+    this.mobileAdditionalOffersCompletedSignature = nextPulse.signature;
+    this.mobileAdditionalOffersPulse = null;
+    applyBadgeState({ active: false, showMessage: false });
+  }, MOBILE_ADDITIONAL_OFFERS_DURATION_MS);
+
+  return { active: false, showMessage: false };
 },
 
 _toggleCompactMobileSummaryTray(sheet) {
@@ -6028,7 +6202,11 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
 _renderCompactMobileSummarySlotTiles(container, allSelectedProducts = [], activeStep = null, totalQuantity = 0) {
   const selectedItems = Array.isArray(allSelectedProducts) ? allSelectedProducts : [];
+  const sharedTargetCount = typeof this.getSummarySidebarMaxItemCount === 'function'
+    ? this.getSummarySidebarMaxItemCount(selectedItems.length)
+    : 0;
   const slotCount = Math.max(
+    sharedTargetCount,
     selectedItems.length + 1,
     activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
     2
@@ -6125,10 +6303,11 @@ _createMobileSummaryActionButton({
 
 getBundleSummaryText() {
   const summary = this.selectedBundle?.bundleTextConfig?.bundleSummary || {};
+  const bundleName = typeof this.selectedBundle?.name === 'string'
+    ? this.selectedBundle.name.trim()
+    : '';
   return {
-    title: typeof summary.title === 'string' && summary.title.trim()
-      ? summary.title
-      : 'Your Bundle',
+    title: bundleName || (typeof summary.title === 'string' ? summary.title.trim() : ''),
     subTitle: typeof summary.subTitle === 'string' && summary.subTitle.trim()
       ? summary.subTitle
       : 'Review your bundle'
@@ -6952,6 +7131,10 @@ getClassicSidebarSlotCount(allSelectedProducts = [], activeStep = null) {
 
   if (activeBoxQuantity > 0) {
     return Math.max(activeBoxQuantity, selectedCount);
+  }
+
+  if (typeof this.getSummarySidebarMaxItemCount === 'function') {
+    return this.getSummarySidebarMaxItemCount(selectedCount);
   }
 
   return Math.max(stepQuantity, selectedCount + 1, 2);
@@ -8307,15 +8490,25 @@ expandProductsByVariant(products, shouldExpand = true) {
   }
 
   return products.flatMap(product => {
+    const isVariantSelectable = (variant) => {
+      if (typeof this.isVariantSelectableForInventory === 'function') {
+        return this.isVariantSelectableForInventory(variant);
+      }
+      return variant?.available !== false;
+    };
 
     if (product.parentProductId && product.variantId) {
-      return [product];
+      return isVariantSelectable(product) ? [product] : [];
     }
 
     if (product.variants && product.variants.length > 1) {
       return product.variants
-        .filter(variant => variant.available !== false)
+        .filter(variant => isVariantSelectable(variant))
         .map(variant => {
+          const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+            ? this.getRuntimeVariantInventory(variant)
+            : null;
+          const inventorySource = runtimeInventory || variant;
 
           const imageUrl = variant.image?.src
             || variant.image?.url
@@ -8337,7 +8530,9 @@ expandProductsByVariant(products, shouldExpand = true) {
             price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
             compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
             variantId: variant.id,
-            available: variant.available !== false,
+            available: isVariantSelectable(variant),
+            quantityAvailable: typeof inventorySource.quantityAvailable === 'number' ? inventorySource.quantityAvailable : null,
+            currentlyNotInStock: inventorySource.currentlyNotInStock === true,
             parentProductId: product.id,
             parentTitle: product.title,
 
@@ -8346,11 +8541,32 @@ expandProductsByVariant(products, shouldExpand = true) {
         });
     }
 
-    return [product];
+    if (Array.isArray(product.variants) && product.variants.length === 1) {
+      const variant = product.variants[0];
+      if (!isVariantSelectable(variant)) return [];
+    }
+    return isVariantSelectable(product) ? [product] : [];
   });
 },
 
+shouldUseProductGridSpinnerOnly() {
+  return this.getFullPageDesignPreset?.() === 'CLASSIC';
+},
+
+renderProductGridLoadingState(productGridContainer) {
+  if (!productGridContainer) return;
+
+  productGridContainer.innerHTML = this.createProductGridLoadingState();
+
+  const loadingGif = this.selectedBundle?.loadingGif || null;
+  if (this.shouldUseProductGridSpinnerOnly() || loadingGif) {
+    this.showLoadingOverlay(loadingGif);
+  }
+},
+
 createProductGridLoadingState() {
+  if (this.shouldUseProductGridSpinnerOnly()) return '';
+
   return `
     <div class="full-page-product-grid">
       ${Array(6).fill(0).map(() => `
@@ -9370,12 +9586,11 @@ async _sidebarAdvanceToNextStep() {
     this.renderFullPageLayoutWithSidebar();
     return;
   }
-  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  this.renderProductGridLoadingState(productGridContainer);
 
   const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
   if (sidePanel) this.renderSidePanel(sidePanel);
 
-  if (this.selectedBundle?.loadingGif) this.showLoadingOverlay(this.selectedBundle.loadingGif);
   try {
     await this.loadStepProducts(this.currentStepIndex);
     const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
@@ -9837,12 +10052,15 @@ _renderFreeGiftSection(container) {
       ? 'side-panel-addon-summary side-panel-free-gift unlocked'
       : 'side-panel-addon-summary side-panel-free-gift';
     if (title) section.appendChild(title);
+    const tierList = document.createElement('div');
+    tierList.className = 'side-panel-addon-tier-list';
     const createMessageElement = typeof this.createAddonTierMessageElement === 'function'
       ? this.createAddonTierMessageElement
       : fullPageValidationAddonsMethods.createAddonTierMessageElement;
     messages.forEach(({ message, eligibilityState }) => {
-      section.appendChild(createMessageElement.call(this, message, eligibilityState.isEligible));
+      tierList.appendChild(createMessageElement.call(this, message, eligibilityState.isEligible));
     });
+    section.appendChild(tierList);
     container.appendChild(section);
     return;
   }
@@ -9972,6 +10190,21 @@ _getSummarySidebarRequiredQuantity(step) {
 
 getSummarySidebarMaxItemCount(selectedCount = 0) {
   const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+  const selected = Number(selectedCount || 0);
+  const boxRules = typeof this.getBoxSelectionRules === 'function'
+    ? this.getBoxSelectionRules()
+    : [];
+  const selectedBoxQuantity = typeof this.getSelectedBoxSelectionQuantity === 'function'
+    ? this.getSelectedBoxSelectionQuantity()
+    : selected;
+  const activeBoxRule = typeof this.getActiveBoxSelectionRule === 'function'
+    ? this.getActiveBoxSelectionRule(boxRules, selectedBoxQuantity)
+    : null;
+  const activeBoxQuantity = Number(activeBoxRule?.boxQuantity || 0);
+  if (activeBoxQuantity > 0) {
+    return Math.max(activeBoxQuantity, selected, 1);
+  }
+
   let totalRequired = 0;
 
   for (const step of steps) {
@@ -9981,7 +10214,6 @@ getSummarySidebarMaxItemCount(selectedCount = 0) {
     }
   }
 
-  const selected = Number(selectedCount || 0);
   return Math.max(totalRequired, selected, 1);
 },
 
@@ -10951,6 +11183,22 @@ function deriveProductOptionNames(product) {
   return Array.from({ length: maxTitleParts }, (_, index) => `Option ${index + 1}`);
 }
 
+function normalizeProductDescription(product) {
+  const directDescription = typeof product?.description === 'string'
+    ? product.description.trim()
+    : '';
+  if (directDescription) return directDescription;
+
+  const htmlDescription = typeof product?.descriptionHtml === 'string'
+    ? product.descriptionHtml.trim()
+    : '';
+  if (!htmlDescription || typeof document === 'undefined') return '';
+
+  const scratch = document.createElement('div');
+  scratch.innerHTML = htmlDescription;
+  return (scratch.textContent || '').trim();
+}
+
 function collectCategoryProducts(step) {
   if (!Array.isArray(step?.categories)) return [];
 
@@ -10965,6 +11213,15 @@ function collectCategoryProducts(step) {
 
 function productLookupKey(product) {
   return extractFullPageId(product?.id || product?.productId || product?.graphqlId);
+}
+
+function productGraphqlId(product) {
+  const rawId = product?.graphqlId || product?.productId || product?.id;
+  if (!rawId) return null;
+  const normalized = String(rawId);
+  if (normalized.startsWith('gid://shopify/Product/')) return normalized;
+  if (/^\d+$/.test(normalized)) return `gid://shopify/Product/${normalized}`;
+  return null;
 }
 
 function variantLookupKey(variant) {
@@ -11053,7 +11310,7 @@ function normalizeFullPageDirectDefaultProduct(product) {
       currentlyNotInStock: false,
     }],
     images: imageUrl ? [{ src: imageUrl }] : [],
-    description: '',
+    description: normalizeProductDescription(product),
   };
 }
 
@@ -11110,6 +11367,16 @@ async loadStepProducts(stepIndex) {
 
   const stepProductsAlreadyEnriched = !step?.isFreeGift && Array.isArray(step.products) && step.products.length > 0
     && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
+  const shouldRefreshRuntimeInventory = hasEnrichedStepProducts
+    && fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
+  const refreshedProductKeys = new Set();
+  const productIds = !step?.isFreeGift ? this.collectStepProductIds(step) : [];
+  if (!step?.isFreeGift && Array.isArray(step.StepProduct)) {
+    step.StepProduct.forEach(product => {
+      const id = product?.productId || product?.graphqlId || product?.id;
+      if (id && !productIds.includes(id)) productIds.push(id);
+    });
+  }
 
   if (stepProductsAlreadyEnriched) {
 
@@ -11125,8 +11392,7 @@ async loadStepProducts(stepIndex) {
     }));
     allProducts = allProducts.concat(normalizedProducts);
   } else if (!step?.isFreeGift) {
-    const productIds = this.collectStepProductIds(step);
-    if (!hasEnrichedStepProducts && productIds.length > 0) {
+    if ((!hasEnrichedStepProducts || shouldRefreshRuntimeInventory) && productIds.length > 0) {
       const shop = window.Shopify?.shop || window.location.host;
 
       const apiBaseUrl = this.resolveStorefrontApiBase();
@@ -11146,6 +11412,15 @@ async loadStepProducts(stepIndex) {
 
           if (data.products && data.products.length > 0) {
             allProducts = allProducts.concat(data.products);
+            if (typeof this.rememberRuntimeProductInventory === 'function') {
+              this.rememberRuntimeProductInventory(data.products);
+            }
+            if (shouldRefreshRuntimeInventory) {
+              data.products.forEach(product => {
+                const key = productLookupKey(product);
+                if (key) refreshedProductKeys.add(key);
+              });
+            }
           }
         }
       } catch (error) {
@@ -11198,7 +11473,10 @@ async loadStepProducts(stepIndex) {
           available: true,
           image: sp.imageUrl ? { src: sp.imageUrl } : null
         }]
-      }));
+      })).filter(product => {
+        const key = productLookupKey(product);
+        return !key || !refreshedProductKeys.has(key);
+      });
 
       allProducts = allProducts.concat(enrichedProducts);
     } else {
@@ -11223,6 +11501,9 @@ async loadStepProducts(stepIndex) {
             const data = await response.json();
             if (data.products && data.products.length > 0) {
               allProducts = allProducts.concat(data.products);
+              if (typeof this.rememberRuntimeProductInventory === 'function') {
+                this.rememberRuntimeProductInventory(data.products);
+              }
             }
           }
         } catch (error) {
@@ -11245,6 +11526,9 @@ async loadStepProducts(stepIndex) {
         const data = await response.json();
         if (data.products && data.products.length > 0) {
           allProducts = allProducts.concat(data.products);
+          if (typeof this.rememberRuntimeProductInventory === 'function') {
+            this.rememberRuntimeProductInventory(data.products);
+          }
         }
 
         if (data.byCollection) {
@@ -11257,6 +11541,8 @@ async loadStepProducts(stepIndex) {
     } catch (error) {
     }
   }
+
+  allProducts = await this.enrichMissingProductDescriptions(allProducts);
 
   allProducts = this.mergeCategoryProductVariantAvailability(allProducts, step);
 
@@ -11386,6 +11672,31 @@ getFirstAvailableVariant(product) {
   return variants.find(variant => this.isVariantSelectableForInventory(variant)) || null;
 },
 
+rememberRuntimeProductInventory(products) {
+  if (!Array.isArray(products) || products.length === 0) return;
+  if (!this._fpbRuntimeVariantInventoryById) {
+    this._fpbRuntimeVariantInventoryById = {};
+  }
+
+  products.forEach(product => {
+    (Array.isArray(product?.variants) ? product.variants : []).forEach(variant => {
+      const key = variantLookupKey(variant);
+      if (!key) return;
+      this._fpbRuntimeVariantInventoryById[key] = {
+        available: variant.available === true,
+        quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
+        currentlyNotInStock: variant.currentlyNotInStock === true,
+      };
+    });
+  });
+},
+
+getRuntimeVariantInventory(productOrVariant) {
+  const key = variantLookupKey(productOrVariant);
+  if (!key) return null;
+  return this._fpbRuntimeVariantInventoryById?.[key] || null;
+},
+
 isInventoryTrackingOnAddToCartEnabled() {
   const controls = typeof this._getLandingPageControls === 'function'
     ? this._getLandingPageControls()
@@ -11394,7 +11705,12 @@ isInventoryTrackingOnAddToCartEnabled() {
 },
 
 isVariantSelectableForInventory(variant) {
-  if (variant?.available !== true) {
+  const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+    ? this.getRuntimeVariantInventory(variant)
+    : null;
+  const candidate = runtimeInventory ? { ...variant, ...runtimeInventory } : variant;
+
+  if (candidate?.available !== true) {
     return false;
   }
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
@@ -11403,7 +11719,7 @@ isVariantSelectableForInventory(variant) {
   if (!trackInventoryOnAddToCart) {
     return true;
   }
-  return !isTrackedZeroStock(variant);
+  return !isTrackedZeroStock(candidate);
 },
 
 processProductsForStep(products, step) {
@@ -11475,7 +11791,7 @@ processProductsForStep(products, step) {
             variants: processedVariants,
             options: processedOptions,
             images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-            description: product.description || ''
+            description: normalizeProductDescription(product)
           };
         });
     } else {
@@ -11519,7 +11835,7 @@ processProductsForStep(products, step) {
         options: processedOptions,
 
         images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-        description: product.description || ''
+        description: normalizeProductDescription(product)
       }];
     }
   });
@@ -11536,13 +11852,18 @@ isVariantOutOfStock(product) {
   if (!product) {
     return false;
   }
-  if (product.available === false) {
+  const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+    ? this.getRuntimeVariantInventory(product)
+    : null;
+  const candidate = runtimeInventory ? { ...product, ...runtimeInventory } : product;
+
+  if (candidate.available === false) {
     return true;
   }
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
-  if (trackInventoryOnAddToCart && isTrackedZeroStock(product)) {
+  if (trackInventoryOnAddToCart && isTrackedZeroStock(candidate)) {
     return true;
   }
   return false;
@@ -11555,15 +11876,19 @@ getVariantAvailable(stepIndex, variantId) {
     return { available: null, outOfStock: false, acceptsBackorder: false };
   }
 
-  const backorder = product.currentlyNotInStock === true;
+  const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+    ? this.getRuntimeVariantInventory(product)
+    : null;
+  const candidate = runtimeInventory ? { ...product, ...runtimeInventory } : product;
+  const backorder = candidate.currentlyNotInStock === true;
   const outOfStock = this.isVariantOutOfStock(product);
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled.call(this);
   const qty = trackInventoryOnAddToCart
-    && typeof product.quantityAvailable === 'number'
-    && product.quantityAvailable > 0
-    ? product.quantityAvailable
+    && typeof candidate.quantityAvailable === 'number'
+    && candidate.quantityAvailable > 0
+    ? candidate.quantityAvailable
     : null;
 
   return { available: qty, outOfStock, acceptsBackorder: backorder };
@@ -11605,6 +11930,51 @@ shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId) {
   }
 
   return target.available === false;
+},
+
+async enrichMissingProductDescriptions(products) {
+  if (!Array.isArray(products) || products.length === 0) return products;
+
+  const missingProductIds = Array.from(new Set(products
+    .filter(product => !normalizeProductDescription(product))
+    .map(productGraphqlId)
+    .filter(Boolean)));
+
+  if (missingProductIds.length === 0) return products;
+
+  const shop = window.Shopify?.shop || window.location.host;
+  const apiBaseUrl = this.resolveStorefrontApiBase();
+  const country = window.Shopify?.country
+    || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+    || null;
+
+  try {
+    const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+    const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(missingProductIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
+    if (!response.ok) return products;
+
+    const data = await response.json();
+    if (typeof this.rememberRuntimeProductInventory === 'function') {
+      this.rememberRuntimeProductInventory(data.products);
+    }
+    const descriptionsByProductId = new Map();
+    (Array.isArray(data.products) ? data.products : []).forEach(product => {
+      const description = normalizeProductDescription(product);
+      const key = productLookupKey(product);
+      if (key && description) descriptionsByProductId.set(key, description);
+    });
+
+    if (descriptionsByProductId.size === 0) return products;
+
+    return products.map(product => {
+      if (normalizeProductDescription(product)) return product;
+      const key = productLookupKey(product);
+      const description = key ? descriptionsByProductId.get(key) : '';
+      return description ? { ...product, description } : product;
+    });
+  } catch (error) {
+    return products;
+  }
 },
 };
 

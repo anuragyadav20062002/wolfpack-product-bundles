@@ -55,6 +55,7 @@ describe("api.storefront-products loader", () => {
                 id: "gid://shopify/Product/111",
                 title: "Tracked Product",
                 handle: "tracked-product",
+                description: "Detailed product copy",
                 featuredImage: null,
                 variants: {
                   edges: [
@@ -96,5 +97,6 @@ describe("api.storefront-products loader", () => {
       quantityAvailable: 0,
       currentlyNotInStock: false,
     });
+    expect(body.products[0].description).toBe("Detailed product copy");
   });
 });

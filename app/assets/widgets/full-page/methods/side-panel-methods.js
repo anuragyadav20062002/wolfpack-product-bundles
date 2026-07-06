@@ -66,7 +66,7 @@ renderSidePanel(panel) {
   panel.classList.toggle('full-page-side-panel--skeleton-list', !useInlineSummarySlots);
   panel.classList.toggle('full-page-side-panel--has-addon-summary', false);
 
-  // Header: "Your Bundle" + Clear
+  // Header: bundle name + Clear
   const header = document.createElement('div');
   header.className = 'side-panel-header';
   const headerCopy = document.createElement('div');

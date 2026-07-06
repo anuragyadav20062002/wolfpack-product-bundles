@@ -179,7 +179,7 @@ function compactProductReference(
     }
   }
 
-  for (const key of ["imageUrl", "description"]) {
+  for (const key of ["imageUrl", "description", "descriptionHtml"]) {
     const fieldValue = mergedProduct[key];
     if (typeof fieldValue === "string" && fieldValue.trim()) {
       reference[key] = fieldValue;

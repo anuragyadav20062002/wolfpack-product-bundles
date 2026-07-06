@@ -7,6 +7,8 @@ const { PricingCalculator, ToastManager } = require('../../../app/assets/bundle-
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldUseMobileSummarySlotTiles } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const { getMobileAdditionalOffersPulseState } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getMobileBottomBarActionState } = require('../../../app/assets/widgets/full-page/methods/responsive-layout-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldCategoryTabActivateProducts } = require('../../../app/assets/widgets/full-page/methods/product-grid-methods.js');
@@ -442,6 +444,63 @@ describe('FPB Standard mobile summary action', () => {
     expect(toggleTray).toHaveBeenCalledWith(sheet);
   });
 
+  it('enables the mobile additional-offers pulse for Standard and Classic when add-on tiers are mixed', () => {
+    const paidStep = { id: 'paid-step' };
+    const addonStep = { id: 'addon-step', isFreeGift: true };
+    const mixedState = getMobileAdditionalOffersPulseState({
+      designPreset: 'CLASSIC',
+      currentStepIndex: 0,
+      steps: [paidStep, addonStep],
+      addonStates: [
+        { tier: { tierId: 'tier-1' }, isEligible: true },
+        { tier: { tierId: 'tier-2' }, isEligible: false },
+      ],
+    });
+
+    expect(mixedState.shouldPulse).toBe(true);
+    expect(mixedState.message).toBe('Additional offers to be unlocked');
+
+    expect(getMobileAdditionalOffersPulseState({
+      designPreset: 'STANDARD',
+      currentStepIndex: 0,
+      steps: [paidStep, addonStep],
+      addonStates: [
+        { tier: { tierId: 'tier-1' }, isEligible: true },
+        { tier: { tierId: 'tier-2' }, isEligible: false },
+      ],
+    }).shouldPulse).toBe(true);
+
+    expect(getMobileAdditionalOffersPulseState({
+      designPreset: 'CLASSIC',
+      currentStepIndex: 0,
+      steps: [paidStep, addonStep],
+      addonStates: [
+        { tier: { tierId: 'tier-1' }, isEligible: true },
+        { tier: { tierId: 'tier-2' }, isEligible: true },
+      ],
+    }).shouldPulse).toBe(false);
+
+    expect(getMobileAdditionalOffersPulseState({
+      designPreset: 'CLASSIC',
+      currentStepIndex: 1,
+      steps: [paidStep, addonStep],
+      addonStates: [
+        { tier: { tierId: 'tier-1' }, isEligible: true },
+        { tier: { tierId: 'tier-2' }, isEligible: false },
+      ],
+    }).shouldPulse).toBe(false);
+
+    expect(getMobileAdditionalOffersPulseState({
+      designPreset: 'COMPACT',
+      currentStepIndex: 0,
+      steps: [paidStep, addonStep],
+      addonStates: [
+        { tier: { tierId: 'tier-1' }, isEligible: true },
+        { tier: { tierId: 'tier-2' }, isEligible: false },
+      ],
+    }).shouldPulse).toBe(false);
+  });
+
   it('uses slot tiles for slot-enabled Classic and Standard compact summaries only', () => {
     expect(shouldUseMobileSummarySlotTiles({
       designPreset: 'CLASSIC',
@@ -462,6 +521,27 @@ describe('FPB Standard mobile summary action', () => {
       designPreset: 'CLASSIC',
       productSlotsEnabled: false,
     })).toBe(false);
+  });
+
+  it('keeps Classic mobile slot tiles free of per-slot remove controls', () => {
+    const container = new FakeElement();
+    const context = {
+      getFullPageDesignPreset: () => 'CLASSIC',
+      getSummaryProductDisplayTitle: () => 'Selected product',
+      _getSelectedProductImageSrc: () => 'https://cdn.example.test/product.jpg',
+      _escapeHTML: (value: string) => value,
+      selectedBundle: {},
+    };
+
+    fullPageMobileSummaryMethods._renderCompactMobileSummarySlotTiles.call(
+      context,
+      container,
+      [{ quantity: 1 }],
+      { minQuantity: 1 },
+      1,
+    );
+
+    expect(container.getChildren()[0].getChildren()).toHaveLength(0);
   });
 
   it('keeps Standard mobile category tabs from switching the expanded product body', () => {
