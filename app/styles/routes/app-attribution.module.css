@@ -78,6 +78,104 @@
   margin-block-end: 1rem;
 }
 
+.dashboardShell {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 4px 88px;
+}
+
+.pixelStatusShell {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 4px;
+}
+
+.dashboardStack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dashboardChartGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.dashboardActivityGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.comparePillSlot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inlineForm {
+  display: inline;
+}
+
+.bodyText {
+  margin: 0;
+  font-size: 14px;
+}
+
+.mutedBodyText {
+  margin: 0;
+  color: #6d7175;
+  font-size: 14px;
+}
+
+.codeSample {
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 5px;
+  font-size: 12px;
+}
+
+.dateSelector {
+  position: relative;
+}
+
+.datePopover {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 260px;
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 16px;
+}
+
+.dateInputStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.dateInputLabel {
+  display: block;
+  margin-bottom: 4px;
+  color: #6d7175;
+  font-size: 12px;
+}
+
+.dateInput {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
 .pixelStatusCard {
   display: flex;
   align-items: center;
@@ -490,72 +588,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 360px;
-}
-
-/* colour palette for platform dots */
-.dot0 {
-  background: #5c6ac4;
-}
-.dot1 {
-  background: #00848e;
-}
-.dot2 {
-  background: #f49342;
-}
-.dot3 {
-  background: #de3618;
-}
-.dot4 {
-  background: #50b83c;
-}
-.dot5 {
-  background: #9c6ade;
-}
-.dotDefault {
-  background: #c4cdd0;
-}
-
-/* ── Bundle Revenue Section ─────────────────────────────────── */
-
-.bundleSection {
-  padding: 4px 0 0;
-}
-
-/* KPI cards grid — 4 cols desktop, 2 cols mobile */
-.bundleKpiGrid {
-  grid-template-columns: repeat(4, 1fr) !important;
-}
-
-@media (max-width: 768px) {
-  .bundleKpiGrid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-}
-
-.bundleKpiCard {
-  background: #ffffff;
-  border: 1px solid #e1e3e5;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.bundleKpiLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: #6d7175;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.bundleKpiValue {
-  font-size: 26px;
-  font-weight: 700;
-  color: #202223;
-  line-height: 1.2;
 }
 
 /* Two-column layout: trend chart + leaderboard */

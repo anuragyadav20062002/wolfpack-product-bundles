@@ -8,17 +8,21 @@
 
 @media (min-width: 769px) {
   .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-layout-wrapper {
-    --classic-desktop-sidebar-width: clamp(20rem, 28.65vw, 22.9375rem);
-
-    grid-template-columns: minmax(0, 1fr)
-      minmax(20rem, var(--classic-desktop-sidebar-width));
+    grid-template-columns:
+      minmax(0, var(--classic-desktop-content-fr))
+      minmax(
+        var(--classic-desktop-sidebar-min-width),
+        var(--classic-desktop-sidebar-fr)
+      );
+    align-items: start;
   }
 
   .layout-sidebar[data-fpb-design-preset="CLASSIC"] .full-page-side-panel {
-    width: min(100%, var(--classic-desktop-sidebar-width));
-    max-width: var(--classic-desktop-sidebar-width);
-    flex-basis: var(--classic-desktop-sidebar-width);
-    justify-self: end;
+    width: 100%;
+    max-width: none;
+    flex-basis: auto;
+    justify-self: stretch;
+    align-self: start;
     box-sizing: border-box;
     overflow: hidden;
   }

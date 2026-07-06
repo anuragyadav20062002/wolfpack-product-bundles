@@ -149,11 +149,15 @@
   },
   "common": {
     "actions": {
-      "close": "Schließen", "dismiss": "Ausblenden", "manage": "Verwalten", "enableHere": "Hier aktivieren",
+      "close": "Schließen", "dismiss": "Ausblenden", "manage": "Verwalten", "enable": "Aktivieren", "enableHere": "Hier aktivieren", "learnMore": "Mehr erfahren",
       "maybeLater": "Vielleicht später", "setUpVisibility": "Sichtbarkeit einrichten", "reinstallApp": "App neu installieren",
       "upgradeNow": "Jetzt upgraden", "viewPlans": "Tarife anzeigen", "discardChanges": "Änderungen verwerfen", "continueEditing": "Weiter bearbeiten"
     },
-    "appEmbed": { "body": "Aktiviere die Theme-App-Erweiterung für Wolfpack Bundles, um das Bundle zu platzieren und in der Vorschau anzuzeigen." },
+    "appEmbed": {
+      "body": "Aktiviere die Theme-App-Erweiterung für Wolfpack Bundles, um das Bundle zu platzieren und in der Vorschau anzuzeigen.",
+      "guideTitle": "App-Einbettung aktivieren",
+      "guideImageAlt": "So aktivierst du die Wolfpack Bundles App-Einbettung"
+    },
     "previewGate": { "title": "Die Sichtbarkeit deines Bundles ist noch nicht eingerichtet", "body": "Dein Bundle ist aktiv, aber Käufer können es nicht finden. Richte die Sichtbarkeit ein, um das zu ändern." },
     "unlistedBundle": { "title": "Dein Bundle ist nicht gelistet", "body": "Das Bundle ist in den Suchergebnissen und Kollektionsseiten deines Shops ausgeblendet. Stelle den Status des Bundle-Produkts in Shopify Produkte auf Aktiv, damit es gefunden werden kann." },
     "proxyHealth": { "title": "App-Proxy nicht verbunden", "body": "Ganzseitige Bundle-Widgets werden in deinem Storefront nicht geladen. Installiere die App erneut, um das Problem zu beheben." },

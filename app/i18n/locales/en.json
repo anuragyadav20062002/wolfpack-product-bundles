@@ -161,12 +161,16 @@
   },
   "common": {
     "actions": {
-      "close": "Close", "dismiss": "Dismiss", "manage": "Manage", "enableHere": "Enable here",
+      "close": "Close", "dismiss": "Dismiss", "manage": "Manage", "enable": "Enable", "enableHere": "Enable Here", "learnMore": "Learn More",
       "maybeLater": "Maybe Later", "setUpVisibility": "Set Up Visibility", "reinstallApp": "Reinstall app",
       "upgradeNow": "Upgrade Now", "viewPlans": "View Plans", "discardChanges": "Discard Changes",
       "continueEditing": "Continue Editing"
     },
-    "appEmbed": { "body": "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle." },
+    "appEmbed": {
+      "body": "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle.",
+      "guideTitle": "Enable app embed",
+      "guideImageAlt": "How to enable the Wolfpack Bundles app embed"
+    },
     "previewGate": {
       "title": "Your bundle visibility is not set up yet",
       "body": "Your bundle is live but shoppers have no way to find it. Set up visibility to change that."

@@ -111,7 +111,7 @@ The service must scan all keys in `current.blocks` for any key that starts with 
 https://{shop}/admin/themes/{themeId}/editor?context=apps&appEmbed={CLIENT_ID}%2F{EMBED_BLOCK_HANDLE}
 ```
 
-- `CLIENT_ID` = `63077bb0483a6ce08a2d6139b14d170b`
+- `CLIENT_ID` = configured Shopify app client identifier
 - `EMBED_BLOCK_HANDLE` = handle from TOML (to be confirmed post deploy:sit)
 - `themeId` = numeric ID extracted from GraphQL GID (`gid://shopify/OnlineStoreTheme/12345` → `12345`)
 

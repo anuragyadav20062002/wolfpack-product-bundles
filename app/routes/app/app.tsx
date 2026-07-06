@@ -9,7 +9,7 @@ import prisma from "../../db.server";
 import { ErrorPage } from "../../components/ErrorPage";
 import { I18nextProvider, useTranslation } from "react-i18next";
 import { type ReactNode, useEffect } from "react";
-import { changeAdminI18nLanguage, i18n } from "../../i18n/config";
+import { changeAdminI18nLanguage, i18n, loadAdminLocaleResources } from "../../i18n/config";
 import { getPolarisLocale } from "../../i18n/polaris-locales.server";
 import { ensureShopHasExpiringOfflineSession } from "../../services/offline-token.server";
 import { AppLogger } from "../../lib/logger";
@@ -35,6 +35,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const idToken = new URL(request.url).searchParams.get("id_token");
   ensureExpiringOfflineSessionInBackground(session.shop, idToken);
   const locale = await loadShopAdminLocale(session.shop);
+  await loadAdminLocaleResources(locale);
   const polarisTranslations = getPolarisLocale(locale);
   const mantleCacheKey = `mantle-provider:${session.shop}:${session.accessToken}:${
     process.env.MANTLE_APP_ID || ""

@@ -149,12 +149,16 @@
   },
   "common": {
     "actions": {
-      "close": "Fermer", "dismiss": "Ignorer", "manage": "Gérer", "enableHere": "Activer ici",
+      "close": "Fermer", "dismiss": "Ignorer", "manage": "Gérer", "enable": "Activer", "enableHere": "Activer ici", "learnMore": "En savoir plus",
       "maybeLater": "Peut-être plus tard", "setUpVisibility": "Configurer la visibilité", "reinstallApp": "Réinstaller l'application",
       "upgradeNow": "Mettre à niveau", "viewPlans": "Voir les forfaits", "discardChanges": "Ignorer les modifications",
       "continueEditing": "Continuer la modification"
     },
-    "appEmbed": { "body": "Activez l'extension d'application de thème Wolfpack Bundles pour placer et prévisualiser le lot." },
+    "appEmbed": {
+      "body": "Activez l'extension d'application de thème Wolfpack Bundles pour placer et prévisualiser le lot.",
+      "guideTitle": "Activer l'intégration d'application",
+      "guideImageAlt": "Comment activer l'intégration d'application Wolfpack Bundles"
+    },
     "previewGate": {
       "title": "La visibilité de votre lot n'est pas encore configurée",
       "body": "Votre lot est actif, mais les clients ne peuvent pas le trouver. Configurez sa visibilité pour y remédier."

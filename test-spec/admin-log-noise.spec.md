@@ -2,13 +2,13 @@
 **Spec ID:** admin-log-noise  **Created:** 2026-06-12
 
 ## Purpose
-Keep expected non-critical Admin dashboard cases out of warning logs. Truncated theme settings should still fail open without warning noise, and stale custom Web Vitals beacons should be discarded without reintroducing telemetry.
+Keep expected non-critical Admin dashboard cases out of warning logs. Unreadable theme settings should fail closed without warning noise, and stale custom Web Vitals beacons should be discarded without reintroducing telemetry.
 
 ## Test Cases
 ### AppEmbedCheckLogging
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | Shopify returns malformed `settings_data.json` | Active theme response plus malformed settings content | Returns `enabled: true` and does not call `AppLogger.warn` | Fail-open is expected for truncated Shopify theme settings |
+| 1 | Shopify returns malformed `settings_data.json` | Active theme response plus malformed settings content | Returns `enabled: false` and does not call `AppLogger.warn` | Fail closed so merchants see the app embed enable banner instead of a false Active state |
 
 ### WebVitalsTombstone
 | # | Scenario | Input | Expected Output | Notes |

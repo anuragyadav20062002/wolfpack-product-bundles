@@ -15,6 +15,7 @@ export function FpbBundleVisibilityPanel({
     handleSectionChange,
     isInstallingWidget,
     markAsDirty,
+    openThemeEditorForAppEmbed,
     pageSlug,
     pageSlugError,
     setHasManuallyEditedSlug,
@@ -47,16 +48,16 @@ export function FpbBundleVisibilityPanel({
                     : fullPageBundleStyles.visibilityStatusWarning
                 }
               >
-                {appEmbedEnabled ? "Enabled" : "Not enabled"}
+                {appEmbedEnabled ? "Enabled" : "Disabled"}
               </div>
             </div>
             {!appEmbedEnabled && themeEditorUrl && (
               <button
                 type="button"
                 className={fullPageBundleStyles.visibilitySecondaryAction}
-                onClick={() => window.open(themeEditorUrl, "_blank")}
+                onClick={openThemeEditorForAppEmbed}
               >
-                Enable here
+                Enable Here
               </button>
             )}
           </div>

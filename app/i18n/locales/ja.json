@@ -149,11 +149,15 @@
   },
   "common": {
     "actions": {
-      "close": "閉じる", "dismiss": "閉じる", "manage": "管理", "enableHere": "ここで有効にする",
+      "close": "閉じる", "dismiss": "閉じる", "manage": "管理", "enable": "有効にする", "enableHere": "ここで有効にする", "learnMore": "詳しく見る",
       "maybeLater": "後で行う", "setUpVisibility": "公開設定を行う", "reinstallApp": "アプリを再インストール",
       "upgradeNow": "今すぐアップグレード", "viewPlans": "プランを見る", "discardChanges": "変更を破棄", "continueEditing": "編集を続ける"
     },
-    "appEmbed": { "body": "バンドルを配置してプレビューするには、Wolfpack Bundles のテーマアプリ拡張機能を有効にしてください。" },
+    "appEmbed": {
+      "body": "バンドルを配置してプレビューするには、Wolfpack Bundles のテーマアプリ拡張機能を有効にしてください。",
+      "guideTitle": "アプリ埋め込みを有効にする",
+      "guideImageAlt": "Wolfpack Bundles のアプリ埋め込みを有効にする方法"
+    },
     "previewGate": { "title": "バンドルの公開設定がまだ完了していません", "body": "バンドルは有効ですが、購入者が見つける方法がありません。公開設定を行ってください。" },
     "unlistedBundle": { "title": "バンドルは非掲載です", "body": "バンドルはストアの検索結果とコレクションページに表示されません。見つけられるようにするには、Shopifyの商品でバンドル商品のステータスを有効に変更してください。" },
     "proxyHealth": { "title": "アプリプロキシが接続されていません", "body": "フルページのバンドルウィジェットはストアフロントに読み込まれません。修正するにはアプリを再インストールしてください。" },

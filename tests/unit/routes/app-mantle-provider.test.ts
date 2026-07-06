@@ -73,10 +73,12 @@ jest.mock("react-i18next", () => ({
 }));
 
 jest.mock("../../../app/i18n/config", () => ({
+  changeAdminI18nLanguage: jest.fn(),
   i18n: {
     language: "en",
     changeLanguage: jest.fn(),
   },
+  loadAdminLocaleResources: jest.fn(),
 }));
 
 jest.mock("../../../app/components/ErrorPage", () => ({
