@@ -830,6 +830,8 @@ Evidence: `/private/tmp/fpb-classic-agentic-parity/CS4-mobile-footer-scroll-lock
 
 2026-07-06 selected-product Classic mobile footer evidence confirms the expanded selected slot strip does not render per-slot trash, delete, or remove controls. With two products selected, the visible removal affordance is the footer header `Clear` control; slot cells contain only the product images. Evidence: `/private/tmp/fpb-classic-agentic-parity/mobile-footer-remove-control/eb-mobile-selected-expanded-remove-probe-20260706.json` and `eb-mobile-selected-expanded-remove-20260706.png`.
 
+2026-07-06 Classic mobile additional-offers badge evidence confirms the `Additional offers to be unlocked` state appears as a transient footer count-badge state after the shopper has unlocked at least one add-on tier while another add-on tier remains locked. The badge turns green (`rgb(85, 189, 71)`) with white `14px` regular text, expands from the normal count badge to the message width, then returns to the normal black quantity badge. Evidence: `/private/tmp/fpb-classic-agentic-parity/mobile-additional-offers-pill/eb-mobile-one-select-pill-timeline-refresh-20260706.json`, `eb-mobile-one-select-pill-cycle-20260706.json`, and `eb-mobile-collapsed-additional-offers-flash-20260706.png`.
+
 ### FPB Standard Variant Selector UI
 
 For Standard Design (`FBP_SIDE_FOOTER` + `DEFAULT_FBP`), grouped variant products render an inline `Choose Options` dropdown on desktop when variants are not displayed as individual products.

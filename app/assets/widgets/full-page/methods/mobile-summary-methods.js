@@ -30,14 +30,14 @@ export function shouldUseMobileSummarySlotTiles({ designPreset, productSlotsEnab
   return preset === 'STANDARD' || preset === 'CLASSIC';
 }
 
-export function getClassicMobileAdditionalOffersPulseState({
+export function getMobileAdditionalOffersPulseState({
   designPreset,
   currentStepIndex = 0,
   steps = [],
   addonStates = [],
 } = {}) {
   const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
-  if (preset !== 'CLASSIC') return { shouldPulse: false, signature: '' };
+  if (preset !== 'CLASSIC' && preset !== 'STANDARD') return { shouldPulse: false, signature: '' };
 
   const bundleSteps = Array.isArray(steps) ? steps : [];
   const currentStep = bundleSteps[currentStepIndex] || null;
@@ -62,9 +62,9 @@ export function getClassicMobileAdditionalOffersPulseState({
   };
 }
 
-const CLASSIC_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;
-const CLASSIC_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS = 800;
-const CLASSIC_ADDITIONAL_OFFERS_DURATION_MS = 3000;
+const MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;
+const MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS = 800;
+const MOBILE_ADDITIONAL_OFFERS_DURATION_MS = 3000;
 
 export const fullPageMobileSummaryMethods = {
 _populateCompactMobileSummaryTray(sheet) {
@@ -98,13 +98,13 @@ _populateCompactMobileSummaryTray(sheet) {
   const addonStates = addonStep && typeof this.getAddonSummaryEligibilityStates === 'function'
     ? this.getAddonSummaryEligibilityStates(addonStep)
     : [];
-  const additionalOffersPulseState = getClassicMobileAdditionalOffersPulseState({
+  const additionalOffersPulseState = getMobileAdditionalOffersPulseState({
     designPreset: this.getFullPageDesignPreset?.(),
     currentStepIndex: this.currentStepIndex,
     steps: this.selectedBundle?.steps || [],
     addonStates,
   });
-  const additionalOffersBadgeState = this._syncClassicMobileAdditionalOffersPulse?.(additionalOffersPulseState)
+  const additionalOffersBadgeState = this._syncMobileAdditionalOffersPulse?.(additionalOffersPulseState)
     || { active: false, showMessage: false };
   const toggleSummaryTray = () => {
     this._toggleCompactMobileSummaryTray(sheet);
@@ -118,6 +118,18 @@ _populateCompactMobileSummaryTray(sheet) {
 
   const countBadge = document.createElement('div');
   countBadge.className = 'fpb-mobile-summary-count-badge';
+  if (countBadge.dataset) {
+    countBadge.dataset.summaryQuantity = String(selectedFooterQuantity);
+  } else {
+    countBadge.setAttribute('data-summary-quantity', String(selectedFooterQuantity));
+  }
+  if (additionalOffersPulseState.message) {
+    if (countBadge.dataset) {
+      countBadge.dataset.additionalOffersMessage = additionalOffersPulseState.message;
+    } else {
+      countBadge.setAttribute('data-additional-offers-message', additionalOffersPulseState.message);
+    }
+  }
   if (additionalOffersBadgeState.active) {
     countBadge.classList.add('fpb-mobile-summary-count-badge--additional-offers');
   }
@@ -228,28 +240,49 @@ _populateCompactMobileSummaryTray(sheet) {
   }
 },
 
-_syncClassicMobileAdditionalOffersPulse(pulseState = {}) {
+_syncMobileAdditionalOffersPulse(pulseState = {}) {
   const now = Date.now();
-  const currentPulse = this.classicMobileAdditionalOffersPulse;
+  const currentPulse = this.mobileAdditionalOffersPulse;
+  const timerKeys = [
+    'mobileAdditionalOffersGreenTimer',
+    'mobileAdditionalOffersMessageTimer',
+    'mobileAdditionalOffersEndTimer',
+  ];
+
+  const getBadge = () => document.querySelector?.(
+    '.fpb-mobile-summary-tray .fpb-mobile-summary-count-badge'
+  ) || null;
+
+  const applyBadgeState = ({ active = false, showMessage = false } = {}) => {
+    const badge = getBadge();
+    if (!badge || badge.isConnected === false) return;
+
+    const message = pulseState.message
+      || badge.dataset?.additionalOffersMessage
+      || badge.getAttribute?.('data-additional-offers-message')
+      || '';
+    const quantity = badge.dataset?.summaryQuantity
+      || badge.getAttribute?.('data-summary-quantity')
+      || badge.textContent
+      || '';
+    badge.classList.toggle('fpb-mobile-summary-count-badge--additional-offers', active);
+    badge.classList.toggle('fpb-mobile-summary-count-badge--additional-offers-message', showMessage);
+    badge.textContent = showMessage && message ? message : quantity;
+  };
+
   const clearTimers = () => {
-    if (this.classicMobileAdditionalOffersGreenTimer) {
-      clearTimeout(this.classicMobileAdditionalOffersGreenTimer);
-      this.classicMobileAdditionalOffersGreenTimer = null;
-    }
-    if (this.classicMobileAdditionalOffersMessageTimer) {
-      clearTimeout(this.classicMobileAdditionalOffersMessageTimer);
-      this.classicMobileAdditionalOffersMessageTimer = null;
-    }
-    if (this.classicMobileAdditionalOffersEndTimer) {
-      clearTimeout(this.classicMobileAdditionalOffersEndTimer);
-      this.classicMobileAdditionalOffersEndTimer = null;
-    }
+    timerKeys.forEach((timerKey) => {
+      if (this[timerKey]) {
+        clearTimeout(this[timerKey]);
+        this[timerKey] = null;
+      }
+    });
   };
 
   if (pulseState.shouldPulse !== true || !pulseState.signature) {
     clearTimers();
-    this.classicMobileAdditionalOffersPulse = null;
-    this.classicMobileAdditionalOffersCompletedSignature = null;
+    this.mobileAdditionalOffersPulse = null;
+    this.mobileAdditionalOffersCompletedSignature = null;
     return { active: false, showMessage: false };
   }
 
@@ -264,39 +297,38 @@ _syncClassicMobileAdditionalOffersPulse(pulseState = {}) {
     };
   }
 
-  if (this.classicMobileAdditionalOffersCompletedSignature === pulseState.signature) {
+  if (currentPulse?.signature === pulseState.signature && currentPulse.expiresAt <= now) {
+    this.mobileAdditionalOffersCompletedSignature = pulseState.signature;
+    this.mobileAdditionalOffersPulse = null;
+    return { active: false, showMessage: false };
+  }
+
+  if (this.mobileAdditionalOffersCompletedSignature === pulseState.signature) {
     return { active: false, showMessage: false };
   }
 
   clearTimers();
   const nextPulse = {
     signature: pulseState.signature,
-    greenAt: now + CLASSIC_ADDITIONAL_OFFERS_GREEN_DELAY_MS,
-    messageAt: now + CLASSIC_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS,
-    expiresAt: now + CLASSIC_ADDITIONAL_OFFERS_DURATION_MS,
+    greenAt: now + MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS,
+    messageAt: now + MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS,
+    expiresAt: now + MOBILE_ADDITIONAL_OFFERS_DURATION_MS,
   };
-  this.classicMobileAdditionalOffersPulse = nextPulse;
+  this.mobileAdditionalOffersPulse = nextPulse;
 
-  const refreshSummary = () => {
-    const summaryTray = document.querySelector?.('.fpb-mobile-summary-tray');
-    if (summaryTray && summaryTray.isConnected !== false) {
-      this._populateCompactMobileSummaryTray(summaryTray);
-    }
-  };
-
-  this.classicMobileAdditionalOffersGreenTimer = setTimeout(
-    refreshSummary,
-    CLASSIC_ADDITIONAL_OFFERS_GREEN_DELAY_MS
+  this.mobileAdditionalOffersGreenTimer = setTimeout(
+    () => applyBadgeState({ active: true, showMessage: false }),
+    MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS
   );
-  this.classicMobileAdditionalOffersMessageTimer = setTimeout(
-    refreshSummary,
-    CLASSIC_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS
+  this.mobileAdditionalOffersMessageTimer = setTimeout(
+    () => applyBadgeState({ active: true, showMessage: true }),
+    MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS
   );
-  this.classicMobileAdditionalOffersEndTimer = setTimeout(() => {
-    this.classicMobileAdditionalOffersCompletedSignature = nextPulse.signature;
-    this.classicMobileAdditionalOffersPulse = null;
-    refreshSummary();
-  }, CLASSIC_ADDITIONAL_OFFERS_DURATION_MS);
+  this.mobileAdditionalOffersEndTimer = setTimeout(() => {
+    this.mobileAdditionalOffersCompletedSignature = nextPulse.signature;
+    this.mobileAdditionalOffersPulse = null;
+    applyBadgeState({ active: false, showMessage: false });
+  }, MOBILE_ADDITIONAL_OFFERS_DURATION_MS);
 
   return { active: false, showMessage: false };
 },
