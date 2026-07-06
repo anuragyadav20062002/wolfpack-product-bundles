@@ -198,6 +198,10 @@ getClassicSidebarSlotCount(allSelectedProducts = [], activeStep = null) {
     return Math.max(activeBoxQuantity, selectedCount);
   }
 
+  if (typeof this.getSummarySidebarMaxItemCount === 'function') {
+    return this.getSummarySidebarMaxItemCount(selectedCount);
+  }
+
   return Math.max(stepQuantity, selectedCount + 1, 2);
 },
 

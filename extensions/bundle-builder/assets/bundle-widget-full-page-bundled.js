@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.69
+ * Version : 5.0.70
  * Built   : 2026-07-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.69';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.70';
 (function() {
   'use strict';
 
@@ -6200,7 +6200,11 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
 _renderCompactMobileSummarySlotTiles(container, allSelectedProducts = [], activeStep = null, totalQuantity = 0) {
   const selectedItems = Array.isArray(allSelectedProducts) ? allSelectedProducts : [];
+  const sharedTargetCount = typeof this.getSummarySidebarMaxItemCount === 'function'
+    ? this.getSummarySidebarMaxItemCount(selectedItems.length)
+    : 0;
   const slotCount = Math.max(
+    sharedTargetCount,
     selectedItems.length + 1,
     activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
     2
@@ -7124,6 +7128,10 @@ getClassicSidebarSlotCount(allSelectedProducts = [], activeStep = null) {
 
   if (activeBoxQuantity > 0) {
     return Math.max(activeBoxQuantity, selectedCount);
+  }
+
+  if (typeof this.getSummarySidebarMaxItemCount === 'function') {
+    return this.getSummarySidebarMaxItemCount(selectedCount);
   }
 
   return Math.max(stepQuantity, selectedCount + 1, 2);
@@ -10176,6 +10184,21 @@ _getSummarySidebarRequiredQuantity(step) {
 
 getSummarySidebarMaxItemCount(selectedCount = 0) {
   const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+  const selected = Number(selectedCount || 0);
+  const boxRules = typeof this.getBoxSelectionRules === 'function'
+    ? this.getBoxSelectionRules()
+    : [];
+  const selectedBoxQuantity = typeof this.getSelectedBoxSelectionQuantity === 'function'
+    ? this.getSelectedBoxSelectionQuantity()
+    : selected;
+  const activeBoxRule = typeof this.getActiveBoxSelectionRule === 'function'
+    ? this.getActiveBoxSelectionRule(boxRules, selectedBoxQuantity)
+    : null;
+  const activeBoxQuantity = Number(activeBoxRule?.boxQuantity || 0);
+  if (activeBoxQuantity > 0) {
+    return Math.max(activeBoxQuantity, selected, 1);
+  }
+
   let totalRequired = 0;
 
   for (const step of steps) {
@@ -10185,7 +10208,6 @@ getSummarySidebarMaxItemCount(selectedCount = 0) {
     }
   }
 
-  const selected = Number(selectedCount || 0);
   return Math.max(totalRequired, selected, 1);
 },
 

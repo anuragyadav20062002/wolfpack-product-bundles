@@ -754,6 +754,21 @@ _getSummarySidebarRequiredQuantity(step) {
 
 getSummarySidebarMaxItemCount(selectedCount = 0) {
   const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+  const selected = Number(selectedCount || 0);
+  const boxRules = typeof this.getBoxSelectionRules === 'function'
+    ? this.getBoxSelectionRules()
+    : [];
+  const selectedBoxQuantity = typeof this.getSelectedBoxSelectionQuantity === 'function'
+    ? this.getSelectedBoxSelectionQuantity()
+    : selected;
+  const activeBoxRule = typeof this.getActiveBoxSelectionRule === 'function'
+    ? this.getActiveBoxSelectionRule(boxRules, selectedBoxQuantity)
+    : null;
+  const activeBoxQuantity = Number(activeBoxRule?.boxQuantity || 0);
+  if (activeBoxQuantity > 0) {
+    return Math.max(activeBoxQuantity, selected, 1);
+  }
+
   let totalRequired = 0;
 
   for (const step of steps) {
@@ -763,7 +778,6 @@ getSummarySidebarMaxItemCount(selectedCount = 0) {
     }
   }
 
-  const selected = Number(selectedCount || 0);
   return Math.max(totalRequired, selected, 1);
 },
 

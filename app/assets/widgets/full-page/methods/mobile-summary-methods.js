@@ -510,7 +510,11 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
 
 _renderCompactMobileSummarySlotTiles(container, allSelectedProducts = [], activeStep = null, totalQuantity = 0) {
   const selectedItems = Array.isArray(allSelectedProducts) ? allSelectedProducts : [];
+  const sharedTargetCount = typeof this.getSummarySidebarMaxItemCount === 'function'
+    ? this.getSummarySidebarMaxItemCount(selectedItems.length)
+    : 0;
   const slotCount = Math.max(
+    sharedTargetCount,
     selectedItems.length + 1,
     activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
     2
