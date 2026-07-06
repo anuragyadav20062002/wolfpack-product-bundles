@@ -7,6 +7,8 @@ const { PricingCalculator, ToastManager } = require('../../../app/assets/bundle-
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldUseMobileSummarySlotTiles } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const { getClassicMobileAdditionalOffersPulseState } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getMobileBottomBarActionState } = require('../../../app/assets/widgets/full-page/methods/responsive-layout-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldCategoryTabActivateProducts } = require('../../../app/assets/widgets/full-page/methods/product-grid-methods.js');
@@ -440,6 +442,53 @@ describe('FPB Standard mobile summary action', () => {
     await sheet.getChildren()[0].click();
 
     expect(toggleTray).toHaveBeenCalledWith(sheet);
+  });
+
+  it('enables the Classic additional-offers pulse only when add-on tiers are mixed', () => {
+    const paidStep = { id: 'paid-step' };
+    const addonStep = { id: 'addon-step', isFreeGift: true };
+    const mixedState = getClassicMobileAdditionalOffersPulseState({
+      designPreset: 'CLASSIC',
+      currentStepIndex: 0,
+      steps: [paidStep, addonStep],
+      addonStates: [
+        { tier: { tierId: 'tier-1' }, isEligible: true },
+        { tier: { tierId: 'tier-2' }, isEligible: false },
+      ],
+    });
+
+    expect(mixedState.shouldPulse).toBe(true);
+    expect(mixedState.message).toBe('Additional offers to be unlocked');
+
+    expect(getClassicMobileAdditionalOffersPulseState({
+      designPreset: 'CLASSIC',
+      currentStepIndex: 0,
+      steps: [paidStep, addonStep],
+      addonStates: [
+        { tier: { tierId: 'tier-1' }, isEligible: true },
+        { tier: { tierId: 'tier-2' }, isEligible: true },
+      ],
+    }).shouldPulse).toBe(false);
+
+    expect(getClassicMobileAdditionalOffersPulseState({
+      designPreset: 'CLASSIC',
+      currentStepIndex: 1,
+      steps: [paidStep, addonStep],
+      addonStates: [
+        { tier: { tierId: 'tier-1' }, isEligible: true },
+        { tier: { tierId: 'tier-2' }, isEligible: false },
+      ],
+    }).shouldPulse).toBe(false);
+
+    expect(getClassicMobileAdditionalOffersPulseState({
+      designPreset: 'STANDARD',
+      currentStepIndex: 0,
+      steps: [paidStep, addonStep],
+      addonStates: [
+        { tier: { tierId: 'tier-1' }, isEligible: true },
+        { tier: { tierId: 'tier-2' }, isEligible: false },
+      ],
+    }).shouldPulse).toBe(false);
   });
 
   it('uses slot tiles for slot-enabled Classic and Standard compact summaries only', () => {

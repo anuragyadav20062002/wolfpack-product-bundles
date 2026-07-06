@@ -656,11 +656,31 @@
   }
 
   .fpb-mobile-classic-footer .fpb-mobile-summary-count-badge {
+    --classic-mobile-additional-offers-bg: #55bd47;
     cursor: pointer;
     top: -11.598px;
     min-width: 46.914px;
     height: 25.195px;
     line-height: 25.2px;
+    max-width: calc(var(--fpb-mobile-footer-inner-width) - 2rem);
+    gap: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition:
+      background-color 180ms ease,
+      color 180ms ease;
+  }
+
+  .fpb-mobile-classic-footer
+    .fpb-mobile-summary-count-badge--additional-offers {
+    background: var(--classic-mobile-additional-offers-bg);
+    color: #ffffff;
+  }
+
+  .fpb-mobile-classic-footer
+    .fpb-mobile-summary-count-badge--additional-offers-message {
+    min-width: min(15.25rem, calc(var(--fpb-mobile-footer-inner-width) - 4rem));
   }
 
   .fpb-mobile-classic-footer .fpb-mobile-summary-count-badge::before {

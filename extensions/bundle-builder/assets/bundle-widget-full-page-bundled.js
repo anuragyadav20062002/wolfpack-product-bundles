@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.60
+ * Version : 5.0.61
  * Built   : 2026-07-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.60';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.61';
 (function() {
   'use strict';
 
@@ -5721,6 +5721,42 @@ function shouldUseMobileSummarySlotTiles({ designPreset, productSlotsEnabled } =
   return preset === 'STANDARD' || preset === 'CLASSIC';
 }
 
+function getClassicMobileAdditionalOffersPulseState({
+  designPreset,
+  currentStepIndex = 0,
+  steps = [],
+  addonStates = [],
+} = {}) {
+  const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
+  if (preset !== 'CLASSIC') return { shouldPulse: false, signature: '' };
+
+  const bundleSteps = Array.isArray(steps) ? steps : [];
+  const currentStep = bundleSteps[currentStepIndex] || null;
+  if (currentStep?.isFreeGift === true) return { shouldPulse: false, signature: '' };
+
+  const states = Array.isArray(addonStates) ? addonStates.filter(Boolean) : [];
+  const hasEligibleOffer = states.some(state => state.isEligible === true);
+  const hasLockedOffer = states.some(state => state.isEligible !== true);
+  if (!hasEligibleOffer || !hasLockedOffer) return { shouldPulse: false, signature: '' };
+
+  const signature = states
+    .map((state, index) => {
+      const tierId = state.tier?.tierId || state.tier?.id || index;
+      return `${tierId}:${state.isEligible === true ? 'eligible' : 'locked'}`;
+    })
+    .join('|');
+
+  return {
+    shouldPulse: true,
+    signature,
+    message: 'Additional offers to be unlocked',
+  };
+}
+
+const CLASSIC_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;
+const CLASSIC_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS = 800;
+const CLASSIC_ADDITIONAL_OFFERS_DURATION_MS = 3000;
+
 const fullPageMobileSummaryMethods = {
 _populateCompactMobileSummaryTray(sheet) {
   sheet.innerHTML = '';
@@ -5749,6 +5785,18 @@ _populateCompactMobileSummaryTray(sheet) {
   );
   const isClassicPreset = this.getFullPageDesignPreset?.() === 'CLASSIC';
   const summaryToggleLabel = isClassicPreset ? 'View Selected Products' : 'Review your bundle';
+  const addonStep = (this.selectedBundle?.steps || []).find(step => step?.isFreeGift === true) || null;
+  const addonStates = addonStep && typeof this.getAddonSummaryEligibilityStates === 'function'
+    ? this.getAddonSummaryEligibilityStates(addonStep)
+    : [];
+  const additionalOffersPulseState = getClassicMobileAdditionalOffersPulseState({
+    designPreset: this.getFullPageDesignPreset?.(),
+    currentStepIndex: this.currentStepIndex,
+    steps: this.selectedBundle?.steps || [],
+    addonStates,
+  });
+  const additionalOffersBadgeState = this._syncClassicMobileAdditionalOffersPulse?.(additionalOffersPulseState)
+    || { active: false, showMessage: false };
   const toggleSummaryTray = () => {
     this._toggleCompactMobileSummaryTray(sheet);
   };
@@ -5761,7 +5809,15 @@ _populateCompactMobileSummaryTray(sheet) {
 
   const countBadge = document.createElement('div');
   countBadge.className = 'fpb-mobile-summary-count-badge';
-  countBadge.textContent = String(selectedFooterQuantity);
+  if (additionalOffersBadgeState.active) {
+    countBadge.classList.add('fpb-mobile-summary-count-badge--additional-offers');
+  }
+  if (additionalOffersBadgeState.showMessage) {
+    countBadge.classList.add('fpb-mobile-summary-count-badge--additional-offers-message');
+  }
+  countBadge.textContent = additionalOffersBadgeState.showMessage
+    ? additionalOffersPulseState.message
+    : String(selectedFooterQuantity);
   countBadge.setAttribute('role', 'button');
   countBadge.setAttribute('tabindex', '0');
   countBadge.setAttribute('aria-label', summaryToggleLabel);
@@ -5861,6 +5917,79 @@ _populateCompactMobileSummaryTray(sheet) {
   } else {
     sheet.appendChild(navSection);
   }
+},
+
+_syncClassicMobileAdditionalOffersPulse(pulseState = {}) {
+  const now = Date.now();
+  const currentPulse = this.classicMobileAdditionalOffersPulse;
+  const clearTimers = () => {
+    if (this.classicMobileAdditionalOffersGreenTimer) {
+      clearTimeout(this.classicMobileAdditionalOffersGreenTimer);
+      this.classicMobileAdditionalOffersGreenTimer = null;
+    }
+    if (this.classicMobileAdditionalOffersMessageTimer) {
+      clearTimeout(this.classicMobileAdditionalOffersMessageTimer);
+      this.classicMobileAdditionalOffersMessageTimer = null;
+    }
+    if (this.classicMobileAdditionalOffersEndTimer) {
+      clearTimeout(this.classicMobileAdditionalOffersEndTimer);
+      this.classicMobileAdditionalOffersEndTimer = null;
+    }
+  };
+
+  if (pulseState.shouldPulse !== true || !pulseState.signature) {
+    clearTimers();
+    this.classicMobileAdditionalOffersPulse = null;
+    this.classicMobileAdditionalOffersCompletedSignature = null;
+    return { active: false, showMessage: false };
+  }
+
+  if (
+    currentPulse
+    && currentPulse.signature === pulseState.signature
+    && currentPulse.expiresAt > now
+  ) {
+    return {
+      active: now >= currentPulse.greenAt,
+      showMessage: now >= currentPulse.messageAt,
+    };
+  }
+
+  if (this.classicMobileAdditionalOffersCompletedSignature === pulseState.signature) {
+    return { active: false, showMessage: false };
+  }
+
+  clearTimers();
+  const nextPulse = {
+    signature: pulseState.signature,
+    greenAt: now + CLASSIC_ADDITIONAL_OFFERS_GREEN_DELAY_MS,
+    messageAt: now + CLASSIC_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS,
+    expiresAt: now + CLASSIC_ADDITIONAL_OFFERS_DURATION_MS,
+  };
+  this.classicMobileAdditionalOffersPulse = nextPulse;
+
+  const refreshSummary = () => {
+    const summaryTray = document.querySelector?.('.fpb-mobile-summary-tray');
+    if (summaryTray && summaryTray.isConnected !== false) {
+      this._populateCompactMobileSummaryTray(summaryTray);
+    }
+  };
+
+  this.classicMobileAdditionalOffersGreenTimer = setTimeout(
+    refreshSummary,
+    CLASSIC_ADDITIONAL_OFFERS_GREEN_DELAY_MS
+  );
+  this.classicMobileAdditionalOffersMessageTimer = setTimeout(
+    refreshSummary,
+    CLASSIC_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS
+  );
+  this.classicMobileAdditionalOffersEndTimer = setTimeout(() => {
+    this.classicMobileAdditionalOffersCompletedSignature = nextPulse.signature;
+    this.classicMobileAdditionalOffersPulse = null;
+    refreshSummary();
+  }, CLASSIC_ADDITIONAL_OFFERS_DURATION_MS);
+
+  return { active: false, showMessage: false };
 },
 
 _toggleCompactMobileSummaryTray(sheet) {
