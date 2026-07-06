@@ -2807,9 +2807,7 @@ body:has([data-fpb-design-preset]) {
     text-overflow: ellipsis;
     transition:
       background-color 180ms ease,
-      color 180ms ease,
-      min-width 280ms cubic-bezier(0.22, 1, 0.36, 1),
-      max-width 280ms cubic-bezier(0.22, 1, 0.36, 1);
+      color 180ms ease;
   }
   .fpb-mobile-summary-count-badge--additional-offers {
     background: var(--fpb-mobile-additional-offers-bg);
@@ -2857,6 +2855,16 @@ body:has([data-fpb-design-preset]) {
   .fpb-mobile-summary-tray.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded
     .fpb-mobile-summary-count-badge::before {
     transform: rotate(180deg);
+    margin: 0;
+  }
+  .fpb-mobile-bottom-sheet.fpb-preset-standard.fpb-mobile-summary-tray-animating-open
+    .fpb-mobile-summary-count-badge::before {
+    animation: fpb-mobile-summary-chevron-open-stable 220ms ease both;
+    margin: 0;
+  }
+  .fpb-mobile-bottom-sheet.fpb-preset-standard.fpb-mobile-summary-tray-animating-closed
+    .fpb-mobile-summary-count-badge::before {
+    animation: fpb-mobile-summary-chevron-close-stable 220ms ease both;
     margin: 0;
   }
   .fpb-mobile-bottom-sheet.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
