@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.55
- * Built   : 2026-07-05
+ * Version : 5.0.58
+ * Built   : 2026-07-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.55';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.58';
 (function() {
   'use strict';
 
@@ -3359,9 +3359,19 @@ function buildProductPageCartFormData(cartItems = [], {
 }
 
 const BundleModalVariantMethods = {
+  resetVariantSelectionState() {
+    this.selectedOptions = {};
+    const summaryContainer = document.getElementById('modal-selection-summary');
+    const summaryText = document.getElementById('modal-selection-text');
+    if (summaryContainer) summaryContainer.style.display = 'none';
+    if (summaryText) summaryText.textContent = '';
+  },
+
   createVariantSelectors() {
     const variantsContainer = document.getElementById('modal-variants-container');
     const variants = this.currentProduct.variants || [];
+
+    this.resetVariantSelectionState();
 
     if (variants.length <= 1) {
       variantsContainer.innerHTML = '';
@@ -3906,6 +3916,8 @@ class BundleProductModal {
 
     this.currentProduct = product;
     this.currentStep = step;
+    this.selectedVariant = null;
+    this.selectedOptions = {};
     this.selectedQuantity = 1;
     this.readOnly = options.readOnly === true;
     const imageCount = this.getProductImages().length;
@@ -6037,6 +6049,7 @@ _renderCompactMobileSummarySlotTiles(container, allSelectedProducts = [], active
 
   for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
     const item = selectedItems[slotIndex];
+    const shouldRenderSlotRemove = this.getFullPageDesignPreset?.() === 'CLASSIC';
     const card = document.createElement('div');
     card.className = item
       ? 'fpb-mobile-summary-slot-card fpb-mobile-summary-slot-card--filled'
@@ -6048,6 +6061,23 @@ _renderCompactMobileSummarySlotTiles(container, allSelectedProducts = [], active
       card.innerHTML = imgSrc
         ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="fpb-mobile-summary-slot-image">`
         : '<div class="fpb-mobile-summary-slot-image-placeholder"></div>';
+      if (shouldRenderSlotRemove && !item.isDefault) {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'fpb-mobile-summary-slot-remove';
+        removeBtn.type = 'button';
+        removeBtn.setAttribute('aria-label', `Remove ${summaryTitle}`);
+        const removalState = this.getSummaryProductRemovalState(item);
+        if (!removalState.canRemove) {
+          removeBtn.classList.add('fpb-mobile-summary-slot-remove--disabled');
+          removeBtn.setAttribute('aria-disabled', 'true');
+          removeBtn.title = removalState.blockedMessage;
+        }
+        removeBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          this.removeSummarySelectedProduct(item, summaryTitle);
+        });
+        card.appendChild(removeBtn);
+      }
     } else {
       card.innerHTML = emptyStateIconUrl
         ? `<img class="fpb-mobile-summary-slot-icon-img" src="${emptyStateIconUrl}" alt="">`
@@ -10951,6 +10981,22 @@ function deriveProductOptionNames(product) {
   return Array.from({ length: maxTitleParts }, (_, index) => `Option ${index + 1}`);
 }
 
+function normalizeProductDescription(product) {
+  const directDescription = typeof product?.description === 'string'
+    ? product.description.trim()
+    : '';
+  if (directDescription) return directDescription;
+
+  const htmlDescription = typeof product?.descriptionHtml === 'string'
+    ? product.descriptionHtml.trim()
+    : '';
+  if (!htmlDescription || typeof document === 'undefined') return '';
+
+  const scratch = document.createElement('div');
+  scratch.innerHTML = htmlDescription;
+  return (scratch.textContent || '').trim();
+}
+
 function collectCategoryProducts(step) {
   if (!Array.isArray(step?.categories)) return [];
 
@@ -10965,6 +11011,15 @@ function collectCategoryProducts(step) {
 
 function productLookupKey(product) {
   return extractFullPageId(product?.id || product?.productId || product?.graphqlId);
+}
+
+function productGraphqlId(product) {
+  const rawId = product?.graphqlId || product?.productId || product?.id;
+  if (!rawId) return null;
+  const normalized = String(rawId);
+  if (normalized.startsWith('gid://shopify/Product/')) return normalized;
+  if (/^\d+$/.test(normalized)) return `gid://shopify/Product/${normalized}`;
+  return null;
 }
 
 function variantLookupKey(variant) {
@@ -11053,7 +11108,7 @@ function normalizeFullPageDirectDefaultProduct(product) {
       currentlyNotInStock: false,
     }],
     images: imageUrl ? [{ src: imageUrl }] : [],
-    description: '',
+    description: normalizeProductDescription(product),
   };
 }
 
@@ -11257,6 +11312,8 @@ async loadStepProducts(stepIndex) {
     } catch (error) {
     }
   }
+
+  allProducts = await this.enrichMissingProductDescriptions(allProducts);
 
   allProducts = this.mergeCategoryProductVariantAvailability(allProducts, step);
 
@@ -11475,7 +11532,7 @@ processProductsForStep(products, step) {
             variants: processedVariants,
             options: processedOptions,
             images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-            description: product.description || ''
+            description: normalizeProductDescription(product)
           };
         });
     } else {
@@ -11519,7 +11576,7 @@ processProductsForStep(products, step) {
         options: processedOptions,
 
         images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-        description: product.description || ''
+        description: normalizeProductDescription(product)
       }];
     }
   });
@@ -11605,6 +11662,48 @@ shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId) {
   }
 
   return target.available === false;
+},
+
+async enrichMissingProductDescriptions(products) {
+  if (!Array.isArray(products) || products.length === 0) return products;
+
+  const missingProductIds = Array.from(new Set(products
+    .filter(product => !normalizeProductDescription(product))
+    .map(productGraphqlId)
+    .filter(Boolean)));
+
+  if (missingProductIds.length === 0) return products;
+
+  const shop = window.Shopify?.shop || window.location.host;
+  const apiBaseUrl = this.resolveStorefrontApiBase();
+  const country = window.Shopify?.country
+    || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+    || null;
+
+  try {
+    const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+    const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(missingProductIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
+    if (!response.ok) return products;
+
+    const data = await response.json();
+    const descriptionsByProductId = new Map();
+    (Array.isArray(data.products) ? data.products : []).forEach(product => {
+      const description = normalizeProductDescription(product);
+      const key = productLookupKey(product);
+      if (key && description) descriptionsByProductId.set(key, description);
+    });
+
+    if (descriptionsByProductId.size === 0) return products;
+
+    return products.map(product => {
+      if (normalizeProductDescription(product)) return product;
+      const key = productLookupKey(product);
+      const description = key ? descriptionsByProductId.get(key) : '';
+      return description ? { ...product, description } : product;
+    });
+  } catch (error) {
+    return products;
+  }
 },
 };
 

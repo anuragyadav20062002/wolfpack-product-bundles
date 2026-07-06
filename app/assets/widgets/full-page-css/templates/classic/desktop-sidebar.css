@@ -327,11 +327,11 @@
 
   .fpb-preset-classic .classic-sidebar-slots .bw-selected-slot--filled,
   .fpb-preset-classic .classic-sidebar-slot--filled {
-    border: 1px solid var(--bundle-side-panel-product-border, currentColor);
+    border: 0;
   }
 
   .fpb-preset-classic .classic-sidebar-slots .bw-selected-slot--filled {
-    overflow: hidden;
+    overflow: visible;
   }
 
   .fpb-preset-classic
@@ -379,9 +379,11 @@
     .bw-selected-slot--filled
     .bw-selected-row__action {
     position: absolute;
-    inset: auto -8px -8px auto;
+    inset: 0 auto auto 0;
     display: grid;
     place-items: center;
+    min-width: 0;
+    z-index: 2;
   }
 
   .fpb-preset-classic
@@ -395,19 +397,20 @@
     .classic-sidebar-slots
     .bw-selected-slot--filled
     .bw-selected-row__remove {
-    width: 22px;
-    height: 22px;
+    position: relative;
+    width: 1rem;
+    height: 1rem;
     border: 0;
     border-radius: 50%;
     padding: 0;
     display: grid;
     place-items: center;
-    background: var(
-      --bundle-side-panel-remove-hover,
-      var(--bundle-side-panel-remove-color, currentColor)
-    );
-    color: var(--bundle-button-text-color, var(--bundle-full-page-bg-color));
+    background: var(--bundle-side-panel-remove-icon-bg, #000);
+    color: var(--bundle-side-panel-remove-icon-color, #fff);
+    font-size: 0;
+    line-height: 1;
     cursor: pointer;
+    transform: translate(-15%, -15%);
   }
 
   .fpb-preset-classic
@@ -415,8 +418,37 @@
     .bw-selected-slot--filled
     .bw-selected-row__remove
     svg {
-    width: 14px;
-    height: 14px;
+    display: none;
+  }
+
+  .fpb-preset-classic
+    .classic-sidebar-slots
+    .bw-selected-slot--filled
+    .bw-selected-row__remove::before,
+  .fpb-preset-classic
+    .classic-sidebar-slots
+    .bw-selected-slot--filled
+    .bw-selected-row__remove::after {
+    content: "";
+    position: absolute;
+    width: 0.5rem;
+    height: 0.125rem;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .fpb-preset-classic
+    .classic-sidebar-slots
+    .bw-selected-slot--filled
+    .bw-selected-row__remove::before {
+    transform: rotate(45deg);
+  }
+
+  .fpb-preset-classic
+    .classic-sidebar-slots
+    .bw-selected-slot--filled
+    .bw-selected-row__remove::after {
+    transform: rotate(-45deg);
   }
 
   .fpb-preset-classic

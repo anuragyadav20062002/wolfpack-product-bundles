@@ -139,6 +139,22 @@ function deriveProductOptionNames(product) {
   return Array.from({ length: maxTitleParts }, (_, index) => `Option ${index + 1}`);
 }
 
+function normalizeProductDescription(product) {
+  const directDescription = typeof product?.description === 'string'
+    ? product.description.trim()
+    : '';
+  if (directDescription) return directDescription;
+
+  const htmlDescription = typeof product?.descriptionHtml === 'string'
+    ? product.descriptionHtml.trim()
+    : '';
+  if (!htmlDescription || typeof document === 'undefined') return '';
+
+  const scratch = document.createElement('div');
+  scratch.innerHTML = htmlDescription;
+  return (scratch.textContent || '').trim();
+}
+
 function collectCategoryProducts(step) {
   if (!Array.isArray(step?.categories)) return [];
 
@@ -153,6 +169,15 @@ function collectCategoryProducts(step) {
 
 function productLookupKey(product) {
   return extractFullPageId(product?.id || product?.productId || product?.graphqlId);
+}
+
+function productGraphqlId(product) {
+  const rawId = product?.graphqlId || product?.productId || product?.id;
+  if (!rawId) return null;
+  const normalized = String(rawId);
+  if (normalized.startsWith('gid://shopify/Product/')) return normalized;
+  if (/^\d+$/.test(normalized)) return `gid://shopify/Product/${normalized}`;
+  return null;
 }
 
 function variantLookupKey(variant) {
@@ -241,7 +266,7 @@ export function normalizeFullPageDirectDefaultProduct(product) {
       currentlyNotInStock: false,
     }],
     images: imageUrl ? [{ src: imageUrl }] : [],
-    description: '',
+    description: normalizeProductDescription(product),
   };
 }
 
@@ -459,6 +484,8 @@ async loadStepProducts(stepIndex) {
     } catch (error) {
     }
   }
+
+  allProducts = await this.enrichMissingProductDescriptions(allProducts);
 
   // Process and normalize product data
   allProducts = this.mergeCategoryProductVariantAvailability(allProducts, step);
@@ -685,7 +712,7 @@ processProductsForStep(products, step) {
             variants: processedVariants,
             options: processedOptions,
             images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-            description: product.description || ''
+            description: normalizeProductDescription(product)
           };
         });
     } else {
@@ -733,7 +760,7 @@ processProductsForStep(products, step) {
         options: processedOptions,
         // Preserve the first image candidates for the product details modal.
         images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-        description: product.description || ''
+        description: normalizeProductDescription(product)
       }];
     }
   });
@@ -821,5 +848,47 @@ shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId) {
   }
 
   return target.available === false;
+},
+
+async enrichMissingProductDescriptions(products) {
+  if (!Array.isArray(products) || products.length === 0) return products;
+
+  const missingProductIds = Array.from(new Set(products
+    .filter(product => !normalizeProductDescription(product))
+    .map(productGraphqlId)
+    .filter(Boolean)));
+
+  if (missingProductIds.length === 0) return products;
+
+  const shop = window.Shopify?.shop || window.location.host;
+  const apiBaseUrl = this.resolveStorefrontApiBase();
+  const country = window.Shopify?.country
+    || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+    || null;
+
+  try {
+    const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+    const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(missingProductIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
+    if (!response.ok) return products;
+
+    const data = await response.json();
+    const descriptionsByProductId = new Map();
+    (Array.isArray(data.products) ? data.products : []).forEach(product => {
+      const description = normalizeProductDescription(product);
+      const key = productLookupKey(product);
+      if (key && description) descriptionsByProductId.set(key, description);
+    });
+
+    if (descriptionsByProductId.size === 0) return products;
+
+    return products.map(product => {
+      if (normalizeProductDescription(product)) return product;
+      const key = productLookupKey(product);
+      const description = key ? descriptionsByProductId.get(key) : '';
+      return description ? { ...product, description } : product;
+    });
+  } catch (error) {
+    return products;
+  }
 },
 };

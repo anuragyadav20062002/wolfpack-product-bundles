@@ -93,4 +93,41 @@ describe("FPB product modal read-only quick view", () => {
     const isActive = modal.modalElement.classList.contains("active");
     expect(isActive).toBe(false);
   });
+
+  it("clears stale variant summary when opening a single-variant product", async () => {
+    const { BundleModalVariantMethods } = await import("../../../app/assets/widgets/full-page/modal/variant-methods.js");
+    const elements: Record<string, any> = {
+      "modal-variants-container": {
+        innerHTML: "<button>Old variant</button>",
+        querySelectorAll: jest.fn(() => []),
+      },
+      "modal-selection-summary": {
+        style: { display: "flex" },
+      },
+      "modal-selection-text": {
+        textContent: "Blue / Medium",
+      },
+    };
+    (globalThis as typeof globalThis & { document: any }).document = {
+      getElementById: (id: string) => elements[id] ?? null,
+    };
+    const modal = {
+      currentProduct: {
+        id: "product-2",
+        title: "Single variant product",
+        variants: [{ id: "variant-2", title: "Default Title" }],
+      },
+      selectedOptions: { 0: "Blue", 1: "Medium" },
+      selectedVariant: { id: "old-variant" },
+      ...BundleModalVariantMethods,
+    };
+
+    modal.createVariantSelectors();
+
+    expect(elements["modal-variants-container"].innerHTML).toBe("");
+    expect(elements["modal-selection-summary"].style.display).toBe("none");
+    expect(elements["modal-selection-text"].textContent).toBe("");
+    expect(modal.selectedOptions).toEqual({});
+    expect(modal.selectedVariant).toEqual({ id: "variant-2", title: "Default Title" });
+  });
 });

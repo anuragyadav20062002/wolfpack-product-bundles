@@ -358,6 +358,7 @@ _renderCompactMobileSummarySlotTiles(container, allSelectedProducts = [], active
 
   for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
     const item = selectedItems[slotIndex];
+    const shouldRenderSlotRemove = this.getFullPageDesignPreset?.() === 'CLASSIC';
     const card = document.createElement('div');
     card.className = item
       ? 'fpb-mobile-summary-slot-card fpb-mobile-summary-slot-card--filled'
@@ -369,6 +370,23 @@ _renderCompactMobileSummarySlotTiles(container, allSelectedProducts = [], active
       card.innerHTML = imgSrc
         ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="fpb-mobile-summary-slot-image">`
         : '<div class="fpb-mobile-summary-slot-image-placeholder"></div>';
+      if (shouldRenderSlotRemove && !item.isDefault) {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'fpb-mobile-summary-slot-remove';
+        removeBtn.type = 'button';
+        removeBtn.setAttribute('aria-label', `Remove ${summaryTitle}`);
+        const removalState = this.getSummaryProductRemovalState(item);
+        if (!removalState.canRemove) {
+          removeBtn.classList.add('fpb-mobile-summary-slot-remove--disabled');
+          removeBtn.setAttribute('aria-disabled', 'true');
+          removeBtn.title = removalState.blockedMessage;
+        }
+        removeBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          this.removeSummarySelectedProduct(item, summaryTitle);
+        });
+        card.appendChild(removeBtn);
+      }
     } else {
       card.innerHTML = emptyStateIconUrl
         ? `<img class="fpb-mobile-summary-slot-icon-img" src="${emptyStateIconUrl}" alt="">`

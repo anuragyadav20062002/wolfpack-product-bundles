@@ -162,4 +162,64 @@ describe('FPB Standard variant availability', () => {
       expect.objectContaining({ id: '789', option1: 'M', option2: 'Navy' }),
     ]));
   });
+
+  it('preserves product descriptions for the product detail modal', () => {
+    const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
+      extractId: (id: string) => String(id || '').split('/').pop(),
+      shouldExpandStepProductsDuringLoad: () => false,
+      getFirstAvailableVariant: (product: any) => product.variants[0],
+      isVariantSelectableForInventory: () => true,
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+    }, [{
+      id: 'gid://shopify/Product/123',
+      title: 'Black Crew Neck T-Shirt',
+      description: 'Soft cotton product description.',
+      imageUrl: 'https://cdn.example.test/product.jpg',
+      variants: [
+        {
+          id: 'gid://shopify/ProductVariant/456',
+          title: 'S / Black',
+          price: '30.00',
+          available: true,
+        },
+      ],
+    }], { displayVariantsAsIndividual: false });
+
+    expect(normalized[0].description).toBe('Soft cotton product description.');
+  });
+
+  it('enriches cached products missing descriptions before modal normalization', async () => {
+    const previousWindow = (global as any).window;
+    const previousFetch = (global as any).fetch;
+    (global as any).window = {
+      Shopify: { shop: 'test.myshopify.com', country: 'US' },
+      location: { host: 'test.myshopify.com' },
+    };
+    (global as any).fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        products: [{
+          id: 'gid://shopify/Product/123',
+          description: 'Fetched product description.',
+        }],
+      }),
+    });
+
+    try {
+      const enriched = await fullPageProductProcessingMethods.enrichMissingProductDescriptions.call({
+        resolveStorefrontApiBase: () => '/apps/product-bundles',
+      }, [{
+        id: 'gid://shopify/Product/123',
+        title: 'Cached product',
+      }]);
+
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/apps/product-bundles/api/storefront-products'),
+      );
+      expect(enriched[0].description).toBe('Fetched product description.');
+    } finally {
+      (global as any).window = previousWindow;
+      (global as any).fetch = previousFetch;
+    }
+  });
 });
