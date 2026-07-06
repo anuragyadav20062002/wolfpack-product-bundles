@@ -41,11 +41,26 @@ const shopify = shopifyApp({
         select: { id: true, shopifyShopGid: true },
       });
       let shopifyShopGid = existingShop?.shopifyShopGid ?? null;
+      let setupAdmin: Pick<typeof admin, "graphql"> = admin;
+
+      try {
+        const offlineSession = await ensureShopHasExpiringOfflineSession(
+          prisma,
+          session.shop,
+          sessionStorage,
+        );
+        if (offlineSession) {
+          const { admin: offlineAdmin } = await shopify.unauthenticated.admin(session.shop);
+          setupAdmin = offlineAdmin;
+        }
+      } catch (error: any) {
+        AppLogger.error("Failed to ensure expiring offline session before setup", { shop: session.shop }, error);
+      }
 
       // Create variant-level metafield definitions with storefront access.
       // These enable the Liquid widget to read bundle_ui_config and other metafields.
       try {
-        await ensureVariantBundleMetafieldDefinitions(admin);
+        await ensureVariantBundleMetafieldDefinitions(setupAdmin);
       } catch (error: any) {
         AppLogger.error("Failed to create metafield definitions", { shop: session.shop }, error);
       }
@@ -53,7 +68,7 @@ const shopify = shopifyApp({
       // Create or get shop record with free plan subscription
       try {
         await BillingService.ensureShop(session.shop, session.shop);
-        shopifyShopGid = await ensureShopIdentity(admin, session.shop);
+        shopifyShopGid = await ensureShopIdentity(setupAdmin, session.shop);
         await recordBusinessEvent({
           eventHandle: existingShop ? "app_reauthorized" : "app_installed",
           shopDomain: session.shop,
@@ -69,7 +84,7 @@ const shopify = shopifyApp({
 
       // Create storefront access token after successful auth (optional, non-critical)
       try {
-        await createStorefrontAccessToken(admin, session.shop);
+        await createStorefrontAccessToken(setupAdmin, session.shop);
       } catch (error: any) {
         AppLogger.error("Failed to create storefront access token", { shop: session.shop }, error);
       }
@@ -79,12 +94,12 @@ const shopify = shopifyApp({
       try {
         const appUrl = process.env.SHOPIFY_APP_URL;
         if (appUrl) {
-          const shopIdResponse = await admin.graphql(`query { shop { id } }`);
+          const shopIdResponse = await setupAdmin.graphql(`query { shop { id } }`);
           if (shopIdResponse.ok) {
             const shopIdData = await shopIdResponse.json();
             const shopGlobalId = shopIdData.data?.shop?.id;
             if (shopGlobalId) {
-              await admin.graphql(
+              await setupAdmin.graphql(
                 `mutation UpdateAppUrlMetafield($metafields: [MetafieldsSetInput!]!) {
                    metafieldsSet(metafields: $metafields) {
                      metafields { id }
@@ -112,7 +127,7 @@ const shopify = shopifyApp({
 
       // Sync theme colors for bundle widget color inheritance (non-critical)
       try {
-        await syncThemeColors(admin, session.shop);
+        await syncThemeColors(setupAdmin, session.shop);
       } catch (error: any) {
         AppLogger.error("Failed to sync theme colors", { shop: session.shop }, error);
       }
@@ -122,7 +137,7 @@ const shopify = shopifyApp({
       try {
         const appUrl = process.env.SHOPIFY_APP_URL;
         if (appUrl) {
-          await activateUtmPixel(admin, appUrl, session.shop);
+          await activateUtmPixel(setupAdmin, appUrl, session.shop);
           AppLogger.info("UTM pixel auto-activated", { shop: session.shop });
         }
       } catch (error: any) {
@@ -144,11 +159,11 @@ const shopify = shopifyApp({
 
       // Automatically activate cart transform for new installations
       try {
-        const result = await CartTransformService.completeSetup(admin, session.shop);
+        const result = await CartTransformService.completeSetup(setupAdmin, session.shop);
         if (!result.success) {
           AppLogger.warn("Cart transform setup failed (non-critical)", { shop: session.shop, error: result.error });
           await recordBusinessEvent({
-            eventHandle: "cart_transform_heal_failed",
+            eventHandle: "cart_transform_setup_failed",
             shopDomain: session.shop,
             shopifyShopGid,
             surface: "admin",
@@ -178,7 +193,7 @@ const shopify = shopifyApp({
       } catch (error: any) {
         AppLogger.error("Error during cart transform setup", { shop: session.shop }, error);
         await recordBusinessEvent({
-          eventHandle: "cart_transform_heal_failed",
+          eventHandle: "cart_transform_setup_failed",
           shopDomain: session.shop,
           shopifyShopGid,
           surface: "admin",
@@ -195,7 +210,7 @@ const shopify = shopifyApp({
       // Automatically activate the Add On discount function so selected add-on
       // cart lines can render native Shopify discount allocations.
       try {
-        const result = await AddOnDiscountFunctionService.completeSetup(admin, session.shop);
+        const result = await AddOnDiscountFunctionService.completeSetup(setupAdmin, session.shop);
         if (result.success) {
           await recordBusinessEvent({
             eventHandle: "addon_discount_function_enabled",
@@ -244,11 +259,6 @@ const shopify = shopifyApp({
         });
       }
 
-      try {
-        await ensureShopHasExpiringOfflineSession(prisma, session.shop, sessionStorage);
-      } catch (error: any) {
-        AppLogger.error("Failed to migrate offline session to expiring token", { shop: session.shop }, error);
-      }
     },
   },
   ...(process.env.SHOP_CUSTOM_DOMAIN
