@@ -367,6 +367,8 @@ Acceptance:
 
 2026-07-06 desktop summary-sidebar visual refinement: the dedicated desktop sidebar pass reused the same EB Add On/sidebar evidence and measured the current EB stacked-message layout at `1280 x 844`: `366.27px` sidebar, red Clear, Add On heading rule, vertically scrollable `82px` tier cards, and equal action columns. WPB proof on `5.0.54` confirms the Classic desktop summary now matches those structural details in the active slot/add-on fixture while preserving add-on tier state changes after two selections. This was CSS-only and Classic-scoped; no add-on business logic changed. Evidence path: `/private/tmp/fpb-classic-agentic-parity/desktop-summary-sidebar-parity-20260706/`.
 
+2026-07-06 add-on scrollbar check: live EB Classic was rechecked by navigating into the Add On step and selecting four add-on products. EB did not render those selected add-ons as a scrolling list in the desktop summary sidebar; the sidebar showed the normal selected bundle summary, total, and cart action. The pre-add-on add-on tier/message stack remains scrollable when bounded, but its measured scrollbar styling is hidden (`scrollbar-width: none`). WPB Classic should keep the add-on summary overflow scrollable for stacked messages but hide the scrollbar thumb/track. Evidence path: `/private/tmp/fpb-classic-agentic-parity/C06-addons-free-gift-scrollbar/`.
+
 Acceptance:
 - Eligibility and ineligibility transitions match EB before and after entering the add-on step.
 - Highest eligible add-on tier wins.

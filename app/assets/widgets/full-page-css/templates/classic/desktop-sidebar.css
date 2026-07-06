@@ -558,7 +558,7 @@
     padding: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    scrollbar-width: thin;
+    scrollbar-width: none;
     background: transparent;
     border: 0;
     border-radius: 0;
@@ -573,19 +573,8 @@
     .layout-sidebar[data-fpb-design-preset="CLASSIC"]
     .side-panel-addon-summary::-webkit-scrollbar,
   .fpb-preset-classic .side-panel-addon-summary::-webkit-scrollbar {
-    width: 0.375rem;
-  }
-
-  .bundle-widget-full-page
-    .layout-sidebar[data-fpb-design-preset="CLASSIC"]
-    .side-panel-addon-summary::-webkit-scrollbar-thumb,
-  .fpb-preset-classic .side-panel-addon-summary::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: color-mix(
-      in srgb,
-      var(--bundle-side-panel-text-color, currentColor) 28%,
-      transparent
-    );
+    width: 0;
+    height: 0;
   }
 
   .bundle-widget-full-page
