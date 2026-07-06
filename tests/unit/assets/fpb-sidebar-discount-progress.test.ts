@@ -3,6 +3,8 @@ export {};
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageSidePanelMethods } = require('../../../app/assets/widgets/full-page/methods/side-panel-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const { fullPageMobileSummaryMethods } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PricingCalculator, ToastManager } = require('../../../app/assets/bundle-widget-components.js');
 
 class FakeElement {
@@ -40,6 +42,10 @@ class FakeElement {
   appendChild(child: FakeElement) {
     this.children.push(child);
     return child;
+  }
+
+  append(...children: FakeElement[]) {
+    children.forEach((child) => this.appendChild(child));
   }
 
   addEventListener(eventName: string, handler: () => unknown) {
@@ -252,6 +258,45 @@ describe('FPB summary sidebar discount progress', () => {
     expect(total?.innerHTML).toContain('side-panel-total-final');
     expect(total?.innerHTML).not.toContain('side-panel-total-original');
     expect(total?.innerHTML).not.toContain('$5.00');
+  });
+});
+
+describe('FPB summary bundle name header', () => {
+  it('renders the bundle name instead of the configured summary label in the desktop sidebar', () => {
+    const panel = document.createElement('aside') as unknown as FakeElement;
+    const context = makeContext('CLASSIC', 'simple');
+    context.selectedBundle.name = 'Daily Essentials';
+    context.selectedBundle.bundleTextConfig = {
+      bundleSummary: {
+        title: 'Your Bundle',
+        subTitle: 'Review your bundle',
+      },
+    };
+    context.getBundleSummaryText = fullPageMobileSummaryMethods.getBundleSummaryText;
+
+    fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+
+    expect(panel.querySelector('.side-panel-title')?.textContent).toBe('Daily Essentials');
+  });
+
+  it('renders the bundle name instead of the configured summary label in the mobile footer', () => {
+    const context = makeContext('CLASSIC', 'simple');
+    context.selectedBundle.name = 'Daily Essentials';
+    context.selectedBundle.bundleTextConfig = {
+      bundleSummary: {
+        title: 'Your Bundle',
+        subTitle: 'Review your bundle',
+      },
+    };
+    context.getBundleSummaryText = fullPageMobileSummaryMethods.getBundleSummaryText;
+
+    const bundleItems = fullPageMobileSummaryMethods._renderCompactMobileSummaryBundleItems.call(
+      context,
+      { display: { format: '${{amount}}' } },
+      0,
+    );
+
+    expect(bundleItems.querySelector('.fpb-mobile-summary-bundle-title')?.textContent).toBe('Daily Essentials');
   });
 });
 

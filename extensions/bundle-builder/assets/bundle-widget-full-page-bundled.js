@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.72
+ * Version : 5.0.73
  * Built   : 2026-07-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.72';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.73';
 (function() {
   'use strict';
 
@@ -6303,10 +6303,11 @@ _createMobileSummaryActionButton({
 
 getBundleSummaryText() {
   const summary = this.selectedBundle?.bundleTextConfig?.bundleSummary || {};
+  const bundleName = typeof this.selectedBundle?.name === 'string'
+    ? this.selectedBundle.name.trim()
+    : '';
   return {
-    title: typeof summary.title === 'string' && summary.title.trim()
-      ? summary.title
-      : 'Your Bundle',
+    title: bundleName || (typeof summary.title === 'string' ? summary.title.trim() : ''),
     subTitle: typeof summary.subTitle === 'string' && summary.subTitle.trim()
       ? summary.subTitle
       : 'Review your bundle'

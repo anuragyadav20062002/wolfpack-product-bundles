@@ -611,10 +611,11 @@ _createMobileSummaryActionButton({
 
 getBundleSummaryText() {
   const summary = this.selectedBundle?.bundleTextConfig?.bundleSummary || {};
+  const bundleName = typeof this.selectedBundle?.name === 'string'
+    ? this.selectedBundle.name.trim()
+    : '';
   return {
-    title: typeof summary.title === 'string' && summary.title.trim()
-      ? summary.title
-      : 'Your Bundle',
+    title: bundleName || (typeof summary.title === 'string' ? summary.title.trim() : ''),
     subTitle: typeof summary.subTitle === 'string' && summary.subTitle.trim()
       ? summary.subTitle
       : 'Review your bundle'
