@@ -22,14 +22,14 @@ decideEnablePreviewGate({ appEmbedEnabled, themeEditorUrl }): { mode: "proceed" 
 | 3 | App embed disabled + themeEditorUrl present → modal | `{ appEmbedEnabled: false, themeEditorUrl: "x" }` | `{ mode: "block_with_modal" }` |
 | 4 | App embed disabled and no themeEditorUrl → block silent | `{ appEmbedEnabled: false, themeEditorUrl: null }` | `{ mode: "block_silent" }` |
 
-### `EnablePreviewModal` JSX contract
+### `EnablePreviewModal` behavior
 
 | # | Scenario | Assertion |
 |---|---|---|
-| 5 | Returns null when `themeEditorUrl` is null | source contains an early `if (!themeEditorUrl) return null` |
-| 6 | Renders heading copy | source contains "Enable the theme app extension" |
-| 7 | Renders the 3-step guidance | source mentions "Online Store", "Edit Theme", "Save" |
-| 8 | Primary CTA opens the theme editor URL | source contains `window.open(themeEditorUrl` |
+| 5 | Returns null when closed | `open=false` returns no dialog |
+| 6 | Renders translated heading and body copy | visible text uses the translation keys |
+| 7 | Primary CTA uses setup callback first | `onSetupVisibility` is called and direct navigation is skipped |
+| 8 | Primary CTA opens Theme Editor in a new tab | absent setup callback, the shared Theme Editor new-tab helper is called |
 
 ## Acceptance Criteria
 

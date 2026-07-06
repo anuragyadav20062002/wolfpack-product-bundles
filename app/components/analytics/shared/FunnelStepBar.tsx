@@ -18,13 +18,6 @@ export interface FunnelStepBarProps {
   maxValue: number;
 }
 
-const ACCENT_VAR: Record<NonNullable<FunnelStepBarProps["accent"]>, string> = {
-  engagement: "var(--wpb-accent-engagement)",
-  revenue: "var(--wpb-accent-revenue)",
-  warning: "var(--wpb-accent-warning)",
-  ink: "var(--wpb-ink-900)",
-};
-
 export function FunnelStepBar({
   label,
   value,
@@ -41,56 +34,29 @@ export function FunnelStepBar({
   const dropOffPct = conversionPct !== null ? 100 - conversionPct : null;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        flex: 1,
-        minWidth: 0,
-      }}
-    >
+    <div className="wpb-funnel-step">
       <span className="wpb-label">{label}</span>
       <span
-        className="wpb-display-num"
-        style={{ color: ACCENT_VAR[accent], fontSize: 36, lineHeight: 1 }}
+        className="wpb-display-num wpb-display-num--funnel"
+        data-accent={accent}
         title={String(value)}
       >
         {formattedValue}
       </span>
-      <div
+      <progress
         aria-hidden
-        style={{
-          height: 6,
-          background: "var(--wpb-ink-300)",
-          borderRadius: 999,
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${fillPct}%`,
-            height: "100%",
-            background: ACCENT_VAR[accent],
-            borderRadius: 999,
-          }}
-        />
-      </div>
+        className="wpb-funnel-meter"
+        data-accent={accent}
+        value={fillPct}
+        max={100}
+      />
       {conversionPct !== null && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, font: "var(--wpb-micro)" }}>
-          <span style={{ color: "var(--wpb-ink-500)" }}>
+        <div className="wpb-funnel-conversion">
+          <span className="wpb-muted-micro">
             {conversionPct}% kept
           </span>
           {dropOffPct !== null && dropOffPct > 0 && (
-            <span
-              style={{
-                color: "var(--wpb-accent-warning)",
-                background: "var(--wpb-accent-warning-soft)",
-                borderRadius: 999,
-                padding: "2px 8px",
-                fontWeight: 600,
-              }}
-            >
+            <span className="wpb-funnel-dropoff">
               −{dropOffPct}%
             </span>
           )}

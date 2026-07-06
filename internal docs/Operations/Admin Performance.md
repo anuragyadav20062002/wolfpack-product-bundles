@@ -1,7 +1,7 @@
 ---
 title: Admin Performance
 type: operations
-last_audited: 2026-06-28
+last_audited: 2026-07-06
 ---
 
 # Admin Performance
@@ -108,3 +108,22 @@ The `/app/dashboard` loader must also keep non-critical Admin checks off the
 response path. App-embed refresh and web-pixel reconciliation are scheduled as
 post-response background tasks; the first dashboard payload should come from
 the shop, bundle summary, and subscription data needed to render above the fold.
+
+## 2026-07-06 Attribution LCP Follow-up
+
+A fresh Chrome trace on `/app/attribution?wpbWebVitalsDebug=1&days=7` showed
+the lab LCP candidate as the outer Shopify Admin page-title H1 (`Analytics`),
+not an iframe chart, banner, or image. The app-owned lever for that candidate is
+how quickly the route emits `<ui-title-bar title="Analytics">`.
+
+The attribution route now uses a lightweight shell that renders the title bar
+before loading the analytics dashboard module. The dashboard module is delayed
+briefly after shell mount so chart and analytics chunks do not compete with the
+Admin shell title paint. Support chat auto-load also uses the delayed fallback
+instead of `requestIdleCallback`, because Chrome can run idle callbacks before
+LCP on quiet traces; explicit support-click loading still opens chat
+immediately.
+
+If attribution remains above target in field data, keep optimizing the route
+shell and parent Admin boot path first. Do not add attribution image preloads:
+the confirmed candidate is text in the Shopify Admin shell.

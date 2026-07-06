@@ -124,21 +124,32 @@
 
 .stepConfigRow {
   display: grid;
-  grid-template-columns: 76px 1fr;
-  gap: 12px;
+  grid-template-columns: var(--step-config-icon-control-width, 86px) 1fr;
+  column-gap: 2px;
+  row-gap: 12px;
   align-items: start;
 }
 
 .iconColumn {
+  --step-config-icon-control-width: 86px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: flex-start;
+  align-items: stretch;
+  width: var(--step-config-icon-control-width);
+}
+
+.stepConfigTitle {
+  margin: 0 0 16px;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: 0;
 }
 
 .iconBox {
   position: relative;
-  width: 64px;
+  width: 100%;
   height: 64px;
   border: 1px solid #d4d4d8;
   border-radius: 8px;
@@ -147,6 +158,10 @@
   justify-content: center;
   overflow: hidden;
   background: #ffffff;
+}
+
+.iconUploadButton {
+  width: 100%;
 }
 
 .iconImg {

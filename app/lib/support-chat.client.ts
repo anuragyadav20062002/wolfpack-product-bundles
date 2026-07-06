@@ -23,27 +23,24 @@ export function installSupportChatLoader({
 }) {
   let configured = false;
   let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
-  let idleHandle: number | null = null;
 
   const loadSupportChat = () => {
     if (configured) return;
     configured = true;
+    if (timeoutHandle !== null) {
+      const clearTimer = win.clearTimeout ?? clearTimeout;
+      clearTimer(timeoutHandle);
+      timeoutHandle = null;
+    }
     configure();
   };
 
   win.__wpbLoadSupportChat = loadSupportChat;
 
-  if (typeof win.requestIdleCallback === "function") {
-    idleHandle = win.requestIdleCallback(loadSupportChat);
-  } else {
-    const setTimer = win.setTimeout ?? setTimeout;
-    timeoutHandle = setTimer(loadSupportChat, fallbackDelayMs);
-  }
+  const setTimer = win.setTimeout ?? setTimeout;
+  timeoutHandle = setTimer(loadSupportChat, fallbackDelayMs);
 
   return () => {
-    if (idleHandle !== null && typeof win.cancelIdleCallback === "function") {
-      win.cancelIdleCallback(idleHandle);
-    }
     if (timeoutHandle !== null) {
       const clearTimer = win.clearTimeout ?? clearTimeout;
       clearTimer(timeoutHandle);

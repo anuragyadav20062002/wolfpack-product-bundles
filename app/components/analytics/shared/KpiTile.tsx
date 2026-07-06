@@ -22,7 +22,7 @@ export interface KpiTileProps {
   sparkline?: number[];
 }
 
-const ACCENT_VAR: Record<KpiAccent, string> = {
+export const KPI_ACCENT_VAR: Record<KpiAccent, string> = {
   engagement: "var(--wpb-accent-engagement)",
   revenue: "var(--wpb-accent-revenue)",
   warning: "var(--wpb-accent-warning)",
@@ -44,20 +44,23 @@ export function KpiTile({
   );
 
   const valueClass =
-    size === "hero" ? "wpb-display-num" : size === "small" ? "wpb-numeric" : "wpb-numeric";
-  const valueStyle = size === "small" ? { font: "var(--wpb-numeric-sm)" } : undefined;
+    size === "hero"
+      ? "wpb-display-num"
+      : size === "small"
+        ? "wpb-numeric wpb-numeric--small"
+        : "wpb-numeric";
 
   return (
-    <div className="wpb-card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div className="wpb-card wpb-kpi-card">
       <span className="wpb-label">{label}</span>
       <span
         className={valueClass}
-        style={{ color: ACCENT_VAR[accent], ...(valueStyle || {}) }}
+        data-accent={accent}
       >
         {value}
       </span>
       {(delta || hint) && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: -2 }}>
+        <div className="wpb-kpi-meta">
           {delta && (
             <span
               className={`wpb-delta wpb-delta--${delta.direction}`}
@@ -68,24 +71,24 @@ export function KpiTile({
             </span>
           )}
           {hint && (
-            <span style={{ font: "var(--wpb-micro)", color: "var(--wpb-ink-500)" }}>{hint}</span>
+            <span className="wpb-muted-micro">{hint}</span>
           )}
         </div>
       )}
       {sparkline && sparkline.length > 1 && (
-        <div style={{ height: 36, margin: "8px -8px -8px" }}>
+        <div className="wpb-sparkline">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={sparkData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
               <defs>
                 <linearGradient id={`spark-${label.replace(/\s+/g, "-")}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={ACCENT_VAR[accent]} stopOpacity={0.45} />
-                  <stop offset="100%" stopColor={ACCENT_VAR[accent]} stopOpacity={0} />
+                  <stop offset="0%" stopColor={KPI_ACCENT_VAR[accent]} stopOpacity={0.45} />
+                  <stop offset="100%" stopColor={KPI_ACCENT_VAR[accent]} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <Area
                 type="monotone"
                 dataKey="v"
-                stroke={ACCENT_VAR[accent]}
+                stroke={KPI_ACCENT_VAR[accent]}
                 strokeWidth={1.5}
                 fill={`url(#spark-${label.replace(/\s+/g, "-")})`}
                 isAnimationActive={false}

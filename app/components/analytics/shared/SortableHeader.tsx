@@ -28,27 +28,11 @@ export function SortableHeader({
     <button
       type="button"
       onClick={() => onSort(sortKey)}
-      style={{
-        display: "inline-flex",
-        gap: 4,
-        alignItems: "center",
-        justifyContent: align === "right" ? "flex-end" : "flex-start",
-        width: "100%",
-        background: "none",
-        border: "none",
-        padding: 0,
-        color: "var(--wpb-ink-500)",
-        font: "var(--wpb-micro)",
-        fontSize: "var(--wpb-label-size)",
-        fontWeight: 600,
-        letterSpacing: "var(--wpb-label-spacing)",
-        textTransform: "uppercase",
-        cursor: "pointer",
-        textAlign: align,
-      }}
+      className="wpb-sort-button"
+      data-align={align}
     >
       <span>{label}</span>
-      <span style={{ opacity: isActive ? 1 : 0.3, fontSize: 9 }}>
+      <span className="wpb-sort-indicator" data-active={isActive}>
         {isActive ? (direction === "asc" ? "▲" : "▼") : "▼"}
       </span>
     </button>

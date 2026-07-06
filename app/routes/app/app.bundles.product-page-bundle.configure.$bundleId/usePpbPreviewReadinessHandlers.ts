@@ -3,7 +3,7 @@ import { AppLogger } from "../../../lib/logger";
 import { navigateBackOrFallback } from "../../../lib/navigation";
 import productPageBundleStyles from "../../../styles/routes/product-page-bundle-configure.module.css";
 import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness";
-import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
+import { verifyAppEmbedEnabledBeforePreview } from "../../../lib/app-embed-status-check.client";
 import { pickPpbPreviewUrl } from "../../../lib/ppb-preview-url";
 import type { BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import type { TourStep } from "../../../components/bundle-configure/tourSteps";
@@ -26,20 +26,16 @@ export function usePpbPreviewReadinessHandlers({
   templateState: any;
 }) {
   const [isPreviewBundleLoading, setIsPreviewBundleLoading] = useState(false);
-  const enablePreviewGate = useEnablePreviewGate({
-    appEmbedEnabled: base.appEmbedEnabled,
-    themeEditorUrl: base.themeEditorUrl,
-    onSilentBlock: () =>
-      base.shopify.toast.show("Theme editor is unavailable for this shop.", {
-        isError: true,
-      }),
-    sessionKey: base.bundle.id,
-    autoShowOnMount:
-      base.loaderData.configureMode === "edit" &&
-      base.isBundleVisibilityPending,
-    onSetupVisibility: () => base.setActiveSection("bundle_visibility"),
-  });
-  const handlePreviewBundle = useCallback(() => {
+  const closeDisabledPreviewModal = useCallback(() => undefined, []);
+  const enablePreviewGate = {
+    modalProps: {
+      open: false,
+      onClose: closeDisabledPreviewModal,
+      themeEditorUrl: base.themeEditorUrl,
+      onSetupVisibility: () => base.setActiveSection("bundle_visibility"),
+    },
+  };
+  const handlePreviewBundle = useCallback(async () => {
     if (base.isDirty) {
       base.shopify.toast.show(
         "Please save your changes before previewing the bundle",
@@ -47,90 +43,99 @@ export function usePpbPreviewReadinessHandlers({
       );
       return false;
     }
-    const result = enablePreviewGate.requestPreview(async () => {
-      setIsPreviewBundleLoading(true);
-      try {
-        const bundleStatusForPreview = String(
-          (base.bundle as any).status ?? "",
-        ).toLowerCase();
-        let productUrl = pickPpbPreviewUrl({
-          appEmbedEnabled: base.appEmbedEnabled,
-          bundleStatus: bundleStatusForPreview,
-          productHandle: base.bundle.shopifyProductHandle,
-          bundleProduct: base.bundleProduct,
-          shop: base.shop,
-        });
-        if (!productUrl && base.bundleProduct?.id) {
-          const productId = base.bundleProduct.id.includes(
-            "gid://shopify/Product/",
-          )
-            ? base.bundleProduct.id.split("/").pop()
-            : base.bundleProduct.id;
-          const shopDomain = base.shop.includes(".myshopify.com")
-            ? base.shop.replace(".myshopify.com", "")
-            : base.shop.split(".")[0];
-          productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
-        }
-        if (!productUrl) {
-          AppLogger.error("Bundle product data:", {}, base.bundleProduct);
-          base.shopify.toast.show(
-            "Unable to determine bundle product URL. Please check bundle product configuration.",
-            {
-              isError: true,
-              duration: 5000,
-            },
-          );
-          return true;
-        }
-        const isStorefrontUrl = !productUrl.includes("/admin.shopify.com/");
-        const previewWindow = window.open(
-          "about:blank",
-          "_blank",
-          "noopener,noreferrer",
-        );
-        if (isStorefrontUrl && base.bundleProduct?.id) {
-          try {
-            const formData = new FormData();
-            formData.append("intent", "assignProductTemplate");
-            formData.append("productId", base.bundleProduct.id);
-            formData.append(
-              "templateSuffix",
-              (base.formState.templateName || "").trim(),
-            );
-            await fetch(window.location.href, { method: "POST", body: formData });
-          } catch (err) {
-            AppLogger.error(
-              "Failed to sync product templateSuffix before preview",
-              {},
-              err,
-            );
-          }
-        }
-        if (previewWindow && !previewWindow.closed) {
-          previewWindow.location.href = productUrl;
-        } else {
-          window.open(productUrl, "_blank", "noopener,noreferrer");
-        }
-        recordBundlePreview(productUrl);
-        const isPreviewUrl =
-          base.bundleProduct &&
-          productUrl === base.bundleProduct.onlineStorePreviewUrl;
-        const message = isPreviewUrl
-          ? "Bundle product preview opened in new tab"
-          : "Bundle product opened in new tab";
-        markBundlePreviewComplete({
-          bundleId: base.bundle.id,
-          storage: window.localStorage,
-          setHasPreview: templateState.setHasPreview,
-        });
-        base.shopify.toast.show(message, { isError: false });
-        return true;
-      } finally {
-        window.setTimeout(() => setIsPreviewBundleLoading(false), 500);
+    const appEmbedEnabled = await verifyAppEmbedEnabledBeforePreview(
+      base.appEmbedEnabled,
+      base.checkAppEmbedStatusBeforePreview,
+      {
+        onValidationStart: () => setIsPreviewBundleLoading(true),
+        onValidationBlocked: () => setIsPreviewBundleLoading(false),
+      },
+    );
+    if (!appEmbedEnabled) {
+      base.triggerAppEmbedBannerFeedback();
+      return false;
+    }
+    setIsPreviewBundleLoading(true);
+    try {
+      const bundleStatusForPreview = String(
+        (base.bundle as any).status ?? "",
+      ).toLowerCase();
+      let productUrl = pickPpbPreviewUrl({
+        appEmbedEnabled: base.appEmbedEnabled,
+        bundleStatus: bundleStatusForPreview,
+        productHandle: base.bundle.shopifyProductHandle,
+        bundleProduct: base.bundleProduct,
+        shop: base.shop,
+      });
+      if (!productUrl && base.bundleProduct?.id) {
+        const productId = base.bundleProduct.id.includes(
+          "gid://shopify/Product/",
+        )
+          ? base.bundleProduct.id.split("/").pop()
+          : base.bundleProduct.id;
+        const shopDomain = base.shop.includes(".myshopify.com")
+          ? base.shop.replace(".myshopify.com", "")
+          : base.shop.split(".")[0];
+        productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
       }
-    });
-    return result instanceof Promise ? result : result === true;
-  }, [base, enablePreviewGate, templateState.setHasPreview]);
+      if (!productUrl) {
+        AppLogger.error("Bundle product data:", {}, base.bundleProduct);
+        base.shopify.toast.show(
+          "Unable to determine bundle product URL. Please check bundle product configuration.",
+          {
+            isError: true,
+            duration: 5000,
+          },
+        );
+        return true;
+      }
+      const isStorefrontUrl = !productUrl.includes("/admin.shopify.com/");
+      const previewWindow = window.open(
+        "about:blank",
+        "_blank",
+        "noopener,noreferrer",
+      );
+      if (isStorefrontUrl && base.bundleProduct?.id) {
+        try {
+          const formData = new FormData();
+          formData.append("intent", "assignProductTemplate");
+          formData.append("productId", base.bundleProduct.id);
+          formData.append(
+            "templateSuffix",
+            (base.formState.templateName || "").trim(),
+          );
+          await fetch(window.location.href, { method: "POST", body: formData });
+        } catch (err) {
+          AppLogger.error(
+            "Failed to sync product templateSuffix before preview",
+            {},
+            err,
+          );
+        }
+      }
+      if (previewWindow && !previewWindow.closed) {
+        previewWindow.location.href = productUrl;
+      } else {
+        window.open(productUrl, "_blank", "noopener,noreferrer");
+      }
+      recordBundlePreview(productUrl);
+      const isPreviewUrl =
+        base.bundleProduct &&
+        productUrl === base.bundleProduct.onlineStorePreviewUrl;
+      const message = isPreviewUrl
+        ? "Bundle product preview opened in new tab"
+        : "Bundle product opened in new tab";
+      markBundlePreviewComplete({
+        bundleId: base.bundle.id,
+        storage: window.localStorage,
+        setHasPreview: templateState.setHasPreview,
+      });
+      base.shopify.toast.show(message, { isError: false });
+      return true;
+    } finally {
+      window.setTimeout(() => setIsPreviewBundleLoading(false), 500);
+    }
+  }, [base, templateState.setHasPreview]);
   const readinessItems = useMemo<BundleReadinessItem[]>(() => {
     const hasProducts =
       base.stepsState.steps.reduce((totalProducts: number, step: any) => {
@@ -300,7 +305,7 @@ export function usePpbPreviewReadinessHandlers({
       templateState.setReadinessOpen(false);
       switch (key) {
         case "embed":
-          if (base.themeEditorUrl) window.open(base.themeEditorUrl, "_blank");
+          base.openThemeEditorForAppEmbed();
           break;
         case "products":
           handleSectionChange("step_setup");

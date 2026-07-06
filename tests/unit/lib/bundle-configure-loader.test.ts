@@ -1,4 +1,8 @@
-import { fetchBundleProduct, fetchEmbedData } from "../../../app/lib/bundle-configure-loader.server";
+import {
+  buildThemeAppEmbedEditorUrl,
+  fetchBundleProduct,
+  fetchEmbedData,
+} from "../../../app/lib/bundle-configure-loader.server";
 import { checkAppEmbedEnabled } from "../../../app/services/theme/app-embed-check.server";
 
 jest.mock("../../../app/lib/logger", () => ({
@@ -26,81 +30,104 @@ jest.mock("../../../app/db.server", () => ({
 
 const THEME_GID = "gid://shopify/OnlineStoreTheme/123456";
 const SHOP = "test.myshopify.com";
-const API_KEY = "abc123";
+const API_KEY = "test-api-key";
 
-describe("fetchEmbedData — DB cache", () => {
+describe("fetchEmbedData — live Shopify app embed status", () => {
   const mockAdmin = {};
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("returns cached value and skips Shopify API when cache is fresh", async () => {
-    mockShopFindUnique.mockResolvedValue({
-      appEmbedEnabled: true,
-      appEmbedCheckedAt: new Date(), // just now = fresh
-      appEmbedThemeId: THEME_GID,
-    });
+  it("does not read app embed cache from DB", async () => {
+    mockShopFindUnique.mockRejectedValue(new Error("DB cache must not be read"));
+    (checkAppEmbedEnabled as jest.Mock).mockResolvedValue({ enabled: false, themeId: THEME_GID });
 
     const result = await fetchEmbedData(mockAdmin, SHOP, API_KEY);
 
-    expect(result.appEmbedEnabled).toBe(true);
+    expect(result.appEmbedEnabled).toBe(false);
     expect(result.themeEditorUrl).toContain("123456");
-    expect(checkAppEmbedEnabled).not.toHaveBeenCalled();
+    expect(checkAppEmbedEnabled).toHaveBeenCalledTimes(1);
+    expect(mockShopFindUnique).not.toHaveBeenCalled();
     expect(mockShopUpdate).not.toHaveBeenCalled();
   });
 
-  it("calls Shopify API and updates cache when cache is stale", async () => {
-    const staleDate = new Date(Date.now() - 10 * 60 * 1000); // 10 min ago
-    mockShopFindUnique.mockResolvedValue({
-      appEmbedEnabled: true,
-      appEmbedCheckedAt: staleDate,
-      appEmbedThemeId: THEME_GID,
-    });
+  it("does not persist Shopify app embed status after a live read", async () => {
     (checkAppEmbedEnabled as jest.Mock).mockResolvedValue({ enabled: true, themeId: THEME_GID });
 
     const result = await fetchEmbedData(mockAdmin, SHOP, API_KEY);
 
     expect(checkAppEmbedEnabled).toHaveBeenCalledTimes(1);
-    expect(mockShopUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ appEmbedEnabled: true }) }),
-    );
+    expect(mockShopFindUnique).not.toHaveBeenCalled();
+    expect(mockShopUpdate).not.toHaveBeenCalled();
     expect(result.appEmbedEnabled).toBe(true);
   });
 
-  it("calls Shopify API and updates cache when no cache exists", async () => {
-    mockShopFindUnique.mockResolvedValue(null);
+  it("returns disabled directly from Shopify without writing cache", async () => {
     (checkAppEmbedEnabled as jest.Mock).mockResolvedValue({ enabled: false, themeId: THEME_GID });
 
     const result = await fetchEmbedData(mockAdmin, SHOP, API_KEY);
 
     expect(checkAppEmbedEnabled).toHaveBeenCalledTimes(1);
-    expect(mockShopUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ appEmbedEnabled: false }) }),
-    );
+    expect(mockShopFindUnique).not.toHaveBeenCalled();
+    expect(mockShopUpdate).not.toHaveBeenCalled();
     expect(result.appEmbedEnabled).toBe(false);
   });
 
-  it("does not poison cache when Shopify returns themeId:null (network/error result)", async () => {
-    mockShopFindUnique.mockResolvedValue(null);
+  it("does not write cache when Shopify returns themeId:null", async () => {
     (checkAppEmbedEnabled as jest.Mock).mockResolvedValue({ enabled: false, themeId: null });
 
     await fetchEmbedData(mockAdmin, SHOP, API_KEY);
 
+    expect(mockShopFindUnique).not.toHaveBeenCalled();
     expect(mockShopUpdate).not.toHaveBeenCalled();
   });
 
-  it("builds correct theme editor URL from cached themeId", async () => {
-    mockShopFindUnique.mockResolvedValue({
-      appEmbedEnabled: true,
-      appEmbedCheckedAt: new Date(),
-      appEmbedThemeId: THEME_GID,
-    });
+  it("builds correct theme editor URL from the live themeId", async () => {
+    (checkAppEmbedEnabled as jest.Mock).mockResolvedValue({ enabled: true, themeId: THEME_GID });
 
     const result = await fetchEmbedData(mockAdmin, SHOP, API_KEY, "bundle-app-embed");
 
     expect(result.themeEditorUrl).toBe(
-      `https://${SHOP}/admin/themes/123456/editor?context=apps&appEmbed=${API_KEY}%2Fbundle-app-embed`,
+      `https://${SHOP}/admin/themes/123456/editor?context=apps&activateAppId=${API_KEY}%2Fbundle-app-embed`,
+    );
+  });
+
+  it("lets the embed checker resolve the current Shopify app handle", async () => {
+    (checkAppEmbedEnabled as jest.Mock).mockResolvedValue({
+      enabled: false,
+      themeId: THEME_GID,
+    });
+
+    const result = await fetchEmbedData(mockAdmin, SHOP, API_KEY, "bundle-app-embed");
+
+    expect(checkAppEmbedEnabled).toHaveBeenCalledTimes(1);
+    expect(checkAppEmbedEnabled).toHaveBeenCalledWith(
+      mockAdmin,
+      SHOP,
+      expect.objectContaining({
+        appHandles: ["bundle-builder"],
+        blockHandles: ["bundle-app-embed"],
+      }),
+    );
+    expect(checkAppEmbedEnabled).toHaveBeenCalledWith(
+      mockAdmin,
+      SHOP,
+      expect.any(Object),
+    );
+    expect((checkAppEmbedEnabled as jest.Mock).mock.calls[0][2]).not.toHaveProperty(
+      "appHandle",
+    );
+    expect(mockShopFindUnique).not.toHaveBeenCalled();
+    expect(mockShopUpdate).not.toHaveBeenCalled();
+    expect(result.appEmbedEnabled).toBe(false);
+  });
+});
+
+describe("buildThemeAppEmbedEditorUrl", () => {
+  it("uses Shopify's activateAppId deep link parameter", () => {
+    expect(buildThemeAppEmbedEditorUrl(SHOP, THEME_GID, API_KEY, "bundle-app-embed")).toBe(
+      `https://${SHOP}/admin/themes/123456/editor?context=apps&activateAppId=${API_KEY}%2Fbundle-app-embed`,
     );
   });
 });

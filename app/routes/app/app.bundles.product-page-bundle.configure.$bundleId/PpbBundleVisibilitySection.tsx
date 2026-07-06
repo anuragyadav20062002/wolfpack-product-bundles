@@ -7,6 +7,7 @@ export function PpbBundleVisibilitySection() {
     appEmbedEnabled,
     bundle,
     handleSectionChange,
+    openThemeEditorForAppEmbed,
     productPageBundleStyles,
     shop,
     shopify,
@@ -44,9 +45,9 @@ export function PpbBundleVisibilitySection() {
                 <button
                   type="button"
                   className={productPageBundleStyles.visibilitySecondaryAction}
-                  onClick={() => window.open(themeEditorUrl, "_blank")}
+                  onClick={openThemeEditorForAppEmbed}
                 >
-                  Enable here
+                  Enable Here
                 </button>
               )}
             </div>

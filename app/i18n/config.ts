@@ -24,10 +24,18 @@ export function normalizeAdminLocale(locale: string | null | undefined): Support
   return locale && isSupportedLocale(locale) ? locale : "en";
 }
 
+function cloneLocaleCatalog(catalog: LocaleCatalog): LocaleCatalog {
+  return JSON.parse(JSON.stringify(catalog)) as LocaleCatalog;
+}
+
+function refreshEnglishResourceBundle() {
+  i18n.addResourceBundle("en", "translation", cloneLocaleCatalog(en), true, true);
+}
+
 if (!i18n.isInitialized) {
   void i18n.use(initReactI18next).init({
     resources: {
-      en: { translation: en },
+      en: { translation: cloneLocaleCatalog(en) },
     },
     lng: "en",
     fallbackLng: "en",
@@ -38,6 +46,11 @@ if (!i18n.isInitialized) {
 
 export async function loadAdminLocaleResources(locale: string | null | undefined) {
   const normalizedLocale = normalizeAdminLocale(locale);
+  if (normalizedLocale === "en") {
+    refreshEnglishResourceBundle();
+    return "en";
+  }
+
   if (i18n.hasResourceBundle(normalizedLocale, "translation")) {
     return normalizedLocale;
   }

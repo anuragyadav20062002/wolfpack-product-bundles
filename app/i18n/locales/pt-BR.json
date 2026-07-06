@@ -149,11 +149,15 @@
   },
   "common": {
     "actions": {
-      "close": "Fechar", "dismiss": "Dispensar", "manage": "Gerenciar", "enableHere": "Ativar aqui",
+      "close": "Fechar", "dismiss": "Dispensar", "manage": "Gerenciar", "enable": "Ativar", "enableHere": "Ativar aqui", "learnMore": "Saiba mais",
       "maybeLater": "Talvez mais tarde", "setUpVisibility": "Configurar visibilidade", "reinstallApp": "Reinstalar aplicativo",
       "upgradeNow": "Fazer upgrade agora", "viewPlans": "Ver planos", "discardChanges": "Descartar alterações", "continueEditing": "Continuar editando"
     },
-    "appEmbed": { "body": "Ative a extensão de aplicativo do tema para Wolfpack Bundles para posicionar e visualizar o pacote." },
+    "appEmbed": {
+      "body": "Ative a extensão de aplicativo do tema para Wolfpack Bundles para posicionar e visualizar o pacote.",
+      "guideTitle": "Ativar incorporação do app",
+      "guideImageAlt": "Como ativar a incorporação do app Wolfpack Bundles"
+    },
     "previewGate": { "title": "A visibilidade do seu pacote ainda não está configurada", "body": "Seu pacote está ativo, mas os compradores não conseguem encontrá-lo. Configure a visibilidade para mudar isso." },
     "unlistedBundle": { "title": "Seu pacote não está listado", "body": "O pacote está oculto nos resultados de pesquisa e nas páginas de coleções da loja. Para que ele seja encontrado, altere o status do produto do pacote para Ativo em Produtos da Shopify." },
     "proxyHealth": { "title": "Proxy do aplicativo não conectado", "body": "Os widgets de pacote de página inteira não serão carregados na vitrine. Reinstale o aplicativo para corrigir isso." },

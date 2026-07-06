@@ -20,7 +20,7 @@ import {
 } from "../../lib/analytics";
 import db from "../../db.server";
 
-export { default } from "./app.attribution/AttributionDashboard";
+export { default } from "./app.attribution/AttributionRouteShell";
 
 
 export const action = async ({ request }: ActionFunctionArgs) => {

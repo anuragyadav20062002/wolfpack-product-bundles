@@ -392,6 +392,7 @@ export function useConfigureSaveController(flow: ConfigureBundleFlowDraft) {
             storage: window.localStorage,
             setHasPreview: flow.setHasPreview,
           });
+          flow.finishPreviewBundleLoading?.();
           flow.revalidator.revalidate();
         } else if ("synced" in result && result.synced) {
           flow.shopify.toast.show(
@@ -418,6 +419,7 @@ export function useConfigureSaveController(flow: ConfigureBundleFlowDraft) {
           isError: true,
           duration: 5000,
         });
+        flow.finishPreviewBundleLoading?.();
         if (
           errorMessage.includes("pages") ||
           errorMessage.includes("templates")

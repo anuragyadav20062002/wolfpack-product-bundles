@@ -48,6 +48,10 @@
   font-weight: 700;
   font-size: 15px;
   line-height: 27px;
+  max-width: none;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
   transition:
     background 0.2s ease,
     color 0.2s ease;
@@ -75,6 +79,11 @@
   font-weight: 600;
   font-size: inherit;
   color: inherit;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .promo-discount-tier-row {
