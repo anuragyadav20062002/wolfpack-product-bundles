@@ -887,6 +887,70 @@
     min-height: 0;
   }
 
+  .fpb-mobile-classic-footer .fpb-mobile-summary-bundle-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    align-items: start;
+    column-gap: 0.5rem;
+    width: var(--fpb-mobile-footer-inner-width, 360px);
+    height: auto;
+    min-height: 0;
+    padding: 0 0 0.625rem;
+    box-sizing: border-box;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-bundle-copy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 0.3125rem;
+    min-width: 0;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-clear-btn {
+    display: grid;
+    grid-template-columns: 1.375rem max-content;
+    grid-template-rows: minmax(1.375rem, auto);
+    align-items: center;
+    justify-content: center;
+    justify-self: end;
+    gap: 0.25rem;
+    width: max-content;
+    min-width: 0;
+    min-height: 2.2rem;
+    padding: 0.3125rem 0.875rem;
+    border: 0;
+    border-radius: var(--bundle-side-panel-btn-radius, 5px);
+    background: var(
+      --bundle-side-panel-clear-bg,
+      color-mix(
+        in srgb,
+        var(
+            --bundle-side-panel-clear-color,
+            var(--classic-side-panel-clear-color, #d13d54)
+          )
+          12%,
+        transparent
+      )
+    );
+    color: var(
+      --bundle-side-panel-clear-color,
+      var(--classic-side-panel-clear-color, #d13d54)
+    );
+    font-family: Assistant, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.8;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .fpb-mobile-classic-footer .fpb-mobile-summary-clear-btn svg {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+
   .fpb-mobile-classic-footer .fpb-mobile-summary-box-selection {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
