@@ -64,7 +64,7 @@ export function DashboardTopCards({
         </div>
         {loadAppEmbedImage ? (
           <OptimisedImage
-            src="/appEmbed.png"
+            src="/appEmbed.avif"
             alt={t("dashboard.appEmbeds.headingMain")}
             className={dashboardStyles.appEmbedImage}
             width={420}
