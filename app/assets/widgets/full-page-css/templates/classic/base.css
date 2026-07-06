@@ -66,6 +66,38 @@
   font-weight: 700;
 }
 
+.bundle-widget-full-page[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card.bw-product-card--selected
+  .product-card-action,
+.layout-sidebar[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card.bw-product-card--selected
+  .product-card-action {
+  height: auto;
+  min-height: var(
+    --fpb-card-quantity-selector-height,
+    var(--classic-text-button-height)
+  );
+  overflow: visible;
+}
+
+.bundle-widget-full-page[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card.bw-product-card--selected
+  .product-card-action
+  .inline-quantity-controls,
+.layout-sidebar[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card.bw-product-card--selected
+  .product-card-action
+  .inline-quantity-controls {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  animation: none;
+}
+
 @keyframes fpb-classic-product-image-fade {
   from {
     opacity: 0.4;
