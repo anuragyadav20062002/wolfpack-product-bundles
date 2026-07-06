@@ -134,20 +134,19 @@ async _sidebarAdvanceToNextStep() {
     if (gridContainer) gridContainer.insertAdjacentElement('afterend', newCategoryRows);
   }
 
-  // 4. Show loading skeleton in product grid
+  // 4. Show product-grid loading state
   const productGridContainer = contentSection.querySelector('.full-page-product-grid-container');
   if (!productGridContainer) {
     this.renderFullPageLayoutWithSidebar();
     return;
   }
-  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  this.renderProductGridLoadingState(productGridContainer);
 
   // 5. Immediately update side panel to reflect current selections
   const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
   if (sidePanel) this.renderSidePanel(sidePanel);
 
   // 6. Async: load products for the new step and swap in the grid
-  if (this.selectedBundle?.loadingGif) this.showLoadingOverlay(this.selectedBundle.loadingGif);
   try {
     await this.loadStepProducts(this.currentStepIndex);
     const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
@@ -619,12 +618,15 @@ _renderFreeGiftSection(container) {
       ? 'side-panel-addon-summary side-panel-free-gift unlocked'
       : 'side-panel-addon-summary side-panel-free-gift';
     if (title) section.appendChild(title);
+    const tierList = document.createElement('div');
+    tierList.className = 'side-panel-addon-tier-list';
     const createMessageElement = typeof this.createAddonTierMessageElement === 'function'
       ? this.createAddonTierMessageElement
       : fullPageValidationAddonsMethods.createAddonTierMessageElement;
     messages.forEach(({ message, eligibilityState }) => {
-      section.appendChild(createMessageElement.call(this, message, eligibilityState.isEligible));
+      tierList.appendChild(createMessageElement.call(this, message, eligibilityState.isEligible));
     });
+    section.appendChild(tierList);
     container.appendChild(section);
     return;
   }
@@ -755,6 +757,21 @@ _getSummarySidebarRequiredQuantity(step) {
 
 getSummarySidebarMaxItemCount(selectedCount = 0) {
   const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+  const selected = Number(selectedCount || 0);
+  const boxRules = typeof this.getBoxSelectionRules === 'function'
+    ? this.getBoxSelectionRules()
+    : [];
+  const selectedBoxQuantity = typeof this.getSelectedBoxSelectionQuantity === 'function'
+    ? this.getSelectedBoxSelectionQuantity()
+    : selected;
+  const activeBoxRule = typeof this.getActiveBoxSelectionRule === 'function'
+    ? this.getActiveBoxSelectionRule(boxRules, selectedBoxQuantity)
+    : null;
+  const activeBoxQuantity = Number(activeBoxRule?.boxQuantity || 0);
+  if (activeBoxQuantity > 0) {
+    return Math.max(activeBoxQuantity, selected, 1);
+  }
+
   let totalRequired = 0;
 
   for (const step of steps) {
@@ -764,7 +781,6 @@ getSummarySidebarMaxItemCount(selectedCount = 0) {
     }
   }
 
-  const selected = Number(selectedCount || 0);
   return Math.max(totalRequired, selected, 1);
 },
 

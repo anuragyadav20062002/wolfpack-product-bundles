@@ -227,6 +227,8 @@ class BundleProductModal {
 
     this.currentProduct = product;
     this.currentStep = step;
+    this.selectedVariant = null;
+    this.selectedOptions = {};
     this.selectedQuantity = 1;
     this.readOnly = options.readOnly === true;
     const imageCount = this.getProductImages().length;

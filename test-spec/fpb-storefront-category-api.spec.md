@@ -12,6 +12,9 @@ Ensure the public FPB bundle API loads category-backed step content so the store
 | 2 | Runtime category product compaction preserves weight | Hydrated category product with product and variant weight fields | Compact runtime product keeps `weight` and `weightUnit` on product and variants | Required for category weight rules |
 | 3 | Collection-backed category hydration preserves weight | Storefront collection product variant with `weight` and `weightUnit` | `/api/storefront-collections` response keeps variant weight fields | Required for category weight rules on collection products |
 | 4 | Collection-backed category hydration preserves variant options | Storefront collection product with `options` and variant `selectedOptions` | `/api/storefront-collections` response keeps product `options` and variant `option1` / `option2` / `option3` | Required for grouped product cards to render the inline variant selector when `Display variants as individual products` is off |
+| 5 | Storefront product hydration preserves product description | Storefront product API product with `description` | `/api/storefront-products` response includes `description` | Required for product detail modal copy |
+| 6 | Collection-backed hydration preserves product description | Storefront collection product with `description` | `/api/storefront-collections` response includes `description` | Required for product detail modal copy on collection-backed bundles |
+| 7 | Runtime category product compaction preserves description | Hydrated category product with `description` and `descriptionHtml` | Compact runtime product keeps product description fields | Required for metafield-first modal copy |
 
 ## Acceptance Criteria
 - [ ] Public FPB bundle API includes ordered `StepCategory` rows in the bundle query.
@@ -19,3 +22,4 @@ Ensure the public FPB bundle API loads category-backed step content so the store
 - [ ] Category runtime payloads preserve product and variant weight fields.
 - [ ] Collection-backed category products preserve variant weight fields.
 - [ ] Collection-backed category products preserve variant selector option data.
+- [ ] Storefront hydration and metafield runtime payloads preserve product description data for product modals.
