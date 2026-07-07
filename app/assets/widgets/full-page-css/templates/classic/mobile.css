@@ -113,6 +113,7 @@
     grid-template-columns: minmax(0, 1fr);
     gap: var(--classic-card-gap);
     padding: var(--classic-card-padding);
+    box-sizing: border-box;
     border: 0;
     outline: 2px solid
       var(--bundle-product-card-border-color, var(--color-border, #f1f2f3));
