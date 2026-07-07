@@ -177,13 +177,31 @@ _populateCompactMobileSummaryTray(sheet) {
       );
       let discountMessage = '';
       if (combinedDiscountInfo.hasDiscount) {
+        const successTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'success',
+          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          successTemplate,
           variables
         );
       } else if (nextRule) {
+        const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'progress',
+          fallbackTemplate: this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          progressTemplate,
           variables
         );
       }

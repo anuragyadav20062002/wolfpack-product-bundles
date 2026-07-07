@@ -3,7 +3,9 @@
   --classic-variant-options-scrollbar-size: 0.125rem;
   --classic-product-grid-z-index: 1;
   --classic-variant-open-card-z-index: 40;
-  --classic-variant-dropdown-z-index: 60;
+  --classic-variant-dropdown-z-index: calc(
+    var(--classic-variant-open-card-z-index, 40) + 20
+  );
 }
 
 .layout-sidebar[data-fpb-design-preset="CLASSIC"]
@@ -29,12 +31,13 @@
   .product-card:has(.vs-wrapper--standard .vs-options:not([hidden])) {
   position: relative;
   z-index: var(--classic-variant-open-card-z-index, 40);
+  overflow: visible;
 }
 
 .layout-sidebar[data-fpb-design-preset="CLASSIC"]
   .sidebar-content
   .vs-wrapper--standard:has(> .vs-options:not([hidden])) {
-  z-index: calc(var(--classic-variant-open-card-z-index, 40) + 1);
+  z-index: var(--classic-variant-dropdown-z-index, 60);
 }
 
 .layout-sidebar[data-fpb-design-preset="CLASSIC"]
@@ -92,7 +95,7 @@
   position: absolute;
   inset-block-start: 100%;
   inset-inline: 0;
-  z-index: var(--classic-variant-dropdown-z-index, 60);
+  z-index: calc(var(--classic-variant-dropdown-z-index, 60) + 1);
   max-height: var(--classic-variant-options-open-max-height, min(320px, 65vh));
   margin: 0;
   padding: 0;

@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 5.0.81
+ * Version : 5.0.82
  * Built   : 2026-07-07
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.81';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.82';
 (function (window) {
   'use strict';
 
@@ -1485,6 +1485,57 @@ class TemplateManager {
     };
 
     return variables;
+  }
+
+  static getRuleMessages(bundle, locale = '') {
+    const pricingMessages = bundle?.pricing?.messages;
+    const byLocale = pricingMessages?.ruleMessagesByLocale;
+    const localeRuleMessages = locale && byLocale?.[locale];
+    return localeRuleMessages || pricingMessages?.ruleMessages || {};
+  }
+
+  static getRuleTierMessage(bundle, rule) {
+    const ruleId = rule?.id ? String(rule.id) : '';
+    if (!ruleId) return '';
+
+    const tierText = bundle?.pricing?.messages?.tierTextByRuleId?.[ruleId];
+    const title = typeof tierText?.tierText === 'string' ? tierText.tierText.trim() : '';
+    const subtext = typeof tierText?.tierSubtext === 'string' ? tierText.tierSubtext.trim() : '';
+
+    return [title, subtext].filter(Boolean).join('<br>');
+  }
+
+  static getDiscountMessageTemplate({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress',
+    fallbackTemplate = '',
+    locale = ''
+  }) {
+    const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
+    const rule = messageType === 'success'
+      ? (discountInfo.applicableRule || nextRule)
+      : (nextRule || discountInfo.applicableRule);
+
+    if (!rule) return fallbackTemplate || '';
+
+    if (messageType === 'success') {
+      const tierMessage = this.getRuleTierMessage(bundle, rule);
+      if (tierMessage) return tierMessage;
+    }
+
+    const ruleId = rule?.id ? String(rule.id) : '';
+    const ruleMessages = this.getRuleMessages(bundle, locale);
+    const ruleMessage = ruleId ? ruleMessages?.[ruleId] : null;
+    const template = messageType === 'success'
+      ? ruleMessage?.successMessage
+      : ruleMessage?.discountText;
+
+    return (typeof template === 'string' && template.trim())
+      ? template
+      : (fallbackTemplate || '');
   }
 
   static formatOperatorText(operator, targetValue, unit) {

@@ -1,6 +1,7 @@
 import type { PriceAdjustment } from "../types";
 
 const BXY_METHOD = "buy_x_get_y";
+const FIXED_BUNDLE_PRICE_METHOD = "fixed_bundle_price";
 
 function toPositiveNumber(...values: unknown[]): number {
   for (const value of values) {
@@ -17,20 +18,24 @@ function toNumber(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function buildPriceAdjustmentConfig(pricing: any): PriceAdjustment {
-  const method = pricing?.method || "percentage_off";
-  const priceAdjustment: PriceAdjustment = {
-    method,
-    value: 0,
-  };
-
-  if (!pricing?.enabled || !Array.isArray(pricing.rules) || pricing.rules.length === 0) {
-    return priceAdjustment;
+function getRuleValue(method: string, rule: any): number {
+  if (method === FIXED_BUNDLE_PRICE_METHOD) {
+    return toPositiveNumber(
+      rule.discountValue,
+      rule.fixedBundlePrice,
+      rule.price,
+      rule.discount?.value,
+    );
   }
 
-  const rule = pricing.rules[0] ?? {};
-  priceAdjustment.method = pricing.method || rule.discount?.method || method;
-  priceAdjustment.value = toNumber(rule.discountValue ?? rule.discount?.value);
+  return toNumber(rule.discountValue ?? rule.discount?.value);
+}
+
+function buildPriceAdjustmentRule(method: string, rule: any): PriceAdjustment {
+  const priceAdjustment: PriceAdjustment = {
+    method: method || rule.discount?.method || "percentage_off",
+    value: getRuleValue(method, rule),
+  };
 
   const customerBuys = toPositiveNumber(
     rule.customerBuys,
@@ -73,6 +78,33 @@ export function buildPriceAdjustmentConfig(pricing: any): PriceAdjustment {
       operator: "gte",
       value: condValue,
     };
+  }
+
+  return priceAdjustment;
+}
+
+export function buildPriceAdjustmentConfig(pricing: any): PriceAdjustment {
+  const method = pricing?.method || "percentage_off";
+  const priceAdjustment: PriceAdjustment = {
+    method,
+    value: 0,
+  };
+
+  if (!pricing?.enabled || !Array.isArray(pricing.rules) || pricing.rules.length === 0) {
+    return priceAdjustment;
+  }
+
+  const rule = pricing.rules[0] ?? {};
+  const normalizedRules = pricing.rules.map((pricingRule: any) =>
+    buildPriceAdjustmentRule(pricing.method || pricingRule.discount?.method || method, pricingRule)
+  );
+  Object.assign(
+    priceAdjustment,
+    buildPriceAdjustmentRule(pricing.method || rule.discount?.method || method, rule),
+  );
+
+  if (normalizedRules.length > 0) {
+    priceAdjustment.rules = normalizedRules;
   }
 
   return priceAdjustment;

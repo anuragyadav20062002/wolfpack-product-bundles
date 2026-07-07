@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.81
+ * Version : 5.0.82
  * Built   : 2026-07-07
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.81';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.82';
 (function() {
   'use strict';
 
@@ -1286,6 +1286,57 @@ class TemplateManager {
     };
 
     return variables;
+  }
+
+  static getRuleMessages(bundle, locale = '') {
+    const pricingMessages = bundle?.pricing?.messages;
+    const byLocale = pricingMessages?.ruleMessagesByLocale;
+    const localeRuleMessages = locale && byLocale?.[locale];
+    return localeRuleMessages || pricingMessages?.ruleMessages || {};
+  }
+
+  static getRuleTierMessage(bundle, rule) {
+    const ruleId = rule?.id ? String(rule.id) : '';
+    if (!ruleId) return '';
+
+    const tierText = bundle?.pricing?.messages?.tierTextByRuleId?.[ruleId];
+    const title = typeof tierText?.tierText === 'string' ? tierText.tierText.trim() : '';
+    const subtext = typeof tierText?.tierSubtext === 'string' ? tierText.tierSubtext.trim() : '';
+
+    return [title, subtext].filter(Boolean).join('<br>');
+  }
+
+  static getDiscountMessageTemplate({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress',
+    fallbackTemplate = '',
+    locale = ''
+  }) {
+    const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
+    const rule = messageType === 'success'
+      ? (discountInfo.applicableRule || nextRule)
+      : (nextRule || discountInfo.applicableRule);
+
+    if (!rule) return fallbackTemplate || '';
+
+    if (messageType === 'success') {
+      const tierMessage = this.getRuleTierMessage(bundle, rule);
+      if (tierMessage) return tierMessage;
+    }
+
+    const ruleId = rule?.id ? String(rule.id) : '';
+    const ruleMessages = this.getRuleMessages(bundle, locale);
+    const ruleMessage = ruleId ? ruleMessages?.[ruleId] : null;
+    const template = messageType === 'success'
+      ? ruleMessage?.successMessage
+      : ruleMessage?.discountText;
+
+    return (typeof template === 'string' && template.trim())
+      ? template
+      : (fallbackTemplate || '');
   }
 
   static formatOperatorText(operator, targetValue, unit) {
@@ -5832,13 +5883,31 @@ _populateCompactMobileSummaryTray(sheet) {
       );
       let discountMessage = '';
       if (combinedDiscountInfo.hasDiscount) {
+        const successTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'success',
+          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          successTemplate,
           variables
         );
       } else if (nextRule) {
+        const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'progress',
+          fallbackTemplate: this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          progressTemplate,
           variables
         );
       }
@@ -6488,13 +6557,31 @@ renderSidePanel(panel) {
       );
       let discountMessage = '';
       if (combinedDiscountInfo.hasDiscount) {
+        const successTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'success',
+          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          successTemplate,
           variables
         );
       } else if (nextRule) {
+        const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'progress',
+          fallbackTemplate: this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          progressTemplate,
           variables
         );
       }
@@ -10287,10 +10374,6 @@ const fullPageStepFooterMethods = {
       includeBox: shouldIncludeBundleQuantityCartProperties(this),
     });
 
-    if (useDisplayOnlyFixedPrice) {
-      sourceProperties._bundle_price_adjustment_mode = 'display_only';
-    }
-
     return sourceProperties;
   },
 
@@ -10398,12 +10481,8 @@ async addBundleToCart(clickedButton = null) {
     }
 
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
-    const useDisplayOnlyFixedPrice = sourceProperties._bundle_price_adjustment_mode === 'display_only';
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
-      if (useDisplayOnlyFixedPrice && !item.properties._bundle_step_type) {
-        item.properties._bundle_step_type = 'fixed_price_display_only';
-      }
       if (hasSelectedAddonLine && hasAddonStepConfigured) {
         item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
       }
@@ -10623,16 +10702,34 @@ updateFooterMessaging() {
 
   if (combinedDiscountInfo.qualifiesForDiscount) {
 
+    const successTemplate = TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType: 'success',
+      fallbackTemplate: this.config.successMessageTemplate,
+      locale: window.Shopify?.locale,
+    });
     const successMessage = TemplateManager.replaceVariables(
-      this.config.successMessageTemplate,
+      successTemplate,
       variables
     );
     footerDiscountText.innerHTML = successMessage;
     this.elements.footer.classList.add('qualified');
   } else {
 
+    const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType: 'progress',
+      fallbackTemplate: this.config.discountTextTemplate,
+      locale: window.Shopify?.locale,
+    });
     const progressMessage = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
+      progressTemplate,
       variables
     );
     footerDiscountText.innerHTML = progressMessage;

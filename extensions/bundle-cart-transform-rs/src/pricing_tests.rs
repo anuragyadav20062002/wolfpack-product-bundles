@@ -55,6 +55,7 @@ fn buy_x_get_y_discounted_quantity() {
         customer_gets: Some(1),
         discount_type: Some("percentage".to_string()),
         apply_discount_to: Some("lowest_priced".to_string()),
+        ..Default::default()
     };
     let pct = calculate_discount_percentage(&cfg, 30.0, 30.0, 3, 3, 1.0);
     assert!(
@@ -77,6 +78,7 @@ fn buy_x_get_y_condition_not_met_returns_zero() {
         customer_gets: Some(1),
         discount_type: Some("percentage".to_string()),
         apply_discount_to: Some("lowest_priced".to_string()),
+        ..Default::default()
     };
     let pct = calculate_discount_percentage(&cfg, 20.0, 20.0, 2, 2, 1.0);
     assert_eq!(pct, 0.0);
@@ -108,6 +110,38 @@ fn fixed_bundle_price_basic() {
     // effectivePct = (1 - 29.99/80)*100 ~= 62.51
     let pct = calculate_discount_percentage(&cfg, 80.0, 80.0, 2, 2, 1.0);
     let expected = (1.0 - 29.99 / 80.0) * 100.0;
+    assert!(
+        (pct - expected).abs() < 0.01,
+        "expected {expected} got {pct}"
+    );
+}
+
+#[test]
+fn fixed_bundle_price_uses_highest_qualified_rule() {
+    let mut cfg = adj(PricingMethod::FixedBundlePrice, 770.0);
+    cfg.rules = Some(vec![
+        adj_with_condition(
+            PricingMethod::FixedBundlePrice,
+            770.0,
+            Condition {
+                condition_type: ConditionType::Quantity,
+                operator: "gte".to_string(),
+                value: 2.0,
+            },
+        ),
+        adj_with_condition(
+            PricingMethod::FixedBundlePrice,
+            1540.0,
+            Condition {
+                condition_type: ConditionType::Quantity,
+                operator: "gte".to_string(),
+                value: 3.0,
+            },
+        ),
+    ]);
+
+    let pct = calculate_discount_percentage(&cfg, 100.0, 100.0, 3, 3, 1.0);
+    let expected = (1.0 - 15.40 / 100.0) * 100.0;
     assert!(
         (pct - expected).abs() < 0.01,
         "expected {expected} got {pct}"

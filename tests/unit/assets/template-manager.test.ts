@@ -156,3 +156,87 @@ describe('TemplateManager evidence-matched variables', () => {
     )).toBe('Add 1 product(s) to save $5.00!');
   });
 });
+
+describe('TemplateManager.getDiscountMessageTemplate', () => {
+  const bundle = {
+    pricing: {
+      rules: [
+        { id: 'rule-2', conditionType: 'quantity', conditionOperator: 'gte', conditionValue: 2, discountValue: 770 },
+        { id: 'rule-3', conditionType: 'quantity', conditionOperator: 'gte', conditionValue: 3, discountValue: 1540 },
+      ],
+      messages: {
+        ruleMessages: {
+          'rule-2': {
+            discountText: 'Add one for tier 2',
+            successMessage: 'Tier 2 reached',
+          },
+          'rule-3': {
+            discountText: 'Add one for tier 3',
+            successMessage: 'Tier 3 reached',
+          },
+        },
+      },
+    },
+  };
+
+  it('uses the next unsatisfied rule discount text for progress messages', () => {
+    const template = TemplateManager.getDiscountMessageTemplate({
+      bundle,
+      totalQuantity: 2,
+      totalPrice: 10000,
+      discountInfo: {
+        hasDiscount: true,
+        applicableRule: bundle.pricing.rules[0],
+      },
+      messageType: 'progress',
+      fallbackTemplate: 'Fallback progress',
+    });
+
+    expect(template).toBe('Add one for tier 3');
+  });
+
+  it('uses the applicable rule success text for qualified messages', () => {
+    const template = TemplateManager.getDiscountMessageTemplate({
+      bundle,
+      totalQuantity: 2,
+      totalPrice: 10000,
+      discountInfo: {
+        hasDiscount: true,
+        applicableRule: bundle.pricing.rules[0],
+      },
+      messageType: 'success',
+      fallbackTemplate: 'Fallback success',
+    });
+
+    expect(template).toBe('Tier 2 reached');
+  });
+
+  it('prefers configured tier text for qualified adaptive messages', () => {
+    const template = TemplateManager.getDiscountMessageTemplate({
+      bundle: {
+        pricing: {
+          rules: bundle.pricing.rules,
+          messages: {
+            ruleMessages: bundle.pricing.messages.ruleMessages,
+            tierTextByRuleId: {
+              'rule-2': {
+                tierText: 'Nice! You are saving today',
+                tierSubtext: 'Add one more to save more',
+              },
+            },
+          },
+        },
+      },
+      totalQuantity: 2,
+      totalPrice: 10000,
+      discountInfo: {
+        hasDiscount: true,
+        applicableRule: bundle.pricing.rules[0],
+      },
+      messageType: 'success',
+      fallbackTemplate: 'Fallback success',
+    });
+
+    expect(template).toBe('Nice! You are saving today<br>Add one more to save more');
+  });
+});
