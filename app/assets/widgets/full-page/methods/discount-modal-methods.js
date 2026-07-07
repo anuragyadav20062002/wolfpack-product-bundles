@@ -51,11 +51,17 @@ _renderDiscountProgress(options = {}) {
     totalPrice
   );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const variables = TemplateManager.createDiscountVariables(
-    this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    discountInfo,
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
-  const isReached = discountInfo.hasDiscount;
+  const isReached = discountInfo.hasDiscount && !nextRule;
   const progressPct = isReached ? 100 : Math.min(100, Math.max(0, parseInt(variables.progressPercentage, 10) || 0));
 
   const progressBarType = this.config.discountProgressBarType === 'simple' ? 'simple' : 'step_based';
@@ -71,13 +77,13 @@ _renderDiscountProgress(options = {}) {
       this.config.discountProgressSuccessTemplate || this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
       variables
     );
-  } else {
-    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
-    if (!nextRule) return null;
+  } else if (nextRule) {
     message = TemplateManager.replaceVariables(
       this.config.discountProgressTextTemplate || this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
       variables
     );
+  } else {
+    return null;
   }
 
   const progressData = getDiscountProgressData({
@@ -129,26 +135,32 @@ _renderDiscountProgressBanner() {
     totalPrice
   );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const variables = TemplateManager.createDiscountVariables(
-    this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    discountInfo,
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
   let message = '';
   let isReached = false;
 
-  if (discountInfo.hasDiscount) {
+  if (nextRule) {
+    message = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+      variables
+    );
+  } else if (discountInfo.hasDiscount) {
     isReached = true;
     message = TemplateManager.replaceVariables(
       this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
       variables
     );
   } else {
-    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
-    if (!nextRule) return null;
-    message = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
-      variables
-    );
+    return null;
   }
 
   const banner = document.createElement('div');
@@ -204,7 +216,8 @@ getFormattedHeaderText() {
     totalPrice,
     totalQuantity,
     combinedDiscountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: 'progress' }
   );
 
   return TemplateManager.replaceVariables(

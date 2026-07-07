@@ -117,6 +117,15 @@ describe('createFullPageBundle', () => {
     expect(result.slugAdjusted).toBeFalsy();
   });
 
+  it('normalizes desiredSlug before resolving the page handle', async () => {
+    mockResolveUniqueHandle.mockResolvedValueOnce({ handle: 'my-kit-url', adjusted: false });
+    const admin = makeAdmin({ createPageHandle: 'my-kit-url' });
+
+    await createFullPageBundle(admin, mockSession, 'api-key', bundleId, bundleName, 'My Kit URL');
+
+    expect(mockResolveUniqueHandle).toHaveBeenCalledWith(admin, 'my-kit-url');
+  });
+
   it('falls back to slugify(bundleName) when desiredSlug is not provided', async () => {
     mockResolveUniqueHandle.mockResolvedValueOnce({ handle: 'my-kit', adjusted: false });
     const admin = makeAdmin({ createPageHandle: 'my-kit' });
@@ -247,5 +256,21 @@ describe('renamePageHandle', () => {
     await renamePageHandle(admin, 'gid://shopify/Page/1', 'new-slug', 'old-slug');
 
     expect(mockResolveUniqueHandle).toHaveBeenCalledWith(admin, 'new-slug', 'old-slug');
+  });
+
+  it('normalizes desiredSlug before resolving a renamed page handle', async () => {
+    mockResolveUniqueHandle.mockResolvedValueOnce({ handle: 'new-kit-url', adjusted: false });
+
+    const admin = { graphql: jest.fn() };
+    admin.graphql.mockResolvedValueOnce(createMockGraphQLResponse({
+      pageUpdate: {
+        page: { id: 'gid://shopify/Page/1', handle: 'new-kit-url' },
+        userErrors: []
+      }
+    }));
+
+    await renamePageHandle(admin, 'gid://shopify/Page/1', 'New Kit URL', 'old-slug');
+
+    expect(mockResolveUniqueHandle).toHaveBeenCalledWith(admin, 'new-kit-url', 'old-slug');
   });
 });

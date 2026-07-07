@@ -40,7 +40,8 @@ updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
     totalPrice,
     totalQuantity,
     discountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: 'progress' }
   );
 
   const headerText = TemplateManager.replaceVariables(
@@ -57,16 +58,24 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
 
   if (!footerDiscountText) return;
 
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const variables = TemplateManager.createDiscountVariables(
     this.selectedBundle,
     totalPrice,
     totalQuantity,
     discountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
-  if (discountInfo.qualifiesForDiscount) {
-    // Success message
+  if (nextRule) {
+    const progressMessage = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    if (discountSection) discountSection.classList.remove('qualified');
+  } else if (discountInfo.qualifiesForDiscount) {
     const successMessage = TemplateManager.replaceVariables(
       this.config.successMessageTemplate,
       variables
@@ -74,12 +83,7 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
     footerDiscountText.innerHTML = successMessage;
     if (discountSection) discountSection.classList.add('qualified');
   } else {
-    // Progress message
-    const progressMessage = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = progressMessage;
+    footerDiscountText.innerHTML = '';
     if (discountSection) discountSection.classList.remove('qualified');
   }
 

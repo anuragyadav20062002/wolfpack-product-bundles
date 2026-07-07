@@ -100,10 +100,6 @@ export const fullPageStepFooterMethods = {
       includeBox: shouldIncludeBundleQuantityCartProperties(this),
     });
 
-    if (useDisplayOnlyFixedPrice) {
-      sourceProperties._bundle_price_adjustment_mode = 'display_only';
-    }
-
     return sourceProperties;
   },
 
@@ -219,12 +215,8 @@ async addBundleToCart(clickedButton = null) {
     }
 
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
-    const useDisplayOnlyFixedPrice = sourceProperties._bundle_price_adjustment_mode === 'display_only';
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
-      if (useDisplayOnlyFixedPrice && !item.properties._bundle_step_type) {
-        item.properties._bundle_step_type = 'fixed_price_display_only';
-      }
       if (hasSelectedAddonLine && hasAddonStepConfigured) {
         item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
       }
@@ -442,6 +434,7 @@ updateFooterMessaging() {
     unitPrices
   );
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
 
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const variables = TemplateManager.createDiscountVariables(
@@ -449,26 +442,46 @@ updateFooterMessaging() {
     totalPrice,
     totalQuantity,
     combinedDiscountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
   const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
 
-  if (combinedDiscountInfo.qualifiesForDiscount) {
-    // Success message
+  if (nextRule) {
+    const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType: 'progress',
+      fallbackTemplate: this.config.discountTextTemplate,
+      locale: window.Shopify?.locale,
+    });
+    const progressMessage = TemplateManager.replaceVariables(
+      progressTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    this.elements.footer.classList.remove('qualified');
+  } else if (combinedDiscountInfo.qualifiesForDiscount) {
+    const successTemplate = TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType: 'success',
+      fallbackTemplate: this.config.successMessageTemplate,
+      locale: window.Shopify?.locale,
+    });
     const successMessage = TemplateManager.replaceVariables(
-      this.config.successMessageTemplate,
+      successTemplate,
       variables
     );
     footerDiscountText.innerHTML = successMessage;
     this.elements.footer.classList.add('qualified');
   } else {
-    // Progress message
-    const progressMessage = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = progressMessage;
+    footerDiscountText.innerHTML = '';
     this.elements.footer.classList.remove('qualified');
   }
 

@@ -52,6 +52,8 @@ pub struct PriceAdjustmentConfig {
     pub discount_type: Option<String>,
     #[serde(default)]
     pub apply_discount_to: Option<String>,
+    #[serde(default)]
+    pub rules: Option<Vec<PriceAdjustmentConfig>>,
 }
 
 #[derive(serde::Deserialize, Debug, Clone, PartialEq, Default)]

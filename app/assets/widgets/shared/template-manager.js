@@ -54,9 +54,27 @@ export class TemplateManager {
     return result;
   }
 
-  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
+  static getDiscountMessageRule({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress'
+  } = {}) {
     const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
+    return messageType === 'success'
+      ? (discountInfo.applicableRule || nextRule)
+      : (nextRule || discountInfo.applicableRule);
+  }
+
+  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo, options = {}) {
+    const ruleToUse = options.rule || this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType: options.messageType || 'progress'
+    });
 
     if (!ruleToUse) {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
@@ -136,6 +154,60 @@ export class TemplateManager {
     };
 
     return variables;
+  }
+
+  static getRuleMessages(bundle, locale = '') {
+    const pricingMessages = bundle?.pricing?.messages;
+    const byLocale = pricingMessages?.ruleMessagesByLocale;
+    const localeRuleMessages = locale && byLocale?.[locale];
+    return localeRuleMessages || pricingMessages?.ruleMessages || {};
+  }
+
+  static getRuleTierMessage(bundle, rule) {
+    const ruleId = rule?.id ? String(rule.id) : '';
+    if (!ruleId) return '';
+
+    const tierText = bundle?.pricing?.messages?.tierTextByRuleId?.[ruleId];
+    const title = typeof tierText?.tierText === 'string' ? tierText.tierText.trim() : '';
+    const subtext = typeof tierText?.tierSubtext === 'string' ? tierText.tierSubtext.trim() : '';
+
+    return [title, subtext].filter(Boolean).join('<br>');
+  }
+
+  static getDiscountMessageTemplate({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress',
+    fallbackTemplate = '',
+    locale = ''
+  }) {
+    const rule = this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType
+    });
+
+    if (!rule) return fallbackTemplate || '';
+
+    if (messageType === 'success') {
+      const tierMessage = this.getRuleTierMessage(bundle, rule);
+      if (tierMessage) return tierMessage;
+    }
+
+    const ruleId = rule?.id ? String(rule.id) : '';
+    const ruleMessages = this.getRuleMessages(bundle, locale);
+    const ruleMessage = ruleId ? ruleMessages?.[ruleId] : null;
+    const template = messageType === 'success'
+      ? ruleMessage?.successMessage
+      : ruleMessage?.discountText;
+
+    return (typeof template === 'string' && template.trim())
+      ? template
+      : (fallbackTemplate || '');
   }
 
   static formatOperatorText(operator, targetValue, unit) {

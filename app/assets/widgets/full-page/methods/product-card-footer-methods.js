@@ -69,6 +69,9 @@ createProductCard(product, stepIndex, options = {}) {
     : '';
 
   const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
+  const outOfStock = typeof this.isVariantOutOfStock === 'function'
+    ? this.isVariantOutOfStock(displayProduct)
+    : displayProduct?.available === false;
   const supportsAddonDiscountBadge = ['STANDARD', 'CLASSIC'].includes(designPreset);
   const hasAddonDiscountBadge = supportsAddonDiscountBadge && displayProduct.addonDiscountBadgeText;
   const stockBadgeHtml = hasAddonDiscountBadge
@@ -83,6 +86,7 @@ createProductCard(product, stepIndex, options = {}) {
       {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
+        className: outOfStock ? 'is-out-of-stock' : '',
         addButtonText: this.getProductCardAddButtonText(step),
         cardBadgeHtml: stockBadgeHtml,
         variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,

@@ -5,7 +5,7 @@
  */
 
 import { isUUID } from "../../../../utils/shopify-validators";
-import { getFirstVariantId, batchGetFirstVariants } from "../../../../utils/variant-lookup.server";
+import { getFirstVariantId, batchGetProductVariants } from "../../../../utils/variant-lookup.server";
 import { AppLogger } from "../../../../lib/logger";
 import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { checkMetafieldSize } from "../utils/size-check";
@@ -260,7 +260,9 @@ export async function updateComponentProductMetafields(
     }
   }
 
-  // Batch fetch first variants only for products where no variant data was cached in the DB
+  // Batch fetch all variants for products where no variant data was cached in the DB.
+  // Cart Transform reads component_parents from the selected variant line, so every
+  // selectable variant must carry the metafield.
   if (productIdMap.length > 0) {
     const productIds = productIdMap.map(item => item.productId);
     AppLogger.debug("[COMPONENT_METAFIELD] Batch fetching variants (no DB cache)", {
@@ -268,16 +270,18 @@ export async function updateComponentProductMetafields(
       count: productIds.length,
     });
 
-    const variantResults = await batchGetFirstVariants(admin, productIds);
+    const variantResults = await batchGetProductVariants(admin, productIds);
 
     productIdMap.forEach(item => {
       const cleanId = item.productId.replace('gid://shopify/Product/', '');
       const result = variantResults.get(cleanId);
 
-      if (result?.success && result.variantId) {
-        componentReferences.push(result.variantId);
-        componentQuantities.push(item.stepMinQuantity);
-        componentVariantIds.add(result.variantId);
+      if (result?.success && Array.isArray(result.variantIds) && result.variantIds.length > 0) {
+        result.variantIds.forEach(variantId => {
+          componentReferences.push(variantId);
+          componentQuantities.push(item.stepMinQuantity);
+          componentVariantIds.add(variantId);
+        });
       } else {
         AppLogger.warn("Could not get variant for component product", {
           component: "metafield-sync",

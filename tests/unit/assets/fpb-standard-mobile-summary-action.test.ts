@@ -142,6 +142,7 @@ function createContext() {
     _emitStorefrontEvent: jest.fn(),
     _withWidgetActionBusy: jest.fn(),
     renderFullPageLayoutWithSidebar: jest.fn(),
+    _renderCompactMobileSummaryBundleItems: () => new FakeElement(),
   };
 }
 

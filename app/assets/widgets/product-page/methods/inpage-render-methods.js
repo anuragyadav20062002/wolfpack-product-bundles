@@ -58,7 +58,7 @@ _renderInpageStepProducts(stepIndex, target) {
     const atMaxStock = available !== null && currentQuantity >= available;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
-    const addDisabled = outOfStock;
+    const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const stockBadge = outOfStock
       ? '<div class="product-stock-badge product-stock-badge--out">Out of stock</div>'
       : '';
@@ -83,7 +83,7 @@ _renderInpageStepProducts(stepIndex, target) {
       ` : ''}
     `;
     const addButton = `
-      <button class="product-add-btn${usesCascadeCards ? ' wpbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+      <button class="product-add-btn${usesCascadeCards ? ' wpbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
         ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
       </button>
     `;
@@ -98,7 +98,7 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'row',
           className: `bw-ppb-cascade-product-row wpbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
-          addDisabled,
+          addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
         }
@@ -115,7 +115,7 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
-          addDisabled,
+          addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
         }

@@ -476,13 +476,13 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     const discountData = makeDiscountData({
       discountEnabled: true,
       discountType: "fixed_bundle_price",
-      discountRules: [{ id: "rule-1", price: "79.00" }],
+      discountRules: [{ id: "rule-1", discountValue: 7900 }],
     });
     const fd = makeFormData({ discountData: JSON.stringify(discountData) });
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
     const updateCall = getDb().bundle.update.mock.calls[0][0];
     const pricingRules = updateCall.data.pricing.upsert.create.rules;
-    expect(pricingRules[0].fixedBundlePrice).toBe(79);
+    expect(pricingRules[0].fixedBundlePrice).toBe(7900);
   });
 
   it("derives direct boxSelection from Product Page quantity discount display options", async () => {

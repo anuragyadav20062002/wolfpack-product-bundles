@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.81
+ * Version : 5.0.90
  * Built   : 2026-07-07
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.81';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.90';
 (function() {
   'use strict';
 
@@ -1214,9 +1214,27 @@ class TemplateManager {
     return result;
   }
 
-  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
+  static getDiscountMessageRule({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress'
+  } = {}) {
     const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
+    return messageType === 'success'
+      ? (discountInfo.applicableRule || nextRule)
+      : (nextRule || discountInfo.applicableRule);
+  }
+
+  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo, options = {}) {
+    const ruleToUse = options.rule || this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType: options.messageType || 'progress'
+    });
 
     if (!ruleToUse) {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
@@ -1286,6 +1304,60 @@ class TemplateManager {
     };
 
     return variables;
+  }
+
+  static getRuleMessages(bundle, locale = '') {
+    const pricingMessages = bundle?.pricing?.messages;
+    const byLocale = pricingMessages?.ruleMessagesByLocale;
+    const localeRuleMessages = locale && byLocale?.[locale];
+    return localeRuleMessages || pricingMessages?.ruleMessages || {};
+  }
+
+  static getRuleTierMessage(bundle, rule) {
+    const ruleId = rule?.id ? String(rule.id) : '';
+    if (!ruleId) return '';
+
+    const tierText = bundle?.pricing?.messages?.tierTextByRuleId?.[ruleId];
+    const title = typeof tierText?.tierText === 'string' ? tierText.tierText.trim() : '';
+    const subtext = typeof tierText?.tierSubtext === 'string' ? tierText.tierSubtext.trim() : '';
+
+    return [title, subtext].filter(Boolean).join('<br>');
+  }
+
+  static getDiscountMessageTemplate({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress',
+    fallbackTemplate = '',
+    locale = ''
+  }) {
+    const rule = this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType
+    });
+
+    if (!rule) return fallbackTemplate || '';
+
+    if (messageType === 'success') {
+      const tierMessage = this.getRuleTierMessage(bundle, rule);
+      if (tierMessage) return tierMessage;
+    }
+
+    const ruleId = rule?.id ? String(rule.id) : '';
+    const ruleMessages = this.getRuleMessages(bundle, locale);
+    const ruleMessage = ruleId ? ruleMessages?.[ruleId] : null;
+    const template = messageType === 'success'
+      ? ruleMessage?.successMessage
+      : ruleMessage?.discountText;
+
+    return (typeof template === 'string' && template.trim())
+      ? template
+      : (fallbackTemplate || '');
   }
 
   static formatOperatorText(operator, targetValue, unit) {
@@ -5071,11 +5143,18 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
     totalPrice,
     totalQuantity,
     discountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
-  if (discountInfo.qualifiesForDiscount) {
-
+  if (nextRule) {
+    const progressMessage = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    if (discountSection) discountSection.classList.remove('qualified');
+  } else if (discountInfo.qualifiesForDiscount) {
     const successMessage = TemplateManager.replaceVariables(
       this.config.successMessageTemplate,
       variables
@@ -5083,12 +5162,7 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
     footerDiscountText.innerHTML = successMessage;
     if (discountSection) discountSection.classList.add('qualified');
   } else {
-
-    const progressMessage = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = progressMessage;
+    footerDiscountText.innerHTML = '';
     if (discountSection) discountSection.classList.remove('qualified');
   }
 },
@@ -5638,7 +5712,7 @@ _renderInpageStepProducts(stepIndex, target) {
     const atMaxStock = available !== null && currentQuantity >= available;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
-    const addDisabled = outOfStock;
+    const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const stockBadge = outOfStock
       ? '<div class="product-stock-badge product-stock-badge--out">Out of stock</div>'
       : '';
@@ -5663,7 +5737,7 @@ _renderInpageStepProducts(stepIndex, target) {
       ` : ''}
     `;
     const addButton = `
-      <button class="product-add-btn${usesCascadeCards ? ' wpbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+      <button class="product-add-btn${usesCascadeCards ? ' wpbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
         ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
       </button>
     `;
@@ -5678,7 +5752,7 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'row',
           className: `bw-ppb-cascade-product-row wpbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
-          addDisabled,
+          addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
         }
@@ -5695,7 +5769,7 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
-          addDisabled,
+          addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
         }
@@ -6193,11 +6267,12 @@ processProductsForStep(products, step) {
       !trackInventoryOnAddToCart || !isTrackedZeroStock(variant)
     )
   );
+  const toCents = (value) => Math.round(parseFloat(value || '0') * 100);
   const normalizeVariant = (v) => ({
     id: this.extractId(v.id),
     title: v.title,
-    price: parseFloat(v.price || '0') * 100,
-    compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+    price: toCents(v.price),
+    compareAtPrice: v.compareAtPrice ? toCents(v.compareAtPrice) : null,
     sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
       ? v.sellingPlanAllocations
       : [],
@@ -6221,7 +6296,6 @@ processProductsForStep(products, step) {
       });
 
       return product.variants
-        .filter(isVariantSelectableForInventory)
         .map(variant => {
 
           const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
@@ -6230,8 +6304,8 @@ processProductsForStep(products, step) {
             id: this.extractId(variant.id),
             title: `${product.title} - ${variant.title}`,
             imageUrl,
-            price: parseFloat(variant.price || '0') * 100,
-            compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
+            price: toCents(variant.price),
+            compareAtPrice: variant.compareAtPrice ? toCents(variant.compareAtPrice) : null,
             variantId: this.extractId(variant.id),
             available: isVariantSelectableForInventory(variant),
             quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
@@ -6248,13 +6322,9 @@ processProductsForStep(products, step) {
         });
     } else {
 
-      const defaultVariant = product.variants?.find(isVariantSelectableForInventory) || (
-        trackInventoryOnAddToCart ? null : product.variants?.[0]
-      );
-
-      if (product.variants?.length > 0 && !defaultVariant) {
-        return [];
-      }
+      const defaultVariant = product.variants?.find(isVariantSelectableForInventory)
+        || product.variants?.[0]
+        || null;
 
       const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
@@ -6269,8 +6339,10 @@ processProductsForStep(products, step) {
           id: this.extractId(product.id),
           title: product.title,
           imageUrl,
-          price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-          compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
+          price: defaultVariant
+            ? toCents(defaultVariant.price)
+            : toCents(product.price),
+          compareAtPrice: defaultVariant?.compareAtPrice ? toCents(defaultVariant.compareAtPrice) : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
           sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
           available: defaultVariant ? isVariantSelectableForInventory(defaultVariant) : false,
@@ -6850,7 +6922,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
     const lowStock = available !== null && available > 0 && available <= 3;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
-    const addDisabled = outOfStock;
+    const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
 
     const stockBadge = outOfStock
       ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
@@ -6893,7 +6965,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
             </div>
           ` : ''}
 
-          <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+          <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
             ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add to Cart' })}
           </button>
         </div>
