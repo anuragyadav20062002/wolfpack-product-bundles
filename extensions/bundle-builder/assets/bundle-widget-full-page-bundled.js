@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.82
+ * Version : 5.0.84
  * Built   : 2026-07-07
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.82';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.84';
 (function() {
   'use strict';
 
@@ -1214,9 +1214,27 @@ class TemplateManager {
     return result;
   }
 
-  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
+  static getDiscountMessageRule({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress'
+  } = {}) {
     const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
+    return messageType === 'success'
+      ? (discountInfo.applicableRule || nextRule)
+      : (nextRule || discountInfo.applicableRule);
+  }
+
+  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo, options = {}) {
+    const ruleToUse = options.rule || this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType: options.messageType || 'progress'
+    });
 
     if (!ruleToUse) {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
@@ -1315,10 +1333,13 @@ class TemplateManager {
     fallbackTemplate = '',
     locale = ''
   }) {
-    const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
-    const rule = messageType === 'success'
-      ? (discountInfo.applicableRule || nextRule)
-      : (nextRule || discountInfo.applicableRule);
+    const rule = this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType
+    });
 
     if (!rule) return fallbackTemplate || '';
 
@@ -5771,6 +5792,7 @@ function getMobileAdditionalOffersPulseState({
 const MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;
 const MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS = 800;
 const MOBILE_ADDITIONAL_OFFERS_DURATION_MS = 3000;
+const MOBILE_SUMMARY_TRAY_ANIMATION_MS = 720;
 
 const fullPageMobileSummaryMethods = {
 _populateCompactMobileSummaryTray(sheet) {
@@ -5793,12 +5815,14 @@ _populateCompactMobileSummaryTray(sheet) {
   const displayFinalPrice = shouldDisplayClassicFixedBundleRawTotal(this, combinedDiscountInfo)
     ? totalPrice
     : finalPrice;
-  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const selectedFooterQuantity = this.getAllSelectedProductsData().reduce(
     (sum, item) => sum + (Number(item.quantity) || 1),
     0
   );
-  const isClassicPreset = this.getFullPageDesignPreset?.() === 'CLASSIC';
+  const designPreset = this.getFullPageDesignPreset?.();
+  const isClassicPreset = designPreset === 'CLASSIC';
+  const usesAnimatedSummarySection = isClassicPreset || designPreset === 'STANDARD';
   const summaryToggleLabel = isClassicPreset ? 'View Selected Products' : 'Review your bundle';
   const addonStep = (this.selectedBundle?.steps || []).find(step => step?.isFreeGift === true) || null;
   const addonStates = addonStep && typeof this.getAddonSummaryEligibilityStates === 'function'
@@ -5879,24 +5903,15 @@ _populateCompactMobileSummaryTray(sheet) {
     discountBlock.className = 'side-panel-discount-message';
     if (this.config.showDiscountMessaging) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
+        this.selectedBundle,
+        totalPrice,
+        totalQuantity,
+        combinedDiscountInfo,
+        currencyInfo,
+        { messageType: nextRule ? 'progress' : 'success' }
       );
       let discountMessage = '';
-      if (combinedDiscountInfo.hasDiscount) {
-        const successTemplate = TemplateManager.getDiscountMessageTemplate({
-          bundle: this.selectedBundle,
-          totalQuantity,
-          totalPrice,
-          discountInfo: combinedDiscountInfo,
-          messageType: 'success',
-          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          locale: window.Shopify?.locale,
-        });
-        discountMessage = TemplateManager.replaceVariables(
-          successTemplate,
-          variables
-        );
-      } else if (nextRule) {
+      if (nextRule) {
         const progressTemplate = TemplateManager.getDiscountMessageTemplate({
           bundle: this.selectedBundle,
           totalQuantity,
@@ -5908,6 +5923,20 @@ _populateCompactMobileSummaryTray(sheet) {
         });
         discountMessage = TemplateManager.replaceVariables(
           progressTemplate,
+          variables
+        );
+      } else if (combinedDiscountInfo.hasDiscount) {
+        const successTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'success',
+          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          locale: window.Shopify?.locale,
+        });
+        discountMessage = TemplateManager.replaceVariables(
+          successTemplate,
           variables
         );
       }
@@ -5953,7 +5982,7 @@ _populateCompactMobileSummaryTray(sheet) {
     isComplete: this.areBundleConditionsMet()
   });
   navSection.appendChild(actionButton);
-  if (this.compactMobileSummaryTrayExpanded) {
+  if (usesAnimatedSummarySection || this.compactMobileSummaryTrayExpanded) {
     const productsSection = document.createElement('div');
     productsSection.className = 'fpb-mobile-summary-products-section';
     productsSection.appendChild(this._renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity));
@@ -6081,7 +6110,7 @@ _toggleCompactMobileSummaryTray(sheet) {
       'fpb-mobile-summary-tray-animating-open',
       'fpb-mobile-summary-tray-animating-closed'
     );
-  }, 380);
+  }, MOBILE_SUMMARY_TRAY_ANIMATION_MS);
 },
 
 _syncCompactMobileSummaryScrollLock() {
@@ -6480,7 +6509,7 @@ renderSidePanel(panel) {
   const displayFinalPrice = shouldShowRawTotalOnly ? totalPrice : finalPrice;
   const shouldShowOriginalTotal = combinedDiscountInfo.hasDiscount && !shouldShowRawTotalOnly;
   const allSelectedProducts = this.getAllSelectedProductsData();
-  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
   const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
   const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
@@ -6553,24 +6582,15 @@ renderSidePanel(panel) {
   if (this.selectedBundle?.pricing?.enabled) {
     if (this.config.showDiscountMessaging) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
+        this.selectedBundle,
+        totalPrice,
+        totalQuantity,
+        combinedDiscountInfo,
+        currencyInfo,
+        { messageType: nextRule ? 'progress' : 'success' }
       );
       let discountMessage = '';
-      if (combinedDiscountInfo.hasDiscount) {
-        const successTemplate = TemplateManager.getDiscountMessageTemplate({
-          bundle: this.selectedBundle,
-          totalQuantity,
-          totalPrice,
-          discountInfo: combinedDiscountInfo,
-          messageType: 'success',
-          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          locale: window.Shopify?.locale,
-        });
-        discountMessage = TemplateManager.replaceVariables(
-          successTemplate,
-          variables
-        );
-      } else if (nextRule) {
+      if (nextRule) {
         const progressTemplate = TemplateManager.getDiscountMessageTemplate({
           bundle: this.selectedBundle,
           totalQuantity,
@@ -6582,6 +6602,20 @@ renderSidePanel(panel) {
         });
         discountMessage = TemplateManager.replaceVariables(
           progressTemplate,
+          variables
+        );
+      } else if (combinedDiscountInfo.hasDiscount) {
+        const successTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'success',
+          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          locale: window.Shopify?.locale,
+        });
+        discountMessage = TemplateManager.replaceVariables(
+          successTemplate,
           variables
         );
       }
@@ -10688,6 +10722,7 @@ updateFooterMessaging() {
     unitPrices
   );
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
 
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const variables = TemplateManager.createDiscountVariables(
@@ -10695,13 +10730,29 @@ updateFooterMessaging() {
     totalPrice,
     totalQuantity,
     combinedDiscountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
   const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
 
-  if (combinedDiscountInfo.qualifiesForDiscount) {
-
+  if (nextRule) {
+    const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType: 'progress',
+      fallbackTemplate: this.config.discountTextTemplate,
+      locale: window.Shopify?.locale,
+    });
+    const progressMessage = TemplateManager.replaceVariables(
+      progressTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    this.elements.footer.classList.remove('qualified');
+  } else if (combinedDiscountInfo.qualifiesForDiscount) {
     const successTemplate = TemplateManager.getDiscountMessageTemplate({
       bundle: this.selectedBundle,
       totalQuantity,
@@ -10718,21 +10769,7 @@ updateFooterMessaging() {
     footerDiscountText.innerHTML = successMessage;
     this.elements.footer.classList.add('qualified');
   } else {
-
-    const progressTemplate = TemplateManager.getDiscountMessageTemplate({
-      bundle: this.selectedBundle,
-      totalQuantity,
-      totalPrice,
-      discountInfo: combinedDiscountInfo,
-      messageType: 'progress',
-      fallbackTemplate: this.config.discountTextTemplate,
-      locale: window.Shopify?.locale,
-    });
-    const progressMessage = TemplateManager.replaceVariables(
-      progressTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = progressMessage;
+    footerDiscountText.innerHTML = '';
     this.elements.footer.classList.remove('qualified');
   }
 
@@ -10810,11 +10847,17 @@ _renderDiscountProgress(options = {}) {
     totalPrice
   );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const variables = TemplateManager.createDiscountVariables(
-    this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    discountInfo,
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
-  const isReached = discountInfo.hasDiscount;
+  const isReached = discountInfo.hasDiscount && !nextRule;
   const progressPct = isReached ? 100 : Math.min(100, Math.max(0, parseInt(variables.progressPercentage, 10) || 0));
 
   const progressBarType = this.config.discountProgressBarType === 'simple' ? 'simple' : 'step_based';
@@ -10830,13 +10873,13 @@ _renderDiscountProgress(options = {}) {
       this.config.discountProgressSuccessTemplate || this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
       variables
     );
-  } else {
-    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
-    if (!nextRule) return null;
+  } else if (nextRule) {
     message = TemplateManager.replaceVariables(
       this.config.discountProgressTextTemplate || this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
       variables
     );
+  } else {
+    return null;
   }
 
   const progressData = getDiscountProgressData({
@@ -10886,26 +10929,32 @@ _renderDiscountProgressBanner() {
     totalPrice
   );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const variables = TemplateManager.createDiscountVariables(
-    this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    discountInfo,
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
   let message = '';
   let isReached = false;
 
-  if (discountInfo.hasDiscount) {
+  if (nextRule) {
+    message = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+      variables
+    );
+  } else if (discountInfo.hasDiscount) {
     isReached = true;
     message = TemplateManager.replaceVariables(
       this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
       variables
     );
   } else {
-    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
-    if (!nextRule) return null;
-    message = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
-      variables
-    );
+    return null;
   }
 
   const banner = document.createElement('div');
@@ -10955,7 +11004,8 @@ getFormattedHeaderText() {
     totalPrice,
     totalQuantity,
     combinedDiscountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: 'progress' }
   );
 
   return TemplateManager.replaceVariables(
@@ -12851,7 +12901,8 @@ updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
     totalPrice,
     totalQuantity,
     discountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: 'progress' }
   );
 
   const headerText = TemplateManager.replaceVariables(
@@ -12868,16 +12919,24 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
 
   if (!footerDiscountText) return;
 
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const variables = TemplateManager.createDiscountVariables(
     this.selectedBundle,
     totalPrice,
     totalQuantity,
     discountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
-  if (discountInfo.qualifiesForDiscount) {
-
+  if (nextRule) {
+    const progressMessage = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    if (discountSection) discountSection.classList.remove('qualified');
+  } else if (discountInfo.qualifiesForDiscount) {
     const successMessage = TemplateManager.replaceVariables(
       this.config.successMessageTemplate,
       variables
@@ -12885,12 +12944,7 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
     footerDiscountText.innerHTML = successMessage;
     if (discountSection) discountSection.classList.add('qualified');
   } else {
-
-    const progressMessage = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = progressMessage;
+    footerDiscountText.innerHTML = '';
     if (discountSection) discountSection.classList.remove('qualified');
   }
 

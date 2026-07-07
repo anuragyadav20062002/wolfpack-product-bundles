@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.82
+ * Version : 5.0.84
  * Built   : 2026-07-07
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.82';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.84';
 (function() {
   'use strict';
 
@@ -1214,9 +1214,27 @@ class TemplateManager {
     return result;
   }
 
-  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
+  static getDiscountMessageRule({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress'
+  } = {}) {
     const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
+    return messageType === 'success'
+      ? (discountInfo.applicableRule || nextRule)
+      : (nextRule || discountInfo.applicableRule);
+  }
+
+  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo, options = {}) {
+    const ruleToUse = options.rule || this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType: options.messageType || 'progress'
+    });
 
     if (!ruleToUse) {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
@@ -1315,10 +1333,13 @@ class TemplateManager {
     fallbackTemplate = '',
     locale = ''
   }) {
-    const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
-    const rule = messageType === 'success'
-      ? (discountInfo.applicableRule || nextRule)
-      : (nextRule || discountInfo.applicableRule);
+    const rule = this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType
+    });
 
     if (!rule) return fallbackTemplate || '';
 
@@ -5122,11 +5143,18 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
     totalPrice,
     totalQuantity,
     discountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
-  if (discountInfo.qualifiesForDiscount) {
-
+  if (nextRule) {
+    const progressMessage = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    if (discountSection) discountSection.classList.remove('qualified');
+  } else if (discountInfo.qualifiesForDiscount) {
     const successMessage = TemplateManager.replaceVariables(
       this.config.successMessageTemplate,
       variables
@@ -5134,12 +5162,7 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
     footerDiscountText.innerHTML = successMessage;
     if (discountSection) discountSection.classList.add('qualified');
   } else {
-
-    const progressMessage = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = progressMessage;
+    footerDiscountText.innerHTML = '';
     if (discountSection) discountSection.classList.remove('qualified');
   }
 },

@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 5.0.82
+ * Version : 5.0.84
  * Built   : 2026-07-07
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.82';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.84';
 (function (window) {
   'use strict';
 
@@ -1403,9 +1403,27 @@ class TemplateManager {
     return result;
   }
 
-  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
+  static getDiscountMessageRule({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress'
+  } = {}) {
     const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
+    return messageType === 'success'
+      ? (discountInfo.applicableRule || nextRule)
+      : (nextRule || discountInfo.applicableRule);
+  }
+
+  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo, options = {}) {
+    const ruleToUse = options.rule || this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType: options.messageType || 'progress'
+    });
 
     if (!ruleToUse) {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
@@ -1514,10 +1532,13 @@ class TemplateManager {
     fallbackTemplate = '',
     locale = ''
   }) {
-    const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
-    const rule = messageType === 'success'
-      ? (discountInfo.applicableRule || nextRule)
-      : (nextRule || discountInfo.applicableRule);
+    const rule = this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType
+    });
 
     if (!rule) return fallbackTemplate || '';
 
