@@ -259,19 +259,29 @@ describe('handleValidateWidgetPlacement — draft promotion', () => {
     (getDb().bundle.findUnique as jest.Mock).mockResolvedValue(
       makeBundle({ shopifyPreviewPageId: previewPageId, shopifyPreviewPageHandle: previewPageHandle })
     );
-    mockPublishPreviewPage.mockResolvedValue({ success: true });
+    mockPublishPreviewPage.mockResolvedValue({ success: true, newHandle: 'my-kit', adjusted: false } as any);
     (getDb().bundle.update as jest.Mock).mockResolvedValue({});
 
     const response = await handleValidateWidgetPlacement(mockAdmin, mockSession, bundleId);
     const body: any = await response.json();
 
-    expect(mockPublishPreviewPage).toHaveBeenCalledWith(mockAdmin, previewPageId, bundleId, mockSession.shop);
+    expect(mockPublishPreviewPage).toHaveBeenCalledWith(
+      mockAdmin,
+      previewPageId,
+      bundleId,
+      mockSession.shop,
+      {
+        title: 'My Kit',
+        desiredSlug: 'My Kit',
+        currentHandle: previewPageHandle,
+      }
+    );
     expect(mockRefreshFullPageBundlePageBody).toHaveBeenCalledWith(mockAdmin, previewPageId, bundleId, mockSession.shop, expect.objectContaining({ id: bundleId }));
     expect(mockCreateFullPageBundle).not.toHaveBeenCalled();
     expect(getDb().bundle.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          shopifyPageHandle: previewPageHandle,
+          shopifyPageHandle: 'my-kit',
           shopifyPageId: previewPageId,
           shopifyPreviewPageId: null,
           shopifyPreviewPageHandle: null,
@@ -279,7 +289,37 @@ describe('handleValidateWidgetPlacement — draft promotion', () => {
       })
     );
     expect(body.success).toBe(true);
-    expect(body.pageHandle).toBe(previewPageHandle);
+    expect(body.pageHandle).toBe('my-kit');
+  });
+
+  it('uses the merchant slug when promoting an existing preview page', async () => {
+    (getDb().bundle.findUnique as jest.Mock).mockResolvedValue(
+      makeBundle({ shopifyPreviewPageId: previewPageId, shopifyPreviewPageHandle: previewPageHandle })
+    );
+    mockPublishPreviewPage.mockResolvedValue({ success: true, newHandle: 'custom-slug', adjusted: false } as any);
+    (getDb().bundle.update as jest.Mock).mockResolvedValue({});
+
+    const response = await handleValidateWidgetPlacement(mockAdmin, mockSession, bundleId, 'Custom Slug');
+    const body: any = await response.json();
+
+    expect(mockPublishPreviewPage).toHaveBeenCalledWith(
+      mockAdmin,
+      previewPageId,
+      bundleId,
+      mockSession.shop,
+      {
+        title: 'My Kit',
+        desiredSlug: 'Custom Slug',
+        currentHandle: previewPageHandle,
+      }
+    );
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ shopifyPageHandle: 'custom-slug' }),
+      })
+    );
+    expect(body.pageHandle).toBe('custom-slug');
+    expect(body.pageUrl).toBe('https://test-shop.myshopify.com/pages/custom-slug');
   });
 
   it('falls back to creating new published page when publishPreviewPage fails', async () => {

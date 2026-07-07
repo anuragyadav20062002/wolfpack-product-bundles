@@ -225,6 +225,33 @@ describe('publishPreviewPage', () => {
     expect(call[1].variables.id).toBe(pageId);
   });
 
+  it('renames the preview page title and handle when promotion options are provided', async () => {
+    mockResolveUniqueHandle.mockResolvedValueOnce({ handle: 'custom-slug', adjusted: false });
+    const admin = { graphql: jest.fn() };
+    admin.graphql.mockResolvedValueOnce(
+      createMockGraphQLResponse({
+        pageUpdate: {
+          page: { id: pageId, handle: 'custom-slug', isPublished: true },
+          userErrors: [],
+        },
+      })
+    );
+
+    const result = await (publishPreviewPage as any)(admin, pageId, undefined, undefined, {
+      title: 'My Kit',
+      desiredSlug: 'Custom Slug',
+      currentHandle: 'preview-my-kit',
+    });
+
+    expect(mockResolveUniqueHandle).toHaveBeenCalledWith(admin, 'custom-slug', 'preview-my-kit');
+    expect(admin.graphql.mock.calls[0][1].variables.page).toEqual({
+      isPublished: true,
+      title: 'My Kit',
+      handle: 'custom-slug',
+    });
+    expect(result).toEqual({ success: true, newHandle: 'custom-slug', adjusted: false });
+  });
+
   it('refreshes page body before publishing when bundle context is provided', async () => {
     const admin = { graphql: jest.fn() };
     admin.graphql

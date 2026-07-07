@@ -11,19 +11,21 @@ describe("buildPriceAdjustmentConfig", () => {
           conditionType: "quantity",
           conditionValue: 2,
           discountValue: 770,
+          fixedBundlePrice: 4999,
         },
         {
           id: "rule-3",
           conditionType: "quantity",
           conditionValue: 3,
           discountValue: 1540,
+          fixedBundlePrice: 6999,
         },
       ],
     });
 
     expect(priceAdjustment).toMatchObject({
       method: "fixed_bundle_price",
-      value: 770,
+      value: 4999,
       conditions: {
         type: "quantity",
         operator: "gte",
@@ -32,7 +34,7 @@ describe("buildPriceAdjustmentConfig", () => {
       rules: [
         {
           method: "fixed_bundle_price",
-          value: 770,
+          value: 4999,
           conditions: {
             type: "quantity",
             operator: "gte",
@@ -41,7 +43,7 @@ describe("buildPriceAdjustmentConfig", () => {
         },
         {
           method: "fixed_bundle_price",
-          value: 1540,
+          value: 6999,
           conditions: {
             type: "quantity",
             operator: "gte",

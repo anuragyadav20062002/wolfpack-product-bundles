@@ -59,7 +59,6 @@
 }
 
 .layout-sidebar .side-panel-skeleton-slot {
-  animation: fpb-shimmer 1.5s ease-in-out infinite;
   pointer-events: none;
 }
 
@@ -78,6 +77,8 @@
   background: var(--bundle-skeleton-base-bg, #e5e7eb);
   border-radius: 6px;
   color: transparent;
+  animation: fpb-shimmer var(--bundle-summary-skeleton-pulse-duration, 1.5s)
+    ease-in-out infinite;
 }
 
 .layout-sidebar .side-panel-skeleton-slot .side-panel-skeleton-thumb {

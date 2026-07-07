@@ -325,26 +325,27 @@ expandProductsByVariant(products, shouldExpand = true) {
     return products;
   }
 
+  const context = this || {};
   return products.flatMap(product => {
+    const toCents = (value) => Math.round(parseFloat(value || '0') * 100);
     const isVariantSelectable = (variant) => {
-      if (typeof this.isVariantSelectableForInventory === 'function') {
-        return this.isVariantSelectableForInventory(variant);
+      if (typeof context.isVariantSelectableForInventory === 'function') {
+        return context.isVariantSelectableForInventory(variant);
       }
       return variant?.available !== false;
     };
 
     // If product already has a variantId and parentProductId, it was already expanded
     if (product.parentProductId && product.variantId) {
-      return isVariantSelectable(product) ? [product] : [];
+      return [{ ...product, available: isVariantSelectable(product) }];
     }
 
     // If product has multiple variants, expand into separate cards
     if (product.variants && product.variants.length > 1) {
       return product.variants
-        .filter(variant => isVariantSelectable(variant))
         .map(variant => {
-          const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
-            ? this.getRuntimeVariantInventory(variant)
+          const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
+            ? context.getRuntimeVariantInventory(variant)
             : null;
           const inventorySource = runtimeInventory || variant;
           // Use variant image if available, fallback to product image
@@ -365,8 +366,8 @@ expandProductsByVariant(products, shouldExpand = true) {
             title: product.title,
             variantTitle: variant.title === 'Default Title' ? '' : variant.title,
             imageUrl,
-            price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
-            compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
+            price: typeof variant.price === 'number' ? variant.price : toCents(variant.price),
+            compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : toCents(variant.compareAtPrice)) : null,
             variantId: variant.id,
             available: isVariantSelectable(variant),
             quantityAvailable: typeof inventorySource.quantityAvailable === 'number' ? inventorySource.quantityAvailable : null,
@@ -382,9 +383,9 @@ expandProductsByVariant(products, shouldExpand = true) {
     // Single variant or no variants - return as-is
     if (Array.isArray(product.variants) && product.variants.length === 1) {
       const variant = product.variants[0];
-      if (!isVariantSelectable(variant)) return [];
+      return [{ ...product, available: isVariantSelectable(variant) }];
     }
-    return isVariantSelectable(product) ? [product] : [];
+    return [{ ...product, available: isVariantSelectable(product) }];
   });
 },
 

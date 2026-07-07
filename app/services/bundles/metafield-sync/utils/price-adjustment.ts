@@ -21,9 +21,9 @@ function toNumber(value: unknown): number {
 function getRuleValue(method: string, rule: any): number {
   if (method === FIXED_BUNDLE_PRICE_METHOD) {
     return toPositiveNumber(
-      rule.discountValue,
       rule.fixedBundlePrice,
       rule.price,
+      rule.discountValue,
       rule.discount?.value,
     );
   }

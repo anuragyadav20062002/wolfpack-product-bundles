@@ -243,6 +243,91 @@ describe('Full Page widget category hydration behavior', () => {
     ]);
   });
 
+  it('hydrates incomplete products from a mixed enriched step payload', async () => {
+    const previousWindow = (global as any).window;
+    const previousFetch = (global as any).fetch;
+    (global as any).window = {
+      Shopify: { shop: 'test.myshopify.com', country: 'US' },
+      location: { host: 'test.myshopify.com' },
+    };
+    (global as any).fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        products: [{
+          id: 'gid://shopify/Product/2',
+          title: 'Fetched product',
+          imageUrl: 'https://cdn.example.test/fetched.jpg',
+          price: '42.00',
+          variants: [{
+            id: 'gid://shopify/ProductVariant/22',
+            title: 'Default Title',
+            price: '42.00',
+            available: true,
+          }],
+        }],
+      }),
+    });
+
+    const context: any = {
+      selectedBundle: {
+        steps: [{
+          products: [
+            {
+              id: 'gid://shopify/Product/1',
+              title: 'Cached product',
+              featuredImage: { url: 'https://cdn.example.test/cached.jpg' },
+              price: 1999,
+              variants: [{
+                id: 'gid://shopify/ProductVariant/11',
+                title: 'Default Title',
+                price: 1999,
+                available: true,
+              }],
+            },
+            {
+              id: 'gid://shopify/Product/2',
+              title: 'Incomplete product',
+              featuredImage: { url: 'https://cdn.example.test/incomplete.jpg' },
+              price: 0,
+              variants: [],
+            },
+          ],
+        }],
+      },
+      stepProductData: [[]],
+      stepCollectionProductIds: {},
+      selectedProducts: [{}],
+      resolveStorefrontApiBase: () => '/apps/product-bundles',
+      collectStepProductIds: fullPageSearchCategoryMethods.collectStepProductIds,
+      collectStepCollectionHandles: () => [],
+      shouldExpandStepProductsDuringLoad: () => false,
+      extractId: (id: string) => String(id || '').split('/').pop(),
+      isVariantSelectableForInventory: () => true,
+      isInventoryTrackingOnAddToCartEnabled: () => false,
+      getFirstAvailableVariant: fullPageProductProcessingMethods.getFirstAvailableVariant,
+      processProductsForStep: fullPageProductProcessingMethods.processProductsForStep,
+      enrichMissingProductDescriptions: async (products: any[]) => products,
+      mergeCategoryProductVariantAvailability:
+        fullPageProductProcessingMethods.mergeCategoryProductVariantAvailability,
+      _mergeDirectDefaultProductsIntoStep: (_stepIndex: number, products: any[]) => products,
+    };
+
+    try {
+      await fullPageProductProcessingMethods.loadStepProducts.call(context, 0);
+
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('gid%3A%2F%2Fshopify%2FProduct%2F2'),
+      );
+      expect(context.stepProductData[0]).toEqual([
+        expect.objectContaining({ id: '1', price: 1999 }),
+        expect.objectContaining({ id: '2', price: 4200 }),
+      ]);
+    } finally {
+      (global as any).window = previousWindow;
+      (global as any).fetch = previousFetch;
+    }
+  });
+
   it('resolves empty-product copy from FPB runtime language settings', () => {
     const overridden = getNoProductsAvailableMessage.call({
       _resolveText: (key: string, fallback: string) => (

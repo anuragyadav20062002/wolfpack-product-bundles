@@ -27,7 +27,10 @@ export function useConfigureContentState(flow: ConfigureBundleFlowDraft) {
     bundle.shopifyPageHandle ?? slugify(bundle.name ?? ""),
   );
   const normalizedPageSlug = useMemo(() => slugify(pageSlug), [pageSlug]);
-  const pageSlugError = useMemo(() => validateSlug(pageSlug), [pageSlug]);
+  const pageSlugError = useMemo(
+    () => validateSlug(normalizedPageSlug),
+    [normalizedPageSlug],
+  );
   const bundlePageUrl = useMemo(
     () =>
       bundle.shopifyPageHandle

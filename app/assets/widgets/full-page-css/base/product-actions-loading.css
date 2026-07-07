@@ -106,6 +106,17 @@
   transform: none;
 }
 
+.bw-product-card.is-out-of-stock,
+.product-card.is-out-of-stock {
+  opacity: 0.58;
+  filter: grayscale(1);
+}
+
+.bw-product-card.is-out-of-stock .product-add-btn,
+.product-card.is-out-of-stock .product-add-btn {
+  cursor: not-allowed;
+}
+
 .inline-quantity-controls {
   display: grid;
   grid-template-columns:

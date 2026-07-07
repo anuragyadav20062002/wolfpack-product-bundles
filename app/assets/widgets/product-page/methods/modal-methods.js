@@ -174,7 +174,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
     const lowStock = available !== null && available > 0 && available <= 3;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
-    const addDisabled = outOfStock;
+    const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
 
     // Low-stock / out-of-stock badge — shown on the image, not in the CTA.
     const stockBadge = outOfStock
@@ -218,7 +218,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
             </div>
           ` : ''}
 
-          <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+          <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
             ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add to Cart' })}
           </button>
         </div>

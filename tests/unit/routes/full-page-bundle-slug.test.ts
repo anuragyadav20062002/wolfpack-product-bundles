@@ -238,6 +238,35 @@ describe('handleRenamePageSlug', () => {
     expect(body.newHandle).toBe('new-slug');
   });
 
+  it('normalizes the requested slug before renaming the page', async () => {
+    (getDb().bundle.findUnique as jest.Mock).mockResolvedValue({
+      id: bundleId,
+      shopId: 'test-shop.myshopify.com',
+      shopifyPageId: 'gid://shopify/Page/1',
+      shopifyPageHandle: 'old-slug',
+    });
+
+    mockRenamePageHandle.mockResolvedValue({
+      success: true,
+      newHandle: 'new-kit-url',
+      adjusted: false,
+    });
+
+    (getDb().bundle.update as jest.Mock).mockResolvedValue({});
+
+    const response = await handleRenamePageSlug(mockAdmin, mockSession, bundleId, 'New Kit URL');
+    const body: any = await response.json();
+
+    expect(mockRenamePageHandle).toHaveBeenCalledWith(
+      mockAdmin,
+      'gid://shopify/Page/1',
+      'new-kit-url',
+      'old-slug'
+    );
+    expect(body.success).toBe(true);
+    expect(body.newHandle).toBe('new-kit-url');
+  });
+
   it('returns 404 when bundle is not found', async () => {
     (getDb().bundle.findUnique as jest.Mock).mockResolvedValue(null);
 
