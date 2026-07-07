@@ -23,6 +23,32 @@ mod tests {
             .collect()
     }
 
+    fn merge_discount_percentage(output: &schema::FunctionRunResult) -> Option<String> {
+        let merge = match &output.operations[0] {
+            schema::CartOperation::LinesMerge(m) => m,
+            _ => panic!("expected Merge operation"),
+        };
+
+        merge
+            .price
+            .as_ref()
+            .and_then(|price| price.percentage_decrease.as_ref())
+            .map(|value| value.value.to_string())
+    }
+
+    fn expand_discount_percentage(output: &schema::FunctionRunResult) -> Option<String> {
+        let expand = match &output.operations[0] {
+            schema::CartOperation::LineExpand(e) => e,
+            _ => panic!("expected Expand operation"),
+        };
+
+        expand
+            .price
+            .as_ref()
+            .and_then(|price| price.percentage_decrease.as_ref())
+            .map(|value| value.value.to_string())
+    }
+
     fn messaging_merge_input(cart_transform_fragment: &str) -> String {
         let cart_transform_fragment = if cart_transform_fragment.trim().is_empty() {
             r#""cartTransform": { "bundleCartLineMessaging": null },"#.to_string()
@@ -217,6 +243,142 @@ mod tests {
             .map(|v| v.value.to_string());
         // Decimal::from(f64) uses Rust's f64 Display — "20.0" not "20.00"
         assert_eq!(pct.as_deref(), Some("20.0"));
+    }
+
+    #[test]
+    fn test_merge_fixed_amount_off() {
+        let cp = serde_json::json!([{
+            "id": "gid://shopify/ProductVariant/999",
+            "component_reference": {
+                "value": [
+                    "gid://shopify/ProductVariant/101",
+                    "gid://shopify/ProductVariant/102"
+                ]
+            },
+            "component_quantities": { "value": [1, 1] },
+            "price_adjustment": { "method": "fixed_amount_off", "value": 1000.0 }
+        }])
+        .to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-fixed-amount_1" }},
+                        "wolfpackProductBundleName": {{ "value": "Fixed Amount Bundle" }},
+                        "stepType": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": {{ "value": {cp:?} }},
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "Widget A" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "30.00" }},
+                            "totalAmount": {{ "amount": "30.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "line2", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-fixed-amount_2" }},
+                        "wolfpackProductBundleName": {{ "value": "Fixed Amount Bundle" }},
+                        "stepType": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/102",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/2", "title": "Widget B" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "20.00" }},
+                            "totalAmount": {{ "amount": "20.00" }}
+                        }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+        assert_eq!(merge_discount_percentage(&output).as_deref(), Some("20.0"));
+    }
+
+    #[test]
+    fn test_merge_fixed_bundle_price() {
+        let cp = serde_json::json!([{
+            "id": "gid://shopify/ProductVariant/999",
+            "component_reference": {
+                "value": [
+                    "gid://shopify/ProductVariant/101",
+                    "gid://shopify/ProductVariant/102"
+                ]
+            },
+            "component_quantities": { "value": [1, 1] },
+            "price_adjustment": { "method": "fixed_bundle_price", "value": 3000.0 }
+        }])
+        .to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-fixed-price_1" }},
+                        "wolfpackProductBundleName": {{ "value": "Fixed Bundle Price" }},
+                        "stepType": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": {{ "value": {cp:?} }},
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "Widget A" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "50.00" }},
+                            "totalAmount": {{ "amount": "50.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "line2", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "bundle-fixed-price_2" }},
+                        "wolfpackProductBundleName": {{ "value": "Fixed Bundle Price" }},
+                        "stepType": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/102",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/2", "title": "Widget B" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "30.00" }},
+                            "totalAmount": {{ "amount": "30.00" }}
+                        }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+        assert_eq!(merge_discount_percentage(&output).as_deref(), Some("62.5"));
     }
 
     #[test]
@@ -1202,6 +1364,141 @@ mod tests {
         );
         // 10% discount → price field included
         assert!(expand.price.is_some());
+    }
+
+    #[test]
+    fn test_expand_fixed_amount_off() {
+        let cr = serde_json::json!(["gid://shopify/ProductVariant/A"]).to_string();
+        let cq = serde_json::json!([1]).to_string();
+        let pa = serde_json::json!({ "method": "fixed_amount_off", "value": 1000.0 }).to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [{{
+                    "id": "fixed-amount-line", "quantity": 1,
+                    "wolfpackProductBundleOfferId": null,
+                    "wolfpackProductBundleName": {{ "value": "Fixed Amount Flex Bundle" }},
+                    "stepType": null,
+                    "merchandise": {{
+                        "__typename": "ProductVariant",
+                        "id": "gid://shopify/ProductVariant/PARENT",
+                        "component_parents": null,
+                        "component_reference": {{ "value": {cr:?} }},
+                        "component_quantities": {{ "value": {cq:?} }},
+                        "price_adjustment": {{ "value": {pa:?} }},
+                        "component_pricing": null,
+                        "product": {{ "id": "gid://shopify/Product/10", "title": "Fixed Amount Flex Bundle" }}
+                    }},
+                    "cost": {{
+                        "amountPerQuantity": {{ "amount": "50.00" }},
+                        "totalAmount": {{ "amount": "50.00" }}
+                    }}
+                }}]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+        assert_eq!(expand_discount_percentage(&output).as_deref(), Some("20.0"));
+    }
+
+    #[test]
+    fn test_expand_fixed_bundle_price() {
+        let cr = serde_json::json!(["gid://shopify/ProductVariant/A"]).to_string();
+        let cq = serde_json::json!([1]).to_string();
+        let pa = serde_json::json!({ "method": "fixed_bundle_price", "value": 3000.0 }).to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [{{
+                    "id": "fixed-price-line", "quantity": 1,
+                    "wolfpackProductBundleOfferId": null,
+                    "wolfpackProductBundleName": {{ "value": "Fixed Price Flex Bundle" }},
+                    "stepType": null,
+                    "merchandise": {{
+                        "__typename": "ProductVariant",
+                        "id": "gid://shopify/ProductVariant/PARENT",
+                        "component_parents": null,
+                        "component_reference": {{ "value": {cr:?} }},
+                        "component_quantities": {{ "value": {cq:?} }},
+                        "price_adjustment": {{ "value": {pa:?} }},
+                        "component_pricing": null,
+                        "product": {{ "id": "gid://shopify/Product/10", "title": "Fixed Price Flex Bundle" }}
+                    }},
+                    "cost": {{
+                        "amountPerQuantity": {{ "amount": "80.00" }},
+                        "totalAmount": {{ "amount": "80.00" }}
+                    }}
+                }}]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+        assert_eq!(expand_discount_percentage(&output).as_deref(), Some("62.5"));
+    }
+
+    #[test]
+    fn test_expand_buy_x_get_y() {
+        let cr = serde_json::json!(["gid://shopify/ProductVariant/A"]).to_string();
+        let cq = serde_json::json!([3]).to_string();
+        let pa = serde_json::json!({
+            "method": "buy_x_get_y",
+            "value": 100.0,
+            "customerBuys": 2,
+            "customerGets": 1,
+            "discountType": "percentage",
+            "applyDiscountTo": "lowest_priced",
+            "conditions": { "type": "quantity", "operator": "gte", "value": 3 }
+        })
+        .to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [{{
+                    "id": "bxy-line", "quantity": 1,
+                    "wolfpackProductBundleOfferId": null,
+                    "wolfpackProductBundleName": {{ "value": "BXY Flex Bundle" }},
+                    "stepType": null,
+                    "merchandise": {{
+                        "__typename": "ProductVariant",
+                        "id": "gid://shopify/ProductVariant/PARENT",
+                        "component_parents": null,
+                        "component_reference": {{ "value": {cr:?} }},
+                        "component_quantities": {{ "value": {cq:?} }},
+                        "price_adjustment": {{ "value": {pa:?} }},
+                        "component_pricing": null,
+                        "product": {{ "id": "gid://shopify/Product/10", "title": "BXY Flex Bundle" }}
+                    }},
+                    "cost": {{
+                        "amountPerQuantity": {{ "amount": "30.00" }},
+                        "totalAmount": {{ "amount": "30.00" }}
+                    }}
+                }}]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+        assert_eq!(
+            expand_discount_percentage(&output).as_deref(),
+            Some("33.3333")
+        );
     }
 
     #[test]
