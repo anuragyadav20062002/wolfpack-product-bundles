@@ -412,6 +412,28 @@ describe('FPB Standard mobile summary action', () => {
     expect(classList.add).toHaveBeenCalledWith('fpb-mobile-summary-tray-animating-open');
   });
 
+  it('does not lock page scroll when Standard or Classic mobile summary trays expand', () => {
+    const classList = {
+      toggle: jest.fn(),
+    };
+    global.document = {
+      body: { classList },
+    } as unknown as Document;
+
+    ['STANDARD', 'CLASSIC'].forEach((preset) => {
+      fullPageMobileSummaryMethods._syncCompactMobileSummaryScrollLock.call({
+        compactMobileSummaryTrayExpanded: true,
+        getFullPageDesignPreset: () => preset,
+      });
+    });
+
+    expect(classList.toggle).toHaveBeenCalledWith(
+      'fpb-mobile-summary-scroll-locked',
+      false,
+    );
+    expect(classList.toggle).toHaveBeenCalledTimes(2);
+  });
+
   it('lets the Classic compact summary count toggle use the same interaction path as Standard', async () => {
     const sheet = new FakeElement();
     const toggleTray = jest.fn();

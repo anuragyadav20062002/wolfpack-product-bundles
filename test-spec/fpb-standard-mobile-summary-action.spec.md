@@ -25,6 +25,7 @@ Lock the storefront behavior observed in EB Standard and Classic: a one-step FPB
 | 11 | Exact step validation message | Step condition `is = 2`, one manually selected product, one direct default product | Validation returns `Add exactly 2 products on this step` | Matches EB: direct defaults count toward discount/cart, but exact step validation requires explicit step selections. |
 | 12 | Step-level auto-next predicate | Step condition quantity reached and `autoNextStepOnConditionMet=true` | Auto-next predicate resolves true | Persists EB's step-rule auto-next behavior independently from category auto-next. |
 | 13 | Add-on step after multiple paid steps | Current mobile step is before another paid step and an add-on step exists later | Summary CTA targets the next paid step, not the add-on step | Prevents the visible mobile footer from skipping locked paid steps. |
+| 14 | Standard and Classic expanded tray scroll | Expanded compact mobile summary tray for `STANDARD` or `CLASSIC` | Body scroll-lock class is toggled off | Matches EB evidence that expanded Standard/Classic footer remains sticky without locking page scroll. |
 
 ## Acceptance Criteria
 

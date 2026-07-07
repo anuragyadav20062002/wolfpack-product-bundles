@@ -5,7 +5,7 @@ export const BundleModalVariantMethods = {
     this.selectedOptions = {};
     const summaryContainer = document.getElementById('modal-selection-summary');
     const summaryText = document.getElementById('modal-selection-text');
-    if (summaryContainer) summaryContainer.style.display = 'none';
+    if (summaryContainer) summaryContainer.hidden = true;
     if (summaryText) summaryText.textContent = '';
   },
 
@@ -244,13 +244,13 @@ export const BundleModalVariantMethods = {
       .filter(value => value && value !== 'Default Title');
 
     if (selectedValues.length === 0) {
-      summaryContainer.style.display = 'none';
+      summaryContainer.hidden = true;
       return;
     }
 
     // Show the summary
     summaryText.textContent = selectedValues.join(' / ');
-    summaryContainer.style.display = 'flex';
+    summaryContainer.hidden = false;
   },
 
   /**

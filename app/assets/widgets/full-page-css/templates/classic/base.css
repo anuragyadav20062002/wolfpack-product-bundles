@@ -6,17 +6,17 @@
 
 .fpb-preset-classic,
 [data-bundle-type="full_page"][data-fpb-design-preset="CLASSIC"] {
-  width: min(100vw, var(--classic-shell-max-width, 96rem));
-  max-width: var(--classic-shell-max-width, 96rem);
+  width: min(100%, var(--classic-shell-max-width));
+  max-width: var(--classic-shell-max-width);
   margin-inline: auto;
-  padding: var(--classic-shell-padding, clamp(0.5rem, 1vw, 0.75rem));
+  padding: var(--classic-shell-padding, clamp(8px, 1vw, 12px));
   box-sizing: border-box;
   background: var(--bundle-full-page-bg-color);
 }
 
 .fpb-preset-classic {
   --classic-shell-max-width: 96rem;
-  --classic-shell-padding: clamp(0.5rem, 1vw, 0.75rem);
+  --classic-shell-padding: clamp(8px, 1vw, 12px);
   --classic-grid-gap: 15px;
   --classic-card-radius: 10px;
   --classic-card-padding: 8px;
@@ -25,32 +25,38 @@
   --classic-desktop-card-image-extra: clamp(10px, 1.2vw, 12px);
   --classic-desktop-icon-card-extra: clamp(80px, 8vw, 104px);
   --classic-desktop-text-card-extra: clamp(130px, 11.5vw, 152px);
-  --classic-desktop-layout-left: clamp(1rem, 2vw, 2.25rem);
-  --classic-desktop-layout-right: clamp(1rem, 2vw, 2.25rem);
+  --classic-desktop-layout-left: clamp(16px, 2vw, 36px);
+  --classic-desktop-layout-right: clamp(16px, 2vw, 36px);
   --classic-desktop-layout-inner-max: 100%;
   --classic-desktop-content-fr: 7fr;
   --classic-desktop-sidebar-fr: 3fr;
-  --classic-desktop-sidebar-min-width: min-content;
+  --classic-desktop-sidebar-min-width: min(20rem, 100%);
 
-  --classic-mobile-card-width: clamp(8.75rem, 40vw, 11.25rem);
-  --classic-mobile-shell-gutter: 0.625rem;
-  --classic-mobile-content-bottom-padding: clamp(5rem, 18vh, 7.5rem);
-  --classic-mobile-icon-card-height: clamp(13.75rem, 52vw, 16.5rem);
-  --classic-mobile-text-card-height: clamp(15.5rem, 56vw, 18.75rem);
-  --classic-mobile-image-height: clamp(7.5rem, 37vw, 9.5rem);
+  --classic-mobile-card-width: clamp(140px, 40vw, 180px);
+  --classic-mobile-shell-gutter: 10px;
+  --classic-mobile-content-bottom-padding: clamp(80px, 18vh, 120px);
+  --classic-mobile-icon-card-height: clamp(220px, 52vw, 264px);
+  --classic-mobile-text-card-height: clamp(248px, 56vw, 300px);
+  --classic-mobile-image-height: clamp(120px, 37vw, 152px);
 
   --classic-icon-button-size: clamp(30px, 4.2vw, 38px);
-  --classic-text-button-height: 2.1875rem;
+  --classic-text-button-height: 35px;
   --classic-desktop-icon-action-width: clamp(56px, 20%, 74px);
-  --classic-category-pill-min-height: 2.5rem;
-  --classic-category-pill-padding: 0.45rem 1.5rem;
-  --classic-category-pill-border: 0.125rem solid #000;
+  --classic-category-pill-min-height: 40px;
+  --classic-category-pill-padding: 7px 24px;
+  --classic-category-pill-border: 2px solid #000;
   --bundle-product-strike-price-font-weight: 700;
   --classic-product-card-button-bg: var(--bundle-add-btn-color, #000);
   --classic-product-card-button-text: var(
     --bundle-product-card-button-text-color,
     #fff
   );
+}
+
+.bundle-widget-full-page.fpb-preset-classic {
+  width: min(100%, var(--classic-shell-max-width));
+  max-width: var(--classic-shell-max-width);
+  margin-inline: auto;
 }
 
 .fpb-preset-classic .fpb-category-section-rows {

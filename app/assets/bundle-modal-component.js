@@ -69,7 +69,7 @@ class BundleProductModal {
             <div class="bundle-modal-details">
               <div class="bundle-modal-header">
                 <h2 class="bundle-modal-title" id="modal-product-title"></h2>
-                <div class="bundle-modal-selection-summary" id="modal-selection-summary" style="display: none;">
+                <div class="bundle-modal-selection-summary" id="modal-selection-summary" hidden>
                   <svg class="selection-check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
@@ -271,14 +271,9 @@ class BundleProductModal {
     const displayTitle = this.currentProduct.parentTitle || this.currentProduct.title;
     document.getElementById('modal-product-title').textContent = displayTitle;
 
-    // Set description (if available)
+    // Keep the description row mounted so the modal layout remains stable.
     const descriptionEl = document.getElementById('modal-product-description');
-    if (this.currentProduct.description) {
-      descriptionEl.textContent = this.currentProduct.description;
-      descriptionEl.style.display = 'block';
-    } else {
-      descriptionEl.style.display = 'none';
-    }
+    descriptionEl.textContent = this.currentProduct.description || '';
 
     // Load image
     this.loadImage();
