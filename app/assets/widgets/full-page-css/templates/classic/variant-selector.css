@@ -1,5 +1,5 @@
 .layout-sidebar[data-fpb-design-preset="CLASSIC"] {
-  --classic-variant-options-open-max-height: min(9.375rem, 55vh);
+  --classic-variant-options-open-max-height: min(320px, 65vh);
   --classic-variant-options-scrollbar-size: 0.125rem;
   --classic-product-grid-z-index: 1;
   --classic-variant-open-card-z-index: 40;
@@ -93,7 +93,7 @@
   inset-block-start: 100%;
   inset-inline: 0;
   z-index: var(--classic-variant-dropdown-z-index, 60);
-  max-height: var(--classic-variant-options-open-max-height, min(9.375rem, 55vh));
+  max-height: var(--classic-variant-options-open-max-height, min(320px, 65vh));
   margin: 0;
   padding: 0;
   overflow: hidden scroll;

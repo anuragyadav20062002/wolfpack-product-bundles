@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.79
+ * Version : 5.0.81
  * Built   : 2026-07-07
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.79';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.81';
 (function() {
   'use strict';
 
@@ -7600,12 +7600,10 @@ createStandardStepTimeline() {
     : 0;
   const progressLeft = 100 / (entryCount * 2);
   const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
-  const timelineWidth = Math.min(100, entryCount * 20);
 
   timeline.style.setProperty('--standard-timeline-count', String(entryCount));
   timeline.style.setProperty('--standard-timeline-visible-count', String(entryCount));
   timeline.style.setProperty('--standard-timeline-total-count', String(totalEntryCount));
-  timeline.style.setProperty('--standard-timeline-width', `${timelineWidth.toFixed(4)}%`);
   timeline.style.setProperty('--standard-timeline-progress-left', `${progressLeft.toFixed(4)}%`);
   timeline.style.setProperty('--standard-timeline-progress-width', `${progressWidth.toFixed(4)}%`);
   timeline.style.setProperty('--standard-timeline-progress-fill', `${progressFill.toFixed(4)}%`);

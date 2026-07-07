@@ -11,6 +11,21 @@ import { checkAppEmbedEnabled } from "../services/theme/app-embed-check.server";
 
 const THEME_APP_EXTENSION_HANDLE = "bundle-builder";
 
+function getThemeAppEmbedHandles() {
+  const handles = [
+    THEME_APP_EXTENSION_HANDLE,
+    process.env.SHOPIFY_APP_HANDLE,
+  ];
+
+  return Array.from(
+    new Set(
+      handles
+        .map((handle) => handle?.trim())
+        .filter((handle): handle is string => Boolean(handle)),
+    ),
+  );
+}
+
 const GET_BUNDLE_PRODUCT = `
   query GetBundleProduct($id: ID!) {
     product(id: $id) {
@@ -119,7 +134,7 @@ export async function fetchEmbedData(
   embedBlockHandle = "bundle-app-embed",
 ): Promise<{ appEmbedEnabled: boolean; themeEditorUrl: string | null }> {
   const embedCheck = await checkAppEmbedEnabled(admin, shop, {
-    appHandles: [THEME_APP_EXTENSION_HANDLE],
+    appHandles: getThemeAppEmbedHandles(),
     blockHandles: [embedBlockHandle],
   });
 

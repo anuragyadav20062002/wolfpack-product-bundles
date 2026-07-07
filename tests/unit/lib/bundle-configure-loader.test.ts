@@ -31,12 +31,22 @@ jest.mock("../../../app/db.server", () => ({
 const THEME_GID = "gid://shopify/OnlineStoreTheme/123456";
 const SHOP = "test.myshopify.com";
 const API_KEY = "test-api-key";
+const originalShopifyAppHandle = process.env.SHOPIFY_APP_HANDLE;
 
 describe("fetchEmbedData — live Shopify app embed status", () => {
   const mockAdmin = {};
 
   beforeEach(() => {
     jest.clearAllMocks();
+    delete process.env.SHOPIFY_APP_HANDLE;
+  });
+
+  afterEach(() => {
+    if (originalShopifyAppHandle) {
+      process.env.SHOPIFY_APP_HANDLE = originalShopifyAppHandle;
+    } else {
+      delete process.env.SHOPIFY_APP_HANDLE;
+    }
   });
 
   it("does not read app embed cache from DB", async () => {
@@ -93,11 +103,12 @@ describe("fetchEmbedData — live Shopify app embed status", () => {
     );
   });
 
-  it("lets the embed checker resolve the current Shopify app handle", async () => {
+  it("passes the configured Shopify app handle to the embed checker", async () => {
     (checkAppEmbedEnabled as jest.Mock).mockResolvedValue({
       enabled: false,
       themeId: THEME_GID,
     });
+    process.env.SHOPIFY_APP_HANDLE = "configured-app-handle";
 
     const result = await fetchEmbedData(mockAdmin, SHOP, API_KEY, "bundle-app-embed");
 
@@ -106,7 +117,7 @@ describe("fetchEmbedData — live Shopify app embed status", () => {
       mockAdmin,
       SHOP,
       expect.objectContaining({
-        appHandles: ["bundle-builder"],
+        appHandles: ["bundle-builder", "configured-app-handle"],
         blockHandles: ["bundle-app-embed"],
       }),
     );
@@ -121,6 +132,24 @@ describe("fetchEmbedData — live Shopify app embed status", () => {
     expect(mockShopFindUnique).not.toHaveBeenCalled();
     expect(mockShopUpdate).not.toHaveBeenCalled();
     expect(result.appEmbedEnabled).toBe(false);
+  });
+
+  it("falls back to the theme extension handle when no Shopify app handle is configured", async () => {
+    (checkAppEmbedEnabled as jest.Mock).mockResolvedValue({
+      enabled: true,
+      themeId: THEME_GID,
+    });
+
+    await fetchEmbedData(mockAdmin, SHOP, API_KEY, "bundle-app-embed");
+
+    expect(checkAppEmbedEnabled).toHaveBeenCalledWith(
+      mockAdmin,
+      SHOP,
+      expect.objectContaining({
+        appHandles: ["bundle-builder"],
+        blockHandles: ["bundle-app-embed"],
+      }),
+    );
   });
 });
 

@@ -3,6 +3,13 @@
   display: none;
 }
 
+.section-content-wrapper:has(#bundle-builder-app[data-bundle-type="full_page"]) {
+  width: 100%;
+  max-width: none;
+  padding-inline: 0;
+  overflow: visible;
+}
+
 .product-card-action.is-expanded {
   justify-content: center;
 }

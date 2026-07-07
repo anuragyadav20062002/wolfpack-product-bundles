@@ -459,9 +459,9 @@
 .bundle-widget-full-page .product-card,
 .bundle-widget-full-page .product-card.bw-product-card--selected {
   width: 100%;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
+  height: auto;
+  min-height: 0;
+  max-height: none;
   box-sizing: border-box;
   align-items: stretch;
 }
@@ -469,7 +469,7 @@
 .bundle-widget-full-page .product-card .product-content-wrapper,
 .bundle-widget-full-page .product-card.bw-product-card--selected .product-content-wrapper {
   min-height: 0;
-  max-height: none !important;
+  max-height: none;
   display: flex;
   flex-direction: column;
   padding-top: 10px;
@@ -484,9 +484,9 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
+  height: auto;
+  min-height: 0;
+  max-height: none;
 }
 
 .bundle-widget-full-page .product-card .product-title {
@@ -509,7 +509,7 @@
 .bundle-widget-full-page .product-price-row {
   margin-top: 10px;
   margin-bottom: 10px;
-  min-height: 0 !important;
+  min-height: 0;
   gap: 4px;
   white-space: normal;
 }
@@ -527,25 +527,25 @@
 .bundle-widget-full-page .product-card-action.is-expanded,
 .bundle-widget-full-page .product-card.bw-product-card--selected .product-card-action.is-expanded {
   margin-top: 10px;
-  height: auto !important;
-  min-height: 0 !important;
+  height: auto;
+  min-height: 0;
   justify-content: space-between;
 }
 
 /* FPB card-source normalization for stable selected/unselected behavior */
 .bundle-widget-full-page .product-card.bw-product-card--selected {
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
+  height: auto;
+  min-height: 0;
+  max-height: none;
 }
 
 .bundle-widget-full-page .product-card.bw-product-card--selected .product-content-wrapper,
 .bundle-widget-full-page .product-card.bw-product-card--selected .product-card-action,
 .bundle-widget-full-page .product-card.bw-product-card--selected .product-content-wrapper,
 .bundle-widget-full-page .product-card.bw-product-card--selected .product-card-action {
-  min-height: 0 !important;
-  height: auto !important;
-  max-height: none !important;
+  min-height: 0;
+  height: auto;
+  max-height: none;
 }
 
 .bundle-widget-full-page .product-card.bw-product-card--selected .product-card-action,
@@ -569,9 +569,9 @@
 }
 
 .bundle-widget-full-page .product-card .product-variant-row {
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
+  height: auto;
+  min-height: 0;
+  max-height: none;
   line-height: 1.35;
   overflow: hidden;
   white-space: normal;
