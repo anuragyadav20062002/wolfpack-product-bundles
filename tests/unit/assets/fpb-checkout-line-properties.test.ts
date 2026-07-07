@@ -504,7 +504,7 @@ describe("FPB checkout cart-line properties", () => {
     });
   });
 
-  it("marks Classic fixed bundle price cart lines as display-only pricing", async () => {
+  it("keeps Classic fixed bundle price cart lines eligible for cart-transform pricing", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({}),
@@ -622,8 +622,8 @@ describe("FPB checkout cart-line properties", () => {
     expect(body.items).toHaveLength(2);
     expect(body.items.every((item: { properties: Record<string, string> }) =>
       item.properties._bundle_step_type === "fixed_price_display_only"
-    )).toBe(true);
-    expect(body.items[0].properties._bundle_price_adjustment_mode).toBe("display_only");
+    )).toBe(false);
+    expect(body.items[0].properties._bundle_price_adjustment_mode).toBeUndefined();
     expect(displayProperties).toEqual({
       box: "1",
       items: "1 x First product, 1 x Second product",

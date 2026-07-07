@@ -124,6 +124,121 @@ export async function batchGetFirstVariants(
 }
 
 /**
+ * Batch fetch all variant IDs for multiple products.
+ * Used when any selectable product variant can appear in the cart transform input.
+ */
+export async function batchGetProductVariants(
+  admin: any,
+  productIds: string[]
+): Promise<Map<string, { success: boolean; variantIds?: string[]; error?: string }>> {
+  const results = new Map<string, { success: boolean; variantIds?: string[]; error?: string }>();
+
+  if (productIds.length === 0) {
+    return results;
+  }
+
+  try {
+    const cleanProductIds = productIds
+      .map(id => id.replace('gid://shopify/Product/', ''))
+      .filter(id => isValidShopifyProductId(`gid://shopify/Product/${id}`));
+
+    if (cleanProductIds.length === 0) {
+      console.warn('[BATCH_VARIANT_LOOKUP_ALL] No valid product IDs to fetch');
+      productIds.forEach(id => {
+        results.set(id.replace('gid://shopify/Product/', ''), {
+          success: false,
+          error: 'Invalid product ID format'
+        });
+      });
+      return results;
+    }
+
+    const productGids = cleanProductIds.map(id => `gid://shopify/Product/${id}`);
+
+    const BATCH_PRODUCTS_QUERY = `
+      query GetBatchProductVariants($ids: [ID!]!) {
+        nodes(ids: $ids) {
+          ... on Product {
+            id
+            variants(first: 250) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    console.log(`[BATCH_VARIANT_LOOKUP_ALL] Fetching all variants for ${productGids.length} products in single query`);
+
+    const response = await admin.graphql(BATCH_PRODUCTS_QUERY, {
+      variables: { ids: productGids }
+    });
+
+    const data = await response.json();
+
+    if (data.errors) {
+      console.error('[BATCH_VARIANT_LOOKUP_ALL] GraphQL errors:', data.errors);
+      cleanProductIds.forEach(id => {
+        results.set(id, {
+          success: false,
+          error: 'GraphQL query error'
+        });
+      });
+      return results;
+    }
+
+    const nodes = data.data?.nodes || [];
+    nodes.forEach((product: any) => {
+      if (product && product.id) {
+        const productId = product.id.replace('gid://shopify/Product/', '');
+        const variantIds = (product.variants?.edges || [])
+          .map((edge: any) => edge.node?.id)
+          .filter((id: unknown): id is string => typeof id === 'string' && id.length > 0);
+
+        if (variantIds.length > 0) {
+          results.set(productId, {
+            success: true,
+            variantIds,
+          });
+        } else {
+          results.set(productId, {
+            success: false,
+            error: 'No variants found'
+          });
+        }
+      }
+    });
+
+    cleanProductIds.forEach(id => {
+      if (!results.has(id)) {
+        results.set(id, {
+          success: false,
+          error: 'Product not found (may have been deleted)'
+        });
+      }
+    });
+
+    console.log(`[BATCH_VARIANT_LOOKUP_ALL] Successfully fetched ${results.size} variant result sets`);
+
+    return results;
+  } catch (error) {
+    console.error('[BATCH_VARIANT_LOOKUP_ALL] Error:', error);
+    productIds.forEach(id => {
+      const cleanId = id.replace('gid://shopify/Product/', '');
+      results.set(cleanId, {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    });
+    return results;
+  }
+}
+
+/**
  * Batch fetch first variant IDs and prices for multiple products
  * Used for component pricing calculation in expanded bundle checkout
  */

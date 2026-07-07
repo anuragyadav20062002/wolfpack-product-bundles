@@ -136,11 +136,11 @@ export async function handleSaveBundle(
         "[FIXED_BUNDLE_PRICE] Storing fixed bundle price (will be converted at runtime)",
       );
 
-      // For fixed_bundle_price, keep the original price value in a special field
-      // The cart transform will read this and calculate discount based on actual cart total
+      // For fixed_bundle_price, keep the target bundle price in cents.
+      // The pricing editor stores the current target price in discountValue.
       const processedRules = (discountData.discountRules || []).map(
         (rule: any) => {
-          const fixedPrice = parseFloat(rule.price || 0);
+          const fixedPrice = Number(rule.discountValue ?? 0) || 0;
           AppLogger.debug(
             `[FIXED_BUNDLE_PRICE] Rule fixed price: ${fixedPrice}`,
           );
@@ -149,7 +149,6 @@ export async function handleSaveBundle(
           return {
             ...rule,
             fixedBundlePrice: fixedPrice, // The target bundle price
-            // Don't set discountValue here - it will be calculated at runtime
           };
         },
       );

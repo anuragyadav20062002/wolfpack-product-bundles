@@ -49,6 +49,17 @@
   z-index: 10;
 }
 
+.product-card.is-out-of-stock,
+.bw-product-card.is-out-of-stock {
+  opacity: 0.58;
+  filter: grayscale(1);
+}
+
+.product-card.is-out-of-stock .product-add-btn,
+.bw-product-card.is-out-of-stock .product-add-btn {
+  cursor: not-allowed;
+}
+
 .modal-body .product-card .selected-overlay {
   position: absolute;
   top: 8px;

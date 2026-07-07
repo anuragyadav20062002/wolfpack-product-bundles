@@ -75,6 +75,27 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
   }
+
+  #bundle-builder-modal.bw-bs-panel {
+    overflow-y: auto;
+  }
+
+  #bundle-builder-modal.bw-bs-panel .bw-bs-body {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  #bundle-builder-modal.bw-bs-panel .bw-bs-product-grid {
+    padding-bottom: 16px;
+  }
+
+  #bundle-builder-modal.bw-bs-panel .bw-bs-footer {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    margin: 0 auto 16px;
+  }
 }
 
 .bw-bs-panel .modal-body {

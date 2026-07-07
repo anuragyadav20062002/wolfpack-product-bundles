@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.81
+ * Version : 5.0.90
  * Built   : 2026-07-07
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.81';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.90';
 (function() {
   'use strict';
 
@@ -1214,9 +1214,27 @@ class TemplateManager {
     return result;
   }
 
-  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
+  static getDiscountMessageRule({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress'
+  } = {}) {
     const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
+    return messageType === 'success'
+      ? (discountInfo.applicableRule || nextRule)
+      : (nextRule || discountInfo.applicableRule);
+  }
+
+  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo, options = {}) {
+    const ruleToUse = options.rule || this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType: options.messageType || 'progress'
+    });
 
     if (!ruleToUse) {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
@@ -1286,6 +1304,60 @@ class TemplateManager {
     };
 
     return variables;
+  }
+
+  static getRuleMessages(bundle, locale = '') {
+    const pricingMessages = bundle?.pricing?.messages;
+    const byLocale = pricingMessages?.ruleMessagesByLocale;
+    const localeRuleMessages = locale && byLocale?.[locale];
+    return localeRuleMessages || pricingMessages?.ruleMessages || {};
+  }
+
+  static getRuleTierMessage(bundle, rule) {
+    const ruleId = rule?.id ? String(rule.id) : '';
+    if (!ruleId) return '';
+
+    const tierText = bundle?.pricing?.messages?.tierTextByRuleId?.[ruleId];
+    const title = typeof tierText?.tierText === 'string' ? tierText.tierText.trim() : '';
+    const subtext = typeof tierText?.tierSubtext === 'string' ? tierText.tierSubtext.trim() : '';
+
+    return [title, subtext].filter(Boolean).join('<br>');
+  }
+
+  static getDiscountMessageTemplate({
+    bundle,
+    totalQuantity = 0,
+    totalPrice = 0,
+    discountInfo = {},
+    messageType = 'progress',
+    fallbackTemplate = '',
+    locale = ''
+  }) {
+    const rule = this.getDiscountMessageRule({
+      bundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo,
+      messageType
+    });
+
+    if (!rule) return fallbackTemplate || '';
+
+    if (messageType === 'success') {
+      const tierMessage = this.getRuleTierMessage(bundle, rule);
+      if (tierMessage) return tierMessage;
+    }
+
+    const ruleId = rule?.id ? String(rule.id) : '';
+    const ruleMessages = this.getRuleMessages(bundle, locale);
+    const ruleMessage = ruleId ? ruleMessages?.[ruleId] : null;
+    const template = messageType === 'success'
+      ? ruleMessage?.successMessage
+      : ruleMessage?.discountText;
+
+    return (typeof template === 'string' && template.trim())
+      ? template
+      : (fallbackTemplate || '');
   }
 
   static formatOperatorText(operator, targetValue, unit) {
@@ -5720,6 +5792,7 @@ function getMobileAdditionalOffersPulseState({
 const MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;
 const MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS = 800;
 const MOBILE_ADDITIONAL_OFFERS_DURATION_MS = 3000;
+const MOBILE_SUMMARY_TRAY_ANIMATION_MS = 720;
 
 const fullPageMobileSummaryMethods = {
 _populateCompactMobileSummaryTray(sheet) {
@@ -5742,12 +5815,14 @@ _populateCompactMobileSummaryTray(sheet) {
   const displayFinalPrice = shouldDisplayClassicFixedBundleRawTotal(this, combinedDiscountInfo)
     ? totalPrice
     : finalPrice;
-  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const selectedFooterQuantity = this.getAllSelectedProductsData().reduce(
     (sum, item) => sum + (Number(item.quantity) || 1),
     0
   );
-  const isClassicPreset = this.getFullPageDesignPreset?.() === 'CLASSIC';
+  const designPreset = this.getFullPageDesignPreset?.();
+  const isClassicPreset = designPreset === 'CLASSIC';
+  const usesAnimatedSummarySection = isClassicPreset || designPreset === 'STANDARD';
   const summaryToggleLabel = isClassicPreset ? 'View Selected Products' : 'Review your bundle';
   const addonStep = (this.selectedBundle?.steps || []).find(step => step?.isFreeGift === true) || null;
   const addonStates = addonStep && typeof this.getAddonSummaryEligibilityStates === 'function'
@@ -5828,17 +5903,40 @@ _populateCompactMobileSummaryTray(sheet) {
     discountBlock.className = 'side-panel-discount-message';
     if (this.config.showDiscountMessaging) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
+        this.selectedBundle,
+        totalPrice,
+        totalQuantity,
+        combinedDiscountInfo,
+        currencyInfo,
+        { messageType: nextRule ? 'progress' : 'success' }
       );
       let discountMessage = '';
-      if (combinedDiscountInfo.hasDiscount) {
+      if (nextRule) {
+        const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'progress',
+          fallbackTemplate: this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          progressTemplate,
           variables
         );
-      } else if (nextRule) {
+      } else if (combinedDiscountInfo.hasDiscount) {
+        const successTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'success',
+          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          successTemplate,
           variables
         );
       }
@@ -5884,7 +5982,7 @@ _populateCompactMobileSummaryTray(sheet) {
     isComplete: this.areBundleConditionsMet()
   });
   navSection.appendChild(actionButton);
-  if (this.compactMobileSummaryTrayExpanded) {
+  if (usesAnimatedSummarySection || this.compactMobileSummaryTrayExpanded) {
     const productsSection = document.createElement('div');
     productsSection.className = 'fpb-mobile-summary-products-section';
     productsSection.appendChild(this._renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity));
@@ -6012,7 +6110,7 @@ _toggleCompactMobileSummaryTray(sheet) {
       'fpb-mobile-summary-tray-animating-open',
       'fpb-mobile-summary-tray-animating-closed'
     );
-  }, 380);
+  }, MOBILE_SUMMARY_TRAY_ANIMATION_MS);
 },
 
 _syncCompactMobileSummaryScrollLock() {
@@ -6411,7 +6509,7 @@ renderSidePanel(panel) {
   const displayFinalPrice = shouldShowRawTotalOnly ? totalPrice : finalPrice;
   const shouldShowOriginalTotal = combinedDiscountInfo.hasDiscount && !shouldShowRawTotalOnly;
   const allSelectedProducts = this.getAllSelectedProductsData();
-  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
   const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
   const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
@@ -6484,17 +6582,40 @@ renderSidePanel(panel) {
   if (this.selectedBundle?.pricing?.enabled) {
     if (this.config.showDiscountMessaging) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
+        this.selectedBundle,
+        totalPrice,
+        totalQuantity,
+        combinedDiscountInfo,
+        currencyInfo,
+        { messageType: nextRule ? 'progress' : 'success' }
       );
       let discountMessage = '';
-      if (combinedDiscountInfo.hasDiscount) {
+      if (nextRule) {
+        const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'progress',
+          fallbackTemplate: this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          progressTemplate,
           variables
         );
-      } else if (nextRule) {
+      } else if (combinedDiscountInfo.hasDiscount) {
+        const successTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'success',
+          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          successTemplate,
           variables
         );
       }
@@ -8477,24 +8598,25 @@ expandProductsByVariant(products, shouldExpand = true) {
     return products;
   }
 
+  const context = this || {};
   return products.flatMap(product => {
+    const toCents = (value) => Math.round(parseFloat(value || '0') * 100);
     const isVariantSelectable = (variant) => {
-      if (typeof this.isVariantSelectableForInventory === 'function') {
-        return this.isVariantSelectableForInventory(variant);
+      if (typeof context.isVariantSelectableForInventory === 'function') {
+        return context.isVariantSelectableForInventory(variant);
       }
       return variant?.available !== false;
     };
 
     if (product.parentProductId && product.variantId) {
-      return isVariantSelectable(product) ? [product] : [];
+      return [{ ...product, available: isVariantSelectable(product) }];
     }
 
     if (product.variants && product.variants.length > 1) {
       return product.variants
-        .filter(variant => isVariantSelectable(variant))
         .map(variant => {
-          const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
-            ? this.getRuntimeVariantInventory(variant)
+          const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
+            ? context.getRuntimeVariantInventory(variant)
             : null;
           const inventorySource = runtimeInventory || variant;
 
@@ -8515,8 +8637,8 @@ expandProductsByVariant(products, shouldExpand = true) {
             title: product.title,
             variantTitle: variant.title === 'Default Title' ? '' : variant.title,
             imageUrl,
-            price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
-            compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
+            price: typeof variant.price === 'number' ? variant.price : toCents(variant.price),
+            compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : toCents(variant.compareAtPrice)) : null,
             variantId: variant.id,
             available: isVariantSelectable(variant),
             quantityAvailable: typeof inventorySource.quantityAvailable === 'number' ? inventorySource.quantityAvailable : null,
@@ -8531,9 +8653,9 @@ expandProductsByVariant(products, shouldExpand = true) {
 
     if (Array.isArray(product.variants) && product.variants.length === 1) {
       const variant = product.variants[0];
-      if (!isVariantSelectable(variant)) return [];
+      return [{ ...product, available: isVariantSelectable(variant) }];
     }
-    return isVariantSelectable(product) ? [product] : [];
+    return [{ ...product, available: isVariantSelectable(product) }];
   });
 },
 
@@ -8628,6 +8750,9 @@ createProductCard(product, stepIndex, options = {}) {
     : '';
 
   const displayProduct = this.buildPaidAddonProductDisplayData(product, step);
+  const outOfStock = typeof this.isVariantOutOfStock === 'function'
+    ? this.isVariantOutOfStock(displayProduct)
+    : displayProduct?.available === false;
   const supportsAddonDiscountBadge = ['STANDARD', 'CLASSIC'].includes(designPreset);
   const hasAddonDiscountBadge = supportsAddonDiscountBadge && displayProduct.addonDiscountBadgeText;
   const stockBadgeHtml = hasAddonDiscountBadge
@@ -8642,6 +8767,7 @@ createProductCard(product, stepIndex, options = {}) {
       {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
+        className: outOfStock ? 'is-out-of-stock' : '',
         addButtonText: this.getProductCardAddButtonText(step),
         cardBadgeHtml: stockBadgeHtml,
         variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,
@@ -10287,10 +10413,6 @@ const fullPageStepFooterMethods = {
       includeBox: shouldIncludeBundleQuantityCartProperties(this),
     });
 
-    if (useDisplayOnlyFixedPrice) {
-      sourceProperties._bundle_price_adjustment_mode = 'display_only';
-    }
-
     return sourceProperties;
   },
 
@@ -10398,12 +10520,8 @@ async addBundleToCart(clickedButton = null) {
     }
 
     const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
-    const useDisplayOnlyFixedPrice = sourceProperties._bundle_price_adjustment_mode === 'display_only';
     items.forEach(item => {
       Object.assign(item.properties, sourceProperties);
-      if (useDisplayOnlyFixedPrice && !item.properties._bundle_step_type) {
-        item.properties._bundle_step_type = 'fixed_price_display_only';
-      }
       if (hasSelectedAddonLine && hasAddonStepConfigured) {
         item.properties._addon_offer_id = item.properties._addon_offer_id || baseOfferId;
       }
@@ -10609,6 +10727,7 @@ updateFooterMessaging() {
     unitPrices
   );
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
 
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const variables = TemplateManager.createDiscountVariables(
@@ -10616,26 +10735,46 @@ updateFooterMessaging() {
     totalPrice,
     totalQuantity,
     combinedDiscountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
   const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
 
-  if (combinedDiscountInfo.qualifiesForDiscount) {
-
+  if (nextRule) {
+    const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType: 'progress',
+      fallbackTemplate: this.config.discountTextTemplate,
+      locale: window.Shopify?.locale,
+    });
+    const progressMessage = TemplateManager.replaceVariables(
+      progressTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    this.elements.footer.classList.remove('qualified');
+  } else if (combinedDiscountInfo.qualifiesForDiscount) {
+    const successTemplate = TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType: 'success',
+      fallbackTemplate: this.config.successMessageTemplate,
+      locale: window.Shopify?.locale,
+    });
     const successMessage = TemplateManager.replaceVariables(
-      this.config.successMessageTemplate,
+      successTemplate,
       variables
     );
     footerDiscountText.innerHTML = successMessage;
     this.elements.footer.classList.add('qualified');
   } else {
-
-    const progressMessage = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = progressMessage;
+    footerDiscountText.innerHTML = '';
     this.elements.footer.classList.remove('qualified');
   }
 
@@ -10713,11 +10852,17 @@ _renderDiscountProgress(options = {}) {
     totalPrice
   );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const variables = TemplateManager.createDiscountVariables(
-    this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    discountInfo,
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
-  const isReached = discountInfo.hasDiscount;
+  const isReached = discountInfo.hasDiscount && !nextRule;
   const progressPct = isReached ? 100 : Math.min(100, Math.max(0, parseInt(variables.progressPercentage, 10) || 0));
 
   const progressBarType = this.config.discountProgressBarType === 'simple' ? 'simple' : 'step_based';
@@ -10733,13 +10878,13 @@ _renderDiscountProgress(options = {}) {
       this.config.discountProgressSuccessTemplate || this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
       variables
     );
-  } else {
-    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
-    if (!nextRule) return null;
+  } else if (nextRule) {
     message = TemplateManager.replaceVariables(
       this.config.discountProgressTextTemplate || this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
       variables
     );
+  } else {
+    return null;
   }
 
   const progressData = getDiscountProgressData({
@@ -10789,26 +10934,32 @@ _renderDiscountProgressBanner() {
     totalPrice
   );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const variables = TemplateManager.createDiscountVariables(
-    this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    discountInfo,
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
   let message = '';
   let isReached = false;
 
-  if (discountInfo.hasDiscount) {
+  if (nextRule) {
+    message = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+      variables
+    );
+  } else if (discountInfo.hasDiscount) {
     isReached = true;
     message = TemplateManager.replaceVariables(
       this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
       variables
     );
   } else {
-    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
-    if (!nextRule) return null;
-    message = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
-      variables
-    );
+    return null;
   }
 
   const banner = document.createElement('div');
@@ -10858,7 +11009,8 @@ getFormattedHeaderText() {
     totalPrice,
     totalQuantity,
     combinedDiscountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: 'progress' }
   );
 
   return TemplateManager.replaceVariables(
@@ -11212,6 +11364,26 @@ function productGraphqlId(product) {
   return null;
 }
 
+function hasCompleteRuntimeProductData(product) {
+  if (!product || typeof product !== 'object') return false;
+  const price = Number(product.price);
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  return Number.isFinite(price) && price > 0 && variants.length > 0;
+}
+
+function normalizeCachedRuntimeProduct(product) {
+  return {
+    ...product,
+    price: (product.price || 0) / 100,
+    compareAtPrice: product.compareAtPrice ? product.compareAtPrice / 100 : null,
+    variants: product.variants?.map(variant => ({
+      ...variant,
+      price: (variant.price || 0) / 100,
+      compareAtPrice: variant.compareAtPrice ? variant.compareAtPrice / 100 : null,
+    }))
+  };
+}
+
 function variantLookupKey(variant) {
   return extractFullPageId(
     variant?.id
@@ -11368,17 +11540,66 @@ async loadStepProducts(stepIndex) {
 
   if (stepProductsAlreadyEnriched) {
 
-    const normalizedProducts = step.products.map(p => ({
-      ...p,
-      price: (p.price || 0) / 100,
-      compareAtPrice: p.compareAtPrice ? p.compareAtPrice / 100 : null,
-      variants: p.variants?.map(v => ({
-        ...v,
-        price: (v.price || 0) / 100,
-        compareAtPrice: v.compareAtPrice ? v.compareAtPrice / 100 : null,
-      }))
-    }));
-    allProducts = allProducts.concat(normalizedProducts);
+    const cachedProducts = [];
+    const incompleteProducts = [];
+    step.products.forEach(product => {
+      if (hasCompleteRuntimeProductData(product)) {
+        cachedProducts.push(product);
+      } else {
+        incompleteProducts.push(product);
+      }
+    });
+
+    const fetchedProductsByKey = new Map();
+    if (incompleteProducts.length > 0) {
+      const missingProductIds = incompleteProducts
+        .map(productGraphqlId)
+        .filter(Boolean);
+
+      if (missingProductIds.length > 0) {
+        const shop = window.Shopify?.shop || window.location.host;
+        const apiBaseUrl = this.resolveStorefrontApiBase();
+        const country = window.Shopify?.country
+          || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+          || null;
+
+        try {
+          const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+          const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(missingProductIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.products && data.products.length > 0) {
+              if (typeof this.rememberRuntimeProductInventory === 'function') {
+                this.rememberRuntimeProductInventory(data.products);
+              }
+              data.products.forEach(product => {
+                const key = productLookupKey(product);
+                if (key) fetchedProductsByKey.set(key, product);
+              });
+            }
+          } else {
+            await response.text();
+          }
+        } catch (error) {
+        }
+      }
+    }
+
+    step.products.forEach(product => {
+      if (cachedProducts.includes(product)) {
+        allProducts.push(normalizeCachedRuntimeProduct(product));
+        return;
+      }
+
+      const key = productLookupKey(product);
+      const fetchedProduct = key ? fetchedProductsByKey.get(key) : null;
+      if (fetchedProduct) {
+        allProducts.push(fetchedProduct);
+      } else {
+        allProducts.push(normalizeCachedRuntimeProduct(product));
+      }
+    });
   } else if (!step?.isFreeGift) {
     if ((!hasEnrichedStepProducts || shouldRefreshRuntimeInventory) && productIds.length > 0) {
       const shop = window.Shopify?.shop || window.location.host;
@@ -11712,14 +11933,15 @@ isVariantSelectableForInventory(variant) {
 
 processProductsForStep(products, step) {
 
+  const toCents = (value) => Math.round(parseFloat(value || '0') * 100);
   const normalizeVariant = (v) => {
     const quantityAvailable = typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null;
     const currentlyNotInStock = v.currentlyNotInStock === true;
     return {
       id: this.extractId(v.id),
       title: v.title,
-      price: parseFloat(v.price || '0') * 100,
-      compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      price: toCents(v.price),
+      compareAtPrice: v.compareAtPrice ? toCents(v.compareAtPrice) : null,
       sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
         ? v.sellingPlanAllocations
         : [],
@@ -11746,7 +11968,6 @@ processProductsForStep(products, step) {
       const processedOptions = deriveProductOptionNames(product);
 
       return product.variants
-        .filter(variant => this.isVariantSelectableForInventory(variant))
         .map(variant => {
 
           const imageUrl = variant?.image?.src
@@ -11764,8 +11985,8 @@ processProductsForStep(products, step) {
             id: this.extractId(variant.id),
             title: `${product.title} - ${variant.title}`,
             imageUrl,
-            price: parseFloat(variant.price || '0') * 100,
-            compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
+            price: toCents(variant.price),
+            compareAtPrice: variant.compareAtPrice ? toCents(variant.compareAtPrice) : null,
             variantId: this.extractId(variant.id),
             available: this.isVariantSelectableForInventory(variant),
             quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
@@ -11784,11 +12005,9 @@ processProductsForStep(products, step) {
         });
     } else {
 
-      const defaultVariant = this.getFirstAvailableVariant(product);
-
-      if (product.variants?.length > 0 && !defaultVariant) {
-        return [];
-      }
+      const defaultVariant = this.getFirstAvailableVariant(product)
+        || product.variants?.[0]
+        || null;
 
       const imageUrl = defaultVariant?.image?.src
         || defaultVariant?.image?.url
@@ -11809,11 +12028,13 @@ processProductsForStep(products, step) {
         id: this.extractId(product.id),
         title: product.title,
         imageUrl,
-        price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-        compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
+        price: defaultVariant
+          ? toCents(defaultVariant.price)
+          : toCents(product.price),
+        compareAtPrice: defaultVariant?.compareAtPrice ? toCents(defaultVariant.compareAtPrice) : null,
         variantId: this.extractId(defaultVariant?.id || product.id),
         sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
-        available: defaultVariant?.available === true,
+        available: defaultVariant ? this.isVariantSelectableForInventory(defaultVariant) : product.available === true,
         quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
         currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
         weight: normalizeWeightToGrams(defaultVariant?.weight, defaultVariant?.weightUnit),
@@ -12754,7 +12975,8 @@ updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
     totalPrice,
     totalQuantity,
     discountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: 'progress' }
   );
 
   const headerText = TemplateManager.replaceVariables(
@@ -12771,16 +12993,24 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
 
   if (!footerDiscountText) return;
 
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const variables = TemplateManager.createDiscountVariables(
     this.selectedBundle,
     totalPrice,
     totalQuantity,
     discountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
-  if (discountInfo.qualifiesForDiscount) {
-
+  if (nextRule) {
+    const progressMessage = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    if (discountSection) discountSection.classList.remove('qualified');
+  } else if (discountInfo.qualifiesForDiscount) {
     const successMessage = TemplateManager.replaceVariables(
       this.config.successMessageTemplate,
       variables
@@ -12788,12 +13018,7 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
     footerDiscountText.innerHTML = successMessage;
     if (discountSection) discountSection.classList.add('qualified');
   } else {
-
-    const progressMessage = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = progressMessage;
+    footerDiscountText.innerHTML = '';
     if (discountSection) discountSection.classList.remove('qualified');
   }
 

@@ -180,6 +180,26 @@ function productGraphqlId(product) {
   return null;
 }
 
+function hasCompleteRuntimeProductData(product) {
+  if (!product || typeof product !== 'object') return false;
+  const price = Number(product.price);
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  return Number.isFinite(price) && price > 0 && variants.length > 0;
+}
+
+function normalizeCachedRuntimeProduct(product) {
+  return {
+    ...product,
+    price: (product.price || 0) / 100,
+    compareAtPrice: product.compareAtPrice ? product.compareAtPrice / 100 : null,
+    variants: product.variants?.map(variant => ({
+      ...variant,
+      price: (variant.price || 0) / 100,
+      compareAtPrice: variant.compareAtPrice ? variant.compareAtPrice / 100 : null,
+    }))
+  };
+}
+
 function variantLookupKey(variant) {
   return extractFullPageId(
     variant?.id
@@ -345,17 +365,66 @@ async loadStepProducts(stepIndex) {
     // Prices in metafield are stored as cents (e.g. 82900 = ₹829.00).
     // processProductsForStep multiplies by 100 assuming decimal input, so
     // divide by 100 here to normalise before that multiplication.
-    const normalizedProducts = step.products.map(p => ({
-      ...p,
-      price: (p.price || 0) / 100,
-      compareAtPrice: p.compareAtPrice ? p.compareAtPrice / 100 : null,
-      variants: p.variants?.map(v => ({
-        ...v,
-        price: (v.price || 0) / 100,
-        compareAtPrice: v.compareAtPrice ? v.compareAtPrice / 100 : null,
-      }))
-    }));
-    allProducts = allProducts.concat(normalizedProducts);
+    const cachedProducts = [];
+    const incompleteProducts = [];
+    step.products.forEach(product => {
+      if (hasCompleteRuntimeProductData(product)) {
+        cachedProducts.push(product);
+      } else {
+        incompleteProducts.push(product);
+      }
+    });
+
+    const fetchedProductsByKey = new Map();
+    if (incompleteProducts.length > 0) {
+      const missingProductIds = incompleteProducts
+        .map(productGraphqlId)
+        .filter(Boolean);
+
+      if (missingProductIds.length > 0) {
+        const shop = window.Shopify?.shop || window.location.host;
+        const apiBaseUrl = this.resolveStorefrontApiBase();
+        const country = window.Shopify?.country
+          || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+          || null;
+
+        try {
+          const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+          const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(missingProductIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.products && data.products.length > 0) {
+              if (typeof this.rememberRuntimeProductInventory === 'function') {
+                this.rememberRuntimeProductInventory(data.products);
+              }
+              data.products.forEach(product => {
+                const key = productLookupKey(product);
+                if (key) fetchedProductsByKey.set(key, product);
+              });
+            }
+          } else {
+            await response.text();
+          }
+        } catch (error) {
+        }
+      }
+    }
+
+    step.products.forEach(product => {
+      if (cachedProducts.includes(product)) {
+        allProducts.push(normalizeCachedRuntimeProduct(product));
+        return;
+      }
+
+      const key = productLookupKey(product);
+      const fetchedProduct = key ? fetchedProductsByKey.get(key) : null;
+      if (fetchedProduct) {
+        allProducts.push(fetchedProduct);
+      } else {
+        allProducts.push(normalizeCachedRuntimeProduct(product));
+      }
+    });
   } else if (!step?.isFreeGift) {
     if ((!hasEnrichedStepProducts || shouldRefreshRuntimeInventory) && productIds.length > 0) {
       const shop = window.Shopify?.shop || window.location.host;
@@ -700,14 +769,15 @@ processProductsForStep(products, step) {
   // quantityAvailable is number | null (null when the inventory scope isn't granted
   // or the variant is untracked — widget treats null as unlimited).
   // currentlyNotInStock is true for backorder-accepting variants that are sold out.
+  const toCents = (value) => Math.round(parseFloat(value || '0') * 100);
   const normalizeVariant = (v) => {
     const quantityAvailable = typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null;
     const currentlyNotInStock = v.currentlyNotInStock === true;
     return {
       id: this.extractId(v.id),
       title: v.title,
-      price: parseFloat(v.price || '0') * 100,
-      compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      price: toCents(v.price),
+      compareAtPrice: v.compareAtPrice ? toCents(v.compareAtPrice) : null,
       sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
         ? v.sellingPlanAllocations
         : [],
@@ -735,7 +805,6 @@ processProductsForStep(products, step) {
       const processedOptions = deriveProductOptionNames(product);
 
       return product.variants
-        .filter(variant => this.isVariantSelectableForInventory(variant)) // Only show available variants
         .map(variant => {
           // Storefront API: prioritize variant image, fallback to product featured image.
           // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
@@ -754,8 +823,8 @@ processProductsForStep(products, step) {
             id: this.extractId(variant.id),
             title: `${product.title} - ${variant.title}`,
             imageUrl,
-            price: parseFloat(variant.price || '0') * 100,
-            compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
+            price: toCents(variant.price),
+            compareAtPrice: variant.compareAtPrice ? toCents(variant.compareAtPrice) : null,
             variantId: this.extractId(variant.id),
             available: this.isVariantSelectableForInventory(variant),
             quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
@@ -773,12 +842,11 @@ processProductsForStep(products, step) {
           };
         });
     } else {
-      // Display product with default variant - check availability
-      const defaultVariant = this.getFirstAvailableVariant(product);
-
-      if (product.variants?.length > 0 && !defaultVariant) {
-        return [];
-      }
+      // Display product with the first sellable variant when possible, but keep
+      // fully unavailable products visible so their title/image/price stay intact.
+      const defaultVariant = this.getFirstAvailableVariant(product)
+        || product.variants?.[0]
+        || null;
 
       // Storefront API: prioritize variant image, fallback to product featured image.
       // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
@@ -803,11 +871,13 @@ processProductsForStep(products, step) {
         id: this.extractId(product.id),
         title: product.title,
         imageUrl,
-        price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-        compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
+        price: defaultVariant
+          ? toCents(defaultVariant.price)
+          : toCents(product.price),
+        compareAtPrice: defaultVariant?.compareAtPrice ? toCents(defaultVariant.compareAtPrice) : null,
         variantId: this.extractId(defaultVariant?.id || product.id),
         sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
-        available: defaultVariant?.available === true,
+        available: defaultVariant ? this.isVariantSelectableForInventory(defaultVariant) : product.available === true,
         quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
         currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
         weight: normalizeWeightToGrams(defaultVariant?.weight, defaultVariant?.weightUnit),

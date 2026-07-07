@@ -227,6 +227,68 @@ describe('FPB summary sidebar discount progress', () => {
     expect(context._formatSidebarDiscountMessage).not.toHaveBeenCalled();
   });
 
+  it.each(['STANDARD', 'CLASSIC'])(
+    'renders the next locked tier message in the %s sidebar after the first discount tier is reached',
+    (preset) => {
+      const panel = document.createElement('aside');
+      const context = makeContext(preset, 'simple');
+      context.config.showDiscountProgressBar = false;
+      context.selectedBundle.pricing.rules = [
+        {
+          id: 'rule-1',
+          conditionType: 'quantity',
+          conditionOperator: 'gte',
+          conditionValue: 1,
+          discountValue: 10,
+        },
+        {
+          id: 'rule-6',
+          conditionType: 'quantity',
+          conditionOperator: 'gte',
+          conditionValue: 6,
+          discountValue: 20,
+        },
+      ];
+      context.selectedBundle.pricing.messages = {
+        ruleMessages: {
+          'rule-1': {
+            discountText: 'Add {{discountConditionDiff}} product to save {{discountValue}}{{discountValueUnit}}',
+            successMessage: 'Rule one reached',
+          },
+          'rule-6': {
+            discountText: 'Add {{discountConditionDiff}} more to save {{discountValue}}{{discountValueUnit}}',
+            successMessage: 'Rule six reached',
+          },
+        },
+      };
+
+      const totalSpy = jest.spyOn(PricingCalculator, 'calculateBundleTotal').mockReturnValue({
+        totalPrice: 10000,
+        totalQuantity: 1,
+        unitPrices: [10000],
+      });
+      const discountSpy = jest.spyOn(PricingCalculator, 'calculateDiscount').mockReturnValue({
+        hasDiscount: true,
+        finalPrice: 9000,
+        discountAmount: 1000,
+        discountPercentage: 10,
+        qualifiesForDiscount: true,
+        applicableRule: context.selectedBundle.pricing.rules[0],
+      });
+
+      try {
+        fullPageSidePanelMethods.renderSidePanel.call(context, panel);
+      } finally {
+        totalSpy.mockRestore();
+        discountSpy.mockRestore();
+      }
+
+      const message = panel.querySelector('.side-panel-discount-message');
+      expect(message?.innerHTML).toContain('Add 5 more to save 20%');
+      expect(message?.innerHTML).not.toContain('Rule one reached');
+    },
+  );
+
   it('shows only the raw Classic total for fixed bundle price summary display', () => {
     const panel = document.createElement('aside');
     const context = makeContext('CLASSIC', 'simple');

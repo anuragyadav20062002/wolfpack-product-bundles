@@ -47,7 +47,7 @@ renderSidePanel(panel) {
   const displayFinalPrice = shouldShowRawTotalOnly ? totalPrice : finalPrice;
   const shouldShowOriginalTotal = combinedDiscountInfo.hasDiscount && !shouldShowRawTotalOnly;
   const allSelectedProducts = this.getAllSelectedProductsData();
-  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
   const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
   const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
@@ -123,17 +123,40 @@ renderSidePanel(panel) {
   if (this.selectedBundle?.pricing?.enabled) {
     if (this.config.showDiscountMessaging) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
+        this.selectedBundle,
+        totalPrice,
+        totalQuantity,
+        combinedDiscountInfo,
+        currencyInfo,
+        { messageType: nextRule ? 'progress' : 'success' }
       );
       let discountMessage = '';
-      if (combinedDiscountInfo.hasDiscount) {
+      if (nextRule) {
+        const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'progress',
+          fallbackTemplate: this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          progressTemplate,
           variables
         );
-      } else if (nextRule) {
+      } else if (combinedDiscountInfo.hasDiscount) {
+        const successTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'success',
+          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          locale: window.Shopify?.locale,
+        });
         discountMessage = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          successTemplate,
           variables
         );
       }

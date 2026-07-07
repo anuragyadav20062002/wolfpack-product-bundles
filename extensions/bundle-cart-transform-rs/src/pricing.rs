@@ -55,6 +55,35 @@ fn condition_is_met(
     }
 }
 
+fn condition_threshold(price_adjustment: &PriceAdjustmentConfig) -> f64 {
+    price_adjustment
+        .conditions
+        .as_ref()
+        .map(|condition| condition.value)
+        .unwrap_or(0.0)
+}
+
+fn resolve_applicable_price_adjustment<'a>(
+    price_adjustment: &'a PriceAdjustmentConfig,
+    paid_total: f64,
+    paid_quantity: i64,
+    presentment_currency_rate: f64,
+) -> Option<&'a PriceAdjustmentConfig> {
+    let rules = price_adjustment.rules.as_ref()?;
+    if rules.is_empty() {
+        return None;
+    }
+
+    rules
+        .iter()
+        .filter(|rule| condition_is_met(rule, paid_total, paid_quantity, presentment_currency_rate))
+        .max_by(|a, b| {
+            condition_threshold(a)
+                .partial_cmp(&condition_threshold(b))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+}
+
 pub fn rounded_percentage(discount_amount: f64, original_total: f64) -> f64 {
     if original_total <= 0.0 {
         return 0.0;
@@ -78,6 +107,22 @@ pub fn calculate_buy_x_get_y_discount_percentage(
     paid_quantity: i64,
     presentment_currency_rate: f64,
 ) -> f64 {
+    if let Some(applicable_rule) = resolve_applicable_price_adjustment(
+        price_adjustment,
+        paid_total,
+        paid_quantity,
+        presentment_currency_rate,
+    ) {
+        return calculate_buy_x_get_y_discount_percentage(
+            applicable_rule,
+            paid_unit_prices,
+            paid_total,
+            original_total,
+            paid_quantity,
+            presentment_currency_rate,
+        );
+    }
+
     if !condition_is_met(
         price_adjustment,
         paid_total,
@@ -154,6 +199,22 @@ pub fn calculate_discount_percentage(
     paid_quantity: i64,
     presentment_currency_rate: f64,
 ) -> f64 {
+    if let Some(applicable_rule) = resolve_applicable_price_adjustment(
+        price_adjustment,
+        paid_total,
+        paid_quantity,
+        presentment_currency_rate,
+    ) {
+        return calculate_discount_percentage(
+            applicable_rule,
+            paid_total,
+            original_total,
+            _total_quantity,
+            paid_quantity,
+            presentment_currency_rate,
+        );
+    }
+
     if !condition_is_met(
         price_adjustment,
         paid_total,
