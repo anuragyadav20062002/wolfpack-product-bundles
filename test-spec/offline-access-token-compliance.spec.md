@@ -22,8 +22,14 @@ Keep Shopify offline Admin API access compliant with expiring offline access tok
 | 3 | Legacy offline session is already cached | Cached offline `Session` with no refresh metadata | Storage re-reads and migrates instead of serving cache | Covers SDK callback/cache path |
 | 4 | `findSessionsByShop` sees legacy rows | Shop lookup returns legacy offline rows | Rows are migrated before being returned | Covers batch/session lookup callers |
 
+### BackgroundAdminSetup
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | After-auth setup runs pixel/cart-transform setup | Hook receives a session whose Admin context may not include an access token | Hook ensures the offline session, reloads the unauthenticated Admin context, and passes that hydrated Admin client to setup services | Keeps setup tasks aligned with Shopify's background-token guidance |
+
 ## Acceptance Criteria
 - [x] New installs can acquire expiring offline tokens from an ID token.
 - [x] Existing non-expiring offline tokens still migrate with `expiring=1`.
 - [x] Token responses persist access-token and refresh-token expiration metadata.
 - [x] Session storage never returns a non-expiring offline token to Admin API callers.
+- [x] Background Admin setup checks and hydrates the offline token before creating GraphQL clients.

@@ -103,6 +103,7 @@ describe("FPB product modal read-only quick view", () => {
       },
       "modal-selection-summary": {
         style: { display: "flex" },
+        hidden: false,
       },
       "modal-selection-text": {
         textContent: "Blue / Medium",
@@ -125,7 +126,7 @@ describe("FPB product modal read-only quick view", () => {
     modal.createVariantSelectors();
 
     expect(elements["modal-variants-container"].innerHTML).toBe("");
-    expect(elements["modal-selection-summary"].style.display).toBe("none");
+    expect(elements["modal-selection-summary"].hidden).toBe(true);
     expect(elements["modal-selection-text"].textContent).toBe("");
     expect(modal.selectedOptions).toEqual({});
     expect(modal.selectedVariant).toEqual({ id: "variant-2", title: "Default Title" });

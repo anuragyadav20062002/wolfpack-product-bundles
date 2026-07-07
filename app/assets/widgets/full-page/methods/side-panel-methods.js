@@ -492,6 +492,28 @@ _renderStandardSidebarSlotTiles(container, allSelectedProducts = []) {
       slot.innerHTML = imgSrc
         ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-inline-slot-image">`
         : '<div class="side-panel-inline-slot-image-placeholder"></div>';
+
+      if (!item.isDefault) {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'side-panel-inline-slot-remove';
+        removeBtn.type = 'button';
+        removeBtn.setAttribute('data-action', 'remove-selected-product');
+        removeBtn.setAttribute('aria-label', `Delete ${summaryTitle || 'product'}`);
+
+        const removalState = this.getSummaryProductRemovalState(item);
+        if (!removalState.canRemove) {
+          removeBtn.classList.add('side-panel-inline-slot-remove--disabled');
+          removeBtn.setAttribute('aria-disabled', 'true');
+          removeBtn.title = removalState.blockedMessage;
+        }
+
+        removeBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          this.removeSummarySelectedProduct(item, summaryTitle);
+        });
+
+        slot.appendChild(removeBtn);
+      }
     } else {
       slot.innerHTML = emptyStateIconUrl
         ? `<img class="side-panel-inline-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`

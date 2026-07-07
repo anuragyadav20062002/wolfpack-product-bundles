@@ -55,7 +55,7 @@ export function PpbSelectedItemsModals() {
                                 src={
                                   product.imageUrl ||
                                   product.image?.url ||
-                                  "/bundle.png"
+                                  "/bundle.avif"
                                 }
                                 alt={product.title || product.name || "Product"}
                                 style={{
