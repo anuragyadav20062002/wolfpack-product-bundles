@@ -6,16 +6,16 @@
 
 .fpb-preset-classic,
 [data-bundle-type="full_page"][data-fpb-design-preset="CLASSIC"] {
-  width: min(100%, var(--classic-shell-max-width));
-  max-width: var(--classic-shell-max-width);
-  margin-inline: auto;
-  padding: var(--classic-shell-padding, clamp(8px, 1vw, 12px));
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding: 0;
   box-sizing: border-box;
   background: var(--bundle-full-page-bg-color);
 }
 
 .fpb-preset-classic {
-  --classic-shell-max-width: 96rem;
+  --classic-shell-max-width: 1536px;
   --classic-shell-padding: clamp(8px, 1vw, 12px);
   --classic-grid-gap: 15px;
   --classic-card-radius: 10px;
@@ -54,9 +54,10 @@
 }
 
 .bundle-widget-full-page.fpb-preset-classic {
-  width: min(100%, var(--classic-shell-max-width));
-  max-width: var(--classic-shell-max-width);
-  margin-inline: auto;
+  width: 100vw;
+  max-width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  padding: 0;
 }
 
 .fpb-preset-classic .fpb-category-section-rows {
