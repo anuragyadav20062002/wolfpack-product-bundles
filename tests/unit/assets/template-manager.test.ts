@@ -155,6 +155,54 @@ describe('TemplateManager evidence-matched variables', () => {
       variables,
     )).toBe('Add 1 product(s) to save $5.00!');
   });
+
+  it('uses the next locked tier variables after the first tier is achieved', () => {
+    const variables = TemplateManager.createDiscountVariables(
+      {
+        name: 'Daily Essentials',
+        pricing: {
+          method: 'percentage_off',
+          rules: [
+            {
+              id: 'rule-1',
+              conditionType: 'quantity',
+              conditionOperator: 'gte',
+              conditionValue: 1,
+              discountValue: 10,
+            },
+            {
+              id: 'rule-6',
+              conditionType: 'quantity',
+              conditionOperator: 'gte',
+              conditionValue: 6,
+              discountValue: 20,
+            },
+          ],
+        },
+      },
+      10000,
+      1,
+      {
+        hasDiscount: true,
+        applicableRule: {
+          id: 'rule-1',
+          conditionType: 'quantity',
+          conditionOperator: 'gte',
+          conditionValue: 1,
+          discountValue: 10,
+        },
+        finalPrice: 9000,
+        discountAmount: 1000,
+        discountPercentage: 10,
+        qualifiesForDiscount: true,
+      },
+      currencyInfo,
+    );
+
+    expect(variables.discountConditionDiff).toBe('5');
+    expect(variables.discountValue).toBe('20');
+    expect(variables.discountValueUnit).toBe('%');
+  });
 });
 
 describe('TemplateManager.getDiscountMessageTemplate', () => {

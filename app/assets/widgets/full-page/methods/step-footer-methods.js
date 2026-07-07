@@ -434,6 +434,7 @@ updateFooterMessaging() {
     unitPrices
   );
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
 
   const currencyInfo = CurrencyManager.getCurrencyInfo();
   const variables = TemplateManager.createDiscountVariables(
@@ -441,13 +442,29 @@ updateFooterMessaging() {
     totalPrice,
     totalQuantity,
     combinedDiscountInfo,
-    currencyInfo
+    currencyInfo,
+    { messageType: nextRule ? 'progress' : 'success' }
   );
 
   const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
 
-  if (combinedDiscountInfo.qualifiesForDiscount) {
-    // Success message
+  if (nextRule) {
+    const progressTemplate = TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType: 'progress',
+      fallbackTemplate: this.config.discountTextTemplate,
+      locale: window.Shopify?.locale,
+    });
+    const progressMessage = TemplateManager.replaceVariables(
+      progressTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    this.elements.footer.classList.remove('qualified');
+  } else if (combinedDiscountInfo.qualifiesForDiscount) {
     const successTemplate = TemplateManager.getDiscountMessageTemplate({
       bundle: this.selectedBundle,
       totalQuantity,
@@ -464,21 +481,7 @@ updateFooterMessaging() {
     footerDiscountText.innerHTML = successMessage;
     this.elements.footer.classList.add('qualified');
   } else {
-    // Progress message
-    const progressTemplate = TemplateManager.getDiscountMessageTemplate({
-      bundle: this.selectedBundle,
-      totalQuantity,
-      totalPrice,
-      discountInfo: combinedDiscountInfo,
-      messageType: 'progress',
-      fallbackTemplate: this.config.discountTextTemplate,
-      locale: window.Shopify?.locale,
-    });
-    const progressMessage = TemplateManager.replaceVariables(
-      progressTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = progressMessage;
+    footerDiscountText.innerHTML = '';
     this.elements.footer.classList.remove('qualified');
   }
 

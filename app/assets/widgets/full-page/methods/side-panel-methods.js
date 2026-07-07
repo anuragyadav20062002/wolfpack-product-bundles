@@ -47,7 +47,7 @@ renderSidePanel(panel) {
   const displayFinalPrice = shouldShowRawTotalOnly ? totalPrice : finalPrice;
   const shouldShowOriginalTotal = combinedDiscountInfo.hasDiscount && !shouldShowRawTotalOnly;
   const allSelectedProducts = this.getAllSelectedProductsData();
-  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
   const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
   const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
@@ -123,24 +123,15 @@ renderSidePanel(panel) {
   if (this.selectedBundle?.pricing?.enabled) {
     if (this.config.showDiscountMessaging) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
+        this.selectedBundle,
+        totalPrice,
+        totalQuantity,
+        combinedDiscountInfo,
+        currencyInfo,
+        { messageType: nextRule ? 'progress' : 'success' }
       );
       let discountMessage = '';
-      if (combinedDiscountInfo.hasDiscount) {
-        const successTemplate = TemplateManager.getDiscountMessageTemplate({
-          bundle: this.selectedBundle,
-          totalQuantity,
-          totalPrice,
-          discountInfo: combinedDiscountInfo,
-          messageType: 'success',
-          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          locale: window.Shopify?.locale,
-        });
-        discountMessage = TemplateManager.replaceVariables(
-          successTemplate,
-          variables
-        );
-      } else if (nextRule) {
+      if (nextRule) {
         const progressTemplate = TemplateManager.getDiscountMessageTemplate({
           bundle: this.selectedBundle,
           totalQuantity,
@@ -152,6 +143,20 @@ renderSidePanel(panel) {
         });
         discountMessage = TemplateManager.replaceVariables(
           progressTemplate,
+          variables
+        );
+      } else if (combinedDiscountInfo.hasDiscount) {
+        const successTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'success',
+          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          locale: window.Shopify?.locale,
+        });
+        discountMessage = TemplateManager.replaceVariables(
+          successTemplate,
           variables
         );
       }
