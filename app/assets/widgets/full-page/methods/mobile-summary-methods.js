@@ -65,6 +65,7 @@ export function getMobileAdditionalOffersPulseState({
 const MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;
 const MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS = 800;
 const MOBILE_ADDITIONAL_OFFERS_DURATION_MS = 3000;
+const MOBILE_SUMMARY_TRAY_ANIMATION_MS = 720;
 
 export const fullPageMobileSummaryMethods = {
 _populateCompactMobileSummaryTray(sheet) {
@@ -87,12 +88,14 @@ _populateCompactMobileSummaryTray(sheet) {
   const displayFinalPrice = shouldDisplayClassicFixedBundleRawTotal(this, combinedDiscountInfo)
     ? totalPrice
     : finalPrice;
-  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
   const selectedFooterQuantity = this.getAllSelectedProductsData().reduce(
     (sum, item) => sum + (Number(item.quantity) || 1),
     0
   );
-  const isClassicPreset = this.getFullPageDesignPreset?.() === 'CLASSIC';
+  const designPreset = this.getFullPageDesignPreset?.();
+  const isClassicPreset = designPreset === 'CLASSIC';
+  const usesAnimatedSummarySection = isClassicPreset || designPreset === 'STANDARD';
   const summaryToggleLabel = isClassicPreset ? 'View Selected Products' : 'Review your bundle';
   const addonStep = (this.selectedBundle?.steps || []).find(step => step?.isFreeGift === true) || null;
   const addonStates = addonStep && typeof this.getAddonSummaryEligibilityStates === 'function'
@@ -173,24 +176,15 @@ _populateCompactMobileSummaryTray(sheet) {
     discountBlock.className = 'side-panel-discount-message';
     if (this.config.showDiscountMessaging) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
+        this.selectedBundle,
+        totalPrice,
+        totalQuantity,
+        combinedDiscountInfo,
+        currencyInfo,
+        { messageType: nextRule ? 'progress' : 'success' }
       );
       let discountMessage = '';
-      if (combinedDiscountInfo.hasDiscount) {
-        const successTemplate = TemplateManager.getDiscountMessageTemplate({
-          bundle: this.selectedBundle,
-          totalQuantity,
-          totalPrice,
-          discountInfo: combinedDiscountInfo,
-          messageType: 'success',
-          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          locale: window.Shopify?.locale,
-        });
-        discountMessage = TemplateManager.replaceVariables(
-          successTemplate,
-          variables
-        );
-      } else if (nextRule) {
+      if (nextRule) {
         const progressTemplate = TemplateManager.getDiscountMessageTemplate({
           bundle: this.selectedBundle,
           totalQuantity,
@@ -202,6 +196,20 @@ _populateCompactMobileSummaryTray(sheet) {
         });
         discountMessage = TemplateManager.replaceVariables(
           progressTemplate,
+          variables
+        );
+      } else if (combinedDiscountInfo.hasDiscount) {
+        const successTemplate = TemplateManager.getDiscountMessageTemplate({
+          bundle: this.selectedBundle,
+          totalQuantity,
+          totalPrice,
+          discountInfo: combinedDiscountInfo,
+          messageType: 'success',
+          fallbackTemplate: this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          locale: window.Shopify?.locale,
+        });
+        discountMessage = TemplateManager.replaceVariables(
+          successTemplate,
           variables
         );
       }
@@ -247,7 +255,7 @@ _populateCompactMobileSummaryTray(sheet) {
     isComplete: this.areBundleConditionsMet()
   });
   navSection.appendChild(actionButton);
-  if (this.compactMobileSummaryTrayExpanded) {
+  if (usesAnimatedSummarySection || this.compactMobileSummaryTrayExpanded) {
     const productsSection = document.createElement('div');
     productsSection.className = 'fpb-mobile-summary-products-section';
     productsSection.appendChild(this._renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity));
@@ -375,7 +383,7 @@ _toggleCompactMobileSummaryTray(sheet) {
       'fpb-mobile-summary-tray-animating-open',
       'fpb-mobile-summary-tray-animating-closed'
     );
-  }, 380);
+  }, MOBILE_SUMMARY_TRAY_ANIMATION_MS);
 },
 
 _syncCompactMobileSummaryScrollLock() {
