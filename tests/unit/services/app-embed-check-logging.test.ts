@@ -24,7 +24,7 @@ describe("checkAppEmbedEnabled logging", () => {
     jest.clearAllMocks();
   });
 
-  it("fails open for malformed settings_data.json without warning logs", async () => {
+  it("treats malformed settings_data.json as disabled without warning logs", async () => {
     const admin = makeAdmin([
       {
         data: {
@@ -51,7 +51,8 @@ describe("checkAppEmbedEnabled logging", () => {
 
     const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com");
 
-    expect(result).toEqual({ enabled: true, themeId: THEME_ID });
+    expect(result).toEqual({ enabled: false, themeId: THEME_ID });
+    expect(AppLogger.debug).not.toHaveBeenCalled();
     expect(AppLogger.warn).not.toHaveBeenCalled();
   });
 });

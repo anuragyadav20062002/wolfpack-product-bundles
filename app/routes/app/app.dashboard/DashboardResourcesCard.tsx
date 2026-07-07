@@ -41,7 +41,7 @@ export function DashboardResourcesCard({ activeResource, setActiveResource, hand
       <div className={dashboardStyles.resourcesThumbnails}>
         <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceThumbnailCard}>
           <OptimisedImage
-            src="/bundleGallery.png"
+            src="/bundleGallery.avif"
             alt={t("dashboard.resources.bundleGallery")}
             className={dashboardStyles.resourceThumbnailImage}
             width={320}
@@ -55,7 +55,7 @@ export function DashboardResourcesCard({ activeResource, setActiveResource, hand
         </a>
         <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceThumbnailCard}>
           <OptimisedImage
-            src="/bundleGallery.png"
+            src="/bundleGallery.avif"
             alt={t("dashboard.resources.bundleGallery")}
             className={dashboardStyles.resourceThumbnailImage}
             width={320}

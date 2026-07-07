@@ -244,7 +244,7 @@ export default function CreateBundleWizard() {
                 >
                   <div className={styles.bundleThumbnailWrap}>
                     <OptimisedImage
-                      src="/ppb.png"
+                      src="/ppb.avif"
                       alt={t("createBundle.bundleType.productPage.alt")}
                       className={styles.bundleThumbnailImg}
                       width={320}
@@ -273,7 +273,7 @@ export default function CreateBundleWizard() {
                 >
                   <div className={styles.bundleThumbnailWrap}>
                     <OptimisedImage
-                      src="/fpb.png"
+                      src="/fpb.avif"
                       alt={t("createBundle.bundleType.fullPage.alt")}
                       className={styles.bundleThumbnailImg}
                       width={320}

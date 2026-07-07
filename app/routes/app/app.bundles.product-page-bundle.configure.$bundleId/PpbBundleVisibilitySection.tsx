@@ -66,28 +66,28 @@ export function PpbBundleVisibilitySection() {
                   {
                     title: "Hero Banner",
                     desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",
-                    img: "/Hero-Banner.png",
+                    img: "/Hero-Banner.avif",
                     guide:
                       "Copy your bundle link, open the theme editor, add or select an image banner, set the button label and link, then save.",
                   },
                   {
                     title: "Navigation Menu",
                     desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.",
-                    img: "/Navigation-Menu.png",
+                    img: "/Navigation-Menu.avif",
                     guide:
                       "Copy your bundle link, open Content > Menus, add the bundle as a main-menu item, then save the menu.",
                   },
                   {
                     title: "Announcement Banner",
                     desc: "Show your offer in the announcement bar so visitors see it instantly.",
-                    img: "/Announcement-Bar.png",
+                    img: "/Announcement-Bar.avif",
                     guide:
                       "Copy your bundle link, open the theme editor, enable the announcement bar, add offer copy and the bundle link, then save.",
                   },
                   {
                     title: "Featured Product Card",
                     desc: "Feature your bundle product on your homepage so shoppers find it right away.",
-                    img: "/Featured-Product-Card.png",
+                    img: "/Featured-Product-Card.avif",
                     guide:
                       "Add the bundle product to a collection, open the theme editor, select Featured Collection, choose that collection, lower the max product count, then save.",
                   },

@@ -69,12 +69,13 @@
 
   .fpb-preset-classic .side-panel-clear-btn {
     display: grid;
-    grid-template-columns: 22px max-content;
-    grid-template-rows: 25.1875px;
+    grid-template-columns: 1.375rem max-content;
+    grid-template-rows: minmax(1.5rem, auto);
     gap: 4px;
-    min-width: 82.9375px;
-    height: 35.1875px;
-    padding: 5px 14px;
+    min-width: max-content;
+    min-height: 2.25rem;
+    height: auto;
+    padding: 0.3125rem 0.875rem;
     border: 0;
     border-radius: var(--bundle-side-panel-btn-radius, 5px);
     background: var(

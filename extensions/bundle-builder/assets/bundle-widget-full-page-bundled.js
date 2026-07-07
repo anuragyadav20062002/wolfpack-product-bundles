@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.75
- * Built   : 2026-07-06
+ * Version : 5.0.79
+ * Built   : 2026-07-07
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.75';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.79';
 (function() {
   'use strict';
 
@@ -3365,7 +3365,7 @@ const BundleModalVariantMethods = {
     this.selectedOptions = {};
     const summaryContainer = document.getElementById('modal-selection-summary');
     const summaryText = document.getElementById('modal-selection-text');
-    if (summaryContainer) summaryContainer.style.display = 'none';
+    if (summaryContainer) summaryContainer.hidden = true;
     if (summaryText) summaryText.textContent = '';
   },
 
@@ -3575,12 +3575,12 @@ const BundleModalVariantMethods = {
       .filter(value => value && value !== 'Default Title');
 
     if (selectedValues.length === 0) {
-      summaryContainer.style.display = 'none';
+      summaryContainer.hidden = true;
       return;
     }
 
     summaryText.textContent = selectedValues.join(' / ');
-    summaryContainer.style.display = 'flex';
+    summaryContainer.hidden = false;
   },
 
   /**
@@ -3770,7 +3770,7 @@ class BundleProductModal {
             <div class="bundle-modal-details">
               <div class="bundle-modal-header">
                 <h2 class="bundle-modal-title" id="modal-product-title"></h2>
-                <div class="bundle-modal-selection-summary" id="modal-selection-summary" style="display: none;">
+                <div class="bundle-modal-selection-summary" id="modal-selection-summary" hidden>
                   <svg class="selection-check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
@@ -3960,12 +3960,7 @@ class BundleProductModal {
     document.getElementById('modal-product-title').textContent = displayTitle;
 
     const descriptionEl = document.getElementById('modal-product-description');
-    if (this.currentProduct.description) {
-      descriptionEl.textContent = this.currentProduct.description;
-      descriptionEl.style.display = 'block';
-    } else {
-      descriptionEl.style.display = 'none';
-    }
+    descriptionEl.textContent = this.currentProduct.description || '';
 
     this.loadImage();
 
@@ -4677,38 +4672,6 @@ async _handlePostAddToCartAction(actionConfig) {
   setTimeout(() => {
     window.location.href = target;
   }, 1000);
-},
-
-_scheduleCartTransformSelfHeal() {
-  try {
-    if (window.Shopify?.designMode) return;
-
-    const shop = window.Shopify?.shop || this.container.dataset.shop || window.location.hostname;
-    if (!shop) return;
-
-    const storageKey = `wolfpack:cart-transform-heal:${shop}`;
-    const lastCheckedAt = Number(window.localStorage?.getItem(storageKey) || 0);
-    const now = Date.now();
-    const cooldownMs = 24 * 60 * 60 * 1000;
-
-    if (lastCheckedAt && now - lastCheckedAt < cooldownMs) return;
-
-    window.setTimeout(() => {
-      fetch('/apps/product-bundles/api/cart-transform-heal', {
-        method: 'GET',
-        credentials: 'same-origin',
-        cache: 'no-store',
-      })
-        .then(response => {
-          if (response.ok) {
-            window.localStorage?.setItem(storageKey, String(now));
-          }
-        })
-        .catch(() => {});
-    }, 1500);
-  } catch (_error) {
-
-  }
 },
 
 parseConfiguration() {
@@ -6053,9 +6016,14 @@ _toggleCompactMobileSummaryTray(sheet) {
 },
 
 _syncCompactMobileSummaryScrollLock() {
+  const preset = this.getFullPageDesignPreset?.();
+  const shouldLockScroll = this.compactMobileSummaryTrayExpanded === true
+    && preset !== 'STANDARD'
+    && preset !== 'CLASSIC';
+
   document.body.classList.toggle(
     'fpb-mobile-summary-scroll-locked',
-    this.compactMobileSummaryTrayExpanded === true
+    shouldLockScroll
   );
 },
 
@@ -6879,6 +6847,28 @@ _renderStandardSidebarSlotTiles(container, allSelectedProducts = []) {
       slot.innerHTML = imgSrc
         ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-inline-slot-image">`
         : '<div class="side-panel-inline-slot-image-placeholder"></div>';
+
+      if (!item.isDefault) {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'side-panel-inline-slot-remove';
+        removeBtn.type = 'button';
+        removeBtn.setAttribute('data-action', 'remove-selected-product');
+        removeBtn.setAttribute('aria-label', `Delete ${summaryTitle || 'product'}`);
+
+        const removalState = this.getSummaryProductRemovalState(item);
+        if (!removalState.canRemove) {
+          removeBtn.classList.add('side-panel-inline-slot-remove--disabled');
+          removeBtn.setAttribute('aria-disabled', 'true');
+          removeBtn.title = removalState.blockedMessage;
+        }
+
+        removeBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          this.removeSummarySelectedProduct(item, summaryTitle);
+        });
+
+        slot.appendChild(removeBtn);
+      }
     } else {
       slot.innerHTML = emptyStateIconUrl
         ? `<img class="side-panel-inline-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
@@ -13794,8 +13784,6 @@ class BundleWidgetFullPage {
       this.loadDesignSettingsCSS();
       await this.loadLanguageSettings();
       await this.loadControlsSettings();
-
-      this._scheduleCartTransformSelfHeal();
 
       await this.loadBundleData();
 

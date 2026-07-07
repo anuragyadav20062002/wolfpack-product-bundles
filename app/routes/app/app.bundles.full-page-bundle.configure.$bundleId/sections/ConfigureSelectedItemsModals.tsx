@@ -79,7 +79,7 @@ export function FpbSelectedItemsModals({
                           src={
                             product.imageUrl ||
                             product.image?.url ||
-                            "/bundle.png"
+                            "/bundle.avif"
                           }
                           alt={product.title || "Product"}
                           style={{

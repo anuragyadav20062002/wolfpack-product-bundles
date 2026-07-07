@@ -180,9 +180,7 @@ Most storefront runtime events are customer-side and can be high volume. They sh
 | Event | Sink | Fires When | Key Attributes |
 | --- | --- | --- | --- |
 | `cart_transform_enabled` | App Events + internal | Cart Transform configuration becomes active for a shop. | `function_id`, `cart_transform_id` |
-| `cart_transform_heal_started` | App Events | Admin/background repair starts. | `correlation_id`, `reason` |
-| `cart_transform_healed` | App Events + internal | Missing/broken Cart Transform state is repaired. | `duration_ms`, `cart_transform_id` |
-| `cart_transform_heal_failed` | App Events + internal | Repair fails. | `error_code`, `failed_stage` |
+| `cart_transform_setup_failed` | App Events + internal | Install or reauthorization setup cannot activate Cart Transform. | `error_code`, `error_message_safe` |
 | `cart_transform_function_error` | App Events + internal | Function execution/logging path surfaces an error. | `error_code`, `bundle_type` |
 | `cart_transform_merge_skipped` | Internal, sampled App Events only | Function intentionally skips a merge. | High volume; use carefully. |
 | `addon_discount_function_enabled` | App Events + internal | Add-on Discount Function automatic app discount becomes active for a shop. | `discount_id`, `function_id`, `already_exists` |
@@ -288,14 +286,13 @@ Business interpretation:
 Expected sequence:
 
 1. `cart_transform_enabled`
-2. Optional repair path: `cart_transform_heal_started` -> `cart_transform_healed` or `cart_transform_heal_failed`
+2. Setup failure path: `cart_transform_setup_failed`
 3. Runtime error path: `cart_transform_function_error`
 4. Checkout path: `checkout_extension_rendered` internally, `checkout_extension_render_failed` in App Events
 
 Business interpretation:
 
-- `cart_transform_healed` proves the app self-repaired merchant setup.
-- `cart_transform_heal_failed` is a high-priority support signal.
+- `cart_transform_setup_failed` is a high-priority support signal during install or reauthorization.
 - `checkout_extension_render_failed` identifies checkout placement/runtime issues.
 
 ### Limit and Upgrade Funnel
@@ -370,12 +367,11 @@ Implemented v1 emitted events:
 
 | Area | Events |
 | --- | --- |
-| Auth lifecycle | `app_installed`, `app_reauthorized`, `pixel_activation_failed`, `cart_transform_enabled`, `cart_transform_heal_failed` |
+| Auth lifecycle | `app_installed`, `app_reauthorized`, `pixel_activation_failed`, `cart_transform_enabled`, `cart_transform_setup_failed` |
 | Uninstall webhook | `app_uninstalled` |
 | Create bundle | `bundle_create_started`, `pricing_limit_hit`, `bundle_created`, `bundle_create_failed` |
 | Create configure | `bundle_create_step_completed`, `pricing_configured`, `bundle_saved` |
 | Sync | `bundle_sync_started`, `bundle_synced`, `bundle_sync_failed` |
-| Cart transform heal | `cart_transform_heal_started`, `cart_transform_healed`, `cart_transform_heal_failed` |
 | Storefront runtime | `widget_runtime_error_reported`, internal-only `bundle_engaged`, internal-only `engagement_failed` |
 | Billing APIs | `billing_upgrade_started`, `billing_upgraded`, `billing_upgrade_failed`, `billing_cancel_started`, `billing_cancelled`, `billing_cancel_failed` |
 | Subscription webhooks | `subscription_webhook_processed`, `subscription_webhook_failed` |

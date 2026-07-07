@@ -121,5 +121,5 @@ None — SDK is a read/write layer over existing bundle config (loaded from meta
 | SDK file exceeds Shopify 100 KB asset limit after minification | Low | Monitor in build script; existing minifier already enforces limit |
 | `data-bundle-config` attribute absent when SDK loads (race condition) | Medium | SDK uses `DOMContentLoaded` + MutationObserver fallback to wait for container |
 | Merchant loads both widget and SDK on same page | Low | FR-17: Loader snippet enforces mutual exclusion via `data-sdk-mode` attribute |
-| Cart Transform not active when SDK adds to cart | Low | Existing `_scheduleCartTransformSelfHeal()` mechanism covers this; SDK inherits it |
+| Cart Transform not active when SDK adds to cart | Low | Install and reauthorization setup activates the shop-level Cart Transform |
 | Breaking change in bundle config schema invalidates SDK state shape | Medium | Semantic version bump + sync-bundle prompt banner (per No Backwards Compat rule) |

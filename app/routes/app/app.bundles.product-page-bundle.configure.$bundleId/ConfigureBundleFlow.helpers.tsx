@@ -55,25 +55,25 @@ export const productPageTemplateOptions = [
     presetId: "CASCADE",
     layoutTemplate: "PDP_INPAGE",
     label: "Product List",
-    image: "/PPB-List.png",
+    image: "/PPB-List.avif",
   },
   {
     presetId: "MODAL",
     layoutTemplate: "PDP_MODAL",
     label: "Horizontal Slots",
-    image: "/PPB-HorizontalSlots.png",
+    image: "/PPB-HorizontalSlots.avif",
   },
   {
     presetId: "COGNIVE",
     layoutTemplate: "PDP_INPAGE",
     label: "Product Grid",
-    image: "/PPB-Grid.png",
+    image: "/PPB-Grid.avif",
   },
   {
     presetId: "SIMPLIFIED",
     layoutTemplate: "PDP_MODAL",
     label: "Vertical Slots",
-    image: "/PPB-VerticalSlots.png",
+    image: "/PPB-VerticalSlots.avif",
   },
 ] as const;
 
