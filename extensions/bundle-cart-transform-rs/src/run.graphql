@@ -24,9 +24,6 @@ query Input {
       stepType: attribute(key: "_bundle_step_type") {
         value
       }
-      addonOfferId: attribute(key: "_addon_offer_id") {
-        value
-      }
       bundleDisplayProperties: attribute(key: "_bundle_display_properties") {
         value
       }

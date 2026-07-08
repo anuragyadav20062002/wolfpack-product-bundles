@@ -133,7 +133,6 @@ pub fn process_merge_operations(
         .filter(|value| !value.trim().is_empty());
 
     for (offer_group_id, line_indices) in &bundle_groups {
-        let mut bundle_addon_offer_id: Option<String> = None;
         let merge_line_indices: Vec<usize> = line_indices
             .iter()
             .copied()
@@ -156,6 +155,11 @@ pub fn process_merge_operations(
                 is_addon_line(step_type)
             })
             .collect();
+        let bundle_addon_offer_id = if addon_line_indices.is_empty() {
+            None
+        } else {
+            Some(offer_group_id.clone())
+        };
 
         if merge_line_indices.is_empty() {
             continue;
@@ -260,14 +264,6 @@ pub fn process_merge_operations(
             let line_total = unit_price * (qty as f64);
             total_quantity += qty;
             let step_type = line.step_type().and_then(|a| a.value()).map(|s| s.as_str());
-            if bundle_addon_offer_id.is_none() {
-                if let Some(value) = line.addon_offer_id().and_then(|a| a.value()) {
-                    let normalized = value.trim();
-                    if !normalized.is_empty() {
-                        bundle_addon_offer_id = Some(normalized.to_string());
-                    }
-                }
-            }
             if is_free_gift_line(step_type) {
                 free_gift_total += line_total;
             } else {
