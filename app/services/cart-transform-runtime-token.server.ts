@@ -49,6 +49,7 @@ export function normalizeProductVariantGid(value: unknown): string | null {
 function getCachedVariantGid(variant: any): string | null {
   return normalizeProductVariantGid(
     variant?.id
+      ?? variant?.gid
       ?? variant?.variantId
       ?? variant?.variantGraphqlId
       ?? variant?.graphqlId
@@ -78,8 +79,16 @@ function collectAllowedVariantIds(bundle: any): Set<string> {
     for (const product of Array.isArray(step?.products) ? step.products : []) {
       addProduct(product);
     }
-    for (const category of Array.isArray(step?.StepCategory) ? step.StepCategory : []) {
-      for (const product of Array.isArray(category?.products) ? category.products : []) {
+    const categories = [
+      ...(Array.isArray(step?.StepCategory) ? step.StepCategory : []),
+      ...(Array.isArray(step?.categories) ? step.categories : []),
+    ];
+    for (const category of categories) {
+      const categoryProducts = [
+        ...(Array.isArray(category?.products) ? category.products : []),
+        ...(Array.isArray(category?.selectedProducts) ? category.selectedProducts : []),
+      ];
+      for (const product of categoryProducts) {
         addProduct(product);
       }
     }
