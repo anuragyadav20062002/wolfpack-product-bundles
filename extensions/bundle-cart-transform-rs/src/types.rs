@@ -12,9 +12,7 @@
 // METAFIELD JSON TYPES — deserialized from metafield string values
 // ============================================================================
 
-/// Deserialized from `$app:component_parents` metafield (JSON array).
-/// One entry per bundle parent. The MERGE path chooses the entry whose
-/// component references best match the grouped cart lines.
+/// Runtime-token parent data used by MERGE.
 /// (`component_reference`/`component_quantities` live on separate metafields
 /// and are read directly via typegen accessors in the EXPAND path.)
 #[derive(serde::Deserialize, Debug)]
@@ -22,15 +20,7 @@ pub struct ComponentParent {
     /// Parent variant GID, e.g. "gid://shopify/ProductVariant/123"
     pub id: String,
     #[serde(default)]
-    pub component_reference: Option<MetafieldValue<Vec<String>>>,
-    #[serde(default)]
     pub price_adjustment: Option<PriceAdjustmentConfig>,
-}
-
-#[derive(serde::Deserialize, Debug, Clone)]
-pub struct MetafieldValue<T> {
-    #[serde(default)]
-    pub value: T,
 }
 
 /// Deserialized from `$app:price_adjustment` metafield.
