@@ -16,6 +16,7 @@ export function buildProductPageCartFormData(cartItems = [], {
   bundleName = '',
   offerId = '',
   sessionKey = '',
+  runtimeToken = '',
 } = {}) {
   const formData = new FormData();
 
@@ -36,6 +37,9 @@ export function buildProductPageCartFormData(cartItems = [], {
     formData.append(`items[${index}][properties][_bundleName]`, bundleName);
     formData.append(`items[${index}][properties][_wolfpackProductBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
     formData.append(`items[${index}][properties][_wolfpackProductBundle:prodQty]`, String(item.quantity));
+    if (runtimeToken) {
+      formData.append(`items[${index}][properties][_wolfpack_bundle_runtime]`, runtimeToken);
+    }
   });
 
   return {

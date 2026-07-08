@@ -1,4 +1,5 @@
 use super::schema;
+use crate::runtime_token::{token_components_match, verify_runtime_token};
 use shopify_function::prelude::*;
 use shopify_function::Result;
 use std::collections::HashMap;
@@ -260,6 +261,15 @@ fn build_addon_candidate(id: String, percentage: f64) -> schema::ProductDiscount
 fn build_automatic_addon_candidates(
     input: &schema::cart_lines_discounts_generate_run::Input,
 ) -> Vec<schema::ProductDiscountCandidate> {
+    let Some(runtime_secret) = input
+        .discount()
+        .runtime_token_secret()
+        .map(|metafield| metafield.value().as_str())
+        .filter(|value| !value.trim().is_empty())
+    else {
+        return vec![];
+    };
+
     input
         .cart()
         .lines()
@@ -270,6 +280,28 @@ fn build_automatic_addon_candidates(
                     .and_then(|attribute| attribute.value())
                     .map(|value| value.as_str()),
             )?;
+            let token = line
+                .runtime_token()
+                .and_then(|attribute| attribute.value())
+                .map(|value| value.as_str())?;
+            let payload = verify_runtime_token(token, runtime_secret)?;
+            let variant_id = match line.merchandise() {
+                schema::cart_lines_discounts_generate_run::input::cart::lines::Merchandise::ProductVariant(variant) => {
+                    variant.id().to_string()
+                }
+                _ => return None,
+            };
+            let authorized = payload.addons.iter().any(|addon| {
+                addon.variant_id == variant_id
+                    && addon.quantity == *line.quantity() as i64
+                    && addon.discount.as_ref().map(|discount| {
+                        discount.discount_type.eq_ignore_ascii_case("PERCENTAGE")
+                            && (discount.value - percentage).abs() < 0.0001
+                    }).unwrap_or(false)
+            });
+            if !authorized {
+                return None;
+            }
 
             Some(build_addon_candidate(line.id().clone(), percentage))
         })
@@ -281,13 +313,49 @@ fn build_checkout_integration_candidates(
     presentment_currency_rate: f64,
 ) -> Vec<schema::ProductDiscountCandidate> {
     let lines = input.cart().lines();
+    let runtime_secret = input
+        .discount()
+        .runtime_token_secret()
+        .map(|metafield| metafield.value().as_str())
+        .filter(|value| !value.trim().is_empty());
     let mut groups: HashMap<String, Vec<usize>> = HashMap::new();
     let mut candidates = Vec::new();
 
     for (idx, line) in lines.iter().enumerate() {
         let step_type = line.step_type().and_then(|a| a.value()).map(|s| s.as_str());
         if let Some(percentage) = parse_addon_percentage(step_type) {
-            candidates.push(build_addon_candidate(line.id().clone(), percentage));
+            if let Some(secret) = runtime_secret {
+                let token = line
+                    .runtime_token()
+                    .and_then(|attribute| attribute.value())
+                    .map(|value| value.as_str());
+                let variant_id = match line.merchandise() {
+                    schema::cart_lines_discounts_generate_run::input::cart::lines::Merchandise::ProductVariant(variant) => {
+                        variant.id().to_string()
+                    }
+                    _ => String::new(),
+                };
+                let authorized = token
+                    .and_then(|runtime_token| verify_runtime_token(runtime_token, secret))
+                    .map(|payload| {
+                        payload.addons.iter().any(|addon| {
+                            addon.variant_id == variant_id
+                                && addon.quantity == *line.quantity() as i64
+                                && addon
+                                    .discount
+                                    .as_ref()
+                                    .map(|discount| {
+                                        discount.discount_type.eq_ignore_ascii_case("PERCENTAGE")
+                                            && (discount.value - percentage).abs() < 0.0001
+                                    })
+                                    .unwrap_or(false)
+                        })
+                    })
+                    .unwrap_or(false);
+                if authorized {
+                    candidates.push(build_addon_candidate(line.id().clone(), percentage));
+                }
+            }
             continue;
         }
 
@@ -307,24 +375,12 @@ fn build_checkout_integration_candidates(
     }
 
     for (_, line_indices) in groups {
-        let component_parents_json = line_indices.iter().find_map(|&idx| {
-            match lines[idx].merchandise() {
-                schema::cart_lines_discounts_generate_run::input::cart::lines::Merchandise::ProductVariant(variant) => {
-                    variant.component_parents().map(|metafield| metafield.value().clone())
-                }
-                _ => None,
-            }
-        });
-
-        let Some(component_parents_json) = component_parents_json else {
-            continue;
-        };
-
         let mut paid_total = 0.0;
         let mut free_gift_total = 0.0;
         let mut paid_quantity = 0;
         let mut paid_unit_prices = Vec::new();
         let mut targets = Vec::new();
+        let mut actual_components = Vec::new();
 
         for &idx in &line_indices {
             let line = &lines[idx];
@@ -349,9 +405,53 @@ fn build_checkout_integration_candidates(
                     quantity: None,
                 },
             ));
+            if !is_addon_line(step_type) {
+                if let schema::cart_lines_discounts_generate_run::input::cart::lines::Merchandise::ProductVariant(variant) = line.merchandise() {
+                    actual_components.push((variant.id().to_string(), *line.quantity() as i64));
+                }
+            }
         }
 
         let original_total = paid_total + free_gift_total;
+        let component_parents_json = if let Some(secret) = runtime_secret {
+            let token = line_indices.iter().find_map(|&idx| {
+                lines[idx]
+                    .runtime_token()
+                    .and_then(|attribute| attribute.value())
+                    .map(|value| value.as_str())
+                    .filter(|value| !value.trim().is_empty())
+            });
+            let Some(payload) =
+                token.and_then(|runtime_token| verify_runtime_token(runtime_token, secret))
+            else {
+                continue;
+            };
+            let Some(group_id) = line_indices.iter().find_map(|&idx| {
+                lines[idx]
+                    .wolfpack_product_bundle_offer_id()
+                    .and_then(|attribute| attribute.value())
+                    .and_then(|value| wolfpack_product_bundle_offer_group_id(value.as_str()))
+            }) else {
+                continue;
+            };
+            if !token_components_match(&payload, &group_id, &actual_components) {
+                continue;
+            }
+            serde_json::to_string(&payload.price_adjustment).unwrap_or_default()
+        } else {
+            let component_parents_json = line_indices.iter().find_map(|&idx| {
+                match lines[idx].merchandise() {
+                    schema::cart_lines_discounts_generate_run::input::cart::lines::Merchandise::ProductVariant(variant) => {
+                        variant.component_parents().map(|metafield| metafield.value().clone())
+                    }
+                    _ => None,
+                }
+            });
+            let Some(component_parents_json) = component_parents_json else {
+                continue;
+            };
+            component_parents_json
+        };
         let percentage = calculate_parent_discount_percentage(
             &component_parents_json,
             paid_total,

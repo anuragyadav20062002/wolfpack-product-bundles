@@ -4,6 +4,9 @@ query Input {
     bundleCartLineMessaging: metafield(namespace: "$app", key: "bundle_cart_line_messaging") {
       value
     }
+    runtimeTokenSecret: metafield(namespace: "$app", key: "runtime_token_secret") {
+      value
+    }
   }
   cart {
     lines {
@@ -13,6 +16,9 @@ query Input {
         value
       }
       wolfpackProductBundleName: attribute(key: "_bundleName") {
+        value
+      }
+      runtimeToken: attribute(key: "_wolfpack_bundle_runtime") {
         value
       }
       stepType: attribute(key: "_bundle_step_type") {

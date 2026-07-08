@@ -2,7 +2,7 @@
 title: Cart Transform API
 type: shopify-integration
 audited: 2026-04-16
-sources: extensions/bundle-cart-transform-ts/shopify.extension.toml, Shopify Dev MCP
+sources: extensions/bundle-cart-transform-rs/shopify.extension.toml, extensions/bundle-cart-transform-rs/src/run.graphql, Shopify Dev MCP
 ---
 
 # Cart Transform API
@@ -39,9 +39,30 @@ Shopify consolidates `linesMerge` results that share the same `parentVariantId` 
 
 To keep duplicate bundle instances as separate line items: **append a unique suffix to the title** (e.g., `"Bundle Name (2)"`). Tracked via `bundleNameCounts` Map in the transform function.
 
+## Function Input Runtime Token
+
+The configured MERGE path reads `_wolfpack_bundle_runtime` from each selected cart line and verifies it with the CartTransform owner metafield:
+
+```graphql
+cartTransform {
+  runtimeTokenSecret: metafield(namespace: "$app", key: "runtime_token_secret") {
+    value
+  }
+}
+cart {
+  lines {
+    runtimeToken: attribute(key: "_wolfpack_bundle_runtime") {
+      value
+    }
+  }
+}
+```
+
+The token is issued only by the signed app-proxy route `/apps/product-bundles/api/cart-transform-runtime-token`. It validates the current DB bundle config before signing selected component/add-on variant GIDs, quantities, parent variant, and pricing config.
+
 ## Function Input Metafield Namespacing
 
-The active bundle transform reads bundle component metadata from app-owned product variant metafields. In a Function input query, those fields must include the `$app` namespace explicitly:
+The EXPAND/display path still reads parent bundle metadata from app-owned product variant metafields. In a Function input query, those fields must include the `$app` namespace explicitly:
 
 ```graphql
 metafield(namespace: "$app", key: "component_parents") {
@@ -49,7 +70,7 @@ metafield(namespace: "$app", key: "component_parents") {
 }
 ```
 
-Do not query app-owned component/pricing metafields by key only. The app writers define and write `component_parents`, `component_reference`, `component_quantities`, `price_adjustment`, and `component_pricing` under `$app`; omitting the namespace makes the transform see null metadata and prevents `linesMerge` plus price adjustments from running.
+Do not query app-owned component/pricing metafields by key only. The app writers define and write `component_reference`, `component_quantities`, `price_adjustment`, and `component_pricing` under `$app`; omitting the namespace makes EXPAND/display metadata unavailable.
 
 ## Checkout Discount Allocation Boundary
 
@@ -76,6 +97,8 @@ app discount with EB-aligned settings: `discountClasses: ["PRODUCT"]` and
 scopes for the activation flow. Cart Transform no longer emits a paid add-on
 `lineUpdate` fixed unit price for selected add-on lines, otherwise the selected
 add-on can be discounted twice once the Discount Function is active.
+
+2026-07-08 correction: add-on percentage markers are honored only when `_wolfpack_bundle_runtime` verifies that the selected add-on variant, quantity, and percentage are authorized. Unsigned or tampered add-on markers emit no product discount candidate.
 
 ## See Also
 - [[Architecture/Cart Transform Function]] — full implementation reference

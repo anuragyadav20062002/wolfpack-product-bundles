@@ -13,7 +13,7 @@ A customer may add the same bundle to their cart multiple times (e.g., 2 gift se
 
 ## Solution: EB `_wolfpackProductBundle:OfferId`
 
-Each add-to-cart call generates a unique ID:
+Each add-to-cart call generates a 12-character uppercase alphanumeric grouping ID:
 ```javascript
 const offerLineId = `${offerId}_${sessionKey}_${itemIndex}`;
 ```

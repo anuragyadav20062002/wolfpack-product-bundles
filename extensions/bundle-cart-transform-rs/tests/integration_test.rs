@@ -167,6 +167,109 @@ mod tests {
     }
 
     #[test]
+    fn test_runtime_token_merge_without_component_parents() {
+        let runtime_secret = "26338c77e8f7a7762a2c91a18de15691f0722578ea7e5f067af01a623f403f6c";
+        let runtime_token = "eyJ2ZXJzaW9uIjoxLCJzaG9wIjoidGVzdC1zaG9wLm15c2hvcGlmeS5jb20iLCJidW5kbGVJZCI6ImJ1bmRsZS0xIiwiYnVuZGxlVHlwZSI6ImZ1bGxfcGFnZSIsIm9mZmVyR3JvdXBJZCI6IkZCUC1idW5kbGUtMV9BQkMiLCJwYXJlbnRWYXJpYW50SWQiOiJnaWQ6Ly9zaG9waWZ5L1Byb2R1Y3RWYXJpYW50Lzk5OSIsImJ1bmRsZU5hbWUiOiJSdW50aW1lIEJ1bmRsZSIsImNvbXBvbmVudHMiOlt7InZhcmlhbnRJZCI6ImdpZDovL3Nob3BpZnkvUHJvZHVjdFZhcmlhbnQvMTAxIiwicXVhbnRpdHkiOjF9LHsidmFyaWFudElkIjoiZ2lkOi8vc2hvcGlmeS9Qcm9kdWN0VmFyaWFudC8xMDIiLCJxdWFudGl0eSI6MX1dLCJhZGRvbnMiOltdLCJwcmljZUFkanVzdG1lbnQiOnsibWV0aG9kIjoicGVyY2VudGFnZV9vZmYiLCJ2YWx1ZSI6MjB9fQ.TJSuU_AK3bX8xfUKP-oqONBZSB8LXuNJ6j4uqIgjOsA";
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{
+                "bundleCartLineMessaging": null,
+                "runtimeTokenSecret": {{ "value": "{runtime_secret}" }}
+            }},
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "FBP-bundle-1_ABC_1" }},
+                        "wolfpackProductBundleName": {{ "value": "Runtime Bundle" }},
+                        "runtimeToken": {{ "value": "{runtime_token}" }},
+                        "stepType": null,
+                        "addonOfferId": null,
+                        "bundleDisplayProperties": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "Widget A" }}
+                        }},
+                        "cost": {{ "amountPerQuantity": {{ "amount": "30.00" }}, "totalAmount": {{ "amount": "30.00" }} }}
+                    }},
+                    {{
+                        "id": "line2", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "FBP-bundle-1_ABC_2" }},
+                        "wolfpackProductBundleName": {{ "value": "Runtime Bundle" }},
+                        "runtimeToken": {{ "value": "{runtime_token}" }},
+                        "stepType": null,
+                        "addonOfferId": null,
+                        "bundleDisplayProperties": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/102",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/2", "title": "Widget B" }}
+                        }},
+                        "cost": {{ "amountPerQuantity": {{ "amount": "20.00" }}, "totalAmount": {{ "amount": "20.00" }} }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, input.as_str()).expect("should not error");
+
+        assert_eq!(output.operations.len(), 1);
+        assert_eq!(merge_discount_percentage(&output).as_deref(), Some("20.0"));
+    }
+
+    #[test]
+    fn test_runtime_token_tamper_prevents_merge() {
+        let runtime_secret = "26338c77e8f7a7762a2c91a18de15691f0722578ea7e5f067af01a623f403f6c";
+        let runtime_token = "eyJ2ZXJzaW9uIjoxLCJzaG9wIjoidGVzdC1zaG9wLm15c2hvcGlmeS5jb20iLCJidW5kbGVJZCI6ImJ1bmRsZS0xIiwiYnVuZGxlVHlwZSI6ImZ1bGxfcGFnZSIsIm9mZmVyR3JvdXBJZCI6IkZCUC1idW5kbGUtMV9BQkMiLCJwYXJlbnRWYXJpYW50SWQiOiJnaWQ6Ly9zaG9waWZ5L1Byb2R1Y3RWYXJpYW50Lzk5OSIsImJ1bmRsZU5hbWUiOiJSdW50aW1lIEJ1bmRsZSIsImNvbXBvbmVudHMiOlt7InZhcmlhbnRJZCI6ImdpZDovL3Nob3BpZnkvUHJvZHVjdFZhcmlhbnQvMTAxIiwicXVhbnRpdHkiOjF9LHsidmFyaWFudElkIjoiZ2lkOi8vc2hvcGlmeS9Qcm9kdWN0VmFyaWFudC8xMDIiLCJxdWFudGl0eSI6MX1dLCJhZGRvbnMiOltdLCJwcmljZUFkanVzdG1lbnQiOnsibWV0aG9kIjoicGVyY2VudGFnZV9vZmYiLCJ2YWx1ZSI6MjB9fQ.bad_signature";
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{
+                "bundleCartLineMessaging": null,
+                "runtimeTokenSecret": {{ "value": "{runtime_secret}" }}
+            }},
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 1,
+                        "wolfpackProductBundleOfferId": {{ "value": "FBP-bundle-1_ABC_1" }},
+                        "wolfpackProductBundleName": {{ "value": "Runtime Bundle" }},
+                        "runtimeToken": {{ "value": "{runtime_token}" }},
+                        "stepType": null,
+                        "addonOfferId": null,
+                        "bundleDisplayProperties": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "Widget A" }}
+                        }},
+                        "cost": {{ "amountPerQuantity": {{ "amount": "30.00" }}, "totalAmount": {{ "amount": "30.00" }} }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, input.as_str()).expect("should not error");
+
+        assert!(output.operations.is_empty());
+    }
+
+    #[test]
     fn test_merge_basic_percentage_off() {
         let cp = serde_json::json!([{
             "id": "gid://shopify/ProductVariant/999",

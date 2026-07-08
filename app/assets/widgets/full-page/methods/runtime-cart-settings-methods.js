@@ -319,7 +319,15 @@ async getBundleDetailsCartToken() {
 },
 
 generateBundleSessionKey() {
-  return Math.random().toString(36).slice(2, 5).toUpperCase();
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const keyLength = 12;
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(keyLength);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, byte => alphabet[byte % alphabet.length]).join('');
+  }
+
+  return Math.random().toString(36).slice(2, 2 + keyLength).toUpperCase().padEnd(keyLength, '0');
 },
 // ========================================================================
 // EVENT HANDLERS

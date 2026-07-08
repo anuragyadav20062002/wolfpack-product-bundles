@@ -462,6 +462,7 @@ Billing Page
 | `/apps/product-bundles/api/bundle/:id.json` | Storefront bundle config (HMAC verified) |
 | `/apps/product-bundles/api/bundles.json` | All active bundles for shop |
 | `/apps/product-bundles/api/cart-bundle-details` | Signed storefront route that merges EB-style cart `bundle_details` metafield entries |
+| `/apps/product-bundles/api/cart-transform-runtime-token` | Signed storefront route that validates selected bundle lines and returns `_wolfpack_bundle_runtime` for Cart Transform / Discount Function verification |
 | `/apps/product-bundles/api/checkout-integration-discount-code` | Signed storefront route that creates short-lived app discount codes for third-party FPB checkout integrations |
 | `/apps/product-bundles/api/design-settings/:shop` | CSS vars for storefront widgets |
 | `/apps/product-bundles/api/language-settings/:shop` | Settings -> Language JSON for storefront widget text and cart labels |
