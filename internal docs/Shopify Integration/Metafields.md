@@ -38,6 +38,14 @@ If the bundle config structure changes:
 3. Both must be updated in the same change — never one without the other
 4. Bump `WIDGET_VERSION` and show a sync prompt banner so merchants re-sync
 
+## EB-Style Storefront Sync
+
+As of 2026-07-08, configure Save, Sync Product, Sync Bundle, and Preview follow an EB-style direct server flow. The route persists bundle data to Postgres, performs required Shopify publication work synchronously, and returns a compact response such as `{ success, statusCode, message, bundle }` or `{ success, statusCode, ready }`.
+
+The server reloads the bundle from DB, activates the Cart Transform, then writes page/product metafields before responding. Configure pages do not show a separate storefront sync status or retry banner. Preview posts one compact `/prepare-preview` request and keeps the Preview Bundle spinner active until that promise resolves; failures surface through the existing preview error toast. Save and sync responses do not include full step/category graphs, queue state, attempt IDs, timestamps, or sync stats.
+
+As of 2026-07-08, storefront sync no longer fans out component-variant `$app:component_parents`. MERGE and add-on discount validation use the signed runtime token route plus the CartTransform owner `$app.runtime_token_secret` metafield. Parent product metafields remain the source for EXPAND and display metadata.
+
 ## Why Bootstrap Hydration
 
 Full-page storefront markup uses a compact bootstrap marker so first render hydrates from the current app-proxy payload. The proxy path keeps a 3s retry for `503`/`504` responses to handle Render cold starts. The page metafield and hidden page-body marker remain useful for sync/install state, but neither must be treated as the first-paint full payload because Shopify page HTML can outlive a template change. The compact marker may carry `bundleDesignTemplate` and `bundleDesignPresetId` so the app embed can stamp the initial shell and load the correct preset stylesheet before proxy hydration, preventing a Standard-looking shell before Classic initializes.
@@ -59,6 +67,8 @@ Pending Bundle Visibility preview pages render from a generated Shopify page bod
 ## Bundle Details Order Attribution
 
 The storefront widgets write app-owned cart metafield `bundle_details` through the signed app-proxy route `/apps/product-bundles/api/cart-bundle-details`. The route uses Storefront API `cartMetafieldsSet` without a namespace, so Shopify stores the key in the app-owned namespace (`$app`).
+
+The same storefront add flow first requests `/apps/product-bundles/api/cart-transform-runtime-token`; that route returns `_wolfpack_bundle_runtime` for cart line properties after server-side DB validation.
 
 `shopify.app.toml` and `shopify.app.wolfpack-product-bundles-sit.toml` define `[order.metafields.app.bundle_details]` with `capabilities.cart_to_order_copyable = true`. Shopify requires the cart and order metafields to have matching namespace and key before checkout completion can copy the cart value to the order.
 

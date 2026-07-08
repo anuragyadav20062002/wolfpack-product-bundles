@@ -33,8 +33,15 @@ function rustFunctionsEmptyMock() {
 }
 
 describe('CartTransformService', () => {
+  const originalSecret = process.env.SHOPIFY_API_SECRET;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.SHOPIFY_API_SECRET = 'test_api_secret';
+  });
+
+  afterAll(() => {
+    process.env.SHOPIFY_API_SECRET = originalSecret;
   });
 
   describe('activateForNewInstallation', () => {
@@ -188,6 +195,13 @@ describe('CartTransformService', () => {
             },
             userErrors: []
           }
+        }))
+        // 4. syncRuntimeTokenSecret
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          metafieldsSet: {
+            metafields: [{ key: 'runtime_token_secret', namespace: 'app', value: 'secret' }],
+            userErrors: []
+          }
         }));
 
       const result = await CartTransformService.completeSetup(
@@ -238,7 +252,7 @@ describe('CartTransformService', () => {
   describe('syncCartLineMessagingSettings', () => {
     const shopDomain = 'test-shop.myshopify.com';
 
-    it('writes cart-line messaging settings to the cart transform owner metafield', async () => {
+    it('writes cart-line messaging settings and runtime token secret to the cart transform owner metafields', async () => {
       mockShopifyAdmin.graphql
         // 1. getRustFunctionId
         .mockResolvedValueOnce(rustFunctionsMock())
@@ -285,13 +299,23 @@ describe('CartTransformService', () => {
       expect(result.cartTransformId).toBe('gid://shopify/CartTransform/existing');
       const metafieldsCall = mockShopifyAdmin.graphql.mock.calls[2];
       expect(metafieldsCall[0]).toContain('metafieldsSet');
-      expect(metafieldsCall[1].variables.metafields).toEqual([{
-        ownerId: 'gid://shopify/CartTransform/existing',
-        namespace: '$app',
-        key: 'bundle_cart_line_messaging',
-        type: 'json',
-        value: JSON.stringify(settings)
-      }]);
+      expect(metafieldsCall[1].variables.metafields).toEqual([
+        {
+          ownerId: 'gid://shopify/CartTransform/existing',
+          namespace: '$app',
+          key: 'bundle_cart_line_messaging',
+          type: 'json',
+          value: JSON.stringify(settings)
+        },
+        {
+          ownerId: 'gid://shopify/CartTransform/existing',
+          namespace: '$app',
+          key: 'runtime_token_secret',
+          type: 'single_line_text_field',
+          value: expect.any(String)
+        }
+      ]);
+      expect(metafieldsCall[1].variables.metafields[1].value).toHaveLength(64);
     });
 
     it('returns a failed result when metafield sync reports user errors', async () => {

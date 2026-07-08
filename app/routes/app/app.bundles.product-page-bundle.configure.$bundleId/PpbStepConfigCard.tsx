@@ -79,16 +79,17 @@ export function PpbStepConfigCard({ step }: { step: any }) {
               label=""
             />
           )}
-          <s-button
-            className={productPageBundleStyles.iconUploadButton}
-            onClick={() =>
-              setShowIconPickerForStep((prev) =>
-                prev === step.id ? null : step.id,
-              )
-            }
-          >
-            {(step as any).stepImage ? "Replace" : "Upload file"}
-          </s-button>
+          <div className={productPageBundleStyles.iconUploadButton}>
+            <s-button
+              onClick={() =>
+                setShowIconPickerForStep((prev) =>
+                  prev === step.id ? null : step.id,
+                )
+              }
+            >
+              {(step as any).stepImage ? "Replace" : "Upload file"}
+            </s-button>
+          </div>
         </div>
         <div className={productPageBundleStyles.fieldsColumn}>
           <s-text-field

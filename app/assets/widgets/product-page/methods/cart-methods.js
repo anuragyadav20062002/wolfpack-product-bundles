@@ -33,10 +33,15 @@ export const ProductPageCartMethods = {
       this.elements.addToCartButton.textContent = this._resolveText('addingToCart', 'Adding to Cart...');
       this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
+      const runtimeToken = await this.requestCartTransformRuntimeToken(cartItems, {
+        offerGroupId: `${offerId}_${sessionKey}`,
+        bundleType: 'product_page',
+      });
       const cartContext = this.buildProductPageCartFormData(cartItems, {
         bundleName,
         offerId,
         sessionKey,
+        runtimeToken,
       });
       await this.syncBundleDetailsCartMetafield(cartContext.bundleDetailsKey, cartContext.sourceProperties);
 
@@ -181,12 +186,69 @@ export const ProductPageCartMethods = {
     return cartItems;
   },
 
-  buildProductPageCartFormData(cartItems, { bundleName = '', offerId = '', sessionKey = '' } = {}) {
+  buildProductPageCartFormData(cartItems, {
+    bundleName = '',
+    offerId = '',
+    sessionKey = '',
+    runtimeToken = '',
+  } = {}) {
     return buildProductPageCartFormData(cartItems, {
       bundleName,
       offerId,
       sessionKey,
+      runtimeToken,
     });
+  },
+
+  parseRuntimeAddonDiscount(stepType) {
+    if (typeof stepType !== 'string') return null;
+    const parts = stepType.split(':');
+    if (parts.length !== 3 || parts[0] !== 'addon' || String(parts[1]).toUpperCase() !== 'PERCENTAGE') {
+      return null;
+    }
+    const value = Number(parts[2]);
+    if (!Number.isFinite(value) || value <= 0) return null;
+    return { type: 'PERCENTAGE', value: Math.min(100, value) };
+  },
+
+  async requestCartTransformRuntimeToken(cartItems, { offerGroupId, bundleType }) {
+    const components = [];
+    const addons = [];
+
+    cartItems.forEach((item) => {
+      const stepType = item?.properties?._bundle_step_type;
+      const isAddon = stepType === 'addon' || (typeof stepType === 'string' && stepType.startsWith('addon:'));
+      const line = {
+        variantId: item.id,
+        quantity: item.quantity,
+      };
+      if (isAddon) {
+        addons.push({
+          ...line,
+          discount: this.parseRuntimeAddonDiscount(stepType),
+        });
+      } else {
+        components.push(line);
+      }
+    });
+
+    const response = await fetch('/apps/product-bundles/api/cart-transform-runtime-token', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bundleId: this.selectedBundle?.id,
+        bundleType,
+        offerGroupId,
+        components,
+        addons,
+      }),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.token) {
+      throw new Error(data?.error || 'Unable to validate bundle selection');
+    }
+    return data.token;
   },
 
   async syncBundleDetailsCartMetafield(bundleDetailsKey, sourceProperties) {
@@ -268,7 +330,15 @@ export const ProductPageCartMethods = {
   },
 
   generateBundleSessionKey() {
-    return Math.random().toString(36).slice(2, 5).toUpperCase();
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const keyLength = 12;
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+      const bytes = new Uint8Array(keyLength);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, byte => alphabet[byte % alphabet.length]).join('');
+    }
+
+    return Math.random().toString(36).slice(2, 2 + keyLength).toUpperCase().padEnd(keyLength, '0');
   },
 
   generateBundleInstanceId() {

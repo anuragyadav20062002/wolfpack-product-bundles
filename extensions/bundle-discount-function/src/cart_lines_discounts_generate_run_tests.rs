@@ -1,5 +1,35 @@
 use super::*;
+use crate::runtime_token::sign_runtime_token_for_test;
 use shopify_function::run_function_with_input;
+
+fn test_runtime_secret() -> String {
+    std::env::var("WPB_TEST_RUNTIME_SECRET")
+        .unwrap_or_else(|_| "wpb-runtime-token-test-secret".to_string())
+}
+
+fn addon_runtime_payload() -> String {
+    serde_json::json!({
+        "version": 1,
+        "shop": "test-shop.myshopify.com",
+        "bundleId": "bundle-1",
+        "bundleType": "full_page",
+        "offerGroupId": "FBP-bundle-1_ABC",
+        "parentVariantId": "gid://shopify/ProductVariant/999",
+        "bundleName": "Runtime Bundle",
+        "components": [
+            { "variantId": "gid://shopify/ProductVariant/101", "quantity": 1 }
+        ],
+        "addons": [
+            {
+                "variantId": "gid://shopify/ProductVariant/201",
+                "quantity": 1,
+                "discount": { "type": "PERCENTAGE", "value": 10 }
+            }
+        ],
+        "priceAdjustment": { "method": "percentage_off", "value": 20 }
+    })
+    .to_string()
+}
 
 #[test]
 fn parses_partial_percentage_addon_token() {
@@ -27,7 +57,7 @@ fn ignores_invalid_addon_tokens() {
 }
 
 #[test]
-fn emits_partial_and_full_addon_discount_candidates() {
+fn ignores_partial_and_full_addon_discount_candidates_without_runtime_token() {
     let input = r#"{
         "cart": {
             "lines": [
@@ -93,39 +123,96 @@ fn emits_partial_and_full_addon_discount_candidates() {
     let output: schema::CartLinesDiscountsGenerateRunResult =
         run_function_with_input(cart_lines_discounts_generate_run, input).expect("should run");
 
+    assert!(output.operations.is_empty());
+}
+
+#[test]
+fn emits_addon_discount_only_when_runtime_token_authorizes_line() {
+    let runtime_secret = test_runtime_secret();
+    let runtime_token = sign_runtime_token_for_test(&addon_runtime_payload(), &runtime_secret);
+    let input = format!(
+        r#"{{
+        "cart": {{
+            "lines": [
+                {{
+                    "id": "gid://shopify/CartLine/addon",
+                    "quantity": 1,
+                    "wolfpackProductBundleOfferId": {{ "value": "FBP-bundle-1_ABC_2" }},
+                    "runtimeToken": {{ "value": "{runtime_token}" }},
+                    "stepType": {{ "value": "addon:PERCENTAGE:10" }},
+                    "merchandise": {{
+                        "__typename": "ProductVariant",
+                        "id": "gid://shopify/ProductVariant/201",
+                        "component_parents": null
+                    }},
+                    "cost": {{ "amountPerQuantity": {{ "amount": "10.00" }} }}
+                }}
+            ]
+        }},
+        "discount": {{
+            "discountClasses": ["PRODUCT"],
+            "runtimeTokenSecret": {{ "value": "{runtime_secret}" }},
+            "checkoutIntegrationConfig": null
+        }},
+        "enteredDiscountCodes": [],
+        "triggeringDiscountCode": null,
+        "presentmentCurrencyRate": "1.0"
+    }}"#
+    );
+
+    let output: schema::CartLinesDiscountsGenerateRunResult =
+        run_function_with_input(cart_lines_discounts_generate_run, input.as_str())
+            .expect("should run");
+
     assert_eq!(output.operations.len(), 1);
     let add_operation = match &output.operations[0] {
         schema::CartOperation::ProductDiscountsAdd(operation) => operation,
         unexpected => panic!("expected product discounts add operation, got {unexpected:?}"),
     };
-    assert_eq!(
-        add_operation.selection_strategy,
-        schema::ProductDiscountSelectionStrategy::All
-    );
-    assert_eq!(add_operation.candidates.len(), 2);
+    assert_eq!(add_operation.candidates.len(), 1);
     assert_eq!(
         add_operation.candidates[0].message.as_deref(),
         Some(ADDON_DISCOUNT_MESSAGE)
     );
-    assert_eq!(
-        add_operation.candidates[1].message.as_deref(),
-        Some(ADDON_DISCOUNT_MESSAGE)
-    );
+}
 
-    let first_percentage = match &add_operation.candidates[0].value {
-        schema::ProductDiscountCandidateValue::Percentage(percentage) => {
-            percentage.value.to_string()
-        }
-        unexpected => panic!("expected percentage discount value, got {unexpected:?}"),
-    };
-    let second_percentage = match &add_operation.candidates[1].value {
-        schema::ProductDiscountCandidateValue::Percentage(percentage) => {
-            percentage.value.to_string()
-        }
-        unexpected => panic!("expected percentage discount value, got {unexpected:?}"),
-    };
-    assert_eq!(first_percentage, "10.0");
-    assert_eq!(second_percentage, "100.0");
+#[test]
+fn ignores_unsigned_addon_discount_markers() {
+    let runtime_secret = test_runtime_secret();
+    let input = r#"{
+        "cart": {
+            "lines": [
+                {
+                    "id": "gid://shopify/CartLine/addon",
+                    "quantity": 1,
+                    "wolfpackProductBundleOfferId": { "value": "FBP-bundle-1_ABC_2" },
+                    "runtimeToken": null,
+                    "stepType": { "value": "addon:PERCENTAGE:10" },
+                    "merchandise": {
+                        "__typename": "ProductVariant",
+                        "id": "gid://shopify/ProductVariant/201",
+                        "component_parents": null
+                    },
+                    "cost": { "amountPerQuantity": { "amount": "10.00" } }
+                }
+            ]
+        },
+        "discount": {
+            "discountClasses": ["PRODUCT"],
+            "runtimeTokenSecret": { "value": "__RUNTIME_SECRET__" },
+            "checkoutIntegrationConfig": null
+        },
+        "enteredDiscountCodes": [],
+        "triggeringDiscountCode": null,
+        "presentmentCurrencyRate": "1.0"
+    }"#
+    .replace("__RUNTIME_SECRET__", &runtime_secret);
+
+    let output: schema::CartLinesDiscountsGenerateRunResult =
+        run_function_with_input(cart_lines_discounts_generate_run, input.as_str())
+            .expect("should run");
+
+    assert!(output.operations.is_empty());
 }
 
 #[test]

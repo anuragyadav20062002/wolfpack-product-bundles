@@ -61,7 +61,13 @@ function makeAdmin(collectionResponses: CollectionMap = {}) {
 function getMetafieldSetCalls(admin: any) {
   return admin.graphql.mock.calls
     .filter((c: any[]) => typeof c[0] === "string" && c[0].includes("SetComponentMetafields"))
-    .map((c: any[]) => c[1].variables.metafields[0]);
+    .flatMap((c: any[]) => c[1].variables.metafields);
+}
+
+function getMetafieldSetCallBatches(admin: any) {
+  return admin.graphql.mock.calls
+    .filter((c: any[]) => typeof c[0] === "string" && c[0].includes("SetComponentMetafields"))
+    .map((c: any[]) => c[1].variables.metafields);
 }
 
 function getCollectionQueryCalls(admin: any) {
@@ -159,6 +165,36 @@ describe("updateComponentProductMetafields", () => {
       value: 770,
       conditions: { type: "quantity", operator: "gte", value: 2 },
     });
+  });
+
+  it("batches component variant metafields into groups of at most 25 inputs", async () => {
+    const admin = makeAdmin();
+    const variants = Array.from({ length: 260 }, (_unused, index) => ({
+      id: `gid://shopify/ProductVariant/${index + 1}`,
+    }));
+    const config = {
+      steps: [
+        {
+          minQuantity: 1,
+          StepProduct: [
+            {
+              productId: "gid://shopify/Product/123",
+              variants,
+            },
+          ],
+        },
+      ],
+      pricing: { enabled: false },
+    };
+
+    await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
+
+    const batches = getMetafieldSetCallBatches(admin);
+    expect(batches).toHaveLength(11);
+    expect(batches.every((batch: any[]) => batch.length <= 25)).toBe(true);
+    expect(batches.flat().map((write: any) => write.ownerId)).toHaveLength(260);
+    expect(batches.flat()[0].ownerId).toBe("gid://shopify/ProductVariant/1");
+    expect(batches.flat()[259].ownerId).toBe("gid://shopify/ProductVariant/260");
   });
 
   it("falls back to batchGetProductVariants when StepProduct has no cached variants", async () => {

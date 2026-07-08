@@ -53,6 +53,13 @@ enum BundleType {
   full_page // Dedicated bundle page (future feature)
 }
 
+enum StorefrontSyncStatus {
+  queued
+  syncing
+  synced
+  failed
+}
+
 enum FullPageLayout {
   footer_bottom // Sticky footer at viewport bottom (default)
   footer_side // Sidebar panel to the right of product grid
@@ -147,6 +154,14 @@ model Bundle {
   status                               BundleStatus        @default(draft)
   inventorySyncedAt                    DateTime? // Last successful inventory sync timestamp
   inventoryStaleAt                     DateTime? // Set when webhook indicates component inventory changed
+  storefrontSyncStatus                 StorefrontSyncStatus @default(synced)
+  storefrontSyncQueuedAt               DateTime?
+  storefrontSyncStartedAt              DateTime?
+  storefrontSyncedAt                   DateTime?
+  storefrontSyncFailedAt               DateTime?
+  storefrontSyncLastError              String?
+  storefrontSyncAttemptId              String?
+  storefrontSyncStats                  Json?
   createdAt                            DateTime            @default(now())
   updatedAt                            DateTime            @updatedAt
   steps                                BundleStep[]
@@ -161,6 +176,7 @@ model Bundle {
   @@index([shopifyProductId])
   @@index([shopId, status])
   @@index([shopId, bundleType, status])
+  @@index([shopId, storefrontSyncStatus])
   @@index([shopId, updatedAt])
 }
 

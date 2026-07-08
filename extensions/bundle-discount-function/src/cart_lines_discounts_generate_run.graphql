@@ -7,6 +7,9 @@ query Input {
       wolfpackProductBundleOfferId: attribute(key: "_wolfpackProductBundle:OfferId") {
         value
       }
+      runtimeToken: attribute(key: "_wolfpack_bundle_runtime") {
+        value
+      }
       stepType: attribute(key: "_bundle_step_type") {
         value
       }
@@ -28,6 +31,9 @@ query Input {
   }
   discount {
     discountClasses
+    runtimeTokenSecret: metafield(namespace: "$app", key: "runtime_token_secret") {
+      value
+    }
     checkoutIntegrationConfig: metafield(namespace: "$app", key: "checkout_integration_config") {
       jsonValue
     }

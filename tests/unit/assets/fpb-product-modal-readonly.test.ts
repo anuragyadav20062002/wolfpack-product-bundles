@@ -13,10 +13,10 @@ describe("FPB product modal read-only quick view", () => {
   beforeEach(() => {
     jest.resetModules();
     const bodyClassList = createClassList();
-    (globalThis as typeof globalThis & { window?: unknown }).window = {};
-    (globalThis as typeof globalThis & { document?: unknown }).document = {
+    (globalThis as any).window = {};
+    (globalThis as any).document = {
       body: {
-        classList: bodyClassList,
+        classList: bodyClassList as any,
       },
     };
   });

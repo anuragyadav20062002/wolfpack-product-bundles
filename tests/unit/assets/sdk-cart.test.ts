@@ -44,7 +44,7 @@ describe('buildCartItems', () => {
     expect(itemA.quantity).toBe(2);
     expect(itemA.properties.Box).toBe('1');
     expect(itemA.properties._bundleName).toBe('Test Bundle');
-    expect(itemA.properties['_wolfpackProductBundle:OfferId']).toMatch(/^MIX-894502_[A-Z0-9]{3}_1$/);
+    expect(itemA.properties['_wolfpackProductBundle:OfferId']).toMatch(/^MIX-894502_[A-Z0-9]{12}_1$/);
     expect(itemA.properties['_wolfpackProductBundle:prodQty']).toBe('2');
     expect(itemA.properties).not.toHaveProperty('_bundle_id');
     expect(itemA.properties).not.toHaveProperty('_bundle_name');
@@ -89,7 +89,7 @@ describe('buildCartItems', () => {
   it('prefixes numeric product-page offers with MIX-', () => {
     const state = makeState({ offerId: '894502' });
     const { items } = buildCartItems(state);
-    expect(items[0].properties['_wolfpackProductBundle:OfferId']).toMatch(/^MIX-894502_[A-Z0-9]{3}_1$/);
+    expect(items[0].properties['_wolfpackProductBundle:OfferId']).toMatch(/^MIX-894502_[A-Z0-9]{12}_1$/);
   });
 
   it('adds preformatted private source properties for cart-line messaging', () => {

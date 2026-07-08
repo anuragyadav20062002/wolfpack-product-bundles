@@ -10,7 +10,7 @@ import { PpbSubscriptionsSection } from "./PpbSubscriptionsSection";
 import { PpbFreeGiftAddonsSection } from "./PpbFreeGiftAddonsSection";
 
 export function PpbMainSections() {
-  const { productPageBundleStyles } = usePpbConfigureContext();
+  const { loaderData, productPageBundleStyles } = usePpbConfigureContext();
 
   return (
     <>

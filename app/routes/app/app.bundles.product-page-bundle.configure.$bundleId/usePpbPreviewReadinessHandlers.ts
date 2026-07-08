@@ -5,6 +5,7 @@ import productPageBundleStyles from "../../../styles/routes/product-page-bundle-
 import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness";
 import { verifyAppEmbedEnabledBeforePreview } from "../../../lib/app-embed-status-check.client";
 import { pickPpbPreviewUrl } from "../../../lib/ppb-preview-url";
+import { prepareStorefrontPreviewForOpen } from "../../../lib/storefront-sync-preview.client";
 import type { BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import type { TourStep } from "../../../components/bundle-configure/tourSteps";
 
@@ -57,6 +58,7 @@ export function usePpbPreviewReadinessHandlers({
     }
     setIsPreviewBundleLoading(true);
     try {
+      await prepareStorefrontPreviewForOpen();
       const bundleStatusForPreview = String(
         (base.bundle as any).status ?? "",
       ).toLowerCase();
@@ -90,11 +92,6 @@ export function usePpbPreviewReadinessHandlers({
         return true;
       }
       const isStorefrontUrl = !productUrl.includes("/admin.shopify.com/");
-      const previewWindow = window.open(
-        "about:blank",
-        "_blank",
-        "noopener,noreferrer",
-      );
       if (isStorefrontUrl && base.bundleProduct?.id) {
         try {
           const formData = new FormData();
@@ -113,11 +110,7 @@ export function usePpbPreviewReadinessHandlers({
           );
         }
       }
-      if (previewWindow && !previewWindow.closed) {
-        previewWindow.location.href = productUrl;
-      } else {
-        window.open(productUrl, "_blank", "noopener,noreferrer");
-      }
+      window.open(productUrl, "_blank", "noopener,noreferrer");
       recordBundlePreview(productUrl);
       const isPreviewUrl =
         base.bundleProduct &&
@@ -132,6 +125,14 @@ export function usePpbPreviewReadinessHandlers({
       });
       base.shopify.toast.show(message, { isError: false });
       return true;
+    } catch (error) {
+      base.shopify.toast.show(
+        error instanceof Error
+          ? error.message
+          : "Preview is not ready. Please try preview again.",
+        { isError: true, duration: 5000 },
+      );
+      return false;
     } finally {
       window.setTimeout(() => setIsPreviewBundleLoading(false), 500);
     }
