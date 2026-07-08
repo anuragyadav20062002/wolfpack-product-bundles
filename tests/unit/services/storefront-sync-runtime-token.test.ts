@@ -1,4 +1,4 @@
-import { runBundleStorefrontSync } from "../../../app/services/bundles/storefront-sync.server";
+import { syncBundleStorefrontNow } from "../../../app/services/bundles/storefront-sync.server";
 import db from "../../../app/db.server";
 import { CartTransformService } from "../../../app/services/cart-transform-service.server";
 import {
@@ -105,13 +105,13 @@ describe("storefront sync runtime token contract", () => {
     mockUpdateComponentProductMetafields.mockResolvedValue(undefined);
   });
 
-  it("does not write component_parents from async storefront sync", async () => {
-    await runBundleStorefrontSync({
+  it("does not write component_parents from direct storefront sync", async () => {
+    await syncBundleStorefrontNow({
+      admin: { graphql: jest.fn() } as any,
       shopDomain: "test-shop.myshopify.com",
       bundleId: "bundle-1",
       bundleType: "product_page",
       reason: "save",
-      attemptId: "attempt-1",
     });
 
     expect(mockUpdateBundleProductMetafields).toHaveBeenCalled();

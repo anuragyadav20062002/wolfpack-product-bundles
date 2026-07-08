@@ -14,7 +14,10 @@ import {
   normalizePricingDisplayOptions,
   serializeBoxSelectionFromPricingDisplayOptions,
 } from "../../../../lib/pricing-display-options";
-import { enqueueBundleStorefrontSync } from "../../../../services/bundles/storefront-sync.server";
+import {
+  compactBundleForConfigureResponse,
+  syncBundleStorefrontNow,
+} from "../../../../services/bundles/storefront-sync.server";
 
 export async function handleSaveBundle(
   admin: ShopifyAdmin,
@@ -22,7 +25,6 @@ export async function handleSaveBundle(
   bundleId: string,
   formData: FormData,
 ) {
-  void admin;
   const endTimer = AppLogger.startTimer("Bundle save process", {
     component: "bundle-config",
     operation: "save",
@@ -393,7 +395,8 @@ export async function handleSaveBundle(
       },
     });
 
-    const storefrontSync = await enqueueBundleStorefrontSync({
+    await syncBundleStorefrontNow({
+      admin,
       shopDomain: session.shop,
       bundleId,
       bundleType: "product_page",
@@ -402,9 +405,9 @@ export async function handleSaveBundle(
 
     return json({
       success: true,
-      bundle: updatedBundle,
-      storefrontSync,
-      message: "Bundle configuration saved successfully",
+      statusCode: 200,
+      bundle: compactBundleForConfigureResponse(updatedBundle),
+      message: "Updated Successfully!",
     });
   } catch (error) {
     const message =

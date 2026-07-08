@@ -16,7 +16,10 @@ import { parseConditionValue } from "../../../../lib/parse-condition-value";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
 import { AddOnDiscountFunctionService } from "../../../../services/addon-discount-function-service.server";
 import { parseFpbSaveBundleForm } from "./save-bundle-form.server";
-import { enqueueBundleStorefrontSync } from "../../../../services/bundles/storefront-sync.server";
+import {
+  compactBundleForConfigureResponse,
+  syncBundleStorefrontNow,
+} from "../../../../services/bundles/storefront-sync.server";
 
 function hasEnabledAddonProducts(personalizationData: unknown) {
   if (
@@ -467,7 +470,8 @@ export async function handleSaveBundle(
       },
     });
 
-    const storefrontSync = await enqueueBundleStorefrontSync({
+    await syncBundleStorefrontNow({
+      admin,
       shopDomain: session.shop,
       bundleId,
       bundleType: "full_page",
@@ -508,9 +512,9 @@ export async function handleSaveBundle(
 
     return json({
       success: true,
-      bundle: updatedBundle,
-      storefrontSync,
-      message: "Bundle configuration saved successfully",
+      statusCode: 200,
+      bundle: compactBundleForConfigureResponse(updatedBundle),
+      message: "Updated Successfully!",
     });
   } catch (error) {
     const message =

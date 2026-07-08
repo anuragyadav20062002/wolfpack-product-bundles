@@ -29,10 +29,9 @@ import {
 } from "./handlers";
 import { handleRecordBundlePreview } from "../shared/bundle-preview-action.server";
 import {
-  handleGetStorefrontSyncStatus,
-  handleQueueStorefrontSync,
+  handlePrepareStorefrontPreview,
+  handleSyncStorefrontNow,
 } from "../shared/storefront-sync-action.server";
-import { formatBundleStorefrontSync } from "../../../services/bundles/storefront-sync.server";
 import ConfigureBundleFlow from "./ConfigureBundleFlow";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -98,7 +97,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   return json({
     bundle,
-    storefrontSync: formatBundleStorefrontSync(bundle),
     bundleProduct,
     availableBundles,
     shop: session.shop,
@@ -182,11 +180,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       case "recordBundlePreview":
         return await handleRecordBundlePreview(admin, session, bundleId, formData);
       case "syncBundle":
-        return await handleQueueStorefrontSync(session, bundleId, "full_page", "sync_bundle");
-      case "retryStorefrontSync":
-        return await handleQueueStorefrontSync(session, bundleId, "full_page", "retry");
-      case "getStorefrontSyncStatus":
-        return await handleGetStorefrontSyncStatus(session, bundleId);
+        return await handleSyncStorefrontNow(admin, session, bundleId, "full_page", "sync_bundle");
+      case "preparePreviewBundle":
+        return await handlePrepareStorefrontPreview(admin, session, bundleId, "full_page");
       case "updateBundleDesignTemplate":
         return await handleUpdateBundleDesignTemplate(
           admin,

@@ -11,7 +11,7 @@ import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
 } from "../../../app/services/bundles/metafield-sync.server";
-import { enqueueBundleStorefrontSync } from "../../../app/services/bundles/storefront-sync.server";
+import { syncBundleStorefrontNow } from "../../../app/services/bundles/storefront-sync.server";
 import {
   refreshFullPageBundlePageBody,
   writeBundleConfigPageMetafield,
@@ -40,15 +40,23 @@ jest.mock("../../../app/services/bundles/metafield-sync.server", () => ({
 }));
 
 jest.mock("../../../app/services/bundles/storefront-sync.server", () => ({
-  enqueueBundleStorefrontSync: jest.fn().mockResolvedValue({
-    status: "queued",
-    attemptId: "attempt-1",
-    error: null,
-    queuedAt: new Date("2026-07-08T00:00:00.000Z"),
-    startedAt: null,
-    syncedAt: null,
-    failedAt: null,
-    stats: null,
+  compactBundleForConfigureResponse: jest.fn((bundle: any) => ({
+    id: bundle.id,
+    bundleType: bundle.bundleType,
+    status: bundle.status,
+    name: bundle.name,
+    description: bundle.description ?? null,
+    shopifyProductId: bundle.shopifyProductId ?? null,
+    shopifyProductHandle: bundle.shopifyProductHandle ?? null,
+    shopifyPageId: bundle.shopifyPageId ?? null,
+    shopifyPageHandle: bundle.shopifyPageHandle ?? null,
+    shopifyPreviewPageId: bundle.shopifyPreviewPageId ?? null,
+    shopifyPreviewPageHandle: bundle.shopifyPreviewPageHandle ?? null,
+  })),
+  syncBundleStorefrontNow: jest.fn().mockResolvedValue({
+    skipped: false,
+    synced: true,
+    stats: {},
   }),
 }));
 
@@ -287,7 +295,7 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
     const body = await res.json() as any;
     expect(body.success).toBe(true);
-    expect(body.message).toMatch(/saved successfully/i);
+    expect(body.message).toBe("Updated Successfully!");
   });
 
   it("calls db.bundle.update with the correct name and description", async () => {
@@ -374,7 +382,8 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", makeFormData());
     expect(updateBundleProductMetafields).not.toHaveBeenCalled();
     expect(updateComponentProductMetafields).not.toHaveBeenCalled();
-    expect(enqueueBundleStorefrontSync).toHaveBeenCalledWith({
+    expect(syncBundleStorefrontNow).toHaveBeenCalledWith({
+      admin: MOCK_ADMIN,
       shopDomain: MOCK_SESSION.shop,
       bundleId: "bundle-1",
       bundleType: "full_page",
@@ -382,7 +391,7 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     });
   });
 
-  it("enqueues storefront sync instead of refreshing the full-page marker body inline", async () => {
+  it("syncs storefront data directly through the shared sync service", async () => {
     const updatedBundle = makeUpdatedBundle({
       shopifyPageId: "gid://shopify/Page/123",
       shopifyPageHandle: "test-bundle",
@@ -394,7 +403,8 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
 
     expect(refreshFullPageBundlePageBody).not.toHaveBeenCalled();
     expect(writeBundleConfigPageMetafield).not.toHaveBeenCalled();
-    expect(enqueueBundleStorefrontSync).toHaveBeenCalledWith({
+    expect(syncBundleStorefrontNow).toHaveBeenCalledWith({
+      admin: MOCK_ADMIN,
       shopDomain: MOCK_SESSION.shop,
       bundleId: "bundle-1",
       bundleType: "full_page",
@@ -980,7 +990,7 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
   });
 });
 
-describe("FPB handleSaveBundle — with shopifyProductId (enqueues storefront sync)", () => {
+describe("FPB handleSaveBundle — with shopifyProductId (direct storefront sync)", () => {
   const PRODUCT_ID = "gid://shopify/Product/123";
 
   function makeStepWithProduct() {
@@ -1014,7 +1024,7 @@ describe("FPB handleSaveBundle — with shopifyProductId (enqueues storefront sy
     );
   });
 
-  it("saves the bundle and enqueues storefront sync instead of writing Shopify metafields inline", async () => {
+  it("saves the bundle and syncs storefront data through the shared service", async () => {
     const fd = makeFormData({
       stepsData: JSON.stringify(makeStepWithProduct()),
       bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
@@ -1024,12 +1034,9 @@ describe("FPB handleSaveBundle — with shopifyProductId (enqueues storefront sy
     const body = await res.json() as any;
 
     expect(body.success).toBe(true);
-    expect(body.storefrontSync).toEqual(expect.objectContaining({
-      status: "queued",
-      attemptId: "attempt-1",
-      error: null,
-    }));
-    expect(enqueueBundleStorefrontSync).toHaveBeenCalledWith({
+    expect(body).not.toHaveProperty("storefrontSync");
+    expect(syncBundleStorefrontNow).toHaveBeenCalledWith({
+      admin: MOCK_ADMIN,
       shopDomain: MOCK_SESSION.shop,
       bundleId: "bundle-1",
       bundleType: "full_page",
@@ -1042,17 +1049,10 @@ describe("FPB handleSaveBundle — with shopifyProductId (enqueues storefront sy
     expect(MOCK_ADMIN.graphql).not.toHaveBeenCalled();
   });
 
-  it("keeps the save successful and surfaces failed sync status when enqueue fails", async () => {
-    (enqueueBundleStorefrontSync as jest.Mock).mockResolvedValueOnce({
-      status: "failed",
-      attemptId: "attempt-failed",
-      error: "fetch failed",
-      queuedAt: new Date("2026-07-08T00:00:00.000Z"),
-      startedAt: null,
-      syncedAt: null,
-      failedAt: new Date("2026-07-08T00:00:01.000Z"),
-      stats: null,
-    });
+  it("returns an error when direct storefront sync fails", async () => {
+    (syncBundleStorefrontNow as jest.Mock).mockRejectedValueOnce(
+      new Error("fetch failed"),
+    );
 
     const res = await handleSaveBundle(
       MOCK_ADMIN,
@@ -1065,13 +1065,9 @@ describe("FPB handleSaveBundle — with shopifyProductId (enqueues storefront sy
     );
     const body = await res.json() as any;
 
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.storefrontSync).toEqual(expect.objectContaining({
-      status: "failed",
-      attemptId: "attempt-failed",
-      error: "fetch failed",
-    }));
+    expect(res.status).toBe(500);
+    expect(body.success).toBe(false);
+    expect(body.error).toBe("fetch failed");
   });
 
   it("does not reject save inline when component products are missing from the saved bundle", async () => {
@@ -1092,7 +1088,8 @@ describe("FPB handleSaveBundle — with shopifyProductId (enqueues storefront sy
 
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(enqueueBundleStorefrontSync).toHaveBeenCalledWith(expect.objectContaining({
+    expect(syncBundleStorefrontNow).toHaveBeenCalledWith(expect.objectContaining({
+      admin: MOCK_ADMIN,
       bundleType: "full_page",
       reason: "save",
     }));

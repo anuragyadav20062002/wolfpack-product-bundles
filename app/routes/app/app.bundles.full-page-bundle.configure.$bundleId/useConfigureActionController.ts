@@ -4,6 +4,7 @@ import { navigateBackOrFallback } from "../../../lib/navigation";
 import { validateSlug } from "../../../lib/slug-utils";
 import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness";
 import { verifyAppEmbedEnabledBeforePreview } from "../../../lib/app-embed-status-check.client";
+import { prepareStorefrontPreviewForOpen } from "../../../lib/storefront-sync-preview.client";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
 import { type TourStep } from "../../../components/bundle-configure/tourSteps";
 import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
@@ -88,6 +89,18 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
     if (!appEmbedEnabled) {
       finishPreviewBundleLoading();
       flow.triggerAppEmbedBannerFeedback();
+      return false;
+    }
+    try {
+      await prepareStorefrontPreviewForOpen();
+    } catch (error) {
+      finishPreviewBundleLoading();
+      flow.shopify.toast.show(
+        error instanceof Error
+          ? error.message
+          : "Preview is not ready. Please try preview again.",
+        { isError: true, duration: 5000 },
+      );
       return false;
     }
     const executePreviewBundle = (): "opened" | "pending_fetcher" => {

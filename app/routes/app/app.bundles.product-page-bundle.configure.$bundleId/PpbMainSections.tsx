@@ -8,7 +8,6 @@ import { PpbImagesGifsSection } from "./PpbImagesGifsSection";
 import { PpbBundleSettingsSection } from "./PpbBundleSettingsSection";
 import { PpbSubscriptionsSection } from "./PpbSubscriptionsSection";
 import { PpbFreeGiftAddonsSection } from "./PpbFreeGiftAddonsSection";
-import { StorefrontSyncStatusBanner } from "../../../components/bundle-configure/StorefrontSyncStatusBanner";
 
 export function PpbMainSections() {
   const { loaderData, productPageBundleStyles } = usePpbConfigureContext();
@@ -16,9 +15,6 @@ export function PpbMainSections() {
   return (
     <>
       <div className={productPageBundleStyles.mainColumn}>
-        <StorefrontSyncStatusBanner
-          initialState={(loaderData as any).storefrontSync}
-        />
         <PpbStepSetupSection /> <PpbDiscountPricingSection />
         <PpbBundleVisibilitySection /> <PpbBundleWidgetSection />
         <PpbBundleEmbedSection /> <PpbImagesGifsSection />

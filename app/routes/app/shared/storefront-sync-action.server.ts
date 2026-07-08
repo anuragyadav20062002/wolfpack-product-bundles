@@ -1,41 +1,78 @@
 import { json } from "@remix-run/node";
 import type { Session } from "@shopify/shopify-api";
+import type { ShopifyAdmin } from "../../../lib/auth-guards.server";
 import {
-  enqueueBundleStorefrontSync,
-  getBundleStorefrontSyncState,
+  syncBundleStorefrontNow,
   type StorefrontSyncReason,
 } from "../../../services/bundles/storefront-sync.server";
 
-export async function handleQueueStorefrontSync(
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Storefront sync failed";
+}
+
+export async function handleSyncStorefrontNow(
+  admin: ShopifyAdmin,
   session: Session,
   bundleId: string,
   bundleType: "full_page" | "product_page",
   reason: StorefrontSyncReason,
 ) {
-  const storefrontSync = await enqueueBundleStorefrontSync({
-    shopDomain: session.shop,
-    bundleId,
-    bundleType,
-    reason,
-  });
+  try {
+    await syncBundleStorefrontNow({
+      admin,
+      shopDomain: session.shop,
+      bundleId,
+      bundleType,
+      reason,
+    });
 
-  return json({
-    success: true,
-    queued: storefrontSync.status === "queued",
-    storefrontSync,
-    message:
-      storefrontSync.status === "failed"
-        ? "Bundle saved, but storefront sync could not be queued"
-        : "Storefront sync queued",
-  });
+    return json({
+      success: true,
+      statusCode: 200,
+      synced: true,
+      message: "Updated Successfully!",
+    });
+  } catch (error) {
+    return json(
+      {
+        success: false,
+        statusCode: 500,
+        error: getErrorMessage(error),
+      },
+      { status: 500 },
+    );
+  }
 }
 
-export async function handleGetStorefrontSyncStatus(
+export async function handlePrepareStorefrontPreview(
+  admin: ShopifyAdmin,
   session: Session,
   bundleId: string,
+  bundleType: "full_page" | "product_page",
 ) {
-  return json({
-    success: true,
-    storefrontSync: await getBundleStorefrontSyncState(session.shop, bundleId),
-  });
+  try {
+    await syncBundleStorefrontNow({
+      admin,
+      shopDomain: session.shop,
+      bundleId,
+      bundleType,
+      reason: "preview",
+    });
+
+    return json({
+      success: true,
+      statusCode: 200,
+      ready: true,
+      message: "success",
+    });
+  } catch (error) {
+    return json(
+      {
+        success: false,
+        statusCode: 500,
+        error: getErrorMessage(error),
+      },
+      { status: 500 },
+    );
+  }
 }

@@ -10,7 +10,6 @@ import { ImagesVisibilitySection } from "./sections/ImagesVisibilitySection";
 import { BundleSettingsSection } from "./sections/BundleSettingsSection";
 import { BundleWidgetSection } from "./sections/BundleWidgetSection";
 import { ConfigureRouteModals } from "./sections/ConfigureRouteModals";
-import { StorefrontSyncStatusBanner } from "../../../components/bundle-configure/StorefrontSyncStatusBanner";
 
 function ConfigureBundleFlow() {
   const flow = useConfigureBundleFlow();
@@ -72,9 +71,6 @@ function ConfigureBundleFlow() {
       <div className={fullPageBundleStyles.editGrid}>
         <ConfigureSidebar flow={flow} />
         <div className={fullPageBundleStyles.mainColumn}>
-          <StorefrontSyncStatusBanner
-            initialState={(flow.loaderData as any).storefrontSync}
-          />
           <StepSetupSection flow={flow} />
           <FreeGiftAddonsSection flow={flow} />
           <DiscountPricingSection flow={flow} />
