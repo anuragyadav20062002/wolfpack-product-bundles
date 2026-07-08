@@ -7,8 +7,29 @@ mod tests {
     use shopify_function::run_function_with_input;
     use std::collections::{BTreeMap, HashMap};
 
-    const TEST_RUNTIME_SECRET: &str =
-        "26338c77e8f7a7762a2c91a18de15691f0722578ea7e5f067af01a623f403f6c";
+    fn test_runtime_secret() -> String {
+        std::env::var("WPB_TEST_RUNTIME_SECRET")
+            .unwrap_or_else(|_| "wpb-runtime-token-test-secret".to_string())
+    }
+
+    fn runtime_merge_payload() -> String {
+        serde_json::json!({
+            "version": 1,
+            "shop": "test-shop.myshopify.com",
+            "bundleId": "bundle-1",
+            "bundleType": "full_page",
+            "offerGroupId": "FBP-bundle-1_ABC",
+            "parentVariantId": "gid://shopify/ProductVariant/999",
+            "bundleName": "Runtime Bundle",
+            "components": [
+                { "variantId": "gid://shopify/ProductVariant/101", "quantity": 1 },
+                { "variantId": "gid://shopify/ProductVariant/102", "quantity": 1 }
+            ],
+            "addons": [],
+            "priceAdjustment": { "method": "percentage_off", "value": 20 }
+        })
+        .to_string()
+    }
 
     // =========================================================================
     // MERGE OPERATION TESTS
@@ -191,14 +212,16 @@ mod tests {
                 "addons": [],
                 "priceAdjustment": price_adjustment,
             });
-            let token = sign_runtime_token_for_test(&payload.to_string(), TEST_RUNTIME_SECRET);
+            let runtime_secret = test_runtime_secret();
+            let token = sign_runtime_token_for_test(&payload.to_string(), &runtime_secret);
             for idx in indices {
                 lines[idx]["runtimeToken"] = serde_json::json!({ "value": token });
             }
         }
 
+        let runtime_secret = test_runtime_secret();
         root["cartTransform"]["runtimeTokenSecret"] =
-            serde_json::json!({ "value": TEST_RUNTIME_SECRET });
+            serde_json::json!({ "value": runtime_secret });
         root.to_string()
     }
 
@@ -337,8 +360,8 @@ mod tests {
 
     #[test]
     fn test_runtime_token_merge_without_component_parents() {
-        let runtime_secret = "26338c77e8f7a7762a2c91a18de15691f0722578ea7e5f067af01a623f403f6c";
-        let runtime_token = "eyJ2ZXJzaW9uIjoxLCJzaG9wIjoidGVzdC1zaG9wLm15c2hvcGlmeS5jb20iLCJidW5kbGVJZCI6ImJ1bmRsZS0xIiwiYnVuZGxlVHlwZSI6ImZ1bGxfcGFnZSIsIm9mZmVyR3JvdXBJZCI6IkZCUC1idW5kbGUtMV9BQkMiLCJwYXJlbnRWYXJpYW50SWQiOiJnaWQ6Ly9zaG9waWZ5L1Byb2R1Y3RWYXJpYW50Lzk5OSIsImJ1bmRsZU5hbWUiOiJSdW50aW1lIEJ1bmRsZSIsImNvbXBvbmVudHMiOlt7InZhcmlhbnRJZCI6ImdpZDovL3Nob3BpZnkvUHJvZHVjdFZhcmlhbnQvMTAxIiwicXVhbnRpdHkiOjF9LHsidmFyaWFudElkIjoiZ2lkOi8vc2hvcGlmeS9Qcm9kdWN0VmFyaWFudC8xMDIiLCJxdWFudGl0eSI6MX1dLCJhZGRvbnMiOltdLCJwcmljZUFkanVzdG1lbnQiOnsibWV0aG9kIjoicGVyY2VudGFnZV9vZmYiLCJ2YWx1ZSI6MjB9fQ.TJSuU_AK3bX8xfUKP-oqONBZSB8LXuNJ6j4uqIgjOsA";
+        let runtime_secret = test_runtime_secret();
+        let runtime_token = sign_runtime_token_for_test(&runtime_merge_payload(), &runtime_secret);
         let input = format!(
             r#"{{
             "presentmentCurrencyRate": "1.0",
@@ -395,8 +418,14 @@ mod tests {
 
     #[test]
     fn test_runtime_token_tamper_prevents_merge() {
-        let runtime_secret = "26338c77e8f7a7762a2c91a18de15691f0722578ea7e5f067af01a623f403f6c";
-        let runtime_token = "eyJ2ZXJzaW9uIjoxLCJzaG9wIjoidGVzdC1zaG9wLm15c2hvcGlmeS5jb20iLCJidW5kbGVJZCI6ImJ1bmRsZS0xIiwiYnVuZGxlVHlwZSI6ImZ1bGxfcGFnZSIsIm9mZmVyR3JvdXBJZCI6IkZCUC1idW5kbGUtMV9BQkMiLCJwYXJlbnRWYXJpYW50SWQiOiJnaWQ6Ly9zaG9waWZ5L1Byb2R1Y3RWYXJpYW50Lzk5OSIsImJ1bmRsZU5hbWUiOiJSdW50aW1lIEJ1bmRsZSIsImNvbXBvbmVudHMiOlt7InZhcmlhbnRJZCI6ImdpZDovL3Nob3BpZnkvUHJvZHVjdFZhcmlhbnQvMTAxIiwicXVhbnRpdHkiOjF9LHsidmFyaWFudElkIjoiZ2lkOi8vc2hvcGlmeS9Qcm9kdWN0VmFyaWFudC8xMDIiLCJxdWFudGl0eSI6MX1dLCJhZGRvbnMiOltdLCJwcmljZUFkanVzdG1lbnQiOnsibWV0aG9kIjoicGVyY2VudGFnZV9vZmYiLCJ2YWx1ZSI6MjB9fQ.bad_signature";
+        let runtime_secret = test_runtime_secret();
+        let runtime_token = format!(
+            "{}.bad_signature",
+            sign_runtime_token_for_test(&runtime_merge_payload(), &runtime_secret)
+                .split('.')
+                .next()
+                .expect("signed token should include a payload")
+        );
         let input = format!(
             r#"{{
             "presentmentCurrencyRate": "1.0",
