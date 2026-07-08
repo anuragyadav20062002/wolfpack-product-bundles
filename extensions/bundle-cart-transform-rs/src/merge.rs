@@ -5,8 +5,9 @@ use crate::helpers::{decimal_to_f64, is_addon_line, is_free_gift_line, parse_jso
 use crate::pricing::{
     calculate_buy_x_get_y_discount_percentage, calculate_discount_percentage, rounded_percentage,
 };
+use crate::runtime_token::{token_components_match, verify_runtime_token};
 use crate::schema;
-use crate::types::{CartLineMessagingSettings, ComponentParent, PricingMethod};
+use crate::types::{CartLineMessagingSettings, ComponentParent, MetafieldValue, PricingMethod};
 
 fn parent_match_count(parent: &ComponentParent, group_variant_ids: &[String]) -> usize {
     let Some(component_reference) = &parent.component_reference else {
@@ -125,7 +126,13 @@ pub fn process_merge_operations(
     // -------------------------------------------------------------------------
     // Step 2: Build one MERGE operation per bundle group.
     // -------------------------------------------------------------------------
-    for (_, line_indices) in &bundle_groups {
+    let runtime_token_secret = input
+        .cart_transform()
+        .runtime_token_secret()
+        .map(|metafield| metafield.value().as_str())
+        .filter(|value| !value.trim().is_empty());
+
+    for (offer_group_id, line_indices) in &bundle_groups {
         let mut bundle_addon_offer_id: Option<String> = None;
         let merge_line_indices: Vec<usize> = line_indices
             .iter()
@@ -154,26 +161,6 @@ pub fn process_merge_operations(
             continue;
         }
 
-        // Find first line with component_parents metafield value.
-        let component_parents_json: Option<String> =
-            merge_line_indices
-                .iter()
-                .find_map(|&idx| match lines[idx].merchandise() {
-                    schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
-                        v.component_parents().map(|m| m.value().clone())
-                    }
-                    _ => None,
-                });
-
-        let Some(cp_json) = component_parents_json else {
-            continue;
-        };
-
-        let component_parents: Vec<ComponentParent> = parse_json_or_default(Some(&cp_json));
-        if component_parents.is_empty() {
-            continue;
-        }
-
         let group_variant_ids: Vec<String> = merge_line_indices
             .iter()
             .filter_map(|&idx| match lines[idx].merchandise() {
@@ -184,8 +171,76 @@ pub fn process_merge_operations(
             })
             .collect();
 
-        let Some(parent) = select_component_parent(&component_parents, &group_variant_ids) else {
+        let runtime_parent = runtime_token_secret.and_then(|secret| {
+            let token = merge_line_indices.iter().find_map(|&idx| {
+                lines[idx]
+                    .runtime_token()
+                    .and_then(|attribute| attribute.value())
+                    .map(|value| value.as_str())
+                    .filter(|value| !value.trim().is_empty())
+            })?;
+            let payload = verify_runtime_token(token, secret)?;
+            let actual_components: Vec<(String, i64)> = merge_line_indices
+                .iter()
+                .filter_map(|&idx| match lines[idx].merchandise() {
+                    schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
+                        Some((v.id().to_string(), *lines[idx].quantity() as i64))
+                    }
+                    _ => None,
+                })
+                .collect();
+            if !token_components_match(&payload, offer_group_id, &actual_components) {
+                return None;
+            }
+            Some(ComponentParent {
+                id: payload.parent_variant_id,
+                component_reference: Some(MetafieldValue {
+                    value: payload
+                        .components
+                        .iter()
+                        .map(|line| line.variant_id.clone())
+                        .collect(),
+                }),
+                price_adjustment: Some(payload.price_adjustment),
+            })
+        });
+
+        let fallback_parent;
+        let parent = if let Some(parent) = runtime_parent.as_ref() {
+            parent
+        } else if runtime_token_secret.is_some() {
             continue;
+        } else {
+            // Existing no-secret fixtures still exercise the legacy metadata parser.
+            let component_parents_json: Option<String> =
+                merge_line_indices
+                    .iter()
+                    .find_map(|&idx| match lines[idx].merchandise() {
+                        schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
+                            v.component_parents().map(|m| m.value().clone())
+                        }
+                        _ => None,
+                    });
+
+            let Some(cp_json) = component_parents_json else {
+                continue;
+            };
+
+            let component_parents: Vec<ComponentParent> = parse_json_or_default(Some(&cp_json));
+            if component_parents.is_empty() {
+                continue;
+            }
+            let Some(selected_parent) =
+                select_component_parent(&component_parents, &group_variant_ids)
+            else {
+                continue;
+            };
+            fallback_parent = ComponentParent {
+                id: selected_parent.id.clone(),
+                component_reference: selected_parent.component_reference.clone(),
+                price_adjustment: selected_parent.price_adjustment.clone(),
+            };
+            &fallback_parent
         };
         let parent_variant_id = parent.id.clone();
 

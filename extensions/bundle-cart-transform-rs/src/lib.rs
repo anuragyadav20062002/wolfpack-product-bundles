@@ -5,6 +5,7 @@ mod helpers;
 mod merge;
 mod pricing;
 mod run;
+mod runtime_token;
 mod types;
 
 #[typegen("schema.graphql")]

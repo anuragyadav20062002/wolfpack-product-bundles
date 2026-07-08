@@ -180,3 +180,53 @@ pub struct CartLineDisplaySavings {
     #[serde(default)]
     pub amount_percentage: Option<String>,
 }
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
+pub struct RuntimeTokenPayload {
+    pub version: i64,
+    pub shop: String,
+    pub bundle_id: String,
+    pub bundle_type: String,
+    pub offer_group_id: String,
+    pub parent_variant_id: String,
+    pub bundle_name: String,
+    #[serde(default)]
+    pub components: Vec<RuntimeTokenLine>,
+    #[serde(default)]
+    pub addons: Vec<RuntimeTokenAddonLine>,
+    #[serde(default)]
+    pub price_adjustment: PriceAdjustmentConfig,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeTokenLine {
+    pub variant_id: String,
+    pub quantity: i64,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
+pub struct RuntimeTokenAddonLine {
+    pub variant_id: String,
+    pub quantity: i64,
+    #[serde(default)]
+    pub discount: Option<RuntimeTokenDiscount>,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RuntimeTokenDiscountType {
+    Percentage,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[allow(dead_code)]
+pub struct RuntimeTokenDiscount {
+    #[serde(rename = "type")]
+    pub discount_type: RuntimeTokenDiscountType,
+    pub value: f64,
+}

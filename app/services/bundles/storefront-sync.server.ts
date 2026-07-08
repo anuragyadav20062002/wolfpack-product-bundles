@@ -6,7 +6,6 @@ import type { ShopifyAdmin } from "../../lib/auth-guards.server";
 import { CartTransformService } from "../cart-transform-service.server";
 import {
   updateBundleProductMetafields,
-  updateComponentProductMetafields,
 } from "./metafield-sync.server";
 import {
   convertBundleToStandardMetafields,
@@ -310,7 +309,6 @@ async function syncFullPageBundleFromDb(
   );
   const bundleConfig = buildFullPageBundleMetafieldConfig(bundle);
   await updateStandardMetafields(admin, bundle.shopifyProductId, bundleConfig);
-  await updateComponentProductMetafields(admin, bundle.shopifyProductId, bundleConfig);
   await updateBundleProductMetafields(admin, bundle.shopifyProductId, bundleConfig);
   stats.productMetafields = true;
   syncThemeColors(admin, shopDomain).catch(() => {});
@@ -355,7 +353,6 @@ async function syncProductPageBundleFromDb(
 
   const bundleConfig = buildSyncBundleConfiguration(bundle, bundle.shopifyProductId);
   await updateStandardMetafields(admin, bundle.shopifyProductId, bundleConfig);
-  await updateComponentProductMetafields(admin, bundle.shopifyProductId, bundleConfig);
   await updateBundleProductMetafields(admin, bundle.shopifyProductId, bundleConfig);
   stats.productMetafields = true;
   syncThemeColors(admin, shopDomain).catch(() => {});

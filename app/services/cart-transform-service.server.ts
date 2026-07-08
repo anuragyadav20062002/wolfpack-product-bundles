@@ -1,6 +1,7 @@
 // Cart Transform Automatic Activation Service
 import type { authenticate } from "~/shopify.server";
 import { AppLogger } from "../lib/logger";
+import { generateCartTransformRuntimeTokenSecret } from "./cart-transform-runtime-token.server";
 
 type AdminApiContext = Awaited<ReturnType<typeof authenticate.admin>>['admin'];
 
@@ -323,6 +324,17 @@ export class CartTransformService {
 
     const result = await this.activateForNewInstallation(admin, shopDomain);
 
+    if (result.success && result.cartTransformId) {
+      const secretSync = await this.syncRuntimeTokenSecret(admin, shopDomain, result.cartTransformId);
+      if (!secretSync.success) {
+        return {
+          success: false,
+          cartTransformId: result.cartTransformId,
+          error: secretSync.error ?? 'Runtime token secret sync failed',
+        };
+      }
+    }
+
     if (result.success) {
       AppLogger.info('Complete setup finished', {
         component: 'cart-transform',
@@ -336,6 +348,63 @@ export class CartTransformService {
     }
 
     return result;
+  }
+
+  private static async syncRuntimeTokenSecret(
+    admin: AdminApiContext,
+    shopDomain: string,
+    cartTransformId: string,
+  ): Promise<CartTransformMetafieldSyncResult> {
+    try {
+      const secret = generateCartTransformRuntimeTokenSecret(shopDomain);
+      const MUTATION = `
+        mutation SyncRuntimeTokenSecret($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              key
+              namespace
+              value
+            }
+            userErrors {
+              field
+              message
+              code
+            }
+          }
+        }
+      `;
+      const response = await admin.graphql(MUTATION, {
+        variables: {
+          metafields: [{
+            ownerId: cartTransformId,
+            namespace: '$app',
+            key: 'runtime_token_secret',
+            type: 'single_line_text_field',
+            value: secret,
+          }],
+        },
+      });
+      const data = await response.json() as any;
+      const errors = data.data?.metafieldsSet?.userErrors ?? [];
+      if (data.errors || errors.length > 0) {
+        const message = data.errors
+          ? data.errors.map((error: any) => error.message).join(', ')
+          : errors.map((error: any) => error.message).join(', ');
+        AppLogger.error('Failed to sync runtime token secret metafield', {
+          component: 'cart-transform',
+          operation: 'sync-runtime-token-secret'
+        }, { shopDomain, errors: data.errors ?? errors });
+        return { success: false, cartTransformId, error: message };
+      }
+      return { success: true, cartTransformId };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown runtime token secret sync error';
+      AppLogger.error('Error syncing runtime token secret metafield', {
+        component: 'cart-transform',
+        operation: 'sync-runtime-token-secret'
+      }, { shopDomain, error: message });
+      return { success: false, cartTransformId, error: message };
+    }
   }
 
   static async syncCartLineMessagingSettings(
@@ -380,15 +449,25 @@ export class CartTransformService {
         }
       `;
 
+      const runtimeTokenSecret = generateCartTransformRuntimeTokenSecret(shopDomain);
       const response = await admin.graphql(MUTATION, {
         variables: {
-          metafields: [{
-            ownerId: cartTransformId,
-            namespace: '$app',
-            key: 'bundle_cart_line_messaging',
-            type: 'json',
-            value: JSON.stringify(settings ?? null),
-          }],
+          metafields: [
+            {
+              ownerId: cartTransformId,
+              namespace: '$app',
+              key: 'bundle_cart_line_messaging',
+              type: 'json',
+              value: JSON.stringify(settings ?? null),
+            },
+            {
+              ownerId: cartTransformId,
+              namespace: '$app',
+              key: 'runtime_token_secret',
+              type: 'single_line_text_field',
+              value: runtimeTokenSecret,
+            },
+          ],
         },
       });
       const data = await response.json() as any;

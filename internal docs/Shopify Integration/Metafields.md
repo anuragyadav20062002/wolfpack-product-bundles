@@ -42,9 +42,9 @@ If the bundle config structure changes:
 
 As of 2026-07-08, Admin save requests persist bundle data to Postgres and enqueue `bundle/storefront-sync.requested` instead of waiting for Shopify storefront publication. The event payload is intentionally small: `shopDomain`, `bundleId`, `bundleType`, `reason`, and `attemptId`.
 
-The Inngest worker reloads the bundle from DB, opens an unauthenticated Admin client for the shop, activates the Cart Transform, then writes page/product/component metafields. `Bundle.storefrontSyncStatus` tracks `queued`, `syncing`, `synced`, or `failed`; the configure pages show that state and expose retry. This keeps large component sets from turning Admin save into a long-running Shopify API request.
+The Inngest worker reloads the bundle from DB, opens an unauthenticated Admin client for the shop, activates the Cart Transform, then writes page/product metafields. `Bundle.storefrontSyncStatus` tracks `queued`, `syncing`, `synced`, or `failed`; the configure pages show that state and expose retry. This keeps large component sets from turning Admin save into a long-running Shopify API request.
 
-Component variant `$app:component_parents` writes must use `metafieldsSet` batches of at most 25 inputs. A 260-variant bundle should produce 11 mutations, not 260 one-variant mutations.
+As of 2026-07-08, async storefront sync no longer fans out component-variant `$app:component_parents`. MERGE and add-on discount validation use the signed runtime token route plus the CartTransform owner `$app.runtime_token_secret` metafield. Parent product metafields remain the source for EXPAND and display metadata.
 
 ## Why Bootstrap Hydration
 
@@ -67,6 +67,8 @@ Pending Bundle Visibility preview pages render from a generated Shopify page bod
 ## Bundle Details Order Attribution
 
 The storefront widgets write app-owned cart metafield `bundle_details` through the signed app-proxy route `/apps/product-bundles/api/cart-bundle-details`. The route uses Storefront API `cartMetafieldsSet` without a namespace, so Shopify stores the key in the app-owned namespace (`$app`).
+
+The same storefront add flow first requests `/apps/product-bundles/api/cart-transform-runtime-token`; that route returns `_wolfpack_bundle_runtime` for cart line properties after server-side DB validation.
 
 `shopify.app.toml` and `shopify.app.wolfpack-product-bundles-sit.toml` define `[order.metafields.app.bundle_details]` with `capabilities.cart_to_order_copyable = true`. Shopify requires the cart and order metafields to have matching namespace and key before checkout completion can copy the cart value to the order.
 
