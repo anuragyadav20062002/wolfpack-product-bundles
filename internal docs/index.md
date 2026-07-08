@@ -40,6 +40,7 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Shopify Integration/Cart Transform API]] — Operations, targets, API versions (2025-10)
 - [[Shopify Integration/Checkout UI Extension]] — Preact targets, build rules
 - [[Shopify Integration/Metafields]] — Bundle config metafield sync strategy
+- [[Shopify Integration/Webhooks]] — Subscribed webhook topics, removed broad topics, and delivery-volume rationale
 - [[Features/Bundle Types]] — FPB vs PDP, layout modes, step config
 - [[Features/Pricing Pipeline]] — UI → DB → Metafield → Cart Transform units
 - [[Features/Bundle Instance Tracking]] — EB `_wolfpackProductBundle:OfferId`, MERGE dedup, unique titles
