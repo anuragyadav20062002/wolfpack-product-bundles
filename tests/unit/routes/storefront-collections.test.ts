@@ -57,6 +57,7 @@ describe("api.storefront-collections loader", () => {
                           title: "Ring",
                           handle: "ring",
                           description: "Ring product description",
+                          descriptionHtml: "<p>Ring <strong>product</strong> description</p>",
                           featuredImage: { url: "https://cdn.example/ring.jpg" },
                           variants: {
                             edges: [
@@ -99,6 +100,7 @@ describe("api.storefront-collections loader", () => {
       weightUnit: "OUNCES",
     });
     expect(body.products[0].description).toBe("Ring product description");
+    expect(body.products[0].descriptionHtml).toBe("<p>Ring <strong>product</strong> description</p>");
   });
 
   it("preserves variant option fields for grouped product variant selectors", async () => {

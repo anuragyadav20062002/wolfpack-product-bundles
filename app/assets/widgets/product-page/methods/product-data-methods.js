@@ -207,7 +207,8 @@ processProductsForStep(products, step) {
             variants: processedVariants,
             options: processedOptions,
             images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-            description: product.description || ''
+            description: product.description || '',
+            descriptionHtml: product.descriptionHtml || ''
           };
         });
     } else {
@@ -248,7 +249,8 @@ processProductsForStep(products, step) {
         options: processedOptions,
         // Preserve the first image candidates for the product details modal.
         images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-        description: product.description || ''
+        description: product.description || '',
+        descriptionHtml: product.descriptionHtml || ''
       }];
     }
   });

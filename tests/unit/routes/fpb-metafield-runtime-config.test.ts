@@ -121,5 +121,6 @@ describe("FPB runtime metafield config", () => {
       discountValue: 770,
       fixedBundlePrice: 4999,
     });
+    expect(config).not.toHaveProperty("fullPageLayout");
   });
 });

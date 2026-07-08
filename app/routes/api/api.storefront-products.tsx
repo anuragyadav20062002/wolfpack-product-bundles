@@ -170,7 +170,7 @@ function buildProductsQuery(country: string | null, hasInventoryScope: boolean) 
     ? `query getProducts($ids: [ID!]!, $country: CountryCode!) @inContext(country: $country) {
         nodes(ids: $ids) {
           ... on Product {
-            id title handle description featuredImage { url }
+            id title handle description descriptionHtml featuredImage { url }
             variants(first: 1) {
               edges {
                 node {
@@ -187,7 +187,7 @@ function buildProductsQuery(country: string | null, hasInventoryScope: boolean) 
     : `query getProducts($ids: [ID!]!) {
         nodes(ids: $ids) {
           ... on Product {
-            id title handle description featuredImage { url }
+            id title handle description descriptionHtml featuredImage { url }
             variants(first: 1) {
               edges {
                 node {
@@ -332,6 +332,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
             title: product.title,
             handle: product.handle,
             description: product.description || '',
+            descriptionHtml: product.descriptionHtml || '',
             imageUrl: product.featuredImage?.url || '',
             variants: variantEdges.map(mapStorefrontVariant)
           };
@@ -344,6 +345,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
             title: product.title,
             handle: product.handle,
             description: product.description || '',
+            descriptionHtml: product.descriptionHtml || '',
             imageUrl: product.featuredImage?.url || '',
             variants: fallbackVariants
           };

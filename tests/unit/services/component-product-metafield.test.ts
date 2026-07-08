@@ -118,6 +118,49 @@ describe("updateComponentProductMetafields", () => {
     expect(mockBatchGetProductVariants).not.toHaveBeenCalled();
   });
 
+  it("normalizes numeric cached StepProduct variant IDs before writing component_parents", async () => {
+    const admin = makeAdmin();
+    const config = {
+      steps: [
+        {
+          minQuantity: 1,
+          StepProduct: [
+            {
+              productId: "gid://shopify/Product/123",
+              variants: [
+                { id: "51659604984106" },
+                { variantId: 51658221388074 },
+              ],
+            },
+          ],
+        },
+      ],
+      pricing: {
+        enabled: true,
+        method: "fixed_bundle_price",
+        rules: [{ conditionType: "quantity", conditionValue: 2, discountValue: 770, fixedBundlePrice: 770 }],
+      },
+    };
+
+    await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
+
+    const writes = getMetafieldSetCalls(admin);
+    expect(writes.map((write: any) => write.ownerId).sort()).toEqual([
+      "gid://shopify/ProductVariant/51658221388074",
+      "gid://shopify/ProductVariant/51659604984106",
+    ]);
+    const parsed = JSON.parse(writes[0].value);
+    expect(parsed[0].component_reference.value).toEqual([
+      "gid://shopify/ProductVariant/51659604984106",
+      "gid://shopify/ProductVariant/51658221388074",
+    ]);
+    expect(parsed[0].price_adjustment).toMatchObject({
+      method: "fixed_bundle_price",
+      value: 770,
+      conditions: { type: "quantity", operator: "gte", value: 2 },
+    });
+  });
+
   it("falls back to batchGetProductVariants when StepProduct has no cached variants", async () => {
     mockBatchGetProductVariants.mockResolvedValue(
       new Map([["123", { success: true, variantIds: ["gid://shopify/ProductVariant/F1"] }]]),

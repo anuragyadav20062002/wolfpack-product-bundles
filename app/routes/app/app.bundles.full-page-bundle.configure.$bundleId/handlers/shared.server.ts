@@ -5,7 +5,6 @@ import { safeJsonParse } from "../../../../services/bundles/bundle-configure-han
 import {
   BundleStatus,
   BundleType,
-  FullPageLayout,
 } from "../../../../constants/bundle";
 import {
   formatProductReferencesForRuntime,
@@ -245,7 +244,6 @@ export function buildFullPageBundleMetafieldConfig(
     description: bundle.description || "",
     status: bundle.status,
     bundleType: bundle.bundleType || BundleType.FULL_PAGE,
-    fullPageLayout: bundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
     templateName: bundle.templateName || null,
     shopifyProductId: bundle.shopifyProductId || null,
     shopifyPageHandle:
@@ -271,7 +269,6 @@ export function buildFpbBaseConfig(
     description: string | null;
     status: string;
     bundleType: string;
-    fullPageLayout: string | null;
     templateName: string | null;
     shopifyProductId: string | null;
     shopifyPageHandle: string | null;
@@ -351,8 +348,6 @@ export function buildFpbBaseConfig(
     description: updatedBundle.description,
     status: updatedBundle.status,
     bundleType: updatedBundle.bundleType,
-    fullPageLayout:
-      updatedBundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
     templateName: updatedBundle.templateName,
     steps: optimizedSteps,
     pricing: {
