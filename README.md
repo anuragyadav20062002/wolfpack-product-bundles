@@ -467,9 +467,11 @@ npx prisma migrate dev
 # Seed sample data
 npx prisma db seed
 
-# Start dev server
-npm run dev
+# Start SIT dev server
+npm run dev:sit
 ```
+
+`npm run dev:sit` starts `shopify app dev --config shopify.app.wolfpack-product-bundles-sit.toml`. Configure Save, Sync Product, Sync Bundle, and Preview publish storefront data synchronously; no local storefront-sync queue is required for those flows.
 
 ### Development Workflow
 
@@ -487,7 +489,8 @@ npm run lint
 npm run build
 
 # Deploy Shopify extensions
-shopify app deploy
+npm run deploy:sit
+npm run deploy:prod
 ```
 
 ### Testing

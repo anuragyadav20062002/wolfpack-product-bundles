@@ -77,18 +77,6 @@ export function usePpbFetcherEffects({
             ("message" in result ? result.message : null) ||
             "Product synced successfully";
           base.shopify.toast.show(syncMessage, { isError: false });
-          if ("syncedData" in result && result.syncedData) {
-            const syncedData = result.syncedData as any;
-            const { changesDetected } = syncedData;
-            if (changesDetected) {
-              setTimeout(() => {
-                base.shopify.toast.show(
-                  "Bundle data updated with changes from Shopify product",
-                  { isError: false },
-                );
-              }, 2000);
-            }
-          }
         } else if ("templates" in result && result.templates) {
           const rawTemplates = (result as any).templates || [];
           const enhancedTemplates =

@@ -95,10 +95,10 @@ First-install first-bundle tour adds: `&first_load=true`
 ```
 
 Configure page storefront sync status:
-- Full-page and product-page configure pages show a Storefront sync banner above the section content.
-- Save persists DB changes and queues background storefront sync instead of blocking on Shopify metafield publication.
-- Existing Sync Bundle actions queue the same background storefront sync event.
-- Failed sync state exposes Retry storefront sync, which posts `retryStorefrontSync` and polls `getStorefrontSyncStatus` until synced or failed.
+- Full-page and product-page configure pages do not show a separate Storefront sync status or retry banner.
+- Save persists DB changes and publishes Shopify storefront data synchronously before returning a compact success response.
+- Existing Sync Bundle actions run the same direct storefront sync path.
+- Preview Bundle posts one compact `/prepare-preview` request before opening storefront preview; failed checks surface through the preview error toast while the button spinner is active.
 
 #### Modal: Delete Bundle Confirmation
 Triggered by: "Delete" row action

@@ -38,13 +38,13 @@ If the bundle config structure changes:
 3. Both must be updated in the same change — never one without the other
 4. Bump `WIDGET_VERSION` and show a sync prompt banner so merchants re-sync
 
-## Async Storefront Sync
+## EB-Style Storefront Sync
 
-As of 2026-07-08, Admin save requests persist bundle data to Postgres and enqueue `bundle/storefront-sync.requested` instead of waiting for Shopify storefront publication. The event payload is intentionally small: `shopDomain`, `bundleId`, `bundleType`, `reason`, and `attemptId`.
+As of 2026-07-08, configure Save, Sync Product, Sync Bundle, and Preview follow an EB-style direct server flow. The route persists bundle data to Postgres, performs required Shopify publication work synchronously, and returns a compact response such as `{ success, statusCode, message, bundle }` or `{ success, statusCode, ready }`.
 
-The Inngest worker reloads the bundle from DB, opens an unauthenticated Admin client for the shop, activates the Cart Transform, then writes page/product metafields. `Bundle.storefrontSyncStatus` tracks `queued`, `syncing`, `synced`, or `failed`; the configure pages show that state and expose retry. This keeps large component sets from turning Admin save into a long-running Shopify API request.
+The server reloads the bundle from DB, activates the Cart Transform, then writes page/product metafields before responding. Configure pages do not show a separate storefront sync status or retry banner. Preview posts one compact `/prepare-preview` request and keeps the Preview Bundle spinner active until that promise resolves; failures surface through the existing preview error toast. Save and sync responses do not include full step/category graphs, queue state, attempt IDs, timestamps, or sync stats.
 
-As of 2026-07-08, async storefront sync no longer fans out component-variant `$app:component_parents`. MERGE and add-on discount validation use the signed runtime token route plus the CartTransform owner `$app.runtime_token_secret` metafield. Parent product metafields remain the source for EXPAND and display metadata.
+As of 2026-07-08, storefront sync no longer fans out component-variant `$app:component_parents`. MERGE and add-on discount validation use the signed runtime token route plus the CartTransform owner `$app.runtime_token_secret` metafield. Parent product metafields remain the source for EXPAND and display metadata.
 
 ## Why Bootstrap Hydration
 

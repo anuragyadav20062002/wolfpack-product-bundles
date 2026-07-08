@@ -7,7 +7,6 @@
 
 import type { PricingRule } from "../../../types/pricing";
 import type { BundleStatus } from "../../../constants/bundle";
-import type { BundleStorefrontSyncState } from "../../../services/bundles/storefront-sync.server";
 import type {
   ActionResponse,
   BundleStep,
@@ -61,7 +60,6 @@ export interface LoaderData {
   blockHandle: string;
   configureMode?: "create" | "edit";
   showFirstLoadTour?: boolean;
-  storefrontSync?: BundleStorefrontSyncState;
 }
 
 export interface SaveBundleResponse extends ActionResponse {

@@ -1,10 +1,6 @@
 import { inngest } from "./client";
 import { WebhookProcessor } from "../services/webhooks/processor.server";
-import { runBundleStorefrontSync } from "../services/bundles/storefront-sync.server";
-import type {
-  BundleStorefrontSyncEventData,
-  ShopifyWebhookEventData,
-} from "./types";
+import type { ShopifyWebhookEventData } from "./types";
 
 /**
  * Inngest function: shopify-webhook
@@ -42,16 +38,5 @@ export const webhookFunction = inngest.createFunction(
     }
 
     return { processed: true, message: result.message };
-  },
-);
-
-export const bundleStorefrontSyncFunction = inngest.createFunction(
-  {
-    id: "bundle-storefront-sync",
-    retries: 3,
-  },
-  { event: "bundle/storefront-sync.requested" as const },
-  async ({ event }: { event: { data: BundleStorefrontSyncEventData } }) => {
-    return runBundleStorefrontSync(event.data);
   },
 );

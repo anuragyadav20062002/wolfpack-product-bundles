@@ -162,7 +162,13 @@ describe("FPB handleSyncProduct", () => {
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
     const body = await res.json() as any;
     expect(body.success).toBe(true);
-    expect(body.syncedData.changesDetected).toBe(false);
+    expect(body).toMatchObject({
+      statusCode: 200,
+      productId: "gid://shopify/Product/1",
+      productHandle: "bundle-product",
+      message: "Updated Successfully!",
+    });
+    expect(body).not.toHaveProperty("syncedData");
   });
 
   it("updates DB description when Shopify product description changed", async () => {
@@ -171,7 +177,7 @@ describe("FPB handleSyncProduct", () => {
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
     const body = await res.json() as any;
     expect(body.success).toBe(true);
-    expect(body.syncedData.changesDetected).toBe(true);
+    expect(body).not.toHaveProperty("syncedData");
     expect(getDb().bundle.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ description: "New description" }) })
     );
@@ -222,6 +228,6 @@ describe("FPB handleSyncProduct", () => {
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
     expect(res.status).toBe(200);
     const body = await res.json() as any;
-    expect(body.message).toMatch(/synchronized successfully/i);
+    expect(body.message).toBe("Updated Successfully!");
   });
 });

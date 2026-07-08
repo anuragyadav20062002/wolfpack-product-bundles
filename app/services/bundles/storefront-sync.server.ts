@@ -1,5 +1,4 @@
 import db from "../../db.server";
-import { inngest } from "../../inngest/client";
 import { StorefrontSyncStatus, BundleType } from "../../constants/bundle";
 import { AppLogger } from "../../lib/logger";
 import type { ShopifyAdmin } from "../../lib/auth-guards.server";
@@ -23,7 +22,7 @@ import {
 } from "../../routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/runtime-config.server";
 import { syncBundleProductToShopify } from "../../routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/product-sync.server";
 
-export type StorefrontSyncReason = "save" | "retry" | "sync_bundle";
+export type StorefrontSyncReason = "save" | "retry" | "sync_bundle" | "preview";
 
 export type BundleStorefrontSyncState = {
   status: StorefrontSyncStatus;
@@ -36,15 +35,8 @@ export type BundleStorefrontSyncState = {
   stats: unknown;
 };
 
-type QueueInput = {
-  shopDomain: string;
-  bundleId: string;
-  bundleType: `${BundleType}` | "full_page" | "product_page";
-  reason: StorefrontSyncReason;
-};
-
 function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Storefront sync enqueue failed";
+  return error instanceof Error ? error.message : "Storefront sync failed";
 }
 
 export function createStorefrontSyncAttemptId(bundleId: string) {
@@ -62,86 +54,6 @@ export function formatBundleStorefrontSync(bundle: any): BundleStorefrontSyncSta
     failedAt: bundle.storefrontSyncFailedAt ?? null,
     stats: bundle.storefrontSyncStats ?? null,
   };
-}
-
-export async function enqueueBundleStorefrontSync({
-  shopDomain,
-  bundleId,
-  bundleType,
-  reason,
-}: QueueInput): Promise<BundleStorefrontSyncState> {
-  const attemptId = createStorefrontSyncAttemptId(bundleId);
-  const queuedAt = new Date();
-
-  await (db.bundle as any).update({
-    where: { id: bundleId, shopId: shopDomain },
-    data: {
-      storefrontSyncStatus: StorefrontSyncStatus.QUEUED,
-      storefrontSyncQueuedAt: queuedAt,
-      storefrontSyncStartedAt: null,
-      storefrontSyncedAt: null,
-      storefrontSyncFailedAt: null,
-      storefrontSyncLastError: null,
-      storefrontSyncAttemptId: attemptId,
-      storefrontSyncStats: null,
-    },
-  });
-
-  try {
-    await inngest.send({
-      name: "bundle/storefront-sync.requested",
-      data: {
-        shopDomain,
-        bundleId,
-        bundleType,
-        reason,
-        attemptId,
-      },
-    });
-
-    AppLogger.info("[STOREFRONT_SYNC] Queued storefront sync", {
-      component: "storefront-sync",
-      shopDomain,
-      bundleId,
-      bundleType,
-      reason,
-      attemptId,
-    });
-
-    return {
-      status: StorefrontSyncStatus.QUEUED,
-      attemptId,
-      error: null,
-      queuedAt,
-      startedAt: null,
-      syncedAt: null,
-      failedAt: null,
-      stats: null,
-    };
-  } catch (error) {
-    const message = getErrorMessage(error);
-    const failedAt = new Date();
-    const failedBundle = await (db.bundle as any).update({
-      where: { id: bundleId, shopId: shopDomain },
-      data: {
-        storefrontSyncStatus: StorefrontSyncStatus.FAILED,
-        storefrontSyncFailedAt: failedAt,
-        storefrontSyncLastError: message,
-        storefrontSyncAttemptId: attemptId,
-      },
-    });
-
-    AppLogger.error("[STOREFRONT_SYNC] Failed to queue storefront sync", {
-      component: "storefront-sync",
-      shopDomain,
-      bundleId,
-      bundleType,
-      reason,
-      attemptId,
-    }, error);
-
-    return formatBundleStorefrontSync(failedBundle);
-  }
 }
 
 export async function getBundleStorefrontSyncState(
@@ -180,24 +92,24 @@ async function loadBundleForStorefrontSync(shopDomain: string, bundleId: string)
   });
 }
 
-async function markStorefrontSyncing(input: {
+async function markStorefrontSyncingNow(input: {
   shopDomain: string;
   bundleId: string;
   attemptId: string;
 }) {
-  const result = await (db.bundle as any).updateMany({
-    where: {
-      id: input.bundleId,
-      shopId: input.shopDomain,
-      storefrontSyncAttemptId: input.attemptId,
-    },
+  await (db.bundle as any).update({
+    where: { id: input.bundleId, shopId: input.shopDomain },
     data: {
       storefrontSyncStatus: StorefrontSyncStatus.SYNCING,
+      storefrontSyncQueuedAt: null,
       storefrontSyncStartedAt: new Date(),
+      storefrontSyncedAt: null,
+      storefrontSyncFailedAt: null,
       storefrontSyncLastError: null,
+      storefrontSyncAttemptId: input.attemptId,
+      storefrontSyncStats: null,
     },
   });
-  return result.count > 0;
 }
 
 async function markStorefrontSynced(input: {
@@ -360,63 +272,91 @@ async function syncProductPageBundleFromDb(
   return stats;
 }
 
-export async function runBundleStorefrontSync(input: {
+async function performBundleStorefrontSync(
+  admin: ShopifyAdmin,
+  input: {
+    shopDomain: string;
+    bundleId: string;
+    bundleType: "full_page" | "product_page";
+    reason: StorefrontSyncReason;
+    attemptId: string;
+  },
+) {
+  const bundle = await loadBundleForStorefrontSync(input.shopDomain, input.bundleId);
+  if (!bundle) {
+    throw new Error("Bundle not found");
+  }
+
+  const activation = await CartTransformService.completeSetup(
+    admin,
+    input.shopDomain,
+  );
+  if (!activation.success) {
+    throw new Error(activation.error ?? "Cart Transform activation failed");
+  }
+
+  const stats =
+    input.bundleType === BundleType.FULL_PAGE
+      ? await syncFullPageBundleFromDb(admin, input.shopDomain, bundle)
+      : await syncProductPageBundleFromDb(admin, input.shopDomain, bundle);
+
+  await markStorefrontSynced({
+    shopDomain: input.shopDomain,
+    bundleId: input.bundleId,
+    attemptId: input.attemptId,
+    stats: {
+      ...stats,
+      cartTransformId: activation.cartTransformId ?? null,
+      reason: input.reason,
+    },
+  });
+
+  return { skipped: false, synced: true, stats };
+}
+
+export async function syncBundleStorefrontNow(input: {
+  admin: ShopifyAdmin;
   shopDomain: string;
   bundleId: string;
   bundleType: "full_page" | "product_page";
   reason: StorefrontSyncReason;
-  attemptId: string;
 }) {
-  const started = await markStorefrontSyncing(input);
-  if (!started) {
-    AppLogger.info("[STOREFRONT_SYNC] Ignoring stale storefront sync attempt", {
-      component: "storefront-sync",
-      ...input,
-    });
-    return { skipped: true, reason: "stale_attempt" };
-  }
+  const attemptId = createStorefrontSyncAttemptId(input.bundleId);
+  const syncInput = {
+    shopDomain: input.shopDomain,
+    bundleId: input.bundleId,
+    bundleType: input.bundleType,
+    reason: input.reason,
+    attemptId,
+  };
+
+  await markStorefrontSyncingNow(syncInput);
 
   try {
-    const bundle = await loadBundleForStorefrontSync(input.shopDomain, input.bundleId);
-    if (!bundle) {
-      throw new Error("Bundle not found");
-    }
-
-    const { unauthenticated } = await import("../../shopify.server");
-    const { admin } = await unauthenticated.admin(input.shopDomain);
-    const activation = await CartTransformService.completeSetup(
-      admin,
-      input.shopDomain,
-    );
-    if (!activation.success) {
-      throw new Error(activation.error ?? "Cart Transform activation failed");
-    }
-
-    const stats =
-      input.bundleType === BundleType.FULL_PAGE
-        ? await syncFullPageBundleFromDb(admin, input.shopDomain, bundle)
-        : await syncProductPageBundleFromDb(admin, input.shopDomain, bundle);
-
-    await markStorefrontSynced({
-      shopDomain: input.shopDomain,
-      bundleId: input.bundleId,
-      attemptId: input.attemptId,
-      stats: {
-        ...stats,
-        cartTransformId: activation.cartTransformId ?? null,
-        reason: input.reason,
-      },
-    });
-
-    return { skipped: false, synced: true, stats };
+    return await performBundleStorefrontSync(input.admin, syncInput);
   } catch (error) {
-    const message = getErrorMessage(error);
     await markStorefrontSyncFailed({
       shopDomain: input.shopDomain,
       bundleId: input.bundleId,
-      attemptId: input.attemptId,
-      error: message,
+      attemptId,
+      error: getErrorMessage(error),
     });
     throw error;
   }
+}
+
+export function compactBundleForConfigureResponse(bundle: any) {
+  return {
+    id: bundle.id,
+    bundleType: bundle.bundleType,
+    status: bundle.status,
+    name: bundle.name,
+    description: bundle.description ?? null,
+    shopifyProductId: bundle.shopifyProductId ?? null,
+    shopifyProductHandle: bundle.shopifyProductHandle ?? null,
+    shopifyPageId: bundle.shopifyPageId ?? null,
+    shopifyPageHandle: bundle.shopifyPageHandle ?? null,
+    shopifyPreviewPageId: bundle.shopifyPreviewPageId ?? null,
+    shopifyPreviewPageHandle: bundle.shopifyPreviewPageHandle ?? null,
+  };
 }
