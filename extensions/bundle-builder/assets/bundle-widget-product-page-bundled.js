@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.90
- * Built   : 2026-07-07
+ * Version : 5.0.92
+ * Built   : 2026-07-08
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.90';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.92';
 (function() {
   'use strict';
 
@@ -6317,7 +6317,8 @@ processProductsForStep(products, step) {
             variants: processedVariants,
             options: processedOptions,
             images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-            description: product.description || ''
+            description: product.description || '',
+            descriptionHtml: product.descriptionHtml || ''
           };
         });
     } else {
@@ -6353,7 +6354,8 @@ processProductsForStep(products, step) {
         options: processedOptions,
 
         images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-        description: product.description || ''
+        description: product.description || '',
+        descriptionHtml: product.descriptionHtml || ''
       }];
     }
   });

@@ -29,6 +29,13 @@ describe("FPB Show Text on + Button persistence", () => {
     ).toBe(false);
   });
 
+  it("does not expose legacy fullPageLayout from FPB save form data", () => {
+    const formData = buildSaveForm(true);
+    formData.append("fullPageLayout", "footer_bottom");
+
+    expect(parseFpbSaveBundleForm(formData)).not.toHaveProperty("fullPageLayout");
+  });
+
   it("emits showTextOnAddButton to the storefront payload without requiring button copy", () => {
     const result = formatBundleForWidget({
       id: "bundle-1",
@@ -36,7 +43,6 @@ describe("FPB Show Text on + Button persistence", () => {
       description: null,
       status: "ACTIVE",
       bundleType: "full_page",
-      fullPageLayout: "FOOTER_BOTTOM",
       shopifyProductId: null,
       steps: [],
       pricing: null,

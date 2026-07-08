@@ -6,6 +6,7 @@ import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness
 import { DiscountMethod } from "../../../types/pricing";
 import { ADDON_MESSAGE_KEY } from "./configure-constants";
 import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
+import { serializeFpbSaveSteps } from "./fpb-save-transport";
 
 export function useConfigureSaveController(flow: ConfigureBundleFlowDraft) {
   const buildDefaultProductsData = useCallback(() => {
@@ -69,20 +70,7 @@ export function useConfigureSaveController(flow: ConfigureBundleFlowDraft) {
       formData.append("bundleName", flow.formState.bundleName);
       formData.append("bundleDescription", flow.formState.bundleDescription);
       formData.append("templateName", flow.formState.templateName);
-      formData.append("fullPageLayout", flow.formState.fullPageLayout);
       formData.append("bundleStatus", flow.formState.bundleStatus);
-      const stepsWithCollections = flow.stepsState.steps.map((step: any) => ({
-        ...step,
-        isFreeGift: false,
-        freeGiftName: null,
-        addonLabel: null,
-        addonTitle: null,
-        addonIconUrl: null,
-        addonDisplayFree: false,
-        addonTiers: [],
-        collections:
-          flow.selectedCollections[step.id] || step.collections || [],
-      }));
       const pricingMessages = serializePricingDisplayOptions({
         existingMessages: {
           showDiscountMessaging: flow.pricingState.discountMessagingEnabled,
@@ -90,7 +78,12 @@ export function useConfigureSaveController(flow: ConfigureBundleFlowDraft) {
         },
         options: flow.normalizedPricingDisplayOptions,
       });
-      formData.append("stepsData", JSON.stringify(stepsWithCollections));
+      formData.append(
+        "stepsData",
+        JSON.stringify(
+          serializeFpbSaveSteps(flow.stepsState.steps, flow.selectedCollections),
+        ),
+      );
       const enrichedRuleMessages = Object.fromEntries(
         Object.entries(flow.normalizedRuleMessages).map(([id, msg]: any) => [
           id,
@@ -258,7 +251,6 @@ export function useConfigureSaveController(flow: ConfigureBundleFlowDraft) {
             name: flow.formState.bundleName,
             description: flow.formState.bundleDescription,
             templateName: flow.formState.templateName,
-            fullPageLayout: flow.formState.fullPageLayout,
             steps: JSON.stringify(flow.stepsState.steps),
             discountEnabled: flow.pricingState.discountEnabled,
             discountType: flow.pricingState.discountType,

@@ -45,7 +45,6 @@ export interface BundleData {
   bundleType: string;
   status: BundleStatus;
   templateName?: string;
-  fullPageLayout?: string | null;
   promoBannerBgImage?: string | null;
   loadingGif?: string | null;
   steps: BundleStep[];

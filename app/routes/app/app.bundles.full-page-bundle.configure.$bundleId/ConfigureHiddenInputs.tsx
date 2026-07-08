@@ -1,4 +1,5 @@
 import type { ConfigureBundleFlowContext } from "./useConfigureBundleFlow";
+import { serializeFpbSaveSteps } from "./fpb-save-transport";
 
 export function ConfigureHiddenInputs({
   flow,
@@ -15,6 +16,7 @@ export function ConfigureHiddenInputs({
     pricingState,
     ruleMessages,
     ruleMessagesByLocale,
+    selectedCollections,
     serializePricingDisplayOptions,
     stepsState,
     tierTextByLocaleByRuleId,
@@ -39,7 +41,9 @@ export function ConfigureHiddenInputs({
       <input
         type="hidden"
         name="stepsData"
-        value={JSON.stringify(stepsState.steps)}
+        value={JSON.stringify(
+          serializeFpbSaveSteps(stepsState.steps, selectedCollections),
+        )}
       />
       <input
         type="hidden"

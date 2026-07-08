@@ -37,6 +37,7 @@ interface StorefrontProduct {
   options?: Array<string | { name: string }>;
   images?: Array<{ src?: string }>;
   description?: string;
+  descriptionHtml?: string;
 }
 
 interface WidgetStep {
@@ -332,6 +333,29 @@ describe('Product Page widget product-level inventory tracking', () => {
       available: false,
       quantityAvailable: 0,
       currentlyNotInStock: false,
+    });
+  });
+
+  it('preserves Shopify descriptionHtml for the shared product modal', () => {
+    const products = processProductPageProductsForStep([
+      {
+        id: 'gid://shopify/Product/123',
+        title: 'Product with HTML',
+        description: 'Plain description',
+        descriptionHtml: '<p>Plain <strong>description</strong></p>',
+        imageUrl: 'https://cdn.example.test/product.jpg',
+        variants: [{
+          id: 'gid://shopify/ProductVariant/456',
+          title: 'Default Title',
+          price: '10.00',
+          available: true,
+        }],
+      },
+    ], { displayVariantsAsIndividual: false }, false);
+
+    expect(products[0]).toMatchObject({
+      description: 'Plain description',
+      descriptionHtml: '<p>Plain <strong>description</strong></p>',
     });
   });
 

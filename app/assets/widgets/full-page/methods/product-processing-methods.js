@@ -155,6 +155,12 @@ function normalizeProductDescription(product) {
   return (scratch.textContent || '').trim();
 }
 
+function normalizeProductDescriptionHtml(product) {
+  return typeof product?.descriptionHtml === 'string'
+    ? product.descriptionHtml.trim()
+    : '';
+}
+
 function collectCategoryProducts(step) {
   if (!Array.isArray(step?.categories)) return [];
 
@@ -287,6 +293,7 @@ export function normalizeFullPageDirectDefaultProduct(product) {
     }],
     images: imageUrl ? [{ src: imageUrl }] : [],
     description: normalizeProductDescription(product),
+    descriptionHtml: normalizeProductDescriptionHtml(product),
   };
 }
 
@@ -838,7 +845,8 @@ processProductsForStep(products, step) {
             variants: processedVariants,
             options: processedOptions,
             images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-            description: normalizeProductDescription(product)
+            description: normalizeProductDescription(product),
+            descriptionHtml: normalizeProductDescriptionHtml(product)
           };
         });
     } else {
@@ -887,7 +895,8 @@ processProductsForStep(products, step) {
         options: processedOptions,
         // Preserve the first image candidates for the product details modal.
         images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-        description: normalizeProductDescription(product)
+        description: normalizeProductDescription(product),
+        descriptionHtml: normalizeProductDescriptionHtml(product)
       }];
     }
   });
@@ -990,7 +999,7 @@ async enrichMissingProductDescriptions(products) {
   if (!Array.isArray(products) || products.length === 0) return products;
 
   const missingProductIds = Array.from(new Set(products
-    .filter(product => !normalizeProductDescription(product))
+    .filter(product => !normalizeProductDescriptionHtml(product))
     .map(productGraphqlId)
     .filter(Boolean)));
 
@@ -1014,17 +1023,27 @@ async enrichMissingProductDescriptions(products) {
     const descriptionsByProductId = new Map();
     (Array.isArray(data.products) ? data.products : []).forEach(product => {
       const description = normalizeProductDescription(product);
+      const descriptionHtml = normalizeProductDescriptionHtml(product);
       const key = productLookupKey(product);
-      if (key && description) descriptionsByProductId.set(key, description);
+      if (key && (description || descriptionHtml)) {
+        descriptionsByProductId.set(key, { description, descriptionHtml });
+      }
     });
 
     if (descriptionsByProductId.size === 0) return products;
 
     return products.map(product => {
-      if (normalizeProductDescription(product)) return product;
+      if (normalizeProductDescriptionHtml(product)) return product;
       const key = productLookupKey(product);
-      const description = key ? descriptionsByProductId.get(key) : '';
-      return description ? { ...product, description } : product;
+      const descriptions = key ? descriptionsByProductId.get(key) : null;
+      if (!descriptions) return product;
+
+      const existingDescription = normalizeProductDescription(product);
+      return {
+        ...product,
+        description: existingDescription || descriptions.description || '',
+        descriptionHtml: descriptions.descriptionHtml || '',
+      };
     });
   } catch (error) {
     return products;

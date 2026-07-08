@@ -14,6 +14,26 @@ import type { ComponentParentsData } from "../types";
 import { buildPriceAdjustmentConfig } from "../utils/price-adjustment";
 import { collectAddonComponentVariants } from "../utils/addon-components";
 
+function normalizeProductVariantGid(value: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+
+  const raw = String(value).trim();
+  if (!raw) return null;
+  if (raw.startsWith("gid://shopify/ProductVariant/")) return raw;
+  if (/^\d+$/.test(raw)) return `gid://shopify/ProductVariant/${raw}`;
+  return null;
+}
+
+function getCachedVariantGid(variant: any): string | null {
+  return normalizeProductVariantGid(
+    variant?.id
+      ?? variant?.variantId
+      ?? variant?.variantGraphqlId
+      ?? variant?.graphqlId
+      ?? variant?.admin_graphql_api_id,
+  );
+}
+
 /**
  * Updates component product variants with component_parents metafield (Shopify Standard)
  *
@@ -86,9 +106,10 @@ export async function updateComponentProductMetafields(
           // Writing component_parents to every variant ensures Cart Transform can apply
           // the bundle discount regardless of which variant the customer selects.
           for (const variant of dbVariants) {
-            if (variant.id && !isUUID(variant.id)) {
-              componentVariantIds.add(variant.id);
-              componentReferences.push(variant.id);
+            const variantId = getCachedVariantGid(variant);
+            if (variantId && !isUUID(variantId)) {
+              componentVariantIds.add(variantId);
+              componentReferences.push(variantId);
               componentQuantities.push(step.minQuantity || 1);
             }
           }
@@ -110,9 +131,10 @@ export async function updateComponentProductMetafields(
 
           if (cachedVariants.length > 0) {
             for (const variant of cachedVariants) {
-              if (variant.id && !isUUID(variant.id)) {
-                componentVariantIds.add(variant.id);
-                componentReferences.push(variant.id);
+              const variantId = getCachedVariantGid(variant);
+              if (variantId && !isUUID(variantId)) {
+                componentVariantIds.add(variantId);
+                componentReferences.push(variantId);
                 componentQuantities.push(step.minQuantity || 1);
               }
             }
@@ -192,9 +214,10 @@ export async function updateComponentProductMetafields(
 
           if (cachedVariants.length > 0) {
             for (const variant of cachedVariants) {
-              if (variant.id && !isUUID(variant.id)) {
-                componentVariantIds.add(variant.id);
-                componentReferences.push(variant.id);
+              const variantId = getCachedVariantGid(variant);
+              if (variantId && !isUUID(variantId)) {
+                componentVariantIds.add(variantId);
+                componentReferences.push(variantId);
                 componentQuantities.push(step.minQuantity || 1);
               }
             }
@@ -278,9 +301,11 @@ export async function updateComponentProductMetafields(
 
       if (result?.success && Array.isArray(result.variantIds) && result.variantIds.length > 0) {
         result.variantIds.forEach(variantId => {
-          componentReferences.push(variantId);
+          const normalizedVariantId = normalizeProductVariantGid(variantId);
+          if (!normalizedVariantId) return;
+          componentReferences.push(normalizedVariantId);
           componentQuantities.push(item.stepMinQuantity);
-          componentVariantIds.add(variantId);
+          componentVariantIds.add(normalizedVariantId);
         });
       } else {
         AppLogger.warn("Could not get variant for component product", {

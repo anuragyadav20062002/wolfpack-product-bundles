@@ -1,4 +1,3 @@
-import { FullPageLayout } from "../../../../constants/bundle";
 import { processCss } from "../../../../lib/css-sanitizer";
 import { parseIndividualSellingPlanSelection } from "./shared.server";
 
@@ -53,8 +52,6 @@ export function parseFpbSaveBundleForm(formData: FormData) {
   const bundleDescription = formData.get("bundleDescription") as string;
   const bundleStatus = formData.get("bundleStatus") as string;
   const templateName = (formData.get("templateName") as string) || null;
-  const fullPageLayout =
-    (formData.get("fullPageLayout") as string) || FullPageLayout.FOOTER_BOTTOM;
   const promoBannerBgImageRaw = formData.get("promoBannerBgImage") as string;
   const promoBannerBgImage = promoBannerBgImageRaw || null;
   const loadingGifRaw = formData.get("loadingGif") as string;
@@ -182,7 +179,6 @@ export function parseFpbSaveBundleForm(formData: FormData) {
     discountData,
     floatingBadgeEnabled,
     floatingBadgeText,
-    fullPageLayout,
     individualSellingPlanSelection,
     loadingGif,
     maxQtyPerProduct,

@@ -614,6 +614,19 @@ describe("updateBundleProductMetafields", () => {
         operator: "gte",
         value: 3,
       },
+      rules: [{
+        method: "buy_x_get_y",
+        value: 100,
+        customerBuys: 2,
+        customerGets: 1,
+        discountType: "percentage",
+        applyDiscountTo: "lowest_priced",
+        conditions: {
+          type: "quantity",
+          operator: "gte",
+          value: 3,
+        },
+      }],
     });
   });
 });

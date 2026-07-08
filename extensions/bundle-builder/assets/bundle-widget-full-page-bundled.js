@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.90
- * Built   : 2026-07-07
+ * Version : 5.0.92
+ * Built   : 2026-07-08
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.90';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.92';
 (function() {
   'use strict';
 
@@ -4032,7 +4032,16 @@ class BundleProductModal {
     document.getElementById('modal-product-title').textContent = displayTitle;
 
     const descriptionEl = document.getElementById('modal-product-description');
-    descriptionEl.textContent = this.currentProduct.description || '';
+    const descriptionHtml = typeof this.currentProduct.descriptionHtml === 'string'
+      ? this.currentProduct.descriptionHtml.trim()
+      : '';
+    descriptionEl.textContent = '';
+    descriptionEl.innerHTML = '';
+    if (descriptionHtml) {
+      descriptionEl.innerHTML = descriptionHtml;
+    } else {
+      descriptionEl.textContent = this.currentProduct.description || '';
+    }
 
     this.loadImage();
 
@@ -11339,6 +11348,12 @@ function normalizeProductDescription(product) {
   return (scratch.textContent || '').trim();
 }
 
+function normalizeProductDescriptionHtml(product) {
+  return typeof product?.descriptionHtml === 'string'
+    ? product.descriptionHtml.trim()
+    : '';
+}
+
 function collectCategoryProducts(step) {
   if (!Array.isArray(step?.categories)) return [];
 
@@ -11471,6 +11486,7 @@ function normalizeFullPageDirectDefaultProduct(product) {
     }],
     images: imageUrl ? [{ src: imageUrl }] : [],
     description: normalizeProductDescription(product),
+    descriptionHtml: normalizeProductDescriptionHtml(product),
   };
 }
 
@@ -12000,7 +12016,8 @@ processProductsForStep(products, step) {
             variants: processedVariants,
             options: processedOptions,
             images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-            description: normalizeProductDescription(product)
+            description: normalizeProductDescription(product),
+            descriptionHtml: normalizeProductDescriptionHtml(product)
           };
         });
     } else {
@@ -12044,7 +12061,8 @@ processProductsForStep(products, step) {
         options: processedOptions,
 
         images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-        description: normalizeProductDescription(product)
+        description: normalizeProductDescription(product),
+        descriptionHtml: normalizeProductDescriptionHtml(product)
       }];
     }
   });
@@ -12145,7 +12163,7 @@ async enrichMissingProductDescriptions(products) {
   if (!Array.isArray(products) || products.length === 0) return products;
 
   const missingProductIds = Array.from(new Set(products
-    .filter(product => !normalizeProductDescription(product))
+    .filter(product => !normalizeProductDescriptionHtml(product))
     .map(productGraphqlId)
     .filter(Boolean)));
 
@@ -12169,17 +12187,27 @@ async enrichMissingProductDescriptions(products) {
     const descriptionsByProductId = new Map();
     (Array.isArray(data.products) ? data.products : []).forEach(product => {
       const description = normalizeProductDescription(product);
+      const descriptionHtml = normalizeProductDescriptionHtml(product);
       const key = productLookupKey(product);
-      if (key && description) descriptionsByProductId.set(key, description);
+      if (key && (description || descriptionHtml)) {
+        descriptionsByProductId.set(key, { description, descriptionHtml });
+      }
     });
 
     if (descriptionsByProductId.size === 0) return products;
 
     return products.map(product => {
-      if (normalizeProductDescription(product)) return product;
+      if (normalizeProductDescriptionHtml(product)) return product;
       const key = productLookupKey(product);
-      const description = key ? descriptionsByProductId.get(key) : '';
-      return description ? { ...product, description } : product;
+      const descriptions = key ? descriptionsByProductId.get(key) : null;
+      if (!descriptions) return product;
+
+      const existingDescription = normalizeProductDescription(product);
+      return {
+        ...product,
+        description: existingDescription || descriptions.description || '',
+        descriptionHtml: descriptions.descriptionHtml || '',
+      };
     });
   } catch (error) {
     return products;
@@ -13804,20 +13832,16 @@ async _scheduleLayoutRefresh() {
     const data = await response.json();
     if (!data?.bundle) return;
 
-    const freshLayout = this.resolveFullPageLayout(data.bundle);
-    const currentLayout = this.resolveFullPageLayout();
     const freshTemplate = data.bundle.bundleDesignTemplate ?? null;
     const currentTemplate = this.selectedBundle?.bundleDesignTemplate ?? null;
     const freshPreset = data.bundle.bundleDesignPresetId ?? null;
     const currentPreset = this.selectedBundle?.bundleDesignPresetId ?? null;
 
-    if ((freshLayout !== currentLayout || freshTemplate !== currentTemplate || freshPreset !== currentPreset) && this.selectedBundle) {
-      this.selectedBundle.fullPageLayout = data.bundle.fullPageLayout;
+    if ((freshTemplate !== currentTemplate || freshPreset !== currentPreset) && this.selectedBundle) {
       this.selectedBundle.bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.selectedBundle.bundleDesignTemplate;
       this.selectedBundle.bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.selectedBundle.bundleDesignPresetId;
       this.selectedBundle.bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.selectedBundle.bundleDesignTemplateData;
       if (this.bundleData?.[bundleId]) {
-        this.bundleData[bundleId].fullPageLayout = data.bundle.fullPageLayout;
         this.bundleData[bundleId].bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.bundleData[bundleId].bundleDesignTemplate;
         this.bundleData[bundleId].bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.bundleData[bundleId].bundleDesignPresetId;
         this.bundleData[bundleId].bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.bundleData[bundleId].bundleDesignTemplateData;
