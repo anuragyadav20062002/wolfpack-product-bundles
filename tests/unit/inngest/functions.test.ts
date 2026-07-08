@@ -8,12 +8,20 @@
  */
 
 import { WebhookProcessor } from "../../../app/services/webhooks/processor.server";
-import { webhookFunction } from "../../../app/inngest/functions";
+import {
+  bundleStorefrontSyncFunction,
+  webhookFunction,
+} from "../../../app/inngest/functions";
+import { runBundleStorefrontSync } from "../../../app/services/bundles/storefront-sync.server";
 
 jest.mock("../../../app/services/webhooks/processor.server", () => ({
   WebhookProcessor: {
     processPubSubMessage: jest.fn(),
   },
+}));
+
+jest.mock("../../../app/services/bundles/storefront-sync.server", () => ({
+  runBundleStorefrontSync: jest.fn(),
 }));
 
 // Mock the inngest client so createFunction captures the handler synchronously
@@ -27,7 +35,9 @@ jest.mock("../../../app/inngest/client", () => ({
 }));
 
 const mockProcess = WebhookProcessor.processPubSubMessage as jest.Mock;
+const mockRunStorefrontSync = runBundleStorefrontSync as jest.Mock;
 const fn = webhookFunction as any;
+const storefrontFn = bundleStorefrontSyncFunction as any;
 
 const sampleData = {
   rawPayload: Buffer.from(JSON.stringify({ inventory_item_id: 123 })).toString("base64"),
@@ -90,5 +100,33 @@ describe("shopify-webhook Inngest function", () => {
     const [msg] = mockProcess.mock.calls[0];
     expect(msg.attributes["X-Shopify-Webhook-Id"]).toBeUndefined();
     expect(msg.attributes["X-Shopify-API-Version"]).toBeUndefined();
+  });
+});
+
+describe("bundle-storefront-sync Inngest function", () => {
+  beforeEach(() => {
+    mockRunStorefrontSync.mockReset();
+  });
+
+  it("registers with id 'bundle-storefront-sync', retries: 3, event 'bundle/storefront-sync.requested'", () => {
+    expect(storefrontFn.__config.id).toBe("bundle-storefront-sync");
+    expect(storefrontFn.__config.retries).toBe(3);
+    expect(storefrontFn.__trigger.event).toBe("bundle/storefront-sync.requested");
+  });
+
+  it("delegates the lightweight event payload to the storefront sync worker", async () => {
+    const data = {
+      shopDomain: "test.myshopify.com",
+      bundleId: "bundle-1",
+      bundleType: "full_page",
+      reason: "retry",
+      attemptId: "attempt-1",
+    };
+    mockRunStorefrontSync.mockResolvedValue({ synced: true });
+
+    await expect(storefrontFn.__handler({ event: { data } })).resolves.toEqual({
+      synced: true,
+    });
+    expect(mockRunStorefrontSync).toHaveBeenCalledWith(data);
   });
 });

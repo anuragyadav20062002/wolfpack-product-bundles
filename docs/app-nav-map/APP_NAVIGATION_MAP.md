@@ -4,7 +4,7 @@
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-07-02
+**Last Updated:** 2026-07-08
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -93,6 +93,12 @@ Product Page: `/app/bundles/product-page-bundle/configure/:bundleId?mode=create`
 Full Page: `/app/bundles/full-page-bundle/configure/:bundleId?mode=create`
 First-install first-bundle tour adds: `&first_load=true`
 ```
+
+Configure page storefront sync status:
+- Full-page and product-page configure pages show a Storefront sync banner above the section content.
+- Save persists DB changes and queues background storefront sync instead of blocking on Shopify metafield publication.
+- Existing Sync Bundle actions queue the same background storefront sync event.
+- Failed sync state exposes Retry storefront sync, which posts `retryStorefrontSync` and polls `getStorefrontSyncStatus` until synced or failed.
 
 #### Modal: Delete Bundle Confirmation
 Triggered by: "Delete" row action

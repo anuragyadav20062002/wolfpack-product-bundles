@@ -32,6 +32,13 @@ export enum FullPageLayout {
   FOOTER_SIDE = "footer_side",
 }
 
+export enum StorefrontSyncStatus {
+  QUEUED = "queued",
+  SYNCING = "syncing",
+  SYNCED = "synced",
+  FAILED = "failed",
+}
+
 // ============================================
 // FORM SELECT OPTIONS
 // ============================================

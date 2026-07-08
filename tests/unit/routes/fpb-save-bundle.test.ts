@@ -11,7 +11,7 @@ import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
 } from "../../../app/services/bundles/metafield-sync.server";
-import { convertBundleToStandardMetafields } from "../../../app/services/bundles/standard-metafields.server";
+import { enqueueBundleStorefrontSync } from "../../../app/services/bundles/storefront-sync.server";
 import {
   refreshFullPageBundlePageBody,
   writeBundleConfigPageMetafield,
@@ -37,6 +37,19 @@ jest.mock("../../../app/lib/logger", () => ({
 jest.mock("../../../app/services/bundles/metafield-sync.server", () => ({
   updateBundleProductMetafields: jest.fn().mockResolvedValue(undefined),
   updateComponentProductMetafields: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock("../../../app/services/bundles/storefront-sync.server", () => ({
+  enqueueBundleStorefrontSync: jest.fn().mockResolvedValue({
+    status: "queued",
+    attemptId: "attempt-1",
+    error: null,
+    queuedAt: new Date("2026-07-08T00:00:00.000Z"),
+    startedAt: null,
+    syncedAt: null,
+    failedAt: null,
+    stats: null,
+  }),
 }));
 
 jest.mock("../../../app/services/addon-discount-function-service.server", () => ({
@@ -361,9 +374,15 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", makeFormData());
     expect(updateBundleProductMetafields).not.toHaveBeenCalled();
     expect(updateComponentProductMetafields).not.toHaveBeenCalled();
+    expect(enqueueBundleStorefrontSync).toHaveBeenCalledWith({
+      shopDomain: MOCK_SESSION.shop,
+      bundleId: "bundle-1",
+      bundleType: "full_page",
+      reason: "save",
+    });
   });
 
-  it("refreshes the full-page marker body when saving a placed full-page bundle", async () => {
+  it("enqueues storefront sync instead of refreshing the full-page marker body inline", async () => {
     const updatedBundle = makeUpdatedBundle({
       shopifyPageId: "gid://shopify/Page/123",
       shopifyPageHandle: "test-bundle",
@@ -373,26 +392,14 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
 
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", makeFormData());
 
-    expect(refreshFullPageBundlePageBody).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      "gid://shopify/Page/123",
-      "bundle-1",
-      MOCK_SESSION.shop,
-      expect.objectContaining({
-        id: "bundle-1",
-        shopifyPageId: "gid://shopify/Page/123",
-        bundleDesignPresetId: "CLASSIC",
-      }),
-    );
-    expect(writeBundleConfigPageMetafield).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      "gid://shopify/Page/123",
-      expect.objectContaining({
-        id: "bundle-1",
-        shopifyPageId: "gid://shopify/Page/123",
-        bundleDesignPresetId: "CLASSIC",
-      }),
-    );
+    expect(refreshFullPageBundlePageBody).not.toHaveBeenCalled();
+    expect(writeBundleConfigPageMetafield).not.toHaveBeenCalled();
+    expect(enqueueBundleStorefrontSync).toHaveBeenCalledWith({
+      shopDomain: MOCK_SESSION.shop,
+      bundleId: "bundle-1",
+      bundleType: "full_page",
+      reason: "save",
+    });
   });
 
   it("passes variantSelectorEnabled=false to DB when form has false", async () => {
@@ -973,7 +980,7 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
   });
 });
 
-describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)", () => {
+describe("FPB handleSaveBundle — with shopifyProductId (enqueues storefront sync)", () => {
   const PRODUCT_ID = "gid://shopify/Product/123";
 
   function makeStepWithProduct() {
@@ -1007,729 +1014,87 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
-  it("calls updateComponentProductMetafields and updateBundleProductMetafields on success", async () => {
+  it("saves the bundle and enqueues storefront sync instead of writing Shopify metafields inline", async () => {
     const fd = makeFormData({
       stepsData: JSON.stringify(makeStepWithProduct()),
       bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
     });
+
     const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
+    const body = await res.json() as any;
+
     expect(body.success).toBe(true);
-    expect(updateComponentProductMetafields).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      PRODUCT_ID,
-      expect.any(Object)
-    );
-    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      PRODUCT_ID,
-      expect.any(Object)
-    );
-  });
-
-  it("syncs direct full-page bundleUpsellConfig into bundle product metafields", async () => {
-    const bundleUpsellConfig = makeBundleUpsellConfig();
-    getDb().bundle.update.mockResolvedValue(
-      makeUpdatedBundle({
-        shopifyProductId: PRODUCT_ID,
-        bundleUpsellConfig,
-        steps: [
-          {
-            id: "step-db-1",
-            name: "Step 1",
-            StepProduct: [
-              {
-                productId: "gid://shopify/Product/456",
-                title: "Component",
-                imageUrl: null,
-              },
-            ],
-            StepCategory: [],
-          },
-        ],
-      }),
-    );
-
-    await handleSaveBundle(
-      MOCK_ADMIN,
-      MOCK_SESSION,
-      "bundle-1",
-      makeFormData({
-        stepsData: JSON.stringify(makeStepWithProduct()),
-        bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-        bundleUpsellConfig: JSON.stringify(bundleUpsellConfig),
-      }),
-    );
-
-    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      PRODUCT_ID,
-      expect.objectContaining({ bundleUpsellConfig }),
-    );
-  });
-
-  it("syncs parent product status with Shopify's current product update mutation", async () => {
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+    expect(body.storefrontSync).toEqual(expect.objectContaining({
+      status: "queued",
+      attemptId: "attempt-1",
+      error: null,
+    }));
+    expect(enqueueBundleStorefrontSync).toHaveBeenCalledWith({
+      shopDomain: MOCK_SESSION.shop,
+      bundleId: "bundle-1",
+      bundleType: "full_page",
+      reason: "save",
     });
-
-    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-
-    const statusCall = MOCK_ADMIN.graphql.mock.calls.find(([query]: [unknown, ...unknown[]]) =>
-      String(query).includes("productUpdate")
-    );
-    expect(statusCall).toBeDefined();
-    expect(statusCall?.[1]).toEqual(
-      expect.objectContaining({
-        variables: expect.objectContaining({
-          product: expect.objectContaining({
-            id: PRODUCT_ID,
-            status: "ACTIVE",
-            descriptionHtml: expect.any(String),
-          }),
-        }),
-      }),
-    );
+    expect(updateComponentProductMetafields).not.toHaveBeenCalled();
+    expect(updateBundleProductMetafields).not.toHaveBeenCalled();
+    expect(refreshFullPageBundlePageBody).not.toHaveBeenCalled();
+    expect(writeBundleConfigPageMetafield).not.toHaveBeenCalled();
+    expect(MOCK_ADMIN.graphql).not.toHaveBeenCalled();
   });
 
-  it("syncs parent product status to ACTIVE then UNLISTED for unlisted status", async () => {
-    const unlistedStatuses: string[] = [];
-    MOCK_ADMIN.graphql.mockImplementation(async (query: string, variables: any) => {
-      if (String(query).includes("productUpdate")) {
-        unlistedStatuses.push(String(variables?.variables?.product?.status));
-      }
-      return Promise.resolve({
-        json: async () => ({
-          data: {
-            productUpdate: {
-              product: { id: PRODUCT_ID, status: variables?.variables?.product?.status },
-              userErrors: [],
-            },
-          },
-        }),
-      });
-    });
-
-    const fd = makeFormData({
-      bundleStatus: "unlisted",
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+  it("keeps the save successful and surfaces failed sync status when enqueue fails", async () => {
+    (enqueueBundleStorefrontSync as jest.Mock).mockResolvedValueOnce({
+      status: "failed",
+      attemptId: "attempt-failed",
+      error: "fetch failed",
+      queuedAt: new Date("2026-07-08T00:00:00.000Z"),
+      startedAt: null,
+      syncedAt: null,
+      failedAt: new Date("2026-07-08T00:00:01.000Z"),
+      stats: null,
     });
 
     const res = await handleSaveBundle(
       MOCK_ADMIN,
       MOCK_SESSION,
       "bundle-1",
-      fd,
-    );
-    const body = await res.json();
-
-    expect(body.success).toBe(true);
-    expect(unlistedStatuses).toEqual(["ACTIVE", "UNLISTED"]);
-    expect(MOCK_ADMIN.graphql).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        variables: expect.objectContaining({
-          product: expect.objectContaining({
-            id: PRODUCT_ID,
-            status: "UNLISTED",
-            descriptionHtml: expect.stringContaining("Your Bundle is Unlisted"),
-          }),
-        }),
+      makeFormData({
+        stepsData: JSON.stringify(makeStepWithProduct()),
+        bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
       }),
     );
+    const body = await res.json() as any;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.storefrontSync).toEqual(expect.objectContaining({
+      status: "failed",
+      attemptId: "attempt-failed",
+      error: "fetch failed",
+    }));
   });
 
-  it("activates bundle parent products through a requiresComponents sequence when Shopify rejects unsupported channels", async () => {
-    MOCK_ADMIN.graphql.mockImplementation((query: string, variables: any) => {
-      if (String(query).includes("productUpdate") && variables?.variables?.product?.status === "ACTIVE") {
-        const directStatusCalls = MOCK_ADMIN.graphql.mock.calls.filter(([calledQuery]: [unknown, ...unknown[]]) =>
-          String(calledQuery).includes("productUpdate")
-        ).length;
-
-        if (directStatusCalls === 1) {
-          return Promise.resolve({
-            json: async () => ({
-              data: {
-                productUpdate: {
-                  product: { id: PRODUCT_ID, status: "DRAFT" },
-                  userErrors: [
-                    {
-                      field: ["resourcePublications", "channelId"],
-                      message: "Resource publications channel ChatGPT does not support bundle products",
-                    },
-                  ],
-                },
-              },
-            }),
-          });
-        }
-      }
-
-      if (String(query).includes("productVariantsBulkUpdate")) {
-        return Promise.resolve({
-          json: async () => ({
-            data: {
-              productVariantsBulkUpdate: {
-                productVariants: [
-                  {
-                    id: "gid://shopify/ProductVariant/999",
-                    requiresComponents: variables.variables.variants[0].requiresComponents,
-                  },
-                ],
-                userErrors: [],
-              },
-            },
-          }),
-        });
-      }
-
-      return Promise.resolve({
-        json: async () => ({
-          data: {
-            productUpdate: {
-              product: { id: PRODUCT_ID, status: "ACTIVE" },
-              userErrors: [],
-            },
-          },
-        }),
-      });
-    });
-
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-    });
-
-    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-
-    const variantUpdates = MOCK_ADMIN.graphql.mock.calls
-      .filter(([query]: [unknown, ...unknown[]]) => String(query).includes("productVariantsBulkUpdate"))
-      .map(([, options]: [unknown, any]) => options.variables.variants[0].requiresComponents);
-
-    expect(variantUpdates).toEqual([false, true]);
-  });
-
-  it("returns 500 when no products found in any step", async () => {
+  it("does not reject save inline when component products are missing from the saved bundle", async () => {
     getDb().bundle.update.mockResolvedValue(
       makeUpdatedBundle({
         shopifyProductId: PRODUCT_ID,
         steps: [{ id: "step-db-1", StepProduct: [], StepCategory: [], products: [], collections: [] }],
       })
     );
-    const fd = makeFormData({
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    expect(res.status).toBe(500);
-    const body = await res.json() as any;
-    expect(body.error).toMatch(/add products/i);
-  });
 
-  it("returns success when standard metafield update fails (non-fatal)", async () => {
-    (convertBundleToStandardMetafields as jest.Mock).mockRejectedValueOnce(
-      new Error("Standard metafield error")
-    );
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-  });
-
-  it("keeps StepCategory products under categories in full-page standard config", async () => {
-    const categoryProduct = {
-      id: "gid://shopify/Product/789",
-      title: "Category Product",
-      variants: [{ id: "gid://shopify/ProductVariant/987", title: "Default" }],
-    };
-    const selectedCollection = {
-      id: "gid://shopify/Collection/456",
-      handle: "category-collection",
-      title: "Category Collection",
-    };
-    getDb().bundle.update.mockResolvedValue(
-      makeUpdatedBundle({
-        shopifyProductId: PRODUCT_ID,
-        steps: [
-          {
-            id: "step-db-1",
-            name: "Step 1",
-            products: [],
-            collections: [],
-            StepProduct: [],
-            StepCategory: [
-              {
-                id: "category98476",
-                name: "Category 1",
-                title: "Category 1",
-                sortOrder: 0,
-                products: [categoryProduct],
-                selectedProducts: [],
-                collections: [],
-                collectionsData: [],
-                collectionsSelectedData: [selectedCollection],
-              },
-            ],
-          },
-        ],
-      })
-    );
-
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepsData({
-        StepCategory: [
-          {
-            id: "category98476",
-            title: "Category 1",
-            products: [categoryProduct],
-            collectionsSelectedData: [selectedCollection],
-          },
-        ],
-      })),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
-
-    expect(body.success).toBe(true);
-    const standardConfig = (convertBundleToStandardMetafields as jest.Mock).mock.calls[0][1];
-    expect(standardConfig.steps[0].products).toEqual([]);
-    expect(standardConfig.steps[0].collections).toEqual([]);
-    expect(standardConfig.steps[0].categories[0].products).toEqual([{
-      id: "gid://shopify/Product/789",
-      title: "Category Product",
-      variants: [{
-        id: "gid://shopify/ProductVariant/987",
-        title: "Default",
-      }],
-    }]);
-    expect(standardConfig.steps[0].categories[0].collectionsSelectedData).toEqual([selectedCollection]);
-  });
-
-  it("passes direct bundle summary text config into metafield sync", async () => {
-    const bundleTextConfig = {
-      bundleSummary: {
-        title: "Your Custom Box",
-        subTitle: "Review your selected items",
-      },
-    };
-    getDb().bundle.update.mockResolvedValue(
-      makeUpdatedBundle({
-        shopifyProductId: PRODUCT_ID,
-        bundleTextConfig,
-        steps: [
-          {
-            id: "step-db-1",
-            name: "Step 1",
-            StepProduct: [
-              {
-                productId: "gid://shopify/Product/456",
-                title: "Component",
-                imageUrl: null,
-              },
-            ],
-            StepCategory: [],
-          },
-        ],
-      })
-    );
-
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-      bundleTextConfig: JSON.stringify(bundleTextConfig),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
-
-    expect(body.success).toBe(true);
-    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+    const res = await handleSaveBundle(
       MOCK_ADMIN,
-      PRODUCT_ID,
-      expect.objectContaining({ bundleTextConfig }),
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ bundleProduct: JSON.stringify({ id: PRODUCT_ID }) }),
     );
-  });
-
-  it("persists direct quantity validation and product slots config into metafield sync", async () => {
-    const validateQuantityPerProduct = {
-      isEnabled: true,
-      allowedQuantity: 2,
-    };
-    const individualSellingPlanSelection = {
-      isEnabled: true,
-      showFor: "OOS_PRODUCTS",
-    };
-    getDb().bundle.update.mockResolvedValue(
-      makeUpdatedBundle({
-        shopifyProductId: PRODUCT_ID,
-        productSlotsEnabled: true,
-        individualSellingPlanSelection,
-        validateQuantityPerProduct,
-        steps: [
-          {
-            id: "step-db-1",
-            name: "Step 1",
-            StepProduct: [
-              {
-                productId: "gid://shopify/Product/456",
-                title: "Component",
-                imageUrl: null,
-              },
-            ],
-            StepCategory: [],
-          },
-        ],
-      })
-    );
-
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-      productSlotsEnabled: "true",
-      validateQuantityPerProduct: JSON.stringify(validateQuantityPerProduct),
-      individualSellingPlanSelection: JSON.stringify(individualSellingPlanSelection),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
     const body = await res.json();
 
+    expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      PRODUCT_ID,
-      expect.objectContaining({
-        individualSellingPlanSelection,
-        productSlotsEnabled: true,
-        validateQuantityPerProduct,
-      }),
-    );
-  });
-
-  it("passes step translations into bundle product metafield sync", async () => {
-    const multiLangData = {
-      es: {
-        productPageStepText: "Paso auditoria",
-        productPageSubtext: "Construye paquete auditoria",
-      },
-    };
-    getDb().bundle.update.mockResolvedValue(
-      makeUpdatedBundle({
-        shopifyProductId: PRODUCT_ID,
-        steps: [
-          {
-            id: "step-db-1",
-            name: "Step 1",
-            multiLangData,
-            StepProduct: [
-              {
-                productId: "gid://shopify/Product/456",
-                title: "Component",
-                imageUrl: null,
-              },
-            ],
-            StepCategory: [],
-          },
-        ],
-      })
-    );
-
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepsData({
-        multiLangData,
-        StepProduct: [
-          {
-            id: "gid://shopify/Product/456",
-            title: "Component",
-            imageUrl: null,
-          },
-        ],
-      })),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
-
-    expect(body.success).toBe(true);
-    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      PRODUCT_ID,
-      expect.objectContaining({
-        steps: [
-          expect.objectContaining({
-            name: "Step 1",
-            multiLangData,
-          }),
-        ],
-      }),
-    );
-  });
-
-  it("persists Step Config image and passes stepImage into bundle product metafield sync", async () => {
-    const stepImage = "https://cdn.example.test/fpb-step-config.png";
-    getDb().bundle.update.mockResolvedValue(
-      makeUpdatedBundle({
-        shopifyProductId: PRODUCT_ID,
-        steps: [
-          {
-            id: "step-db-1",
-            name: "Step 1",
-            timelineIconUrl: stepImage,
-            StepProduct: [
-              {
-                productId: "gid://shopify/Product/456",
-                title: "Component",
-                imageUrl: null,
-              },
-            ],
-            StepCategory: [],
-          },
-        ],
-      })
-    );
-
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepsData({
-        stepImage,
-        StepProduct: [
-          {
-            id: "gid://shopify/Product/456",
-            title: "Component",
-            imageUrl: null,
-          },
-        ],
-      })),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
-    const updateCall = getDb().bundle.update.mock.calls[0][0];
-    const metafieldConfig = (updateBundleProductMetafields as jest.Mock).mock.calls[0][2];
-
-    expect(body.success).toBe(true);
-    expect(updateCall.data.steps.create[0].timelineIconUrl).toBe(stepImage);
-    expect(metafieldConfig.steps[0]).not.toHaveProperty("timelineIconUrl");
-    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      PRODUCT_ID,
-      expect.objectContaining({
-        steps: [
-          expect.objectContaining({
-            name: "Step 1",
-            stepImage,
-          }),
-        ],
-      }),
-    );
-  });
-
-  it("persists direct add-ons personalization config and passes it into metafield sync", async () => {
-    const personalizationData = {
-      isPersonalizationEnabled: true,
-      addonProducts: {
-        isEnabled: true,
-        title: "Optional audit extras",
-        type: "MULTI_TIER",
-        tiers: [
-          {
-            tierId: "tier74285",
-            title: "Audit Tier 1",
-            selectedAddonProducts: [
-              {
-                id: "gid://shopify/Product/8322626126020",
-                productId: "8322626126020",
-                graphqlId: "gid://shopify/Product/8322626126020",
-                handle: "14k-dangling-obsidian-earrings",
-                title: "14k Dangling Obsidian Earrings",
-                variants: [
-                  {
-                    variantId: "45038877868228",
-                    variantGraphqlId: "gid://shopify/ProductVariant/45038877868228",
-                    price: "829.00",
-                    variantTitle: "Default Title",
-                  },
-                ],
-              },
-            ],
-            eligibilityCondition: {
-              type: "AMOUNT",
-              value: 1,
-              isValidateEligibilityConditionEnabled: true,
-            },
-            discount: { type: "PERCENTAGE", value: 10 },
-            displayVariantsAsIndividualProducts_addons: false,
-            conditions: [],
-          },
-        ],
-        multiLangData: {},
-        addonsMessaging: {
-          isEnabled: true,
-          tier1: {
-            ineligibleState: "Add product(s) worth at least {{addonsConditionDiff}} {{currencyUnit}} more to claim {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons",
-            eligibleState: "Congrats you are eligible for {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons",
-          },
-        },
-      },
-    };
-    getDb().bundle.update.mockResolvedValue(
-      makeUpdatedBundle({
-        shopifyProductId: PRODUCT_ID,
-        personalizationData,
-        steps: [
-          {
-            id: "step-db-1",
-            name: "Step 1",
-            StepProduct: [
-              {
-                productId: "gid://shopify/Product/456",
-                title: "Component",
-                imageUrl: null,
-              },
-            ],
-            StepCategory: [],
-          },
-        ],
-      })
-    );
-
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-      personalizationData: JSON.stringify(personalizationData),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
-
-    expect(body.success).toBe(true);
-    expect(getDb().bundle.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ personalizationData }),
-      })
-    );
-    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      PRODUCT_ID,
-      expect.objectContaining({ personalizationData }),
-    );
-  });
-
-  it("passes direct box-selection config into bundle variant metafield sync", async () => {
-    const boxSelection = {
-      isEnabled: true,
-      validateBoxSelectionQuantity: false,
-      rules: [
-        {
-          ruleId: "rule-2",
-          boxQuantity: 2,
-          boxLabel: "Box of 2",
-          boxSubtext: "5% off",
-          isDefaultSelected: true,
-        },
-      ],
-    };
-    getDb().bundle.update.mockImplementationOnce(async (args: any) =>
-      makeUpdatedBundle({
-        shopifyProductId: PRODUCT_ID,
-        boxSelection: args.data.boxSelection,
-        steps: [
-          {
-            id: "step-db-1",
-            name: "Step 1",
-            StepProduct: [
-              {
-                productId: "gid://shopify/Product/456",
-                title: "Component",
-                imageUrl: null,
-              },
-            ],
-            StepCategory: [],
-          },
-        ],
-      })
-    );
-    const discountData = makeDiscountData({
-      discountEnabled: true,
-      discountType: "percentage_off",
-      discountRules: [
-        {
-          id: "rule-2",
-          conditionType: "quantity",
-          conditionValue: 2,
-          discountValue: 5,
-        },
-      ],
-      showDiscountProgressBar: true,
-      pricingDisplayOptions: {
-        bundleQuantityOptions: {
-          enabled: true,
-          defaultRuleId: "rule-2",
-          optionsByRuleId: {
-            "rule-2": { label: "Box of 2", subtext: "5% off" },
-          },
-          optionsByLocaleByRuleId: {},
-        },
-        progressBar: {
-          enabled: true,
-          type: "step_based",
-          progressText: "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!",
-          successText: "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.",
-        },
-      },
-      tierTextByRuleId: {
-        "rule-2": { tierText: "2 Pack", tierSubtext: "Save 5%" },
-      },
-    });
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-      discountData: JSON.stringify(discountData),
-    });
-
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
-
-    expect(body.success).toBe(true);
-    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      PRODUCT_ID,
-      expect.objectContaining({
-        boxSelection,
-        pricing: expect.objectContaining({
-          messages: expect.objectContaining({
-            tierTextByRuleId: {
-              "rule-2": { tierText: "2 Pack", tierSubtext: "Save 5%" },
-            },
-          }),
-        }),
-      }),
-    );
-  });
-
-  it("returns 500 when component metafield update fails (fatal)", async () => {
-    (updateComponentProductMetafields as jest.Mock).mockRejectedValueOnce(
-      new Error("Component metafield failure")
-    );
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.success).toBe(false);
-  });
-
-  it("returns 500 when bundle variant metafield update fails (fatal)", async () => {
-    (updateBundleProductMetafields as jest.Mock).mockRejectedValueOnce(
-      new Error("Variant metafield failure")
-    );
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    expect(res.status).toBe(500);
+    expect(enqueueBundleStorefrontSync).toHaveBeenCalledWith(expect.objectContaining({
+      bundleType: "full_page",
+      reason: "save",
+    }));
   });
 });

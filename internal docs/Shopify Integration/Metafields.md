@@ -38,6 +38,14 @@ If the bundle config structure changes:
 3. Both must be updated in the same change — never one without the other
 4. Bump `WIDGET_VERSION` and show a sync prompt banner so merchants re-sync
 
+## Async Storefront Sync
+
+As of 2026-07-08, Admin save requests persist bundle data to Postgres and enqueue `bundle/storefront-sync.requested` instead of waiting for Shopify storefront publication. The event payload is intentionally small: `shopDomain`, `bundleId`, `bundleType`, `reason`, and `attemptId`.
+
+The Inngest worker reloads the bundle from DB, opens an unauthenticated Admin client for the shop, activates the Cart Transform, then writes page/product/component metafields. `Bundle.storefrontSyncStatus` tracks `queued`, `syncing`, `synced`, or `failed`; the configure pages show that state and expose retry. This keeps large component sets from turning Admin save into a long-running Shopify API request.
+
+Component variant `$app:component_parents` writes must use `metafieldsSet` batches of at most 25 inputs. A 260-variant bundle should produce 11 mutations, not 260 one-variant mutations.
+
 ## Why Bootstrap Hydration
 
 Full-page storefront markup uses a compact bootstrap marker so first render hydrates from the current app-proxy payload. The proxy path keeps a 3s retry for `503`/`504` responses to handle Render cold starts. The page metafield and hidden page-body marker remain useful for sync/install state, but neither must be treated as the first-paint full payload because Shopify page HTML can outlive a template change. The compact marker may carry `bundleDesignTemplate` and `bundleDesignPresetId` so the app embed can stamp the initial shell and load the correct preset stylesheet before proxy hydration, preventing a Standard-looking shell before Classic initializes.

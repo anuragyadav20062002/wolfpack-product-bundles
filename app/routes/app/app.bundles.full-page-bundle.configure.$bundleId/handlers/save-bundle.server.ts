@@ -16,7 +16,7 @@ import { parseConditionValue } from "../../../../lib/parse-condition-value";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
 import { AddOnDiscountFunctionService } from "../../../../services/addon-discount-function-service.server";
 import { parseFpbSaveBundleForm } from "./save-bundle-form.server";
-import { syncSavedFpbBundleStorefrontState } from "./save-metafields.server";
+import { enqueueBundleStorefrontSync } from "../../../../services/bundles/storefront-sync.server";
 
 function hasEnabledAddonProducts(personalizationData: unknown) {
   if (
@@ -467,19 +467,11 @@ export async function handleSaveBundle(
       },
     });
 
-    await syncSavedFpbBundleStorefrontState({
-      admin,
-      bundleId,
-      directBoxSelection,
-      discountData,
-      finalStatus: finalStatus as BundleStatus,
+    const storefrontSync = await enqueueBundleStorefrontSync({
       shopDomain: session.shop,
-      stepConditionsData,
-      stepsData,
-      updatedBundle: {
-        ...updatedBundle,
-        personalizationData,
-      },
+      bundleId,
+      bundleType: "full_page",
+      reason: "save",
     });
 
     if (hasEnabledAddonProducts(personalizationData)) {
@@ -517,6 +509,7 @@ export async function handleSaveBundle(
     return json({
       success: true,
       bundle: updatedBundle,
+      storefrontSync,
       message: "Bundle configuration saved successfully",
     });
   } catch (error) {

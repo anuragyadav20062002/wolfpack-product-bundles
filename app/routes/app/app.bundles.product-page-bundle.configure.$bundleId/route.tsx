@@ -9,7 +9,6 @@ import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import {
   handleSaveBundle,
-  handleSyncBundle,
   handleUpdateBundleStatus,
   handleSyncProduct,
   handleUpdateBundleProduct,
@@ -28,6 +27,11 @@ import {
   fetchEmbedData,
 } from "../../../lib/bundle-configure-loader.server";
 import { handleRecordBundlePreview } from "../shared/bundle-preview-action.server";
+import {
+  handleGetStorefrontSyncStatus,
+  handleQueueStorefrontSync,
+} from "../shared/storefront-sync-action.server";
+import { formatBundleStorefrontSync } from "../../../services/bundles/storefront-sync.server";
 import ConfigureBundleFlow from "./ConfigureBundleFlow";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -83,6 +87,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   return json({
     bundle,
+    storefrontSync: formatBundleStorefrontSync(bundle),
     bundleProduct,
     shop: session.shop,
     configureMode,
@@ -147,7 +152,11 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
       case "syncBundle":
-        return await handleSyncBundle(admin, session, bundleId);
+        return await handleQueueStorefrontSync(session, bundleId, "product_page", "sync_bundle");
+      case "retryStorefrontSync":
+        return await handleQueueStorefrontSync(session, bundleId, "product_page", "retry");
+      case "getStorefrontSyncStatus":
+        return await handleGetStorefrontSyncStatus(session, bundleId);
       case "updateBundleDesignTemplate":
         return await handleUpdateBundleDesignTemplate(
           admin,

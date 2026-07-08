@@ -15,6 +15,15 @@ export interface ShopifyWebhookEventData {
   apiVersion?: string;
 }
 
+export interface BundleStorefrontSyncEventData {
+  shopDomain: string;
+  bundleId: string;
+  bundleType: "full_page" | "product_page";
+  reason: "save" | "retry" | "sync_bundle";
+  attemptId: string;
+}
+
 export type ShopifyWebhookEvents = {
   "shopify/webhook": { data: ShopifyWebhookEventData };
+  "bundle/storefront-sync.requested": { data: BundleStorefrontSyncEventData };
 };
