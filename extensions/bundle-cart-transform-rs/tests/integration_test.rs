@@ -185,7 +185,6 @@ mod tests {
                         "wolfpackProductBundleName": {{ "value": "Runtime Bundle" }},
                         "runtimeToken": {{ "value": "{runtime_token}" }},
                         "stepType": null,
-                        "addonOfferId": null,
                         "bundleDisplayProperties": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -203,7 +202,6 @@ mod tests {
                         "wolfpackProductBundleName": {{ "value": "Runtime Bundle" }},
                         "runtimeToken": {{ "value": "{runtime_token}" }},
                         "stepType": null,
-                        "addonOfferId": null,
                         "bundleDisplayProperties": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -246,7 +244,6 @@ mod tests {
                         "wolfpackProductBundleName": {{ "value": "Runtime Bundle" }},
                         "runtimeToken": {{ "value": "{runtime_token}" }},
                         "stepType": null,
-                        "addonOfferId": null,
                         "bundleDisplayProperties": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
