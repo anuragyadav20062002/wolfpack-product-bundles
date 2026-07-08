@@ -59,6 +59,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
                     title
                     handle
                     description
+                    descriptionHtml
                     featuredImage {
                       url
                     }
@@ -150,6 +151,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
             title: product.title,
             handle: product.handle,
             description: product.description || '',
+            descriptionHtml: product.descriptionHtml || '',
             imageUrl: product.featuredImage?.url || '',
             options: (product.options || []).map((option: any) => ({
               name: option.name,

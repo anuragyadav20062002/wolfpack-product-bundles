@@ -25,6 +25,8 @@ data-bundle-config='{"v":2,"type":"full_page","bundleType":"full_page","id":"...
 
 The hidden `data-wpb-full-page-bundle` marker written by `app/services/widget-installation/widget-full-page-bundle.server.ts` uses the same compact payload. The template and preset fields are lightweight visual route hints only; the widget still hydrates current products, steps, rules, and pricing through the app-proxy bundle API before rendering.
 
+FPB runtime layout is template/preset-driven. `bundleDesignTemplate: "FBP_SIDE_FOOTER"` selects the full-page side-footer renderer and `bundleDesignPresetId` selects Standard, Classic, Compact, or Horizontal styling. The older `Bundle.fullPageLayout` database column is legacy storage only until a future schema migration; it must not be emitted in Admin save transport, app-proxy widget payloads, or FPB runtime metafield configs.
+
 ### Reader (Widget JS)
 `app/assets/bundle-widget-full-page.js` → `loadBundleData()`
 
@@ -47,6 +49,8 @@ Saving a placed FPB refreshes the hidden page-body marker before writing page me
 Shopify metafield values have a 64KB hard limit. The bundle variant `$app.bundle_ui_config` payload is especially sensitive for category-backed FPB/PPB bundles because category products can include rich product, image, option, and variant objects.
 
 Runtime category payloads must be compacted at `app/lib/bundle-config/category-runtime.ts` before they are written by `app/services/bundles/metafield-sync/operations/bundle-product.server.ts`. Preserve storefront-required fields only: product IDs/title/handle/image/price/weight, compact product options, and compact variants with ID/title/price/compare-at/weight/availability/inventory/options/image/selling-plan data. Strip admin/cache-only fields such as metafields, SKU, selectedOptions blobs, inventory policy, timestamps, and extra image metadata.
+
+Admin save transport should follow the same compact-field policy before posting `stepsData`. The route-level FPB save serializer is responsible for stripping picker/Admin graph data while preserving the product, variant, collection, category, and rule fields needed by persistence and storefront runtime generation.
 
 ## FPB Preview Cache Contract
 

@@ -273,7 +273,16 @@ class BundleProductModal {
 
     // Keep the description row mounted so the modal layout remains stable.
     const descriptionEl = document.getElementById('modal-product-description');
-    descriptionEl.textContent = this.currentProduct.description || '';
+    const descriptionHtml = typeof this.currentProduct.descriptionHtml === 'string'
+      ? this.currentProduct.descriptionHtml.trim()
+      : '';
+    descriptionEl.textContent = '';
+    descriptionEl.innerHTML = '';
+    if (descriptionHtml) {
+      descriptionEl.innerHTML = descriptionHtml;
+    } else {
+      descriptionEl.textContent = this.currentProduct.description || '';
+    }
 
     // Load image
     this.loadImage();

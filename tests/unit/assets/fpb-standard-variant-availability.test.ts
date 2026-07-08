@@ -192,6 +192,33 @@ describe('FPB Standard variant availability', () => {
     expect(normalized[0].description).toBe('Soft cotton product description.');
   });
 
+  it('preserves Shopify descriptionHtml for the product detail modal', () => {
+    const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
+      extractId: (id: string) => String(id || '').split('/').pop(),
+      shouldExpandStepProductsDuringLoad: () => false,
+      getFirstAvailableVariant: (product: any) => product.variants[0],
+      isVariantSelectableForInventory: () => true,
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+    }, [{
+      id: 'gid://shopify/Product/123',
+      title: 'Black Crew Neck T-Shirt',
+      description: 'Soft cotton product description.',
+      descriptionHtml: '<p>Soft <strong>cotton</strong> product description.</p>',
+      imageUrl: 'https://cdn.example.test/product.jpg',
+      variants: [
+        {
+          id: 'gid://shopify/ProductVariant/456',
+          title: 'S / Black',
+          price: '30.00',
+          available: true,
+        },
+      ],
+    }], { displayVariantsAsIndividual: false });
+
+    expect(normalized[0].description).toBe('Soft cotton product description.');
+    expect(normalized[0].descriptionHtml).toBe('<p>Soft <strong>cotton</strong> product description.</p>');
+  });
+
   it('keeps unavailable grouped products priced from their first variant', () => {
     const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
       extractId: (id: string) => String(id || '').split('/').pop(),
@@ -240,6 +267,7 @@ describe('FPB Standard variant availability', () => {
         products: [{
           id: 'gid://shopify/Product/123',
           description: 'Fetched product description.',
+          descriptionHtml: '<p>Fetched <strong>product</strong> description.</p>',
         }],
       }),
     });
@@ -256,6 +284,7 @@ describe('FPB Standard variant availability', () => {
         expect.stringContaining('/apps/product-bundles/api/storefront-products'),
       );
       expect(enriched[0].description).toBe('Fetched product description.');
+      expect(enriched[0].descriptionHtml).toBe('<p>Fetched <strong>product</strong> description.</p>');
     } finally {
       (global as any).window = previousWindow;
       (global as any).fetch = previousFetch;

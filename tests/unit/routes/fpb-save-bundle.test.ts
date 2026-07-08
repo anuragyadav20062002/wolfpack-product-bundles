@@ -289,6 +289,18 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
   });
 
+  it("does not persist legacy fullPageLayout from old save payloads", async () => {
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ fullPageLayout: "footer_bottom" }),
+    );
+
+    const updateArgs = getDb().bundle.update.mock.calls[0][0];
+    expect(updateArgs.data).not.toHaveProperty("fullPageLayout");
+  });
+
   it("persists direct bundleUpsellConfig from current full-page visibility controls", async () => {
     const bundleUpsellConfig = makeBundleUpsellConfig();
     await handleSaveBundle(

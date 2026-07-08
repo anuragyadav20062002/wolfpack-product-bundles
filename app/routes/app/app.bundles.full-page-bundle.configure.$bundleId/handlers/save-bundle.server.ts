@@ -81,7 +81,6 @@ export async function handleSaveBundle(
       discountData,
       floatingBadgeEnabled,
       floatingBadgeText,
-      fullPageLayout,
       individualSellingPlanSelection,
       loadingGif,
       maxQtyPerProduct,
@@ -279,7 +278,6 @@ export async function handleSaveBundle(
         shopifyProductId:
           bundleProductData?.id || existingBundle?.shopifyProductId || null,
         templateName: templateName,
-        fullPageLayout: fullPageLayout as any,
         promoBannerBgImage: promoBannerBgImage,
         loadingGif: loadingGif,
         showStepTimeline: showStepTimelineParsed,

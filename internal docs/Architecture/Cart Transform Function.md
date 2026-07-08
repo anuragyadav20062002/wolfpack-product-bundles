@@ -71,6 +71,12 @@ The function groups cart lines by EB's public `_wolfpackProductBundle:OfferId` c
    - `title`: bundle name (must be **unique per instance** to prevent Shopify's automatic consolidation of duplicate merges — append `" (2)"`, `" (3)"`, etc. via `bundleNameCounts` Map)
 2. **EXPAND**: Breaks the merged line back into components at checkout for fulfillment
 
+### Component variant metafield owner IDs
+
+`component_parents` must be written to Shopify ProductVariant GIDs, not cached numeric variant IDs. A real merchant failure on 2026-07-07 had an active `cart.transform.run` object and correct cart line `_wolfpackProductBundle:OfferId` properties, but cart lines remained unmerged because cached `StepProduct.variants` contained numeric IDs such as `51659604984106`. Passing those numeric values as `metafieldsSet.ownerId` prevents Shopify from attaching `$app:component_parents`, so the Function input sees null component metadata and emits no `linesMerge` operation.
+
+Normalize every cached variant identifier into `gid://shopify/ProductVariant/{id}` before adding it to `component_reference.value` or using it as a metafield owner.
+
 ---
 
 ## Pricing

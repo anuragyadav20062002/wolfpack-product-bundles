@@ -24,7 +24,6 @@ export interface FormattedBundle {
   description: string | null;
   status: string;
   bundleType: string;
-  fullPageLayout: string | null;
   bundleDesignTemplate: string | null;
   bundleDesignPresetId: string | null;
   bundleDesignTemplateData: { templateId: string } | null;
@@ -263,7 +262,6 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     description: bundle.description,
     status: bundle.status,
     bundleType: bundle.bundleType,
-    fullPageLayout: bundle.fullPageLayout ?? null,
     bundleDesignTemplate,
     bundleDesignPresetId,
     bundleDesignTemplateData,

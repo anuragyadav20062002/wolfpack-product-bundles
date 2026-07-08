@@ -62,10 +62,10 @@ describe("formatBundleForWidget", () => {
     expect(result.steps).toHaveLength(0);
   });
 
-  it("nullifies optional fields when absent", () => {
-    const bundle = makeBundle({ fullPageLayout: undefined });
+  it("omits the legacy fullPageLayout field from widget payloads", () => {
+    const bundle = makeBundle({ fullPageLayout: "footer_bottom" });
     const result = formatBundleForWidget(bundle as any);
-    expect(result.fullPageLayout).toBeNull();
+    expect(result).not.toHaveProperty("fullPageLayout");
   });
 
   it("defaults full-page bundles to Standard Design when template fields are absent", () => {

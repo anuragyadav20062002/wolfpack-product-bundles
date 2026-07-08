@@ -340,20 +340,16 @@ async _scheduleLayoutRefresh() {
     const data = await response.json();
     if (!data?.bundle) return;
 
-    const freshLayout = this.resolveFullPageLayout(data.bundle);
-    const currentLayout = this.resolveFullPageLayout();
     const freshTemplate = data.bundle.bundleDesignTemplate ?? null;
     const currentTemplate = this.selectedBundle?.bundleDesignTemplate ?? null;
     const freshPreset = data.bundle.bundleDesignPresetId ?? null;
     const currentPreset = this.selectedBundle?.bundleDesignPresetId ?? null;
 
-    if ((freshLayout !== currentLayout || freshTemplate !== currentTemplate || freshPreset !== currentPreset) && this.selectedBundle) {
-      this.selectedBundle.fullPageLayout = data.bundle.fullPageLayout;
+    if ((freshTemplate !== currentTemplate || freshPreset !== currentPreset) && this.selectedBundle) {
       this.selectedBundle.bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.selectedBundle.bundleDesignTemplate;
       this.selectedBundle.bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.selectedBundle.bundleDesignPresetId;
       this.selectedBundle.bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.selectedBundle.bundleDesignTemplateData;
       if (this.bundleData?.[bundleId]) {
-        this.bundleData[bundleId].fullPageLayout = data.bundle.fullPageLayout;
         this.bundleData[bundleId].bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.bundleData[bundleId].bundleDesignTemplate;
         this.bundleData[bundleId].bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.bundleData[bundleId].bundleDesignPresetId;
         this.bundleData[bundleId].bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.bundleData[bundleId].bundleDesignTemplateData;
