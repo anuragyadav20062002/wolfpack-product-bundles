@@ -22,6 +22,7 @@ describe('shared cart-submit helpers', () => {
       bundleName: 'Gift Box',
       offerId: 'offer-1',
       sessionKey: 'session-1',
+      runtimeToken: 'signed-runtime-token',
     });
 
     expect(context.bundleDetailsKey).toBe('offer-1_session-1');
@@ -39,6 +40,7 @@ describe('shared cart-submit helpers', () => {
       ['items[0][properties][_bundleName]', 'Gift Box'],
       ['items[0][properties][_wolfpackProductBundle:OfferId]', 'offer-1_session-1_1'],
       ['items[0][properties][_wolfpackProductBundle:prodQty]', '2'],
+      ['items[0][properties][_wolfpack_bundle_runtime]', 'signed-runtime-token'],
     ]);
   });
 

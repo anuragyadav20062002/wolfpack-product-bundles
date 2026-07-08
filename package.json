@@ -12,6 +12,7 @@
     "build:sdk": "node scripts/build-widget-bundles.js sdk && node scripts/minify-assets.js js",
     "minify:assets": "node scripts/minify-assets.js",
     "dev": "shopify app dev",
+    "dev:sit": "shopify app dev --config shopify.app.wolfpack-product-bundles-sit.toml",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",

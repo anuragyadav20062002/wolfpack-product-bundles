@@ -12,9 +12,7 @@
 // METAFIELD JSON TYPES — deserialized from metafield string values
 // ============================================================================
 
-/// Deserialized from `$app:component_parents` metafield (JSON array).
-/// One entry per bundle parent. The MERGE path chooses the entry whose
-/// component references best match the grouped cart lines.
+/// Runtime-token parent data used by MERGE.
 /// (`component_reference`/`component_quantities` live on separate metafields
 /// and are read directly via typegen accessors in the EXPAND path.)
 #[derive(serde::Deserialize, Debug)]
@@ -22,15 +20,7 @@ pub struct ComponentParent {
     /// Parent variant GID, e.g. "gid://shopify/ProductVariant/123"
     pub id: String,
     #[serde(default)]
-    pub component_reference: Option<MetafieldValue<Vec<String>>>,
-    #[serde(default)]
     pub price_adjustment: Option<PriceAdjustmentConfig>,
-}
-
-#[derive(serde::Deserialize, Debug, Clone)]
-pub struct MetafieldValue<T> {
-    #[serde(default)]
-    pub value: T,
 }
 
 /// Deserialized from `$app:price_adjustment` metafield.
@@ -179,4 +169,54 @@ pub struct CartLineDisplaySavings {
     pub percentage: Option<String>,
     #[serde(default)]
     pub amount_percentage: Option<String>,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
+pub struct RuntimeTokenPayload {
+    pub version: i64,
+    pub shop: String,
+    pub bundle_id: String,
+    pub bundle_type: String,
+    pub offer_group_id: String,
+    pub parent_variant_id: String,
+    pub bundle_name: String,
+    #[serde(default)]
+    pub components: Vec<RuntimeTokenLine>,
+    #[serde(default)]
+    pub addons: Vec<RuntimeTokenAddonLine>,
+    #[serde(default)]
+    pub price_adjustment: PriceAdjustmentConfig,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeTokenLine {
+    pub variant_id: String,
+    pub quantity: i64,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
+pub struct RuntimeTokenAddonLine {
+    pub variant_id: String,
+    pub quantity: i64,
+    #[serde(default)]
+    pub discount: Option<RuntimeTokenDiscount>,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RuntimeTokenDiscountType {
+    Percentage,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[allow(dead_code)]
+pub struct RuntimeTokenDiscount {
+    #[serde(rename = "type")]
+    pub discount_type: RuntimeTokenDiscountType,
+    pub value: f64,
 }

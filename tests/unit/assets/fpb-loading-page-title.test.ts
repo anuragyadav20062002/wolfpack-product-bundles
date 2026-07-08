@@ -45,7 +45,7 @@ class FakeElement {
     return matches;
   }
 
-  closest(selector: Selector) {
+  closest(selector: Selector): FakeElement | null {
     const selectors = selector.split(',').map((part) => part.trim()).filter(Boolean);
 
     for (const candidate of selectors) {

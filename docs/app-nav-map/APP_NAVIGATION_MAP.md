@@ -4,7 +4,7 @@
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-07-02
+**Last Updated:** 2026-07-08
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -93,6 +93,12 @@ Product Page: `/app/bundles/product-page-bundle/configure/:bundleId?mode=create`
 Full Page: `/app/bundles/full-page-bundle/configure/:bundleId?mode=create`
 First-install first-bundle tour adds: `&first_load=true`
 ```
+
+Configure page storefront sync status:
+- Full-page and product-page configure pages do not show a separate Storefront sync status or retry banner.
+- Save persists DB changes and publishes Shopify storefront data synchronously before returning a compact success response.
+- Existing Sync Bundle actions run the same direct storefront sync path.
+- Preview Bundle posts one compact `/prepare-preview` request before opening storefront preview; failed checks surface through the preview error toast while the button spinner is active.
 
 #### Modal: Delete Bundle Confirmation
 Triggered by: "Delete" row action
@@ -456,6 +462,7 @@ Billing Page
 | `/apps/product-bundles/api/bundle/:id.json` | Storefront bundle config (HMAC verified) |
 | `/apps/product-bundles/api/bundles.json` | All active bundles for shop |
 | `/apps/product-bundles/api/cart-bundle-details` | Signed storefront route that merges EB-style cart `bundle_details` metafield entries |
+| `/apps/product-bundles/api/cart-transform-runtime-token` | Signed storefront route that validates selected bundle lines and returns `_wolfpack_bundle_runtime` for Cart Transform / Discount Function verification |
 | `/apps/product-bundles/api/checkout-integration-discount-code` | Signed storefront route that creates short-lived app discount codes for third-party FPB checkout integrations |
 | `/apps/product-bundles/api/design-settings/:shop` | CSS vars for storefront widgets |
 | `/apps/product-bundles/api/language-settings/:shop` | Settings -> Language JSON for storefront widget text and cart labels |

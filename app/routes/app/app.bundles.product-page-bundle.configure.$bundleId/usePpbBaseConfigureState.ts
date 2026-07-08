@@ -170,7 +170,7 @@ export function usePpbBaseConfigureState() {
   const checkAppEmbedStatusBeforePreview = useCallback(async () => {
     const status = await checkAppEmbedStatusFromCurrentRoute();
     setCurrentAppEmbedEnabled(status.appEmbedEnabled);
-    setCurrentThemeEditorUrl((currentUrl) =>
+    setCurrentThemeEditorUrl((currentUrl: string | null) =>
       resolveAppEmbedStatusThemeEditorUrl(currentUrl, status.themeEditorUrl),
     );
     return status.appEmbedEnabled;

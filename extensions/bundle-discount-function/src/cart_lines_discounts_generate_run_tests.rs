@@ -27,7 +27,7 @@ fn ignores_invalid_addon_tokens() {
 }
 
 #[test]
-fn emits_partial_and_full_addon_discount_candidates() {
+fn ignores_partial_and_full_addon_discount_candidates_without_runtime_token() {
     let input = r#"{
         "cart": {
             "lines": [
@@ -93,39 +93,93 @@ fn emits_partial_and_full_addon_discount_candidates() {
     let output: schema::CartLinesDiscountsGenerateRunResult =
         run_function_with_input(cart_lines_discounts_generate_run, input).expect("should run");
 
+    assert!(output.operations.is_empty());
+}
+
+#[test]
+fn emits_addon_discount_only_when_runtime_token_authorizes_line() {
+    let runtime_secret = "26338c77e8f7a7762a2c91a18de15691f0722578ea7e5f067af01a623f403f6c";
+    let runtime_token = "eyJ2ZXJzaW9uIjoxLCJzaG9wIjoidGVzdC1zaG9wLm15c2hvcGlmeS5jb20iLCJidW5kbGVJZCI6ImJ1bmRsZS0xIiwiYnVuZGxlVHlwZSI6ImZ1bGxfcGFnZSIsIm9mZmVyR3JvdXBJZCI6IkZCUC1idW5kbGUtMV9BQkMiLCJwYXJlbnRWYXJpYW50SWQiOiJnaWQ6Ly9zaG9waWZ5L1Byb2R1Y3RWYXJpYW50Lzk5OSIsImJ1bmRsZU5hbWUiOiJSdW50aW1lIEJ1bmRsZSIsImNvbXBvbmVudHMiOlt7InZhcmlhbnRJZCI6ImdpZDovL3Nob3BpZnkvUHJvZHVjdFZhcmlhbnQvMTAxIiwicXVhbnRpdHkiOjF9XSwiYWRkb25zIjpbeyJ2YXJpYW50SWQiOiJnaWQ6Ly9zaG9waWZ5L1Byb2R1Y3RWYXJpYW50LzIwMSIsInF1YW50aXR5IjoxLCJkaXNjb3VudCI6eyJ0eXBlIjoiUEVSQ0VOVEFHRSIsInZhbHVlIjoxMH19XSwicHJpY2VBZGp1c3RtZW50Ijp7Im1ldGhvZCI6InBlcmNlbnRhZ2Vfb2ZmIiwidmFsdWUiOjIwfX0.taZELlnRV1Rlh-RZ2YBVJD1Z8dUE9i3EO28hKYAf7JY";
+    let input = format!(
+        r#"{{
+        "cart": {{
+            "lines": [
+                {{
+                    "id": "gid://shopify/CartLine/addon",
+                    "quantity": 1,
+                    "wolfpackProductBundleOfferId": {{ "value": "FBP-bundle-1_ABC_2" }},
+                    "runtimeToken": {{ "value": "{runtime_token}" }},
+                    "stepType": {{ "value": "addon:PERCENTAGE:10" }},
+                    "merchandise": {{
+                        "__typename": "ProductVariant",
+                        "id": "gid://shopify/ProductVariant/201",
+                        "component_parents": null
+                    }},
+                    "cost": {{ "amountPerQuantity": {{ "amount": "10.00" }} }}
+                }}
+            ]
+        }},
+        "discount": {{
+            "discountClasses": ["PRODUCT"],
+            "runtimeTokenSecret": {{ "value": "{runtime_secret}" }},
+            "checkoutIntegrationConfig": null
+        }},
+        "enteredDiscountCodes": [],
+        "triggeringDiscountCode": null,
+        "presentmentCurrencyRate": "1.0"
+    }}"#
+    );
+
+    let output: schema::CartLinesDiscountsGenerateRunResult =
+        run_function_with_input(cart_lines_discounts_generate_run, input.as_str())
+            .expect("should run");
+
     assert_eq!(output.operations.len(), 1);
     let add_operation = match &output.operations[0] {
         schema::CartOperation::ProductDiscountsAdd(operation) => operation,
         unexpected => panic!("expected product discounts add operation, got {unexpected:?}"),
     };
-    assert_eq!(
-        add_operation.selection_strategy,
-        schema::ProductDiscountSelectionStrategy::All
-    );
-    assert_eq!(add_operation.candidates.len(), 2);
+    assert_eq!(add_operation.candidates.len(), 1);
     assert_eq!(
         add_operation.candidates[0].message.as_deref(),
         Some(ADDON_DISCOUNT_MESSAGE)
     );
-    assert_eq!(
-        add_operation.candidates[1].message.as_deref(),
-        Some(ADDON_DISCOUNT_MESSAGE)
-    );
+}
 
-    let first_percentage = match &add_operation.candidates[0].value {
-        schema::ProductDiscountCandidateValue::Percentage(percentage) => {
-            percentage.value.to_string()
-        }
-        unexpected => panic!("expected percentage discount value, got {unexpected:?}"),
-    };
-    let second_percentage = match &add_operation.candidates[1].value {
-        schema::ProductDiscountCandidateValue::Percentage(percentage) => {
-            percentage.value.to_string()
-        }
-        unexpected => panic!("expected percentage discount value, got {unexpected:?}"),
-    };
-    assert_eq!(first_percentage, "10.0");
-    assert_eq!(second_percentage, "100.0");
+#[test]
+fn ignores_unsigned_addon_discount_markers() {
+    let input = r#"{
+        "cart": {
+            "lines": [
+                {
+                    "id": "gid://shopify/CartLine/addon",
+                    "quantity": 1,
+                    "wolfpackProductBundleOfferId": { "value": "FBP-bundle-1_ABC_2" },
+                    "runtimeToken": null,
+                    "stepType": { "value": "addon:PERCENTAGE:10" },
+                    "merchandise": {
+                        "__typename": "ProductVariant",
+                        "id": "gid://shopify/ProductVariant/201",
+                        "component_parents": null
+                    },
+                    "cost": { "amountPerQuantity": { "amount": "10.00" } }
+                }
+            ]
+        },
+        "discount": {
+            "discountClasses": ["PRODUCT"],
+            "runtimeTokenSecret": { "value": "26338c77e8f7a7762a2c91a18de15691f0722578ea7e5f067af01a623f403f6c" },
+            "checkoutIntegrationConfig": null
+        },
+        "enteredDiscountCodes": [],
+        "triggeringDiscountCode": null,
+        "presentmentCurrencyRate": "1.0"
+    }"#;
+
+    let output: schema::CartLinesDiscountsGenerateRunResult =
+        run_function_with_input(cart_lines_discounts_generate_run, input).expect("should run");
+
+    assert!(output.operations.is_empty());
 }
 
 #[test]

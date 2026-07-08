@@ -196,17 +196,10 @@ export async function handleSyncProduct(
 
       return json({
         success: true,
+        statusCode: 200,
         productId,
-        syncedData: {
-          title: shopifyProduct.title,
-          description: shopifyProduct.description,
-          status: shopifyProduct.status,
-          lastUpdated: shopifyProduct.updatedAt,
-          changesDetected: bundleNeedsSyncing,
-        },
-        message: bundleNeedsSyncing
-          ? "Bundle product synchronized successfully. Changes detected and updated."
-          : "Bundle product synchronized successfully. No changes detected.",
+        productHandle: syncedProductHandle,
+        message: "Updated Successfully!",
       });
     } catch (error) {
       const message =
@@ -400,7 +393,8 @@ export async function handleSyncProduct(
 
   return json({
     success: true,
+    statusCode: 200,
     productId,
-    message: "Bundle product synchronized successfully",
+    message: "Updated Successfully!",
   });
 }

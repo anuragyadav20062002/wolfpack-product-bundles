@@ -14,7 +14,10 @@ import {
   normalizePricingDisplayOptions,
   serializeBoxSelectionFromPricingDisplayOptions,
 } from "../../../../lib/pricing-display-options";
-import { syncSavedBundleMetafields } from "./save-bundle-metafields.server";
+import {
+  compactBundleForConfigureResponse,
+  syncBundleStorefrontNow,
+} from "../../../../services/bundles/storefront-sync.server";
 
 export async function handleSaveBundle(
   admin: ShopifyAdmin,
@@ -392,20 +395,19 @@ export async function handleSaveBundle(
       },
     });
 
-    await syncSavedBundleMetafields({
+    await syncBundleStorefrontNow({
       admin,
+      shopDomain: session.shop,
       bundleId,
-      finalStatus,
-      updatedBundle,
-      stepsData,
-      stepConditionsData,
-      discountData,
+      bundleType: "product_page",
+      reason: "save",
     });
 
     return json({
       success: true,
-      bundle: updatedBundle,
-      message: "Bundle configuration saved successfully",
+      statusCode: 200,
+      bundle: compactBundleForConfigureResponse(updatedBundle),
+      message: "Updated Successfully!",
     });
   } catch (error) {
     const message =

@@ -9,7 +9,6 @@ import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import {
   handleSaveBundle,
-  handleSyncBundle,
   handleUpdateBundleStatus,
   handleSyncProduct,
   handleUpdateBundleProduct,
@@ -28,6 +27,10 @@ import {
   fetchEmbedData,
 } from "../../../lib/bundle-configure-loader.server";
 import { handleRecordBundlePreview } from "../shared/bundle-preview-action.server";
+import {
+  handlePrepareStorefrontPreview,
+  handleSyncStorefrontNow,
+} from "../shared/storefront-sync-action.server";
 import ConfigureBundleFlow from "./ConfigureBundleFlow";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -147,7 +150,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
       case "syncBundle":
-        return await handleSyncBundle(admin, session, bundleId);
+        return await handleSyncStorefrontNow(admin, session, bundleId, "product_page", "sync_bundle");
+      case "preparePreviewBundle":
+        return await handlePrepareStorefrontPreview(admin, session, bundleId, "product_page");
       case "updateBundleDesignTemplate":
         return await handleUpdateBundleDesignTemplate(
           admin,

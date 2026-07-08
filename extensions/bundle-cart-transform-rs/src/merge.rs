@@ -5,39 +5,9 @@ use crate::helpers::{decimal_to_f64, is_addon_line, is_free_gift_line, parse_jso
 use crate::pricing::{
     calculate_buy_x_get_y_discount_percentage, calculate_discount_percentage, rounded_percentage,
 };
+use crate::runtime_token::{token_components_match, verify_runtime_token};
 use crate::schema;
 use crate::types::{CartLineMessagingSettings, ComponentParent, PricingMethod};
-
-fn parent_match_count(parent: &ComponentParent, group_variant_ids: &[String]) -> usize {
-    let Some(component_reference) = &parent.component_reference else {
-        return 0;
-    };
-
-    group_variant_ids
-        .iter()
-        .filter(|variant_id| {
-            component_reference
-                .value
-                .iter()
-                .any(|ref_id| ref_id == *variant_id)
-        })
-        .count()
-}
-
-fn select_component_parent<'a>(
-    component_parents: &'a [ComponentParent],
-    group_variant_ids: &[String],
-) -> Option<&'a ComponentParent> {
-    component_parents
-        .iter()
-        .filter(|parent| !parent.id.is_empty())
-        .max_by_key(|parent| parent_match_count(parent, group_variant_ids))
-        .or_else(|| {
-            component_parents
-                .iter()
-                .find(|parent| !parent.id.is_empty())
-        })
-}
 
 fn non_empty(value: &Option<String>) -> Option<String> {
     value
@@ -80,8 +50,7 @@ fn wolfpack_product_bundle_offer_group_id(value: &str) -> Option<String> {
 }
 
 /// Groups cart lines by EB `_wolfpackProductBundle:OfferId` base (O(n) pass), then for each group builds one
-/// MERGE operation using the component_parents metafield for parent variant ID
-/// and pricing config.
+/// MERGE operation after verifying the signed runtime token.
 ///
 /// # Returns
 /// Vec of CartOperation (merge variant), with processed line IDs added to
@@ -125,8 +94,13 @@ pub fn process_merge_operations(
     // -------------------------------------------------------------------------
     // Step 2: Build one MERGE operation per bundle group.
     // -------------------------------------------------------------------------
-    for (_, line_indices) in &bundle_groups {
-        let mut bundle_addon_offer_id: Option<String> = None;
+    let runtime_token_secret = input
+        .cart_transform()
+        .runtime_token_secret()
+        .map(|metafield| metafield.value().as_str())
+        .filter(|value| !value.trim().is_empty());
+
+    for (offer_group_id, line_indices) in &bundle_groups {
         let merge_line_indices: Vec<usize> = line_indices
             .iter()
             .copied()
@@ -149,42 +123,46 @@ pub fn process_merge_operations(
                 is_addon_line(step_type)
             })
             .collect();
+        let bundle_addon_offer_id = if addon_line_indices.is_empty() {
+            None
+        } else {
+            Some(offer_group_id.clone())
+        };
 
         if merge_line_indices.is_empty() {
             continue;
         }
 
-        // Find first line with component_parents metafield value.
-        let component_parents_json: Option<String> =
-            merge_line_indices
+        let runtime_parent = runtime_token_secret.and_then(|secret| {
+            let token = merge_line_indices.iter().find_map(|&idx| {
+                lines[idx]
+                    .runtime_token()
+                    .and_then(|attribute| attribute.value())
+                    .map(|value| value.as_str())
+                    .filter(|value| !value.trim().is_empty())
+            })?;
+            let payload = verify_runtime_token(token, secret)?;
+            let actual_components: Vec<(String, i64)> = merge_line_indices
                 .iter()
-                .find_map(|&idx| match lines[idx].merchandise() {
+                .filter_map(|&idx| match lines[idx].merchandise() {
                     schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
-                        v.component_parents().map(|m| m.value().clone())
+                        Some((v.id().to_string(), *lines[idx].quantity() as i64))
                     }
                     _ => None,
-                });
-
-        let Some(cp_json) = component_parents_json else {
-            continue;
-        };
-
-        let component_parents: Vec<ComponentParent> = parse_json_or_default(Some(&cp_json));
-        if component_parents.is_empty() {
-            continue;
-        }
-
-        let group_variant_ids: Vec<String> = merge_line_indices
-            .iter()
-            .filter_map(|&idx| match lines[idx].merchandise() {
-                schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
-                    Some(v.id().to_string())
-                }
-                _ => None,
+                })
+                .collect();
+            if !token_components_match(&payload, offer_group_id, &actual_components) {
+                return None;
+            }
+            Some(ComponentParent {
+                id: payload.parent_variant_id,
+                price_adjustment: Some(payload.price_adjustment),
             })
-            .collect();
+        });
 
-        let Some(parent) = select_component_parent(&component_parents, &group_variant_ids) else {
+        let parent = if let Some(parent) = runtime_parent.as_ref() {
+            parent
+        } else {
             continue;
         };
         let parent_variant_id = parent.id.clone();
@@ -205,14 +183,6 @@ pub fn process_merge_operations(
             let line_total = unit_price * (qty as f64);
             total_quantity += qty;
             let step_type = line.step_type().and_then(|a| a.value()).map(|s| s.as_str());
-            if bundle_addon_offer_id.is_none() {
-                if let Some(value) = line.addon_offer_id().and_then(|a| a.value()) {
-                    let normalized = value.trim();
-                    if !normalized.is_empty() {
-                        bundle_addon_offer_id = Some(normalized.to_string());
-                    }
-                }
-            }
             if is_free_gift_line(step_type) {
                 free_gift_total += line_total;
             } else {

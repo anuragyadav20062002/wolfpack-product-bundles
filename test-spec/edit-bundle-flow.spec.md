@@ -104,7 +104,7 @@ All tests run against mocked Prisma and mocked Shopify admin. No real DB or netw
 | # | Scenario | Setup | Expected |
 |---|----------|-------|----------|
 | 1 | Bundle not found | db.findUnique returns null | returns 404 JSON |
-| 2 | Product exists — syncs successfully | Shopify product returned | success JSON with syncedData |
+| 2 | Product exists — syncs successfully | Shopify product returned | compact success JSON with productId/productHandle |
 | 3 | Product deleted in Shopify | Shopify returns null | db.update clears productId; returns 404 |
 | 4 | No productId — creates new product | productId=null | admin.graphql productCreate called |
 | 5 | GraphQL errors from Shopify | data.errors present | returns 400 |

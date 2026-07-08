@@ -16,7 +16,10 @@ import { parseConditionValue } from "../../../../lib/parse-condition-value";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
 import { AddOnDiscountFunctionService } from "../../../../services/addon-discount-function-service.server";
 import { parseFpbSaveBundleForm } from "./save-bundle-form.server";
-import { syncSavedFpbBundleStorefrontState } from "./save-metafields.server";
+import {
+  compactBundleForConfigureResponse,
+  syncBundleStorefrontNow,
+} from "../../../../services/bundles/storefront-sync.server";
 
 function hasEnabledAddonProducts(personalizationData: unknown) {
   if (
@@ -467,19 +470,12 @@ export async function handleSaveBundle(
       },
     });
 
-    await syncSavedFpbBundleStorefrontState({
+    await syncBundleStorefrontNow({
       admin,
-      bundleId,
-      directBoxSelection,
-      discountData,
-      finalStatus: finalStatus as BundleStatus,
       shopDomain: session.shop,
-      stepConditionsData,
-      stepsData,
-      updatedBundle: {
-        ...updatedBundle,
-        personalizationData,
-      },
+      bundleId,
+      bundleType: "full_page",
+      reason: "save",
     });
 
     if (hasEnabledAddonProducts(personalizationData)) {
@@ -516,8 +512,9 @@ export async function handleSaveBundle(
 
     return json({
       success: true,
-      bundle: updatedBundle,
-      message: "Bundle configuration saved successfully",
+      statusCode: 200,
+      bundle: compactBundleForConfigureResponse(updatedBundle),
+      message: "Updated Successfully!",
     });
   } catch (error) {
     const message =
