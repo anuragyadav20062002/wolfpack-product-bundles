@@ -1,8 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use bundle_cart_transform_rs::{cart_transform_run, schema};
+    use bundle_cart_transform_rs::{
+        cart_transform_run, runtime_token::sign_runtime_token_for_test, schema,
+    };
+    use serde_json::Value;
     use shopify_function::run_function_with_input;
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
+
+    const TEST_RUNTIME_SECRET: &str =
+        "26338c77e8f7a7762a2c91a18de15691f0722578ea7e5f067af01a623f403f6c";
 
     // =========================================================================
     // MERGE OPERATION TESTS
@@ -34,6 +40,171 @@ mod tests {
             .as_ref()
             .and_then(|price| price.percentage_decrease.as_ref())
             .map(|value| value.value.to_string())
+    }
+
+    fn offer_group_id(value: &str) -> Option<String> {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            return None;
+        }
+
+        let Some((base, item_index)) = trimmed.rsplit_once('_') else {
+            return Some(trimmed.to_string());
+        };
+
+        if base.is_empty() || item_index.is_empty() {
+            return None;
+        }
+
+        Some(base.to_string())
+    }
+
+    fn attr_value<'a>(line: &'a Value, key: &str) -> Option<&'a str> {
+        line.get(key)?.get("value")?.as_str()
+    }
+
+    fn parse_component_parents(line: &Value) -> Vec<Value> {
+        let Some(raw) = line
+            .get("merchandise")
+            .and_then(|merchandise| merchandise.get("component_parents"))
+            .and_then(|metafield| metafield.get("value"))
+            .and_then(|value| value.as_str())
+        else {
+            return Vec::new();
+        };
+
+        serde_json::from_str(raw).unwrap_or_default()
+    }
+
+    fn parent_match_count(parent: &Value, variant_ids: &[String]) -> usize {
+        let Some(component_ids) = parent
+            .get("component_reference")
+            .and_then(|value| value.get("value"))
+            .and_then(|value| value.as_array())
+        else {
+            return 0;
+        };
+
+        variant_ids
+            .iter()
+            .filter(|variant_id| {
+                component_ids
+                    .iter()
+                    .any(|component_id| component_id.as_str() == Some(variant_id.as_str()))
+            })
+            .count()
+    }
+
+    fn select_parent_for_group(lines: &[Value], indices: &[usize]) -> Option<Value> {
+        let variant_ids: Vec<String> = indices
+            .iter()
+            .filter_map(|idx| {
+                lines
+                    .get(*idx)?
+                    .get("merchandise")?
+                    .get("id")?
+                    .as_str()
+                    .map(|value| value.to_string())
+            })
+            .collect();
+
+        indices
+            .iter()
+            .flat_map(|idx| parse_component_parents(&lines[*idx]))
+            .filter(|parent| parent.get("id").and_then(|id| id.as_str()).is_some())
+            .max_by_key(|parent| parent_match_count(parent, &variant_ids))
+    }
+
+    fn with_runtime_tokens(input: &str) -> String {
+        let mut root: Value = serde_json::from_str(input).expect("test input should be valid JSON");
+        if root
+            .get("cartTransform")
+            .and_then(|cart_transform| cart_transform.get("runtimeTokenSecret"))
+            .is_some()
+        {
+            return input.to_string();
+        }
+
+        let Some(lines) = root
+            .get_mut("cart")
+            .and_then(|cart| cart.get_mut("lines"))
+            .and_then(|lines| lines.as_array_mut())
+        else {
+            return input.to_string();
+        };
+
+        let mut groups: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+        for (idx, line) in lines.iter().enumerate() {
+            let step_type = attr_value(line, "stepType");
+            if step_type == Some("gift_message") || step_type.unwrap_or("").starts_with("addon") {
+                continue;
+            }
+            let Some(group_id) =
+                attr_value(line, "wolfpackProductBundleOfferId").and_then(offer_group_id)
+            else {
+                continue;
+            };
+            groups.entry(group_id).or_default().push(idx);
+        }
+
+        for (group_id, indices) in groups {
+            let Some(parent) = select_parent_for_group(lines, &indices) else {
+                continue;
+            };
+            let Some(parent_variant_id) = parent.get("id").and_then(|id| id.as_str()) else {
+                continue;
+            };
+
+            let components: Vec<Value> = indices
+                .iter()
+                .filter_map(|idx| {
+                    let line = lines.get(*idx)?;
+                    Some(serde_json::json!({
+                        "variantId": line.get("merchandise")?.get("id")?.as_str()?,
+                        "quantity": line.get("quantity")?.as_i64()?,
+                    }))
+                })
+                .collect();
+            if components.is_empty() {
+                continue;
+            }
+
+            let bundle_name = indices
+                .first()
+                .and_then(|idx| lines.get(*idx))
+                .and_then(|line| attr_value(line, "wolfpackProductBundleName"))
+                .unwrap_or("Bundle");
+            let price_adjustment = parent
+                .get("price_adjustment")
+                .filter(|value| !value.is_null())
+                .cloned()
+                .unwrap_or_else(|| serde_json::json!({}));
+            let payload = serde_json::json!({
+                "version": 1,
+                "shop": "test-shop.myshopify.com",
+                "bundleId": "test-bundle",
+                "bundleType": "full_page",
+                "offerGroupId": group_id,
+                "parentVariantId": parent_variant_id,
+                "bundleName": bundle_name,
+                "components": components,
+                "addons": [],
+                "priceAdjustment": price_adjustment,
+            });
+            let token = sign_runtime_token_for_test(&payload.to_string(), TEST_RUNTIME_SECRET);
+            for idx in indices {
+                lines[idx]["runtimeToken"] = serde_json::json!({ "value": token });
+            }
+        }
+
+        root["cartTransform"]["runtimeTokenSecret"] =
+            serde_json::json!({ "value": TEST_RUNTIME_SECRET });
+        root.to_string()
+    }
+
+    fn run_cart_transform(input: &str) -> schema::FunctionRunResult {
+        let input = with_runtime_tokens(input);
+        run_function_with_input(cart_transform_run, input.as_str()).expect("should not error")
     }
 
     fn expand_discount_percentage(output: &schema::FunctionRunResult) -> Option<String> {
@@ -132,8 +303,7 @@ mod tests {
     #[test]
     fn test_empty_cart_no_operations() {
         let input = r#"{"presentmentCurrencyRate":"1.0","cartTransform":{"bundleCartLineMessaging":null},"cart":{"lines":[]}}"#;
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(input);
         assert!(output.operations.is_empty());
     }
 
@@ -161,8 +331,7 @@ mod tests {
                 }]
             }
         }"#;
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(input);
         assert!(output.operations.is_empty());
     }
 
@@ -218,8 +387,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, input.as_str()).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(input.as_str());
 
         assert_eq!(output.operations.len(), 1);
         assert_eq!(merge_discount_percentage(&output).as_deref(), Some("20.0"));
@@ -260,8 +428,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, input.as_str()).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(input.as_str());
 
         assert!(output.operations.is_empty());
     }
@@ -323,8 +490,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let op = &output.operations[0];
@@ -407,8 +573,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
         assert_eq!(merge_discount_percentage(&output).as_deref(), Some("20.0"));
     }
@@ -475,8 +640,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
         assert_eq!(merge_discount_percentage(&output).as_deref(), Some("62.5"));
     }
@@ -586,8 +750,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let merge = match &output.operations[0] {
@@ -674,8 +837,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let merge = match &output.operations[0] {
@@ -807,8 +969,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let attributes = merge_attributes(&output);
@@ -835,8 +996,7 @@ mod tests {
     #[test]
     fn test_merge_emits_public_cart_line_messaging_by_default() {
         let input = messaging_merge_input("");
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let attributes = merge_attributes(&output);
@@ -859,8 +1019,7 @@ mod tests {
     #[test]
     fn test_merge_omits_box_when_source_display_metadata_has_no_box() {
         let input = messaging_merge_input("").replace("\\\"box\\\":\\\"1\\\",", "");
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let attributes = merge_attributes(&output);
@@ -943,8 +1102,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let merge = match &output.operations[0] {
@@ -1007,8 +1165,7 @@ mod tests {
             r#""cartTransform": {{ "bundleCartLineMessaging": {{ "value": {settings:?} }} }},"#
         ));
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let attributes = merge_attributes(&output);
@@ -1068,8 +1225,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 2);
         let titles: Vec<_> = output
             .operations
@@ -1153,8 +1309,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let merge = match &output.operations[0] {
@@ -1263,8 +1418,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let merge = output
@@ -1369,8 +1523,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let attributes = merge_attributes(&output);
@@ -1446,8 +1599,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let op = &output.operations[0];
@@ -1501,8 +1653,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
         assert_eq!(expand_discount_percentage(&output).as_deref(), Some("20.0"));
     }
@@ -1542,8 +1693,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
         assert_eq!(expand_discount_percentage(&output).as_deref(), Some("62.5"));
     }
@@ -1592,8 +1742,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
         assert_eq!(
             expand_discount_percentage(&output).as_deref(),
@@ -1635,8 +1784,7 @@ mod tests {
         }}"#
         );
 
-        let output: schema::FunctionRunResult =
-            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        let output: schema::FunctionRunResult = run_cart_transform(&input);
         assert_eq!(output.operations.len(), 1);
 
         let expand = match &output.operations[0] {

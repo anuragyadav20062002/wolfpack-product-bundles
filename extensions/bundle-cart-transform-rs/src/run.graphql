@@ -31,16 +31,6 @@ query Input {
         __typename
         ... on ProductVariant {
           id
-
-          # SHOPIFY STANDARD BUNDLE METAFIELDS (Approach 1: Hybrid)
-          # These metafields follow Shopify's official bundle architecture
-          # See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
-
-          # For MERGE: Check if this variant is a component in a bundle
-          component_parents: metafield(namespace: "$app", key: "component_parents") {
-            value
-          }
-
           # For EXPAND: Check if this variant is a bundle parent
           component_reference: metafield(namespace: "$app", key: "component_reference") {
             value

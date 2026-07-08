@@ -186,6 +186,13 @@ pub fn verify_runtime_token(token: &str, secret: &str) -> Option<RuntimeTokenPay
     (payload.version == 1).then_some(payload)
 }
 
+#[cfg(debug_assertions)]
+pub fn sign_runtime_token_for_test(payload_json: &str, secret: &str) -> String {
+    let payload_part = base64url_encode(payload_json.as_bytes());
+    let signature_part = base64url_encode(&hmac_sha256(secret.as_bytes(), payload_part.as_bytes()));
+    format!("{payload_part}.{signature_part}")
+}
+
 pub fn token_components_match(
     payload: &RuntimeTokenPayload,
     group_id: &str,
