@@ -3,6 +3,7 @@ import {
   generateCartTransformRuntimeTokenSecret,
   normalizeProductVariantGid,
   signRuntimeCartToken,
+  type RuntimeTokenPayload,
   validateRuntimeTokenSelection,
   verifyRuntimeCartToken,
 } from "../../../app/services/cart-transform-runtime-token.server";
@@ -68,7 +69,7 @@ describe("cart transform runtime token service", () => {
       components: [{ variantId: "gid://shopify/ProductVariant/101", quantity: 2 }],
       addons: [],
       priceAdjustment: { method: "percentage_off", value: 15 },
-    };
+    } satisfies RuntimeTokenPayload;
     const secret = generateCartTransformRuntimeTokenSecret("test-shop.myshopify.com", "api-secret");
 
     const token = signRuntimeCartToken(payload, secret);
@@ -110,6 +111,61 @@ describe("cart transform runtime token service", () => {
     expect(selection.components).toEqual([
       { variantId: "gid://shopify/ProductVariant/101", quantity: 1 },
       { variantId: "gid://shopify/ProductVariant/201", quantity: 2 },
+    ]);
+  });
+
+  it("validates selected components from persisted category selectedProducts", () => {
+    const selection = validateRuntimeTokenSelection(makeBundle({
+      steps: [
+        {
+          StepProduct: [],
+          StepCategory: [
+            {
+              products: [],
+              selectedProducts: [
+                {
+                  id: "gid://shopify/Product/3",
+                  variants: [{ id: "gid://shopify/ProductVariant/301" }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }), {
+      components: [{ variantId: "301", quantity: 1 }],
+      addons: [],
+    });
+
+    expect(selection.components).toEqual([
+      { variantId: "gid://shopify/ProductVariant/301", quantity: 1 },
+    ]);
+  });
+
+  it("validates selected components from runtime category products with variant gid fields", () => {
+    const selection = validateRuntimeTokenSelection(makeBundle({
+      steps: [
+        {
+          StepProduct: [],
+          categories: [
+            {
+              products: [
+                {
+                  id: "gid://shopify/Product/4",
+                  variants: [{ id: "401", gid: "gid://shopify/ProductVariant/401" }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }), {
+      components: [{ variantId: "gid://shopify/ProductVariant/401", quantity: 1 }],
+      addons: [],
+    });
+
+    expect(selection.components).toEqual([
+      { variantId: "gid://shopify/ProductVariant/401", quantity: 1 },
     ]);
   });
 
