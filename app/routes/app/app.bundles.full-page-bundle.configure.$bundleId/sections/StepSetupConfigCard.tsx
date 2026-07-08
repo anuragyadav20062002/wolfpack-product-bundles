@@ -86,16 +86,17 @@ export function FpbStepConfigCard({
                 label=""
               />
             )}
-            <s-button
-              className={fullPageBundleStyles.iconUploadButton}
-              onClick={() =>
-                setShowIconPickerForStep((prev: string | null) =>
-                  prev === step.id ? null : step.id,
-                )
-              }
-            >
-              {(step as any).stepImage ? "Replace" : "Upload file"}
-            </s-button>
+            <div className={fullPageBundleStyles.iconUploadButton}>
+              <s-button
+                onClick={() =>
+                  setShowIconPickerForStep((prev: string | null) =>
+                    prev === step.id ? null : step.id,
+                  )
+                }
+              >
+                {(step as any).stepImage ? "Replace" : "Upload file"}
+              </s-button>
+            </div>
           </div>
           <div className={fullPageBundleStyles.fieldsColumn}>
             <s-text-field

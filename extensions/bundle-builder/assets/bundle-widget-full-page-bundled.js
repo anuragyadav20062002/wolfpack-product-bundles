@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.92
+ * Version : 5.0.94
  * Built   : 2026-07-08
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.92';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.94';
 (function() {
   'use strict';
 
@@ -3403,6 +3403,7 @@ function buildProductPageCartFormData(cartItems = [], {
   bundleName = '',
   offerId = '',
   sessionKey = '',
+  runtimeToken = '',
 } = {}) {
   const formData = new FormData();
 
@@ -3423,6 +3424,9 @@ function buildProductPageCartFormData(cartItems = [], {
     formData.append(`items[${index}][properties][_bundleName]`, bundleName);
     formData.append(`items[${index}][properties][_wolfpackProductBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
     formData.append(`items[${index}][properties][_wolfpackProductBundle:prodQty]`, String(item.quantity));
+    if (runtimeToken) {
+      formData.append(`items[${index}][properties][_wolfpack_bundle_runtime]`, runtimeToken);
+    }
   });
 
   return {
@@ -10540,6 +10544,13 @@ async addBundleToCart(clickedButton = null) {
     this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
     try {
+      const runtimeToken = await this.requestCartTransformRuntimeToken(items, {
+        offerGroupId: baseOfferId,
+        bundleType: 'full_page',
+      });
+      items.forEach(item => {
+        item.properties._wolfpack_bundle_runtime = runtimeToken;
+      });
 
       const response = await fetch('/cart/add.js', {
         method: 'POST',
@@ -10574,6 +10585,57 @@ async addBundleToCart(clickedButton = null) {
     this._emitStorefrontEvent('bundle-add-to-cart-failed', { reason: 'validation-error', message: String(error && error.message || error) });
     ToastManager.show('Failed to add bundle to cart. Please try again.');
   }
+},
+
+parseRuntimeAddonDiscount(stepType) {
+  if (typeof stepType !== 'string') return null;
+  const parts = stepType.split(':');
+  if (parts.length !== 3 || parts[0] !== 'addon' || String(parts[1]).toUpperCase() !== 'PERCENTAGE') {
+    return null;
+  }
+  const value = Number(parts[2]);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return { type: 'PERCENTAGE', value: Math.min(100, value) };
+},
+
+async requestCartTransformRuntimeToken(items, { offerGroupId, bundleType }) {
+  const components = [];
+  const addons = [];
+
+  items.forEach((item) => {
+    const stepType = item?.properties?._bundle_step_type;
+    const isAddon = stepType === 'addon' || (typeof stepType === 'string' && stepType.startsWith('addon:'));
+    const line = {
+      variantId: item.id,
+      quantity: item.quantity,
+    };
+    if (isAddon) {
+      addons.push({
+        ...line,
+        discount: this.parseRuntimeAddonDiscount(stepType),
+      });
+    } else {
+      components.push(line);
+    }
+  });
+
+  const response = await fetch('/apps/product-bundles/api/cart-transform-runtime-token', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      bundleId: this.selectedBundle?.id,
+      bundleType,
+      offerGroupId,
+      components,
+      addons,
+    }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data?.token) {
+    throw new Error(data?.error || 'Unable to validate bundle selection');
+  }
+  return data.token;
 },
 
 createStepElement(step, index) {
@@ -13268,7 +13330,15 @@ async getBundleDetailsCartToken() {
 },
 
 generateBundleSessionKey() {
-  return Math.random().toString(36).slice(2, 5).toUpperCase();
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const keyLength = 12;
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(keyLength);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, byte => alphabet[byte % alphabet.length]).join('');
+  }
+
+  return Math.random().toString(36).slice(2, 2 + keyLength).toUpperCase().padEnd(keyLength, '0');
 },
 
 /**

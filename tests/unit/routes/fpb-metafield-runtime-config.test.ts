@@ -53,7 +53,7 @@ describe("FPB runtime metafield config", () => {
         },
       ],
       pricing: null,
-    });
+    } as any) as any;
 
     expect(config.steps[0].products[0]).toMatchObject({
       id: "gid://shopify/Product/123",
@@ -85,7 +85,7 @@ describe("FPB runtime metafield config", () => {
         templateName: null,
         shopifyProductId: "gid://shopify/Product/999",
         shopifyPageHandle: "bundle",
-      },
+      } as any,
       [
         {
           id: "step-1",
@@ -108,7 +108,7 @@ describe("FPB runtime metafield config", () => {
         ],
       },
       "gid://shopify/ProductVariant/999",
-    );
+    ) as any;
 
     expect(config.steps[0].products[0]).toMatchObject({
       id: "gid://shopify/Product/123",

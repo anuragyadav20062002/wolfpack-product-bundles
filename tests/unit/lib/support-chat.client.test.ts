@@ -22,7 +22,7 @@ describe("support chat client", () => {
       cancelIdleCallback: jest.fn(),
       setTimeout: jest.fn((callback: () => void, delay?: number) => {
         return setTimeout(callback, delay);
-      }) as typeof setTimeout,
+      }) as unknown as typeof setTimeout,
       clearTimeout: jest.fn((handle?: ReturnType<typeof setTimeout>) => {
         clearTimeout(handle);
       }) as typeof clearTimeout,

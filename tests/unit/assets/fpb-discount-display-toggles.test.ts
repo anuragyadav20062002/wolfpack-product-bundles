@@ -13,7 +13,7 @@ describe('FPB discount display toggles', () => {
   });
 
   it('preserves disabled full-page pricing messaging when pricing is enabled', () => {
-    const context = {
+    const context: { selectedBundle: any; config: Record<string, any> } = {
       selectedBundle: {
         pricing: {
           enabled: true,

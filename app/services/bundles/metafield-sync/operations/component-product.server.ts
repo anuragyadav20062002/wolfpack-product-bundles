@@ -14,6 +14,8 @@ import type { ComponentParentsData } from "../types";
 import { buildPriceAdjustmentConfig } from "../utils/price-adjustment";
 import { collectAddonComponentVariants } from "../utils/addon-components";
 
+const METAFIELDS_SET_BATCH_SIZE = 25;
+
 function normalizeProductVariantGid(value: unknown): string | null {
   if (typeof value !== "string" && typeof value !== "number") return null;
 
@@ -32,6 +34,14 @@ function getCachedVariantGid(variant: any): string | null {
       ?? variant?.graphqlId
       ?? variant?.admin_graphql_api_id,
   );
+}
+
+function chunkMetafields<T>(items: T[], size = METAFIELDS_SET_BATCH_SIZE): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
 }
 
 /**
@@ -340,8 +350,17 @@ export async function updateComponentProductMetafields(
     throw new Error(`component_parents metafield exceeds Shopify's 64KB limit (size: ${componentParentsSizeCheck.size} bytes). Bundle has too many component products.`);
   }
 
-  // Update each component variant
-  for (const variantId of componentVariantIds) {
+  const componentParentValue = JSON.stringify(componentParentsData);
+  const metafieldInputs = Array.from(componentVariantIds).map((variantId) => ({
+    ownerId: variantId,
+    namespace: METAFIELD_NAMESPACE,
+    key: METAFIELD_KEYS.COMPONENT_PARENTS,
+    value: componentParentValue,
+    type: "json",
+  }));
+  const metafieldBatches = chunkMetafields(metafieldInputs);
+
+  for (const [batchIndex, metafields] of metafieldBatches.entries()) {
     try {
       const SET_METAFIELDS = `
         mutation SetComponentMetafields($metafields: [MetafieldsSetInput!]!) {
@@ -361,29 +380,23 @@ export async function updateComponentProductMetafields(
 
       const response = await admin.graphql(SET_METAFIELDS, {
         variables: {
-          metafields: [
-            {
-              ownerId: variantId,
-              namespace: METAFIELD_NAMESPACE,
-              key: METAFIELD_KEYS.COMPONENT_PARENTS,
-              value: JSON.stringify(componentParentsData),
-              type: "json"
-            }
-          ]
+          metafields,
         }
       });
 
       const data = await response.json();
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-        AppLogger.error("[COMPONENT_METAFIELD] Error updating variant", {
+        AppLogger.error("[COMPONENT_METAFIELD] Error updating variant batch", {
           component: "component-product.server",
-          variantId,
+          batchIndex: batchIndex + 1,
+          batchSize: metafields.length,
         }, data.data.metafieldsSet.userErrors);
       }
     } catch (error) {
-      AppLogger.error("[COMPONENT_METAFIELD] Failed to update variant", {
+      AppLogger.error("[COMPONENT_METAFIELD] Failed to update variant batch", {
         component: "component-product.server",
-        variantId,
+        batchIndex: batchIndex + 1,
+        batchSize: metafields.length,
       }, error);
     }
   }
@@ -392,5 +405,6 @@ export async function updateComponentProductMetafields(
     component: "component-product.server",
     bundleProductId,
     variantCount: componentVariantIds.size,
+    mutationCount: metafieldBatches.length,
   });
 }

@@ -166,7 +166,13 @@ describe("PPB handleSyncProduct", () => {
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
     const body = await res.json() as any;
     expect(body.success).toBe(true);
-    expect(body.syncedData.changesDetected).toBe(false);
+    expect(body).toMatchObject({
+      statusCode: 200,
+      productId: "gid://shopify/Product/1",
+      productHandle: "ppb-bundle-product",
+      message: "Updated Successfully!",
+    });
+    expect(body).not.toHaveProperty("syncedData");
   });
 
   it("rewrites runtime metafields during sync even when pricing is not enabled", async () => {
@@ -333,7 +339,7 @@ describe("PPB handleSyncProduct", () => {
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
     const body = await res.json() as any;
     expect(body.success).toBe(true);
-    expect(body.syncedData.changesDetected).toBe(true);
+    expect(body).not.toHaveProperty("syncedData");
     expect(getDb().bundle.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ description: "New PPB description" }) })
     );
@@ -495,15 +501,19 @@ describe("PPB handleSyncProduct", () => {
     );
   });
 
-  it("syncedData includes title, description, and status from Shopify", async () => {
+  it("returns compact product sync data without Shopify product payload", async () => {
     getDb().bundle.findUnique.mockResolvedValue(makeBundle());
     const admin = makeAdmin();
     const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
     const body = await res.json() as any;
-    expect(body.syncedData).toMatchObject({
-      title: "PPB Bundle Product",
-      status: "ACTIVE",
+    expect(body).toMatchObject({
+      success: true,
+      statusCode: 200,
+      productId: "gid://shopify/Product/1",
+      productHandle: "ppb-bundle-product",
+      message: "Updated Successfully!",
     });
+    expect(body).not.toHaveProperty("syncedData");
   });
 
   it("preserves StepCategory products and variants in sync metafield payloads", async () => {

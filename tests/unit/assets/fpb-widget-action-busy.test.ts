@@ -234,6 +234,7 @@ describe('FPB widget action busy state', () => {
       getAddonLineDiscount: () => null,
       getSelectedSellingPlanAllocationId: () => null,
       buildCartLineSourceProperties: () => ({}),
+      requestCartTransformRuntimeToken: async () => 'signed-runtime-token',
       syncBundleDetailsCartMetafield: async () => undefined,
       _emitStorefrontEvent: () => undefined,
       _handlePostAddToCartAction: () => undefined,
@@ -255,6 +256,7 @@ describe('FPB widget action busy state', () => {
     expect(context._isWidgetActionBusy).toBe(true);
     expect(actionButton.disabled).toBe(true);
 
+    await Promise.resolve();
     resolveResponse?.();
     await action;
 

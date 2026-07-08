@@ -8,7 +8,17 @@ function _generateBundleInstanceId(bundleId) {
 }
 
 function _generateBundleSessionKey() {
-  return Math.random().toString(36).slice(2, 5).toUpperCase();
+  var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var keyLength = 12;
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    var bytes = new Uint8Array(keyLength);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, function (byte) {
+      return alphabet[byte % alphabet.length];
+    }).join('');
+  }
+
+  return Math.random().toString(36).slice(2, 2 + keyLength).toUpperCase().padEnd(keyLength, '0');
 }
 
 function _resolveProductPageOfferId(state) {
@@ -124,7 +134,7 @@ function buildCartItems(state) {
   };
 }
 
-function buildProductPageCartFormData(items) {
+function buildProductPageCartFormData(items, runtimeToken) {
   var formData = new FormData();
   items.forEach(function (item, index) {
     formData.append('items[' + index + '][id]', String(item.id));
@@ -134,6 +144,9 @@ function buildProductPageCartFormData(items) {
       if (value === null || typeof value === 'undefined') return;
       formData.append('items[' + index + '][properties][' + key + ']', String(value));
     });
+    if (runtimeToken) {
+      formData.append('items[' + index + '][properties][_wolfpack_bundle_runtime]', String(runtimeToken));
+    }
   });
   return formData;
 }
@@ -207,6 +220,33 @@ function syncBundleDetailsCartMetafield(bundleDetailsKey, sourceProperties) {
     });
 }
 
+function requestCartTransformRuntimeToken(state, cartResult) {
+  var components = cartResult.items.map(function (item) {
+    return { variantId: item.id, quantity: item.quantity };
+  });
+
+  return fetch('/apps/product-bundles/api/cart-transform-runtime-token', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      bundleId: state.bundleId,
+      bundleType: 'product_page',
+      offerGroupId: cartResult.offerId + '_' + cartResult.sessionKey,
+      components: components,
+      addons: [],
+    }),
+  })
+    .then(function (response) {
+      return response.json().catch(function () { return null; }).then(function (data) {
+        if (!response.ok || !data || !data.token) {
+          throw new Error((data && data.error) || 'Unable to validate bundle selection');
+        }
+        return data.token;
+      });
+    });
+}
+
 function addBundleToCart(state, validateBundleFn, emitFn) {
   var validation = validateBundleFn();
   if (!validation.valid) {
@@ -222,10 +262,13 @@ function addBundleToCart(state, validateBundleFn, emitFn) {
     return Promise.resolve();
   }
 
-  return fetch('/cart/add', {
-    method: 'POST',
-    body: buildProductPageCartFormData(cartResult.items),
-  })
+  return requestCartTransformRuntimeToken(state, cartResult)
+    .then(function (runtimeToken) {
+      return fetch('/cart/add', {
+        method: 'POST',
+        body: buildProductPageCartFormData(cartResult.items, runtimeToken),
+      });
+    })
     .then(function (response) {
       return response.text().then(function (text) {
         if (!response.ok) {

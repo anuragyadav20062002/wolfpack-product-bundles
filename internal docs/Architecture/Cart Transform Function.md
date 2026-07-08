@@ -2,7 +2,7 @@
 title: Cart Transform Function
 type: architecture
 audited: 2026-07-04
-source: extensions/bundle-cart-transform-rs/shopify.extension.toml; extensions/bundle-cart-transform-rs/src/merge.rs
+source: extensions/bundle-cart-transform-rs/shopify.extension.toml; extensions/bundle-cart-transform-rs/src/merge.rs; app/services/cart-transform-runtime-token.server.ts
 ---
 
 # Cart Transform Function
@@ -10,6 +10,8 @@ source: extensions/bundle-cart-transform-rs/shopify.extension.toml; extensions/b
 ## Overview
 
 The cart transform function intercepts Shopify's checkout flow to merge individual product variants into logical bundle line items and apply bundle pricing. The active implementation is the Rust Shopify Function in `extensions/bundle-cart-transform-rs`, compiled to WASM.
+
+As of 2026-07-08, MERGE validation is runtime-token based. Storefront widgets POST the selected component/add-on variants to the signed app-proxy route `/apps/product-bundles/api/cart-transform-runtime-token` immediately before `/cart/add`. The route validates the selected variants against the current DB bundle config, signs a base64url payload with HMAC-SHA256, and returns `_wolfpack_bundle_runtime`. The Cart Transform and Discount Function verify that token with the same CartTransform owner metafield secret before trusting component, quantity, parent, pricing, or add-on discount data.
 
 > ⚠️ The original `docs/CART_TRANSFORM_FUNCTION.md` contained multiple critical errors. This note is the authoritative reference.
 
@@ -66,16 +68,23 @@ The codebase uses the new names. Do not use the old names when reading or modify
 
 The function groups cart lines by EB's public `_wolfpackProductBundle:OfferId` cart attribute. The item-specific suffix is removed before grouping, so `MIX-894502_K1K_1` and `MIX-894502_K1K_2` become one bundle instance group keyed by `MIX-894502_K1K`:
 
-1. **MERGE**: Groups all component lines for a bundle instance into a single parent line
+1. **MERGE**: Groups all component lines for a bundle instance into a single parent line after verifying `_wolfpack_bundle_runtime`
    - `parentVariantId`: the bundle variant ID
    - `title`: bundle name (must be **unique per instance** to prevent Shopify's automatic consolidation of duplicate merges — append `" (2)"`, `" (3)"`, etc. via `bundleNameCounts` Map)
 2. **EXPAND**: Breaks the merged line back into components at checkout for fulfillment
 
-### Component variant metafield owner IDs
+### Runtime token contract
 
-`component_parents` must be written to Shopify ProductVariant GIDs, not cached numeric variant IDs. A real merchant failure on 2026-07-07 had an active `cart.transform.run` object and correct cart line `_wolfpackProductBundle:OfferId` properties, but cart lines remained unmerged because cached `StepProduct.variants` contained numeric IDs such as `51659604984106`. Passing those numeric values as `metafieldsSet.ownerId` prevents Shopify from attaching `$app:component_parents`, so the Function input sees null component metadata and emits no `linesMerge` operation.
+The token payload contains:
+- `offerGroupId` matching the `_wolfpackProductBundle:OfferId` base
+- selected base `components` as ProductVariant GIDs plus quantities
+- selected `addons` plus authorized percentage discount metadata
+- parent bundle variant GID
+- price adjustment config copied from current bundle pricing
 
-Normalize every cached variant identifier into `gid://shopify/ProductVariant/{id}` before adding it to `component_reference.value` or using it as a metafield owner.
+The HMAC covers the base64url payload string, so Rust verifies the signature before decoding JSON. If `runtime_token_secret` is configured on the CartTransform owner and a line token is missing, tampered, or mismatched against actual cart line variants/quantities, the function emits no merge or add-on discount.
+
+Parent bundle metafields are still written for EXPAND/display paths: `component_reference`, `component_quantities`, `price_adjustment`, and `component_pricing`. Component-variant `$app:component_parents` is no longer the configured MERGE source.
 
 ---
 
@@ -98,7 +107,7 @@ Shopify `linesMerge` can apply only one parent `percentageDecrease`, so mixed-pr
 
 ## Bundle Instance Tracking
 
-- Each add-to-cart generates one EB session key and writes `_wolfpackProductBundle:OfferId` as `{offerId}_{sessionKey}_{itemIndex}`
+- Each add-to-cart generates one 12-character EB-style session key and writes `_wolfpackProductBundle:OfferId` as `{offerId}_{sessionKey}_{itemIndex}`
 - Cart Transform groups component lines by the `{offerId}_{sessionKey}` base and uses `_bundleName` for the parent title
 - Shopify's cart line properties still differ per component line because the trailing item index differs
 - See [[Features/Bundle Instance Tracking]]

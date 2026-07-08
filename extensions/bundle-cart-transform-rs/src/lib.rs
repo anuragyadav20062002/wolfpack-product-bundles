@@ -5,6 +5,10 @@ mod helpers;
 mod merge;
 mod pricing;
 mod run;
+#[cfg(debug_assertions)]
+pub mod runtime_token;
+#[cfg(not(debug_assertions))]
+mod runtime_token;
 mod types;
 
 #[typegen("schema.graphql")]
