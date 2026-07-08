@@ -255,6 +255,10 @@ function compactProductReferences(
     .filter((reference): reference is Record<string, unknown> => reference !== null);
 }
 
+export function formatProductReferencesForRuntime(value: unknown, productSources: unknown[] = []) {
+  return compactProductReferences(value, buildProductSourceMap(productSources));
+}
+
 function compactCollectionReferences(value: unknown): Record<string, unknown>[] {
   return asArray(value)
     .map(compactCollectionReference)

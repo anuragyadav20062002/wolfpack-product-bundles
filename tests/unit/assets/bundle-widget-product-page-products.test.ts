@@ -1,6 +1,10 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ProductPageSelectionDataMethods } = require('../../../app/assets/widgets/product-page/methods/selection-data-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ProductPageSelectionMethods } = require('../../../app/assets/widgets/product-page/methods/selection-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ToastManager } = require('../../../app/assets/bundle-widget-components.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldDisableProductPageVariantOption } = require('../../../app/assets/widgets/product-page/methods/modal-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ProductPageProductDataMethods } = require('../../../app/assets/widgets/product-page/methods/product-data-methods.js');
@@ -33,6 +37,7 @@ interface StorefrontProduct {
   options?: Array<string | { name: string }>;
   images?: Array<{ src?: string }>;
   description?: string;
+  descriptionHtml?: string;
 }
 
 interface WidgetStep {
@@ -99,6 +104,37 @@ describe('processProductPageProductsForStep', () => {
       currentlyNotInStock: false,
     });
   });
+
+  it('keeps unavailable parent product cards priced from their first variant', () => {
+    const products = processProductPageProductsForStep([
+      {
+        id: 'gid://shopify/Product/9427287703811',
+        title: 'Armor Matte Case',
+        imageUrl: 'https://cdn.example/product.jpg',
+        variants: [
+          {
+            id: 'gid://shopify/ProductVariant/111',
+            title: 'Sold out',
+            price: '19.99',
+            available: false,
+            quantityAvailable: 0,
+            currentlyNotInStock: false,
+          },
+        ],
+      },
+    ], { displayVariantsAsIndividual: false }, true);
+
+    expect(products).toHaveLength(1);
+    expect(products[0]).toMatchObject({
+      id: '9427287703811',
+      title: 'Armor Matte Case',
+      variantId: '111',
+      price: 1999,
+      available: false,
+      quantityAvailable: 0,
+      currentlyNotInStock: false,
+    });
+  });
 });
 
 describe('Product Page widget product-level inventory tracking', () => {
@@ -126,6 +162,22 @@ describe('Product Page widget product-level inventory tracking', () => {
     );
 
     expect(state).toEqual({ available: 0, outOfStock: true, acceptsBackorder: false });
+  });
+
+  it('keeps unavailable add attempts on the stock toast guard', () => {
+    const toastSpy = jest.spyOn(ToastManager, 'show').mockImplementation(() => {});
+
+    try {
+      ProductPageSelectionMethods.updateProductSelection.call({
+        normalizeSelectionKey: (value: string) => value,
+        _getDirectDefaultRequiredQuantity: () => null,
+        getVariantAvailable: () => ({ available: 0, outOfStock: true, acceptsBackorder: false }),
+      }, 0, 'variant-1', 1);
+
+      expect(toastSpy).toHaveBeenCalledWith('This item is out of stock.');
+    } finally {
+      toastSpy.mockRestore();
+    }
   });
 
   it('keeps tracked zero-stock variants unbounded when inventory tracking is disabled', () => {
@@ -175,7 +227,7 @@ describe('Product Page widget product-level inventory tracking', () => {
     }, true)).toBe(false);
   });
 
-  it('hides tracked zero-stock variants before rendering individual product cards', () => {
+  it('keeps tracked zero-stock variants visible before rendering individual product cards', () => {
     const products = processProductPageProductsForStep([
       {
         id: 'gid://shopify/Product/700',
@@ -210,7 +262,14 @@ describe('Product Page widget product-level inventory tracking', () => {
       },
     ], { displayVariantsAsIndividual: true }, true);
 
-    expect(products.map(product => product.variantId)).toEqual(['702', '703']);
+    expect(products.map(product => product.variantId)).toEqual(['701', '702', '703']);
+    expect(products[0]).toEqual(expect.objectContaining({
+      variantId: '701',
+      price: 1000,
+      available: false,
+      quantityAvailable: 0,
+      currentlyNotInStock: false,
+    }));
   });
 
   it('selects the first sellable variant for grouped product cards when tracking is enabled', () => {
@@ -248,7 +307,7 @@ describe('Product Page widget product-level inventory tracking', () => {
     });
   });
 
-  it('hides grouped products when every variant is tracked zero stock', () => {
+  it('keeps grouped products visible when every variant is tracked zero stock', () => {
     const products = processProductPageProductsForStep([
       {
         id: 'gid://shopify/Product/900',
@@ -267,7 +326,37 @@ describe('Product Page widget product-level inventory tracking', () => {
       },
     ], { displayVariantsAsIndividual: false }, true);
 
-    expect(products).toEqual([]);
+    expect(products).toHaveLength(1);
+    expect(products[0]).toMatchObject({
+      variantId: '901',
+      price: 1000,
+      available: false,
+      quantityAvailable: 0,
+      currentlyNotInStock: false,
+    });
+  });
+
+  it('preserves Shopify descriptionHtml for the shared product modal', () => {
+    const products = processProductPageProductsForStep([
+      {
+        id: 'gid://shopify/Product/123',
+        title: 'Product with HTML',
+        description: 'Plain description',
+        descriptionHtml: '<p>Plain <strong>description</strong></p>',
+        imageUrl: 'https://cdn.example.test/product.jpg',
+        variants: [{
+          id: 'gid://shopify/ProductVariant/456',
+          title: 'Default Title',
+          price: '10.00',
+          available: true,
+        }],
+      },
+    ], { displayVariantsAsIndividual: false }, false);
+
+    expect(products[0]).toMatchObject({
+      description: 'Plain description',
+      descriptionHtml: '<p>Plain <strong>description</strong></p>',
+    });
   });
 
   it('preserves explicit zero inventory on direct default products', () => {

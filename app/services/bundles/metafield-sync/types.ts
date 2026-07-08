@@ -33,6 +33,7 @@ export interface MetafieldSizeCheck {
 export interface PriceAdjustment {
   method: string;
   value: number;
+  rules?: PriceAdjustment[];
   customerBuys?: number;
   customerGets?: number;
   discountType?: string;

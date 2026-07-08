@@ -6,15 +6,17 @@
 
 .fpb-preset-classic,
 [data-bundle-type="full_page"][data-fpb-design-preset="CLASSIC"] {
-  width: min(100vw, 1536px);
-  max-width: 1536px;
-  margin-left: calc(50% - min(50vw, 768px));
-  padding: 10px;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding: 0;
   box-sizing: border-box;
   background: var(--bundle-full-page-bg-color);
 }
 
 .fpb-preset-classic {
+  --classic-shell-max-width: 1536px;
+  --classic-shell-padding: clamp(8px, 1vw, 12px);
   --classic-grid-gap: 15px;
   --classic-card-radius: 10px;
   --classic-card-padding: 8px;
@@ -23,30 +25,39 @@
   --classic-desktop-card-image-extra: clamp(10px, 1.2vw, 12px);
   --classic-desktop-icon-card-extra: clamp(80px, 8vw, 104px);
   --classic-desktop-text-card-extra: clamp(130px, 11.5vw, 152px);
-  --classic-desktop-layout-left: 33.59375px;
-  --classic-desktop-layout-right: 37.59375px;
+  --classic-desktop-layout-left: clamp(16px, 2vw, 36px);
+  --classic-desktop-layout-right: clamp(16px, 2vw, 36px);
+  --classic-desktop-layout-inner-max: 100%;
   --classic-desktop-content-fr: 7fr;
   --classic-desktop-sidebar-fr: 3fr;
-  --classic-desktop-sidebar-min-width: min-content;
+  --classic-desktop-sidebar-min-width: min(20rem, 100%);
 
-  --classic-mobile-card-width: clamp(140px, 40vw, 177.5px);
-  --classic-mobile-shell-gutter: 0.625rem;
-  --classic-mobile-icon-card-height: clamp(220px, 52vw, 263px);
+  --classic-mobile-card-width: clamp(140px, 40vw, 180px);
+  --classic-mobile-shell-gutter: 10px;
+  --classic-mobile-content-bottom-padding: clamp(80px, 18vh, 120px);
+  --classic-mobile-icon-card-height: clamp(220px, 52vw, 264px);
   --classic-mobile-text-card-height: clamp(248px, 56vw, 300px);
-  --classic-mobile-image-height: clamp(118px, 37vw, 150px);
+  --classic-mobile-image-height: clamp(120px, 37vw, 152px);
 
   --classic-icon-button-size: clamp(30px, 4.2vw, 38px);
-  --classic-text-button-height: 2.1875rem;
+  --classic-text-button-height: 35px;
   --classic-desktop-icon-action-width: clamp(56px, 20%, 74px);
-  --classic-category-pill-min-height: 2.5rem;
-  --classic-category-pill-padding: 0.45rem 1.5rem;
-  --classic-category-pill-border: 0.125rem solid #000;
+  --classic-category-pill-min-height: 40px;
+  --classic-category-pill-padding: 7px 24px;
+  --classic-category-pill-border: 2px solid #000;
   --bundle-product-strike-price-font-weight: 700;
   --classic-product-card-button-bg: var(--bundle-add-btn-color, #000);
   --classic-product-card-button-text: var(
     --bundle-product-card-button-text-color,
     #fff
   );
+}
+
+.bundle-widget-full-page.fpb-preset-classic {
+  width: 100vw;
+  max-width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  padding: 0;
 }
 
 .fpb-preset-classic .fpb-category-section-rows {
@@ -115,4 +126,69 @@
   .full-page-product-grid
   .bw-product-card__image {
   animation: fpb-classic-product-image-fade 1.5s ease;
+}
+
+.layout-sidebar[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .bw-product-card__media {
+  position: relative;
+  cursor: pointer;
+}
+
+.layout-sidebar[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card
+  .bw-product-card__image-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 0.625rem 0.3125rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.layout-sidebar[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card:has(> .fpb-addon-discount-badge)
+  .bw-product-card__image-overlay {
+  justify-content: flex-start;
+}
+
+.layout-sidebar[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card
+  .bw-product-card__magnifier {
+  position: relative;
+  display: block;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95) url("/magnifying-glass.avif")
+    center / 1rem 1rem no-repeat;
+  box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.18);
+}
+
+.layout-sidebar[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card
+  .bw-product-card__magnifier::before,
+.layout-sidebar[data-fpb-design-preset="CLASSIC"]
+  .sidebar-content
+  .product-card
+  .bw-product-card__magnifier::after {
+  content: "";
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .layout-sidebar[data-fpb-design-preset="CLASSIC"]
+    .sidebar-content
+    .product-card
+    .product-image:hover
+    .bw-product-card__image-overlay {
+    opacity: 0.8;
+  }
 }

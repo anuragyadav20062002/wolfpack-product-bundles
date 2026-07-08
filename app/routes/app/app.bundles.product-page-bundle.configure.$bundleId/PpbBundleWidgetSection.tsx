@@ -69,8 +69,8 @@ export function PpbBundleWidgetSection() {
                   className={productPageBundleStyles.visibilityPreviewFullImage}
                   src={
                     upsellWidgetDisplayMode === "button"
-                      ? "/Upsell-Button.png"
-                      : "/Upsell-Block.png"
+                      ? "/Upsell-Button.avif"
+                      : "/Upsell-Block.avif"
                   }
                   alt={
                     upsellWidgetDisplayMode === "button"

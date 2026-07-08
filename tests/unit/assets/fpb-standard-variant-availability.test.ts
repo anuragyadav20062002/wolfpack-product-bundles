@@ -192,6 +192,68 @@ describe('FPB Standard variant availability', () => {
     expect(normalized[0].description).toBe('Soft cotton product description.');
   });
 
+  it('preserves Shopify descriptionHtml for the product detail modal', () => {
+    const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
+      extractId: (id: string) => String(id || '').split('/').pop(),
+      shouldExpandStepProductsDuringLoad: () => false,
+      getFirstAvailableVariant: (product: any) => product.variants[0],
+      isVariantSelectableForInventory: () => true,
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+    }, [{
+      id: 'gid://shopify/Product/123',
+      title: 'Black Crew Neck T-Shirt',
+      description: 'Soft cotton product description.',
+      descriptionHtml: '<p>Soft <strong>cotton</strong> product description.</p>',
+      imageUrl: 'https://cdn.example.test/product.jpg',
+      variants: [
+        {
+          id: 'gid://shopify/ProductVariant/456',
+          title: 'S / Black',
+          price: '30.00',
+          available: true,
+        },
+      ],
+    }], { displayVariantsAsIndividual: false });
+
+    expect(normalized[0].description).toBe('Soft cotton product description.');
+    expect(normalized[0].descriptionHtml).toBe('<p>Soft <strong>cotton</strong> product description.</p>');
+  });
+
+  it('keeps unavailable grouped products priced from their first variant', () => {
+    const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
+      extractId: (id: string) => String(id || '').split('/').pop(),
+      shouldExpandStepProductsDuringLoad: () => false,
+      getFirstAvailableVariant: fullPageProductProcessingMethods.getFirstAvailableVariant,
+      isVariantSelectableForInventory: fullPageProductProcessingMethods.isVariantSelectableForInventory,
+      getRuntimeVariantInventory: fullPageProductProcessingMethods.getRuntimeVariantInventory,
+      isInventoryTrackingOnAddToCartEnabled: fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled,
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: true }),
+    }, [{
+      id: 'gid://shopify/Product/123',
+      title: 'Black Crew Neck T-Shirt',
+      imageUrl: 'https://cdn.example.test/product.jpg',
+      variants: [
+        {
+          id: 'gid://shopify/ProductVariant/456',
+          title: 'Default Title',
+          price: '30.00',
+          available: true,
+          quantityAvailable: 0,
+          currentlyNotInStock: false,
+        },
+      ],
+    }], { displayVariantsAsIndividual: false });
+
+    expect(normalized).toHaveLength(1);
+    expect(normalized[0]).toEqual(expect.objectContaining({
+      variantId: '456',
+      price: 3000,
+      available: false,
+      quantityAvailable: 0,
+      currentlyNotInStock: false,
+    }));
+  });
+
   it('enriches cached products missing descriptions before modal normalization', async () => {
     const previousWindow = (global as any).window;
     const previousFetch = (global as any).fetch;
@@ -205,6 +267,7 @@ describe('FPB Standard variant availability', () => {
         products: [{
           id: 'gid://shopify/Product/123',
           description: 'Fetched product description.',
+          descriptionHtml: '<p>Fetched <strong>product</strong> description.</p>',
         }],
       }),
     });
@@ -221,6 +284,7 @@ describe('FPB Standard variant availability', () => {
         expect.stringContaining('/apps/product-bundles/api/storefront-products'),
       );
       expect(enriched[0].description).toBe('Fetched product description.');
+      expect(enriched[0].descriptionHtml).toBe('<p>Fetched <strong>product</strong> description.</p>');
     } finally {
       (global as any).window = previousWindow;
       (global as any).fetch = previousFetch;
@@ -296,7 +360,15 @@ describe('FPB Standard variant availability', () => {
       expect((global as any).fetch).toHaveBeenCalledWith(
         expect.stringContaining('/apps/product-bundles/api/storefront-products'),
       );
-      expect(context.stepProductData[0]).toEqual([]);
+      expect(context.stepProductData[0]).toEqual([
+        expect.objectContaining({
+          variantId: '456',
+          price: 3000,
+          available: false,
+          quantityAvailable: 0,
+          currentlyNotInStock: false,
+        }),
+      ]);
     } finally {
       (global as any).window = previousWindow;
       (global as any).fetch = previousFetch;
@@ -370,14 +442,22 @@ describe('FPB Standard variant availability', () => {
       expect((global as any).fetch).toHaveBeenCalledWith(
         expect.stringContaining('/apps/product-bundles/api/storefront-products'),
       );
-      expect(context.stepProductData[0]).toEqual([]);
+      expect(context.stepProductData[0]).toEqual([
+        expect.objectContaining({
+          variantId: '456',
+          price: 3000,
+          available: false,
+          quantityAvailable: 0,
+          currentlyNotInStock: false,
+        }),
+      ]);
     } finally {
       (global as any).window = previousWindow;
       (global as any).fetch = previousFetch;
     }
   });
 
-  it('filters tracked zero-stock variants during product grid expansion', () => {
+  it('keeps tracked zero-stock variants visible during product grid expansion', () => {
     const expanded = fullPageProductGridMethods.expandProductsByVariant.call({
       isVariantSelectableForInventory: fullPageProductProcessingMethods.isVariantSelectableForInventory,
       isInventoryTrackingOnAddToCartEnabled: fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled,
@@ -406,9 +486,18 @@ describe('FPB Standard variant availability', () => {
       ],
     }], true);
 
-    expect(expanded).toHaveLength(1);
+    expect(expanded).toHaveLength(2);
     expect(expanded[0]).toEqual(expect.objectContaining({
+      variantId: 'gid://shopify/ProductVariant/456',
+      price: 3000,
+      available: false,
+      quantityAvailable: 0,
+      currentlyNotInStock: false,
+    }));
+    expect(expanded[1]).toEqual(expect.objectContaining({
       variantId: 'gid://shopify/ProductVariant/789',
+      price: 3500,
+      available: true,
       quantityAvailable: 0,
       currentlyNotInStock: true,
     }));

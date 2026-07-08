@@ -60,6 +60,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
+  min-height: var(--bundle-modal-quantity-min-height, 64px);
 }
 
 .bundle-modal-quantity-label {
@@ -121,6 +122,7 @@
 
 .bundle-modal-add-btn {
   width: 100%;
+  min-height: var(--bundle-modal-add-button-min-height, 48px);
   padding: 14px 24px;
   background: var(--bundle-button-bg, var(--bundle-global-primary-button, #000));
   color: var(--bundle-button-text-color, var(--bundle-global-button-text, #ffffff));
@@ -137,6 +139,9 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .bundle-modal-add-btn:hover {
@@ -161,6 +166,7 @@
   line-height: 1.6;
   color: #666;
   font-family: inherit;
+  min-height: var(--bundle-modal-description-min-height, clamp(44px, 8vh, 96px));
   max-height: 120px;
   overflow-y: auto;
 }
@@ -440,7 +446,7 @@ body.modal-open {
 
 .bundle-toast {
   position: fixed;
-  top: 16px;
+  top: calc(16px + env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
   background-color: var(--bundle-toast-bg, #000000);
@@ -451,14 +457,27 @@ body.modal-open {
     var(--bundle-toast-border-color, #ffffff);
   box-shadow: var(--bundle-toast-box-shadow, 0 4px 12px rgba(0, 0, 0, 0.15));
   z-index: 1000001;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: center;
+  justify-content: stretch;
   gap: 8px;
   font-size: var(--bundle-toast-font-size, 13px);
   font-weight: var(--bundle-toast-font-weight, 500);
   animation: slideDown var(--bundle-toast-animation-duration, 300ms) ease-out;
-  max-width: 360px;
+  max-width: min(360px, calc(100vw - 32px));
   min-height: auto;
-  width: auto;
+  width: max-content;
+  box-sizing: border-box;
+}
+
+.bundle-toast > span,
+.bundle-toast .toast-message {
+  min-width: 0;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.bundle-toast .toast-close {
+  justify-self: end;
 }

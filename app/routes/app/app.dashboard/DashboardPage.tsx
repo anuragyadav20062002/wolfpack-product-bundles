@@ -553,7 +553,7 @@ export function DashboardPage() {
                   <div className={dashboardStyles.emptyBundlesState}>
                     <div className={dashboardStyles.emptyBundlesIcon}>
                       <OptimisedImage
-                        src="/bundle.png"
+                        src="/bundle.avif"
                         alt=""
                         className={dashboardStyles.emptyBundlesImg}
                         width={120}

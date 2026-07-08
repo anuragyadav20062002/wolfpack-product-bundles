@@ -1,8 +1,8 @@
 body:has(.layout-sidebar[data-fpb-design-preset="CLASSIC"], .fpb-preset-classic)
   .bundle-modal-overlay[data-read-only="true"] {
-  --classic-product-modal-gutter: 1.25rem;
-  --classic-product-modal-max-width: min(79vw, 63.125rem);
-  --classic-product-modal-radius: 0.625rem;
+  --classic-product-modal-gutter: 20px;
+  --classic-product-modal-max-width: min(79vw, 1010px);
+  --classic-product-modal-radius: 10px;
 }
 
 body:has(.layout-sidebar[data-fpb-design-preset="CLASSIC"], .fpb-preset-classic)
@@ -67,9 +67,9 @@ body:has(.layout-sidebar[data-fpb-design-preset="CLASSIC"], .fpb-preset-classic)
   body:has(.layout-sidebar[data-fpb-design-preset="CLASSIC"], .fpb-preset-classic)
     .bundle-modal-overlay.active[data-read-only="true"]
     .bundle-modal-container {
-    width: min(var(--classic-product-modal-max-width), calc(100vw - 2.5rem));
-    max-width: min(var(--classic-product-modal-max-width), calc(100vw - 2.5rem));
-    max-height: min(90vh, 40rem);
+    width: min(var(--classic-product-modal-max-width), calc(100vw - 40px));
+    max-width: min(var(--classic-product-modal-max-width), calc(100vw - 40px));
+    max-height: min(90vh, 640px);
     padding: 1.25rem;
     border-radius: var(--classic-product-modal-radius);
     transform: scale(1);

@@ -56,6 +56,7 @@ describe("api.storefront-products loader", () => {
                 title: "Tracked Product",
                 handle: "tracked-product",
                 description: "Detailed product copy",
+                descriptionHtml: "<p>Detailed <strong>product</strong> copy</p>",
                 featuredImage: null,
                 variants: {
                   edges: [
@@ -98,5 +99,6 @@ describe("api.storefront-products loader", () => {
       currentlyNotInStock: false,
     });
     expect(body.products[0].description).toBe("Detailed product copy");
+    expect(body.products[0].descriptionHtml).toBe("<p>Detailed <strong>product</strong> copy</p>");
   });
 });

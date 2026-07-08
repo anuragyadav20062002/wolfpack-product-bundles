@@ -13,6 +13,7 @@ import {
 import { updateBundleProductMetafields } from "../../../../services/bundles/metafield-sync.server";
 import { BundleStatus } from "../../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
+import { slugify } from "../../../../lib/slug-utils";
 import {
   buildFullPageBundleMetafieldConfig,
   createProductPageRedirect,
@@ -75,18 +76,29 @@ export async function handleValidateWidgetPlacement(
         bundle,
       );
 
+      const requestedPublishedSlug = desiredSlug?.trim();
       const publishResult = await publishPreviewPage(
         admin,
         bundle.shopifyPreviewPageId,
         bundleId,
         session.shop,
+        {
+          title: bundle.name,
+          desiredSlug: requestedPublishedSlug
+            ? requestedPublishedSlug
+            : bundle.name,
+          currentHandle: bundle.shopifyPreviewPageHandle ?? "",
+        },
       );
 
       if (publishResult.success) {
+        const publishedPageHandle =
+          publishResult.newHandle ?? bundle.shopifyPreviewPageHandle;
+
         await db.bundle.update({
           where: { id: bundleId, shopId: session.shop },
           data: {
-            shopifyPageHandle: bundle.shopifyPreviewPageHandle,
+            shopifyPageHandle: publishedPageHandle,
             shopifyPageId: bundle.shopifyPreviewPageId,
             shopifyPreviewPageId: null,
             shopifyPreviewPageHandle: null,
@@ -101,7 +113,7 @@ export async function handleValidateWidgetPlacement(
           session.shop,
           {
             ...bundle,
-            shopifyPageHandle: bundle.shopifyPreviewPageHandle,
+            shopifyPageHandle: publishedPageHandle,
             shopifyPageId: bundle.shopifyPreviewPageId,
             status: BundleStatus.ACTIVE,
           },
@@ -111,18 +123,18 @@ export async function handleValidateWidgetPlacement(
           bundle.shopifyPreviewPageId,
           {
             ...bundle,
-            shopifyPageHandle: bundle.shopifyPreviewPageHandle,
+            shopifyPageHandle: publishedPageHandle,
             shopifyPageId: bundle.shopifyPreviewPageId,
             status: BundleStatus.ACTIVE,
           },
         );
 
         // Create URL redirect so /products/{handle} → /pages/{pageHandle} at routing level
-        if (bundle.shopifyProductId && bundle.shopifyPreviewPageHandle) {
+        if (bundle.shopifyProductId && publishedPageHandle) {
           createProductPageRedirect(
             admin,
             bundle.shopifyProductId,
-            bundle.shopifyPreviewPageHandle,
+            publishedPageHandle,
           ).catch(() => {});
         }
 
@@ -131,16 +143,16 @@ export async function handleValidateWidgetPlacement(
           {
             bundleId,
             pageId: bundle.shopifyPreviewPageId,
-            pageHandle: bundle.shopifyPreviewPageHandle,
+            pageHandle: publishedPageHandle,
           },
         );
 
         return json({
           success: true,
-          pageHandle: bundle.shopifyPreviewPageHandle,
+          pageHandle: publishedPageHandle,
           pageId: bundle.shopifyPreviewPageId,
-          pageUrl: `https://${session.shop.replace(".myshopify.com", "")}.myshopify.com/pages/${bundle.shopifyPreviewPageHandle}`,
-          slugAdjusted: false,
+          pageUrl: `https://${session.shop.replace(".myshopify.com", "")}.myshopify.com/pages/${publishedPageHandle}`,
+          slugAdjusted: publishResult.adjusted ?? false,
           message: `Bundle page published successfully!`,
         });
       }
@@ -389,7 +401,7 @@ export async function handleRenamePageSlug(
     const result = await renamePageHandle(
       admin,
       bundle.shopifyPageId,
-      newSlug,
+      slugify(newSlug),
       bundle.shopifyPageHandle ?? "",
     );
 

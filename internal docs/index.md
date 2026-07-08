@@ -36,6 +36,7 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Architecture/Widget Architecture]] — FPB + PDP widgets, load strategy, versioning
 - [[Architecture/State Management]] — Redux Toolkit slices, RTK Query endpoint boundaries, and AppStateService migration rules
 - [[Shopify Integration/Admin API]] — Rate limits, GraphQL patterns, session handling
+- [[Shopify Integration/Storefront API]] — Storefront GraphQL field gotchas, including product description HTML handling
 - [[Shopify Integration/Cart Transform API]] — Operations, targets, API versions (2025-10)
 - [[Shopify Integration/Checkout UI Extension]] — Preact targets, build rules
 - [[Shopify Integration/Metafields]] — Bundle config metafield sync strategy

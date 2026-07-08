@@ -200,6 +200,10 @@
   margin-top: 8px;
 }
 
+.bundle-modal-selection-summary[hidden] {
+  display: none;
+}
+
 .bundle-modal-selection-summary .selection-check-icon {
   flex-shrink: 0;
   color: var(--bundle-selection-check-color, #16a34a);

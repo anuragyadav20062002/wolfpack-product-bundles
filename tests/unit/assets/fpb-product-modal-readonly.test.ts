@@ -52,6 +52,43 @@ describe("FPB product modal read-only quick view", () => {
     return new TestModal(widget);
   }
 
+  async function createModalForPopulate(widget: ReturnType<typeof buildWidget>) {
+    await import("../../../app/assets/bundle-modal-component.js");
+    const Modal = ((globalThis as typeof globalThis & { window: { BundleProductModal: new (widget: unknown) => any } }).window)
+      .BundleProductModal;
+    const elements: Record<string, any> = {
+      "modal-product-title": { textContent: "" },
+      "modal-product-description": { textContent: "", innerHTML: "" },
+      "modal-qty-display": { textContent: "" },
+    };
+    (globalThis as typeof globalThis & { document: any }).document = {
+      body: {
+        classList: createClassList(),
+      },
+      getElementById: (id: string) => elements[id] ?? null,
+    };
+
+    class TestModal extends Modal {
+      init() {
+        this.modalElement = {
+          classList: createClassList(),
+          dataset: {},
+          querySelector: () => null,
+        };
+      }
+
+      loadImage() {}
+
+      createVariantSelectors() {}
+
+      updatePrice() {}
+
+      updateReadOnlyState() {}
+    }
+
+    return { modal: new TestModal(widget), elements };
+  }
+
   const product = {
     id: "product-1",
     variantId: "variant-1",
@@ -94,6 +131,41 @@ describe("FPB product modal read-only quick view", () => {
     expect(isActive).toBe(false);
   });
 
+  it("renders Shopify product descriptionHtml as modal HTML", async () => {
+    const widget = buildWidget();
+    const { modal, elements } = await createModalForPopulate(widget);
+
+    modal.currentProduct = {
+      ...product,
+      description: "Soft cotton product description.",
+      descriptionHtml: "<p>Soft <strong>cotton</strong> product description.</p>",
+    };
+    modal.selectedQuantity = 1;
+    modal.populateModal();
+
+    expect(elements["modal-product-description"].innerHTML).toBe(
+      "<p>Soft <strong>cotton</strong> product description.</p>",
+    );
+    expect(elements["modal-product-description"].textContent).toBe("");
+  });
+
+  it("renders plain product descriptions as text when descriptionHtml is missing", async () => {
+    const widget = buildWidget();
+    const { modal, elements } = await createModalForPopulate(widget);
+
+    modal.currentProduct = {
+      ...product,
+      description: "Plain <strong>text</strong> fallback.",
+    };
+    modal.selectedQuantity = 1;
+    modal.populateModal();
+
+    expect(elements["modal-product-description"].textContent).toBe(
+      "Plain <strong>text</strong> fallback.",
+    );
+    expect(elements["modal-product-description"].innerHTML).toBe("");
+  });
+
   it("clears stale variant summary when opening a single-variant product", async () => {
     const { BundleModalVariantMethods } = await import("../../../app/assets/widgets/full-page/modal/variant-methods.js");
     const elements: Record<string, any> = {
@@ -103,6 +175,7 @@ describe("FPB product modal read-only quick view", () => {
       },
       "modal-selection-summary": {
         style: { display: "flex" },
+        hidden: false,
       },
       "modal-selection-text": {
         textContent: "Blue / Medium",
@@ -125,7 +198,7 @@ describe("FPB product modal read-only quick view", () => {
     modal.createVariantSelectors();
 
     expect(elements["modal-variants-container"].innerHTML).toBe("");
-    expect(elements["modal-selection-summary"].style.display).toBe("none");
+    expect(elements["modal-selection-summary"].hidden).toBe(true);
     expect(elements["modal-selection-text"].textContent).toBe("");
     expect(modal.selectedOptions).toEqual({});
     expect(modal.selectedVariant).toEqual({ id: "variant-2", title: "Default Title" });

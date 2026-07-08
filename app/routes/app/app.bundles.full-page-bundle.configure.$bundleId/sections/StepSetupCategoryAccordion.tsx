@@ -56,7 +56,7 @@ export function FpbStepCategoryAccordion({
     product.image?.url ||
     product.images?.[0]?.url ||
     product.images?.[0]?.originalSrc ||
-    "/bundle.png";
+    "/bundle.avif";
 
   const updateCategory = (updater: (category: any) => any) => {
     const updated = ((step.StepCategory as any[]) ?? []).map(

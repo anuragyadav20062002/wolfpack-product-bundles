@@ -25,11 +25,87 @@ function getThemeSettingsContent(
   }
 }
 
+async function getThemeSettingsFileContent(
+  body: { content?: string; contentBase64?: string; url?: string } | undefined,
+) {
+  const inlineContent = getThemeSettingsContent(body);
+  if (inlineContent) return inlineContent;
+  if (typeof body?.url !== "string") return undefined;
+
+  try {
+    const response = await fetch(body.url, {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return undefined;
+    return await response.text();
+  } catch {
+    return undefined;
+  }
+}
+
+function stripJsonComments(input: string) {
+  let output = "";
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
+    const nextChar = input[index + 1];
+
+    if (inString) {
+      output += char;
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === "\"") {
+      inString = true;
+      output += char;
+      continue;
+    }
+
+    if (char === "/" && nextChar === "*") {
+      const commentEnd = input.indexOf("*/", index + 2);
+      if (commentEnd === -1) return input;
+      index = commentEnd + 1;
+      continue;
+    }
+
+    if (char === "/" && nextChar === "/") {
+      const lineEnd = input.indexOf("\n", index + 2);
+      if (lineEnd === -1) break;
+      output += "\n";
+      index = lineEnd;
+      continue;
+    }
+
+    output += char;
+  }
+
+  return output;
+}
+
+function parseThemeSettingsData(fileContent: string): Record<string, unknown> {
+  return JSON.parse(stripJsonComments(fileContent.replace(/^\uFEFF/, "")));
+}
+
+function isDisabledAppEmbedSetting(disabled: unknown) {
+  return disabled === true || (
+    typeof disabled === "string" && disabled.trim().toLowerCase() === "true"
+  );
+}
+
 function isWolfpackEmbedBlock(
-  value: { disabled?: boolean; type?: string } | undefined,
+  value: { disabled?: unknown; type?: string } | undefined,
   options: AppEmbedCheckOptions,
 ) {
-  if (value?.disabled === true) return false;
+  if (isDisabledAppEmbedSetting(value?.disabled)) return false;
   if (typeof value?.type !== "string") return false;
 
   const appHandles = [
@@ -60,9 +136,8 @@ function isWolfpackEmbedBlock(
  * Reads config/settings_data.json via Admin GraphQL and scans `current.blocks` for
  * the current app's app-embed block type that is not explicitly disabled.
  *
- * Never throws. If the theme settings cannot be read, fail closed. If the
- * settings payload is malformed or truncated, fail open because we cannot
- * confirm that the app embed is disabled.
+ * Never throws. If the theme settings cannot be read or parsed, fail closed
+ * so the merchant sees the setup banner instead of a false active state.
  */
 export async function checkAppEmbedEnabled(
   admin: ShopifyAdmin,
@@ -105,6 +180,9 @@ export async function checkAppEmbedEnabled(
                 ... on OnlineStoreThemeFileBodyBase64 {
                   contentBase64
                 }
+                ... on OnlineStoreThemeFileBodyUrl {
+                  url
+                }
               }
             }
           }
@@ -113,8 +191,12 @@ export async function checkAppEmbedEnabled(
     `, { variables: { themeId } });
 
     const settingsData = await settingsResult.json();
-    const fileContent = getThemeSettingsContent(
-      settingsData?.data?.theme?.files?.nodes?.[0]?.body,
+    const settingsFiles = settingsData?.data?.theme?.files?.nodes ?? [];
+    const settingsFile = settingsFiles.find(
+      (node: { filename?: string }) => node?.filename === "config/settings_data.json",
+    ) ?? settingsFiles[0];
+    const fileContent = await getThemeSettingsFileContent(
+      settingsFile?.body,
     );
 
     if (!fileContent) {
@@ -123,14 +205,13 @@ export async function checkAppEmbedEnabled(
 
     let parsed: Record<string, unknown>;
     try {
-      parsed = JSON.parse(fileContent);
+      parsed = parseThemeSettingsData(fileContent);
     } catch {
-      AppLogger.debug("checkAppEmbedEnabled: failed to parse settings_data.json", { shopDomain });
-      return { enabled: true, themeId };
+      return { enabled: false, themeId };
     }
 
     const blocks = (parsed?.current as Record<string, unknown> | undefined)?.blocks as
-      | Record<string, { disabled?: boolean; type?: string }>
+      | Record<string, { disabled?: unknown; type?: string }>
       | undefined;
 
     if (!blocks || typeof blocks !== "object") {

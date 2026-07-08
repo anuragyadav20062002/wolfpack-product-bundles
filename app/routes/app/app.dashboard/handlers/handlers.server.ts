@@ -416,7 +416,7 @@ export async function handleCreateBundle(
     const appUrl = process.env.SHOPIFY_APP_URL;
     const mediaInput = appUrl ? [
       {
-        originalSource: `${appUrl}/bundle.png`,
+        originalSource: `${appUrl}/bundle.avif`,
         alt: `${bundleName} - Bundle`,
         mediaContentType: "IMAGE"
       }

@@ -5,7 +5,7 @@
  */
 
 import { isUUID } from "../../../../utils/shopify-validators";
-import { getFirstVariantId, batchGetFirstVariants } from "../../../../utils/variant-lookup.server";
+import { getFirstVariantId, batchGetProductVariants } from "../../../../utils/variant-lookup.server";
 import { AppLogger } from "../../../../lib/logger";
 import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { checkMetafieldSize } from "../utils/size-check";
@@ -13,6 +13,26 @@ import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../../../../constants/metaf
 import type { ComponentParentsData } from "../types";
 import { buildPriceAdjustmentConfig } from "../utils/price-adjustment";
 import { collectAddonComponentVariants } from "../utils/addon-components";
+
+function normalizeProductVariantGid(value: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+
+  const raw = String(value).trim();
+  if (!raw) return null;
+  if (raw.startsWith("gid://shopify/ProductVariant/")) return raw;
+  if (/^\d+$/.test(raw)) return `gid://shopify/ProductVariant/${raw}`;
+  return null;
+}
+
+function getCachedVariantGid(variant: any): string | null {
+  return normalizeProductVariantGid(
+    variant?.id
+      ?? variant?.variantId
+      ?? variant?.variantGraphqlId
+      ?? variant?.graphqlId
+      ?? variant?.admin_graphql_api_id,
+  );
+}
 
 /**
  * Updates component product variants with component_parents metafield (Shopify Standard)
@@ -86,9 +106,10 @@ export async function updateComponentProductMetafields(
           // Writing component_parents to every variant ensures Cart Transform can apply
           // the bundle discount regardless of which variant the customer selects.
           for (const variant of dbVariants) {
-            if (variant.id && !isUUID(variant.id)) {
-              componentVariantIds.add(variant.id);
-              componentReferences.push(variant.id);
+            const variantId = getCachedVariantGid(variant);
+            if (variantId && !isUUID(variantId)) {
+              componentVariantIds.add(variantId);
+              componentReferences.push(variantId);
               componentQuantities.push(step.minQuantity || 1);
             }
           }
@@ -110,9 +131,10 @@ export async function updateComponentProductMetafields(
 
           if (cachedVariants.length > 0) {
             for (const variant of cachedVariants) {
-              if (variant.id && !isUUID(variant.id)) {
-                componentVariantIds.add(variant.id);
-                componentReferences.push(variant.id);
+              const variantId = getCachedVariantGid(variant);
+              if (variantId && !isUUID(variantId)) {
+                componentVariantIds.add(variantId);
+                componentReferences.push(variantId);
                 componentQuantities.push(step.minQuantity || 1);
               }
             }
@@ -192,9 +214,10 @@ export async function updateComponentProductMetafields(
 
           if (cachedVariants.length > 0) {
             for (const variant of cachedVariants) {
-              if (variant.id && !isUUID(variant.id)) {
-                componentVariantIds.add(variant.id);
-                componentReferences.push(variant.id);
+              const variantId = getCachedVariantGid(variant);
+              if (variantId && !isUUID(variantId)) {
+                componentVariantIds.add(variantId);
+                componentReferences.push(variantId);
                 componentQuantities.push(step.minQuantity || 1);
               }
             }
@@ -260,7 +283,9 @@ export async function updateComponentProductMetafields(
     }
   }
 
-  // Batch fetch first variants only for products where no variant data was cached in the DB
+  // Batch fetch all variants for products where no variant data was cached in the DB.
+  // Cart Transform reads component_parents from the selected variant line, so every
+  // selectable variant must carry the metafield.
   if (productIdMap.length > 0) {
     const productIds = productIdMap.map(item => item.productId);
     AppLogger.debug("[COMPONENT_METAFIELD] Batch fetching variants (no DB cache)", {
@@ -268,16 +293,20 @@ export async function updateComponentProductMetafields(
       count: productIds.length,
     });
 
-    const variantResults = await batchGetFirstVariants(admin, productIds);
+    const variantResults = await batchGetProductVariants(admin, productIds);
 
     productIdMap.forEach(item => {
       const cleanId = item.productId.replace('gid://shopify/Product/', '');
       const result = variantResults.get(cleanId);
 
-      if (result?.success && result.variantId) {
-        componentReferences.push(result.variantId);
-        componentQuantities.push(item.stepMinQuantity);
-        componentVariantIds.add(result.variantId);
+      if (result?.success && Array.isArray(result.variantIds) && result.variantIds.length > 0) {
+        result.variantIds.forEach(variantId => {
+          const normalizedVariantId = normalizeProductVariantGid(variantId);
+          if (!normalizedVariantId) return;
+          componentReferences.push(normalizedVariantId);
+          componentQuantities.push(item.stepMinQuantity);
+          componentVariantIds.add(normalizedVariantId);
+        });
       } else {
         AppLogger.warn("Could not get variant for component product", {
           component: "metafield-sync",

@@ -160,7 +160,7 @@ export async function createFullPageBundle(
     // the widget inside normal page content when the dedicated app block is absent.
 
     // Step 1: Resolve page handle — use desiredSlug, fall back to slugified bundle name
-    const rawSlug = desiredSlug?.trim() || slugify(bundleName) || `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    const rawSlug = slugify(desiredSlug ?? '') || slugify(bundleName) || `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
     const { handle: pageHandle, adjusted: slugAdjusted } = await resolveUniqueHandle(admin, rawSlug);
     const pageTitle = bundleName || `Bundle ${bundleId}`;
     const pageBodyHtml = buildFullPageBundleBodyHtml(bundleId, shop);
@@ -399,7 +399,8 @@ export async function renamePageHandle(
   currentSlug: string
 ): Promise<{ success: boolean; newHandle?: string; adjusted?: boolean; error?: string }> {
   try {
-    const { handle: resolvedHandle, adjusted } = await resolveUniqueHandle(admin, desiredSlug, currentSlug);
+    const normalizedSlug = slugify(desiredSlug);
+    const { handle: resolvedHandle, adjusted } = await resolveUniqueHandle(admin, normalizedSlug, currentSlug);
 
     const UPDATE_PAGE_HANDLE = `
       mutation updatePageHandle($id: ID!, $page: PageUpdateInput!) {
@@ -426,7 +427,7 @@ export async function renamePageHandle(
       AppLogger.error('renamePageHandle: pageUpdate returned userErrors', {
         component: 'WidgetFullPageBundle',
         pageId,
-        desiredSlug,
+        desiredSlug: normalizedSlug,
         errors
       });
       return { success: false, error: errors[0].message };
@@ -561,8 +562,13 @@ export async function publishPreviewPage(
   admin: any,
   pageId: string,
   bundleId?: string,
-  shopDomain?: string
-): Promise<{ success: boolean; error?: string }> {
+  shopDomain?: string,
+  publishOptions?: {
+    title?: string;
+    desiredSlug?: string;
+    currentHandle?: string;
+  },
+): Promise<{ success: boolean; newHandle?: string; adjusted?: boolean; error?: string }> {
   const PUBLISH_PAGE = `
     mutation publishPage($id: ID!, $page: PageUpdateInput!) {
       pageUpdate(id: $id, page: $page) {
@@ -591,8 +597,30 @@ export async function publishPreviewPage(
       }
     }
 
+    const pageInput: { isPublished: boolean; title?: string; handle?: string } = {
+      isPublished: true,
+    };
+    const title = publishOptions?.title?.trim();
+    if (title) {
+      pageInput.title = title;
+    }
+
+    let resolvedHandle: string | undefined;
+    let adjusted = false;
+    const desiredHandle = slugify(publishOptions?.desiredSlug ?? title ?? "");
+    if (desiredHandle) {
+      const resolved = await resolveUniqueHandle(
+        admin,
+        desiredHandle,
+        publishOptions?.currentHandle,
+      );
+      resolvedHandle = resolved.handle;
+      adjusted = resolved.adjusted;
+      pageInput.handle = resolvedHandle;
+    }
+
     const response = await admin.graphql(PUBLISH_PAGE, {
-      variables: { id: pageId, page: { isPublished: true } },
+      variables: { id: pageId, page: pageInput },
     });
     const data = await response.json();
     const userErrors = data.data?.pageUpdate?.userErrors ?? [];
@@ -610,7 +638,8 @@ export async function publishPreviewPage(
       component: 'WidgetFullPageBundle',
       pageId,
     });
-    return { success: true };
+    const newHandle = data.data?.pageUpdate?.page?.handle ?? resolvedHandle;
+    return { success: true, newHandle, adjusted };
   } catch (error) {
     AppLogger.error('publishPreviewPage: unexpected error', {
       component: 'WidgetFullPageBundle',

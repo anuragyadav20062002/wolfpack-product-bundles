@@ -39,7 +39,7 @@ import { useBundleForm } from "./useBundleForm";
 import { useBundleSteps } from "./useBundleSteps";
 import { useBundleConditions } from "./useBundleConditions";
 import { useBundlePricing } from "./useBundlePricing";
-import { FullPageLayout, type BundleStatus } from "../constants/bundle";
+import { type BundleStatus } from "../constants/bundle";
 import { normalizePricingRuleMessages } from "../lib/pricing-display-options";
 
 // ============================================
@@ -55,7 +55,6 @@ export interface BundleData {
   status: BundleStatus;
   bundleType: string;
   templateName?: string;
-  fullPageLayout?: string | null;
   shopifyProductId?: string;
   shopifyPageHandle?: string;
   shopifyPageId?: string;
@@ -124,7 +123,6 @@ export function useBundleConfigurationState({
       description: bundle.description || "",
       status: bundle.status,
       templateName: bundle.templateName || "",
-      fullPageLayout: bundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
     },
     onStateChange: markAsDirty
   });
@@ -367,7 +365,6 @@ export function useBundleConfigurationState({
     name: formState.bundleName,
     description: formState.bundleDescription,
     templateName: formState.templateName,
-    fullPageLayout: formState.fullPageLayout,
     steps: JSON.stringify(transformedSteps),
     discountEnabled: pricingState.discountEnabled,
     discountType: pricingState.discountType,
@@ -394,7 +391,6 @@ export function useBundleConfigurationState({
       formState.setBundleName(originalValues.name);
       formState.setBundleDescription(originalValues.description);
       formState.setTemplateName(originalValues.templateName);
-      formState.setFullPageLayout(originalValues.fullPageLayout);
 
       // Reset steps
       const originalSteps = JSON.parse(originalValues.steps);
@@ -452,7 +448,6 @@ export function useBundleConfigurationState({
       name: formState.bundleName,
       description: formState.bundleDescription,
       templateName: formState.templateName,
-      fullPageLayout: formState.fullPageLayout,
       steps: JSON.stringify(stepsState.steps),
       discountEnabled: pricingState.discountEnabled,
       discountType: pricingState.discountType,

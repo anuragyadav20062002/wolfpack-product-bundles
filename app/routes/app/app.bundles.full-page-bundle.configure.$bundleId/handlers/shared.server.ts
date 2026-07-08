@@ -5,9 +5,11 @@ import { safeJsonParse } from "../../../../services/bundles/bundle-configure-han
 import {
   BundleStatus,
   BundleType,
-  FullPageLayout,
 } from "../../../../constants/bundle";
-import { formatStepCategoriesForRuntime } from "../../../../lib/bundle-config/category-runtime";
+import {
+  formatProductReferencesForRuntime,
+  formatStepCategoriesForRuntime,
+} from "../../../../lib/bundle-config/category-runtime";
 import {
   normalizePricingDisplayOptions,
   serializePricingDisplayOptions,
@@ -67,6 +69,8 @@ function buildFullPageBundlePricing(pricing: any) {
         flat.bxyDiscountType = rule.bxyDiscountType;
       if (rule.bxyApplyMode !== undefined)
         flat.bxyApplyMode = rule.bxyApplyMode;
+      if (rule.fixedBundlePrice !== undefined)
+        flat.fixedBundlePrice = Number(rule.fixedBundlePrice) || 0;
       return flat;
     }),
     display: {
@@ -85,6 +89,13 @@ function buildFullPageBundlePricing(pricing: any) {
   };
 }
 
+function buildRuntimeProductReferences(products: any[] = []) {
+  return formatProductReferencesForRuntime(products, products).map((product: any) => {
+    const id = product.id || product.productId || product.graphqlId;
+    return id ? { ...product, id } : product;
+  });
+}
+
 function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
   return steps.map((step: any, index: number) => {
     const rawStepProducts =
@@ -94,12 +105,11 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
           ? step.products
           : [];
 
-    const stepProducts = rawStepProducts
+    const stepProducts = buildRuntimeProductReferences(rawStepProducts)
       .map((product: any) => ({
-        productId: product.productId || product.id || null,
+        ...product,
+        productId: product.productId || product.id || product.graphqlId || null,
         title: product.title || product.name || "Product",
-        imageUrl: product.imageUrl || product.image?.url || null,
-        variants: Array.isArray(product.variants) ? product.variants : null,
       }))
       .filter((product: { productId: string | null }) =>
         Boolean(product.productId),
@@ -130,9 +140,8 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
       conditionValue2: step.conditionValue2 ?? null,
       StepProduct: stepProducts,
       products: stepProducts.map((product: any) => ({
-        id: product.productId,
-        title: product.title,
-        imageUrl: product.imageUrl,
+        ...product,
+        id: product.id || product.productId,
       })),
       collections: stepCollections.map((c: any) => ({
         id: c.id,
@@ -235,7 +244,6 @@ export function buildFullPageBundleMetafieldConfig(
     description: bundle.description || "",
     status: bundle.status,
     bundleType: bundle.bundleType || BundleType.FULL_PAGE,
-    fullPageLayout: bundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
     templateName: bundle.templateName || null,
     shopifyProductId: bundle.shopifyProductId || null,
     shopifyPageHandle:
@@ -261,7 +269,6 @@ export function buildFpbBaseConfig(
     description: string | null;
     status: string;
     bundleType: string;
-    fullPageLayout: string | null;
     templateName: string | null;
     shopifyProductId: string | null;
     shopifyPageHandle: string | null;
@@ -304,10 +311,10 @@ export function buildFpbBaseConfig(
         stepConditionsData[step.id]?.[0]?.autoNext === true ||
         stepConditionsData[step.id]?.[0]?.autoNext === "true" ||
         step.autoNextStepOnConditionMet === true,
-      products: (step.StepProduct || []).map((product: any) => ({
-        id: product.id,
+      products: buildRuntimeProductReferences(step.StepProduct || []).map((product: any) => ({
+        ...product,
+        id: product.id || product.productId || product.graphqlId,
         title: product.title || product.name || "Product",
-        imageUrl: product.imageUrl || product.image?.url || null,
       })),
       collections: (step.collections || []).map((collection: any) => ({
         id: collection.id,
@@ -341,8 +348,6 @@ export function buildFpbBaseConfig(
     description: updatedBundle.description,
     status: updatedBundle.status,
     bundleType: updatedBundle.bundleType,
-    fullPageLayout:
-      updatedBundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
     templateName: updatedBundle.templateName,
     steps: optimizedSteps,
     pricing: {
@@ -363,6 +368,8 @@ export function buildFpbBaseConfig(
           flat.bxyDiscountType = rule.bxyDiscountType;
         if (rule.bxyApplyMode !== undefined)
           flat.bxyApplyMode = rule.bxyApplyMode;
+        if (rule.fixedBundlePrice !== undefined)
+          flat.fixedBundlePrice = Number(rule.fixedBundlePrice) || 0;
         return flat;
       }),
       display: {

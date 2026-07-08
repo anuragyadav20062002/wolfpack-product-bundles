@@ -37,7 +37,7 @@ export const BundleProductCard = memo(
           <s-stack direction="block" gap="small">
             <s-stack direction="inline" gap="small" alignItems="center">
               <img
-                src={productImageUrl || "/bundle.png"}
+                src={productImageUrl || "/bundle.avif"}
                 alt={productTitle || "Bundle Product"}
                 style={{
                   width: 40,

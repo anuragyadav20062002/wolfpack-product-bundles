@@ -1,7 +1,7 @@
 import { updateComponentProductMetafields } from "../../../app/services/bundles/metafield-sync/operations/component-product.server";
 import {
   getFirstVariantId,
-  batchGetFirstVariants,
+  batchGetProductVariants,
 } from "../../../app/utils/variant-lookup.server";
 
 jest.mock("../../../app/lib/logger", () => ({
@@ -16,11 +16,11 @@ jest.mock("../../../app/lib/logger", () => ({
 
 jest.mock("../../../app/utils/variant-lookup.server", () => ({
   getFirstVariantId: jest.fn(),
-  batchGetFirstVariants: jest.fn(),
+  batchGetProductVariants: jest.fn(),
 }));
 
 const mockGetFirstVariantId = getFirstVariantId as jest.MockedFunction<typeof getFirstVariantId>;
-const mockBatchGetFirstVariants = batchGetFirstVariants as jest.MockedFunction<typeof batchGetFirstVariants>;
+const mockBatchGetProductVariants = batchGetProductVariants as jest.MockedFunction<typeof batchGetProductVariants>;
 
 type CollectionMap = Record<string, string[]>;
 
@@ -79,7 +79,7 @@ describe("updateComponentProductMetafields", () => {
       variantId: "gid://shopify/ProductVariant/PARENT",
     } as any);
 
-    mockBatchGetFirstVariants.mockResolvedValue(new Map());
+    mockBatchGetProductVariants.mockResolvedValue(new Map());
   });
 
   // ─── Regression guards: existing StepProduct / products[] paths ─────────────
@@ -115,12 +115,55 @@ describe("updateComponentProductMetafields", () => {
     // Should NOT call the collection query when no collections are configured
     expect(getCollectionQueryCalls(admin)).toHaveLength(0);
     // Should NOT need batch variant fetch when DB cache covers everything
-    expect(mockBatchGetFirstVariants).not.toHaveBeenCalled();
+    expect(mockBatchGetProductVariants).not.toHaveBeenCalled();
   });
 
-  it("falls back to batchGetFirstVariants when StepProduct has no cached variants", async () => {
-    mockBatchGetFirstVariants.mockResolvedValue(
-      new Map([["123", { success: true, variantId: "gid://shopify/ProductVariant/F1" }]]),
+  it("normalizes numeric cached StepProduct variant IDs before writing component_parents", async () => {
+    const admin = makeAdmin();
+    const config = {
+      steps: [
+        {
+          minQuantity: 1,
+          StepProduct: [
+            {
+              productId: "gid://shopify/Product/123",
+              variants: [
+                { id: "51659604984106" },
+                { variantId: 51658221388074 },
+              ],
+            },
+          ],
+        },
+      ],
+      pricing: {
+        enabled: true,
+        method: "fixed_bundle_price",
+        rules: [{ conditionType: "quantity", conditionValue: 2, discountValue: 770, fixedBundlePrice: 770 }],
+      },
+    };
+
+    await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
+
+    const writes = getMetafieldSetCalls(admin);
+    expect(writes.map((write: any) => write.ownerId).sort()).toEqual([
+      "gid://shopify/ProductVariant/51658221388074",
+      "gid://shopify/ProductVariant/51659604984106",
+    ]);
+    const parsed = JSON.parse(writes[0].value);
+    expect(parsed[0].component_reference.value).toEqual([
+      "gid://shopify/ProductVariant/51659604984106",
+      "gid://shopify/ProductVariant/51658221388074",
+    ]);
+    expect(parsed[0].price_adjustment).toMatchObject({
+      method: "fixed_bundle_price",
+      value: 770,
+      conditions: { type: "quantity", operator: "gte", value: 2 },
+    });
+  });
+
+  it("falls back to batchGetProductVariants when StepProduct has no cached variants", async () => {
+    mockBatchGetProductVariants.mockResolvedValue(
+      new Map([["123", { success: true, variantIds: ["gid://shopify/ProductVariant/F1"] }]]),
     );
     const admin = makeAdmin();
     const config = {
@@ -135,15 +178,53 @@ describe("updateComponentProductMetafields", () => {
 
     await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
 
-    expect(mockBatchGetFirstVariants).toHaveBeenCalledWith(admin, ["gid://shopify/Product/123"]);
+    expect(mockBatchGetProductVariants).toHaveBeenCalledWith(admin, ["gid://shopify/Product/123"]);
     const writes = getMetafieldSetCalls(admin);
     expect(writes).toHaveLength(1);
     expect(writes[0].ownerId).toBe("gid://shopify/ProductVariant/F1");
   });
 
+  it("writes fallback product component_parents to every fetched variant", async () => {
+    mockBatchGetProductVariants.mockResolvedValue(
+      new Map([[
+        "123",
+        {
+          success: true,
+          variantIds: [
+            "gid://shopify/ProductVariant/F1",
+            "gid://shopify/ProductVariant/F2",
+          ],
+        },
+      ]]),
+    );
+    const admin = makeAdmin();
+    const config = {
+      steps: [
+        {
+          minQuantity: 1,
+          StepProduct: [{ productId: "gid://shopify/Product/123", variants: [] }],
+        },
+      ],
+      pricing: { enabled: false },
+    };
+
+    await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
+
+    const writes = getMetafieldSetCalls(admin);
+    expect(writes.map((write: any) => write.ownerId).sort()).toEqual([
+      "gid://shopify/ProductVariant/F1",
+      "gid://shopify/ProductVariant/F2",
+    ]);
+    const parsed = JSON.parse(writes[0].value);
+    expect(parsed[0].component_reference.value).toEqual([
+      "gid://shopify/ProductVariant/F1",
+      "gid://shopify/ProductVariant/F2",
+    ]);
+  });
+
   it("uses products[] fallback when StepProduct is absent", async () => {
-    mockBatchGetFirstVariants.mockResolvedValue(
-      new Map([["456", { success: true, variantId: "gid://shopify/ProductVariant/F2" }]]),
+    mockBatchGetProductVariants.mockResolvedValue(
+      new Map([["456", { success: true, variantIds: ["gid://shopify/ProductVariant/F2"] }]]),
     );
     const admin = makeAdmin();
     const config = {
@@ -185,7 +266,7 @@ describe("updateComponentProductMetafields", () => {
 
     await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
 
-    expect(mockBatchGetFirstVariants).not.toHaveBeenCalled();
+    expect(mockBatchGetProductVariants).not.toHaveBeenCalled();
     const writes = getMetafieldSetCalls(admin);
     expect(writes).toHaveLength(2);
     expect(writes.map((write: any) => write.ownerId).sort()).toEqual([
@@ -223,7 +304,7 @@ describe("updateComponentProductMetafields", () => {
 
     await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
 
-    expect(mockBatchGetFirstVariants).not.toHaveBeenCalled();
+    expect(mockBatchGetProductVariants).not.toHaveBeenCalled();
     const writes = getMetafieldSetCalls(admin);
     expect(writes).toHaveLength(2);
     expect(writes.map((write: any) => write.ownerId).sort()).toEqual([
@@ -273,7 +354,7 @@ describe("updateComponentProductMetafields", () => {
     const writes = getMetafieldSetCalls(admin);
     expect(writes).toHaveLength(1);
     const parsed = JSON.parse(writes[0].value);
-    expect(parsed[0].price_adjustment).toEqual({
+    expect(parsed[0].price_adjustment).toMatchObject({
       method: "buy_x_get_y",
       value: 100,
       customerBuys: 2,
@@ -344,7 +425,7 @@ describe("updateComponentProductMetafields", () => {
       "gid://shopify/ProductVariant/PAID",
       "gid://shopify/ProductVariant/ADDON",
     ]);
-    expect(parsed[0].price_adjustment).toEqual({
+    expect(parsed[0].price_adjustment).toMatchObject({
       method: "fixed_amount_off",
       value: 500,
       conditions: { type: "quantity", operator: "gte", value: 2 },
@@ -354,11 +435,11 @@ describe("updateComponentProductMetafields", () => {
   // ─── New collection-only path (the Pearletti fix) ───────────────────────────
 
   it("resolves products from step.collections and writes component_parents to each first variant", async () => {
-    mockBatchGetFirstVariants.mockResolvedValue(
+    mockBatchGetProductVariants.mockResolvedValue(
       new Map([
-        ["100", { success: true, variantId: "gid://shopify/ProductVariant/V100" }],
-        ["200", { success: true, variantId: "gid://shopify/ProductVariant/V200" }],
-        ["300", { success: true, variantId: "gid://shopify/ProductVariant/V300" }],
+        ["100", { success: true, variantIds: ["gid://shopify/ProductVariant/V100"] }],
+        ["200", { success: true, variantIds: ["gid://shopify/ProductVariant/V200"] }],
+        ["300", { success: true, variantIds: ["gid://shopify/ProductVariant/V300"] }],
       ]),
     );
     const admin = makeAdmin({
@@ -390,7 +471,7 @@ describe("updateComponentProductMetafields", () => {
     expect(collQueries[0][1].variables).toEqual({ handle: "buy-any-3" });
 
     // Batch lookup was issued for all 3 collection-resolved product IDs
-    expect(mockBatchGetFirstVariants).toHaveBeenCalledWith(admin, [
+    expect(mockBatchGetProductVariants).toHaveBeenCalledWith(admin, [
       "gid://shopify/Product/100",
       "gid://shopify/Product/200",
       "gid://shopify/Product/300",
@@ -421,8 +502,8 @@ describe("updateComponentProductMetafields", () => {
   });
 
   it("merges StepProduct + collection products without duplicate writes for shared products", async () => {
-    mockBatchGetFirstVariants.mockResolvedValue(
-      new Map([["300", { success: true, variantId: "gid://shopify/ProductVariant/V300" }]]),
+    mockBatchGetProductVariants.mockResolvedValue(
+      new Map([["300", { success: true, variantIds: ["gid://shopify/ProductVariant/V300"] }]]),
     );
     const admin = makeAdmin({
       shared: [
@@ -449,7 +530,7 @@ describe("updateComponentProductMetafields", () => {
     await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
 
     // batch fetch only for product 300; 200 is already cached via StepProduct
-    expect(mockBatchGetFirstVariants).toHaveBeenCalledWith(admin, ["gid://shopify/Product/300"]);
+    expect(mockBatchGetProductVariants).toHaveBeenCalledWith(admin, ["gid://shopify/Product/300"]);
 
     // 2 unique variants written: V200 (StepProduct) + V300 (collection)
     const writes = getMetafieldSetCalls(admin);

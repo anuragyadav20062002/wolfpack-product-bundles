@@ -289,6 +289,18 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
   });
 
+  it("does not persist legacy fullPageLayout from old save payloads", async () => {
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ fullPageLayout: "footer_bottom" }),
+    );
+
+    const updateArgs = getDb().bundle.update.mock.calls[0][0];
+    expect(updateArgs.data).not.toHaveProperty("fullPageLayout");
+  });
+
   it("persists direct bundleUpsellConfig from current full-page visibility controls", async () => {
     const bundleUpsellConfig = makeBundleUpsellConfig();
     await handleSaveBundle(
@@ -606,13 +618,13 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     const discountData = makeDiscountData({
       discountEnabled: true,
       discountType: "fixed_bundle_price",
-      discountRules: [{ id: "rule-1", price: "49.99" }],
+      discountRules: [{ id: "rule-1", discountValue: 4999 }],
     });
     const fd = makeFormData({ discountData: JSON.stringify(discountData) });
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
     const updateCall = getDb().bundle.update.mock.calls[0][0];
     const pricingRules = updateCall.data.pricing.upsert.create.rules;
-    expect(pricingRules[0].fixedBundlePrice).toBe(49.99);
+    expect(pricingRules[0].fixedBundlePrice).toBe(4999);
   });
 
   it("returns 500 when a product ID is a UUID (corrupted browser state)", async () => {
