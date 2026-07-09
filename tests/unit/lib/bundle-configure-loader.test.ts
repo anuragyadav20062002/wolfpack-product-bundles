@@ -117,7 +117,12 @@ describe("fetchEmbedData — live Shopify app embed status", () => {
       mockAdmin,
       SHOP,
       expect.objectContaining({
-        appHandles: ["bundle-builder", "configured-app-handle"],
+        appHandles: [
+          "bundle-builder",
+          "wolfpack-product-bundles-4",
+          "wolfpack-product-bundles-sit",
+          "configured-app-handle",
+        ],
         blockHandles: ["bundle-app-embed"],
       }),
     );
@@ -134,7 +139,7 @@ describe("fetchEmbedData — live Shopify app embed status", () => {
     expect(result.appEmbedEnabled).toBe(false);
   });
 
-  it("falls back to the theme extension handle when no Shopify app handle is configured", async () => {
+  it("includes stable deployed app handles when no Shopify app handle is configured", async () => {
     (checkAppEmbedEnabled as jest.Mock).mockResolvedValue({
       enabled: true,
       themeId: THEME_GID,
@@ -146,7 +151,11 @@ describe("fetchEmbedData — live Shopify app embed status", () => {
       mockAdmin,
       SHOP,
       expect.objectContaining({
-        appHandles: ["bundle-builder"],
+        appHandles: [
+          "bundle-builder",
+          "wolfpack-product-bundles-4",
+          "wolfpack-product-bundles-sit",
+        ],
         blockHandles: ["bundle-app-embed"],
       }),
     );
