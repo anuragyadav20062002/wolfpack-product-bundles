@@ -10,10 +10,15 @@ import { AppLogger } from "./logger";
 import { checkAppEmbedEnabled } from "../services/theme/app-embed-check.server";
 
 const THEME_APP_EXTENSION_HANDLE = "bundle-builder";
+const DEPLOYED_SHOPIFY_APP_HANDLES = [
+  "wolfpack-product-bundles-4",
+  "wolfpack-product-bundles-sit",
+];
 
 function getThemeAppEmbedHandles() {
   const handles = [
     THEME_APP_EXTENSION_HANDLE,
+    ...DEPLOYED_SHOPIFY_APP_HANDLES,
     process.env.SHOPIFY_APP_HANDLE,
   ];
 
