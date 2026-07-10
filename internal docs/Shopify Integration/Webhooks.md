@@ -44,3 +44,15 @@ The handler deletes old `BusinessEvent` rows before writing the final `app_unins
 `products/update` is not subscribed because Shopify cannot filter it by Wolfpack DB membership. Reintroducing it would deliver all product updates unless the app also writes and maintains a Shopify-side marker such as a tag or metafield.
 
 `inventory_levels/update` is not subscribed because each event requires a shop-wide bundle lookup before inventory sync. Runtime storefront inventory checks and explicit bundle sync flows should own this until there is a narrower, Shopify-side event filter.
+
+## Storage Gotcha
+
+If stale upstream subscriptions still deliver removed topics, `WebhookProcessor` must drop `products/update`, `inventory_levels/update`, and `orders/create` before decoding payloads or inserting `WebhookEvent` rows.
+
+Production evidence from 2026-07-10:
+- `WebhookEvent` was 7.7 GB in a 7.7 GB database.
+- `products/update` alone accounted for about 2.4M rows and 5.6 GB of JSON payload.
+- The previous 24 hours added about 82k `products/update` rows and 296 MB of JSON payload.
+- Webhook IDs were present and unique, so the issue was not duplicate delivery. The issue was storing distinct broad-topic events that the app no longer needs.
+
+Do not reintroduce persistence for retired broad topics. If they appear again, fix the Shopify subscription source and keep the processor-side guard as the last line of defense.
