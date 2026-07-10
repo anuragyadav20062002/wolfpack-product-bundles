@@ -209,6 +209,19 @@ WPB_DEPLOYMENT_BACKFILL_ENABLED=true npm run deployment:backfill
 
 Apply mode requires explicit approval for the exact environment and scope. Prefer narrowing with `WPB_DEPLOYMENT_BACKFILL_SHOP` or `WPB_DEPLOYMENT_BACKFILL_LIMIT` when possible.
 
+## ⚠️ Cart Transform Repair Rule
+
+`npm run cart-transform:repair` runs an app-context Cart Transform repair for installed shops. It is disabled by default and accepts only these mode flags:
+
+```bash
+WPB_CART_TRANSFORM_REPAIR_DRY_RUN=true
+WPB_CART_TRANSFORM_REPAIR_APPLY=true
+```
+
+Never set both flags. Dry-run scans installed shops without mutating Shopify. Apply mode runs `CartTransformService.completeSetup` through the app's offline Admin context for every installed shop.
+
+**NEVER run repair apply mode autonomously.** Stop and ask for explicit user approval first. Warn the user that production apply mode can create or replace CartTransform objects and overwrite the `$app.runtime_token_secret` owner metafield across live merchant shops.
+
 ---
 
 ## 🧪 Shopify Dev Environment Rule
