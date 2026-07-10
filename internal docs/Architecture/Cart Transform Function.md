@@ -1,7 +1,7 @@
 ---
 title: Cart Transform Function
 type: architecture
-audited: 2026-07-04
+audited: 2026-07-10
 source: extensions/bundle-cart-transform-rs/shopify.extension.toml; extensions/bundle-cart-transform-rs/src/merge.rs; app/services/cart-transform-runtime-token.server.ts
 ---
 
@@ -85,6 +85,73 @@ The token payload contains:
 The HMAC covers the base64url payload string, so Rust verifies the signature before decoding JSON. If `runtime_token_secret` is configured on the CartTransform owner and a line token is missing, tampered, or mismatched against actual cart line variants/quantities, the function emits no merge or add-on discount.
 
 Parent bundle metafields are still written for EXPAND/display paths: `component_reference`, `component_quantities`, `price_adjustment`, and `component_pricing`. Component-variant `$app:component_parents` is no longer the configured MERGE source.
+
+---
+
+## App-Context Diagnostics Gotcha
+
+Cart Transform objects and owner metafields are app-owned. A generic Shopify CLI
+store-auth query can authenticate successfully and still return empty
+`cartTransforms` / `shopifyFunctions` for this app's Function state. Treat that
+as an auth-context limitation, not proof that the transform is absent.
+
+Use this order when a shop's storefront sends valid bundle lines but no merge
+happens:
+
+1. Start at the storefront version:
+   `window.__BUNDLE_WIDGET_VERSION__`.
+2. Confirm the deployed widget asset contains the current cart contract:
+   `_wolfpackProductBundle:OfferId`, `_wolfpack_bundle_runtime`, and
+   `/apps/product-bundles/api/cart-transform-runtime-token`.
+3. Mint a runtime token through the storefront app proxy with real selected
+   variants, add the component lines through `/cart/add`, and inspect
+   `/cart.js`.
+   - If component lines include `_wolfpack_bundle_runtime` but remain unmerged,
+     the storefront contract is probably fine and the Function path rejected or
+     did not run.
+4. Verify active transform state through the embedded app route, not generic
+   store auth:
+   `https://admin.shopify.com/store/<store-handle>/apps/<app-handle>/api/check-cart-transform`
+   then open the app iframe URL directly if the outer Admin shell hides the JSON.
+5. If the route reports `activated: true` and no stale transforms but lines
+   still do not merge, inspect/resync the CartTransform owner metafield
+   `$app.runtime_token_secret` from app-context Admin API. The Rust MERGE path
+   emits no operation when this secret is absent or mismatched.
+
+Concrete 2026-07-10 example:
+
+- `wolfpackdemostore.myshopify.com` loaded production widget `5.0.94` from
+  `wolfpack-product-bundles-4-254`.
+- The deployed asset already included the runtime-token contract.
+- The app proxy minted a valid runtime token and `/cart/add` wrote component
+  lines with `_wolfpack_bundle_runtime`.
+- `/cart.js` still showed raw component lines.
+- The embedded app route reported `activated: true`, one Rust transform, and no
+  stale transforms.
+- A generic `shopify store execute` query authenticated with
+  `read_cart_transforms` but returned empty app-owned transforms/functions.
+
+Conclusion for that case: not a widget payload issue; repair by running
+`CartTransformService.completeSetup(admin, shopDomain)` in app context so the
+active CartTransform is present and the `$app.runtime_token_secret` owner
+metafield is synced.
+
+### Repair script
+
+Use `npm run cart-transform:repair` when multiple installed shops need the same
+app-context repair. The script is disabled unless exactly one mode flag is set:
+
+```bash
+WPB_CART_TRANSFORM_REPAIR_DRY_RUN=true npm run cart-transform:repair
+WPB_CART_TRANSFORM_REPAIR_APPLY=true npm run cart-transform:repair
+```
+
+Dry-run scans installed shops only and reports the target count. Apply mode
+runs `CartTransformService.completeSetup(admin, shopDomain)` through
+`unauthenticated.admin(shopDomain)` for every installed shop. That can create or
+replace CartTransform objects and sync the `$app.runtime_token_secret` owner
+metafield. Do not run apply mode against production without explicit manual
+approval for that exact operation.
 
 ---
 

@@ -35,6 +35,7 @@
     "webhook-worker": "tsx scripts/webhook-worker.ts",
     "bulk-sync": "tsx scripts/bulk-sync-bundles.ts",
     "deployment:backfill": "tsx scripts/deployment-backfill.ts",
+    "cart-transform:repair": "tsx scripts/cart-transform-repair.ts",
     "test": "ts-node tests/test-runner.ts",
     "test:unit": "ts-node tests/test-runner.ts unit",
     "test:integration": "ts-node tests/test-runner.ts integration",
