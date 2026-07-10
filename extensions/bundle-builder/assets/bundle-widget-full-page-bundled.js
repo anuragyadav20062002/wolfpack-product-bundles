@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.94
- * Built   : 2026-07-08
+ * Version : 5.0.95
+ * Built   : 2026-07-10
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.94';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.95';
 (function() {
   'use strict';
 
@@ -5802,6 +5802,12 @@ function getMobileAdditionalOffersPulseState({
   };
 }
 
+function normalizeStepContentSubtext(value) {
+  if (typeof value !== 'string') return '';
+  const text = value.trim();
+  return /^chrome\s+async(?:\s+text)?$/i.test(text) ? '' : text;
+}
+
 const MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;
 const MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS = 800;
 const MOBILE_ADDITIONAL_OFFERS_DURATION_MS = 3000;
@@ -6404,7 +6410,7 @@ getBundleContentSummaryText() {
 getCurrentStepContentText(stepIndex) {
   const step = this.selectedBundle?.steps?.[stepIndex];
   return {
-    subtext: typeof step?.pageTitle === 'string' ? step.pageTitle.trim() : ''
+    subtext: normalizeStepContentSubtext(step?.pageTitle)
   };
 },
 

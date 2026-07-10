@@ -7,7 +7,6 @@ import { handleCreateBundle } from "../app.dashboard/handlers/handlers.server";
 import { BundleType } from "../../../constants/bundle";
 import { showPolarisModal } from "../_shared/bundle-configure/modal-utils";
 import styles from "./create-bundle.module.css";
-import { OptimisedImage } from "../../../components/OptimisedImage";
 import { ensureShopIdentity, recordBusinessEvent } from "../../../services/app-events.server";
 import { getCachedSubscriptionInfo, getSubscriptionInfoFromCache } from "../../../services/subscription-cache.server";
 
@@ -243,14 +242,9 @@ export default function CreateBundleWizard() {
                   onClick={() => handleSelectBundleType(BundleType.PRODUCT_PAGE)}
                 >
                   <div className={styles.bundleThumbnailWrap}>
-                    <OptimisedImage
-                      src="/ppb.avif"
-                      alt={t("createBundle.bundleType.productPage.alt")}
-                      className={styles.bundleThumbnailImg}
-                      width={320}
-                      height={200}
-                      loading="eager"
-                      fetchPriority="high"
+                    <span
+                      className={`${styles.bundleThumbnailImg} ${styles.productPageThumbnail}`}
+                      aria-hidden="true"
                     />
                   </div>
                   <div className={styles.bundleCardBody}>
@@ -272,14 +266,9 @@ export default function CreateBundleWizard() {
                   onClick={() => handleSelectBundleType(BundleType.FULL_PAGE)}
                 >
                   <div className={styles.bundleThumbnailWrap}>
-                    <OptimisedImage
-                      src="/fpb.avif"
-                      alt={t("createBundle.bundleType.fullPage.alt")}
-                      className={styles.bundleThumbnailImg}
-                      width={320}
-                      height={200}
-                      loading="eager"
-                      fetchPriority="high"
+                    <span
+                      className={`${styles.bundleThumbnailImg} ${styles.fullPageThumbnail}`}
+                      aria-hidden="true"
                     />
                   </div>
                   <div className={styles.bundleCardBody}>
