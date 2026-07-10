@@ -51,16 +51,11 @@ function makeSettingsResponse(blocks: Record<string, unknown>) {
   };
 }
 
-function makeThemeNode(
-  id: string,
-  role: string,
-  blocks: Record<string, unknown>,
-  name = role,
-) {
+function makeThemeNode(id: string, blocks: Record<string, unknown>) {
   return {
     id,
-    name,
-    role,
+    name: "Main",
+    role: "MAIN",
     files: {
       nodes: [
         {
@@ -97,7 +92,7 @@ describe("checkAppEmbedEnabled", () => {
           currentAppInstallation: THEME_LIST_RESPONSE.data.currentAppInstallation,
           themes: {
             nodes: [
-              makeThemeNode("gid://shopify/OnlineStoreTheme/123456", "MAIN", {
+              makeThemeNode("gid://shopify/OnlineStoreTheme/123456", {
                 [EMBED_KEY]: { type: EMBED_KEY, disabled: false },
               }),
             ],
@@ -113,29 +108,21 @@ describe("checkAppEmbedEnabled", () => {
     expect(result.themeId).toBe("gid://shopify/OnlineStoreTheme/123456");
   });
 
-  it("keeps enabled false when the app embed is enabled only on a non-main theme", async () => {
+  it("checks only the MAIN theme because that is the live storefront theme", async () => {
     const mainThemeId = "gid://shopify/OnlineStoreTheme/111";
-    const draftThemeId = "gid://shopify/OnlineStoreTheme/222";
     const admin = makeAdmin([
       {
         data: {
           currentAppInstallation: THEME_LIST_RESPONSE.data.currentAppInstallation,
           themes: {
             nodes: [
-              makeThemeNode(mainThemeId, "MAIN", {
+              makeThemeNode(mainThemeId, {
                 "17878678986028907411": {
                   type: SINGLE_EMBED_KEY,
                   disabled: true,
                 },
               }),
-              makeThemeNode(draftThemeId, "UNPUBLISHED", {
-                "17878678986028907412": {
-                  type: SINGLE_EMBED_KEY,
-                  disabled: false,
-                },
-              }),
             ],
-            pageInfo: { hasNextPage: false, endCursor: null },
           },
         },
       },
@@ -147,64 +134,8 @@ describe("checkAppEmbedEnabled", () => {
 
     expect(result.enabled).toBe(false);
     expect(result.themeId).toBe(mainThemeId);
-    expect(result.enabledThemeIds).toEqual([draftThemeId]);
-    expect(result.checkedThemes).toEqual([
-      expect.objectContaining({ id: mainThemeId, role: "MAIN", enabled: false }),
-      expect.objectContaining({ id: draftThemeId, role: "UNPUBLISHED", enabled: true }),
-    ]);
-  });
-
-  it("scans paginated theme lists instead of only the first page", async () => {
-    const mainThemeId = "gid://shopify/OnlineStoreTheme/111";
-    const draftThemeId = "gid://shopify/OnlineStoreTheme/222";
-    const admin = makeAdmin([
-      {
-        data: {
-          currentAppInstallation: THEME_LIST_RESPONSE.data.currentAppInstallation,
-          themes: {
-            nodes: [
-              makeThemeNode(mainThemeId, "MAIN", {
-                "17878678986028907411": {
-                  type: SINGLE_EMBED_KEY,
-                  disabled: true,
-                },
-              }),
-            ],
-            pageInfo: { hasNextPage: true, endCursor: "cursor-1" },
-          },
-        },
-      },
-      {
-        data: {
-          currentAppInstallation: THEME_LIST_RESPONSE.data.currentAppInstallation,
-          themes: {
-            nodes: [
-              makeThemeNode(draftThemeId, "UNPUBLISHED", {
-                "17878678986028907412": {
-                  type: SINGLE_EMBED_KEY,
-                  disabled: false,
-                },
-              }),
-            ],
-            pageInfo: { hasNextPage: false, endCursor: null },
-          },
-        },
-      },
-    ]);
-
-    const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com", {
-      blockHandles: ["bundle-app-embed"],
-    });
-
-    expect(result.enabled).toBe(false);
-    expect(result.themeId).toBe(mainThemeId);
-    expect(result.enabledThemeIds).toEqual([draftThemeId]);
-    expect(admin.graphql).toHaveBeenCalledTimes(2);
-    expect(admin.graphql).toHaveBeenNthCalledWith(
-      2,
-      expect.any(String),
-      expect.objectContaining({ variables: { after: "cursor-1" } }),
-    );
+    expect(admin.graphql).toHaveBeenCalledTimes(1);
+    expect(admin.graphql).toHaveBeenCalledWith(expect.stringContaining("roles: [MAIN]"));
   });
 
   it("returns true for the single bundle app embed when Shopify stores a numeric block ID", async () => {

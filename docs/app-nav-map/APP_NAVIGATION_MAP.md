@@ -469,8 +469,6 @@ Billing Page
 | `/api/billing/create` | Initiate subscription |
 | `/api/billing/confirm` | Confirm subscription |
 | `/api/billing/cancel` | Cancel subscription |
-| `/api/install-pdp-widget` | Install PDP widget block to theme |
-| `/api/install-fpb-widget` | Install FPB widget block to theme |
 | `/api/activate-cart-transform` | Deploy cart transform function |
 | `/api/activate-pixel` | Activate UTM web pixel |
 | `/app/app-embed-status` | Authenticated Admin resource route for Preview-button app embed revalidation |

@@ -9,7 +9,7 @@ sources: shopify.dev ThemeRole, shopify.dev themes query, shopify.dev theme app 
 
 Shopify stores app embed activation per theme. `ThemeRole.MAIN` is the currently published storefront theme, and Shopify allows only one main theme at a time. Unpublished and development themes can also have the app embed enabled, but that does not make the live storefront embed active.
 
-The Wolfpack app embed status check scans paginated theme results and reads each theme's `config/settings_data.json` via Admin GraphQL theme files. The returned `appEmbedEnabled` boolean is intentionally based on the MAIN theme only. Non-main enabled themes are retained as diagnostics so a draft-theme activation does not hide the live storefront warning.
+The Wolfpack app embed status check reads the MAIN theme's `config/settings_data.json` via Admin GraphQL theme files using `themes(first: 1, roles: [MAIN])`. The returned `appEmbedEnabled` boolean is based only on the active published storefront theme, matching EB-style app embed gating. Non-main enabled themes are not part of the Preview/banner hot path because a draft-theme activation does not make the live storefront embed active.
 
 App embed detection depends on the app handle and app embed block handle in Shopify's settings data, not the extension UID alone. For production, the expected app embed type is:
 

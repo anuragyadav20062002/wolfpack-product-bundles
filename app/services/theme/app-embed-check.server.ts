@@ -4,15 +4,6 @@ import { AppLogger } from "../../lib/logger";
 export interface AppEmbedCheckResult {
   enabled: boolean;
   themeId: string | null;
-  checkedThemes?: AppEmbedThemeCheck[];
-  enabledThemeIds?: string[];
-}
-
-export interface AppEmbedThemeCheck {
-  id: string;
-  name: string | null;
-  role: string | null;
-  enabled: boolean;
 }
 
 interface AppEmbedCheckOptions {
@@ -26,15 +17,48 @@ interface ThemeNode {
   name?: string | null;
   role?: string | null;
   files?: {
-    nodes?: Array<{
-      filename?: string;
-      body?: { content?: string; contentBase64?: string; url?: string };
-    }>;
+    nodes?: ThemeFileNode[];
   };
 }
 
+interface ThemeFileBody {
+  content?: string;
+  contentBase64?: string;
+  url?: string;
+}
+
+interface ThemeFileNode {
+  filename?: string;
+  body?: ThemeFileBody;
+}
+
+interface AppEmbedStatusSeedResponse {
+  data?: {
+    currentAppInstallation?: {
+      app?: {
+        handle?: string | null;
+      } | null;
+    } | null;
+    themes?: {
+      nodes?: ThemeNode[];
+    } | null;
+  } | null;
+}
+
+interface ThemeSettingsResponse {
+  data?: {
+    theme?: {
+      files?: ThemeNode["files"];
+    } | null;
+  } | null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function getThemeSettingsContent(
-  body: { content?: string; contentBase64?: string } | undefined,
+  body: Pick<ThemeFileBody, "content" | "contentBase64"> | undefined,
 ) {
   if (typeof body?.content === "string") return body.content;
   if (typeof body?.contentBase64 !== "string") return undefined;
@@ -47,7 +71,7 @@ function getThemeSettingsContent(
 }
 
 async function getThemeSettingsFileContent(
-  body: { content?: string; contentBase64?: string; url?: string } | undefined,
+  body: ThemeFileBody | undefined,
 ) {
   const inlineContent = getThemeSettingsContent(body);
   if (inlineContent) return inlineContent;
@@ -113,7 +137,11 @@ function stripJsonComments(input: string) {
 }
 
 function parseThemeSettingsData(fileContent: string): Record<string, unknown> {
-  return JSON.parse(stripJsonComments(fileContent.replace(/^\uFEFF/, "")));
+  const parsed = JSON.parse(stripJsonComments(fileContent.replace(/^\uFEFF/, ""))) as unknown;
+  if (!isRecord(parsed)) {
+    throw new Error("Theme settings data is not a JSON object");
+  }
+  return parsed;
 }
 
 function isDisabledAppEmbedSetting(disabled: unknown) {
@@ -160,63 +188,47 @@ function getThemeSettingsBodyFromFiles(files: ThemeNode["files"]) {
   return settingsFile?.body;
 }
 
-async function listThemesWithSettings(
+async function getMainThemeWithSettings(
   admin: ShopifyAdmin,
-): Promise<{ currentAppHandle?: string; themes: ThemeNode[] }> {
-  const themes: ThemeNode[] = [];
-  let currentAppHandle: string | undefined;
-  let after: string | null = null;
-
-  do {
-    const themeListResult = await admin.graphql(`
-      query GetAppEmbedStatusSeed($after: String) {
-        currentAppInstallation {
-          app {
-            handle
-          }
+): Promise<{ currentAppHandle?: string; theme?: ThemeNode }> {
+  const themeListResult = await admin.graphql(`
+    query GetAppEmbedStatusSeed {
+      currentAppInstallation {
+        app {
+          handle
         }
-        themes(first: 50, after: $after) {
-          nodes {
-            id
-            name
-            role
-            files(filenames: ["config/settings_data.json"]) {
-              nodes {
-                filename
-                body {
-                  ... on OnlineStoreThemeFileBodyText {
-                    content
-                  }
-                  ... on OnlineStoreThemeFileBodyBase64 {
-                    contentBase64
-                  }
-                  ... on OnlineStoreThemeFileBodyUrl {
-                    url
-                  }
+      }
+      themes(first: 1, roles: [MAIN]) {
+        nodes {
+          id
+          name
+          role
+          files(filenames: ["config/settings_data.json"]) {
+            nodes {
+              filename
+              body {
+                ... on OnlineStoreThemeFileBodyText {
+                  content
+                }
+                ... on OnlineStoreThemeFileBodyBase64 {
+                  contentBase64
+                }
+                ... on OnlineStoreThemeFileBodyUrl {
+                  url
                 }
               }
             }
           }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
         }
       }
-    `, { variables: { after } });
-    const themeListData = await themeListResult.json();
-    currentAppHandle ??= themeListData?.data?.currentAppInstallation?.app?.handle;
-
-    const nextThemes = themeListData?.data?.themes?.nodes ?? [];
-    if (Array.isArray(nextThemes)) {
-      themes.push(...nextThemes);
     }
-
-    const pageInfo = themeListData?.data?.themes?.pageInfo;
-    after = pageInfo?.hasNextPage ? pageInfo?.endCursor ?? null : null;
-  } while (after);
-
-  return { currentAppHandle, themes };
+  `);
+  const themeListData = await themeListResult.json();
+  const data = themeListData as AppEmbedStatusSeedResponse;
+  return {
+    currentAppHandle: data.data?.currentAppInstallation?.app?.handle ?? undefined,
+    theme: data.data?.themes?.nodes?.[0],
+  };
 }
 
 async function getThemeSettingsBody(
@@ -251,55 +263,8 @@ async function getThemeSettingsBody(
   `, { variables: { themeId: theme.id } });
 
   const settingsData = await settingsResult.json();
-  return getThemeSettingsBodyFromFiles(settingsData?.data?.theme?.files);
-}
-
-async function inspectThemeEmbed(
-  admin: ShopifyAdmin,
-  theme: ThemeNode,
-  options: AppEmbedCheckOptions,
-): Promise<AppEmbedThemeCheck | null> {
-  if (!theme.id) return null;
-
-  const fileContent = await getThemeSettingsFileContent(
-    await getThemeSettingsBody(admin, theme),
-  );
-
-  if (!fileContent) {
-    return {
-      id: theme.id,
-      name: theme.name ?? null,
-      role: theme.role ?? null,
-      enabled: false,
-    };
-  }
-
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = parseThemeSettingsData(fileContent);
-  } catch {
-    return {
-      id: theme.id,
-      name: theme.name ?? null,
-      role: theme.role ?? null,
-      enabled: false,
-    };
-  }
-
-  const blocks = (parsed?.current as Record<string, unknown> | undefined)?.blocks as
-    | Record<string, { disabled?: unknown; type?: string }>
-    | undefined;
-
-  const enabled = Boolean(blocks && typeof blocks === "object" && Object.values(blocks).some((value) =>
-    isWolfpackEmbedBlock(value, options),
-  ));
-
-  return {
-    id: theme.id,
-    name: theme.name ?? null,
-    role: theme.role ?? null,
-    enabled,
-  };
+  const data = settingsData as ThemeSettingsResponse;
+  return getThemeSettingsBodyFromFiles(data.data?.theme?.files);
 }
 
 /**
@@ -316,10 +281,9 @@ export async function checkAppEmbedEnabled(
   options: AppEmbedCheckOptions = {},
 ): Promise<AppEmbedCheckResult> {
   try {
-    const { currentAppHandle, themes } = await listThemesWithSettings(admin);
-    const mainTheme = themes.find((theme) => theme.role === "MAIN");
+    const { currentAppHandle, theme } = await getMainThemeWithSettings(admin);
 
-    if (!mainTheme?.id) {
+    if (!theme?.id) {
       AppLogger.warn("checkAppEmbedEnabled: no active theme found", { shopDomain });
       return { enabled: false, themeId: null };
     }
@@ -332,29 +296,38 @@ export async function checkAppEmbedEnabled(
         currentAppHandle,
       ].filter((handle): handle is string => Boolean(handle?.trim())),
     };
-    const checkedThemes = (
-      await Promise.all(themes.map((theme) => inspectThemeEmbed(admin, theme, effectiveOptions)))
-    ).filter((theme): theme is AppEmbedThemeCheck => Boolean(theme));
-    const mainThemeCheck = checkedThemes.find((theme) => theme.id === mainTheme.id);
-    const enabledThemeIds = checkedThemes
-      .filter((theme) => theme.enabled)
-      .map((theme) => theme.id);
-    const enabled = mainThemeCheck?.enabled === true;
 
-    if (!enabled && enabledThemeIds.length > 0) {
-      AppLogger.info("checkAppEmbedEnabled: app embed enabled only on non-main theme", {
-        shopDomain,
-        mainThemeId: mainTheme.id,
-        enabledThemeIds,
-      });
+    const fileContent = await getThemeSettingsFileContent(
+      await getThemeSettingsBody(admin, theme),
+    );
+
+    if (!fileContent) {
+      return { enabled: false, themeId: theme.id };
     }
 
-    return {
-      enabled,
-      themeId: mainTheme.id,
-      checkedThemes,
-      enabledThemeIds,
-    };
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = parseThemeSettingsData(fileContent);
+    } catch {
+      return { enabled: false, themeId: theme.id };
+    }
+
+    const current = parsed.current;
+    if (!isRecord(current) || !isRecord(current.blocks)) {
+      return { enabled: false, themeId: theme.id };
+    }
+
+    const enabled = Object.values(current.blocks).some((value) =>
+      isWolfpackEmbedBlock(
+        isRecord(value) ? {
+          disabled: value.disabled,
+          type: typeof value.type === "string" ? value.type : undefined,
+        } : undefined,
+        effectiveOptions,
+      ),
+    );
+
+    return { enabled, themeId: theme.id };
   } catch (err) {
     AppLogger.warn("checkAppEmbedEnabled: unexpected error", { shopDomain, err });
     return { enabled: false, themeId: null };

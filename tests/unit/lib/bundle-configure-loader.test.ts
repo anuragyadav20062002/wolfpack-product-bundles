@@ -139,7 +139,7 @@ describe("fetchEmbedData — live Shopify app embed status", () => {
     expect(result.appEmbedEnabled).toBe(false);
   });
 
-  it("falls back to the theme extension handle when no Shopify app handle is configured", async () => {
+  it("includes stable deployed app handles when no Shopify app handle is configured", async () => {
     (checkAppEmbedEnabled as jest.Mock).mockResolvedValue({
       enabled: true,
       themeId: THEME_GID,
