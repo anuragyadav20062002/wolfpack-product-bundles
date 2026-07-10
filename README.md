@@ -112,7 +112,7 @@ Wolfpack Product Bundles is a comprehensive Shopify application that allows merc
 
 - Shopify Partner account
 - Shopify development store
-- Node.js 18+ and npm
+- Node.js 22 and npm
 - PostgreSQL database
 - Render.com account (or similar hosting)
 
@@ -317,7 +317,7 @@ npm run dev
 - **Vite** - Build tool
 
 ### Backend
-- **Node.js 18+** - JavaScript runtime
+- **Node.js 22** - JavaScript runtime
 - **Prisma** - Database ORM
 - **PostgreSQL** - Relational database
 - **Express** - HTTP server

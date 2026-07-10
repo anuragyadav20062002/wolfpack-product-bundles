@@ -131,7 +131,7 @@
   position: relative;
   width: 70px;
   height: 70px;
-  align-self: start;
+  align-self: center;
   border-radius: 50%;
   overflow: hidden;
 }
@@ -215,34 +215,15 @@
 }
 
 .appEmbedImage {
-  position: relative;
   display: block;
   width: 100%;
   aspect-ratio: 1096 / 304;
   max-height: 100px;
+  height: auto;
+  object-fit: cover;
   overflow: hidden;
   border: 1px solid #e3e3e3;
   border-radius: 6px;
-  background:
-    linear-gradient(135deg, rgba(0, 91, 211, 0.1), rgba(0, 128, 96, 0.12)),
-    #ffffff;
-}
-
-.appEmbedImage::before {
-  position: absolute;
-  inset: 22% 8%;
-  content: "";
-  border: 1px solid rgba(48, 48, 48, 0.1);
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.78);
-}
-
-.appEmbedImage::after {
-  position: absolute;
-  inset: 38% 18% 36% 18%;
-  content: "";
-  border-radius: 999px;
-  background: rgba(0, 91, 211, 0.16);
 }
 
 .bundlesPanel {
@@ -542,31 +523,12 @@
 }
 
 .resourceThumbnailImage {
-  position: relative;
   display: block;
   width: 100%;
   aspect-ratio: 842 / 494;
+  height: auto;
+  object-fit: cover;
   overflow: hidden;
-  background:
-    linear-gradient(135deg, rgba(0, 91, 211, 0.12), rgba(0, 128, 96, 0.14)),
-    #f8fafc;
-}
-
-.resourceThumbnailImage::before,
-.resourceThumbnailImage::after {
-  position: absolute;
-  content: "";
-  border: 1px solid rgba(48, 48, 48, 0.1);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.78);
-}
-
-.resourceThumbnailImage::before {
-  inset: 22% 42% 18% 12%;
-}
-
-.resourceThumbnailImage::after {
-  inset: 16% 12% 24% 46%;
 }
 
 .resourceThumbnailFooter {

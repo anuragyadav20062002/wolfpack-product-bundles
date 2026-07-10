@@ -1,7 +1,7 @@
 ---
 title: Deployment
 type: operations
-audited: 2026-04-16
+audited: 2026-07-10
 sources: docs/DEPLOYMENT.md (largely current as of Jan 14 2026)
 ---
 
@@ -18,7 +18,7 @@ sources: docs/DEPLOYMENT.md (largely current as of Jan 14 2026)
 
 ## App Server (Render)
 
-- Node.js 20+
+- Node.js 22
 - PostgreSQL database
 - Server cold-starts: ~3–10s on starter plans (widget has retry logic for this)
 

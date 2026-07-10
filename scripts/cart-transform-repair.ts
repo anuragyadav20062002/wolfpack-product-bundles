@@ -16,7 +16,8 @@ async function main() {
       const { admin } = await unauthenticated.admin(shopDomain);
       return admin;
     },
-    completeSetup: CartTransformService.completeSetup as any,
+    completeSetup: (admin, shopDomain) =>
+      CartTransformService.completeSetup(admin as any, shopDomain),
     logger: console,
   });
 

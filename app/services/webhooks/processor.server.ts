@@ -43,6 +43,15 @@ import {
   handleOrderCreate,
 } from "./handlers/orders.server";
 
+const RETIRED_WEBHOOK_TOPICS = new Set([
+  "products/update",
+  "PRODUCTS_UPDATE",
+  "inventory_levels/update",
+  "INVENTORY_LEVELS_UPDATE",
+  "orders/create",
+  "ORDERS_CREATE",
+]);
+
 /**
  * Main webhook processor entry point
  * Processes Pub/Sub messages from Google Cloud
@@ -86,6 +95,18 @@ export class WebhookProcessor {
     const webhookId = message.attributes["X-Shopify-Webhook-Id"];
 
     try {
+      if (RETIRED_WEBHOOK_TOPICS.has(topic)) {
+        AppLogger.info("Ignored retired webhook topic before persistence", {
+          component: "webhook-processor",
+          operation: "processPubSubMessage"
+        }, { topic, shop: shopDomain, webhookId });
+
+        return {
+          success: true,
+          message: `Ignored retired webhook topic: ${topic}`
+        };
+      }
+
       // Decode base64 payload
       const payloadString = Buffer.from(message.data, "base64").toString("utf-8");
       const payload = JSON.parse(payloadString);

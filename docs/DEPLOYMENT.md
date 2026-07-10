@@ -22,8 +22,8 @@
 
 ### Required Tools
 ```bash
-# Node.js 20+ and npm
-node --version  # v20.x.x or higher
+# Node.js 22 and npm
+node --version  # v22.x.x
 npm --version   # v10.x.x or higher
 
 # Shopify CLI
