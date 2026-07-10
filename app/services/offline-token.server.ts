@@ -1,12 +1,15 @@
 import { Session } from "@shopify/shopify-api";
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import { AppLogger } from "../lib/logger";
 
 const OFFLINE_REFRESH_LEEWAY_MS = 5 * 60 * 1000;
+const OFFLINE_TOKEN_REFRESH_MAX_ATTEMPTS = 2;
 const TOKEN_ENDPOINT_PATH = "/admin/oauth/access_token";
 const OFFLINE_TOKEN_TYPE = "urn:shopify:params:oauth:token-type:offline-access-token";
 const ID_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:id_token";
 const TOKEN_EXCHANGE_GRANT = "urn:ietf:params:oauth:grant-type:token-exchange";
+
+type OfflineTokenPrismaClient = PrismaClient | Prisma.TransactionClient;
 
 type SessionStorageSync = {
   storeSession(session: Session): Promise<boolean>;
@@ -33,12 +36,49 @@ type OfflineTokenResponse = {
   scope?: string;
 };
 
+type OfflineTokenErrorPayload = {
+  error?: string;
+  error_description?: string;
+};
+
+class OfflineTokenRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number | null,
+    readonly code: string | null,
+  ) {
+    super(message);
+  }
+}
+
 function getTokenEndpoint(shop: string) {
   return `https://${shop}${TOKEN_ENDPOINT_PATH}`;
 }
 
 function getOfflineSessionId(shop: string) {
   return `offline_${shop}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isOfflineTokenResponsePayload(value: unknown): value is OfflineTokenResponse {
+  return isRecord(value) &&
+    typeof value.access_token === "string" &&
+    typeof value.expires_in === "number" &&
+    typeof value.refresh_token === "string" &&
+    typeof value.refresh_token_expires_in === "number";
+}
+
+function toOfflineTokenErrorPayload(value: unknown): OfflineTokenErrorPayload {
+  if (!isRecord(value)) return {};
+  return {
+    error: typeof value.error === "string" ? value.error : undefined,
+    error_description: typeof value.error_description === "string"
+      ? value.error_description
+      : undefined,
+  };
 }
 
 function getRequiredAppCredentials() {
@@ -75,6 +115,33 @@ async function requestOfflineToken(
   shop: string,
   params: Record<string, string>,
 ): Promise<OfflineTokenResponse> {
+  const maxAttempts = params.grant_type === "refresh_token"
+    ? OFFLINE_TOKEN_REFRESH_MAX_ATTEMPTS
+    : 1;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await requestOfflineTokenOnce(shop, params);
+    } catch (error) {
+      if (attempt >= maxAttempts || !isTransientOfflineTokenRequestError(error)) {
+        throw error;
+      }
+
+      AppLogger.warn("[OFFLINE_TOKEN] Retrying transient offline token refresh failure", {
+        component: "offline-token.server",
+        shop,
+        attempt,
+      }, error as Error);
+    }
+  }
+
+  throw new Error("Offline token request failed");
+}
+
+async function requestOfflineTokenOnce(
+  shop: string,
+  params: Record<string, string>,
+): Promise<OfflineTokenResponse> {
   const { clientId, clientSecret } = getRequiredAppCredentials();
   const body = new URLSearchParams({
     client_id: clientId,
@@ -91,28 +158,42 @@ async function requestOfflineToken(
     body,
   });
 
-  const payload = await response.json().catch(() => null);
+  const payload: unknown = await response.json().catch(() => null);
 
-  if (!response.ok || !payload?.access_token) {
-    const error = payload?.error_description || payload?.error || response.statusText;
-    throw new Error(`Offline token request failed: ${response.status} ${error}`);
+  if (!response.ok || !isOfflineTokenResponsePayload(payload)) {
+    const errorPayload = toOfflineTokenErrorPayload(payload);
+    const error = errorPayload.error_description ?? errorPayload.error ?? response.statusText;
+    throw new OfflineTokenRequestError(
+      `Offline token request failed: ${response.status} ${error}`,
+      response.status,
+      errorPayload.error ?? null,
+    );
   }
 
-  return payload as OfflineTokenResponse;
+  return payload;
 }
 
-async function persistOfflineTokenResponse(
-  prisma: PrismaClient,
+function isTransientOfflineTokenRequestError(error: unknown) {
+  if (!(error instanceof OfflineTokenRequestError)) {
+    return error instanceof TypeError || (
+      error instanceof Error &&
+      (error.name === "AbortError" || error.name === "TimeoutError")
+    );
+  }
+
+  return error.status === 429 || (error.status !== null && error.status >= 500);
+}
+
+function applyOfflineTokenResponse(
   record: OfflineSessionRecord,
   tokenResponse: OfflineTokenResponse,
-  storage: SessionStorageSync,
 ) {
   const expiresAt = new Date(Date.now() + tokenResponse.expires_in * 1000);
   const refreshTokenExpiresAt = new Date(
     Date.now() + tokenResponse.refresh_token_expires_in * 1000,
   );
 
-  const updatedRecord: OfflineSessionRecord = {
+  return {
     ...record,
     accessToken: tokenResponse.access_token,
     expires: expiresAt,
@@ -120,9 +201,14 @@ async function persistOfflineTokenResponse(
     refreshToken: tokenResponse.refresh_token,
     refreshTokenExpiresAt,
   };
+}
 
+async function writeOfflineSessionRecord(
+  prisma: OfflineTokenPrismaClient,
+  updatedRecord: OfflineSessionRecord,
+) {
   await prisma.session.upsert({
-    where: { id: record.id },
+    where: { id: updatedRecord.id },
     update: {
       accessToken: updatedRecord.accessToken,
       expires: updatedRecord.expires,
@@ -143,9 +229,50 @@ async function persistOfflineTokenResponse(
       storefrontAccessToken: updatedRecord.storefrontAccessToken ?? null,
     },
   });
+}
+
+async function withOfflineTokenLock<T>(
+  prisma: PrismaClient,
+  shop: string,
+  operation: "acquire" | "migrate" | "refresh",
+  callback: (tx: Prisma.TransactionClient) => Promise<T>,
+) {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw(
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`wpb:offline-token:${shop}`}))`,
+    );
+    AppLogger.info("[OFFLINE_TOKEN] Acquired offline token lock", {
+      component: "offline-token.server",
+      shop,
+      operation,
+    });
+    return callback(tx);
+  }, {
+    maxWait: 10_000,
+    timeout: 30_000,
+  });
+}
+
+async function requestAndPersistWithOfflineTokenLock(
+  prisma: PrismaClient,
+  record: OfflineSessionRecord,
+  storage: SessionStorageSync,
+  operation: "acquire" | "migrate" | "refresh",
+  requestParams: Record<string, string>,
+) {
+  const updatedRecord = await withOfflineTokenLock(
+    prisma,
+    record.shop,
+    operation,
+    async (tx) => {
+      const tokenResponse = await requestOfflineToken(record.shop, requestParams);
+      const nextRecord = applyOfflineTokenResponse(record, tokenResponse);
+      await writeOfflineSessionRecord(tx, nextRecord);
+      return nextRecord;
+    },
+  );
 
   await storage.storeSession(buildOfflineSession(updatedRecord));
-
   return updatedRecord;
 }
 
@@ -175,12 +302,10 @@ export async function refreshOfflineSession(
     shop: record.shop,
   });
 
-  const tokenResponse = await requestOfflineToken(record.shop, {
+  return requestAndPersistWithOfflineTokenLock(prisma, record, storage, "refresh", {
     grant_type: "refresh_token",
     refresh_token: record.refreshToken,
   });
-
-  return persistOfflineTokenResponse(prisma, record, tokenResponse, storage);
 }
 
 export async function migrateOfflineSessionToExpiring(
@@ -193,15 +318,13 @@ export async function migrateOfflineSessionToExpiring(
     shop: record.shop,
   });
 
-  const tokenResponse = await requestOfflineToken(record.shop, {
+  return requestAndPersistWithOfflineTokenLock(prisma, record, storage, "migrate", {
     grant_type: TOKEN_EXCHANGE_GRANT,
     subject_token: record.accessToken,
     subject_token_type: OFFLINE_TOKEN_TYPE,
     requested_token_type: OFFLINE_TOKEN_TYPE,
     expiring: "1",
   });
-
-  return persistOfflineTokenResponse(prisma, record, tokenResponse, storage);
 }
 
 export async function acquireExpiringOfflineSessionFromIdToken(
@@ -215,26 +338,24 @@ export async function acquireExpiringOfflineSessionFromIdToken(
     shop,
   });
 
-  const tokenResponse = await requestOfflineToken(shop, {
+  return requestAndPersistWithOfflineTokenLock(prisma, {
+    id: getOfflineSessionId(shop),
+    shop,
+    state: "",
+    isOnline: false,
+    scope: null,
+    expires: null,
+    accessToken: "",
+    refreshToken: null,
+    refreshTokenExpiresAt: null,
+    storefrontAccessToken: null,
+  }, storage, "acquire", {
     grant_type: TOKEN_EXCHANGE_GRANT,
     subject_token: idToken,
     subject_token_type: ID_TOKEN_TYPE,
     requested_token_type: OFFLINE_TOKEN_TYPE,
     expiring: "1",
   });
-
-  return persistOfflineTokenResponse(prisma, {
-    id: getOfflineSessionId(shop),
-    shop,
-    state: "",
-    isOnline: false,
-    scope: tokenResponse.scope ?? null,
-    expires: null,
-    accessToken: "",
-    refreshToken: null,
-    refreshTokenExpiresAt: null,
-    storefrontAccessToken: null,
-  }, tokenResponse, storage);
 }
 
 export async function ensureShopHasExpiringOfflineSession(
@@ -362,7 +483,11 @@ export async function getOfflineSessionForShop(
     }
   }
 
-  if (refreshIfNeeded && shouldRefreshOfflineSession(record)) {
+  if (
+    refreshIfNeeded &&
+    record.refreshToken &&
+    (!record.expires || !record.refreshTokenExpiresAt || shouldRefreshOfflineSession(record))
+  ) {
     try {
       return await refreshOfflineSession(prisma, record, storage);
     } catch (error) {

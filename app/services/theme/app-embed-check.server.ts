@@ -12,8 +12,53 @@ interface AppEmbedCheckOptions {
   blockHandles?: string[];
 }
 
+interface ThemeNode {
+  id?: string;
+  name?: string | null;
+  role?: string | null;
+  files?: {
+    nodes?: ThemeFileNode[];
+  };
+}
+
+interface ThemeFileBody {
+  content?: string;
+  contentBase64?: string;
+  url?: string;
+}
+
+interface ThemeFileNode {
+  filename?: string;
+  body?: ThemeFileBody;
+}
+
+interface AppEmbedStatusSeedResponse {
+  data?: {
+    currentAppInstallation?: {
+      app?: {
+        handle?: string | null;
+      } | null;
+    } | null;
+    themes?: {
+      nodes?: ThemeNode[];
+    } | null;
+  } | null;
+}
+
+interface ThemeSettingsResponse {
+  data?: {
+    theme?: {
+      files?: ThemeNode["files"];
+    } | null;
+  } | null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function getThemeSettingsContent(
-  body: { content?: string; contentBase64?: string } | undefined,
+  body: Pick<ThemeFileBody, "content" | "contentBase64"> | undefined,
 ) {
   if (typeof body?.content === "string") return body.content;
   if (typeof body?.contentBase64 !== "string") return undefined;
@@ -26,7 +71,7 @@ function getThemeSettingsContent(
 }
 
 async function getThemeSettingsFileContent(
-  body: { content?: string; contentBase64?: string; url?: string } | undefined,
+  body: ThemeFileBody | undefined,
 ) {
   const inlineContent = getThemeSettingsContent(body);
   if (inlineContent) return inlineContent;
@@ -92,7 +137,11 @@ function stripJsonComments(input: string) {
 }
 
 function parseThemeSettingsData(fileContent: string): Record<string, unknown> {
-  return JSON.parse(stripJsonComments(fileContent.replace(/^\uFEFF/, "")));
+  const parsed = JSON.parse(stripJsonComments(fileContent.replace(/^\uFEFF/, ""))) as unknown;
+  if (!isRecord(parsed)) {
+    throw new Error("Theme settings data is not a JSON object");
+  }
+  return parsed;
 }
 
 function isDisabledAppEmbedSetting(disabled: unknown) {
@@ -131,45 +180,29 @@ function isWolfpackEmbedBlock(
   );
 }
 
-/**
- * Checks whether any Wolfpack embed block is active in the merchant's current theme.
- * Reads config/settings_data.json via Admin GraphQL and scans `current.blocks` for
- * the current app's app-embed block type that is not explicitly disabled.
- *
- * Never throws. If the theme settings cannot be read or parsed, fail closed
- * so the merchant sees the setup banner instead of a false active state.
- */
-export async function checkAppEmbedEnabled(
+function getThemeSettingsBodyFromFiles(files: ThemeNode["files"]) {
+  const settingsFiles = files?.nodes ?? [];
+  const settingsFile = settingsFiles.find(
+    (node) => node?.filename === "config/settings_data.json",
+  ) ?? settingsFiles[0];
+  return settingsFile?.body;
+}
+
+async function getMainThemeWithSettings(
   admin: ShopifyAdmin,
-  shopDomain: string,
-  options: AppEmbedCheckOptions = {},
-): Promise<AppEmbedCheckResult> {
-  try {
-    const themeListResult = await admin.graphql(`
-      query GetAppEmbedStatusSeed {
-        currentAppInstallation {
-          app {
-            handle
-          }
-        }
-        themes(first: 5, roles: [MAIN]) {
-          nodes { id }
+): Promise<{ currentAppHandle?: string; theme?: ThemeNode }> {
+  const themeListResult = await admin.graphql(`
+    query GetAppEmbedStatusSeed {
+      currentAppInstallation {
+        app {
+          handle
         }
       }
-    `);
-    const themeListData = await themeListResult.json();
-    const themeId: string | undefined = themeListData?.data?.themes?.nodes?.[0]?.id;
-    const currentAppHandle: string | undefined =
-      themeListData?.data?.currentAppInstallation?.app?.handle;
-
-    if (!themeId) {
-      AppLogger.warn("checkAppEmbedEnabled: no active theme found", { shopDomain });
-      return { enabled: false, themeId: null };
-    }
-
-    const settingsResult = await admin.graphql(`
-      query GetThemeSettings($themeId: ID!) {
-        theme(id: $themeId) {
+      themes(first: 1, roles: [MAIN]) {
+        nodes {
+          id
+          name
+          role
           files(filenames: ["config/settings_data.json"]) {
             nodes {
               filename
@@ -188,48 +221,113 @@ export async function checkAppEmbedEnabled(
           }
         }
       }
-    `, { variables: { themeId } });
+    }
+  `);
+  const themeListData = await themeListResult.json();
+  const data = themeListData as AppEmbedStatusSeedResponse;
+  return {
+    currentAppHandle: data.data?.currentAppInstallation?.app?.handle ?? undefined,
+    theme: data.data?.themes?.nodes?.[0],
+  };
+}
 
-    const settingsData = await settingsResult.json();
-    const settingsFiles = settingsData?.data?.theme?.files?.nodes ?? [];
-    const settingsFile = settingsFiles.find(
-      (node: { filename?: string }) => node?.filename === "config/settings_data.json",
-    ) ?? settingsFiles[0];
+async function getThemeSettingsBody(
+  admin: ShopifyAdmin,
+  theme: ThemeNode,
+) {
+  const nestedBody = getThemeSettingsBodyFromFiles(theme.files);
+  if (nestedBody) return nestedBody;
+  if (!theme.id) return undefined;
+
+  const settingsResult = await admin.graphql(`
+    query GetThemeSettings($themeId: ID!) {
+      theme(id: $themeId) {
+        files(filenames: ["config/settings_data.json"]) {
+          nodes {
+            filename
+            body {
+              ... on OnlineStoreThemeFileBodyText {
+                content
+              }
+              ... on OnlineStoreThemeFileBodyBase64 {
+                contentBase64
+              }
+              ... on OnlineStoreThemeFileBodyUrl {
+                url
+              }
+            }
+          }
+        }
+      }
+    }
+  `, { variables: { themeId: theme.id } });
+
+  const settingsData = await settingsResult.json();
+  const data = settingsData as ThemeSettingsResponse;
+  return getThemeSettingsBodyFromFiles(data.data?.theme?.files);
+}
+
+/**
+ * Checks whether any Wolfpack embed block is active in the merchant's current theme.
+ * Reads config/settings_data.json via Admin GraphQL and scans `current.blocks` for
+ * the current app's app-embed block type that is not explicitly disabled.
+ *
+ * Never throws. If the theme settings cannot be read or parsed, fail closed
+ * so the merchant sees the setup banner instead of a false active state.
+ */
+export async function checkAppEmbedEnabled(
+  admin: ShopifyAdmin,
+  shopDomain: string,
+  options: AppEmbedCheckOptions = {},
+): Promise<AppEmbedCheckResult> {
+  try {
+    const { currentAppHandle, theme } = await getMainThemeWithSettings(admin);
+
+    if (!theme?.id) {
+      AppLogger.warn("checkAppEmbedEnabled: no active theme found", { shopDomain });
+      return { enabled: false, themeId: null };
+    }
+
+    const effectiveOptions = {
+      ...options,
+      appHandles: [
+        options.appHandle,
+        ...(options.appHandles ?? []),
+        currentAppHandle,
+      ].filter((handle): handle is string => Boolean(handle?.trim())),
+    };
+
     const fileContent = await getThemeSettingsFileContent(
-      settingsFile?.body,
+      await getThemeSettingsBody(admin, theme),
     );
 
     if (!fileContent) {
-      return { enabled: false, themeId };
+      return { enabled: false, themeId: theme.id };
     }
 
     let parsed: Record<string, unknown>;
     try {
       parsed = parseThemeSettingsData(fileContent);
     } catch {
-      return { enabled: false, themeId };
+      return { enabled: false, themeId: theme.id };
     }
 
-    const blocks = (parsed?.current as Record<string, unknown> | undefined)?.blocks as
-      | Record<string, { disabled?: unknown; type?: string }>
-      | undefined;
-
-    if (!blocks || typeof blocks !== "object") {
-      return { enabled: false, themeId };
+    const current = parsed.current;
+    if (!isRecord(current) || !isRecord(current.blocks)) {
+      return { enabled: false, themeId: theme.id };
     }
 
-    const enabled = Object.values(blocks).some((value) =>
-      isWolfpackEmbedBlock(value, {
-        ...options,
-        appHandles: [
-          options.appHandle,
-          ...(options.appHandles ?? []),
-          currentAppHandle,
-        ].filter((handle): handle is string => Boolean(handle?.trim())),
-      }),
+    const enabled = Object.values(current.blocks).some((value) =>
+      isWolfpackEmbedBlock(
+        isRecord(value) ? {
+          disabled: value.disabled,
+          type: typeof value.type === "string" ? value.type : undefined,
+        } : undefined,
+        effectiveOptions,
+      ),
     );
 
-    return { enabled, themeId };
+    return { enabled, themeId: theme.id };
   } catch (err) {
     AppLogger.warn("checkAppEmbedEnabled: unexpected error", { shopDomain, err });
     return { enabled: false, themeId: null };

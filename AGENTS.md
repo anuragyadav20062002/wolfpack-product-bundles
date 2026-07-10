@@ -187,6 +187,28 @@ Let me know once it completes.
 
 The npm scripts run `scripts/generate-extension-templates.js` first — never call `shopify app deploy` directly.
 
+## ⚠️ Deployment Backfill Rule
+
+`npm run deploy`, `npm run deploy:prod`, and `npm run deploy:sit` invoke `npm run deployment:backfill` before Shopify deploy. The backfill script is disabled by default unless environment flags enable it.
+
+**NEVER enable or run deployment backfill apply mode autonomously.** Always stop and ask for explicit user approval before using:
+
+```bash
+WPB_DEPLOYMENT_BACKFILL_ENABLED=true
+WPB_DEPLOYMENT_BACKFILL_APPLY=true
+WPB_DEPLOYMENT_BACKFILL_CONFIRM=I_UNDERSTAND_THIS_CAN_MUTATE_PRODUCTION
+```
+
+Warn the user first: this is a dangerous operation. Running it against production can mutate Shopify products, pages, metafields, cart transform setup, and bundle sync state across live merchant shops, and the effects may be irreversible from the app database alone.
+
+Dry-run still requires deliberate operator intent:
+
+```bash
+WPB_DEPLOYMENT_BACKFILL_ENABLED=true npm run deployment:backfill
+```
+
+Apply mode requires explicit approval for the exact environment and scope. Prefer narrowing with `WPB_DEPLOYMENT_BACKFILL_SHOP` or `WPB_DEPLOYMENT_BACKFILL_LIMIT` when possible.
+
 ---
 
 ## 🧪 Shopify Dev Environment Rule

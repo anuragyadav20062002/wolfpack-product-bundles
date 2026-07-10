@@ -62,6 +62,12 @@ export function getMobileAdditionalOffersPulseState({
   };
 }
 
+function normalizeStepContentSubtext(value) {
+  if (typeof value !== 'string') return '';
+  const text = value.trim();
+  return /^chrome\s+async(?:\s+text)?$/i.test(text) ? '' : text;
+}
+
 const MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;
 const MOBILE_ADDITIONAL_OFFERS_MESSAGE_DELAY_MS = 800;
 const MOBILE_ADDITIONAL_OFFERS_DURATION_MS = 3000;
@@ -664,7 +670,7 @@ getBundleContentSummaryText() {
 getCurrentStepContentText(stepIndex) {
   const step = this.selectedBundle?.steps?.[stepIndex];
   return {
-    subtext: typeof step?.pageTitle === 'string' ? step.pageTitle.trim() : ''
+    subtext: normalizeStepContentSubtext(step?.pageTitle)
   };
 },
 

@@ -14,6 +14,11 @@ import { DashboardPage } from "./DashboardPage";
 import { getDashboardInitialImagePreloads } from "./dashboard-media-state";
 import { queueDashboardBackgroundTask } from "./dashboard-background-tasks.server";
 
+export type DashboardAppEmbedStatus = {
+  appEmbedEnabled: boolean;
+  themeEditorUrl: string | null;
+};
+
 /**
  * Preload first-viewport dashboard images via real
  * `<link rel="preload" as="image">` tags emitted during HTML parse.
@@ -95,11 +100,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }));
 
   const apiKey = process.env.SHOPIFY_API_KEY || "";
-  const embedDataPromise = timing.track("shopify.appEmbed", () =>
+  const appEmbedStatus = timing.track("shopify.appEmbed", () =>
     fetchEmbedData(admin, session.shop, apiKey),
-  );
+  ).catch((error): DashboardAppEmbedStatus => {
+    AppLogger.warn(
+      "Failed to resolve dashboard app embed status",
+      { component: "app.dashboard", operation: "shopify.appEmbed", shop: session.shop },
+      error,
+    );
+    return { appEmbedEnabled: false, themeEditorUrl: null };
+  });
 
-  const [bundles, embedData] = await Promise.all([bundlesPromise, embedDataPromise]);
+  const bundles = await bundlesPromise;
 
   const bundlesNeedingBackfill = bundles.filter(
     b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId && !b.shopifyProductHandle
@@ -157,9 +169,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       proxyHealthy,
     };
   })();
-  const appEmbedEnabled = embedData.appEmbedEnabled;
-  const themeEditorUrl = embedData.themeEditorUrl;
-
   const appUrl = process.env.SHOPIFY_APP_URL;
   if (appUrl) {
     queueDashboardBackgroundTask(async () => {
@@ -192,8 +201,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     bundles: bundlesWithPreview,
     shop: session.shop,
     appUrl,
-    themeEditorUrl,
-    appEmbedEnabled,
+    appEmbedStatus,
     banners,
   }, { headers: timing.toHeaders() });
 };

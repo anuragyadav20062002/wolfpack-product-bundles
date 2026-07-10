@@ -29,6 +29,14 @@ Shopify sends every event matching a subscribed topic. Filtering after receipt s
 
 `products/delete` is retained because it is the only product catalog webhook currently required for bundle integrity. The handler removes deleted products from bundle steps and archives active bundles that would otherwise contain empty steps.
 
+## App Uninstall Cleanup
+
+`app/uninstalled` removes app-owned operational data for the shop: bundles and their cascaded child records, sessions, design settings, queued jobs, compliance records, old webhook events, old business events, and the shop record.
+
+Revenue analytics are intentionally retained after uninstall. `OrderAttribution` and `BundleEngagement` are not deleted by the uninstall handler because they power historical revenue and funnel reporting for merchant performance driven by the app.
+
+The handler deletes old `BusinessEvent` rows before writing the final `app_uninstalled` event so churned shops do not keep growing event-log storage while still preserving a final uninstall marker.
+
 ## Removed Topics
 
 `orders/create` is not subscribed because order attribution is handled by the Web Pixel to `/api/attribution`; the existing order webhook handler is a no-op stub.
