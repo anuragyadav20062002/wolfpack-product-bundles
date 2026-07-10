@@ -92,7 +92,7 @@ Wolfpack Product Bundles is a Shopify app that enables merchants to create and s
 - **App Bridge:** @shopify/app-bridge-react (embedded app)
 
 ### Backend
-- **Runtime:** Node.js 20+
+- **Runtime:** Node.js 22
 - **Framework:** Remix (full-stack)
 - **ORM:** Prisma (PostgreSQL adapter)
 - **API Client:** @shopify/shopify-app-remix
