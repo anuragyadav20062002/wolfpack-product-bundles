@@ -26,7 +26,8 @@ const THEME_LIST_RESPONSE = {
       },
     },
     themes: {
-      nodes: [{ id: "gid://shopify/OnlineStoreTheme/123456" }],
+      nodes: [{ id: "gid://shopify/OnlineStoreTheme/123456", name: "Main", role: "MAIN" }],
+      pageInfo: { hasNextPage: false, endCursor: null },
     },
   },
 };
@@ -50,6 +51,29 @@ function makeSettingsResponse(blocks: Record<string, unknown>) {
   };
 }
 
+function makeThemeNode(
+  id: string,
+  role: string,
+  blocks: Record<string, unknown>,
+  name = role,
+) {
+  return {
+    id,
+    name,
+    role,
+    files: {
+      nodes: [
+        {
+          filename: "config/settings_data.json",
+          body: {
+            content: JSON.stringify({ current: { blocks } }),
+          },
+        },
+      ],
+    },
+  };
+}
+
 const EMBED_KEY =
   "shopify://apps/current-test-app/blocks/bundle-full-page-embed/uid-abc";
 const SINGLE_EMBED_KEY =
@@ -68,16 +92,119 @@ describe("checkAppEmbedEnabled", () => {
 
   it("returns true when Wolfpack embed block is present and not disabled", async () => {
     const admin = makeAdmin([
-      THEME_LIST_RESPONSE,
-      makeSettingsResponse({
-        [EMBED_KEY]: { type: EMBED_KEY, disabled: false },
-      }),
+      {
+        data: {
+          currentAppInstallation: THEME_LIST_RESPONSE.data.currentAppInstallation,
+          themes: {
+            nodes: [
+              makeThemeNode("gid://shopify/OnlineStoreTheme/123456", "MAIN", {
+                [EMBED_KEY]: { type: EMBED_KEY, disabled: false },
+              }),
+            ],
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+        },
+      },
     ]);
 
     const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com");
 
     expect(result.enabled).toBe(true);
     expect(result.themeId).toBe("gid://shopify/OnlineStoreTheme/123456");
+  });
+
+  it("keeps enabled false when the app embed is enabled only on a non-main theme", async () => {
+    const mainThemeId = "gid://shopify/OnlineStoreTheme/111";
+    const draftThemeId = "gid://shopify/OnlineStoreTheme/222";
+    const admin = makeAdmin([
+      {
+        data: {
+          currentAppInstallation: THEME_LIST_RESPONSE.data.currentAppInstallation,
+          themes: {
+            nodes: [
+              makeThemeNode(mainThemeId, "MAIN", {
+                "17878678986028907411": {
+                  type: SINGLE_EMBED_KEY,
+                  disabled: true,
+                },
+              }),
+              makeThemeNode(draftThemeId, "UNPUBLISHED", {
+                "17878678986028907412": {
+                  type: SINGLE_EMBED_KEY,
+                  disabled: false,
+                },
+              }),
+            ],
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+        },
+      },
+    ]);
+
+    const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com", {
+      blockHandles: ["bundle-app-embed"],
+    });
+
+    expect(result.enabled).toBe(false);
+    expect(result.themeId).toBe(mainThemeId);
+    expect(result.enabledThemeIds).toEqual([draftThemeId]);
+    expect(result.checkedThemes).toEqual([
+      expect.objectContaining({ id: mainThemeId, role: "MAIN", enabled: false }),
+      expect.objectContaining({ id: draftThemeId, role: "UNPUBLISHED", enabled: true }),
+    ]);
+  });
+
+  it("scans paginated theme lists instead of only the first page", async () => {
+    const mainThemeId = "gid://shopify/OnlineStoreTheme/111";
+    const draftThemeId = "gid://shopify/OnlineStoreTheme/222";
+    const admin = makeAdmin([
+      {
+        data: {
+          currentAppInstallation: THEME_LIST_RESPONSE.data.currentAppInstallation,
+          themes: {
+            nodes: [
+              makeThemeNode(mainThemeId, "MAIN", {
+                "17878678986028907411": {
+                  type: SINGLE_EMBED_KEY,
+                  disabled: true,
+                },
+              }),
+            ],
+            pageInfo: { hasNextPage: true, endCursor: "cursor-1" },
+          },
+        },
+      },
+      {
+        data: {
+          currentAppInstallation: THEME_LIST_RESPONSE.data.currentAppInstallation,
+          themes: {
+            nodes: [
+              makeThemeNode(draftThemeId, "UNPUBLISHED", {
+                "17878678986028907412": {
+                  type: SINGLE_EMBED_KEY,
+                  disabled: false,
+                },
+              }),
+            ],
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+        },
+      },
+    ]);
+
+    const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com", {
+      blockHandles: ["bundle-app-embed"],
+    });
+
+    expect(result.enabled).toBe(false);
+    expect(result.themeId).toBe(mainThemeId);
+    expect(result.enabledThemeIds).toEqual([draftThemeId]);
+    expect(admin.graphql).toHaveBeenCalledTimes(2);
+    expect(admin.graphql).toHaveBeenNthCalledWith(
+      2,
+      expect.any(String),
+      expect.objectContaining({ variables: { after: "cursor-1" } }),
+    );
   });
 
   it("returns true for the single bundle app embed when Shopify stores a numeric block ID", async () => {
