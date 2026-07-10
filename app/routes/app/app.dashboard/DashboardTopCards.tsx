@@ -5,13 +5,11 @@ import dashboardStyles from "./dashboard.module.css";
 type DashboardTopCardsProps = {
   handleDirectChat: () => void;
   handleAppEmbedCardClick: () => void;
-  loadAppEmbedImage: boolean;
 };
 
 export function DashboardTopCards({
   handleDirectChat,
   handleAppEmbedCardClick,
-  loadAppEmbedImage,
 }: DashboardTopCardsProps) {
   const { t } = useTranslation();
   return (
@@ -62,19 +60,7 @@ export function DashboardTopCards({
           <s-heading>{t("dashboard.appEmbeds.headingMain")} <span className={dashboardStyles.appEmbedHeadingHint}>{t("dashboard.appEmbeds.headingHint")}</span></s-heading>
           <s-icon type="external" color="subdued" />
         </div>
-        {loadAppEmbedImage ? (
-          <OptimisedImage
-            src="/appEmbed.avif"
-            alt={t("dashboard.appEmbeds.headingMain")}
-            className={dashboardStyles.appEmbedImage}
-            width={420}
-            height={140}
-            loading="lazy"
-            fetchPriority="low"
-          />
-        ) : (
-          <div className={dashboardStyles.appEmbedImage} aria-hidden="true" />
-        )}
+        <div className={dashboardStyles.appEmbedImage} aria-hidden="true" />
         <s-text color="subdued">{t("dashboard.appEmbeds.instruction")}</s-text>
       </s-stack>
     </button>

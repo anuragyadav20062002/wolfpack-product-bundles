@@ -15,6 +15,7 @@ export interface FunnelHeroProps {
   windowLabel: string;
   formatRevenue: (cents: number) => string;
   formatCount: (n: number) => string;
+  showHeader?: boolean;
 }
 
 export function FunnelHero({
@@ -22,6 +23,7 @@ export function FunnelHero({
   windowLabel,
   formatRevenue,
   formatCount,
+  showHeader = true,
 }: FunnelHeroProps) {
   const showImpressions = snapshot.impressions > snapshot.engaged;
   const steps: Array<{
@@ -73,17 +75,20 @@ export function FunnelHero({
   return (
     <section
       className="wpb-card wpb-card--hero"
-      aria-labelledby="wpb-funnel-hero-title"
+      aria-labelledby={showHeader ? "wpb-funnel-hero-title" : undefined}
+      aria-label={showHeader ? undefined : "Bundle funnel metrics"}
     >
-      <header className="wpb-section-header">
-        <div>
-          <p className="wpb-label wpb-section-kicker">Bundle Funnel</p>
-          <h2 id="wpb-funnel-hero-title" className="wpb-section-title wpb-section-title--hero">
-            How shoppers move through your bundles
-          </h2>
-        </div>
-        <p className="wpb-section-hint">{windowLabel}</p>
-      </header>
+      {showHeader ? (
+        <header className="wpb-section-header">
+          <div>
+            <p className="wpb-label wpb-section-kicker">Bundle Funnel</p>
+            <h2 id="wpb-funnel-hero-title" className="wpb-section-title wpb-section-title--hero">
+              How shoppers move through your bundles
+            </h2>
+          </div>
+          <p className="wpb-section-hint">{windowLabel}</p>
+        </header>
+      ) : null}
       <div
         className="wpb-funnel-grid"
         data-step-count={steps.length}

@@ -1,7 +1,7 @@
 ---
 title: Admin Performance
 type: operations
-last_audited: 2026-07-06
+last_audited: 2026-07-10
 ---
 
 # Admin Performance
@@ -70,14 +70,14 @@ Measured in the Shopify Admin chrome on `wolfpack-store-test-1` / SIT using
 
 | Route | Iframe LCP candidate / source-audited candidate | Fix status |
 |---|---|---|
-| `/app/dashboard` | Current local app candidate: support card content text; historical candidate: app-embed instructional screenshot | Keep only the above-the-fold support avatar preload; render the top cards immediately with the app-embed screenshot loading after hydration; keep the support card outside delayed Polaris custom-element wrappers; defer the lower resources card until the main content has settled; render row action-menu content only after a row menu is opened. |
-| `/app/bundles/create` | Measured: `img[src="/ppb.png"]` rendered via `/ppb.avif` | Preloaded in route `links()` and HTTP `Link`; adjacent `/fpb.avif` also preloaded |
+| `/app/dashboard` | Current local app candidate: support card content text; historical candidates: `/bundleGallery.avif`, `/appEmbed.avif` | Keep only the above-the-fold support avatar preload; render the top cards immediately; do not load decorative dashboard guide screenshots in the initial viewport; use CSS-only thumbnail placeholders for app-embed and resources-card previews. Keep the support card outside delayed Polaris custom-element wrappers; defer the lower resources card until the main content has settled; render row action-menu content only after a row menu is opened. App-embed theme detection is deferred from the initial loader payload and hydrated via a deferred promise; the app-embed card can still run an on-demand status check before opening the theme editor. |
+| `/app/bundles/create` | Measured: bundle type thumbnail rendered via `/ppb.avif` | Preloaded in route `links()` and HTTP `Link`; adjacent `/fpb.avif` also preloaded. The thumbnail is now a CSS background with stable dimensions, and local candidate paint was under target. |
 | `/app/integrations` | Measured: text subtitle (`p._subtitle...`) | No image preload fix; page LCP is text/bootstrap-bound |
 | `/app/events` | Source audit: no first-viewport owned image | No image preload fix |
 | `/app/billing` | Source audit: no first-viewport owned image | No image preload fix |
 | `/app/pricing` | Source audit: no first-viewport owned image | No image preload fix |
 | `/app/bundles/cart-transform` | Source audit: no first-viewport owned image | No image preload fix |
-| `/app/attribution` | Source audit: analytics cards/charts, no owned image hero | No image preload fix; evaluate JS/data path if future LCP is slow text |
+| `/app/attribution` | Current local app candidate: critical funnel heading; historical candidates: inactive tracking body copy, deferred funnel hero title | Render the funnel heading in the route shell before analytics resolves; keep inactive/no-data copy out of the critical first-paint path; render the deferred funnel metrics without duplicating the late heading. |
 | `/app/settings` | Source audit: dynamic settings preview images are not route hero content | No speculative preload; measure a concrete settings subview before adding one |
 | `/app/store-files` / `/app/upload-store-file` | Source audit: images are picker/file content, not initial route hero content | No route preload |
 | Configure routes | Source audit: dynamic product/template images depend on loaded bundle state and active section/modal | Do not globally preload; measure concrete FPB/PPB configure URLs and preload only confirmed above-fold candidates |
@@ -105,9 +105,17 @@ Do not recreate custom `/api/web-vitals` telemetry for BFS eligibility. Use Shop
 The `/app` layout loader must keep Shopify authentication on the critical path, but non-critical maintenance should not block the initial shell. Offline-session migration runs in the background and logs failures instead of delaying first render.
 
 The `/app/dashboard` loader must also keep non-critical Admin checks off the
-response path. App-embed refresh and web-pixel reconciliation are scheduled as
-post-response background tasks; the first dashboard payload should come from
-the shop, bundle summary, and subscription data needed to render above the fold.
+response path. App-embed refresh/status checks and web-pixel reconciliation are
+deferred or scheduled as post-response background tasks; the first dashboard
+payload should come from the shop, bundle summary, and subscription data needed
+to render above the fold.
+
+The shared `/app` shell must not import or await providers that do not have
+runtime consumers on every Admin page. On 2026-07-10, the global Mantle provider
+and server-side Mantle identify call were removed from the app shell after an
+audit found no `@heymantle/react` hook usage in Admin routes. Billing still uses
+the Shopify billing service directly. Keep any future third-party billing or
+analytics provider route-scoped until a shared runtime consumer exists.
 
 ## 2026-07-06 Attribution LCP Follow-up
 
@@ -127,3 +135,20 @@ immediately.
 If attribution remains above target in field data, keep optimizing the route
 shell and parent Admin boot path first. Do not add attribution image preloads:
 the confirmed candidate is text in the Shopify Admin shell.
+
+## 2026-07-10 Candidate Fix Proof
+
+Dev/SIT measurements used a temporary parent-frame `postMessage` bridge to read
+the iframe's browser `largest-contentful-paint` candidate from
+`PerformanceObserver`. The bridge was removed before committing runtime code.
+
+Spot checks after the candidate fixes:
+
+| Route | Previous candidate/value | Post-fix candidate/value |
+|---|---:|---:|
+| `/app/attribution` | inactive tracking body copy and deferred funnel title, ~8-9s | `h2#wpb-critical-funnel-hero-title`, 1460ms |
+| `/app/dashboard` | `/bundleGallery.avif` ~6164ms, then `/appEmbed.avif` ~4572ms | support card text, 1700ms |
+| `/app/bundles/create` | `/ppb.avif` p75 previously above target | `/ppb.avif`, 1156ms |
+
+These are dev tunnel spot checks, not Shopify field p75. Final BFS proof still
+comes from Shopify-collected field metrics after deployment.

@@ -10,6 +10,7 @@ import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bu
 import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
 import { openSupportChat } from "../../../lib/support-chat.client";
 import { openThemeEditorInNewTab } from "../../../lib/theme-editor-navigation.client";
+import { checkAppEmbedStatusFromCurrentRoute } from "../../../lib/app-embed-status-check.client";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { normalizeAdminLocale } from "../../../i18n/config";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
@@ -20,10 +21,9 @@ import {
   setDashboardStatusFilter,
   setDashboardTypeFilter,
 } from "../../../store/slices/adminRouteStateSlice";
-import type { action, loader } from "./route";
+import type { action, DashboardAppEmbedStatus, loader } from "./route";
 import { DashboardTopCards } from "./DashboardTopCards";
 import {
-  getDashboardMediaState,
   shouldRenderDashboardResourceCard,
 } from "./dashboard-media-state";
 import {
@@ -44,9 +44,27 @@ const DashboardResourcesCard = lazy(() =>
 const EnablePreviewModal = lazy(() =>
   import("../../../components/EnablePreviewModal").then((module) => ({ default: module.EnablePreviewModal })),
 );
+const DEFAULT_APP_EMBED_STATUS: DashboardAppEmbedStatus = {
+  appEmbedEnabled: false,
+  themeEditorUrl: null,
+};
+
+function DashboardAppEmbedStatusHydrator({
+  status,
+  onResolve,
+}: {
+  status: DashboardAppEmbedStatus;
+  onResolve: (status: DashboardAppEmbedStatus) => void;
+}) {
+  useEffect(() => {
+    onResolve(status);
+  }, [onResolve, status]);
+
+  return null;
+}
 
 export function DashboardPage() {
-  const { bundles, shop, appUrl, themeEditorUrl, appEmbedEnabled, banners } = useLoaderData<typeof loader>();
+  const { bundles, shop, appUrl, appEmbedStatus, banners } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher();
@@ -72,11 +90,11 @@ export function DashboardPage() {
   const [previewingBundleId, setPreviewingBundleId] = useState<string | null>(null);
   const [editingBundleId, setEditingBundleId] = useState<string | null>(null);
   const [activeActionMenuBundleId, setActiveActionMenuBundleId] = useState<string | null>(null);
-  const [hasHydratedDashboardMedia, setHasHydratedDashboardMedia] = useState(false);
   const [hasMainContentSettled, setHasMainContentSettled] = useState(false);
+  const [resolvedAppEmbedStatus, setResolvedAppEmbedStatus] = useState<DashboardAppEmbedStatus>(DEFAULT_APP_EMBED_STATUS);
 
-  useEffect(() => {
-    setHasHydratedDashboardMedia(true);
+  const handleAppEmbedStatusResolved = useCallback((status: DashboardAppEmbedStatus) => {
+    setResolvedAppEmbedStatus(status);
   }, []);
 
   useEffect(() => {
@@ -179,8 +197,8 @@ export function DashboardPage() {
   }, [bundleToDelete]);
 
   const enablePreviewGate = useEnablePreviewGate({
-    appEmbedEnabled,
-    themeEditorUrl,
+    appEmbedEnabled: resolvedAppEmbedStatus.appEmbedEnabled,
+    themeEditorUrl: resolvedAppEmbedStatus.themeEditorUrl,
     onSilentBlock: () => shopify.toast.show(t("dashboard.actions.themeEditorUnavailable"), { isError: true }),
   });
   const renderDeleteModal = shouldRenderDashboardDeleteModal({ bundleToDelete });
@@ -209,7 +227,7 @@ export function DashboardPage() {
         shopifyProductHandle: bundle.shopifyProductHandle,
         shopifyPageHandle: bundle.shopifyPageHandle,
         shop,
-        appEmbedEnabled,
+        appEmbedEnabled: resolvedAppEmbedStatus.appEmbedEnabled,
         bundleStatus: bundle.status,
       });
 
@@ -239,7 +257,7 @@ export function DashboardPage() {
     }
 
     enablePreviewGate.requestPreview(executePreviewAction);
-  }, [shop, shopify, fetcher, enablePreviewGate, appEmbedEnabled, recordDashboardPreview]);
+  }, [shop, shopify, fetcher, enablePreviewGate, resolvedAppEmbedStatus.appEmbedEnabled, recordDashboardPreview]);
 
   const getStatusDisplay = (status: string) => {
     const tone = STATUS_TONE_MAP[status as keyof typeof STATUS_TONE_MAP] ?? 'info';
@@ -401,13 +419,21 @@ export function DashboardPage() {
     navigate('/app/events');
   }, [navigate]);
 
-  const handleAppEmbedCardClick = useCallback(() => {
-    if (themeEditorUrl) {
-      openThemeEditorInNewTab(themeEditorUrl);
+  const handleAppEmbedCardClick = useCallback(async () => {
+    if (resolvedAppEmbedStatus.themeEditorUrl) {
+      openThemeEditorInNewTab(resolvedAppEmbedStatus.themeEditorUrl);
       return;
     }
+
+    const checkedStatus = await checkAppEmbedStatusFromCurrentRoute();
+    setResolvedAppEmbedStatus(checkedStatus);
+    if (checkedStatus.themeEditorUrl) {
+      openThemeEditorInNewTab(checkedStatus.themeEditorUrl);
+      return;
+    }
+
     shopify.toast.show(t("dashboard.actions.themeEditorUnavailable"), { isError: true });
-  }, [shopify, themeEditorUrl, t]);
+  }, [resolvedAppEmbedStatus.themeEditorUrl, shopify, t]);
 
   const filteredBundles = useMemo(() =>
     bundles
@@ -424,9 +450,6 @@ export function DashboardPage() {
     filteredBundles.slice((effectivePage - 1) * bundlesPerPage, effectivePage * bundlesPerPage),
     [filteredBundles, effectivePage, bundlesPerPage]
   );
-  const dashboardMediaState = getDashboardMediaState({
-    isHydrated: hasHydratedDashboardMedia,
-  });
   const renderResourceCard = shouldRenderDashboardResourceCard({
     hasMainContentSettled,
   });
@@ -446,6 +469,17 @@ export function DashboardPage() {
           </s-text>
         </s-modal>
       )}
+
+      <Suspense fallback={null}>
+        <Await resolve={appEmbedStatus}>
+          {(status) => (
+            <DashboardAppEmbedStatusHydrator
+              status={status as DashboardAppEmbedStatus}
+              onResolve={handleAppEmbedStatusResolved}
+            />
+          )}
+        </Await>
+      </Suspense>
 
       <div className={dashboardStyles.dashboardPage}>
         <div className={dashboardStyles.dashboardLayout}>
@@ -489,7 +523,6 @@ export function DashboardPage() {
           <DashboardTopCards
             handleDirectChat={handleDirectChat}
             handleAppEmbedCardClick={handleAppEmbedCardClick}
-            loadAppEmbedImage={dashboardMediaState.loadAppEmbedImage}
           />
 
           {/* Bundles panel */}
