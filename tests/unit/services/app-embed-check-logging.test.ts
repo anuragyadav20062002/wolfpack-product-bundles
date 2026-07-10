@@ -29,7 +29,8 @@ describe("checkAppEmbedEnabled logging", () => {
       {
         data: {
           themes: {
-            nodes: [{ id: THEME_ID }],
+            nodes: [{ id: THEME_ID, name: "Main", role: "MAIN" }],
+            pageInfo: { hasNextPage: false, endCursor: null },
           },
         },
       },
@@ -51,7 +52,7 @@ describe("checkAppEmbedEnabled logging", () => {
 
     const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com");
 
-    expect(result).toEqual({ enabled: false, themeId: THEME_ID });
+    expect(result).toEqual(expect.objectContaining({ enabled: false, themeId: THEME_ID }));
     expect(AppLogger.debug).not.toHaveBeenCalled();
     expect(AppLogger.warn).not.toHaveBeenCalled();
   });

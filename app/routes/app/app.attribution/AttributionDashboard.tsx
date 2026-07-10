@@ -1,5 +1,4 @@
 import { Await, useLoaderData, useNavigate } from "@remix-run/react";
-import { PixelStatusCard } from "./PixelStatusCard";
 import { useState, useMemo, useEffect, useRef, Suspense } from "react";
 import "../../../components/analytics/shared/tokens.css";
 import {
@@ -12,6 +11,7 @@ import { LazyEngagementPulse, LazyRevenueAttribution } from "../../../components
 import { ChartCardSkeleton } from "../../../components/skeletons/ChartCardSkeleton";
 import styles from "../../../styles/routes/app-attribution.module.css";
 import type { AttributionDashboardData, loader } from "../app.attribution";
+import { shouldRenderAnalyticsNoDataBanner } from "./attribution-lcp-state";
 
 type PixelStatusPayload = {
   active: boolean;
@@ -176,18 +176,6 @@ function AttributionDashboardSkeleton() {
   );
 }
 
-function PixelStatusBoundary({ pixelStatus }: { pixelStatus: Promise<PixelStatusPayload> }) {
-  return (
-    <div className={styles.pixelStatusShell}>
-      <Suspense fallback={<ChartCardSkeleton height={96} label="Loading tracking status" />}>
-        <Await resolve={pixelStatus}>
-          {(status) => <PixelStatusCard pixelActive={Boolean(status.active)} />}
-        </Await>
-      </Suspense>
-    </div>
-  );
-}
-
 function NoDataBanner({
   hasNoData,
   pixelStatus,
@@ -201,11 +189,8 @@ function NoDataBanner({
     <Suspense fallback={null}>
       <Await resolve={pixelStatus}>
         {(status) => (
-          <s-banner
-            heading={status.active ? "No data for this period" : "UTM tracking is not enabled"}
-            tone={status.active ? "info" : "warning"}
-          >
-            {status.active ? (
+          shouldRenderAnalyticsNoDataBanner({ hasNoData, pixelActive: Boolean(status.active) }) ? (
+            <s-banner heading="No data for this period" tone="info">
               <s-stack direction="block" gap="small-100">
                 <p className={styles.bodyText}>
                   Tracking is active but no attributed orders were recorded yet. Values will populate once customers arrive via UTM-tagged links and complete a purchase.
@@ -217,12 +202,8 @@ function NoDataBanner({
                   </code>
                 </p>
               </s-stack>
-            ) : (
-              <p className={styles.bodyText}>
-                Enable tracking below to start capturing UTM parameters from visitor sessions. Once active, orders from tagged ad links will be attributed and shown here.
-              </p>
-            )}
-          </s-banner>
+            </s-banner>
+          ) : null
         )}
       </Await>
     </Suspense>
@@ -320,6 +301,7 @@ function AttributionDashboardContent({
             windowLabel={from && to ? `${from} → ${to}` : `Last ${days} days`}
             formatRevenue={formatRevenue}
             formatCount={(n) => n.toLocaleString()}
+            showHeader={false}
           />
 
           <div className={styles.dashboardChartGrid}>
@@ -361,9 +343,6 @@ export default function AttributionDashboard() {
 
   return (
     <>
-      <div className={styles.pixelStatusBoundary}>
-        <PixelStatusBoundary pixelStatus={pixelStatus} />
-      </div>
       <Suspense fallback={<AttributionDashboardSkeleton />}>
         <Await resolve={analytics}>
           {(data) => <AttributionDashboardContent data={data} pixelStatus={pixelStatus} />}

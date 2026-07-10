@@ -90,6 +90,12 @@
   padding: 0 4px;
 }
 
+.criticalHeroShell {
+  max-width: 1320px;
+  margin: 0 auto 20px;
+  padding: 0 4px;
+}
+
 .dashboardStack {
   display: flex;
   flex-direction: column;

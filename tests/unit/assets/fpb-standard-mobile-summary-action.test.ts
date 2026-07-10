@@ -153,6 +153,35 @@ const currencyInfo = {
 };
 
 describe('FPB Standard mobile summary action', () => {
+  it('renders merchant-authored step page titles as the content subtitle', () => {
+    const context = {
+      ...createContext(),
+      selectedBundle: {
+        steps: [{ pageTitle: 'Choose your product' }],
+      },
+      getCurrentStepContentText: fullPageMobileSummaryMethods.getCurrentStepContentText,
+    };
+
+    const header = fullPageMobileSummaryMethods.createStepContentHeader.call(context, 0);
+
+    expect(header?.textContent).toBe('Choose your product');
+  });
+
+  it('suppresses accidental Chrome async debug text from the content subtitle', () => {
+    const context = {
+      ...createContext(),
+      selectedBundle: {
+        steps: [{ pageTitle: 'Chrome async text' }],
+      },
+      getCurrentStepContentText: fullPageMobileSummaryMethods.getCurrentStepContentText,
+    };
+
+    expect(fullPageMobileSummaryMethods.getCurrentStepContentText.call(context, 0)).toEqual({
+      subtext: '',
+    });
+    expect(fullPageMobileSummaryMethods.createStepContentHeader.call(context, 0)).toBeNull();
+  });
+
   it('does not force compact mobile summary progress when discount progress is disabled', () => {
     const sheet = new FakeElement();
     const renderProgress = jest.fn(() => new FakeElement());
