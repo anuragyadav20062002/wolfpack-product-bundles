@@ -131,7 +131,7 @@
   position: relative;
   width: 70px;
   height: 70px;
-  align-self: start;
+  align-self: center;
   border-radius: 50%;
   overflow: hidden;
 }
