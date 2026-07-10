@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.95
+ * Version : 5.0.98
  * Built   : 2026-07-10
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.95';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.98';
 (function() {
   'use strict';
 
@@ -5701,9 +5701,6 @@ _renderInpageStepProducts(stepIndex, target) {
   target.classList.toggle('bw-ppb-cascade-product-list', usesCascadeCards);
   target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
 
-  const selectedProducts = this.selectedProducts[stepIndex] || {};
-  const showQuantitySelector = !this._usesCompactInpageProductCards()
-    && this.config.showQuantitySelectorOnCard;
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
     this.selectedBundle?.validateQuantityPerProduct
   );
@@ -5716,35 +5713,9 @@ _renderInpageStepProducts(stepIndex, target) {
     const atMaxStock = available !== null && currentQuantity >= available;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
-    const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const stockBadge = outOfStock
       ? '<div class="product-stock-badge product-stock-badge--out">Out of stock</div>'
       : '';
-
-    const productContent = `
-      <div class="product-title${usesCascadeCards ? ' wpbMixCascadeProductTitle' : ''}">${ComponentGenerator.escapeHtml(product.title)}</div>
-      ${product.price ? `
-        <div class="product-price-row${usesCascadeCards ? ' wpbMixCascadeProductsPriceWrapper' : ''}">
-          ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike${usesCascadeCards ? ' wpbMixCascadeProductCompareAtPrice' : ''}">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
-          <span class="product-price${usesCascadeCards ? ' wpbMixCascadeProductsPrice' : ''}">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
-        </div>
-      ` : ''}
-      ${this.renderInlineCardVariantSelector(product, currentStep)}
-      ${showQuantitySelector ? `
-        <div class="product-quantity-wrapper">
-          <div class="product-quantity-selector">
-            <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-            <span class="qty-display">${currentQuantity}</span>
-            <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
-          </div>
-        </div>
-      ` : ''}
-    `;
-    const addButton = `
-      <button class="product-add-btn${usesCascadeCards ? ' wpbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
-        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
-      </button>
-    `;
 
     if (usesCascadeCards) {
       return renderSharedProductCard(
@@ -5754,9 +5725,14 @@ _renderInpageStepProducts(stepIndex, target) {
         {
           variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'row',
-          className: `bw-ppb-cascade-product-row wpbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
+          className: [
+            'bw-ppb-cascade-product-row',
+            'wpbMixCascadeProductWrapper',
+            currentQuantity > 0 ? 'selected' : '',
+            outOfStock ? 'is-out-of-stock' : '',
+          ].filter(Boolean).join(' '),
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
-          addDisabled: false,
+          addDisabled: outOfStock,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
         }
@@ -5779,6 +5755,34 @@ _renderInpageStepProducts(stepIndex, target) {
         }
       );
     }
+
+    const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
+    const showQuantitySelector = !this._usesCompactInpageProductCards()
+      && this.config.showQuantitySelectorOnCard;
+    const productContent = `
+      <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
+      ${product.price ? `
+        <div class="product-price-row">
+          ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+          <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
+        </div>
+      ` : ''}
+      ${this.renderInlineCardVariantSelector(product, currentStep)}
+      ${showQuantitySelector ? `
+        <div class="product-quantity-wrapper">
+          <div class="product-quantity-selector">
+            <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+            <span class="qty-display">${currentQuantity}</span>
+            <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
+          </div>
+        </div>
+      ` : ''}
+    `;
+    const addButton = `
+      <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
+        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
+      </button>
+    `;
 
     return `
       <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">

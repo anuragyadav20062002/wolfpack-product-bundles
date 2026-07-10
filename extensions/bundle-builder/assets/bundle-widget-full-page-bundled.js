@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.97
+ * Version : 5.0.98
  * Built   : 2026-07-10
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.97';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.98';
 (function() {
   'use strict';
 
@@ -5805,7 +5805,7 @@ function getMobileAdditionalOffersPulseState({
 function normalizeStepContentSubtext(value) {
   if (typeof value !== 'string') return '';
   const text = value.trim();
-  return /^chrome\s+async(?:\s+text)?$/i.test(text) ? '' : text;
+  return /^chrome\s+async(?:\s+(?:text|\d{1,2}:\d{2}(?::\d{2})?))?$/i.test(text) ? '' : text;
 }
 
 const MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;

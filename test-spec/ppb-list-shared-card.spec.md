@@ -3,7 +3,7 @@
 
 ## Purpose
 
-Verify the PPB List migration slice routes `PDP_INPAGE + CASCADE` product rows through the shared row-mode product-card primitive while preserving legacy List classes and disabled/stock states.
+Verify the PPB List migration slice routes `PDP_INPAGE + CASCADE` product rows through the shared row-mode product-card primitive while preserving selection, variant selector, and disabled/stock behavior.
 
 ## Test Cases
 
@@ -11,10 +11,12 @@ Verify the PPB List migration slice routes `PDP_INPAGE + CASCADE` product rows t
 
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | List in-page product rows | `renderInpageStepProducts()` source | Shared product-card renderer with row mode | Keeps `CASCADE` data/classes during migration. |
+| 1 | List in-page product rows | `renderInpageStepProducts()` source | Shared product-card renderer with row mode | Keeps `CASCADE` behavior during migration. |
+| 2 | Selected and sold-out List rows | CASCADE step with one selected product and one out-of-stock product | Selected row renders quantity state; sold-out row renders a disabled add action | Covers current Product List shared-card behavior rather than source-string checks. |
 
 ## Acceptance Criteria
 
 - [x] PPB List product rows route through `renderSharedProductCard()`.
-- [x] Shared card uses row mode and legacy List classes.
+- [x] Shared card uses row mode and preserves Product List interaction behavior.
 - [x] Disabled add/increase and stock badge state are preserved.
+- [x] Focused behavior test covers selected quantity state and sold-out add-action disabling.

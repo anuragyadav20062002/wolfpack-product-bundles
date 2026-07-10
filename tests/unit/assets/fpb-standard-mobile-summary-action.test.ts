@@ -182,6 +182,21 @@ describe('FPB Standard mobile summary action', () => {
     expect(fullPageMobileSummaryMethods.createStepContentHeader.call(context, 0)).toBeNull();
   });
 
+  it('suppresses timestamped Chrome async debug text from the content subtitle', () => {
+    const context = {
+      ...createContext(),
+      selectedBundle: {
+        steps: [{ pageTitle: 'Chrome async 08:17:02' }],
+      },
+      getCurrentStepContentText: fullPageMobileSummaryMethods.getCurrentStepContentText,
+    };
+
+    expect(fullPageMobileSummaryMethods.getCurrentStepContentText.call(context, 0)).toEqual({
+      subtext: '',
+    });
+    expect(fullPageMobileSummaryMethods.createStepContentHeader.call(context, 0)).toBeNull();
+  });
+
   it('does not force compact mobile summary progress when discount progress is disabled', () => {
     const sheet = new FakeElement();
     const renderProgress = jest.fn(() => new FakeElement());
