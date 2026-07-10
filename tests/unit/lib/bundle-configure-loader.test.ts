@@ -120,6 +120,7 @@ describe("fetchEmbedData — live Shopify app embed status", () => {
         appHandles: [
           "bundle-builder",
           "configured-app-handle",
+          "wolfpack-product-bundles",
           "wolfpack-product-bundles-4",
           "wolfpack-product-bundles-sit",
         ],
@@ -153,6 +154,7 @@ describe("fetchEmbedData — live Shopify app embed status", () => {
       expect.objectContaining({
         appHandles: [
           "bundle-builder",
+          "wolfpack-product-bundles",
           "wolfpack-product-bundles-4",
           "wolfpack-product-bundles-sit",
         ],
@@ -177,6 +179,7 @@ describe("fetchEmbedData — live Shopify app embed status", () => {
         appHandles: [
           "bundle-builder",
           "wolfpack-product-bundles-4",
+          "wolfpack-product-bundles",
           "wolfpack-product-bundles-sit",
         ],
         blockHandles: ["bundle-app-embed"],
