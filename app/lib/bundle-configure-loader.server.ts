@@ -8,13 +8,16 @@
 
 import { AppLogger } from "./logger";
 import { checkAppEmbedEnabled } from "../services/theme/app-embed-check.server";
-
-const THEME_APP_EXTENSION_HANDLE = "bundle-builder";
+import {
+  deployed_shopify_app_handles,
+  theme_app_extension_handle,
+} from "../config/shopify-app-handles.js";
 
 function getThemeAppEmbedHandles() {
   const handles = [
-    THEME_APP_EXTENSION_HANDLE,
+    theme_app_extension_handle,
     process.env.SHOPIFY_APP_HANDLE,
+    ...deployed_shopify_app_handles,
   ];
 
   return Array.from(

@@ -38,18 +38,6 @@ export async function handleAppUninstalled(
     }, { shop: shopDomain });
 
     const shopifyShopGid = await getCachedShopifyShopGid(shopDomain);
-    await recordBusinessEvent({
-      eventHandle: "app_uninstalled",
-      shopDomain,
-      shopifyShopGid,
-      surface: "webhook",
-      actor: "webhook",
-      routeFamily: "lifecycle_webhook",
-      result: "success",
-      attributes: {
-        topic: "APP_UNINSTALLED",
-      },
-    });
 
     // Step 1: Delete all bundles (cascades to steps, step products, pricing)
     const deletedBundles = await db.bundle.deleteMany({
@@ -118,7 +106,21 @@ export async function handleAppUninstalled(
       }, { shop: shopDomain, error: e });
     }
 
-    // Step 7: Delete shop record (cascades to subscriptions)
+    // Step 7: Delete old business events. Revenue analytics are retained in
+    // OrderAttribution and BundleEngagement; those tables are intentionally not
+    // touched by uninstall cleanup.
+    try {
+      await db.businessEvent.deleteMany({
+        where: { shopDomain },
+      });
+    } catch (e) {
+      AppLogger.warn("Failed to delete business events", {
+        component: "webhook-processor",
+        operation: "handleAppUninstalled",
+      }, { shop: shopDomain, error: e });
+    }
+
+    // Step 8: Delete shop record (cascades to subscriptions)
     try {
       await db.shop.deleteMany({
         where: { shopDomain },
@@ -129,6 +131,19 @@ export async function handleAppUninstalled(
         operation: "handleAppUninstalled",
       }, { shop: shopDomain, error: e });
     }
+
+    await recordBusinessEvent({
+      eventHandle: "app_uninstalled",
+      shopDomain,
+      shopifyShopGid,
+      surface: "webhook",
+      actor: "webhook",
+      routeFamily: "lifecycle_webhook",
+      result: "success",
+      attributes: {
+        topic: "APP_UNINSTALLED",
+      },
+    });
 
     AppLogger.info("App uninstall cleanup completed", {
       component: "webhook-processor",

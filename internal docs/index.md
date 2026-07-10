@@ -45,6 +45,7 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Features/Pricing Pipeline]] — UI → DB → Metafield → Cart Transform units
 - [[Features/Bundle Instance Tracking]] — EB `_wolfpackProductBundle:OfferId`, MERGE dedup, unique titles
 - [[Operations/Deployment]] — Render + Shopify deploy process
+- [[Operations/Deployment Backfill]] — guarded deploy-time DB-to-Shopify resync script and approval rules
 - [[Operations/Development]] — SIT Shopify dev command and direct configure sync flow
 - [[Operations/Build Process]] — Widget bundles, WASM, CSS size limits
 - [[Operations/App Events Taxonomy]] — Shopify App Events taxonomy, flow tracing, feature usage, error events, and `wpb:*` migration boundaries
