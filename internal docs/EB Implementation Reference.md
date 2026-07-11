@@ -1,7 +1,7 @@
 ---
 title: EB Implementation Reference
 type: reference
-last_updated: 2026-06-12
+last_updated: 2026-07-12
 source: docs/competitor-analysis/16-eb-full-data-flow-investigation.md; docs/competitor-analysis/17-eb-complete-configure-e2e-audit.md
 ---
 
@@ -540,6 +540,37 @@ Sent to `mixAndMatch/update`. The captured Admin update payload preserves hydrat
 - Both captured FPB and PPB category saves use `products`, `collectionsData`, and `collectionsSelectedData` arrays with hydrated product/collection objects from the picker.
 - FPB additionally preserves a `selectedProducts` array in the captured category object; it was empty in the step-setup proof.
 - PPB stores `displayVariantsAsIndividualProducts` and `displayVariantsAsSwatches` per **category** — confirmed at category level
+
+### PPB Product List Step Rules
+
+Verified on 2026-07-12 against EB Product Page Bundle Product List (`PDP_INPAGE` + `CASCADE`) for offer `MIX-156854`.
+
+Admin behavior:
+- Selecting the `Step rules` label exposes an `Add Rule` control.
+- A newly added rule exposes:
+  - metric options: `Quantity`, `Amount`
+  - condition options: `is less than or equal to`, `is greater than or equal to`, `is equal to`
+  - numeric value spinbutton
+- Saving a quantity rule for at least two items persists as:
+
+```json
+{
+  "productsData1": {
+    "conditions": {
+      "isEnabled": true,
+      "rules": [
+        { "type": "quantity", "condition": "greaterThanOrEqualTo", "value": "02" }
+      ]
+    }
+  }
+}
+```
+
+Storefront Product List behavior:
+- With one selected product, the footer `Add Bundle to Cart` element keeps the class `gbbMixCascadeAddToCartBtn--disabled-conditionsNotMet`, has `pointer-events: none`, and opacity `0.5`.
+- Under the same one-product state, no cart line is added.
+- With two selected products, EB removes the disabled condition class, sets `pointer-events: auto`, opacity `1`, and the bundle add-to-cart succeeds.
+- The successful cart line uses the parent bundle product and properties including `_EasyBundleId`, `_originalOfferId`, `Box`, and `Items`.
 
 ### Discount Configuration Shape (PPB — applies to FPB too)
 
