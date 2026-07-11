@@ -2,15 +2,31 @@ import { register } from "@shopify/web-pixels-extension";
 
 const UTM_STORAGE_KEY = "_wolfpack_utm_params";
 const UTM_PARAMS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
+const MAX_CUSTOM_UTM_PARAMETERS = 10;
+const CUSTOM_PARAM_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+const BLOCKED_CUSTOM_PARAM_RE = /(email|phone|address|customer|buyer|token|secret|password)/i;
+
+function parseCustomUtmParameters(value: unknown): string[] {
+  const raw = Array.isArray(value) ? value.join(",") : String(value ?? "");
+  const names = new Set<string>();
+  for (const token of raw.split(/[\s,]+/)) {
+    const name = token.trim().toLowerCase();
+    if (!name || !CUSTOM_PARAM_RE.test(name) || BLOCKED_CUSTOM_PARAM_RE.test(name)) continue;
+    names.add(name);
+    if (names.size >= MAX_CUSTOM_UTM_PARAMETERS) break;
+  }
+  return [...names];
+}
 
 /**
  * Extract UTM parameters from a URL string.
  * Returns null if no UTM params are present.
  */
-function extractUtmParams(url: string): Record<string, string> | null {
+function extractUtmParams(url: string, customParamNames: string[]): Record<string, unknown> | null {
   try {
     const urlObj = new URL(url);
-    const params: Record<string, string> = {};
+    const params: Record<string, unknown> = {};
+    const customAttributes: Record<string, string> = {};
     let hasUtm = false;
 
     for (const key of UTM_PARAMS) {
@@ -21,7 +37,18 @@ function extractUtmParams(url: string): Record<string, string> | null {
       }
     }
 
+    for (const key of customParamNames) {
+      const value = urlObj.searchParams.get(key);
+      if (value) {
+        customAttributes[key] = value.slice(0, 256);
+        hasUtm = true;
+      }
+    }
+
     if (hasUtm) {
+      if (Object.keys(customAttributes).length > 0) {
+        params.custom_utm_attributes = customAttributes;
+      }
       params.landing_page = urlObj.pathname + urlObj.search;
       params.captured_at = new Date().toISOString();
       return params;
@@ -34,6 +61,7 @@ function extractUtmParams(url: string): Record<string, string> | null {
 
 register(({ analytics, browser, settings }) => {
   const appServerUrl = settings.app_server_url as string | undefined;
+  const customUtmParameters = parseCustomUtmParameters(settings.custom_utm_parameters);
   // Shop domain is passed in at activation from session.shop so it doesn't depend
   // on document.location.hostname — that value can be null on Shopify's hosted
   // Thank-you page or the wrong domain when a shop uses a custom checkout domain,
@@ -49,7 +77,7 @@ register(({ analytics, browser, settings }) => {
       const url = event.context?.document?.location?.href;
       if (!url) return;
 
-      const utmParams = extractUtmParams(url);
+      const utmParams = extractUtmParams(url, customUtmParameters);
       if (!utmParams) return;
 
       // Last-touch: always overwrite with the most recent UTM click
@@ -71,8 +99,8 @@ register(({ analytics, browser, settings }) => {
 
       // Read UTMs from localStorage — null object when customer arrived without UTMs
       const storedUtmsRaw = await browser.localStorage.getItem(UTM_STORAGE_KEY);
-      const utmParams: Record<string, string> = storedUtmsRaw
-        ? (JSON.parse(storedUtmsRaw) as Record<string, string>)
+      const utmParams: Record<string, any> = storedUtmsRaw
+        ? (JSON.parse(storedUtmsRaw) as Record<string, any>)
         : {};
 
       // Normalise order ID — may be a GID ("gid://shopify/Order/123") or plain number
@@ -99,6 +127,7 @@ register(({ analytics, browser, settings }) => {
         utmCampaign: utmParams.utm_campaign ?? null,
         utmContent: utmParams.utm_content ?? null,
         utmTerm: utmParams.utm_term ?? null,
+        customUtmAttributes: utmParams.custom_utm_attributes ?? null,
         landingPage: utmParams.landing_page ?? null,
       };
 

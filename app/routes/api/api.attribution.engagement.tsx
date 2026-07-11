@@ -63,6 +63,13 @@ function sanitizeEventName(value: unknown): string | null {
   return trimmed;
 }
 
+function getBusinessEventHandle(eventName: string) {
+  if (eventName === "wpb:bundle-add-to-cart-success") {
+    return "bundle_add_to_cart_succeeded";
+  }
+  return "bundle_engaged";
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: buildCorsHeaders(request) });
@@ -199,7 +206,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     await recordBusinessEvent({
-      eventHandle: "bundle_engaged",
+      eventHandle: getBusinessEventHandle(normalizedEventName),
       shopDomain: normalizedShopId,
       bundleId: normalizedBundleId,
       bundleType: normalizedBundleType,

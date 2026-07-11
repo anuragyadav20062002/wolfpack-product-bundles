@@ -26,9 +26,9 @@ describe("computeBundleFunnel", () => {
 
   it("counts engaged as distinct sessionIds", () => {
     const eng: BundleEngagementRow[] = [
-      { bundleId: "b1", sessionId: "s1", createdAt: D("2026-06-01T00:00Z") },
-      { bundleId: "b1", sessionId: "s1", createdAt: D("2026-06-01T00:01Z") }, // dup session
-      { bundleId: "b2", sessionId: "s2", createdAt: D("2026-06-01T00:02Z") },
+      { bundleId: "b1", sessionId: "s1", eventName: "wpb:session-engaged", createdAt: D("2026-06-01T00:00Z") },
+      { bundleId: "b1", sessionId: "s1", eventName: "wpb:session-engaged", createdAt: D("2026-06-01T00:01Z") }, // dup session
+      { bundleId: "b2", sessionId: "s2", eventName: "wpb:session-engaged", createdAt: D("2026-06-01T00:02Z") },
     ];
     const snap = computeBundleFunnel(eng, []);
     expect(snap.engaged).toBe(2);
@@ -38,8 +38,15 @@ describe("computeBundleFunnel", () => {
     const eng: BundleEngagementRow[] = Array.from({ length: 10 }, (_, i) => ({
       bundleId: "b1",
       sessionId: `s${i}`,
+      eventName: "wpb:session-engaged",
       createdAt: D("2026-06-01T00:00Z"),
     }));
+    eng.push(
+      { bundleId: "b1", sessionId: "s0", eventName: "wpb:bundle-add-to-cart-success", createdAt: D("2026-06-01T00:10Z") },
+      { bundleId: "b1", sessionId: "s1", eventName: "wpb:bundle-add-to-cart-success", createdAt: D("2026-06-01T00:11Z") },
+      { bundleId: "b1", sessionId: "s2", eventName: "wpb:bundle-add-to-cart-success", createdAt: D("2026-06-01T00:12Z") },
+      { bundleId: "b1", sessionId: "s3", eventName: "wpb:bundle-add-to-cart-success", createdAt: D("2026-06-01T00:13Z") },
+    );
     const attr: OrderAttributionRow[] = Array.from({ length: 4 }, (_, i) => ({
       bundleId: "b1",
       revenue: 5000,
@@ -49,6 +56,19 @@ describe("computeBundleFunnel", () => {
     expect(snap.engaged).toBe(10);
     expect(snap.addedToCart).toBe(4);
     expect(snap.dropOffEngagedToAtc).toBe(60); // 100 - 40
+  });
+
+  it("counts added-to-cart from persisted add-to-cart events independently of checkout", () => {
+    const eng: BundleEngagementRow[] = [
+      { bundleId: "b1", sessionId: "s1", eventName: "wpb:session-engaged", createdAt: D("2026-06-01T00:00Z") },
+      { bundleId: "b1", sessionId: "s1", eventName: "wpb:bundle-add-to-cart-success", createdAt: D("2026-06-01T00:02Z") },
+    ];
+
+    const snap = computeBundleFunnel(eng, []);
+
+    expect(snap.engaged).toBe(1);
+    expect(snap.addedToCart).toBe(1);
+    expect(snap.checkedOut).toBe(0);
   });
 
   it("ignores attribution rows with null bundleId", () => {
@@ -73,9 +93,9 @@ describe("buildEngagementTrendSeries", () => {
 
   it("counts engagements per day and tracks unique bundles", () => {
     const eng: BundleEngagementRow[] = [
-      { bundleId: "b1", sessionId: "s1", createdAt: D("2026-06-01T03:00Z") },
-      { bundleId: "b1", sessionId: "s2", createdAt: D("2026-06-01T05:00Z") },
-      { bundleId: "b2", sessionId: "s3", createdAt: D("2026-06-02T05:00Z") },
+      { bundleId: "b1", sessionId: "s1", eventName: "wpb:session-engaged", createdAt: D("2026-06-01T03:00Z") },
+      { bundleId: "b1", sessionId: "s2", eventName: "wpb:session-engaged", createdAt: D("2026-06-01T05:00Z") },
+      { bundleId: "b2", sessionId: "s3", eventName: "wpb:session-engaged", createdAt: D("2026-06-02T05:00Z") },
     ];
     const series = buildEngagementTrendSeries(eng, D("2026-06-01"), D("2026-06-02"));
     expect(series).toHaveLength(2);
@@ -98,9 +118,9 @@ describe("buildBundlePerformanceMatrix", () => {
 
   it("computes engagement→order conversion + aov + sorts by revenue desc", () => {
     const eng: BundleEngagementRow[] = [
-      { bundleId: "b1", sessionId: "s1", createdAt: D("2026-06-01") },
-      { bundleId: "b1", sessionId: "s2", createdAt: D("2026-06-01") },
-      { bundleId: "b2", sessionId: "s3", createdAt: D("2026-06-01") },
+      { bundleId: "b1", sessionId: "s1", eventName: "wpb:session-engaged", createdAt: D("2026-06-01") },
+      { bundleId: "b1", sessionId: "s2", eventName: "wpb:session-engaged", createdAt: D("2026-06-01") },
+      { bundleId: "b2", sessionId: "s3", eventName: "wpb:session-engaged", createdAt: D("2026-06-01") },
     ];
     const attr: OrderAttributionRow[] = [
       { bundleId: "b1", revenue: 10_000, createdAt: D("2026-06-01") },

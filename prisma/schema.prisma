@@ -566,6 +566,7 @@ model Shop {
   subscriptions           Subscription[] // Subscription history
   currentSubscriptionId   String? // Current active subscription
   adminLocale             String? // Shop-wide embedded Admin UI language preference; null defaults to English
+  customUtmParameters     Json           @default("[]") // Merchant-configured query parameters captured by the UTM pixel
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
 
@@ -667,6 +668,7 @@ model OrderAttribution {
   utmCampaign String?
   utmContent  String?
   utmTerm     String?
+  customUtmAttributes Json     @default("{}")
   landingPage String? // The URL customer landed on
   revenue     Int // cents
   currency    String   @default("USD")
@@ -682,8 +684,8 @@ model OrderAttribution {
 }
 
 /// Records the first interaction (engagement) a shopper has with a bundle in a
-/// browser session. Written once per (shopId, bundleId, sessionId) — guarded by
-/// a unique constraint so retries from the storefront beacon are idempotent.
+/// browser session. Written once per (shopId, bundleId, sessionId, eventName) —
+/// guarded by a unique constraint so retries from the storefront beacon are idempotent.
 ///
 /// Powers funnel metrics (impressions vs engagement vs ATC) decoupled from the
 /// existing OrderAttribution table which only captures completed checkouts.
@@ -699,7 +701,7 @@ model BundleEngagement {
   userAgent     String?
   createdAt     DateTime @default(now())
 
-  @@unique([shopId, bundleId, sessionId])
+  @@unique([shopId, bundleId, sessionId, eventName])
   @@index([shopId])
   @@index([bundleId])
   @@index([shopId, createdAt])

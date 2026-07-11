@@ -1,18 +1,22 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Await, useLoaderData, useNavigate } from "@remix-run/react";
 import { navigateBackOrFallback } from "../../../lib/navigation";
-import { ChartCardSkeleton } from "../../../components/skeletons/ChartCardSkeleton";
-import { PixelStatusCard } from "./PixelStatusCard";
 import type { loader } from "../app.attribution";
 import styles from "./AttributionRouteShell.module.css";
 import attributionStyles from "../../../styles/routes/app-attribution.module.css";
+import { AttributionDashboardSkeleton } from "./AttributionDashboardSkeleton";
 import "../../../components/analytics/shared/tokens.css";
 
 const AttributionDashboard = lazy(() => import("./AttributionDashboard"));
+const PixelStatusCard = lazy(() =>
+  import("./PixelStatusCard").then((module) => ({
+    default: module.PixelStatusCard,
+  }))
+);
 const DASHBOARD_IMPORT_DELAY_MS = 3000;
 
-function AttributionDashboardPending() {
-  return <div aria-hidden="true" className={styles.dashboardPending} />;
+function AttributionStatusPending() {
+  return <div aria-hidden="true" className={styles.statusPending} />;
 }
 
 function AttributionCriticalFunnelHeader() {
@@ -46,7 +50,7 @@ function AttributionCriticalStatus({
   return (
     <div className={attributionStyles.pixelStatusBoundary}>
       <div className={attributionStyles.pixelStatusShell}>
-        <Suspense fallback={<ChartCardSkeleton height={96} label="Loading tracking status" />}>
+        <Suspense fallback={<AttributionStatusPending />}>
           <Await resolve={pixelStatus}>
             {(status) => (
               <PixelStatusCard pixelActive={Boolean(status.active)} />
@@ -85,14 +89,14 @@ export default function AttributionRouteShell() {
           Dashboard
         </button>
       </ui-title-bar>
-      <AttributionCriticalStatus pixelStatus={pixelStatus} />
       <AttributionCriticalFunnelHeader />
+      <AttributionCriticalStatus pixelStatus={pixelStatus} />
       {loadDashboard ? (
-        <Suspense fallback={<AttributionDashboardPending />}>
+        <Suspense fallback={<AttributionDashboardSkeleton />}>
           <AttributionDashboard />
         </Suspense>
       ) : (
-        <AttributionDashboardPending />
+        <AttributionDashboardSkeleton />
       )}
     </>
   );

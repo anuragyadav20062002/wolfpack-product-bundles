@@ -7,11 +7,11 @@ const { PricingCalculator } = require('../../../app/assets/widgets/shared/pricin
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { CurrencyManager } = require('../../../app/assets/widgets/shared/currency-manager.js');
 
-global.PricingCalculator = PricingCalculator;
-global.CurrencyManager = CurrencyManager;
+(globalThis as any).PricingCalculator = PricingCalculator;
+(globalThis as any).CurrencyManager = CurrencyManager;
 
 const MONEY_FORMAT = ['$', '{{amount}}'].join('');
-global.window = {
+(globalThis as any).window = {
   Shopify: {
     currency: {
       active: 'USD',

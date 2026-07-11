@@ -10,17 +10,15 @@ import { PpbSubscriptionsSection } from "./PpbSubscriptionsSection";
 import { PpbFreeGiftAddonsSection } from "./PpbFreeGiftAddonsSection";
 
 export function PpbMainSections() {
-  const { loaderData, productPageBundleStyles } = usePpbConfigureContext();
+  usePpbConfigureContext();
 
   return (
     <>
-      <div className={productPageBundleStyles.mainColumn}>
-        <PpbStepSetupSection /> <PpbDiscountPricingSection />
-        <PpbBundleVisibilitySection /> <PpbBundleWidgetSection />
-        <PpbBundleEmbedSection /> <PpbImagesGifsSection />
-        <PpbBundleSettingsSection /> <PpbSubscriptionsSection />
-        <PpbFreeGiftAddonsSection />
-      </div>
+      <PpbStepSetupSection /> <PpbDiscountPricingSection />
+      <PpbBundleVisibilitySection /> <PpbBundleWidgetSection />
+      <PpbBundleEmbedSection /> <PpbImagesGifsSection />
+      <PpbBundleSettingsSection /> <PpbSubscriptionsSection />
+      <PpbFreeGiftAddonsSection />
     </>
   );
 }

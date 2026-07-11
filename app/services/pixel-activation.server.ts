@@ -97,7 +97,8 @@ export async function deactivateUtmPixel(admin: any): Promise<PixelDeactivationR
 export async function activateUtmPixel(
   admin: any,
   appUrl: string,
-  shopDomain: string
+  shopDomain: string,
+  customUtmParameters: string[] = [],
 ): Promise<PixelActivationResult> {
   let deleted = false;
 
@@ -146,7 +147,13 @@ export async function activateUtmPixel(
     }`,
     {
       variables: {
-        webPixel: { settings: { app_server_url: appUrl, shop_domain: shopDomain } },
+        webPixel: {
+          settings: {
+            app_server_url: appUrl,
+            shop_domain: shopDomain,
+            custom_utm_parameters: customUtmParameters.join(","),
+          },
+        },
       },
     }
   );

@@ -14,6 +14,7 @@ import type { OrderAttributionRow, TrendPoint } from "./analytics-helpers";
 export interface BundleEngagementRow {
   bundleId: string;
   sessionId: string;
+  eventName: string;
   createdAt: Date;
   presetId?: string | null;
 }
@@ -57,34 +58,36 @@ export interface BundleMatrixRow {
 /**
  * Build the cross-bundle funnel snapshot for a single time window.
  *
- * Engagement = distinct sessionIds (one shopper, one session, one engaged event).
- * AddedToCart = sessions that produced at least one OrderAttribution row.
- *   We use orders as a proxy for ATC; refining this requires forwarding the
- *   wpb:bundle-add-to-cart-success beacon server-side (deferred).
- * CheckedOut = same as AddedToCart for now (every OrderAttribution row is a
- *   completed checkout). Once an "abandoned cart" beacon lands these two
- *   diverge.
+ * Engagement = distinct sessionIds with a session-engaged event.
+ * AddedToCart = distinct sessionIds with a bundle-add-to-cart-success event.
+ * CheckedOut = bundle-attributed completed checkout rows.
  */
 export function computeBundleFunnel(
   engagementRows: BundleEngagementRow[],
   attributionRows: OrderAttributionRow[],
 ): FunnelSnapshot {
   const engagedSessionIds = new Set<string>();
+  const addedToCartSessionIds = new Set<string>();
   for (const r of engagementRows) {
-    engagedSessionIds.add(r.sessionId);
+    if (r.eventName === "wpb:session-engaged") {
+      engagedSessionIds.add(r.sessionId);
+    }
+    if (r.eventName === "wpb:bundle-add-to-cart-success") {
+      addedToCartSessionIds.add(r.sessionId);
+      engagedSessionIds.add(r.sessionId);
+    }
   }
   const engaged = engagedSessionIds.size;
+  const addedToCart = addedToCartSessionIds.size;
 
-  let bundleOrderCount = 0;
+  let checkedOut = 0;
   let revenueCents = 0;
   for (const r of attributionRows) {
     if (r.bundleId !== null) {
-      bundleOrderCount += 1;
+      checkedOut += 1;
       revenueCents += r.revenue;
     }
   }
-  const addedToCart = bundleOrderCount;
-  const checkedOut = bundleOrderCount;
 
   const dropOffEngagedToAtc =
     engaged > 0 ? Math.max(0, Math.min(100, 100 - Math.round((addedToCart / engaged) * 100))) : 0;
@@ -127,6 +130,7 @@ export function buildEngagementTrendSeries(
   }
 
   for (const r of rows) {
+    if (r.eventName !== "wpb:session-engaged") continue;
     const key = dayKey(r.createdAt);
     const bucket = series.get(key);
     if (!bucket) continue;
@@ -162,6 +166,7 @@ export function buildBundlePerformanceMatrix(
 ): BundleMatrixRow[] {
   const engagedByBundle = new Map<string, Set<string>>();
   for (const r of engagementRows) {
+    if (r.eventName !== "wpb:session-engaged") continue;
     const set = engagedByBundle.get(r.bundleId) ?? new Set<string>();
     set.add(r.sessionId);
     engagedByBundle.set(r.bundleId, set);

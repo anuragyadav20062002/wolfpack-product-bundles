@@ -1,5 +1,6 @@
 import productPageBundleStyles from "../../../styles/routes/product-page-bundle-configure.module.css";
 
+import { CommonConfigureShell } from "../_shared/bundle-configure/CommonConfigureShell";
 import {
   PpbConfigureProvider,
   usePpbConfigureContext,
@@ -21,31 +22,26 @@ function ConfigureBundleCanvas() {
     usePpbConfigureContext();
 
   return (
-    <div
-      className={productPageBundleStyles.editCanvas}
-      data-admin-save-lock-active={isSaveInFlight || undefined}
-      onBeforeInputCapture={blockConfigurationChangeWhileSaving}
-      onChangeCapture={blockConfigurationChangeWhileSaving}
-      onClickCapture={blockConfigurationChangeWhileSaving}
-      onDropCapture={blockConfigurationChangeWhileSaving}
-      onInputCapture={blockConfigurationChangeWhileSaving}
-      onKeyDownCapture={blockConfigurationChangeWhileSaving}
-      onPasteCapture={blockConfigurationChangeWhileSaving}
-      onPointerDownCapture={blockConfigurationChangeWhileSaving}
+    <CommonConfigureShell
+      blockConfigurationChangeWhileSaving={blockConfigurationChangeWhileSaving}
+      isSaveInFlight={isSaveInFlight}
+      styles={productPageBundleStyles}
+      saveForm={<PpbSaveForm />}
+      header={<PpbCanvasHeader />}
+      sidebar={<PpbConfigureSidebar />}
+      overlays={
+        <>
+          <PpbPageSelectionModal />
+          <PpbSelectedItemsModals />
+          <PpbSelectTemplateDialog />
+          <PpbUtilityModals />
+          <PpbDiscountLanguageModals />
+          <PpbOverlayModals />
+        </>
+      }
     >
-      <PpbSaveForm />
-      <PpbCanvasHeader />
-      <div className={productPageBundleStyles.editGrid}>
-        <PpbConfigureSidebar />
-        <PpbMainSections />
-      </div>
-      <PpbPageSelectionModal />
-      <PpbSelectedItemsModals />
-      <PpbSelectTemplateDialog />
-      <PpbUtilityModals />
-      <PpbDiscountLanguageModals />
-      <PpbOverlayModals />
-    </div>
+      <PpbMainSections />
+    </CommonConfigureShell>
   );
 }
 

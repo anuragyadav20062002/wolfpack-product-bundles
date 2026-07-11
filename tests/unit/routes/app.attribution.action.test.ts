@@ -7,16 +7,15 @@
 
 import { action } from "../../../app/routes/app/app.attribution";
 
-import { authenticate } from "../../../app/shopify.server";
+import { requireAdminSession } from "../../../app/lib/auth-guards.server";
 import {
   activateUtmPixel,
   deactivateUtmPixel,
 } from "../../../app/services/pixel-activation.server";
+import { backfillOrderAttribution } from "../../../app/services/analytics/order-backfill.server";
 
-jest.mock("../../../app/shopify.server", () => ({
-  authenticate: {
-    admin: jest.fn(),
-  },
+jest.mock("../../../app/lib/auth-guards.server", () => ({
+  requireAdminSession: jest.fn(),
 }));
 
 jest.mock("../../../app/services/pixel-activation.server", () => ({
@@ -25,12 +24,28 @@ jest.mock("../../../app/services/pixel-activation.server", () => ({
   getPixelStatus: jest.fn(),
 }));
 
-const mockAuthenticate = authenticate as jest.Mocked<typeof authenticate>;
+jest.mock("../../../app/services/analytics/order-backfill.server", () => ({
+  backfillOrderAttribution: jest.fn(),
+}));
+
+jest.mock("../../../app/db.server", () => ({
+  __esModule: true,
+  default: {
+    shop: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+    },
+  },
+}));
+
+const mockRequireAdminSession = requireAdminSession as jest.MockedFunction<typeof requireAdminSession>;
 const mockActivate = activateUtmPixel as jest.MockedFunction<typeof activateUtmPixel>;
 const mockDeactivate = deactivateUtmPixel as jest.MockedFunction<typeof deactivateUtmPixel>;
+const mockBackfill = backfillOrderAttribution as jest.MockedFunction<typeof backfillOrderAttribution>;
+const getDb = () => require("../../../app/db.server").default;
 
-function makeRequest(intent: string): Request {
-  const body = new URLSearchParams({ intent });
+function makeRequest(intent: string, fields: Record<string, string> = {}): Request {
+  const body = new URLSearchParams({ intent, ...fields });
   return new Request("https://app.example.com/attribution", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -40,9 +55,12 @@ function makeRequest(intent: string): Request {
 
 beforeEach(() => {
   jest.resetAllMocks();
-  (mockAuthenticate.admin as jest.Mock).mockResolvedValue({
+  mockRequireAdminSession.mockResolvedValue({
     admin: {},
     session: { shop: "test.myshopify.com" },
+  } as any);
+  getDb().shop.findUnique.mockResolvedValue({
+    customUtmParameters: [],
   });
   process.env.SHOPIFY_APP_URL = "https://app.example.com";
 });
@@ -106,6 +124,64 @@ describe("action — disable intent", () => {
     expect(data.success).toBe(false);
     expect(data.pixelActive).toBe(true);
     expect(data.error).toBeDefined();
+  });
+});
+
+// ── backfill intent ───────────────────────────────────────────
+
+describe("action — backfill intent", () => {
+  it("respects the selected days window", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-07-11T12:00:00.000Z"));
+    mockBackfill.mockResolvedValue({ created: 2, skipped: 1 } as any);
+
+    const response = await action({
+      request: makeRequest("backfill", { days: "7" }),
+      params: {},
+      context: {},
+    });
+    const data: any = await response.json();
+
+    expect(data.success).toBe(true);
+    expect(mockBackfill).toHaveBeenCalledWith(
+      {},
+      "test.myshopify.com",
+      "2026-07-05T00:00:00.000Z",
+      "2026-07-11T23:59:59.999Z",
+    );
+
+    jest.useRealTimers();
+  });
+});
+
+// ── custom UTM settings ───────────────────────────────────────
+
+describe("action — saveCustomUtms intent", () => {
+  it("saves sanitized custom UTM names and reactivates the pixel with them", async () => {
+    mockActivate.mockResolvedValue({ success: true, pixelId: "gid://shopify/WebPixel/1" });
+
+    const response = await action({
+      request: makeRequest("saveCustomUtms", {
+        customUtmParameters: "utm_influencer, Partner-ID, utm_influencer",
+      }),
+      params: {},
+      context: {},
+    });
+    const data: any = await response.json();
+
+    expect(data).toMatchObject({
+      success: true,
+      customUtmParameters: ["utm_influencer", "partner-id"],
+    });
+    expect(getDb().shop.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: { shopDomain: "test.myshopify.com" },
+      update: { customUtmParameters: ["utm_influencer", "partner-id"] },
+    }));
+    expect(mockActivate).toHaveBeenCalledWith(
+      {},
+      "https://app.example.com",
+      "test.myshopify.com",
+      ["utm_influencer", "partner-id"],
+    );
   });
 });
 

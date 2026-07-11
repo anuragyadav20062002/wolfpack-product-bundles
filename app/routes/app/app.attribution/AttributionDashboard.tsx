@@ -1,4 +1,4 @@
-import { Await, useLoaderData, useNavigate } from "@remix-run/react";
+import { Await, useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
 import { useState, useMemo, useEffect, useRef, Suspense } from "react";
 import "../../../components/analytics/shared/tokens.css";
 import {
@@ -8,10 +8,14 @@ import {
   TopCampaigns,
 } from "../../../components/analytics";
 import { LazyEngagementPulse, LazyRevenueAttribution } from "../../../components/analytics/lazy";
-import { ChartCardSkeleton } from "../../../components/skeletons/ChartCardSkeleton";
 import styles from "../../../styles/routes/app-attribution.module.css";
 import type { AttributionDashboardData, loader } from "../app.attribution";
+import {
+  AttributionAnalyticsSkeletonCard,
+  AttributionDashboardSkeleton,
+} from "./AttributionDashboardSkeleton";
 import { shouldRenderAnalyticsNoDataBanner } from "./attribution-lcp-state";
+import { analyzeCustomUtmInput } from "../../../lib/analytics/attribution-controls";
 
 type PixelStatusPayload = {
   active: boolean;
@@ -60,6 +64,7 @@ interface DateRangeSelectorProps {
 }
 
 function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
+  const navigate = useNavigate();
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [fromDate, setFromDate] = useState(from || "");
   const [toDate, setToDate] = useState(to || "");
@@ -67,6 +72,11 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
 
   const triggerLabel = formatRangeLabel(days, from, to);
   const today = new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    setFromDate(from || "");
+    setToDate(to || "");
+  }, [from, to]);
 
   // Close on outside click
   useEffect(() => {
@@ -91,7 +101,8 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
     } else {
       url.searchParams.set("days", String(daysN ?? 30));
     }
-    window.location.href = url.toString();
+    setPopoverOpen(false);
+    navigate(`${url.pathname}?${url.searchParams.toString()}`);
   }
 
   function handleApply() {
@@ -112,6 +123,7 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
             {([7, 30, 90] as const).map((d) => (
               <button
                 key={d}
+                type="button"
                 className={`${styles.presetChip}${!from && days === d ? ` ${styles.presetChipActive}` : ""}`}
                 onClick={() => navigateTo(d)}
               >
@@ -162,20 +174,6 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
 
 // ─── Main Component ───────────────────────────────────────────
 
-function AttributionDashboardSkeleton() {
-  return (
-    <div className={styles.dashboardShell}>
-      <div className={styles.dashboardStack}>
-        <ChartCardSkeleton height={180} label="Loading funnel summary" />
-        <div className={styles.dashboardChartGrid}>
-          <ChartCardSkeleton label="Loading engagement chart" />
-          <ChartCardSkeleton label="Loading revenue attribution chart" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function NoDataBanner({
   hasNoData,
   pixelStatus,
@@ -210,6 +208,94 @@ function NoDataBanner({
   );
 }
 
+function CustomUtmTrackingCard({
+  customUtmParameters,
+}: {
+  customUtmParameters: string[];
+}) {
+  const fetcher = useFetcher<{
+    success?: boolean;
+    customUtmParameters?: string[];
+    message?: string;
+    error?: string;
+  }>();
+  const [input, setInput] = useState(customUtmParameters.join("\n"));
+  const inputAnalysis = useMemo(() => analyzeCustomUtmInput(input), [input]);
+
+  useEffect(() => {
+    setInput(customUtmParameters.join("\n"));
+  }, [customUtmParameters]);
+
+  useEffect(() => {
+    if (fetcher.data?.success && Array.isArray(fetcher.data.customUtmParameters)) {
+      setInput(fetcher.data.customUtmParameters.join("\n"));
+    }
+  }, [fetcher.data]);
+
+  const isSaving = fetcher.state !== "idle";
+  const feedback = fetcher.data?.error ?? fetcher.data?.message;
+  const previewLabel = inputAnalysis.accepted.length > 0
+    ? `Wolfpack will track: ${inputAnalysis.accepted.join(", ")}`
+    : "No valid custom attributes will be tracked yet.";
+  const savedLabel = customUtmParameters.length > 0
+    ? `Currently tracking: ${customUtmParameters.join(", ")}`
+    : "No custom attributes are configured yet.";
+
+  return (
+    <section className={styles.sectionCard}>
+      <div className={styles.sectionHeader}>
+        <div>
+          <h2 className={styles.sectionTitle}>Custom UTM attributes</h2>
+          <p className={styles.mutedBodyText}>
+            Enter parameter names separated by commas or new lines. Wolfpack captures matching URL values on future visits and stores them with checkout attribution.
+          </p>
+        </div>
+      </div>
+      <div className={styles.customUtmBody}>
+        <fetcher.Form method="post" className={styles.customUtmForm}>
+          <input type="hidden" name="intent" value="saveCustomUtms" />
+          <input type="hidden" name="customUtmParameters" value={input} />
+          <s-text-area
+            label="Parameter names"
+            value={input}
+            rows={3}
+            placeholder={"utm_influencer, partner_id\ncreator"}
+            onInput={(event) => {
+              setInput((event.target as HTMLTextAreaElement).value);
+            }}
+          />
+          <div className={styles.customUtmFeedback} aria-live="polite">
+            <p className={styles.customUtmPreview}>{previewLabel}</p>
+            <p className={styles.mutedBodyText}>
+              {savedLabel}
+            </p>
+            {inputAnalysis.rejected.length > 0 ? (
+              <p className={styles.errorText}>
+                Ignored: {inputAnalysis.rejected.join(", ")}. Use URL parameter names only, not shopper identifiers.
+              </p>
+            ) : null}
+            {inputAnalysis.limitReached ? (
+              <p className={styles.mutedBodyText}>
+                Only the first 10 valid custom attributes will be saved.
+              </p>
+            ) : null}
+          </div>
+          <s-stack direction="inline" alignItems="center" gap="small-100">
+            <s-button variant="primary" disabled={isSaving || undefined}>
+              {isSaving ? "Updating tracking" : "Save custom attributes"}
+            </s-button>
+            {feedback ? (
+              <span className={fetcher.data?.error ? styles.errorText : styles.successText}>
+                {feedback}
+              </span>
+            ) : null}
+          </s-stack>
+        </fetcher.Form>
+      </div>
+    </section>
+  );
+}
+
 function AttributionDashboardContent({
   data,
   pixelStatus,
@@ -222,6 +308,7 @@ function AttributionDashboardContent({
     bundleRevenueSummary, bundleRevenueTrend,
     funnelSnapshot, engagementTrend, engagedSessions, prevEngagedSessions,
     engagementToOrderPct, bundleMatrix, topCampaignsRows, activityFeed,
+    customUtmParameters,
   } = data;
   const navigate = useNavigate();
 
@@ -260,14 +347,21 @@ function AttributionDashboardContent({
                 method="post"
                 className={styles.inlineForm}
                 onSubmit={(e) => {
-                  if (!window.confirm("Reconcile the last 30 days of orders from Shopify? Existing rows are skipped.")) {
+                  if (!window.confirm("Reconcile orders from Shopify for the selected analytics window? Existing rows are skipped.")) {
                     e.preventDefault();
                   }
                 }}
               >
                 <input type="hidden" name="intent" value="backfill" />
-                <input type="hidden" name="days" value="30" />
-                <s-button variant="secondary">Backfill 30 days</s-button>
+                {from && to ? (
+                  <>
+                    <input type="hidden" name="from" value={from} />
+                    <input type="hidden" name="to" value={to} />
+                  </>
+                ) : (
+                  <input type="hidden" name="days" value={String(days)} />
+                )}
+                <s-button variant="secondary">Backfill window</s-button>
               </form>
               <form method="post" className={styles.inlineForm}>
                 <input type="hidden" name="intent" value="export" />
@@ -305,7 +399,7 @@ function AttributionDashboardContent({
           />
 
           <div className={styles.dashboardChartGrid}>
-            <Suspense fallback={<ChartCardSkeleton label="Loading engagement chart" />}>
+            <Suspense fallback={<AttributionAnalyticsSkeletonCard size="chart" />}>
               <LazyEngagementPulse
                 engagedSessions={engagedSessions}
                 prevEngagedSessions={prevEngagedSessions}
@@ -313,7 +407,7 @@ function AttributionDashboardContent({
                 trend={engagementTrend}
               />
             </Suspense>
-            <Suspense fallback={<ChartCardSkeleton label="Loading revenue attribution chart" />}>
+            <Suspense fallback={<AttributionAnalyticsSkeletonCard size="chart" />}>
               <LazyRevenueAttribution
                 summary={bundleRevenueSummary}
                 trend={bundleRevenueTrend}
@@ -327,6 +421,8 @@ function AttributionDashboardContent({
             formatRevenue={formatRevenue}
             onRowClick={(bundleId) => navigate(`/app/bundles/full-page-bundle/configure/${bundleId}`)}
           />
+
+          <CustomUtmTrackingCard customUtmParameters={customUtmParameters} />
 
           <div className={styles.dashboardActivityGrid}>
             <LiveActivityFeed initialEvents={activityFeed} />

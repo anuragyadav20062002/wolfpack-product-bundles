@@ -12,7 +12,10 @@ import { openSupportChat } from "../../../lib/support-chat.client";
 import { openThemeEditorInNewTab } from "../../../lib/theme-editor-navigation.client";
 import { checkAppEmbedStatusFromCurrentRoute } from "../../../lib/app-embed-status-check.client";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
-import { normalizeAdminLocale } from "../../../i18n/config";
+import {
+  changeAdminI18nLanguage,
+  normalizeAdminLocale,
+} from "../../../i18n/config";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   setDashboardBundleFilter,
@@ -32,6 +35,7 @@ import {
 } from "./dashboard-modal-state";
 import {
   buildDashboardLocaleSearchParams,
+  applyDashboardLocaleSelection,
   shouldApplyDashboardLocaleSave,
 } from "./dashboard-locale-state";
 import { BundleActionsButtons } from "./BundleActionsButtons";
@@ -306,13 +310,13 @@ export function DashboardPage() {
   const [selectedLanguage, setSelectedLanguage] = useState(activeLanguage);
 
   const handleLanguageChange = useCallback((locale: string) => {
-    const nextLocale = normalizeAdminLocale(locale);
-    setSelectedLanguage(nextLocale);
-    if (nextLocale === activeLanguage) return;
-    const formData = new FormData();
-    formData.append("intent", "saveAdminLocale");
-    formData.append("locale", nextLocale);
-    localeFetcher.submit(formData, { method: "post" });
+    void applyDashboardLocaleSelection({
+      locale,
+      activeLanguage,
+      setSelectedLanguage,
+      changeLanguage: changeAdminI18nLanguage,
+      submit: (formData) => localeFetcher.submit(formData, { method: "post" }),
+    });
   }, [activeLanguage, localeFetcher]);
 
   useEffect(() => {

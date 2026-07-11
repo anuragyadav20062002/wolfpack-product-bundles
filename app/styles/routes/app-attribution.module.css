@@ -124,6 +124,37 @@
   display: inline;
 }
 
+.customUtmBody {
+  padding: 18px 24px 22px;
+}
+
+.customUtmForm {
+  display: grid;
+  gap: 12px;
+}
+
+.customUtmFeedback {
+  display: grid;
+  gap: 6px;
+}
+
+.customUtmPreview {
+  margin: 0;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.successText {
+  color: #008060;
+  font-size: 13px;
+}
+
+.errorText {
+  color: #d72c0d;
+  font-size: 13px;
+}
+
 .bodyText {
   margin: 0;
   font-size: 14px;
