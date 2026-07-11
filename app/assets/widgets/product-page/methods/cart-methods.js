@@ -1,6 +1,24 @@
 import { buildCartLineSourceProperties } from '../../shared/engine/cart-lines.js';
 import { buildProductPageCartFormData } from '../../shared/engine/cart-submit.js';
 
+function getProductPageSelectedQuantityTotal(selectedProducts = []) {
+  return selectedProducts.reduce((sum, stepSelections) => {
+    if (!stepSelections || typeof stepSelections !== 'object') return sum;
+    return sum + Object.values(stepSelections).reduce((stepSum, quantity) => {
+      const value = Number(quantity || 0);
+      return stepSum + (Number.isFinite(value) && value > 0 ? value : 0);
+    }, 0);
+  }, 0);
+}
+
+function getProductPageActiveBoxSelectionRule(boxSelection) {
+  const rules = Array.isArray(boxSelection?.rules) ? boxSelection.rules : [];
+  return boxSelection?.activeRule
+    || rules.find(rule => rule?.isDefaultSelected === true)
+    || rules[0]
+    || null;
+}
+
 export const ProductPageCartMethods = {
   async addToCart() {
     try {
@@ -21,6 +39,18 @@ export const ProductPageCartMethods = {
       });
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
+        return;
+      }
+
+      const boxSelectionCheck = this.validateProductPageBoxSelectionCheckout();
+      if (!boxSelectionCheck.valid) {
+        const template = this._resolveText?.('boxSelectionEligibilityToast_inPage', '')
+          || this._resolveText?.('boxSelectionEligibilityToast', '')
+          || this._resolveText?.('completeSteps', '');
+        ToastManager.show(String(template)
+          .replace(/{{boxSelectionDifference}}/g, String(boxSelectionCheck.difference))
+          .replace(/{{quantityDifference}}/g, String(boxSelectionCheck.difference))
+          .replace(/{{conditionQuantity}}/g, String(boxSelectionCheck.targetQuantity)));
         return;
       }
 
@@ -76,6 +106,28 @@ export const ProductPageCartMethods = {
       this.hideLoadingOverlay();
       this.updateAddToCartButton();
     }
+  },
+
+  validateProductPageBoxSelectionCheckout() {
+    const boxSelection = this.selectedBundle?.boxSelection;
+    const totalQuantity = getProductPageSelectedQuantityTotal(this.selectedProducts || []);
+
+    if (boxSelection?.validateBoxSelectionQuantity !== true) {
+      return { valid: true, totalQuantity, targetQuantity: null, difference: 0 };
+    }
+
+    const activeRule = getProductPageActiveBoxSelectionRule(boxSelection);
+    const targetQuantity = Number(activeRule?.boxQuantity);
+    if (!Number.isFinite(targetQuantity) || targetQuantity < 1) {
+      return { valid: true, totalQuantity, targetQuantity: null, difference: 0 };
+    }
+
+    return {
+      valid: totalQuantity === targetQuantity,
+      totalQuantity,
+      targetQuantity,
+      difference: Math.abs(targetQuantity - totalQuantity),
+    };
   },
 
   buildCartLineSourceProperties(selectedLines) {

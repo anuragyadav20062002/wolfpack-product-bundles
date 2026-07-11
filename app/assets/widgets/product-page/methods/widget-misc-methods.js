@@ -4,8 +4,11 @@ import { hideLoadingOverlayElement, markLoadingOverlayVisible } from '../../shar
 const MIN_LOADING_OVERLAY_VISIBLE_MS = 180;
 
 export const ProductPageWidgetMiscMethods = {
-showLoadingOverlay(gifUrl) {
+showLoadingOverlay(gifUrl, options = {}) {
   if (!this.container) return;
+  if (options.bootstrap === true) {
+    this.container.dataset.wpbBootstrapLoading = 'true';
+  }
   // Ensure container is positioned so absolute overlay works
   const pos = getComputedStyle(this.container).position;
   if (pos !== 'relative' && pos !== 'absolute' && pos !== 'fixed' && pos !== 'sticky') {
@@ -58,6 +61,7 @@ hideLoadingOverlay() {
   window.setTimeout(() => {
     if (this._bundleLoadingOverlayToken !== overlayToken) return;
     this._bundleLoadingOverlayToken = 0;
+    delete this.container.dataset.wpbBootstrapLoading;
     hideLoadingOverlayElement(overlay);
   }, delayMs);
 },

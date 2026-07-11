@@ -1,4 +1,5 @@
 import { CurrencyManager, PricingCalculator, ToastManager } from '../../../bundle-widget-components.js';
+import { ConditionValidator } from '../../shared/condition-validator.js';
 
 export const ProductPageModalStateMethods = {
 getFormattedHeaderText() {
@@ -98,7 +99,15 @@ validateStep(stepIndex) {
     for (const [selKey, qty] of Object.entries(currentSelections)) {
       const product = this.findProductBySelectionKey(products, selKey);
       const productId = String((product && (product.parentProductId || product.id)) || selKey);
-      translated[productId] = (translated[productId] || 0) + (Number(qty) || 0);
+      const quantity = Number(qty) || 0;
+      const price = Number(product?.price || 0);
+      const weight = Number(product?.weight || product?.weightInGrams || product?.grams || 0);
+      const current = translated[productId] || { quantity: 0, amount: 0, weight: 0 };
+      translated[productId] = {
+        quantity: current.quantity + quantity,
+        amount: current.amount + (price * quantity),
+        weight: current.weight + (weight * quantity),
+      };
     }
     return ConditionValidator.isStepConditionSatisfied(step, translated);
   }

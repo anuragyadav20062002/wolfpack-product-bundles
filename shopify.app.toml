@@ -4,7 +4,7 @@ client_id = "a383172f42c2ab283901a663d485a03d"
 name = "Wolfpack: Product Bundles"
 application_url = "https://wolfpack-product-bundle-app.onrender.com"
 embedded = true
-handle = "wolfpack-product-bundles-4"
+handle = "wolfpack-product-bundles"
 
 [webhooks]
 api_version = "2025-10"

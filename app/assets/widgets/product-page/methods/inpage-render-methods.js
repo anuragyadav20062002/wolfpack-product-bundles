@@ -1,4 +1,5 @@
 import { BUNDLE_WIDGET, CurrencyManager, ComponentGenerator, ToastManager } from '../../../bundle-widget-components.js';
+import { ConditionValidator } from '../../shared/condition-validator.js';
 import { getDiscountProgressData } from '../../shared/engine/bundle-selectors.js';
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { renderSharedProductCard } from '../../shared/components/product-card.js';
@@ -9,12 +10,49 @@ function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
 
+function renderInpageProductLoadingRows(rowCount = 3) {
+  const rows = Array.from({ length: rowCount }, (_, index) => `
+    <div class="bw-ppb-inpage-loading-row" aria-hidden="true" data-loading-row="${index + 1}">
+      <span class="bw-ppb-inpage-loading-media"></span>
+      <span class="bw-ppb-inpage-loading-body">
+        <span class="bw-ppb-inpage-loading-line bw-ppb-inpage-loading-line--title"></span>
+        <span class="bw-ppb-inpage-loading-line bw-ppb-inpage-loading-line--price"></span>
+      </span>
+      <span class="bw-ppb-inpage-loading-action"></span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="bw-ppb-inpage-loading" role="status" aria-label="Loading products">
+      ${rows}
+    </div>
+  `;
+}
+
+export function shouldDisplayVariantsAsIndividualForInpageCategory(step, stepIndex, activeCategoryIndexes = {}) {
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  if (categories.length > 0) {
+    const activeIndex = typeof activeCategoryIndexes?.[stepIndex] === 'number'
+      ? activeCategoryIndexes[stepIndex]
+      : 0;
+    const category = categories[activeIndex] || categories[0];
+    return category?.displayVariantsAsIndividualProducts === true
+      || category?.displayVariantsAsIndividual === true;
+  }
+
+  return step?.displayVariantsAsIndividualProducts === true
+    || step?.displayVariantsAsIndividual === true;
+}
+
 export const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
+  target.classList.toggle('bw-ppb-cascade-product-list', this._isProductPageCascadeTemplate());
+  target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
 
   if (rawProducts.length === 0 && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
-    target.innerHTML = '<div class="bw-ppb-inpage-loading">Loading products...</div>';
+    target.setAttribute?.('aria-busy', 'true');
+    target.innerHTML = renderInpageProductLoadingRows();
     this.loadStepProducts(stepIndex).then(() => {
       if (target.isConnected) this._renderInpageStepProducts(stepIndex, target);
     }).catch(() => {
@@ -26,11 +64,19 @@ _renderInpageStepProducts(stepIndex, target) {
   }
 
   const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  const categoryDisplaysVariantsAsIndividual = shouldDisplayVariantsAsIndividualForInpageCategory(
+    currentStep,
+    stepIndex,
+    this.activeInpageCategoryIndexes,
+  );
   const products = this._filterProductsForInpageCategory(
     currentStep,
-    this.expandProductsByVariant(rawProducts),
+    categoryDisplaysVariantsAsIndividual
+      ? this.expandProductsByVariant(rawProducts)
+      : rawProducts,
     stepIndex
   );
+  target.setAttribute?.('aria-busy', 'false');
   if (products.length === 0) {
     target.innerHTML = this._stepFetchFailed?.[stepIndex]
       ? '<p class="modal-fetch-error">Could not load products. Please check your connection and try again.</p>'
@@ -40,12 +86,7 @@ _renderInpageStepProducts(stepIndex, target) {
 
   const usesCascadeCards = this._isProductPageCascadeTemplate();
   const usesGridCards = this._isProductPageGridTemplate();
-  target.classList.toggle('bw-ppb-cascade-product-list', usesCascadeCards);
-  target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
 
-  const selectedProducts = this.selectedProducts[stepIndex] || {};
-  const showQuantitySelector = !this._usesCompactInpageProductCards()
-    && this.config.showQuantitySelectorOnCard;
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
     this.selectedBundle?.validateQuantityPerProduct
   );
@@ -58,35 +99,9 @@ _renderInpageStepProducts(stepIndex, target) {
     const atMaxStock = available !== null && currentQuantity >= available;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
-    const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const stockBadge = outOfStock
       ? '<div class="product-stock-badge product-stock-badge--out">Out of stock</div>'
       : '';
-
-    const productContent = `
-      <div class="product-title${usesCascadeCards ? ' wpbMixCascadeProductTitle' : ''}">${ComponentGenerator.escapeHtml(product.title)}</div>
-      ${product.price ? `
-        <div class="product-price-row${usesCascadeCards ? ' wpbMixCascadeProductsPriceWrapper' : ''}">
-          ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike${usesCascadeCards ? ' wpbMixCascadeProductCompareAtPrice' : ''}">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
-          <span class="product-price${usesCascadeCards ? ' wpbMixCascadeProductsPrice' : ''}">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
-        </div>
-      ` : ''}
-      ${this.renderInlineCardVariantSelector(product, currentStep)}
-      ${showQuantitySelector ? `
-        <div class="product-quantity-wrapper">
-          <div class="product-quantity-selector">
-            <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-            <span class="qty-display">${currentQuantity}</span>
-            <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
-          </div>
-        </div>
-      ` : ''}
-    `;
-    const addButton = `
-      <button class="product-add-btn${usesCascadeCards ? ' wpbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
-        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
-      </button>
-    `;
 
     if (usesCascadeCards) {
       return renderSharedProductCard(
@@ -96,9 +111,14 @@ _renderInpageStepProducts(stepIndex, target) {
         {
           variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'row',
-          className: `bw-ppb-cascade-product-row wpbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
+          className: [
+            'bw-ppb-cascade-product-row',
+            'wpbMixCascadeProductWrapper',
+            currentQuantity > 0 ? 'selected' : '',
+            outOfStock ? 'is-out-of-stock' : '',
+          ].filter(Boolean).join(' '),
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
-          addDisabled: false,
+          addDisabled: outOfStock,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
         }
@@ -121,6 +141,34 @@ _renderInpageStepProducts(stepIndex, target) {
         }
       );
     }
+
+    const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
+    const showQuantitySelector = !this._usesCompactInpageProductCards()
+      && this.config.showQuantitySelectorOnCard;
+    const productContent = `
+      <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
+      ${product.price ? `
+        <div class="product-price-row">
+          ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+          <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
+        </div>
+      ` : ''}
+      ${this.renderInlineCardVariantSelector(product, currentStep)}
+      ${showQuantitySelector ? `
+        <div class="product-quantity-wrapper">
+          <div class="product-quantity-selector">
+            <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+            <span class="qty-display">${currentQuantity}</span>
+            <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
+          </div>
+        </div>
+      ` : ''}
+    `;
+    const addButton = `
+      <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
+        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
+      </button>
+    `;
 
     return `
       <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
