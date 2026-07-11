@@ -23,7 +23,7 @@ Verify EB-matched Product Page Bundle Product List runtime behavior for the sing
 | 6 | Cascade footer ATC ownership | ATC button outside Cascade footer | Button is moved into the Cascade footer | Matches EB footer DOM order |
 | 7 | Drawer affordance styling | selected products, Product List footer | Pill is attached to the drawer top border, the top border cuts through the pill midpoint, chevron rotates 180 degrees when expanded, drawer uses white background with top border, remove icon is red, and open animation follows EB's slower timing | Visual proof via Chrome DevTools MCP |
 | 8 | Drawer collapse geometry | selected products, drawer opened then collapsed | `View Bundle Items` pill stays attached to the drawer top border and collapsing the drawer does not shift footer controls | Visual proof via Chrome DevTools MCP |
-| 9 | Selected quantity selector state | selected Product List row | Quantity selector keeps the same action footprint as the Add button and uses the EB selected capsule treatment | Visual proof via Chrome DevTools MCP |
+| 9 | Selected quantity selector state | selected Product List row | Quantity selector keeps the same action footprint as the Add button and uses EB's transparent wrapper with separate black +/- controls and dark count text | Visual proof via Chrome DevTools MCP |
 
 ## Acceptance Criteria
 - [x] All listed test cases pass

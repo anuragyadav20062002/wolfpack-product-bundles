@@ -45,6 +45,29 @@ describe('PPB List shared selected product entries selector', () => {
 });
 
 describe('PPB List Cascade selected entries integration', () => {
+  it('preserves an open Cascade drawer before footer replacement', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ProductPageFooterModalStateMethods } = require('../../../app/assets/widgets/product-page/methods/footer-modal-state-methods.js');
+    const footer = {
+      innerHTML: 'existing drawer',
+      querySelector: jest.fn(() => ({ className: 'bw-ppb-cascade-selected-drawer--open' })),
+    };
+    const renderCascadeFooter = jest.fn();
+    const context = {
+      elements: { footer },
+      cascadeSelectedDrawerState: { isOpen: false },
+      _isProductPageCascadeTemplate: () => true,
+      _renderCascadeFooter: renderCascadeFooter,
+    };
+
+    ProductPageFooterModalStateMethods.renderFooter.call(context);
+
+    expect(footer.querySelector).toHaveBeenCalledWith('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
+    expect(context.cascadeSelectedDrawerState.isOpen).toBe(true);
+    expect(footer.innerHTML).toBe('');
+    expect(renderCascadeFooter).toHaveBeenCalledWith(footer);
+  });
+
   it('keeps the selected drawer collapsed by default when Cascade has selected entries', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getCascadeSelectedDrawerState } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');

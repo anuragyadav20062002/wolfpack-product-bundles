@@ -28,6 +28,15 @@ clearStepSelections(stepIndex) {
 renderFooter() {
   const el = this.elements.footer;
   if (!el) return;
+  if (this._isProductPageCascadeTemplate()) {
+    const openDrawer = el.querySelector('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
+    if (openDrawer) {
+      this.cascadeSelectedDrawerState = {
+        ...(this.cascadeSelectedDrawerState || {}),
+        isOpen: true,
+      };
+    }
+  }
   el.innerHTML = '';
 
   if (this._isProductPageCascadeTemplate()) {
