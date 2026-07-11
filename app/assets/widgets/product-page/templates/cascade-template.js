@@ -172,7 +172,7 @@ export const cascadeTemplateMethods = {
     const setDrawerExpanded = (isExpanded) => {
       const nextExpanded = Boolean(isExpanded && drawerState.hasSelectedProducts);
       if (list) {
-        const maxDrawerHeight = Math.min(list.scrollHeight + 10, Math.round(window.innerHeight * 0.6), 420);
+        const maxDrawerHeight = Math.min(list.scrollHeight + 34, Math.round(window.innerHeight * 0.6), 420);
         drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${maxDrawerHeight}px`);
       }
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open', nextExpanded);
