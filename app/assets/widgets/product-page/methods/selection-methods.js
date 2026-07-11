@@ -145,6 +145,15 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     return;
   }
 
+  const cascadeDrawerWasOpen = this._isProductPageCascadeTemplate?.()
+    && this.elements?.footer?.querySelector('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
+  if (cascadeDrawerWasOpen) {
+    this.cascadeSelectedDrawerState = {
+      ...(this.cascadeSelectedDrawerState || {}),
+      isOpen: true,
+    };
+  }
+
   this.setSelectedQuantity(stepIndex, selectionKey, quantity);
 
   // Update UI without re-rendering the entire modal (prevents event listener duplication)

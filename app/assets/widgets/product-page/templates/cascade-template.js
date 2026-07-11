@@ -191,7 +191,6 @@ export const cascadeTemplateMethods = {
       toggle.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
       this.cascadeSelectedDrawerState.isOpen = nextExpanded;
     };
-    setDrawerExpanded(drawerState.isOpen);
     toggle.addEventListener('click', () => {
       setDrawerExpanded(getNextCascadeSelectedDrawerExpandedState({
         hasSelectedProducts: drawerState.hasSelectedProducts,
@@ -201,6 +200,7 @@ export const cascadeTemplateMethods = {
     });
 
     el.appendChild(drawer);
+    setDrawerExpanded(drawerState.isOpen);
 
     const message = this._getCascadeFooterMessage();
     if (message) {
