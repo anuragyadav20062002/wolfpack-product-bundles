@@ -57,6 +57,8 @@ activateStepCategory(categoryId) {
 },
 
 createCategorySectionRows(stepIndex, placement = 'all') {
+  if (this.getFullPageDesignPreset?.() !== 'CLASSIC') return null;
+
   if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
     return null;
   }

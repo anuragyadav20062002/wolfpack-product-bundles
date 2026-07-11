@@ -65,7 +65,7 @@ export function getMobileAdditionalOffersPulseState({
 function normalizeStepContentSubtext(value) {
   if (typeof value !== 'string') return '';
   const text = value.trim();
-  return /^chrome\s+async(?:\s+text)?$/i.test(text) ? '' : text;
+  return /^chrome\s+async(?:\s+(?:text|\d{1,2}:\d{2}(?::\d{2})?))?$/i.test(text) ? '' : text;
 }
 
 const MOBILE_ADDITIONAL_OFFERS_GREEN_DELAY_MS = 550;

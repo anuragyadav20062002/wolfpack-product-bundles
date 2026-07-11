@@ -103,9 +103,47 @@ describe('processProductPageProductsForStep', () => {
       quantityAvailable: 4,
       currentlyNotInStock: false,
     });
+    expect(products[0].variants.map((variant: StorefrontVariant) => variant.id)).toEqual(['222']);
   });
 
-  it('keeps unavailable parent product cards priced from their first variant', () => {
+  it('omits true unavailable variants from individual Product List rows without hiding sellable zero-quantity variants', () => {
+    const products = processProductPageProductsForStep([
+      {
+        id: 'gid://shopify/Product/700',
+        title: 'Tracked Bundle Product',
+        imageUrl: 'https://cdn.example/product.jpg',
+        variants: [
+          {
+            id: 'gid://shopify/ProductVariant/701',
+            title: 'Unavailable',
+            price: '10.00',
+            available: false,
+            quantityAvailable: 0,
+            currentlyNotInStock: false,
+          },
+          {
+            id: 'gid://shopify/ProductVariant/702',
+            title: 'Sellable zero',
+            price: '11.00',
+            available: true,
+            quantityAvailable: 0,
+            currentlyNotInStock: false,
+          },
+        ],
+      },
+    ], { displayVariantsAsIndividual: true }, false);
+
+    expect(products.map(product => product.variantId)).toEqual(['702']);
+    expect(products[0]).toEqual(expect.objectContaining({
+      variantId: '702',
+      price: 1100,
+      available: true,
+      quantityAvailable: 0,
+      currentlyNotInStock: false,
+    }));
+  });
+
+  it('omits grouped product cards when every Storefront variant is unavailable', () => {
     const products = processProductPageProductsForStep([
       {
         id: 'gid://shopify/Product/9427287703811',
@@ -124,16 +162,7 @@ describe('processProductPageProductsForStep', () => {
       },
     ], { displayVariantsAsIndividual: false }, true);
 
-    expect(products).toHaveLength(1);
-    expect(products[0]).toMatchObject({
-      id: '9427287703811',
-      title: 'Armor Matte Case',
-      variantId: '111',
-      price: 1999,
-      available: false,
-      quantityAvailable: 0,
-      currentlyNotInStock: false,
-    });
+    expect(products).toEqual([]);
   });
 });
 

@@ -60,7 +60,14 @@ export function DashboardTopCards({
           <s-heading>{t("dashboard.appEmbeds.headingMain")} <span className={dashboardStyles.appEmbedHeadingHint}>{t("dashboard.appEmbeds.headingHint")}</span></s-heading>
           <s-icon type="external" color="subdued" />
         </div>
-        <div className={dashboardStyles.appEmbedImage} aria-hidden="true" />
+        <OptimisedImage
+          src="/appEmbed.avif"
+          alt=""
+          aria-hidden="true"
+          className={dashboardStyles.appEmbedImage}
+          width={1096}
+          height={304}
+        />
         <s-text color="subdued">{t("dashboard.appEmbeds.instruction")}</s-text>
       </s-stack>
     </button>

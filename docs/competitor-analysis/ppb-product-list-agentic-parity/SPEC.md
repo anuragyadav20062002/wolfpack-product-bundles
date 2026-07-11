@@ -80,6 +80,7 @@ Stress rows:
 - `PLS4`: drawer/footer animation, selected-row overflow, mobile scroll.
 - `PLS5`: spinner-only loading with no native product title/add-to-cart flash.
 - `PLS6`: smoke Product Grid, Horizontal Slots, Vertical Slots after shared PPB edits.
+- `PLS7-placement-responsive`: Product List mounted in narrow product-info column, full-width product section, and constrained card/sidebar contexts. Capture EB and WPB at desktop and mobile widths, then fix only Product List-owned responsive CSS gaps.
 
 ## Test And Verification Plan
 

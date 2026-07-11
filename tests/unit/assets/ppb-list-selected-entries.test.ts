@@ -45,14 +45,95 @@ describe('PPB List shared selected product entries selector', () => {
 });
 
 describe('PPB List Cascade selected entries integration', () => {
-  it('wires Cascade selected entries to the shared selector', () => {
+  it('keeps the selected drawer collapsed by default when Cascade has selected entries', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('node:fs');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const path = require('node:path');
-    const source = fs.readFileSync(path.join(process.cwd(), 'app/assets/widgets/product-page/templates/cascade-template.js'), 'utf8');
+    const { getCascadeSelectedDrawerState } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
 
-    expect(source).toContain("import { getSelectedProductEntries } from '../../shared/engine/bundle-selectors.js';");
-    expect(source).toContain('return getSelectedProductEntries({');
+    expect(getCascadeSelectedDrawerState([{ variantId: 'variant_a', quantity: 1 }])).toEqual({
+      isOpen: false,
+      selectedQuantity: 1,
+      hasSelectedProducts: true,
+    });
+  });
+
+  it('keeps the selected drawer closed when Cascade has no selected entries', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCascadeSelectedDrawerState } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+
+    expect(getCascadeSelectedDrawerState([])).toEqual({
+      isOpen: false,
+      selectedQuantity: 0,
+      hasSelectedProducts: false,
+    });
+  });
+
+  it('toggles the selected drawer only when selected entries exist', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getNextCascadeSelectedDrawerExpandedState } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+
+    expect(getNextCascadeSelectedDrawerExpandedState({
+      hasSelectedProducts: true,
+      isExpanded: false,
+    })).toBe(true);
+    expect(getNextCascadeSelectedDrawerExpandedState({
+      hasSelectedProducts: true,
+      isExpanded: true,
+    })).toBe(false);
+    expect(getNextCascadeSelectedDrawerExpandedState({
+      hasSelectedProducts: false,
+      isExpanded: false,
+    })).toBe(false);
+  });
+
+  it('prepares EB-style Cascade selected row display data', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { prepareCascadeSelectedProductDisplay } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+
+    const product = prepareCascadeSelectedProductDisplay({
+      product: {
+        title: '14k Dangling Obsidian Earrings',
+        price: 82900,
+      },
+      variantId: 'variant_a',
+      quantity: 2,
+      formatPrice: (amount: number) => `$${(amount / 100).toFixed(2)}`,
+    });
+
+    expect(product).toMatchObject({
+      title: '14k Dangling Obsidian Earrings x 2',
+      priceText: '$829.00',
+      quantityLabel: 'x 2',
+      quantity: 2,
+      variantId: 'variant_a',
+    });
+  });
+
+  it('renders a caller-provided selected row quantity label', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { renderSelectedProductRow } = require('../../../app/assets/widgets/shared/components/selected-product-row.js');
+
+    const view = renderSelectedProductRow({
+      title: '14k Dangling Obsidian Earrings x 2',
+      variantId: 'variant_a',
+      quantity: 2,
+      quantityLabel: 'x 2',
+      priceText: '$829.00',
+    }, {
+      className: 'bw-ppb-cascade-selected-item',
+    });
+
+    expect(view).toContain('14k Dangling Obsidian Earrings x 2');
+    expect(view).toContain('$829.00');
+    expect(view).toContain('>x 2</span>');
+  });
+
+  it('mounts the Cascade add-to-cart button into the Cascade footer when it is outside', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { shouldMountCascadeAddToCartInFooter } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+    const footer = {};
+
+    expect(shouldMountCascadeAddToCartInFooter({ parentElement: {} }, footer)).toBe(true);
+    expect(shouldMountCascadeAddToCartInFooter({ parentElement: footer }, footer)).toBe(false);
+    expect(shouldMountCascadeAddToCartInFooter(null, footer)).toBe(false);
   });
 });

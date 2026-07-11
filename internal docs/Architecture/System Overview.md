@@ -1,7 +1,7 @@
 ---
 title: System Overview
 type: architecture
-audited: 2026-04-16
+audited: 2026-07-10
 sources: docs/APPLICATION_ARCHITECTURE.md, docs/DEPLOYMENT.md, prisma/schema.prisma
 ---
 
@@ -12,7 +12,7 @@ sources: docs/APPLICATION_ARCHITECTURE.md, docs/DEPLOYMENT.md, prisma/schema.pri
 | Layer | Technology |
 |---|---|
 | Framework | Remix (Shopify App template) |
-| Runtime | Node.js 20+ |
+| Runtime | Node.js 22 |
 | Database | PostgreSQL (production), SQLite (dev) |
 | ORM | Prisma |
 | Hosting | Render (app server) |
@@ -66,7 +66,7 @@ From `graphify-out/GRAPH_REPORT.md`:
 
 ## Corrections vs APPLICATION_ARCHITECTURE.md
 
-- Node.js version: doc says 18+ → **actual: 20+**
+- Node.js version: doc said 18+/20+ → **actual: 22**
 - Missing DB models: `DesignSettings`, `OrderAttribution`, `BundleAnalytics`
 - `BundleStatus.unlisted` not documented
 - `FullPageLayout` enum not documented

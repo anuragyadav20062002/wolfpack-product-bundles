@@ -175,17 +175,23 @@ processProductsForStep(products, step) {
   });
 
   return products.flatMap(product => {
+    const sourceVariants = Array.isArray(product.variants) ? product.variants : [];
+    const customerSelectableVariants = sourceVariants.filter(variant => variant?.available !== false);
+
     if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
+      if (customerSelectableVariants.length === 0) {
+        return [];
+      }
       // Display each variant as separate product - filter out unavailable variants
       // Preserve parent product reference for variant selection and tracking
-      const processedVariants = (product.variants || []).map(normalizeVariant);
+      const processedVariants = customerSelectableVariants.map(normalizeVariant);
 
       const processedOptions = (product.options || []).map(opt => {
         if (typeof opt === 'string') return opt;
         return opt.name || opt;
       });
 
-      return product.variants
+      return customerSelectableVariants
         .map(variant => {
           // Storefront API: prioritize variant image, fallback to product featured image
           const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
@@ -212,18 +218,19 @@ processProductsForStep(products, step) {
           };
         });
     } else {
-      // Display product with the first available variant when variants are not separate cards.
-      // If all variants are unavailable, keep the configured product visible and
-      // render it as out of stock instead of turning a valid DTO into a load error.
-      const defaultVariant = product.variants?.find(isVariantSelectableForInventory)
-        || product.variants?.[0]
+      if (sourceVariants.length > 0 && customerSelectableVariants.length === 0) {
+        return [];
+      }
+      // Display product with the first sellable variant when variants are not separate cards.
+      const defaultVariant = customerSelectableVariants.find(isVariantSelectableForInventory)
+        || customerSelectableVariants[0]
         || null;
 
       // Storefront API: prioritize variant image, fallback to product featured image
       const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
       // Process variants array for variant selection in modal
-      const processedVariants = (product.variants || []).map(normalizeVariant);
+      const processedVariants = customerSelectableVariants.map(normalizeVariant);
 
       // Process options array for variant selector labels
       const processedOptions = (product.options || []).map(opt => {

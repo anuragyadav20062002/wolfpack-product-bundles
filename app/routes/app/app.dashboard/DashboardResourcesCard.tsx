@@ -1,6 +1,7 @@
 import { Link } from "@remix-run/react";
 import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
+import { OptimisedImage } from "../../../components/OptimisedImage";
 import dashboardStyles from "./dashboard.module.css";
 
 type DashboardResourcesCardProps = {
@@ -39,14 +40,28 @@ export function DashboardResourcesCard({ activeResource, setActiveResource, hand
 
       <div className={dashboardStyles.resourcesThumbnails}>
         <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceThumbnailCard}>
-          <span className={dashboardStyles.resourceThumbnailImage} aria-hidden="true" />
+          <OptimisedImage
+            src="/bundleGallery.avif"
+            alt=""
+            aria-hidden="true"
+            className={dashboardStyles.resourceThumbnailImage}
+            width={842}
+            height={494}
+          />
           <div className={dashboardStyles.resourceThumbnailFooter}>
             <span>{t("dashboard.resources.bundleGallery")}</span>
             <s-icon type="external" color="subdued" />
           </div>
         </a>
         <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceThumbnailCard}>
-          <span className={dashboardStyles.resourceThumbnailImage} aria-hidden="true" />
+          <OptimisedImage
+            src="/bundleGallery.avif"
+            alt=""
+            aria-hidden="true"
+            className={dashboardStyles.resourceThumbnailImage}
+            width={842}
+            height={494}
+          />
           <div className={dashboardStyles.resourceThumbnailFooter}>
             <span>{t("dashboard.resources.bundleGallery")}</span>
             <s-icon type="external" color="subdued" />

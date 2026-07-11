@@ -2,10 +2,60 @@ import {
   ComponentGenerator,
   CurrencyManager,
   PricingCalculator,
+  TemplateManager,
 } from '../../../bundle-widget-components.js';
 import { renderSelectedProductRow } from '../../shared/components/selected-product-row.js';
 import { getSelectedProductEntries } from '../../shared/engine/bundle-selectors.js';
 import { resolveProductPageTemplateConfig } from './registry.js';
+
+export function getCascadeSelectedDrawerState(selectedEntries = []) {
+  const entries = Array.isArray(selectedEntries) ? selectedEntries : [];
+  const selectedQuantity = entries.reduce((sum, entry) => sum + Math.max(0, Number(entry?.quantity || 0)), 0);
+  const hasSelectedProducts = selectedQuantity > 0;
+
+  return {
+    isOpen: false,
+    selectedQuantity,
+    hasSelectedProducts,
+  };
+}
+
+export function getNextCascadeSelectedDrawerExpandedState({
+  hasSelectedProducts = false,
+  isExpanded = false,
+} = {}) {
+  if (!hasSelectedProducts) return false;
+  return !isExpanded;
+}
+
+export function prepareCascadeSelectedProductDisplay({
+  product = {},
+  variantId = '',
+  quantity = 1,
+  formatPrice = null,
+} = {}) {
+  const normalizedQuantity = Math.max(1, Number(quantity || 1));
+  const title = product.title || product.parentTitle || '';
+  const amount = Number(product.price);
+  const priceText = product.priceText || (
+    Number.isFinite(amount) && typeof formatPrice === 'function'
+      ? formatPrice(amount)
+      : ''
+  );
+
+  return {
+    ...product,
+    variantId,
+    quantity: normalizedQuantity,
+    title: `${title} x ${normalizedQuantity}`,
+    priceText,
+    quantityLabel: `x ${normalizedQuantity}`,
+  };
+}
+
+export function shouldMountCascadeAddToCartInFooter(addToCartButton, footerElement) {
+  return Boolean(addToCartButton && footerElement && addToCartButton.parentElement !== footerElement);
+}
 
 export const cascadeTemplateMethods = {
   _isProductPageCascadeTemplate() {
@@ -40,34 +90,33 @@ export const cascadeTemplateMethods = {
       this.stepProductData,
       this.selectedBundle?.steps
     );
-    const rule = rules[0];
-    const discountMethod = PricingCalculator.getDiscountMethod(this.selectedBundle);
-    const conditionValue = PricingCalculator.getRuleConditionValue(rule, discountMethod);
-    const conditionType = PricingCalculator.getRuleConditionType(rule);
-    const current = conditionType === 'quantity' ? totalQuantity : totalPrice / 100;
-    const progress = conditionValue > 0 ? Math.min(1, current / conditionValue) : 1;
-    const met = progress >= 1;
     const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity, unitPrices);
     const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-    const discountText = combinedDiscountInfo.hasDiscount
-      ? (this.selectedBundle.pricing.method === 'percentage_off'
-          ? `${rule.discountValue ?? 0}% off`
-          : CurrencyManager.convertAndFormat(combinedDiscountInfo.savings, CurrencyManager.getCurrencyInfo()))
-      : '';
-    const template = met
+    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity, totalPrice) || null;
+    const messageType = nextRule ? 'progress' : 'success';
+    const fallbackTemplate = messageType === 'success'
       ? (pbConfig?.successText || this.selectedBundle.messaging?.successTemplate || 'You got {discountText}!')
       : (pbConfig?.progressText || this.selectedBundle.messaging?.progressTemplate || 'Add {conditionText} more to get {discountText}');
-    const diff = Math.max(0, conditionValue - current);
-    const conditionText = conditionType === 'quantity'
-      ? `${Math.ceil(diff)} item${Math.ceil(diff) !== 1 ? 's' : ''}`
-      : CurrencyManager.convertAndFormat(diff * 100, CurrencyManager.getCurrencyInfo());
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      combinedDiscountInfo,
+      currencyInfo,
+      { messageType }
+    );
+    const template = TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType,
+      fallbackTemplate,
+      locale: window.Shopify?.locale,
+    });
 
-    return template
-      .replace(/{discountText}/g, discountText)
-      .replace(/{conditionText}/g, conditionText)
-      .replace(/{amountNeeded}/g, conditionText)
-      .replace(/{itemsNeeded}/g, `${Math.ceil(diff)}`)
-      .replace(/{progressPercentage}/g, `${Math.round(progress * 100)}`);
+    return TemplateManager.replaceVariables(template, variables);
   },
 
   _renderCascadeFooter(el) {
@@ -76,32 +125,39 @@ export const cascadeTemplateMethods = {
     el.style.cssText = '';
 
     const selectedEntries = this._getSelectedProductEntries();
+    const drawerState = getCascadeSelectedDrawerState(selectedEntries);
     const drawer = document.createElement('div');
-    drawer.className = 'bw-ppb-cascade-selected-drawer wpbMixCascadeCartDrawerContainer';
+    drawer.className = `bw-ppb-cascade-selected-drawer wpbMixCascadeCartDrawerContainer${drawerState.isOpen ? ' bw-ppb-cascade-selected-drawer--open gbbMixCascadeCartDrawerContainer--open' : ''}`;
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'bw-ppb-cascade-selected-toggle wpbMixCascadeSelectedItemsInCartWrappper';
-    const totalSelectedQuantity = selectedEntries.reduce((sum, entry) => sum + entry.quantity, 0);
+    toggle.setAttribute('aria-expanded', drawerState.isOpen ? 'true' : 'false');
     toggle.innerHTML = `
+      <span class="bw-ppb-cascade-selected-toggle-chevron gbbMixCascadeCartChevronIcon" aria-hidden="true"></span>
       <span class="bw-ppb-cascade-selected-toggle-label wpbMixCascadeCartDrawerBtnText">${ComponentGenerator.escapeHtml(this._resolveText('viewBundleItems', 'View Bundle Items'))}</span>
-      <span class="bw-ppb-cascade-selected-toggle-count wpbMixCascadeSelectedItemsInCart">${totalSelectedQuantity}</span>
+      <span class="bw-ppb-cascade-selected-toggle-count wpbMixCascadeSelectedItemsInCart">${drawerState.selectedQuantity}</span>
     `;
-    toggle.addEventListener('click', () => {
-      drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open');
-    });
     drawer.appendChild(toggle);
 
-    if (selectedEntries.length > 0) {
-      const list = document.createElement('div');
+    let list = null;
+    if (drawerState.hasSelectedProducts) {
+      list = document.createElement('div');
       list.className = 'bw-ppb-cascade-selected-list wpbMixCascadeCartItemsWrapper';
+
+      const title = document.createElement('div');
+      title.className = 'bw-ppb-cascade-selected-list-title wpbMixCascadeCartItemsTitle';
+      title.textContent = this._resolveText('bundleCartSelectedProductsText', 'Selected Products');
+      list.appendChild(title);
+
       selectedEntries.forEach(({ stepIndex, variantId, quantity, product }) => {
         const item = document.createElement('div');
-        item.innerHTML = renderSelectedProductRow({
-          ...product,
+        item.innerHTML = renderSelectedProductRow(prepareCascadeSelectedProductDisplay({
+          product,
           variantId,
           quantity,
-        }, {
+          formatPrice: (amount) => CurrencyManager.convertAndFormat(amount, CurrencyManager.getCurrencyInfo()),
+        }), {
           className: 'bw-ppb-cascade-selected-item wpbMixCascadeBundleCartItem',
         }).trim();
         const row = item.firstElementChild;
@@ -113,6 +169,24 @@ export const cascadeTemplateMethods = {
       drawer.appendChild(list);
     }
 
+    const setDrawerExpanded = (isExpanded) => {
+      const nextExpanded = Boolean(isExpanded && drawerState.hasSelectedProducts);
+      if (list) {
+        const maxDrawerHeight = Math.min(list.scrollHeight + 34, Math.round(window.innerHeight * 0.6), 420);
+        drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${maxDrawerHeight}px`);
+      }
+      drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open', nextExpanded);
+      drawer.classList.toggle('gbbMixCascadeCartDrawerContainer--open', nextExpanded);
+      toggle.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
+    };
+    setDrawerExpanded(drawerState.isOpen);
+    toggle.addEventListener('click', () => {
+      setDrawerExpanded(getNextCascadeSelectedDrawerExpandedState({
+        hasSelectedProducts: drawerState.hasSelectedProducts,
+        isExpanded: drawer.classList.contains('bw-ppb-cascade-selected-drawer--open'),
+      }));
+    });
+
     el.appendChild(drawer);
 
     const message = this._getCascadeFooterMessage();
@@ -121,6 +195,11 @@ export const cascadeTemplateMethods = {
       messageEl.className = 'bw-ppb-cascade-discount-message';
       messageEl.textContent = message;
       el.appendChild(messageEl);
+    }
+
+    const addToCartButton = this.elements?.addToCartButton;
+    if (shouldMountCascadeAddToCartInFooter(addToCartButton, el)) {
+      el.appendChild(addToCartButton);
     }
   },
 };
