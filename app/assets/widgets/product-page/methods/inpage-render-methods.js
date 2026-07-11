@@ -102,6 +102,7 @@ _renderInpageStepProducts(stepIndex, target) {
     const stockBadge = outOfStock
       ? '<div class="product-stock-badge product-stock-badge--out">Out of stock</div>'
       : '';
+    const variantSelectorHtml = this.renderInlineCardVariantSelector(product, currentStep);
 
     if (usesCascadeCards) {
       return renderSharedProductCard(
@@ -114,9 +115,11 @@ _renderInpageStepProducts(stepIndex, target) {
           className: [
             'bw-ppb-cascade-product-row',
             'wpbMixCascadeProductWrapper',
+            variantSelectorHtml ? 'bw-ppb-cascade-product-row--has-variant-selector' : '',
             currentQuantity > 0 ? 'selected' : '',
             outOfStock ? 'is-out-of-stock' : '',
           ].filter(Boolean).join(' '),
+          variantSelectorHtml,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled: outOfStock,
           increaseDisabled,
@@ -131,7 +134,7 @@ _renderInpageStepProducts(stepIndex, target) {
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
+          variantSelectorHtml,
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),

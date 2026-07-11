@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.134
+ * Version : 5.0.135
  * Built   : 2026-07-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.134';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.135';
 (function() {
   'use strict';
 
@@ -5994,6 +5994,7 @@ _renderInpageStepProducts(stepIndex, target) {
     const stockBadge = outOfStock
       ? '<div class="product-stock-badge product-stock-badge--out">Out of stock</div>'
       : '';
+    const variantSelectorHtml = this.renderInlineCardVariantSelector(product, currentStep);
 
     if (usesCascadeCards) {
       return renderSharedProductCard(
@@ -6006,9 +6007,11 @@ _renderInpageStepProducts(stepIndex, target) {
           className: [
             'bw-ppb-cascade-product-row',
             'wpbMixCascadeProductWrapper',
+            variantSelectorHtml ? 'bw-ppb-cascade-product-row--has-variant-selector' : '',
             currentQuantity > 0 ? 'selected' : '',
             outOfStock ? 'is-out-of-stock' : '',
           ].filter(Boolean).join(' '),
+          variantSelectorHtml,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled: outOfStock,
           increaseDisabled,
@@ -6023,7 +6026,7 @@ _renderInpageStepProducts(stepIndex, target) {
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
+          variantSelectorHtml,
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
