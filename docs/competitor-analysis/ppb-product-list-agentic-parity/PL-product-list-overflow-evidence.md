@@ -69,3 +69,15 @@ Measured WPB mobile state:
 No source patch is needed for the requested scroll behavior. WPB is vertically scrollable beyond the product-list cap and does not introduce horizontal scrolling.
 
 Parity note: EB desktop uses the same `410px` cap and vertical-only overflow. EB mobile does not overflow with this six-row fixture because its measured list height is `485px`; WPB intentionally keeps the same capped Product List behavior on mobile so long lists do not push the page indefinitely.
+
+## 2026-07-12 Re-check
+
+Evidence files:
+- WPB desktop: `/private/tmp/ppb-product-list-scroll-current-desktop.json`
+- WPB mobile: `/private/tmp/ppb-product-list-scroll-current.json`
+
+Chrome DevTools MCP re-check against WPB widget `5.0.136` confirms the Product List scroller is still attached to the rendered `PDP_INPAGE + CASCADE` grid:
+- Desktop: `max-height: 410px`, `overflow-x: hidden`, `overflow-y: auto`, `clientHeight: 410`, `scrollHeight: 472`, `scrollTop` moved from `0` to `62`, no horizontal overflow.
+- Mobile: `max-height: 410px`, `overflow-x: hidden`, `overflow-y: auto`, `clientHeight: 410`, `scrollHeight: 472`, `scrollTop` moved from `0` to `62`, no horizontal overflow.
+
+Decision remains unchanged: no source patch is needed. The current source owner is `app/assets/widgets/product-page-css/templates/inpage-cascade.css`; the generated deployment asset `extensions/bundle-builder/assets/bundle-widget-product-page-cascade.css` already contains the vertical-only overflow rule.
