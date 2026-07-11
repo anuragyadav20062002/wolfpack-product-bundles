@@ -668,7 +668,7 @@
   .bw-ppb-cascade-selected-drawer--open
   .bw-ppb-cascade-selected-list {
   max-height: var(--bw-ppb-cascade-selected-drawer-height, min(60vh, 420px));
-  padding-top: 10px;
+  padding-top: 0;
   padding-bottom: 10px;
 }
 

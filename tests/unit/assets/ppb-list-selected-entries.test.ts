@@ -137,13 +137,13 @@ describe('PPB List Cascade selected entries integration', () => {
   it('sizes the selected drawer from list content plus the drawer border', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getCascadeSelectedDrawerHeight } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
-    const list = { scrollHeight: 185 };
+    const list = { scrollHeight: 175 };
     const drawer = {};
     const previousGetComputedStyle = global.getComputedStyle;
     global.getComputedStyle = jest.fn(() => ({ borderTopWidth: '1px' })) as any;
 
     try {
-      expect(getCascadeSelectedDrawerHeight({ list, drawer, viewportHeight: 800 })).toBe(186);
+      expect(getCascadeSelectedDrawerHeight({ list, drawer, viewportHeight: 800 })).toBe(176);
     } finally {
       global.getComputedStyle = previousGetComputedStyle;
     }
@@ -168,12 +168,12 @@ describe('PPB List Cascade selected entries integration', () => {
     const previousGetComputedStyle = global.getComputedStyle;
     global.getComputedStyle = jest.fn((element) => {
       if (element === drawer) return { borderTopWidth: '1px' };
-      if (element === list) return { paddingTop: '10px', rowGap: '10px', gap: '10px' };
+      if (element === list) return { paddingTop: '0px', rowGap: '10px', gap: '10px' };
       return {};
     }) as any;
 
     try {
-      expect(getCascadeSelectedDrawerHeight({ list, drawer, viewportHeight: 800 })).toBe(246);
+      expect(getCascadeSelectedDrawerHeight({ list, drawer, viewportHeight: 800 })).toBe(236);
     } finally {
       global.getComputedStyle = previousGetComputedStyle;
     }

@@ -8,8 +8,8 @@ Verify the Product List selected drawer height helper caps the visible drawer co
 ### CascadeSelectedDrawerHeight
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | One/two-row natural sizing | `scrollHeight=185`, border `1px` | `186` | Existing behavior stays unchanged. |
-| 2 | Three-row overflow cap | title `25px`, three rows `60px`, row gap `10px`, top padding `10px`, bottom padding `10px`, border `1px` | `246` | Excludes bottom padding to make list scrollable. |
+| 1 | One/two-row natural sizing | `scrollHeight=175`, border `1px` | `176` | Selected heading starts at the drawer top while bottom breathing room remains. |
+| 2 | Three-row overflow cap | title `25px`, three rows `60px`, row gap `10px`, top padding `0px`, bottom padding `10px`, border `1px` | `236` | Excludes bottom padding from the visible cap so the list scrolls like EB. |
 
 ## Acceptance Criteria
 - [ ] Natural drawer sizing remains unchanged for short selected lists.
