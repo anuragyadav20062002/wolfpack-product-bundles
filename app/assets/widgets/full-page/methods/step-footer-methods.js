@@ -252,6 +252,7 @@ async addBundleToCart(clickedButton = null) {
       await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties);
 
       // Storefront analytics: bundle successfully added to cart.
+      this._sendEngagementBeacon?.('bundle-add-to-cart-success');
       this._emitStorefrontEvent('bundle-add-to-cart-success', { itemCount: items.length, lineCount: selectedLines.length });
 
       // Show success message

@@ -28,6 +28,17 @@ clearStepSelections(stepIndex) {
 renderFooter() {
   const el = this.elements.footer;
   if (!el) return;
+  if (this._isProductPageCascadeTemplate()) {
+    const openDrawer = el.querySelector('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
+    if (openDrawer) {
+      const drawerHeight = openDrawer.getBoundingClientRect?.().height || 0;
+      this.cascadeSelectedDrawerState = {
+        ...(this.cascadeSelectedDrawerState || {}),
+        isOpen: true,
+        height: drawerHeight,
+      };
+    }
+  }
   el.innerHTML = '';
 
   if (this._isProductPageCascadeTemplate()) {

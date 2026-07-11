@@ -17,13 +17,13 @@ Verify EB-matched Product Page Bundle Product List runtime behavior for the sing
 |---|---|---|---|---|
 | 1 | No selected products | `selectedEntries=[]` | Drawer closed, no selected heading | Empty footer remains compact |
 | 2 | Selected products exist | one selected entry | Drawer stays collapsed by default, selected count is kept out of the visible pill text | Matches EB open-state proof where the count node is hidden |
-| 3 | Toggle selected drawer | selected products, collapsed drawer | First click expands, second click collapses, no selected products never expands | Matches EB `View Bundle Items` behavior |
+| 3 | Toggle selected drawer | selected products, collapsed drawer | First click expands, second click collapses, no selected products never expands, empty drawer click shows `Add items to your bundle first`, and selected products added while open append to the drawer without collapsing it | Matches EB `View Bundle Items` behavior |
 | 4 | Selected row display data | selected product, quantity, price formatter | Title includes `x n`, price is present, quantity label uses `x n` | Matches EB drawer row text shape |
 | 5 | Selected row renderer | caller-provided quantity label | Quantity label renders exactly as provided | Keeps Product List EB spacing without changing other callers |
 | 6 | Cascade footer ATC ownership | ATC button outside Cascade footer | Button is moved into the Cascade footer | Matches EB footer DOM order |
-| 7 | Drawer affordance styling | selected products, Product List footer | Pill includes a static chevron, drawer uses white background with top border, remove icon is red, and open animation follows EB's slower timing | Visual proof via Chrome DevTools MCP |
-| 8 | Drawer collapse geometry | selected products, drawer opened then collapsed | `View Bundle Items` pill stays anchored to the same footer edge and collapsing the drawer does not shift footer controls | Visual proof via Chrome DevTools MCP |
-| 9 | Selected quantity selector state | selected Product List row | Quantity selector keeps the same action footprint as the Add button and uses the EB selected capsule treatment | Visual proof via Chrome DevTools MCP |
+| 7 | Drawer affordance styling | selected products, Product List footer | Pill is attached to the drawer top border, the top border cuts through the pill midpoint, chevron rotates 180 degrees when expanded, drawer uses white background with top border, remove icon is red, and open animation follows EB's slower timing | Visual proof via Chrome DevTools MCP |
+| 8 | Drawer collapse geometry | selected products, drawer opened then collapsed | `View Bundle Items` pill stays attached to the drawer top border and collapsing the drawer does not shift footer controls | Visual proof via Chrome DevTools MCP |
+| 9 | Selected quantity selector state | selected Product List row | Quantity selector keeps the same action footprint as the Add button and uses EB's transparent wrapper with separate black +/- controls and dark count text | Visual proof via Chrome DevTools MCP |
 
 ## Acceptance Criteria
 - [x] All listed test cases pass

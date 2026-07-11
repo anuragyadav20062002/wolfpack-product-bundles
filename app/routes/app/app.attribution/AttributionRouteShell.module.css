@@ -4,3 +4,29 @@
   margin: 0 auto;
   padding: 0 4px 88px;
 }
+
+.statusPending {
+  min-height: 96px;
+}
+
+.analyticsSkeletonCard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.analyticsSkeletonCard[data-size="funnel"] {
+  min-height: 180px;
+}
+
+.analyticsSkeletonCard[data-size="chart"] {
+  min-height: 320px;
+}
+
+.analyticsSkeletonCard[data-size="matrix"] {
+  min-height: 260px;
+}
+
+.analyticsSkeletonCard[data-size="activity"] {
+  min-height: 220px;
+}

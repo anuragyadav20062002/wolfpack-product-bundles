@@ -119,6 +119,46 @@ describe("api.attribution.engagement", () => {
     }));
   });
 
+  it("records add-to-cart success as a distinct persisted event for the same session", async () => {
+    await action({
+      request: makeSignedRequest({
+        shopId: "test-shop.myshopify.com",
+        bundleId: "bundle-123",
+        sessionId: "session-1",
+        eventName: "wpb:session-engaged",
+      }),
+      params: {},
+      context: {},
+    } as any);
+
+    const response = await action({
+      request: makeSignedRequest({
+        shopId: "test-shop.myshopify.com",
+        bundleId: "bundle-123",
+        sessionId: "session-1",
+        eventName: "wpb:bundle-add-to-cart-success",
+      }),
+      params: {},
+      context: {},
+    } as any) as Response;
+
+    expect(response.status).toBe(200);
+    expect(mockCreateMany()).toHaveBeenLastCalledWith(expect.objectContaining({
+      data: [expect.objectContaining({
+        bundleId: "bundle-123",
+        sessionId: "session-1",
+        eventName: "wpb:bundle-add-to-cart-success",
+      })],
+      skipDuplicates: true,
+    }));
+    expect(mockRecordBusinessEvent()).toHaveBeenLastCalledWith(expect.objectContaining({
+      eventHandle: "bundle_add_to_cart_succeeded",
+      shopDomain: "test-shop.myshopify.com",
+      bundleId: "bundle-123",
+      result: "success",
+    }));
+  });
+
   it("rejects unsigned or invalid app-proxy requests", async () => {
     const response = await action({
       request: makeSignedRequest({

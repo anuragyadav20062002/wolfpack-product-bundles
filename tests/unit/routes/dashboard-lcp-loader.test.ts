@@ -82,14 +82,14 @@ function getDeferredPayload(response: unknown) {
 describe("app.dashboard loader LCP behavior", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    delete process.env.SHOPIFY_APP_URL;
+    Reflect.deleteProperty(process.env, "SHOPIFY_APP_URL");
 
     mockRequireAdminSession.mockResolvedValue({
       session: { shop: "agent-5sfidg3m.myshopify.com" },
       admin: { graphql: jest.fn() },
     } as any);
 
-    mockDb.bundle.findMany.mockResolvedValue([
+    (mockDb.bundle.findMany as jest.Mock).mockResolvedValue([
       {
         id: "bundle-1",
         name: "Starter bundle",

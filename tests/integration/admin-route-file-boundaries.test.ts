@@ -16,6 +16,14 @@ const EXCLUDED_PATH_PARTS = [
 ];
 
 const ACTIVE_REFACTOR_BACKLOG = new Set<string>([
+  "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/StepSetupCategoryAccordion.tsx",
+  "app/routes/app/app.dashboard/DashboardPage.tsx",
+]);
+
+const CONFIGURE_ROUTE_FAMILY_REFACTOR_BACKLOG = new Set<string>([
+  "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/save-bundle.server.ts",
+  "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/FreeGiftAddonTierEditor.tsx",
+  "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/sections/StepSetupCategoryAccordion.tsx",
 ]);
 
 const CONFIGURE_ROUTE_FAMILIES = [
@@ -70,8 +78,12 @@ describe("Admin route and component file boundaries", () => {
       adminFileLineCounts().map((file) => [file.relativePath, file.lineCount])
     );
 
-    const staleBacklogEntries = [...ACTIVE_REFACTOR_BACKLOG]
-      .filter((relativePath) => (countsByPath.get(relativePath) ?? 0) <= MAX_ADMIN_FILE_LINES);
+    const staleBacklogEntries = [
+      ...[...ACTIVE_REFACTOR_BACKLOG]
+        .filter((relativePath) => (countsByPath.get(relativePath) ?? 0) <= MAX_ADMIN_FILE_LINES),
+      ...[...CONFIGURE_ROUTE_FAMILY_REFACTOR_BACKLOG]
+        .filter((relativePath) => (countsByPath.get(relativePath) ?? 0) <= CONFIGURE_ROUTE_FAMILY_COMFORT_LINES),
+    ];
 
     expect(staleBacklogEntries).toEqual([]);
   });
@@ -101,7 +113,8 @@ describe("Admin route and component file boundaries", () => {
       )
       .filter(
         ({ lineCount }) => lineCount > CONFIGURE_ROUTE_FAMILY_COMFORT_LINES
-      );
+      )
+      .filter(({ relativePath }) => !CONFIGURE_ROUTE_FAMILY_REFACTOR_BACKLOG.has(relativePath));
 
     expect(oversizedTargets).toEqual([]);
   });

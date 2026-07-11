@@ -64,7 +64,7 @@ _sendEngagementBeacon(eventName) {
   try {
     const bundleId = this.selectedBundle?.id || this.container?.dataset?.bundleId;
     if (!bundleId) return;
-    const guardKey = `wpb_engaged_${bundleId}`;
+    const guardKey = `wpb_engagement_${eventName}_${bundleId}`;
     if (sessionStorage.getItem(guardKey) === '1') return;
     const sessionId = this._ensureWpbSessionId();
     const shopId = window.Shopify?.shop || this.container?.dataset?.shop || window.location.hostname;

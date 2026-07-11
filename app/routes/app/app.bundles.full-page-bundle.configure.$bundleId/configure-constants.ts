@@ -1,4 +1,8 @@
 import type { HelpTooltipKey } from "../../../constants/help-tooltips";
+import {
+  buildBundleVisibilityChildItems,
+  buildConfigureSetupItems,
+} from "../../../lib/bundle-config/common-configure-page-model";
 
 export const fullPageTemplateOptions = [
   { presetId: "STANDARD", label: "Standard Design", image: "/FPB-Standard.avif" },
@@ -15,38 +19,7 @@ export type IndividualSellingPlanShowFor = "ALL_PRODUCTS" | "OOS_PRODUCTS";
 
 export const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
 
-export const bundleSetupItems = [
-  {
-    id: "step_setup",
-    label: "Step Setup",
-    iconType: "note",
-    fullPageOnly: false,
-  },
-  {
-    id: "discount_pricing",
-    label: "Discount & Pricing",
-    iconType: "filter",
-    fullPageOnly: false,
-  },
-  {
-    id: "bundle_visibility",
-    label: "Bundle Visibility",
-    iconType: "view",
-    fullPageOnly: true,
-  },
-  {
-    id: "bundle_settings",
-    label: "Bundle Settings",
-    iconType: "edit",
-    fullPageOnly: false,
-  },
-  {
-    id: "select_template",
-    label: "Select Template",
-    iconType: "paint-brush-flat",
-    fullPageOnly: false,
-  },
-];
+export const bundleSetupItems = buildConfigureSetupItems("full_page");
 
 export const stepSetupChildItems = [
   { id: "free_gift_addons", label: "Free Gift & Add Ons" },
@@ -56,9 +29,8 @@ export const ADDON_MESSAGE_KEY = "addons-direct";
 export const ADDONS_HELP_ARTICLE_URL =
   "https://www.youtube.com/watch?v=5p_B81I7tWE";
 
-export const bundleVisibilityChildItems = [
-  { id: "bundle_widget", label: "Bundle Widget" },
-];
+export const bundleVisibilityChildItems =
+  buildBundleVisibilityChildItems("full_page");
 
 export const TEMPLATE_VARIABLES: [string, string][] = [
   [

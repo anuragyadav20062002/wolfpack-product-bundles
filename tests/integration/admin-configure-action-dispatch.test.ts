@@ -4,6 +4,7 @@ import { action as ppbAction } from "../../app/routes/app/app.bundles.product-pa
 import { requireAdminSession } from "../../app/lib/auth-guards.server";
 import * as fpbHandlers from "../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers";
 import * as ppbHandlers from "../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers";
+import * as storefrontSyncAction from "../../app/routes/app/shared/storefront-sync-action.server";
 
 jest.mock("../../app/lib/auth-guards.server", () => ({
   requireAdminSession: jest.fn(),
@@ -16,7 +17,6 @@ jest.mock("../../app/db.server", () => ({
 
 jest.mock("../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers", () => ({
   handleSaveBundle: jest.fn(),
-  handleSyncBundle: jest.fn(),
   handleUpdateBundleStatus: jest.fn(),
   handleSyncProduct: jest.fn(),
   handleUpdateBundleProduct: jest.fn(),
@@ -33,7 +33,6 @@ jest.mock("../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId
 
 jest.mock("../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers", () => ({
   handleSaveBundle: jest.fn(),
-  handleSyncBundle: jest.fn(),
   handleUpdateBundleStatus: jest.fn(),
   handleSyncProduct: jest.fn(),
   handleUpdateBundleProduct: jest.fn(),
@@ -44,6 +43,11 @@ jest.mock("../../app/routes/app/app.bundles.product-page-bundle.configure.$bundl
   handleAssignProductTemplate: jest.fn(),
   handleUpdateBundleDesignTemplate: jest.fn(),
   handleValidateSellingPlanGroups: jest.fn(),
+}));
+
+jest.mock("../../app/routes/app/shared/storefront-sync-action.server", () => ({
+  handlePrepareStorefrontPreview: jest.fn(),
+  handleSyncStorefrontNow: jest.fn(),
 }));
 
 jest.mock("../../app/components/shared/FilePicker", () => ({
@@ -104,7 +108,6 @@ describe("FPB configure action dispatch", () => {
     ["checkFullPageTemplate", "handleCheckFullPageTemplate"],
     ["validateWidgetPlacement", "handleValidateWidgetPlacement"],
     ["createPreviewPage", "handleCreatePreviewPage"],
-    ["syncBundle", "handleSyncBundle"],
     ["updateBundleDesignTemplate", "handleUpdateBundleDesignTemplate"],
   ] as const)("routes %s to %s", async (intent, handlerName) => {
     const handler = fpbHandlers[handlerName] as jest.Mock;
@@ -118,6 +121,23 @@ describe("FPB configure action dispatch", () => {
 
     expect(body).toEqual({ success: true, intent });
     expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes syncBundle to shared storefront sync with full_page type", async () => {
+    const handler = storefrontSyncAction.handleSyncStorefrontNow as jest.Mock;
+    handler.mockResolvedValue(responseFor("syncBundle"));
+
+    const response = await fpbAction(makeActionArgs("syncBundle"));
+    const body = await response.json();
+
+    expect(body).toEqual({ success: true, intent: "syncBundle" });
+    expect(handler).toHaveBeenCalledWith(
+      mockAdmin,
+      mockSession,
+      "bundle-1",
+      "full_page",
+      "sync_bundle",
+    );
   });
 
   it("returns a 400 response for unknown FPB intents", async () => {
@@ -139,7 +159,6 @@ describe("PPB configure action dispatch", () => {
     ["getCurrentTheme", "handleGetCurrentTheme"],
     ["ensureBundleTemplates", "handleEnsureBundleTemplates"],
     ["validateWidgetPlacement", "handleValidateWidgetPlacement"],
-    ["syncBundle", "handleSyncBundle"],
     ["updateBundleDesignTemplate", "handleUpdateBundleDesignTemplate"],
     ["assignProductTemplate", "handleAssignProductTemplate"],
     ["validateSellingPlanGroups", "handleValidateSellingPlanGroups"],
@@ -152,6 +171,23 @@ describe("PPB configure action dispatch", () => {
 
     expect(body).toEqual({ success: true, intent });
     expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes syncBundle to shared storefront sync with product_page type", async () => {
+    const handler = storefrontSyncAction.handleSyncStorefrontNow as jest.Mock;
+    handler.mockResolvedValue(responseFor("syncBundle"));
+
+    const response = await ppbAction(makeActionArgs("syncBundle"));
+    const body = await response.json();
+
+    expect(body).toEqual({ success: true, intent: "syncBundle" });
+    expect(handler).toHaveBeenCalledWith(
+      mockAdmin,
+      mockSession,
+      "bundle-1",
+      "product_page",
+      "sync_bundle",
+    );
   });
 
   it("returns a 400 response for unknown PPB intents", async () => {

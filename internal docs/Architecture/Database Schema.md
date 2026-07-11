@@ -1,7 +1,7 @@
 ---
 title: Database Schema
 type: architecture
-audited: 2026-04-16
+audited: 2026-07-11
 source: prisma/schema.prisma
 ---
 
@@ -39,6 +39,11 @@ Product variant selections per step.
 ### OrderAttribution
 
 **Not documented in APPLICATION_ARCHITECTURE.md.** Tracks order → bundle attribution for analytics.
+Includes standard UTM columns (`utmSource`, `utmMedium`, `utmCampaign`, `utmContent`, `utmTerm`) plus `customUtmAttributes` JSON for merchant-configured URL parameters captured by the Web Pixel.
+
+### Shop
+
+Tracks installed-shop metadata and app-level settings. `customUtmParameters` JSON stores the merchant-configured allowlist of extra URL parameter names the UTM Web Pixel should capture.
 
 ### BundleAnalytics
 
