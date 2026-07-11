@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.117
+ * Version : 5.0.118
  * Built   : 2026-07-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.117';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.118';
 (function() {
   'use strict';
 
@@ -3694,8 +3694,12 @@ function getCascadeSelectedDrawerState(selectedEntries = [], isOpen = false) {
 function getNextCascadeSelectedDrawerExpandedState({
   hasSelectedProducts = false,
   isExpanded = false,
+  onEmpty = null,
 } = {}) {
-  if (!hasSelectedProducts) return false;
+  if (!hasSelectedProducts) {
+    if (typeof onEmpty === 'function') onEmpty();
+    return false;
+  }
   return !isExpanded;
 }
 
@@ -3862,6 +3866,7 @@ const cascadeTemplateMethods = {
       setDrawerExpanded(getNextCascadeSelectedDrawerExpandedState({
         hasSelectedProducts: drawerState.hasSelectedProducts,
         isExpanded: drawer.classList.contains('bw-ppb-cascade-selected-drawer--open'),
+        onEmpty: () => ToastManager.show('Add items to your bundle first'),
       }));
     });
 

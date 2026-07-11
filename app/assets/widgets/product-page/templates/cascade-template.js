@@ -3,6 +3,7 @@ import {
   CurrencyManager,
   PricingCalculator,
   TemplateManager,
+  ToastManager,
 } from '../../../bundle-widget-components.js';
 import { renderSelectedProductRow } from '../../shared/components/selected-product-row.js';
 import { getSelectedProductEntries } from '../../shared/engine/bundle-selectors.js';
@@ -23,8 +24,12 @@ export function getCascadeSelectedDrawerState(selectedEntries = [], isOpen = fal
 export function getNextCascadeSelectedDrawerExpandedState({
   hasSelectedProducts = false,
   isExpanded = false,
+  onEmpty = null,
 } = {}) {
-  if (!hasSelectedProducts) return false;
+  if (!hasSelectedProducts) {
+    if (typeof onEmpty === 'function') onEmpty();
+    return false;
+  }
   return !isExpanded;
 }
 
@@ -191,6 +196,7 @@ export const cascadeTemplateMethods = {
       setDrawerExpanded(getNextCascadeSelectedDrawerExpandedState({
         hasSelectedProducts: drawerState.hasSelectedProducts,
         isExpanded: drawer.classList.contains('bw-ppb-cascade-selected-drawer--open'),
+        onEmpty: () => ToastManager.show('Add items to your bundle first'),
       }));
     });
 

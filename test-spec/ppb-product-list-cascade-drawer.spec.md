@@ -17,7 +17,7 @@ Verify EB-matched Product Page Bundle Product List runtime behavior for the sing
 |---|---|---|---|---|
 | 1 | No selected products | `selectedEntries=[]` | Drawer closed, no selected heading | Empty footer remains compact |
 | 2 | Selected products exist | one selected entry | Drawer stays collapsed by default, selected count is kept out of the visible pill text | Matches EB open-state proof where the count node is hidden |
-| 3 | Toggle selected drawer | selected products, collapsed drawer | First click expands, second click collapses, no selected products never expands, and selected products added while open append to the drawer without collapsing it | Matches EB `View Bundle Items` behavior |
+| 3 | Toggle selected drawer | selected products, collapsed drawer | First click expands, second click collapses, no selected products never expands, empty drawer click shows `Add items to your bundle first`, and selected products added while open append to the drawer without collapsing it | Matches EB `View Bundle Items` behavior |
 | 4 | Selected row display data | selected product, quantity, price formatter | Title includes `x n`, price is present, quantity label uses `x n` | Matches EB drawer row text shape |
 | 5 | Selected row renderer | caller-provided quantity label | Quantity label renders exactly as provided | Keeps Product List EB spacing without changing other callers |
 | 6 | Cascade footer ATC ownership | ATC button outside Cascade footer | Button is moved into the Cascade footer | Matches EB footer DOM order |

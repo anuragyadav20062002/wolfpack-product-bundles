@@ -81,19 +81,24 @@ describe('PPB List Cascade selected entries integration', () => {
   it('toggles the selected drawer only when selected entries exist', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getNextCascadeSelectedDrawerExpandedState } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+    const onEmpty = jest.fn();
 
     expect(getNextCascadeSelectedDrawerExpandedState({
       hasSelectedProducts: true,
       isExpanded: false,
+      onEmpty,
     })).toBe(true);
     expect(getNextCascadeSelectedDrawerExpandedState({
       hasSelectedProducts: true,
       isExpanded: true,
+      onEmpty,
     })).toBe(false);
     expect(getNextCascadeSelectedDrawerExpandedState({
       hasSelectedProducts: false,
       isExpanded: false,
+      onEmpty,
     })).toBe(false);
+    expect(onEmpty).toHaveBeenCalledTimes(1);
   });
 
   it('prepares EB-style Cascade selected row display data', () => {
