@@ -13,6 +13,10 @@ Evidence files:
 - WPB cart after settings sync: `/private/tmp/ppb-product-list-agentic-parity/PL08-cart-lines/wpb-cart-after-settings-sync-settled.json`
 - WPB widget version after variant suffix fix: `/private/tmp/ppb-product-list-agentic-parity/PL08-cart-lines/wpb-variant-suffix-widget-ready.json`
 - WPB cart after variant suffix fix: `/private/tmp/ppb-product-list-agentic-parity/PL08-cart-lines/wpb-cart-after-variant-suffix-fix-settled.json`
+- WPB step-rule two-product desktop prep: `/private/tmp/ppb-product-list-agentic-parity/PL08-step-rule-two-products-desktop-prep.json`
+- WPB step-rule two-product desktop cart: `/private/tmp/ppb-product-list-agentic-parity/PL08-step-rule-two-products-desktop-cart.json`
+- WPB step-rule two-product mobile prep: `/private/tmp/ppb-product-list-agentic-parity/PL08-step-rule-two-products-mobile-prep.json`
+- WPB step-rule two-product mobile cart: `/private/tmp/ppb-product-list-agentic-parity/PL08-step-rule-two-products-mobile-cart.json`
 
 ## State Tested
 
@@ -78,9 +82,50 @@ After the fix, WPB served widget version `5.0.136` and the settled cart payload 
 - `Items: "1 x 18k Pedal Ring - 8 (8)"`
 - `Retail Price: "$399.00"` because SIT still has Original Bundle Price enabled.
 
+## Step-Rule Two-Product Follow-Up
+
+After configuring the Product List fixture with the Step 1 quantity rule `>= 2`, the two-product add-to-cart flow was rechecked against the same products used in the EB step-rule proof:
+
+- `14k Dangling Obsidian Earrings`
+- `14k Dangling Pendant Earrings`
+
+Desktop WPB result:
+- Viewport: `1280x800`, DPR `1`.
+- Widget version: `5.0.136`.
+- Cart before add: `item_count: 0`.
+- Submit button: `Add Bundle to Cart • $1448.00`, class `add-bundle-to-cart`, disabled `false`.
+- Cart after add: `item_count: 1`, `total_price: 144800`.
+- Public property: `Items: "1 x 14k Dangling Obsidian Earrings, 1 x 14k Dangling Pendant Earrings"`.
+- Internal property: `_Items: ""`.
+- Box property: `Box: "1"`.
+- Cart was cleared after proof.
+
+Mobile WPB result:
+- Viewport: `390x745`, DPR `2`.
+- Widget version: `5.0.136`.
+- Cart before add: `item_count: 0`.
+- Submit button: `Add Bundle to Cart • $1448.00`, class `add-bundle-to-cart`, disabled `false`.
+- Cart after add: `item_count: 1`, `total_price: 144800`.
+- Public property: `Items: "1 x 14k Dangling Obsidian Earrings, 1 x 14k Dangling Pendant Earrings"`.
+- Internal property: `_Items: ""`.
+- Box property: `Box: "1"`.
+- Cart was cleared after proof.
+
+This matches EB's two-product public cart-line shape for the same Product List state:
+
+```json
+{
+  "Items": "1 x 14k Dangling Obsidian Earrings, 1 x 14k Dangling Pendant Earrings",
+  "Box": "1"
+}
+```
+
+The WPB cart line also contains `Retail Price: "$1448.00"` because SIT has `Original Bundle Price` enabled in Settings -> Controls. That remains a settings-state difference, not a Product List cart-line parity gap.
+
 ## Verification
 
 - Chrome DevTools MCP: EB and WPB cart-line `/cart.js` payloads captured from live storefronts.
+- Chrome DevTools MCP: WPB step-rule two-product desktop and mobile `/cart.js` payloads captured from live storefronts after cache-bypass reload.
 - `npx jest tests/unit/routes/settings-controls-runtime-route-contract.test.ts --runInBand`
 - `npx jest tests/unit/assets/ppb-product-list-cart-display-metadata.test.ts --runInBand`
 - `npx jest tests/unit/assets/shared-cart-lines.test.ts --runInBand`
