@@ -43,8 +43,19 @@ describe("app.attribution route shell", () => {
 
     expect(view).toContain("<ui-title-bar");
     expect(view).toContain("Analytics");
+    expect(view).toContain("How shoppers move through your bundles");
     expect(view).not.toContain("Loading funnel summary");
     expect(view).not.toContain("Loading tracking status");
+  });
+
+  it("renders the UTM pixel status card shell while the pixel check is pending", async () => {
+    const { default: AttributionRoute } = await import("../../../app/routes/app/app.attribution");
+
+    const view = renderToStaticMarkup(React.createElement(AttributionRoute));
+
+    expect(view).toContain("UTM Pixel Tracking");
+    expect(view).toContain("Checking");
+    expect(view).not.toContain("Not active");
   });
 
   it("renders spinner-only analytics skeleton cards while dashboard data is delayed", async () => {

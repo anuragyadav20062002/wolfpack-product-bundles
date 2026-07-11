@@ -41,6 +41,7 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Shopify Integration/Checkout UI Extension]] — Preact targets, build rules
 - [[Shopify Integration/Metafields]] — Bundle config metafield sync strategy
 - [[Shopify Integration/Theme App Extensions]] — Theme app extension handles, app embed detection, and MAIN-theme status rules
+- [[Shopify Integration/Web Pixels]] — UTM Web Pixel settings payload rules, including nonblank custom-parameter sentinel behavior
 - [[Shopify Integration/Webhooks]] — Subscribed webhook topics, removed broad topics, and delivery-volume rationale
 - [[Features/Bundle Types]] — FPB vs PDP, layout modes, step config
 - [[Features/Pricing Pipeline]] — UI → DB → Metafield → Cart Transform units
