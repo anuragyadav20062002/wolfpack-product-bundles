@@ -178,6 +178,10 @@ class BundleWidgetProductPage {
       // Parse configuration
       this.parseConfiguration();
 
+      // Move the container into its final product-form placement before the
+      // bootstrap overlay paints, so loading and rendered states share a slot.
+      this._relocateContainerToProductForm();
+
       // Show loading overlay immediately with fallback spinner while bundle config loads.
       this.showLoadingOverlay(null, { bootstrap: true });
       await new Promise(resolve => requestAnimationFrame(resolve));
