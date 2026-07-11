@@ -335,6 +335,12 @@
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-product-row
+  .product-card-price-action {
+  display: contents;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .wpbMixCascadeProductLeftSection {
   display: grid;
   grid-template-columns: 70px minmax(0, 1fr);
@@ -444,6 +450,51 @@
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-product-row
+  .bw-quantity-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 90px;
+  height: 32px;
+  border-radius: 100px;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-product-row
+  .bw-quantity-control__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 5px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 25.2px;
+  padding: 0;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-product-row
+  .bw-quantity-control__button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-product-row
+  .bw-quantity-control__value {
+  color: #1e1e1e;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 25.2px;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .bw-ppb-cascade-footer {
   position: relative;
   display: grid !important;
@@ -470,7 +521,9 @@
   height: 0;
   min-height: 0;
   z-index: 2;
-  transition: height 180ms ease;
+  background: #ffffff;
+  border-top: 1px solid #cfcfcf;
+  transition: height 700ms ease;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
@@ -482,7 +535,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  max-width: 75%;
+  max-width: 80%;
   height: 22px;
   padding: 0 10px;
   border: 0;
@@ -502,6 +555,40 @@
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-selected-toggle-chevron {
+  position: relative;
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  color: #ffffff;
+  transition: transform 500ms ease;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-selected-toggle-chevron::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 2px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-selected-drawer--open
+  .bw-ppb-cascade-selected-toggle-chevron {
+  transform: rotate(180deg);
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-selected-toggle-count {
+  display: none;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .bw-ppb-cascade-selected-list {
   display: flex;
   flex-direction: column;
@@ -515,7 +602,7 @@
   padding: 0;
   overflow: hidden;
   background: #ffffff;
-  transition: max-height 180ms ease;
+  transition: max-height 700ms ease;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
@@ -549,7 +636,7 @@
   .bw-ppb-cascade-selected-drawer--open
   .bw-ppb-cascade-selected-list {
   max-height: var(--bw-ppb-cascade-selected-drawer-height, min(60vh, 420px));
-  padding: 0 10px 10px;
+  padding: 10px;
   overflow: auto;
 }
 
@@ -642,11 +729,18 @@
   height: 24px;
   border: 0;
   border-radius: 50%;
-  background: #f2f2f2;
-  color: #111111;
+  background: transparent;
+  color: #d92d20;
   font-size: 16px;
   line-height: 20px;
   cursor: pointer;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-selected-item
+  .bw-selected-row__remove:hover {
+  color: #b42318;
+  background: rgba(217, 45, 32, 0.1);
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
