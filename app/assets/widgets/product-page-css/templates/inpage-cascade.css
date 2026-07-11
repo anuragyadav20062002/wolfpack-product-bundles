@@ -433,13 +433,18 @@
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .bw-ppb-cascade-product-row
   .product-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: var(--bw-ppb-cascade-product-action-width, 90px);
   height: 32px;
+  padding: 4px 14px;
   border-radius: 5px;
   background: #111111;
   color: #ffffff;
   font-size: 14px;
   font-weight: 700;
+  line-height: normal;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
