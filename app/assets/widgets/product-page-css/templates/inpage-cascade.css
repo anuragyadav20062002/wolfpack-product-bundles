@@ -835,6 +835,27 @@
   }
 
   #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+    .bw-ppb-cascade-product-row
+    .product-add-btn,
+  #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+    .bw-ppb-cascade-product-row
+    .bw-quantity-control__value {
+    font-size: 12px;
+  }
+
+  #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+    .bw-ppb-cascade-product-row
+    .product-add-btn {
+    line-height: normal;
+  }
+
+  #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+    .bw-ppb-cascade-product-row
+    .bw-quantity-control__value {
+    line-height: 21.6px;
+  }
+
+  #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
     .bw-ppb-cascade-footer {
     position: sticky;
     bottom: 0;
