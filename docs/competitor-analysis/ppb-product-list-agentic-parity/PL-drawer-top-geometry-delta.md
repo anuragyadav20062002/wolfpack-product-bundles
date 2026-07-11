@@ -57,3 +57,26 @@ Measured WPB post-fix desktop state:
 - The drawer keeps the requested `1px` top border.
 - The pill remains attached to the drawer top and overlaps the top border area.
 - Geometry remains stable when expanding from one selected row to two selected rows.
+
+## Mobile Proof
+
+Evidence files:
+- EB mobile: `/private/tmp/ppb-product-list-agentic-parity/PL-drawer-top-geometry/eb-mobile-drawer-top-geometry.json`
+- WPB mobile post-fix: `/private/tmp/ppb-product-list-agentic-parity/PL-drawer-top-geometry/wpb-mobile-drawer-top-geometry-after-injected.json`
+
+Viewport: `390 x 844`, DPR `3`.
+
+Measured EB mobile state:
+- Title top gap remains `10px`.
+- Title-to-first-row gap remains `10px`.
+- Drawer height is constrained to `59.1094px`.
+- One selected row extends `46.078125px` below the drawer.
+- Two selected rows extend `116.078125px` below the drawer.
+
+Measured WPB mobile post-fix state:
+- One selected item: drawer height `116px`, list height `115px`, title top gap `11px`, bottom slack `10px`.
+- Two selected items: drawer height `186px`, list height `185px`, title top gap `11px`, bottom slack `10px`.
+- The requested top border remains visible.
+- The drawer remains fully contained; it does not copy EB's mobile row overflow.
+
+Decision: keep WPB's contained mobile drawer. It preserves EB's internal spacing rhythm while avoiding EB's mobile overflow defect.
