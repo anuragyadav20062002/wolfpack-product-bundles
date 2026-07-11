@@ -203,12 +203,12 @@ export const cascadeTemplateMethods = {
     const setDrawerExpanded = (isExpanded) => {
       const nextExpanded = Boolean(isExpanded && drawerState.hasSelectedProducts);
       let maxDrawerHeight = 0;
-      if (list) {
+      drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open', nextExpanded);
+      drawer.classList.toggle('gbbMixCascadeCartDrawerContainer--open', nextExpanded);
+      if (list && nextExpanded) {
         maxDrawerHeight = getCascadeSelectedDrawerHeight({ list, drawer });
         drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${maxDrawerHeight}px`);
       }
-      drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open', nextExpanded);
-      drawer.classList.toggle('gbbMixCascadeCartDrawerContainer--open', nextExpanded);
       toggle.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
       this.cascadeSelectedDrawerState.isOpen = nextExpanded;
       this.cascadeSelectedDrawerState.height = nextExpanded ? maxDrawerHeight : 0;
