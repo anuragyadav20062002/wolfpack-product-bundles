@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.135
+ * Version : 5.0.136
  * Built   : 2026-07-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.135';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.136';
 (function() {
   'use strict';
 
@@ -3343,6 +3343,15 @@ const DEFAULT_CART_LINE_LABELS = {
   youSave: 'You Save',
 };
 
+function formatCartLineItemTitle(product = {}) {
+  const title = String(product.title || product.id || '');
+  const variantTitle = String(product.variantTitle || product.variant || '').trim();
+  if (!variantTitle || variantTitle === 'Default Title' || title.endsWith(`(${variantTitle})`)) {
+    return title;
+  }
+  return `${title} (${variantTitle})`;
+}
+
 function buildCartLineSourceProperties({
   selectedLines = [],
   retailPrice = '',
@@ -3353,7 +3362,7 @@ function buildCartLineSourceProperties({
 } = {}) {
   const displayProperties = {
     items: selectedLines
-      .map(({ product = {}, quantity = 0 }) => `${Number(quantity || 0)} x ${product.title || product.id}`)
+      .map(({ product = {}, quantity = 0 }) => `${Number(quantity || 0)} x ${formatCartLineItemTitle(product)}`)
       .join(', '),
     retailPrice: String(retailPrice || ''),
   };

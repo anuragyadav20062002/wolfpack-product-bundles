@@ -11,6 +11,8 @@ Evidence files:
 - WPB cart before settings sync: `/private/tmp/ppb-product-list-agentic-parity/PL08-cart-lines/wpb-cart-after-add.json`
 - WPB settings after resave: `/private/tmp/ppb-product-list-agentic-parity/PL08-cart-lines/wpb-settings-controls-after-resave-snapshot.txt`
 - WPB cart after settings sync: `/private/tmp/ppb-product-list-agentic-parity/PL08-cart-lines/wpb-cart-after-settings-sync-settled.json`
+- WPB widget version after variant suffix fix: `/private/tmp/ppb-product-list-agentic-parity/PL08-cart-lines/wpb-variant-suffix-widget-ready.json`
+- WPB cart after variant suffix fix: `/private/tmp/ppb-product-list-agentic-parity/PL08-cart-lines/wpb-cart-after-variant-suffix-fix-settled.json`
 
 ## State Tested
 
@@ -65,8 +67,25 @@ After resaving Controls with `Bundle Items` checked, WPB cart line after adding 
 
 The `Retail Price` property appears because SIT has `Original Bundle Price` enabled in Settings -> Controls. That is a settings-state difference from the captured EB fixture, not a Product List row or drawer rendering issue.
 
+## Variant Suffix Fix
+
+The first WPB post-sync proof emitted `Items: "1 x 18k Pedal Ring - 8"`, while EB emitted `Items: "1 x 18k Pedal Ring - 8 (8)"`.
+
+The shared cart-line metadata formatter now appends non-default variant titles in parentheses. This keeps the Product List parent title and variant option visible in the same public cart-line text that EB uses.
+
+After the fix, WPB served widget version `5.0.136` and the settled cart payload emitted:
+
+- `Items: "1 x 18k Pedal Ring - 8 (8)"`
+- `Retail Price: "$399.00"` because SIT still has Original Bundle Price enabled.
+
 ## Verification
 
 - Chrome DevTools MCP: EB and WPB cart-line `/cart.js` payloads captured from live storefronts.
 - `npx jest tests/unit/routes/settings-controls-runtime-route-contract.test.ts --runInBand`
 - `npx jest tests/unit/assets/ppb-product-list-cart-display-metadata.test.ts --runInBand`
+- `npx jest tests/unit/assets/shared-cart-lines.test.ts --runInBand`
+- `node --check app/assets/widgets/shared/engine/cart-lines.js`
+- `node --check extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js`
+- `node --check extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js`
+- `node --check extensions/bundle-builder/assets/wolfpack-bundles-sdk.js`
+- `npm run build:widgets`
