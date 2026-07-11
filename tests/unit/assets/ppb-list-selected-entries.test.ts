@@ -48,9 +48,13 @@ describe('PPB List Cascade selected entries integration', () => {
   it('preserves an open Cascade drawer before footer replacement', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { ProductPageFooterModalStateMethods } = require('../../../app/assets/widgets/product-page/methods/footer-modal-state-methods.js');
+    const openDrawer = {
+      className: 'bw-ppb-cascade-selected-drawer--open',
+      getBoundingClientRect: () => ({ height: 115 }),
+    };
     const footer = {
       innerHTML: 'existing drawer',
-      querySelector: jest.fn(() => ({ className: 'bw-ppb-cascade-selected-drawer--open' })),
+      querySelector: jest.fn(() => openDrawer),
     };
     const renderCascadeFooter = jest.fn();
     const context = {
@@ -64,6 +68,7 @@ describe('PPB List Cascade selected entries integration', () => {
 
     expect(footer.querySelector).toHaveBeenCalledWith('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
     expect(context.cascadeSelectedDrawerState.isOpen).toBe(true);
+    expect(context.cascadeSelectedDrawerState.height).toBe(115);
     expect(footer.innerHTML).toBe('');
     expect(renderCascadeFooter).toHaveBeenCalledWith(footer);
   });

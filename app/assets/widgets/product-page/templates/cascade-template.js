@@ -182,14 +182,16 @@ export const cascadeTemplateMethods = {
 
     const setDrawerExpanded = (isExpanded) => {
       const nextExpanded = Boolean(isExpanded && drawerState.hasSelectedProducts);
+      let maxDrawerHeight = 0;
       if (list) {
-        const maxDrawerHeight = Math.min(list.scrollHeight + 20, Math.round(window.innerHeight * 0.6), 420);
+        maxDrawerHeight = Math.min(list.scrollHeight + 20, Math.round(window.innerHeight * 0.6), 420);
         drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${maxDrawerHeight}px`);
       }
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open', nextExpanded);
       drawer.classList.toggle('gbbMixCascadeCartDrawerContainer--open', nextExpanded);
       toggle.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
       this.cascadeSelectedDrawerState.isOpen = nextExpanded;
+      this.cascadeSelectedDrawerState.height = nextExpanded ? maxDrawerHeight : 0;
     };
     toggle.addEventListener('click', () => {
       setDrawerExpanded(getNextCascadeSelectedDrawerExpandedState({
@@ -200,7 +202,16 @@ export const cascadeTemplateMethods = {
     });
 
     el.appendChild(drawer);
-    setDrawerExpanded(drawerState.isOpen);
+    const previousDrawerHeight = Math.max(0, Number(this.cascadeSelectedDrawerState.height || 0));
+    if (drawerState.isOpen && previousDrawerHeight > 0) {
+      drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${previousDrawerHeight}px`);
+      const scheduleFrame = typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
+        ? window.requestAnimationFrame.bind(window)
+        : (callback) => callback();
+      scheduleFrame(() => setDrawerExpanded(true));
+    } else {
+      setDrawerExpanded(drawerState.isOpen);
+    }
 
     const message = this._getCascadeFooterMessage();
     if (message) {

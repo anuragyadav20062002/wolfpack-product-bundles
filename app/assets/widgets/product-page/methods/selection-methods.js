@@ -148,9 +148,11 @@ updateProductSelection(stepIndex, productId, newQuantity) {
   const cascadeDrawerWasOpen = this._isProductPageCascadeTemplate?.()
     && this.elements?.footer?.querySelector('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
   if (cascadeDrawerWasOpen) {
+    const drawerHeight = cascadeDrawerWasOpen.getBoundingClientRect?.().height || 0;
     this.cascadeSelectedDrawerState = {
       ...(this.cascadeSelectedDrawerState || {}),
       isOpen: true,
+      height: drawerHeight,
     };
   }
 
