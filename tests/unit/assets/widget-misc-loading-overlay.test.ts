@@ -17,6 +17,7 @@ type MockElement = {
   };
   setAttribute: (name: string, value: string) => void;
   getAttribute: (name: string) => string | undefined;
+  addEventListener: (name: string, listener: () => void, options?: unknown) => void;
   querySelector: (selector: string) => MockElement | null;
   appendChild: (child: MockElement) => MockElement;
   remove?: () => void;
@@ -45,6 +46,7 @@ function createMockElement(): MockElement {
     getAttribute(name: string) {
       return attributes.get(name);
     },
+    addEventListener() {},
     querySelector(selector: string) {
       if (selector === '.bundle-loading-overlay') {
         const match = this.children.find((child: MockElement) => child.className === 'bundle-loading-overlay');
@@ -92,5 +94,25 @@ describe('ProductPageWidgetMiscMethods loading overlay', () => {
     expect(overlay?.style.minHeight).toBe('var(--bundle-ppb-loading-overlay-min-height, 180px)');
     expect(overlay?.style.minWidth).toBe('var(--bundle-ppb-loading-overlay-min-width, 180px)');
     expect(container.style.position).toBe('relative');
+  });
+
+  it('marks and clears bootstrap loading separately from action loading', () => {
+    jest.useFakeTimers();
+    const container = createMockElement();
+    global.document = createMockDocument() as unknown as Document;
+    global.getComputedStyle = (() => ({ position: 'static' })) as unknown as typeof global.getComputedStyle;
+    global.performance = { now: jest.fn(() => 1000) } as unknown as Performance;
+    global.window = {
+      setTimeout: global.setTimeout,
+    } as unknown as Window & typeof globalThis;
+    const widget = { container };
+
+    ProductPageWidgetMiscMethods.showLoadingOverlay.call(widget, null, { bootstrap: true });
+    expect(container.dataset.wpbBootstrapLoading).toBe('true');
+
+    ProductPageWidgetMiscMethods.hideLoadingOverlay.call(widget);
+    jest.advanceTimersByTime(180);
+
+    expect(container.dataset.wpbBootstrapLoading).toBeUndefined();
   });
 });

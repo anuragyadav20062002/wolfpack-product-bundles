@@ -221,6 +221,14 @@
   transition: opacity 0.2s ease;
 }
 
+#bundle-builder-app[data-wpb-bootstrap-loading="true"] {
+  min-height: var(--bundle-ppb-loading-overlay-min-height, 180px);
+}
+
+#bundle-builder-app[data-wpb-bootstrap-loading="true"] > :not(.bundle-loading-overlay) {
+  visibility: hidden;
+}
+
 .bundle-loading-overlay.is-visible {
   opacity: 1;
   pointer-events: all;

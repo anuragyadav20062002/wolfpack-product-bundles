@@ -20,6 +20,9 @@ shopify://apps/wolfpack-product-bundles-4/blocks/bundle-app-embed/<theme-extensi
 Current production identifiers:
 
 - App handle: `wolfpack-product-bundles-4`
+- Legacy app handle retained in some active theme settings: `wolfpack-product-bundles`
 - Theme extension handle: `bundle-builder`
 - App embed block handle: `bundle-app-embed`
 - Theme extension UID: `23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2`
+
+2026-07-10 production proof on `wolfpackdemostore.myshopify.com`: MAIN theme `wolfpack-dawn-branded` (`gid://shopify/OnlineStoreTheme/150981345468`) had an enabled `bundle-app-embed` block stored as `shopify://apps/wolfpack-product-bundles/blocks/bundle-app-embed/...`, while Shopify reported the current app installation handle as `wolfpack-product-bundles-4`. App embed detection must include the legacy handle or the Admin banner will falsely report that the app embed is disabled.

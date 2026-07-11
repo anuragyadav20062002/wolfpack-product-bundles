@@ -53,6 +53,7 @@
   data-bundle-config='{{ bundle_config_json | escape }}'
   data-hide-default-buttons="{{ is_bundle_product }}"
   data-show-step-numbers="{{ block.settings.show_step_numbers }}"
+  data-wpb-bootstrap-loading="true"
   class="bundle-widget-container"
 >
   {%- comment -%}
@@ -72,9 +73,9 @@
       aria-label="Loading"
     ></div>
   </div>
-  <div class="bundle-steps"></div>
-  <div class="bundle-includes"></div>
-  <button class="add-bundle-to-cart">{{ block.settings.add_to_cart_label }}</button>
+  <div class="bundle-steps" hidden aria-hidden="true"></div>
+  <div class="bundle-includes" hidden aria-hidden="true"></div>
+  <button class="add-bundle-to-cart" hidden aria-hidden="true">{{ block.settings.add_to_cart_label }}</button>
 </div>
 
 {% if is_bundle_product and block.settings.hide_native_buttons %}
