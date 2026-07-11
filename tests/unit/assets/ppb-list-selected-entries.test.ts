@@ -56,11 +56,22 @@ describe('PPB List Cascade selected entries integration', () => {
     });
   });
 
+  it('preserves the selected drawer open state across Cascade footer re-renders', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCascadeSelectedDrawerState } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+
+    expect(getCascadeSelectedDrawerState([{ variantId: 'variant_a', quantity: 1 }], true)).toEqual({
+      isOpen: true,
+      selectedQuantity: 1,
+      hasSelectedProducts: true,
+    });
+  });
+
   it('keeps the selected drawer closed when Cascade has no selected entries', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getCascadeSelectedDrawerState } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
 
-    expect(getCascadeSelectedDrawerState([])).toEqual({
+    expect(getCascadeSelectedDrawerState([], true)).toEqual({
       isOpen: false,
       selectedQuantity: 0,
       hasSelectedProducts: false,
