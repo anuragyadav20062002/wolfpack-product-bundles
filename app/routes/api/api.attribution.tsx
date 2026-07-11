@@ -14,6 +14,7 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-r
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { matchLineItemsToBundles, normalizeToOrderGid } from "../../lib/analytics/bundle-matcher.server";
+import { sanitizeCustomUtmAttributes } from "../../lib/analytics/attribution-controls";
 
 // CORS headers required for cross-origin fetch() calls from the web pixel sandbox.
 // The sandbox runs in an isolated iframe with an opaque (null) origin, so we must
@@ -52,8 +53,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       utmCampaign,
       utmContent,
       utmTerm,
+      customUtmAttributes,
       landingPage,
     } = payload;
+    const sanitizedCustomUtmAttributes = sanitizeCustomUtmAttributes(customUtmAttributes);
 
     // Only shopId is required — utmSource may be null for direct/organic traffic.
     // Bundle revenue is tracked for all checkouts regardless of UTM presence.
@@ -86,6 +89,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           utmCampaign: utmCampaign || null,
           utmContent: utmContent || null,
           utmTerm: utmTerm || null,
+          customUtmAttributes: sanitizedCustomUtmAttributes,
           landingPage: landingPage || null,
           revenue,
           currency: currencyCode || "USD",
@@ -104,6 +108,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           utmCampaign: utmCampaign || null,
           utmContent: utmContent || null,
           utmTerm: utmTerm || null,
+          customUtmAttributes: sanitizedCustomUtmAttributes,
           landingPage: landingPage || null,
           revenue,
           currency: currencyCode || "USD",

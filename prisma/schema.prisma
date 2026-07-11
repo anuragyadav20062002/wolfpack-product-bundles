@@ -566,6 +566,7 @@ model Shop {
   subscriptions           Subscription[] // Subscription history
   currentSubscriptionId   String? // Current active subscription
   adminLocale             String? // Shop-wide embedded Admin UI language preference; null defaults to English
+  customUtmParameters     Json           @default("[]") // Merchant-configured query parameters captured by the UTM pixel
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
 
@@ -667,6 +668,7 @@ model OrderAttribution {
   utmCampaign String?
   utmContent  String?
   utmTerm     String?
+  customUtmAttributes Json     @default("{}")
   landingPage String? // The URL customer landed on
   revenue     Int // cents
   currency    String   @default("USD")

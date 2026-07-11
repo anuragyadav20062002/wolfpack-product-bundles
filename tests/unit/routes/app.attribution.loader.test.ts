@@ -31,6 +31,9 @@ jest.mock("../../../app/db.server", () => ({
     bundleEngagement: {
       findMany: jest.fn(),
     },
+    shop: {
+      findUnique: jest.fn(),
+    },
   },
 }));
 
@@ -65,6 +68,9 @@ describe("app.attribution loader — campaign aggregation", () => {
     } as any);
 
     mockGetPixelStatus.mockResolvedValue({ active: true } as any);
+    getDb().shop.findUnique.mockResolvedValue({
+      customUtmParameters: [],
+    });
 
     const currentAttributions = [
       {
@@ -264,5 +270,84 @@ describe("app.attribution loader — campaign aggregation", () => {
       revenueCents: 5000,
     });
     expect(payload.engagementToOrderPct).toBe(50);
+  });
+
+  it("normalizes day filters before querying and returns saved custom UTM settings", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-07-11T12:00:00.000Z"));
+    getDb().orderAttribution.findMany.mockReset();
+    getDb().bundleAnalytics.findMany.mockReset();
+    getDb().bundleEngagement.findMany.mockReset();
+    getDb().bundle.findMany.mockReset();
+
+    getDb().shop.findUnique.mockResolvedValueOnce({
+      customUtmParameters: ["utm_influencer"],
+    });
+    getDb().orderAttribution.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    getDb().bundleAnalytics.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    getDb().bundleEngagement.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    getDb().bundle.findMany.mockResolvedValueOnce([]);
+
+    const response = await loader({
+      request: new Request("https://test.myshopify.com/app/attribution?days=365"),
+      params: {},
+      context: {},
+    } as any);
+
+    const payload = (await getDeferredPayload(response).analytics) as any;
+
+    expect(getDb().orderAttribution.findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      where: expect.objectContaining({
+        createdAt: {
+          gte: new Date("2026-04-13T00:00:00.000Z"),
+          lte: new Date("2026-07-11T23:59:59.999Z"),
+        },
+      }),
+    }));
+    expect(payload.days).toBe(90);
+    expect(payload.timeSeries).toHaveLength(90);
+    expect(payload.customUtmParameters).toEqual(["utm_influencer"]);
+
+    jest.useRealTimers();
+  });
+
+  it("keeps custom ranges bounded to the selected end date", async () => {
+    getDb().orderAttribution.findMany.mockReset();
+    getDb().bundleAnalytics.findMany.mockReset();
+    getDb().bundleEngagement.findMany.mockReset();
+    getDb().bundle.findMany.mockReset();
+
+    getDb().orderAttribution.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    getDb().bundleAnalytics.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    getDb().bundleEngagement.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    getDb().bundle.findMany.mockResolvedValueOnce([]);
+
+    const response = await loader({
+      request: new Request("https://test.myshopify.com/app/attribution?from=2026-06-01&to=2026-06-07"),
+      params: {},
+      context: {},
+    } as any);
+
+    const payload = (await getDeferredPayload(response).analytics) as any;
+
+    expect(payload.days).toBe(7);
+    expect(payload.from).toBe("2026-06-01");
+    expect(payload.to).toBe("2026-06-07");
+    expect(payload.timeSeries).toHaveLength(7);
+    expect(payload.timeSeries[0].date).toBe("2026-06-01");
+    expect(payload.timeSeries[6].date).toBe("2026-06-07");
   });
 });

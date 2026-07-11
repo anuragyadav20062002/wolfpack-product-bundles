@@ -18,6 +18,11 @@ import {
   buildBundlePerformanceMatrix,
   type OrderAttributionRow,
 } from "../../lib/analytics";
+import {
+  normalizeAttributionWindow,
+  normalizeSavedCustomUtmParameters,
+  parseCustomUtmInput,
+} from "../../lib/analytics/attribution-controls";
 import db from "../../db.server";
 
 export { default } from "./app.attribution/AttributionRouteShell";
@@ -27,26 +32,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await requireAdminSession(request);
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
+  const shopId = session.shop;
+
+  const getSavedCustomUtmParameters = async () => {
+    const shop = await db.shop.findUnique({
+      where: { shopDomain: shopId },
+      select: { customUtmParameters: true },
+    });
+    return normalizeSavedCustomUtmParameters(shop?.customUtmParameters);
+  };
 
   if (intent === "export") {
-    const shopId = session.shop;
-    const fromParam = formData.get("from") as string | null;
-    const toParam   = formData.get("to")   as string | null;
-    const daysParam = formData.get("days") as string | null;
-
-    let since: Date;
-    let until: Date;
-
-    if (fromParam && toParam) {
-      since = new Date(fromParam + "T00:00:00.000Z");
-      until = new Date(toParam   + "T23:59:59.999Z");
-    } else {
-      const days = Math.max(1, parseInt(daysParam || "30", 10));
-      until = new Date();
-      since = new Date(until);
-      since.setDate(since.getDate() - days);
-      since.setHours(0, 0, 0, 0);
+    const params = new URLSearchParams();
+    for (const key of ["from", "to", "days"]) {
+      const value = formData.get(key);
+      if (typeof value === "string") params.set(key, value);
     }
+    const { since, until } = normalizeAttributionWindow(params);
 
     const [attributions, viewEvents] = await Promise.all([
       db.orderAttribution.findMany({
@@ -72,7 +74,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       v == null ? "" : `"${String(v).replace(/"/g, '""')}"`;
 
     const rows: string[] = [
-      ["Date", "Type", "Bundle ID", "Bundle Name", "UTM Source", "UTM Medium", "UTM Campaign", "Revenue (USD)", "Order ID", "Landing Page"].join(","),
+      ["Date", "Type", "Bundle ID", "Bundle Name", "UTM Source", "UTM Medium", "UTM Campaign", "Custom UTM Attributes", "Revenue (USD)", "Order ID", "Landing Page"].join(","),
     ];
 
     for (const a of attributions) {
@@ -84,6 +86,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         escape(a.utmSource),
         escape(a.utmMedium),
         escape(a.utmCampaign),
+        escape(JSON.stringify(a.customUtmAttributes ?? {})),
         (a.revenue / 100).toFixed(2),
         escape(a.orderId),
         escape(a.landingPage),
@@ -96,7 +99,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         "view",
         escape(v.bundleId),
         escape(v.bundleId ? nameMap[v.bundleId] : null),
-        "", "", "", "", "", "",
+        "", "", "", "", "", "", "",
       ].join(","));
     }
 
@@ -118,7 +121,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!appUrl) {
       return json({ success: false, pixelActive: false, error: "App URL not configured." });
     }
-    const result = await activateUtmPixel(admin, appUrl, session.shop);
+    const result = await activateUtmPixel(admin, appUrl, session.shop, await getSavedCustomUtmParameters());
     if (result.success) {
       return json({ success: true, pixelActive: true, message: "UTM tracking enabled successfully" });
     }
@@ -142,12 +145,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   if (intent === "backfill") {
-    const daysParam = formData.get("days") as string | null;
-    const days = Math.max(1, Math.min(90, parseInt(daysParam || "30", 10)));
-    const until = new Date();
-    const since = new Date(until);
-    since.setDate(since.getDate() - days);
-    since.setHours(0, 0, 0, 0);
+    const params = new URLSearchParams();
+    for (const key of ["from", "to", "days"]) {
+      const value = formData.get(key);
+      if (typeof value === "string") params.set(key, value);
+    }
+    const { since, until } = normalizeAttributionWindow(params);
 
     try {
       const result = await backfillOrderAttribution(
@@ -169,6 +172,41 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
   }
 
+  if (intent === "saveCustomUtms") {
+    const customUtmParameters = parseCustomUtmInput(formData.get("customUtmParameters") as string | null);
+
+    await db.shop.upsert({
+      where: { shopDomain: shopId },
+      update: { customUtmParameters },
+      create: { shopDomain: shopId, customUtmParameters },
+    });
+
+    const appUrl = process.env.SHOPIFY_APP_URL;
+    if (!appUrl) {
+      return json({
+        success: false,
+        customUtmParameters,
+        error: "App URL not configured.",
+      }, { status: 500 });
+    }
+
+    const result = await activateUtmPixel(admin, appUrl, shopId, customUtmParameters);
+    if (!result.success) {
+      return json({
+        success: false,
+        customUtmParameters,
+        error: "Custom UTM settings were saved, but tracking could not be refreshed.",
+      }, { status: 500 });
+    }
+
+    return json({
+      success: true,
+      pixelActive: true,
+      customUtmParameters,
+      message: "Custom UTM tracking updated.",
+    });
+  }
+
   return json({ error: "Unknown intent" }, { status: 400 });
 };
 
@@ -181,28 +219,13 @@ async function loadAttributionDashboardData({
   shopId: string;
   url: URL;
 }) {
-  const fromParam = url.searchParams.get("from");
-  const toParam   = url.searchParams.get("to");
-
-  let since: Date;
-  let until: Date;
-  let days: number;
-  let fromStr: string | undefined;
-  let toStr: string | undefined;
-
-  if (fromParam && toParam) {
-    since = new Date(fromParam + "T00:00:00.000Z");
-    until = new Date(toParam   + "T23:59:59.999Z");
-    days  = Math.max(1, Math.round((until.getTime() - since.getTime()) / 86400000));
-    fromStr = fromParam;
-    toStr   = toParam;
-  } else {
-    days  = Math.max(1, parseInt(url.searchParams.get("days") || "30", 10));
-    until = new Date();
-    since = new Date(until);
-    since.setDate(since.getDate() - days);
-    since.setHours(0, 0, 0, 0);
-  }
+  const {
+    since,
+    until,
+    days,
+    from: fromStr,
+    to: toStr,
+  } = normalizeAttributionWindow(url.searchParams);
 
   const prevSince = new Date(since);
   prevSince.setDate(prevSince.getDate() - days);
@@ -211,7 +234,11 @@ async function loadAttributionDashboardData({
   const prevFromStr = prevSince.toISOString().split("T")[0];
   const prevToStr   = prevUntil.toISOString().split("T")[0];
 
-  const [currentAttributions, previousAttributions, viewEvents, prevViewEvents, engagementRows, prevEngagementRows, recentActivity] = await Promise.all([
+  const [shop, currentAttributions, previousAttributions, viewEvents, prevViewEvents, engagementRows, prevEngagementRows, recentActivity] = await Promise.all([
+    db.shop.findUnique({
+      where: { shopDomain: shopId },
+      select: { customUtmParameters: true },
+    }),
     db.orderAttribution.findMany({
       where: { shopId, createdAt: { gte: since, lte: until } },
       orderBy: { createdAt: "asc" },
@@ -360,9 +387,7 @@ async function loadAttributionDashboardData({
 
   const timeSeries: Array<{ date: string; revenue: number; orders: number }> = [];
   const cursor = new Date(since);
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  while (cursor <= today) {
+  while (cursor <= until) {
     const dateKey = cursor.toISOString().split("T")[0];
     timeSeries.push({
       date: dateKey,
@@ -496,6 +521,7 @@ async function loadAttributionDashboardData({
     bundleMatrix,
     topCampaignsRows,
     activityFeed,
+    customUtmParameters: normalizeSavedCustomUtmParameters(shop?.customUtmParameters),
   };
 }
 
