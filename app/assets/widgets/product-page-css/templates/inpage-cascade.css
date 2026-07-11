@@ -831,7 +831,7 @@
 @media (max-width: 749px) {
   #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
     .bw-ppb-cascade-product-list {
-    --bw-ppb-cascade-product-action-width: clamp(70px, 24vw, 82px);
+    --bw-ppb-cascade-product-action-width: 90px;
   }
 
   #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
