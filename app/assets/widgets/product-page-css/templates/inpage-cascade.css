@@ -501,9 +501,13 @@
   .bw-ppb-cascade-product-row
   .bw-quantity-control__value {
   color: #1e1e1e;
+  flex: 0 0 auto;
   font-size: 14px;
   font-weight: 500;
   line-height: 25.2px;
+  min-width: auto;
+  text-align: center;
+  width: auto;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
