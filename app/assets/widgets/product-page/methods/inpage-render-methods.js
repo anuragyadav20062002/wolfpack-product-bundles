@@ -10,6 +10,25 @@ function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
 
+function renderInpageProductLoadingRows(rowCount = 3) {
+  const rows = Array.from({ length: rowCount }, (_, index) => `
+    <div class="bw-ppb-inpage-loading-row" aria-hidden="true" data-loading-row="${index + 1}">
+      <span class="bw-ppb-inpage-loading-media"></span>
+      <span class="bw-ppb-inpage-loading-body">
+        <span class="bw-ppb-inpage-loading-line bw-ppb-inpage-loading-line--title"></span>
+        <span class="bw-ppb-inpage-loading-line bw-ppb-inpage-loading-line--price"></span>
+      </span>
+      <span class="bw-ppb-inpage-loading-action"></span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="bw-ppb-inpage-loading" role="status" aria-label="Loading products">
+      ${rows}
+    </div>
+  `;
+}
+
 export function shouldDisplayVariantsAsIndividualForInpageCategory(step, stepIndex, activeCategoryIndexes = {}) {
   const categories = Array.isArray(step?.categories) ? step.categories : [];
   if (categories.length > 0) {
@@ -28,9 +47,12 @@ export function shouldDisplayVariantsAsIndividualForInpageCategory(step, stepInd
 export const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
+  target.classList.toggle('bw-ppb-cascade-product-list', this._isProductPageCascadeTemplate());
+  target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
 
   if (rawProducts.length === 0 && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
-    target.innerHTML = '<div class="bw-ppb-inpage-loading">Loading products...</div>';
+    target.setAttribute?.('aria-busy', 'true');
+    target.innerHTML = renderInpageProductLoadingRows();
     this.loadStepProducts(stepIndex).then(() => {
       if (target.isConnected) this._renderInpageStepProducts(stepIndex, target);
     }).catch(() => {
@@ -54,6 +76,7 @@ _renderInpageStepProducts(stepIndex, target) {
       : rawProducts,
     stepIndex
   );
+  target.setAttribute?.('aria-busy', 'false');
   if (products.length === 0) {
     target.innerHTML = this._stepFetchFailed?.[stepIndex]
       ? '<p class="modal-fetch-error">Could not load products. Please check your connection and try again.</p>'
@@ -63,8 +86,6 @@ _renderInpageStepProducts(stepIndex, target) {
 
   const usesCascadeCards = this._isProductPageCascadeTemplate();
   const usesGridCards = this._isProductPageGridTemplate();
-  target.classList.toggle('bw-ppb-cascade-product-list', usesCascadeCards);
-  target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
 
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
     this.selectedBundle?.validateQuantityPerProduct

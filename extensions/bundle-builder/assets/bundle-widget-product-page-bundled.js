@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.109
+ * Version : 5.0.110
  * Built   : 2026-07-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.109';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.110';
 (function() {
   'use strict';
 
@@ -4605,6 +4605,18 @@ setupDOMElements() {
   if (!this.container.querySelector('.bw-ppb-dynamic-checkout-visual')) {
     this.container.appendChild(this.elements.dynamicCheckoutVisual);
   }
+
+  [
+    this.elements.defaultProducts,
+    this.elements.stepsContainer,
+    this.elements.qtyPillsEl,
+    this.elements.footer,
+    this.elements.addToCartButton,
+    this.elements.dynamicCheckoutVisual,
+  ].forEach(element => {
+    element?.removeAttribute?.('hidden');
+    element?.removeAttribute?.('aria-hidden');
+  });
 },
 
 _createQtyPillsEl() {
@@ -5316,8 +5328,11 @@ updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo) {
 const MIN_LOADING_OVERLAY_VISIBLE_MS = 180;
 
 const ProductPageWidgetMiscMethods = {
-showLoadingOverlay(gifUrl) {
+showLoadingOverlay(gifUrl, options = {}) {
   if (!this.container) return;
+  if (options.bootstrap === true) {
+    this.container.dataset.wpbBootstrapLoading = 'true';
+  }
 
   const pos = getComputedStyle(this.container).position;
   if (pos !== 'relative' && pos !== 'absolute' && pos !== 'fixed' && pos !== 'sticky') {
@@ -5364,6 +5379,7 @@ hideLoadingOverlay() {
   window.setTimeout(() => {
     if (this._bundleLoadingOverlayToken !== overlayToken) return;
     this._bundleLoadingOverlayToken = 0;
+    delete this.container.dataset.wpbBootstrapLoading;
     hideLoadingOverlayElement(overlay);
   }, delayMs);
 },
@@ -5803,6 +5819,25 @@ function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
 
+function renderInpageProductLoadingRows(rowCount = 3) {
+  const rows = Array.from({ length: rowCount }, (_, index) => `
+    <div class="bw-ppb-inpage-loading-row" aria-hidden="true" data-loading-row="${index + 1}">
+      <span class="bw-ppb-inpage-loading-media"></span>
+      <span class="bw-ppb-inpage-loading-body">
+        <span class="bw-ppb-inpage-loading-line bw-ppb-inpage-loading-line--title"></span>
+        <span class="bw-ppb-inpage-loading-line bw-ppb-inpage-loading-line--price"></span>
+      </span>
+      <span class="bw-ppb-inpage-loading-action"></span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="bw-ppb-inpage-loading" role="status" aria-label="Loading products">
+      ${rows}
+    </div>
+  `;
+}
+
 function shouldDisplayVariantsAsIndividualForInpageCategory(step, stepIndex, activeCategoryIndexes = {}) {
   const categories = Array.isArray(step?.categories) ? step.categories : [];
   if (categories.length > 0) {
@@ -5821,9 +5856,12 @@ function shouldDisplayVariantsAsIndividualForInpageCategory(step, stepIndex, act
 const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
+  target.classList.toggle('bw-ppb-cascade-product-list', this._isProductPageCascadeTemplate());
+  target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
 
   if (rawProducts.length === 0 && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
-    target.innerHTML = '<div class="bw-ppb-inpage-loading">Loading products...</div>';
+    target.setAttribute?.('aria-busy', 'true');
+    target.innerHTML = renderInpageProductLoadingRows();
     this.loadStepProducts(stepIndex).then(() => {
       if (target.isConnected) this._renderInpageStepProducts(stepIndex, target);
     }).catch(() => {
@@ -5847,6 +5885,7 @@ _renderInpageStepProducts(stepIndex, target) {
       : rawProducts,
     stepIndex
   );
+  target.setAttribute?.('aria-busy', 'false');
   if (products.length === 0) {
     target.innerHTML = this._stepFetchFailed?.[stepIndex]
       ? '<p class="modal-fetch-error">Could not load products. Please check your connection and try again.</p>'
@@ -5856,8 +5895,6 @@ _renderInpageStepProducts(stepIndex, target) {
 
   const usesCascadeCards = this._isProductPageCascadeTemplate();
   const usesGridCards = this._isProductPageGridTemplate();
-  target.classList.toggle('bw-ppb-cascade-product-list', usesCascadeCards);
-  target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
 
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
     this.selectedBundle?.validateQuantityPerProduct
@@ -8222,7 +8259,7 @@ class BundleWidgetProductPage {
 
       this.parseConfiguration();
 
-      this.showLoadingOverlay(null);
+      this.showLoadingOverlay(null, { bootstrap: true });
       await new Promise(resolve => requestAnimationFrame(resolve));
       await new Promise(resolve => requestAnimationFrame(resolve));
 
@@ -8237,7 +8274,7 @@ class BundleWidgetProductPage {
       this.selectBundle();
 
       if (this.selectedBundle?.loadingGif) {
-        this.showLoadingOverlay(this.selectedBundle.loadingGif);
+        this.showLoadingOverlay(this.selectedBundle.loadingGif, { bootstrap: true });
       }
 
       if (!this.selectedBundle) {

@@ -192,6 +192,18 @@ setupDOMElements() {
   if (!this.container.querySelector('.bw-ppb-dynamic-checkout-visual')) {
     this.container.appendChild(this.elements.dynamicCheckoutVisual);
   }
+
+  [
+    this.elements.defaultProducts,
+    this.elements.stepsContainer,
+    this.elements.qtyPillsEl,
+    this.elements.footer,
+    this.elements.addToCartButton,
+    this.elements.dynamicCheckoutVisual,
+  ].forEach(element => {
+    element?.removeAttribute?.('hidden');
+    element?.removeAttribute?.('aria-hidden');
+  });
 },
 
 _createQtyPillsEl() {

@@ -9,6 +9,15 @@ class FakeTarget {
   classList = new FakeClassList();
   innerHTML = '';
   isConnected = true;
+  attributes = new Map<string, string>();
+
+  setAttribute(name: string, value: string) {
+    this.attributes.set(name, value);
+  }
+
+  getAttribute(name: string) {
+    return this.attributes.get(name) ?? null;
+  }
 }
 
 function createContext(overrides = {}) {
@@ -101,5 +110,20 @@ describe('PPB List shared product cards', () => {
     expect(soldOutButton).toContain('disabled');
     expect(soldOutButton).toContain('aria-disabled="true"');
     expect(soldOutButton).toContain('Out of stock');
+  });
+
+  it('marks pending Product List product loads busy without visible loading copy', () => {
+    const target = new FakeTarget();
+    const loadStepProducts = jest.fn(() => new Promise(() => {}));
+    const context = createContext({
+      stepProductData: [[]],
+      loadStepProducts,
+    });
+
+    ProductPageInpageRenderMethods._renderInpageStepProducts.call(context, 0, target);
+
+    expect(target.getAttribute('aria-busy')).toBe('true');
+    expect(loadStepProducts).toHaveBeenCalledWith(0);
+    expect(target.innerHTML).not.toContain('Loading products...');
   });
 });

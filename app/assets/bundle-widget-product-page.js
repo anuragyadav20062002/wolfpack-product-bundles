@@ -179,7 +179,7 @@ class BundleWidgetProductPage {
       this.parseConfiguration();
 
       // Show loading overlay immediately with fallback spinner while bundle config loads.
-      this.showLoadingOverlay(null);
+      this.showLoadingOverlay(null, { bootstrap: true });
       await new Promise(resolve => requestAnimationFrame(resolve));
       await new Promise(resolve => requestAnimationFrame(resolve));
 
@@ -198,7 +198,7 @@ class BundleWidgetProductPage {
       this.selectBundle();
 
       if (this.selectedBundle?.loadingGif) {
-        this.showLoadingOverlay(this.selectedBundle.loadingGif);
+        this.showLoadingOverlay(this.selectedBundle.loadingGif, { bootstrap: true });
       }
 
       if (!this.selectedBundle) {
