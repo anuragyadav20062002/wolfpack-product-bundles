@@ -18,6 +18,13 @@ Evidence files:
 - EB desktop valid add and cart clear: `/private/tmp/ppb-product-list-agentic-parity/PL02-eb-desktop-cart-after-valid-add-and-clear.json`
 - EB mobile one-item state: `/private/tmp/ppb-product-list-agentic-parity/PL02-eb-mobile-one-item-disabled-state.json`
 - EB mobile two-item state: `/private/tmp/ppb-product-list-agentic-parity/PL02-eb-mobile-two-items-enabled-state.json`
+- WPB admin post-save snapshot: `/private/tmp/ppb-product-list-agentic-parity/PL02-wpb-cmrf-post-save-check.txt`
+- WPB admin save request: `/private/tmp/ppb-product-list-agentic-parity/PL02-wpb-cmrf-save.request.network-request`
+- WPB admin save response: `/private/tmp/ppb-product-list-agentic-parity/PL02-wpb-cmrf-save.response.network-response`
+- WPB desktop runtime config: `/private/tmp/ppb-product-list-agentic-parity/PL02-wpb-desktop-runtime-config.json`
+- WPB desktop one-item state: `/private/tmp/ppb-product-list-agentic-parity/PL02-wpb-desktop-one-item-state.json`
+- WPB desktop two-item state: `/private/tmp/ppb-product-list-agentic-parity/PL02-wpb-desktop-two-item-state.json`
+- WPB mobile step-rule states: `/private/tmp/ppb-product-list-agentic-parity/PL02-wpb-mobile-step-rule-states.json`
 
 ## Admin Fixture
 
@@ -102,10 +109,49 @@ Two selected items:
 
 The Add Step button did not create a visible second step during this pass; it surfaced the sticky EB `Save` bar while preserving the Step 1 rule. PL02 now has live single-step step-rule gating proof, but still needs a separate EB fixture pass for true multi-step next/back behavior.
 
-## WPB Follow-Up
+## WPB Mirror Proof
 
-Mirror this rule in WPB Product List and verify:
-- one selected product disables the footer with the same disabled semantics,
-- two selected products enables the footer,
-- desktop and mobile match,
-- no Product List source patch is made unless WPB diverges under the same rule state.
+WPB bundle:
+- Store: `agent-5sfidg3m.myshopify.com`
+- App: `wolfpack-product-bundles-sit`
+- Bundle id: `cmrf19c8d0000v0xpj8rz2wgh`
+- Product: `PPB Modal Shared Card Test`
+- Widget version: `5.0.136`
+- Runtime markers: `data-ppb-template-type="PDP_INPAGE"`, `data-ppb-design-preset="CASCADE"`
+
+Configured Step 1 rule:
+
+```json
+{
+  "stepConditions": {
+    "69281805-aff6-4219-a5a6-7f6d187d2a87": [
+      { "type": "quantity", "operator": "greater_than_or_equal_to", "value": "2" }
+    ]
+  }
+}
+```
+
+The cache-busted runtime config returned:
+
+```json
+{
+  "conditionType": "quantity",
+  "conditionOperator": "greater_than_or_equal_to",
+  "conditionValue": 2
+}
+```
+
+Desktop WPB result:
+- Zero selected items: footer text `Add Bundle to Cart`, class `add-bundle-to-cart disabled`, disabled `true`.
+- One selected item: selected row `14k Dangling Obsidian Earrings x 1`; footer text `Complete All Steps to Continue`, class `add-bundle-to-cart disabled`, disabled `true`.
+- Two selected items: selected rows `14k Dangling Obsidian Earrings x 1`, `14k Dangling Pendant Earrings x 1`; footer text `Add Bundle to Cart • $1448.00`, class `add-bundle-to-cart`, disabled `false`.
+
+Mobile WPB result:
+- Viewport: `390x745`, DPR `2`.
+- Zero selected items: footer text `Add Bundle to Cart`, class `add-bundle-to-cart disabled`, disabled `true`.
+- One selected item: footer text `Complete All Steps to Continue`, class `add-bundle-to-cart disabled`, disabled `true`.
+- Two selected items: footer text `Add Bundle to Cart • $1448.00`, class `add-bundle-to-cart`, disabled `false`.
+
+## Decision
+
+No Product List source patch is justified for the single-step quantity rule state. WPB matches EB's gating sequence on desktop and mobile: one selected product blocks the footer, and two selected products enables it with the selected-items total.
