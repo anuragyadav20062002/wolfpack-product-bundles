@@ -229,14 +229,14 @@ async function loadAttributionDashboardData({
     }),
     db.bundleEngagement.findMany({
       where: { shopId, createdAt: { gte: since, lte: until } },
-      select: { bundleId: true, sessionId: true, presetId: true, createdAt: true },
+      select: { bundleId: true, sessionId: true, presetId: true, eventName: true, createdAt: true },
     }),
     db.bundleEngagement.findMany({
-      where: { shopId, createdAt: { gte: prevSince, lt: since } },
+      where: { shopId, eventName: "wpb:session-engaged", createdAt: { gte: prevSince, lt: since } },
       select: { sessionId: true },
     }),
     db.bundleEngagement.findMany({
-      where: { shopId },
+      where: { shopId, eventName: "wpb:session-engaged" },
       orderBy: { createdAt: "desc" },
       take: 25,
       select: { id: true, bundleId: true, sessionId: true, presetId: true, createdAt: true },
@@ -412,6 +412,7 @@ async function loadAttributionDashboardData({
   const engagementRowsTyped = engagementRows.map(r => ({
     bundleId: r.bundleId,
     sessionId: r.sessionId,
+    eventName: r.eventName,
     presetId: r.presetId ?? null,
     createdAt: r.createdAt,
   }));

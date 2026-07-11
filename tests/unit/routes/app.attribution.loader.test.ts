@@ -184,4 +184,85 @@ describe("app.attribution loader — campaign aggregation", () => {
       },
     });
   });
+
+  it("builds funnel added-to-cart from engagement events and checked-out from bundle orders", async () => {
+    getDb().orderAttribution.findMany.mockReset();
+    getDb().bundleAnalytics.findMany.mockReset();
+    getDb().bundleEngagement.findMany.mockReset();
+    getDb().bundle.findMany.mockReset();
+
+    getDb().orderAttribution.findMany
+      .mockResolvedValueOnce([
+        {
+          bundleId: "bundle-1",
+          revenue: 5000,
+          createdAt: new Date("2026-07-10T00:10:00.000Z"),
+          utmSource: "google",
+          utmMedium: "search",
+          utmCampaign: "summer-caps",
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    getDb().bundleAnalytics.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    getDb().bundleEngagement.findMany
+      .mockResolvedValueOnce([
+        {
+          bundleId: "bundle-1",
+          sessionId: "session-1",
+          presetId: "classic",
+          eventName: "wpb:session-engaged",
+          createdAt: new Date("2026-07-10T00:00:00.000Z"),
+        },
+        {
+          bundleId: "bundle-1",
+          sessionId: "session-2",
+          presetId: "classic",
+          eventName: "wpb:session-engaged",
+          createdAt: new Date("2026-07-10T00:01:00.000Z"),
+        },
+        {
+          bundleId: "bundle-1",
+          sessionId: "session-1",
+          presetId: "classic",
+          eventName: "wpb:bundle-add-to-cart-success",
+          createdAt: new Date("2026-07-10T00:02:00.000Z"),
+        },
+        {
+          bundleId: "bundle-1",
+          sessionId: "session-2",
+          presetId: "classic",
+          eventName: "wpb:bundle-add-to-cart-success",
+          createdAt: new Date("2026-07-10T00:03:00.000Z"),
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    getDb().bundle.findMany.mockResolvedValueOnce([
+      { id: "bundle-1", name: "Summer Bundle", status: "active" },
+    ]);
+
+    const response = await loader({
+      request: new Request("https://test.myshopify.com/app/attribution?days=1"),
+      params: {},
+      context: {},
+    } as any);
+
+    const payload = (await getDeferredPayload(response).analytics) as any;
+
+    expect(getDb().bundleEngagement.findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      select: expect.objectContaining({ eventName: true }),
+    }));
+    expect(payload.funnelSnapshot).toMatchObject({
+      engaged: 2,
+      addedToCart: 2,
+      checkedOut: 1,
+      revenueCents: 5000,
+    });
+    expect(payload.engagementToOrderPct).toBe(50);
+  });
 });

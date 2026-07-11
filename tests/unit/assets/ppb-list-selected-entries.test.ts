@@ -57,7 +57,12 @@ describe('PPB List Cascade selected entries integration', () => {
       querySelector: jest.fn(() => openDrawer),
     };
     const renderCascadeFooter = jest.fn();
-    const context = {
+    const context: {
+      elements: { footer: typeof footer };
+      cascadeSelectedDrawerState: { isOpen: boolean; height?: number };
+      _isProductPageCascadeTemplate: () => boolean;
+      _renderCascadeFooter: typeof renderCascadeFooter;
+    } = {
       elements: { footer },
       cascadeSelectedDrawerState: { isOpen: false },
       _isProductPageCascadeTemplate: () => true,

@@ -1,3 +1,4 @@
+import { isMultiLanguageActionDisabled } from "../../../../lib/bundle-config/common-configure-page-model";
 import type { ConfigureBundleFlowContext } from "../useConfigureBundleFlow";
 
 export function BundleWidgetSection({
@@ -8,7 +9,6 @@ export function BundleWidgetSection({
   const {
     activeSection,
     autoSelectBrowsedProduct,
-    bundle,
     fullPageBundleStyles,
     getVisibilityResourceId,
     handlePlaceWidget,
@@ -118,7 +118,9 @@ export function BundleWidgetSection({
                   <s-button
                     variant="secondary"
                     icon="globe"
-                    disabled={shopLocales.length === 0 || undefined}
+                    disabled={
+                      isMultiLanguageActionDisabled(shopLocales) || undefined
+                    }
                     onClick={() =>
                       openMultiLanguageModal("Bundle Widget", [
                         {

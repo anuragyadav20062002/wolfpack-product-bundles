@@ -8,9 +8,12 @@ import {
   TopCampaigns,
 } from "../../../components/analytics";
 import { LazyEngagementPulse, LazyRevenueAttribution } from "../../../components/analytics/lazy";
-import { ChartCardSkeleton } from "../../../components/skeletons/ChartCardSkeleton";
 import styles from "../../../styles/routes/app-attribution.module.css";
 import type { AttributionDashboardData, loader } from "../app.attribution";
+import {
+  AttributionAnalyticsSkeletonCard,
+  AttributionDashboardSkeleton,
+} from "./AttributionDashboardSkeleton";
 import { shouldRenderAnalyticsNoDataBanner } from "./attribution-lcp-state";
 
 type PixelStatusPayload = {
@@ -162,20 +165,6 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
 
 // ─── Main Component ───────────────────────────────────────────
 
-function AttributionDashboardSkeleton() {
-  return (
-    <div className={styles.dashboardShell}>
-      <div className={styles.dashboardStack}>
-        <ChartCardSkeleton height={180} label="Loading funnel summary" />
-        <div className={styles.dashboardChartGrid}>
-          <ChartCardSkeleton label="Loading engagement chart" />
-          <ChartCardSkeleton label="Loading revenue attribution chart" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function NoDataBanner({
   hasNoData,
   pixelStatus,
@@ -305,7 +294,7 @@ function AttributionDashboardContent({
           />
 
           <div className={styles.dashboardChartGrid}>
-            <Suspense fallback={<ChartCardSkeleton label="Loading engagement chart" />}>
+            <Suspense fallback={<AttributionAnalyticsSkeletonCard size="chart" />}>
               <LazyEngagementPulse
                 engagedSessions={engagedSessions}
                 prevEngagedSessions={prevEngagedSessions}
@@ -313,7 +302,7 @@ function AttributionDashboardContent({
                 trend={engagementTrend}
               />
             </Suspense>
-            <Suspense fallback={<ChartCardSkeleton label="Loading revenue attribution chart" />}>
+            <Suspense fallback={<AttributionAnalyticsSkeletonCard size="chart" />}>
               <LazyRevenueAttribution
                 summary={bundleRevenueSummary}
                 trend={bundleRevenueTrend}

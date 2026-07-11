@@ -1,3 +1,5 @@
+export {};
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ProductPageDomMethods } = require('../../../app/assets/widgets/product-page/methods/dom-methods.js');
 
@@ -20,18 +22,18 @@ class MockElement {
     selectors.forEach((selector) => this.selectorMatches.add(selector));
   }
 
-  contains(element: MockElement) {
+  contains(element: MockElement): boolean {
     if (element === this) return true;
     return this.children.some((child) => child.contains(element));
   }
 
-  insertAdjacentElement(position: string, element: MockElement) {
+  insertAdjacentElement(position: string, element: MockElement): void {
     if (position !== 'afterend') return;
     this.nextElementSibling = element;
     element.parentElement = this.parentElement;
   }
 
-  closest() {
+  closest(): MockElement | null {
     return this.parentElement;
   }
 }
