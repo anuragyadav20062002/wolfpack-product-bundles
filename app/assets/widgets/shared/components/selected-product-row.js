@@ -16,6 +16,7 @@ export function renderSelectedProductRow(product = null, options = {}) {
   const title = product.title || product.parentTitle || '';
   const variantTitle = product.variantTitle || product.variant || '';
   const quantity = Math.max(1, Number(product.quantity || 1));
+  const quantityLabel = product.quantityLabel || options.quantityLabel || `x${quantity}`;
   const imageUrl = product.imageUrl || product.image?.src || SELECTED_ROW_PLACEHOLDER_IMAGE;
   const removable = product.isDefault !== true && product.isLocked !== true && options.removable !== false;
   const classes = [
@@ -39,7 +40,7 @@ export function renderSelectedProductRow(product = null, options = {}) {
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
-        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">x${quantity}</span>
+        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">${escapeHtml(quantityLabel)}</span>
         ${removable ? `
           <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Delete ${escapeAttribute(title)}">
             ${renderTrashIcon()}

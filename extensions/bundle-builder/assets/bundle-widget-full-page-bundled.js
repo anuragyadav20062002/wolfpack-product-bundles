@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.98
- * Built   : 2026-07-10
+ * Version : 5.0.108
+ * Built   : 2026-07-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.98';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.108';
 (function() {
   'use strict';
 
@@ -2926,6 +2926,7 @@ function renderSelectedProductRow(product = null, options = {}) {
   const title = product.title || product.parentTitle || '';
   const variantTitle = product.variantTitle || product.variant || '';
   const quantity = Math.max(1, Number(product.quantity || 1));
+  const quantityLabel = product.quantityLabel || options.quantityLabel || `x${quantity}`;
   const imageUrl = product.imageUrl || product.image?.src || SELECTED_ROW_PLACEHOLDER_IMAGE;
   const removable = product.isDefault !== true && product.isLocked !== true && options.removable !== false;
   const classes = [
@@ -2949,7 +2950,7 @@ function renderSelectedProductRow(product = null, options = {}) {
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
-        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">x${quantity}</span>
+        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">${escapeHtml(quantityLabel)}</span>
         ${removable ? `
           <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Delete ${escapeAttribute(title)}">
             ${renderTrashIcon()}

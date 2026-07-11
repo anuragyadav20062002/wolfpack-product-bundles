@@ -10,6 +10,21 @@ function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
 
+export function shouldDisplayVariantsAsIndividualForInpageCategory(step, stepIndex, activeCategoryIndexes = {}) {
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  if (categories.length > 0) {
+    const activeIndex = typeof activeCategoryIndexes?.[stepIndex] === 'number'
+      ? activeCategoryIndexes[stepIndex]
+      : 0;
+    const category = categories[activeIndex] || categories[0];
+    return category?.displayVariantsAsIndividualProducts === true
+      || category?.displayVariantsAsIndividual === true;
+  }
+
+  return step?.displayVariantsAsIndividualProducts === true
+    || step?.displayVariantsAsIndividual === true;
+}
+
 export const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
@@ -27,9 +42,16 @@ _renderInpageStepProducts(stepIndex, target) {
   }
 
   const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  const categoryDisplaysVariantsAsIndividual = shouldDisplayVariantsAsIndividualForInpageCategory(
+    currentStep,
+    stepIndex,
+    this.activeInpageCategoryIndexes,
+  );
   const products = this._filterProductsForInpageCategory(
     currentStep,
-    this.expandProductsByVariant(rawProducts),
+    categoryDisplaysVariantsAsIndividual
+      ? this.expandProductsByVariant(rawProducts)
+      : rawProducts,
     stepIndex
   );
   if (products.length === 0) {

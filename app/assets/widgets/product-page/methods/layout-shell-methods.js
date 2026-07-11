@@ -3,6 +3,13 @@ import { getDiscountProgressData } from '../../shared/engine/bundle-selectors.js
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { renderSharedProductCard } from '../../shared/components/product-card.js';
 
+export function shouldHideInpageStepChrome({ isCascade = false, steps = [], step = null } = {}) {
+  if (!isCascade) return false;
+
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  return Array.isArray(steps) && steps.length === 1 && categories.length <= 1;
+}
+
 export const ProductPageLayoutShellMethods = {
 renderUI() {
   this._renderDirectDefaultProducts();
@@ -195,15 +202,22 @@ _createInpageStepSection(step, stepIndex) {
   const section = document.createElement('div');
   const preset = this._getProductPageDesignPreset();
   const isCascade = this._isProductPageCascadeTemplate?.() === true;
+  const hideStepChrome = shouldHideInpageStepChrome({
+    isCascade,
+    steps: this.selectedBundle?.steps,
+    step,
+  });
   section.className = `bw-ppb-inpage-step-section bw-ppb-inpage-step-section--${preset.toLowerCase()}${isCascade ? ' wpbMixCascadeBodyWrapper' : ''}`;
 
-  const title = document.createElement('div');
-  title.className = `bw-ppb-inpage-step-title${isCascade ? ' wpbMixCascadeBodyHeaderCategoryName' : ''}`;
-  title.textContent = step.pageTitle || step.name || '';
-  section.appendChild(title);
+  if (!hideStepChrome) {
+    const title = document.createElement('div');
+    title.className = `bw-ppb-inpage-step-title${isCascade ? ' wpbMixCascadeBodyHeaderCategoryName' : ''}`;
+    title.textContent = step.pageTitle || step.name || '';
+    section.appendChild(title);
 
-  const tabs = this._createInpageCategoryTabs(step, stepIndex);
-  if (tabs) section.appendChild(tabs);
+    const tabs = this._createInpageCategoryTabs(step, stepIndex);
+    if (tabs) section.appendChild(tabs);
+  }
 
   const grid = document.createElement('div');
   grid.className = 'bw-ppb-inpage-step-grid';
