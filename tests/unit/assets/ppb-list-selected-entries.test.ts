@@ -149,6 +149,36 @@ describe('PPB List Cascade selected entries integration', () => {
     }
   });
 
+  it('caps the selected drawer to three visible rows before overflow scrolling', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCascadeSelectedDrawerHeight } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+    const title = { getBoundingClientRect: () => ({ height: 25 }) };
+    const rows = [
+      { getBoundingClientRect: () => ({ height: 60 }) },
+      { getBoundingClientRect: () => ({ height: 60 }) },
+      { getBoundingClientRect: () => ({ height: 60 }) },
+      { getBoundingClientRect: () => ({ height: 60 }) },
+    ];
+    const list = {
+      scrollHeight: 325,
+      querySelector: jest.fn(() => title),
+      querySelectorAll: jest.fn(() => rows),
+    };
+    const drawer = {};
+    const previousGetComputedStyle = global.getComputedStyle;
+    global.getComputedStyle = jest.fn((element) => {
+      if (element === drawer) return { borderTopWidth: '1px' };
+      if (element === list) return { paddingTop: '10px', rowGap: '10px', gap: '10px' };
+      return {};
+    }) as any;
+
+    try {
+      expect(getCascadeSelectedDrawerHeight({ list, drawer, viewportHeight: 800 })).toBe(246);
+    } finally {
+      global.getComputedStyle = previousGetComputedStyle;
+    }
+  });
+
   it('prepares EB-style Cascade selected row display data', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { prepareCascadeSelectedProductDisplay } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');

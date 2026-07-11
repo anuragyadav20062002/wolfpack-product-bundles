@@ -44,9 +44,37 @@ export function getCascadeSelectedDrawerHeight({
     ? Number.parseFloat(getComputedStyle(drawer).borderTopWidth || '0')
     : 0;
   const borderOffset = Number.isFinite(borderTopWidth) ? borderTopWidth : 0;
+  const listStyle = typeof getComputedStyle === 'function' ? getComputedStyle(list) : {};
+  const selectedRows = typeof list.querySelectorAll === 'function'
+    ? Array.from(list.querySelectorAll('.bw-ppb-cascade-selected-item, .gbbMixCascadeBundleCartItem'))
+    : [];
+  const title = typeof list.querySelector === 'function'
+    ? list.querySelector('.bw-ppb-cascade-selected-list-title, .gbbMixCascadeCartSectionHeading')
+    : null;
+  const rowGap = Number.parseFloat(listStyle.rowGap || listStyle.gap || '0');
+  const paddingTop = Number.parseFloat(listStyle.paddingTop || '0');
+  const visibleRowsLimit = 3;
+  let visibleRowsHeight = Number.POSITIVE_INFINITY;
+
+  if (selectedRows.length >= visibleRowsLimit && title) {
+    const visibleRows = selectedRows.slice(0, visibleRowsLimit);
+    const titleHeight = title.getBoundingClientRect?.().height || 0;
+    const rowHeights = visibleRows.reduce((sum, row) => (
+      sum + (row.getBoundingClientRect?.().height || 0)
+    ), 0);
+    const gap = Number.isFinite(rowGap) ? rowGap : 0;
+    const top = Number.isFinite(paddingTop) ? paddingTop : 0;
+    visibleRowsHeight = top
+      + titleHeight
+      + gap
+      + rowHeights
+      + (gap * Math.max(0, visibleRows.length - 1))
+      + borderOffset;
+  }
+
   const viewportLimit = Math.round(Number(viewportHeight || 0) * 0.6) || Number.POSITIVE_INFINITY;
 
-  return Math.min(list.scrollHeight + borderOffset, viewportLimit, 420);
+  return Math.min(list.scrollHeight + borderOffset, visibleRowsHeight, viewportLimit, 420);
 }
 
 export function prepareCascadeSelectedProductDisplay({
