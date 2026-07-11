@@ -19,6 +19,7 @@ Ensure EB Settings -> Controls values are promoted from Admin state into runtime
 | 5 | Controls settings endpoint | `bundleType=product_page` or `full_page` | Returns `settingsControls` and the active layout controls | Widgets can read one runtime source |
 | 6 | PPB widget source contract | Product Page widget JS | Loads controls settings, applies product-card-click, auto-add-after-last-step, redirect action, and execute script hooks | Main PPB behavior flags wired |
 | 7 | FPB widget source contract | Full Page widget JS | Loads controls settings and applies checkout/cart redirect plus execute script hooks | Main FPB behavior flags wired |
+| 8 | Cart Transform messaging sync | Controls settings save with Bundle Items enabled | Settings action syncs `bundleCartLineMessaging` to the Cart Transform owner metafield | Keeps cart-line `Items` output aligned with the Admin toggle |
 
 ## Acceptance Criteria
 - [x] Red tests fail for missing runtime mapping and widget source contracts before implementation.

@@ -15,6 +15,8 @@ describe("Settings Controls runtime route contract", () => {
     expect(settingsRouteSource).toContain("bundleType === BundleType.FULL_PAGE");
     expect(settingsRouteSource).toContain("controlsRuntime.fullPageCustomCss");
     expect(settingsRouteSource).toContain("controlsRuntime.productPageCustomCss");
+    expect(settingsRouteSource).toContain("CartTransformService.syncCartLineMessagingSettings");
+    expect(settingsRouteSource).toContain("controlsRuntime.bundleCartLineMessaging");
   });
 
   it("exposes a storefront-readable Controls settings endpoint", () => {
