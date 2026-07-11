@@ -229,7 +229,12 @@
   --bw-ppb-cascade-product-row-height: 70px;
   --bw-ppb-cascade-product-row-media: 70px;
   --bw-ppb-cascade-product-action-width: 90px;
+  --bw-ppb-cascade-product-list-max-height: min(410px, 60vh);
   gap: 10px;
+  max-height: var(--bw-ppb-cascade-product-list-max-height);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0 0 2px;
 }
 
