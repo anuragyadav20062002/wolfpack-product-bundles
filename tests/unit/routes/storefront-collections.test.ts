@@ -244,7 +244,8 @@ describe("api.storefront-collections loader", () => {
     expect(requestBody.query).toContain("quantityAvailable");
     expect(requestBody.query).toContain("currentlyNotInStock");
     expect(body.products[0].variants[0]).toMatchObject({
-      quantityAvailable: 0,
+      available: true,
+      quantityAvailable: null,
       currentlyNotInStock: false,
     });
   });

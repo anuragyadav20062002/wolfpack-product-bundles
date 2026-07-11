@@ -44,7 +44,7 @@ describe("api.storefront-products loader", () => {
     delete (global as any).fetch;
   });
 
-  it("preserves fallback variant inventory fields when inventory scope is granted", async () => {
+  it("normalizes sellable zero-quantity fallback variants as unbounded inventory", async () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
@@ -95,7 +95,8 @@ describe("api.storefront-products loader", () => {
     expect(firstRequestBody.query).toContain("quantityAvailable");
     expect(firstRequestBody.query).toContain("currentlyNotInStock");
     expect(body.products[0].variants[0]).toMatchObject({
-      quantityAvailable: 0,
+      available: true,
+      quantityAvailable: null,
       currentlyNotInStock: false,
     });
     expect(body.products[0].description).toBe("Detailed product copy");

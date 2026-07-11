@@ -5,6 +5,7 @@ import { AppLogger } from "../../lib/logger";
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 import { getOfflineSessionForShop } from "../../services/offline-token.server";
 import { sessionStorage } from "../../shopify.server";
+import { normalizeStorefrontQuantityAvailable } from "../../lib/storefront-variant-inventory";
 
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
@@ -168,9 +169,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
               weight: edge.node.weight ?? 0,
               weightUnit: edge.node.weightUnit ?? 'GRAMS',
               available: edge.node.availableForSale,
-              quantityAvailable: typeof edge.node.quantityAvailable === 'number'
-                ? edge.node.quantityAvailable
-                : null,
+              quantityAvailable: normalizeStorefrontQuantityAvailable(edge.node),
               currentlyNotInStock: edge.node.currentlyNotInStock === true,
               image: edge.node.image ? { src: edge.node.image.url } : null
             }))

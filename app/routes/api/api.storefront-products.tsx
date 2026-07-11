@@ -6,6 +6,7 @@ import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 import { createStorefrontAccessToken } from "../../services/storefront-token.server";
 import { getOfflineSessionForShop } from "../../services/offline-token.server";
 import { sessionStorage } from "../../shopify.server";
+import { normalizeStorefrontQuantityAvailable } from "../../lib/storefront-variant-inventory";
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
 const CORS_HEADERS = {
@@ -37,9 +38,7 @@ function mapStorefrontVariant(edge: any) {
       .map((allocationEdge: any) => allocationEdge?.node)
       .filter((allocation: any) => Boolean(allocation)),
     available: edge.node.availableForSale,
-    quantityAvailable: typeof edge.node.quantityAvailable === 'number'
-      ? edge.node.quantityAvailable
-      : null,
+    quantityAvailable: normalizeStorefrontQuantityAvailable(edge.node),
     currentlyNotInStock: edge.node.currentlyNotInStock === true,
     weight: edge.node.weight ?? 0,
     weightUnit: edge.node.weightUnit ?? 'GRAMS',
