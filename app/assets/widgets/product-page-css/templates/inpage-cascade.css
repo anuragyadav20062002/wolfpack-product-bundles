@@ -565,6 +565,8 @@
   .bw-ppb-cascade-selected-toggle-chevron {
   position: relative;
   flex: 0 0 12px;
+  display: grid;
+  place-items: center;
   width: 12px;
   height: 12px;
   color: #ffffff;
@@ -573,14 +575,13 @@
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .bw-ppb-cascade-selected-toggle-chevron::before {
   content: "";
-  position: absolute;
-  top: 3px;
-  left: 2px;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
+  margin-top: -2px;
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
   transform: rotate(45deg);
+  transform-origin: center;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
@@ -597,12 +598,23 @@
   right: 0;
   bottom: 18px;
   left: 0;
+  box-sizing: border-box;
+  width: 100%;
   max-height: 0;
   margin: 0;
-  padding: 0;
-  overflow: hidden;
+  padding: 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #ffffff;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   transition: max-height 700ms ease;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-selected-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
@@ -636,8 +648,6 @@
   .bw-ppb-cascade-selected-drawer--open
   .bw-ppb-cascade-selected-list {
   max-height: calc(var(--bw-ppb-cascade-selected-drawer-height, min(60vh, 420px)) - 18px);
-  padding: 10px;
-  overflow: auto;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
