@@ -1,3 +1,5 @@
+export {};
+
 const mockDb = {
   webhookEvent: {
     findUnique: jest.fn(),

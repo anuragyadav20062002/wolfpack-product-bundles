@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.115
+ * Version : 5.0.123
  * Built   : 2026-07-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.115';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.123';
 (function() {
   'use strict';
 
@@ -4386,7 +4386,7 @@ _sendEngagementBeacon(eventName) {
   try {
     const bundleId = this.selectedBundle?.id || this.container?.dataset?.bundleId;
     if (!bundleId) return;
-    const guardKey = `wpb_engaged_${bundleId}`;
+    const guardKey = `wpb_engagement_${eventName}_${bundleId}`;
     if (sessionStorage.getItem(guardKey) === '1') return;
     const sessionId = this._ensureWpbSessionId();
     const shopId = window.Shopify?.shop || this.container?.dataset?.shop || window.location.hostname;
@@ -10577,6 +10577,7 @@ async addBundleToCart(clickedButton = null) {
 
       await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties);
 
+      this._sendEngagementBeacon?.('bundle-add-to-cart-success');
       this._emitStorefrontEvent('bundle-add-to-cart-success', { itemCount: items.length, lineCount: selectedLines.length });
 
       ToastManager.show('Bundle added to cart successfully!');

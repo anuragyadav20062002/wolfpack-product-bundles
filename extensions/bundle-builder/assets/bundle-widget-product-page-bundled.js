@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.115
+ * Version : 5.0.123
  * Built   : 2026-07-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.115';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.123';
 (function() {
   'use strict';
 
@@ -3679,13 +3679,13 @@ const modalSlotTemplateMethods = {
   },
 };
 
-function getCascadeSelectedDrawerState(selectedEntries = []) {
+function getCascadeSelectedDrawerState(selectedEntries = [], isOpen = false) {
   const entries = Array.isArray(selectedEntries) ? selectedEntries : [];
   const selectedQuantity = entries.reduce((sum, entry) => sum + Math.max(0, Number(entry?.quantity || 0)), 0);
   const hasSelectedProducts = selectedQuantity > 0;
 
   return {
-    isOpen: false,
+    isOpen: Boolean(isOpen && hasSelectedProducts),
     selectedQuantity,
     hasSelectedProducts,
   };
@@ -3694,8 +3694,12 @@ function getCascadeSelectedDrawerState(selectedEntries = []) {
 function getNextCascadeSelectedDrawerExpandedState({
   hasSelectedProducts = false,
   isExpanded = false,
+  onEmpty = null,
 } = {}) {
-  if (!hasSelectedProducts) return false;
+  if (!hasSelectedProducts) {
+    if (typeof onEmpty === 'function') onEmpty();
+    return false;
+  }
   return !isExpanded;
 }
 
@@ -3796,7 +3800,13 @@ const cascadeTemplateMethods = {
     el.style.cssText = '';
 
     const selectedEntries = this._getSelectedProductEntries();
-    const drawerState = getCascadeSelectedDrawerState(selectedEntries);
+    if (!this.cascadeSelectedDrawerState) {
+      this.cascadeSelectedDrawerState = { isOpen: false };
+    }
+    const drawerState = getCascadeSelectedDrawerState(
+      selectedEntries,
+      this.cascadeSelectedDrawerState.isOpen,
+    );
     const drawer = document.createElement('div');
     drawer.className = `bw-ppb-cascade-selected-drawer wpbMixCascadeCartDrawerContainer${drawerState.isOpen ? ' bw-ppb-cascade-selected-drawer--open gbbMixCascadeCartDrawerContainer--open' : ''}`;
 
@@ -3817,8 +3827,12 @@ const cascadeTemplateMethods = {
       list.className = 'bw-ppb-cascade-selected-list wpbMixCascadeCartItemsWrapper';
 
       const title = document.createElement('div');
-      title.className = 'bw-ppb-cascade-selected-list-title wpbMixCascadeCartItemsTitle';
-      title.textContent = this._resolveText('bundleCartSelectedProductsText', 'Selected Products');
+      title.className = 'bw-ppb-cascade-selected-list-title gbbMixCascadeCartSectionHeading wpbMixCascadeCartItemsTitle';
+      title.dataset.sectionId = 'selectedProducts';
+      title.innerHTML = `
+        <span class="bw-ppb-cascade-selected-list-title-text gbbMixCascadeCartSectionHeadingTitle">${ComponentGenerator.escapeHtml(this._resolveText('bundleCartSelectedProductsText', 'Selected Products'))}</span>
+        <span class="bw-ppb-cascade-selected-list-title-line gbbMixCascadeCartSectionHeadingLine" aria-hidden="true"></span>
+      `;
       list.appendChild(title);
 
       selectedEntries.forEach(({ stepIndex, variantId, quantity, product }) => {
@@ -3842,23 +3856,36 @@ const cascadeTemplateMethods = {
 
     const setDrawerExpanded = (isExpanded) => {
       const nextExpanded = Boolean(isExpanded && drawerState.hasSelectedProducts);
+      let maxDrawerHeight = 0;
       if (list) {
-        const maxDrawerHeight = Math.min(list.scrollHeight + 34, Math.round(window.innerHeight * 0.6), 420);
+        maxDrawerHeight = Math.min(list.scrollHeight + 20, Math.round(window.innerHeight * 0.6), 420);
         drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${maxDrawerHeight}px`);
       }
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open', nextExpanded);
       drawer.classList.toggle('gbbMixCascadeCartDrawerContainer--open', nextExpanded);
       toggle.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
+      this.cascadeSelectedDrawerState.isOpen = nextExpanded;
+      this.cascadeSelectedDrawerState.height = nextExpanded ? maxDrawerHeight : 0;
     };
-    setDrawerExpanded(drawerState.isOpen);
     toggle.addEventListener('click', () => {
       setDrawerExpanded(getNextCascadeSelectedDrawerExpandedState({
         hasSelectedProducts: drawerState.hasSelectedProducts,
         isExpanded: drawer.classList.contains('bw-ppb-cascade-selected-drawer--open'),
+        onEmpty: () => ToastManager.show('Add items to your bundle first'),
       }));
     });
 
     el.appendChild(drawer);
+    const previousDrawerHeight = Math.max(0, Number(this.cascadeSelectedDrawerState.height || 0));
+    if (drawerState.isOpen && previousDrawerHeight > 0) {
+      drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${previousDrawerHeight}px`);
+      const scheduleFrame = typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
+        ? window.requestAnimationFrame.bind(window)
+        : (callback) => callback();
+      scheduleFrame(() => setDrawerExpanded(true));
+    } else {
+      setDrawerExpanded(drawerState.isOpen);
+    }
 
     const message = this._getCascadeFooterMessage();
     if (message) {
@@ -4831,6 +4858,17 @@ clearStepSelections(stepIndex) {
 renderFooter() {
   const el = this.elements.footer;
   if (!el) return;
+  if (this._isProductPageCascadeTemplate()) {
+    const openDrawer = el.querySelector('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
+    if (openDrawer) {
+      const drawerHeight = openDrawer.getBoundingClientRect?.().height || 0;
+      this.cascadeSelectedDrawerState = {
+        ...(this.cascadeSelectedDrawerState || {}),
+        isOpen: true,
+        height: drawerHeight,
+      };
+    }
+  }
   el.innerHTML = '';
 
   if (this._isProductPageCascadeTemplate()) {
@@ -7521,6 +7559,17 @@ updateProductSelection(stepIndex, productId, newQuantity) {
 
   if (!this.validateStepCondition(stepIndex, selectionKey, quantity)) {
     return;
+  }
+
+  const cascadeDrawerWasOpen = this._isProductPageCascadeTemplate?.()
+    && this.elements?.footer?.querySelector('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
+  if (cascadeDrawerWasOpen) {
+    const drawerHeight = cascadeDrawerWasOpen.getBoundingClientRect?.().height || 0;
+    this.cascadeSelectedDrawerState = {
+      ...(this.cascadeSelectedDrawerState || {}),
+      isOpen: true,
+      height: drawerHeight,
+    };
   }
 
   this.setSelectedQuantity(stepIndex, selectionKey, quantity);

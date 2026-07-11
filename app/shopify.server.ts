@@ -17,6 +17,7 @@ import { activateUtmPixel } from "./services/pixel-activation.server";
 import { AppLogger } from "./lib/logger";
 import { ensureShopHasExpiringOfflineSession } from "./services/offline-token.server";
 import { ensureShopIdentity, recordBusinessEvent } from "./services/app-events.server";
+import { normalizeSavedCustomUtmParameters } from "./lib/analytics/attribution-controls";
 
 const sessionStorage = new CachedSessionStorage(prisma);
 
@@ -137,7 +138,16 @@ const shopify = shopifyApp({
       try {
         const appUrl = process.env.SHOPIFY_APP_URL;
         if (appUrl) {
-          await activateUtmPixel(setupAdmin, appUrl, session.shop);
+          const shop = await prisma.shop.findUnique({
+            where: { shopDomain: session.shop },
+            select: { customUtmParameters: true },
+          });
+          await activateUtmPixel(
+            setupAdmin,
+            appUrl,
+            session.shop,
+            normalizeSavedCustomUtmParameters(shop?.customUtmParameters),
+          );
           AppLogger.info("UTM pixel auto-activated", { shop: session.shop });
         }
       } catch (error: any) {

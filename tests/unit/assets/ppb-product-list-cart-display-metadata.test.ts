@@ -9,11 +9,11 @@ const { CurrencyManager } = require('../../../app/assets/widgets/shared/currency
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ToastManager } = require('../../../app/assets/bundle-widget-components.js');
 
-global.PricingCalculator = PricingCalculator;
-global.CurrencyManager = CurrencyManager;
-global.ToastManager = ToastManager;
+(globalThis as any).PricingCalculator = PricingCalculator;
+(globalThis as any).CurrencyManager = CurrencyManager;
+(globalThis as any).ToastManager = ToastManager;
 const MONEY_FORMAT = ['$', '{{amount}}'].join('');
-global.window = {
+(globalThis as any).window = {
   Shopify: {
     currency: {
       active: 'USD',
@@ -115,7 +115,7 @@ describe('PPB Product List cart display metadata', () => {
       runtimeToken: 'runtime-token',
     });
     expect(cartContext.bundleDetailsKey).toBe('MIX-894502_K1K');
-    expect(Array.from(cartContext.formData.entries()).filter(([key]) => key.endsWith('[_wolfpackProductBundle:OfferId]'))).toEqual([
+    expect((Array.from(cartContext.formData.entries()) as Array<[string, unknown]>).filter(([key]) => key.endsWith('[_wolfpackProductBundle:OfferId]'))).toEqual([
       ['items[0][properties][_wolfpackProductBundle:OfferId]', 'MIX-894502_K1K_1'],
       ['items[1][properties][_wolfpackProductBundle:OfferId]', 'MIX-894502_K1K_2'],
     ]);

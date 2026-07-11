@@ -2,6 +2,8 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { AppLogger } from "../../lib/logger";
 import { activateUtmPixel } from "../../services/pixel-activation.server";
+import db from "../../db.server";
+import { normalizeSavedCustomUtmParameters } from "../../lib/analytics/attribution-controls";
 
 /**
  * GET /api/activate-pixel
@@ -22,7 +24,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   try {
-    const result = await activateUtmPixel(admin, appUrl, session.shop);
+    const shop = await db.shop.findUnique({
+      where: { shopDomain: session.shop },
+      select: { customUtmParameters: true },
+    });
+    const result = await activateUtmPixel(
+      admin,
+      appUrl,
+      session.shop,
+      normalizeSavedCustomUtmParameters(shop?.customUtmParameters),
+    );
     return json({ ...result, shopDomain: session.shop });
   } catch (error: unknown) {
     AppLogger.error("[PIXEL] Activation route failed", {

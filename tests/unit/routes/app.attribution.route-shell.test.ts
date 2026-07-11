@@ -46,4 +46,14 @@ describe("app.attribution route shell", () => {
     expect(view).not.toContain("Loading funnel summary");
     expect(view).not.toContain("Loading tracking status");
   });
+
+  it("renders spinner-only analytics skeleton cards while dashboard data is delayed", async () => {
+    const { default: AttributionRoute } = await import("../../../app/routes/app/app.attribution");
+
+    const view = renderToStaticMarkup(React.createElement(AttributionRoute));
+
+    expect(view).toContain("<s-spinner");
+    expect(view).not.toContain("Loading engagement chart");
+    expect(view).not.toContain("Loading revenue attribution chart");
+  });
 });

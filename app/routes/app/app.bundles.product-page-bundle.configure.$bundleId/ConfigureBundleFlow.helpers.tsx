@@ -1,4 +1,7 @@
-import { PRODUCT_PAGE_SETUP_ITEMS } from "../../../lib/bundle-config/product-page-admin-sections";
+import {
+  buildBundleVisibilityChildItems,
+  buildConfigureSetupItems,
+} from "../../../lib/bundle-config/common-configure-page-model";
 export {
   BundleProductCard,
   QuestionHelpTooltip,
@@ -43,12 +46,10 @@ export const DISCOUNT_TEMPLATE_VARIABLES: [string, string][] = [
   ],
 ];
 
-export const bundleSetupItems = PRODUCT_PAGE_SETUP_ITEMS;
+export const bundleSetupItems = buildConfigureSetupItems("product_page");
 
-export const bundleVisibilityChildItems = [
-  { id: "bundle_widget", label: "Bundle Widget" },
-  { id: "bundle_embed", label: "Bundle Embed" },
-];
+export const bundleVisibilityChildItems =
+  buildBundleVisibilityChildItems("product_page");
 
 export const productPageTemplateOptions = [
   {

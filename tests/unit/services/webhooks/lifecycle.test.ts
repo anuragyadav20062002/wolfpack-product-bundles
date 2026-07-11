@@ -1,3 +1,5 @@
+export {};
+
 const mockDb = {
   bundle: { deleteMany: jest.fn() },
   session: { deleteMany: jest.fn() },
