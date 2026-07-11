@@ -157,8 +157,12 @@ export const cascadeTemplateMethods = {
       list.className = 'bw-ppb-cascade-selected-list wpbMixCascadeCartItemsWrapper';
 
       const title = document.createElement('div');
-      title.className = 'bw-ppb-cascade-selected-list-title wpbMixCascadeCartItemsTitle';
-      title.textContent = this._resolveText('bundleCartSelectedProductsText', 'Selected Products');
+      title.className = 'bw-ppb-cascade-selected-list-title gbbMixCascadeCartSectionHeading wpbMixCascadeCartItemsTitle';
+      title.dataset.sectionId = 'selectedProducts';
+      title.innerHTML = `
+        <span class="bw-ppb-cascade-selected-list-title-text gbbMixCascadeCartSectionHeadingTitle">${ComponentGenerator.escapeHtml(this._resolveText('bundleCartSelectedProductsText', 'Selected Products'))}</span>
+        <span class="bw-ppb-cascade-selected-list-title-line gbbMixCascadeCartSectionHeadingLine" aria-hidden="true"></span>
+      `;
       list.appendChild(title);
 
       selectedEntries.forEach(({ stepIndex, variantId, quantity, product }) => {

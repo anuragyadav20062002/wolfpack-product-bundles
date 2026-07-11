@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.121
+ * Version : 5.0.122
  * Built   : 2026-07-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.121';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.122';
 (function() {
   'use strict';
 
@@ -3827,8 +3827,12 @@ const cascadeTemplateMethods = {
       list.className = 'bw-ppb-cascade-selected-list wpbMixCascadeCartItemsWrapper';
 
       const title = document.createElement('div');
-      title.className = 'bw-ppb-cascade-selected-list-title wpbMixCascadeCartItemsTitle';
-      title.textContent = this._resolveText('bundleCartSelectedProductsText', 'Selected Products');
+      title.className = 'bw-ppb-cascade-selected-list-title gbbMixCascadeCartSectionHeading wpbMixCascadeCartItemsTitle';
+      title.dataset.sectionId = 'selectedProducts';
+      title.innerHTML = `
+        <span class="bw-ppb-cascade-selected-list-title-text gbbMixCascadeCartSectionHeadingTitle">${ComponentGenerator.escapeHtml(this._resolveText('bundleCartSelectedProductsText', 'Selected Products'))}</span>
+        <span class="bw-ppb-cascade-selected-list-title-line gbbMixCascadeCartSectionHeadingLine" aria-hidden="true"></span>
+      `;
       list.appendChild(title);
 
       selectedEntries.forEach(({ stepIndex, variantId, quantity, product }) => {
