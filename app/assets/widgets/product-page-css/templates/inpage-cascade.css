@@ -236,6 +236,12 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0 0 2px;
+  scrollbar-gutter: stable;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-product-list[aria-busy="true"] {
+  min-height: var(--bw-ppb-cascade-product-list-max-height);
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
