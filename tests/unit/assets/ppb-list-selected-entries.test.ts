@@ -134,6 +134,21 @@ describe('PPB List Cascade selected entries integration', () => {
     expect(onEmpty).toHaveBeenCalledTimes(1);
   });
 
+  it('sizes the selected drawer from list content plus the drawer border', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCascadeSelectedDrawerHeight } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+    const list = { scrollHeight: 185 };
+    const drawer = {};
+    const previousGetComputedStyle = global.getComputedStyle;
+    global.getComputedStyle = jest.fn(() => ({ borderTopWidth: '1px' })) as any;
+
+    try {
+      expect(getCascadeSelectedDrawerHeight({ list, drawer, viewportHeight: 800 })).toBe(186);
+    } finally {
+      global.getComputedStyle = previousGetComputedStyle;
+    }
+  });
+
   it('prepares EB-style Cascade selected row display data', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { prepareCascadeSelectedProductDisplay } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');

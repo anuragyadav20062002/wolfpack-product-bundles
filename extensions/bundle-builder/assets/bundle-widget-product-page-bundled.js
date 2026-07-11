@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.123
+ * Version : 5.0.124
  * Built   : 2026-07-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.123';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.124';
 (function() {
   'use strict';
 
@@ -3703,6 +3703,22 @@ function getNextCascadeSelectedDrawerExpandedState({
   return !isExpanded;
 }
 
+function getCascadeSelectedDrawerHeight({
+  list = null,
+  drawer = null,
+  viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0,
+} = {}) {
+  if (!list) return 0;
+
+  const borderTopWidth = drawer && typeof getComputedStyle === 'function'
+    ? Number.parseFloat(getComputedStyle(drawer).borderTopWidth || '0')
+    : 0;
+  const borderOffset = Number.isFinite(borderTopWidth) ? borderTopWidth : 0;
+  const viewportLimit = Math.round(Number(viewportHeight || 0) * 0.6) || Number.POSITIVE_INFINITY;
+
+  return Math.min(list.scrollHeight + borderOffset, viewportLimit, 420);
+}
+
 function prepareCascadeSelectedProductDisplay({
   product = {},
   variantId = '',
@@ -3858,7 +3874,7 @@ const cascadeTemplateMethods = {
       const nextExpanded = Boolean(isExpanded && drawerState.hasSelectedProducts);
       let maxDrawerHeight = 0;
       if (list) {
-        maxDrawerHeight = Math.min(list.scrollHeight + 20, Math.round(window.innerHeight * 0.6), 420);
+        maxDrawerHeight = getCascadeSelectedDrawerHeight({ list, drawer });
         drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${maxDrawerHeight}px`);
       }
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open', nextExpanded);

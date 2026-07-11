@@ -33,6 +33,22 @@ export function getNextCascadeSelectedDrawerExpandedState({
   return !isExpanded;
 }
 
+export function getCascadeSelectedDrawerHeight({
+  list = null,
+  drawer = null,
+  viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0,
+} = {}) {
+  if (!list) return 0;
+
+  const borderTopWidth = drawer && typeof getComputedStyle === 'function'
+    ? Number.parseFloat(getComputedStyle(drawer).borderTopWidth || '0')
+    : 0;
+  const borderOffset = Number.isFinite(borderTopWidth) ? borderTopWidth : 0;
+  const viewportLimit = Math.round(Number(viewportHeight || 0) * 0.6) || Number.POSITIVE_INFINITY;
+
+  return Math.min(list.scrollHeight + borderOffset, viewportLimit, 420);
+}
+
 export function prepareCascadeSelectedProductDisplay({
   product = {},
   variantId = '',
@@ -188,7 +204,7 @@ export const cascadeTemplateMethods = {
       const nextExpanded = Boolean(isExpanded && drawerState.hasSelectedProducts);
       let maxDrawerHeight = 0;
       if (list) {
-        maxDrawerHeight = Math.min(list.scrollHeight + 20, Math.round(window.innerHeight * 0.6), 420);
+        maxDrawerHeight = getCascadeSelectedDrawerHeight({ list, drawer });
         drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${maxDrawerHeight}px`);
       }
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open', nextExpanded);
