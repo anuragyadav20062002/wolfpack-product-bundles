@@ -80,10 +80,13 @@ export function FpbBundleCssSettings({
           )}
         </s-stack>
       </s-section>
-      <BundleStatusSection
-        status={formState.bundleStatus}
-        onChange={formState.setBundleStatus}
-      />
+      <s-section>
+        <BundleStatusSection
+          status={formState.bundleStatus}
+          onChange={formState.setBundleStatus}
+          showHeading={false}
+        />
+      </s-section>
     </>
   );
 }

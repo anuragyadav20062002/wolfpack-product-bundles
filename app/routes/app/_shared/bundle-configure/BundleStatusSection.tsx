@@ -10,7 +10,11 @@ const statusOptions = [...BUNDLE_STATUS_OPTIONS];
  * Shared bundle status selector for FPB and PPB configure pages.
  * Uses the imperative ref pattern to keep the web component in sync.
  */
-const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps) => {
+const BundleStatusSection = memo(({
+  status,
+  onChange,
+  showHeading = true,
+}: BundleStatusSectionProps) => {
   const selectRef = useRef<any>(null);
   const { t } = useTranslation();
   const handleChange = (event: Event) => {
@@ -32,9 +36,11 @@ const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps
 
   return (
     <s-stack direction="block" gap="small-100">
-      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-        {t("common.bundleStatus.title")}
-      </h3>
+      {showHeading && (
+        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+          {t("common.bundleStatus.title")}
+        </h3>
+      )}
       <s-select
         ref={selectRef}
         value={status}
