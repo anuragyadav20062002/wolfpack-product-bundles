@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
-const WIDGET_VERSION = '5.0.153';
+const WIDGET_VERSION = '5.0.154';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
