@@ -145,6 +145,7 @@ Current EB evidence:
 Current WPB evidence:
 - WPB product-page mobile before source patch: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-current-true-mobile-direct-product-live-probe.json`
 - WPB mobile local CSS proof after source patch, injected through Chrome DevTools MCP without deploy: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-mobile-local-css-price-selector-after.json`
+- WPB mobile hard-refresh proof after commit, no injected CSS: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-mobile-live-after-commit-no-injection.json`
 
 Findings:
 - EB's true `390 x 844` Product List row uses the same price typography across normal rows and the variant-selector row.
@@ -159,3 +160,10 @@ Post-patch local Chrome proof at `390 x 844`:
 - Normal row price: `14px`, `font-weight: 700`.
 - Variant row price: `14px`, `font-weight: 700`.
 - Variant select width: `142.391px` on the WPB direct product page, matching the EB mobile responsive target closely without a deploy.
+
+Hard-refresh proof after the `5.0.143` build was served by the dev extension:
+- `window.__BUNDLE_WIDGET_VERSION__`: `5.0.143`.
+- No temporary injected style was present.
+- Normal row price: `14px`, `font-weight: 700`.
+- Variant row price: `14px`, `font-weight: 700`.
+- Variant select width: `142.391px`.
