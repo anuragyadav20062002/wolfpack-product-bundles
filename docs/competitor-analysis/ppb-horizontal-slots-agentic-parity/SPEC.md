@@ -2,8 +2,10 @@
 
 ## Status
 
-In progress. EB fixture establishment and the first desktop empty/open states are
-captured. WPB comparison has not started.
+In progress. Baseline slots, category controls, selection return/removal,
+responsive mobile behavior, and modal scroll/close behavior have current EB-first
+and WPB evidence. Remaining pairwise, stress, placement, cart, and regression rows
+are not yet accepted.
 
 ## Contract
 
@@ -37,9 +39,11 @@ committed.
 | --- | --- | --- | --- | --- |
 | HS00 baseline | Desktop/mobile empty states captured | Desktop/mobile empty states captured on 5.0.151 | Aggregate card and 300px mobile cap fixed | Accepted empty behavior at 1280x800 and 390x844 |
 | HS01 step/category | Multi-step/category picker controls captured | Modal category controls and filtering captured on 5.0.152 | Missing category row fixed | Accepted at 390x844; desktop smoke pending |
-| HS14 picker open/close | Desktop/mobile open state captured | Mobile category/header/open state captured | Category behavior fixed; remaining desktop/focus checks pending | In progress |
+| HS14 picker open/close | Desktop/mobile open, close, and backdrop states captured | Equivalent states captured on 5.0.153 | Mobile close listener fixed; no remaining open/close delta | Accepted at 390x844 and 1280x800 |
 | HS09 responsive placement | 390px host captured | 390px host captured | Mobile grid cap fixed; remaining viewports pending | In progress |
-| HS17 modal scroll/focus | Modal geometry and scroll owner captured | Mobile body-scroll/footer persistence captured | Whole-panel scrolling fixed; focus proof incomplete | In progress |
+| HS15 picker selection | Product stays in picker and returns to first slot on close | Equivalent return order captured on 5.0.153 | Mobile close listener fixed | Accepted at 390x844 |
+| HS16 replace/remove | Filled slot is inert; remove restores empty slot | Equivalent remove-first replacement flow captured | No remaining behavior delta | Accepted at 390x844 |
+| HS17 modal scroll/focus | Mobile/desktop body lock, internal scroll, backdrop, focus, and Escape captured | Identical core behavior; WPB adds dialog semantics and Escape close | No visual or pointer interaction delta | Accepted at 390x844 and 1280x800 |
 
 ## Acceptance boundary
 
