@@ -11,7 +11,7 @@ This audit treats missing or stale evidence as incomplete. It does not infer com
 | Product Page Bundle, Product List only | Runtime `PDP_INPAGE + CASCADE` markers throughout row evidence and `SPEC.md` | Proven |
 | Realistic fixture permutations | PL00-PL08, PLF six-product, PLS1 combined, and PLS3 collection fixtures | Proven |
 | EB inspected before WPB changes | Per-row EB source-of-truth sections and Chrome evidence paths | Proven for completed rows |
-| Desktop and mobile behavior | Per-row desktop/mobile evidence | Proven except gates below |
+| Desktop and mobile behavior | Per-row desktop/mobile evidence | Proven |
 | Narrow, default, and wide placements | `PLS7-placement-responsive-evidence.md` | Proven on `5.0.148` desktop/mobile recheck |
 | Empty, one, two, and overflow selected counts | PL07 evidence set | Proven; `5.0.148` did not change drawer CSS/JS |
 | Available, unavailable, grouped variants, and sole sellable variant | PL03, PL04, PLS1 | Proven |
@@ -25,12 +25,12 @@ This audit treats missing or stale evidence as incomplete. It does not infer com
 | Product Grid, Horizontal Slots, Vertical Slots isolation | `PLS6-other-template-smoke-evidence.md` | Proven by desktop/mobile runtime and interaction smoke |
 | Behavior tests | 17 focused unit suites, 106 tests passed on 2026-07-13 | Proven against current tree |
 | Builds, syntax, lint, graph | Widget `5.0.148` build/minification, generated JS syntax check, zero-error lint, clean diff check, and successful graph rebuild | Proven |
-| Every finished slice committed | Recent parity commits through `bb3dbc34` | Proven for completed slices |
+| Every finished slice committed | Parity implementation/evidence commits through `122eba91` | Proven |
 
 ## Completion Result
 
 All objective requirements and matrix rows have current evidence or an explicit EB-absent resolution. The final focused behavior pass contains 17 suites and 106 tests; widget `5.0.148` syntax, CSS minification, lint, diff validation, and graph rebuild pass. Every completed implementation/evidence slice is committed or staged for the final evidence commit.
 
-The focused behavior portion of gate 4 currently passes: 17 suites and 106 tests. It must be repeated only if subsequent runtime code changes affect the covered behavior.
+The focused behavior baseline passes 17 suites and 106 tests. It must be repeated only if subsequent runtime code changes affect the covered behavior.
 
 Chrome DevTools MCP later became available. The card, placement, other-template smoke, interaction, and Product List restoration gates were completed using direct MCP functions.
