@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.151
+ * Version : 5.0.152
  * Built   : 2026-07-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.151';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.152';
 (function() {
   'use strict';
 
@@ -4890,6 +4890,8 @@ ensureBottomSheet() {
         </div>
         <!-- "Choose X" step title -->
         <div class="modal-step-title bw-bs-choose-title"></div>
+        <!-- Current-step categories -->
+        <div class="bw-bs-category-tabs" hidden></div>
         <!-- Discount / progress messaging -->
         <div class="bw-bs-discount-bar footer-discount-text"></div>
       </div>
@@ -7566,16 +7568,64 @@ renderModalTabs() {
   if (this.updateTabArrows) {
     setTimeout(() => this.updateTabArrows(), 50);
   }
+
+  this.renderModalCategoryTabs();
+},
+
+renderModalCategoryTabs() {
+  const tabsContainer = this.elements.modal.querySelector('.bw-bs-category-tabs');
+  if (!tabsContainer) return;
+
+  const stepIndex = this.currentStepIndex;
+  const step = this.selectedBundle?.steps?.[stepIndex];
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  tabsContainer.textContent = '';
+
+  if (categories.length <= 1) {
+    tabsContainer.hidden = true;
+    return;
+  }
+
+  this.activeInpageCategoryIndexes ||= {};
+  if (typeof this.activeInpageCategoryIndexes[stepIndex] !== 'number') {
+    this.activeInpageCategoryIndexes[stepIndex] = 0;
+  }
+
+  tabsContainer.hidden = false;
+  categories.forEach((category, categoryIndex) => {
+    const button = tabsContainer.ownerDocument.createElement('button');
+    button.type = 'button';
+    button.className = 'bw-bs-category-tab';
+    button.dataset.categoryIndex = String(categoryIndex);
+    button.textContent = this._getInpageCategoryLabel(category, categoryIndex);
+    button.classList.toggle(
+      'active',
+      categoryIndex === this.activeInpageCategoryIndexes[stepIndex]
+    );
+    button.addEventListener('click', () => {
+      this.activeInpageCategoryIndexes[stepIndex] = categoryIndex;
+      tabsContainer.querySelectorAll('.bw-bs-category-tab').forEach(tab => {
+        tab.classList.toggle('active', tab === button);
+      });
+      this.renderModalProducts(stepIndex);
+    });
+    tabsContainer.appendChild(button);
+  });
 },
 
 renderModalProducts(stepIndex, productsToRender = null) {
 
   const rawProducts = productsToRender || this.stepProductData[stepIndex];
+  const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  const categoryProducts = this._filterProductsForInpageCategory(
+    currentStep,
+    rawProducts,
+    stepIndex
+  );
 
-  const products = this.expandProductsByVariant(rawProducts);
+  const products = this.expandProductsByVariant(categoryProducts);
   const selectedProducts = this.selectedProducts[stepIndex];
   const productGrid = this.elements.modal.querySelector('.product-grid');
-  const currentStep = this.selectedBundle?.steps?.[stepIndex];
   const isFreeGiftStep = !!currentStep?.isFreeGift;
 
   const bodyEl = this.elements.modal.querySelector('.bw-bs-body') || this.elements.modal.querySelector('.modal-body');

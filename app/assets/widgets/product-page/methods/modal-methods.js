@@ -172,16 +172,64 @@ renderModalTabs() {
   if (this.updateTabArrows) {
     setTimeout(() => this.updateTabArrows(), 50);
   }
+
+  this.renderModalCategoryTabs();
+},
+
+renderModalCategoryTabs() {
+  const tabsContainer = this.elements.modal.querySelector('.bw-bs-category-tabs');
+  if (!tabsContainer) return;
+
+  const stepIndex = this.currentStepIndex;
+  const step = this.selectedBundle?.steps?.[stepIndex];
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  tabsContainer.textContent = '';
+
+  if (categories.length <= 1) {
+    tabsContainer.hidden = true;
+    return;
+  }
+
+  this.activeInpageCategoryIndexes ||= {};
+  if (typeof this.activeInpageCategoryIndexes[stepIndex] !== 'number') {
+    this.activeInpageCategoryIndexes[stepIndex] = 0;
+  }
+
+  tabsContainer.hidden = false;
+  categories.forEach((category, categoryIndex) => {
+    const button = tabsContainer.ownerDocument.createElement('button');
+    button.type = 'button';
+    button.className = 'bw-bs-category-tab';
+    button.dataset.categoryIndex = String(categoryIndex);
+    button.textContent = this._getInpageCategoryLabel(category, categoryIndex);
+    button.classList.toggle(
+      'active',
+      categoryIndex === this.activeInpageCategoryIndexes[stepIndex]
+    );
+    button.addEventListener('click', () => {
+      this.activeInpageCategoryIndexes[stepIndex] = categoryIndex;
+      tabsContainer.querySelectorAll('.bw-bs-category-tab').forEach(tab => {
+        tab.classList.toggle('active', tab === button);
+      });
+      this.renderModalProducts(stepIndex);
+    });
+    tabsContainer.appendChild(button);
+  });
 },
 
 renderModalProducts(stepIndex, productsToRender = null) {
   // Use all products from step data
   const rawProducts = productsToRender || this.stepProductData[stepIndex];
+  const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  const categoryProducts = this._filterProductsForInpageCategory(
+    currentStep,
+    rawProducts,
+    stepIndex
+  );
   // Expand variants into separate cards like full-page widget
-  const products = this.expandProductsByVariant(rawProducts);
+  const products = this.expandProductsByVariant(categoryProducts);
   const selectedProducts = this.selectedProducts[stepIndex];
   const productGrid = this.elements.modal.querySelector('.product-grid');
-  const currentStep = this.selectedBundle?.steps?.[stepIndex];
   const isFreeGiftStep = !!currentStep?.isFreeGift;
 
   // Inject free gift promo heading above the grid

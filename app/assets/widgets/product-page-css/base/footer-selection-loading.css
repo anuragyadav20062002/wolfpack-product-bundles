@@ -338,6 +338,47 @@
   padding: 12px 52px 6px 20px;
 }
 
+.bw-bs-category-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  gap: 16px;
+  width: calc(100% + 32px);
+  padding: 0 1px 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.bw-bs-category-tabs[hidden] {
+  display: none;
+}
+
+.bw-bs-category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.bw-bs-category-tab {
+  flex: 0 0 auto;
+  min-height: 33px;
+  padding: 5px;
+  border: 1px solid var(--bundle-global-primary-button, #1e1e1e);
+  border-radius: 5px;
+  background: var(--bundle-bs-panel-bg, rgb(244, 249, 249));
+  color: var(--bundle-global-primary-button, #1e1e1e);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: normal;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bw-bs-category-tab.active {
+  background: var(--bundle-global-primary-button, #1e1e1e);
+  color: var(--bundle-global-button-text, #ffffff);
+}
+
 .bw-bs-close-desktop {
   position: absolute;
   top: 10px;

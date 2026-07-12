@@ -43,7 +43,7 @@ to 1,121px, and the footer was pushed below the viewport to y=1,356.20. WPB now:
 - preserves the footer y-position while the body scrolls from 0 to 400;
 - retains bottom padding so the final product remains reachable above the footer.
 
-The remaining body-height difference is explained by a behavioral header gap,
+The remaining body-height difference was explained by a behavioral header gap,
 not spacing: EB includes category controls between its step tabs and discount
-message; WPB currently does not render modal category controls. That is tracked
-as the next TDD behavior slice.
+message. WPB now renders and applies those modal category controls on widget
+5.0.152; see `HS01-modal-category-evidence.md`.
