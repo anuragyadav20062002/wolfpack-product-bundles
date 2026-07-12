@@ -88,9 +88,9 @@ Last updated: 2026-07-13.
 
 | Row | Status | Evidence | Remaining requirement |
 |---|---|---|---|
-| `PL00-baseline` | Accepted in source/local proof; live no-injection proof still blocked by served CSS skew | `PL00-product-row-quantity-delta.md`, `PL00-add-button-centering-delta.md`, `PL-quantity-behavior-evidence.md`, `PL-loading-placement-evidence.md` | Re-run live proof after the served `bundle-widget-product-page-cascade.css` contains `--bw-ppb-cascade-action-radius`; JS `5.0.145` alone is not sufficient proof. |
+| `PL00-baseline` | Accepted | `PL00-product-row-quantity-delta.md`, `PL00-add-button-centering-delta.md`, `PL-quantity-behavior-evidence.md`, `PL-loading-placement-evidence.md` | Widget `5.0.146` desktop/mobile proof confirms the served Cascade CSS contains the action-radius token and all Add/selected quantity controls compute to `5px`. |
 | `PL01-category-list` | Accepted for populated category tabs and switching | `PL01-category-list-fixture-evidence.md` | Empty manual category remains EB-absent in the captured fixture; do not invent WPB-only behavior. |
-| `PL02-step-conditions` | Partially accepted | `PL02-step-rules-eb-fixture-evidence.md`, `PL02-step-conditions-fixture-evidence.md` | Single-step quantity rule gating is accepted; true multi-step next/back behavior still needs an EB fixture with visible Step Setup controls. |
+| `PL02-step-conditions` | Accepted | `PL02-step-rules-eb-fixture-evidence.md`, `PL02-step-conditions-fixture-evidence.md` | Desktop and mobile match for active-step rendering, Next/Back, gating, exact-one blocking, toast copy, cross-step selection persistence, and measured step-indicator geometry/styles. |
 | `PL03-variants` | Accepted for grouped variant selector, selected identity, price typography, and responsive select width | `PL03-variant-row-evidence.md` | Unavailable variant state is still covered under `PL04`; swatches only apply if EB exposes them for Product List. |
 | `PL04-product-source-inventory` | Fixture-gated | `PL04-inventory-fixture-evidence.md` | Need EB and WPB fixture with at least one sold-out product row and one unavailable variant option. |
 | `PL05-discounts-footer` | Accepted for percentage-tier discount footer | `PL05-discounts-footer-fixture-evidence.md` | Fixed-amount and fixed-price discount permutations remain optional fixture expansion, not a known WPB gap. |

@@ -247,6 +247,9 @@ updateAddToCartButton() {
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
   const button = this.elements.addToCartButton;
+  const usesCascadeStepFlow = this._usesCascadeStepFlow?.() === true;
+  const isIntermediateCascadeStep = usesCascadeStepFlow
+    && this.currentStepIndex < this.selectedBundle.steps.length - 1;
 
   // Check if all required steps are complete (free gift and default steps are not required)
   const allStepsValid = this.selectedBundle.steps.every((step, index) => {
@@ -261,9 +264,39 @@ updateAddToCartButton() {
     return sum + Object.values(stepSelections || {}).reduce((s, qty) => s + qty, 0);
   }, 0);
 
+  if (isIntermediateCascadeStep) {
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const currentStepValid = this.validateStep(this.currentStepIndex);
+    const formattedPrice = totalQuantity > 0
+      ? CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo)
+      : '';
+    const formattedTotalPrice = totalQuantity > 0
+      ? CurrencyManager.convertAndFormat(totalPrice, currencyInfo)
+      : '';
+    const formattedDiscountAmount = combinedDiscountInfo.discountAmount > 0
+      ? CurrencyManager.convertAndFormat(combinedDiscountInfo.discountAmount, currencyInfo)
+      : '';
+
+    const nextButtonContent = this._getCascadeAddToCartButtonContent?.({
+      label: this._resolveText('nextButton', 'Next'),
+      totalPriceText: formattedTotalPrice,
+      finalPriceText: formattedPrice,
+      discountAmountText: formattedDiscountAmount,
+      discountInfo: combinedDiscountInfo,
+    }) || {
+      label: this._resolveText('nextButton', 'Next'),
+      separator: formattedPrice ? '\u2022' : '',
+      finalPriceText: formattedPrice,
+      compareAtPriceText: '',
+      discountPillText: '',
+    };
+    if (!formattedPrice) nextButtonContent.separator = '';
+    this._renderCascadeAddToCartButtonContent(button, nextButtonContent);
+    button.disabled = !currentStepValid;
+    button.classList.toggle('disabled', !currentStepValid);
   // Disable button if no paid products selected or not all required steps are complete.
-  if (paidTotalQuantity === 0 || !allStepsValid) {
-    if (paidTotalQuantity === 0) {
+  } else if (paidTotalQuantity === 0 || !allStepsValid) {
+    if (paidTotalQuantity === 0 || usesCascadeStepFlow) {
       button.textContent = this._resolveText('addToCartButton', 'Add Bundle to Cart');
     } else {
       // Some products selected but not all required steps complete

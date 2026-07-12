@@ -89,3 +89,97 @@ Decision:
 - PL02 remains a fixture-setup gap, not a proven WPB storefront/runtime gap.
 - Do not patch WPB step-condition rendering until EB emits a comparable multi-step Product List storefront runtime.
 - The safe next step is to use a Chrome DevTools MCP session that exposes coordinate click or keypress controls, or ask the user to manually open EB `Step Setup` for `WPB PPB Product List Parity 2026-07-11` and confirm when it is visible.
+
+## 2026-07-13 Multi-Step Fixture And Live Delta
+
+Chrome DevTools MCP was used for all browser evidence. The earlier Admin tooling blocker is cleared: the EB iframe accessibility tree now exposes the Step Setup controls and supports safe interaction.
+
+Help content read before fixture changes:
+- Step-flow help: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-step-flow-help-2026-07-13.txt`
+- Steps-versus-categories help: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-steps-vs-categories-help-2026-07-13.txt`
+- Rules help: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-rules-help-2026-07-13.txt`
+
+Configured EB fixture:
+- Step 1 retains its quantity `greater than or equal to 2` rule.
+- Step 2 contains `14k Intertwined Earrings` and `14k Solid Bloom Earrings`.
+- Step 2 uses a quantity `equal to 1` rule.
+- Auto-next is disabled so manual Next and Back behavior remains observable.
+
+Configured WPB mirror fixture:
+- Step 1 retains its quantity `greater_than_or_equal_to 2` rule.
+- Step 2 contains the same two products.
+- Step 2 uses a quantity `equal_to 1` rule.
+- Auto-next is disabled.
+- The Admin save response returned `success: true`, status `200`, and `Updated Successfully!`: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/wpb-admin-save-response-2026-07-13.network-response`.
+
+EB desktop source of truth:
+- Only the active step's products render.
+- Step 1 shows a `Next` footer action.
+- Selecting the second Step 1 product permits transition to Step 2.
+- Step 2 shows a separate Back control and a disabled `Add Bundle to Cart` action while no Step 2 product is selected.
+- Selecting exactly one Step 2 product enables `Add Bundle to Cart` with `opacity: 1` and `pointer-events: auto`.
+- Attempting to select a second Step 2 product leaves the selected count at one and shows `Add exactly 01 products on this step`.
+- The selected-items drawer preserves selections from both steps.
+
+EB evidence:
+- Initial multi-step DOM: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-multistep-dom-2026-07-13.json`
+- Step 1 condition met: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-step1-condition-met-2026-07-13.json`
+- Step 2 initial: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-step2-initial-2026-07-13.json`
+- Step 2 exact-one state: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-step2-exact-one-2026-07-13.json`
+- Step 2 over-target attempt: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-step2-over-attempt-2026-07-13.json`
+- Mobile exact-one state: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-mobile-step2-exact-one-2026-07-13.json`
+
+Measured WPB divergence after a cache-cleared hard reload:
+- Both Step 1 and Step 2 headings render simultaneously.
+- Products from both steps render simultaneously.
+- The footer remains `Add Bundle to Cart`; there is no Step 1 `Next` action and no Step 2 Back control.
+- This contradicts EB's one-active-step navigation model and blocks PL02 acceptance.
+
+Decision:
+- PL02 is now a proven Product List runtime gap, not a fixture blocker.
+- Fix the `PDP_INPAGE + CASCADE` source owner so only the active step renders and Next/Back navigation follows the configured step rules.
+- Re-run the same desktop and mobile sequence after implementation, including blocked, allowed, Back, exact-one, and over-target toast states.
+
+## 2026-07-13 mobile step-indicator delta
+
+Chrome DevTools MCP measurements at `390x844` found one remaining visual delta after the multi-step behavior matched:
+
+- EB uses a `20px` flex gap between step items and has no connector element or pseudo-element.
+- EB fills only the active `30px` step badge. A completed but inactive step returns to the light badge treatment.
+- EB step badges use the inherited `15px` regular-weight type; labels use `14px`, `700`, and `25.2px` line height.
+- EB uses a `10px` gap between the badge and label.
+- EB's inactive badge uses `#f4f9f9` with a dark `1px` border, and unavailable future steps remain fully opaque.
+- WPB still rendered a connector line, filled completed badges, and used `12px/700` badge type with `14px/500` labels.
+
+Evidence:
+
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-mobile-step-parts-390-2026-07-13.json`
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-mobile-step-pseudo-390-2026-07-13.json`
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/wpb-mobile-step-parts-390-5-0-146.json`
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/wpb-mobile-step-pseudo-390-5-0-146.json`
+
+## 2026-07-13 implementation proof
+
+Widget `5.0.146` was verified after cache-cleared hard reloads without a deploy or dev-server restart.
+
+Desktop and mobile results:
+
+- Only the active step renders; Step 1 has six rows and Step 2 has two rows.
+- Step 1 Next remains disabled until two products are selected, then transitions to Step 2.
+- Step 2 has a separate Back control and disabled `Add Bundle to Cart` at zero selected.
+- Selecting exactly one Step 2 product enables Add Bundle to Cart.
+- Attempting a second Step 2 product keeps the selected count at one and shows `Add exactly 01 products on this step`.
+- Back returns to Step 1 while the drawer retains all three cross-step selections.
+- The final served CSS uses a `20px` step gap, `10px` badge-label gap, no connector pseudo-element, active-only badge fill, and EB-matching inactive badge treatment and typography.
+
+Final WPB evidence:
+
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/wpb-desktop-final-step-flow-5-0-146.json`
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/wpb-mobile-step1-initial-5-0-146.json`
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/wpb-mobile-step1-two-enabled-5-0-146.json`
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/wpb-mobile-step2-exact-one-5-0-146.json`
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/wpb-mobile-step2-over-attempt-5-0-146.json`
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/wpb-mobile-back-persistence-5-0-146.json`
+- `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/wpb-mobile-final-css-propagation-recheck-390-5-0-146.json`
+
+Decision: PL02 is accepted for the configured multi-step Product List permutation on desktop and mobile.

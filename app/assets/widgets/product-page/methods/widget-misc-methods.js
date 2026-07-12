@@ -72,7 +72,15 @@ hideLoadingOverlay() {
 
 attachEventListeners() {
   // Add to cart button
-  this.elements.addToCartButton.addEventListener('click', () => this.addToCart());
+  this.elements.addToCartButton.addEventListener('click', () => {
+    const isIntermediateCascadeStep = this._usesCascadeStepFlow?.()
+      && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+    if (isIntermediateCascadeStep) {
+      this.navigateCascadeStep(1);
+      return;
+    }
+    this.addToCart();
+  });
 
   // Modal close handlers
   const modal = this.elements.modal;

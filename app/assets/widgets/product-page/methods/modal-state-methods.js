@@ -1,6 +1,17 @@
 import { CurrencyManager, PricingCalculator, ToastManager } from '../../../bundle-widget-components.js';
 import { ConditionValidator } from '../../shared/condition-validator.js';
 
+export function formatCascadeStepLimitToast(limitText, required) {
+  const normalizedRequired = Number(required);
+  if (!Number.isFinite(normalizedRequired) || normalizedRequired <= 0) return '';
+
+  const qualifier = String(limitText || '')
+    .replace(/\s+-?\d+(?:\.\d+)?\s*$/, '')
+    .trim();
+  const formattedRequired = String(normalizedRequired).padStart(2, '0');
+  return `Add ${qualifier} ${formattedRequired} products on this step`;
+}
+
 export const ProductPageModalStateMethods = {
 getFormattedHeaderText() {
   const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
@@ -76,9 +87,12 @@ validateStepCondition(stepIndex, productId, newQuantity) {
 
   // Only block and toast on increases — decreases are always permitted.
   if (!allowed && newQuantity > currentQty) {
-    const toastMessage = typeof ConditionValidator._formatStepLimitToast === 'function'
+    const cascadeMessage = this._usesCascadeStepFlow?.()
+      ? formatCascadeStepLimitToast(limitText, step.conditionValue)
+      : '';
+    const toastMessage = cascadeMessage || (typeof ConditionValidator._formatStepLimitToast === 'function'
       ? ConditionValidator._formatStepLimitToast(limitText, step.conditionValue)
-      : 'This step allows ' + limitText + ' product' + (step.conditionValue !== 1 ? 's' : '') + ' only.';
+      : 'This step allows ' + limitText + ' product' + (step.conditionValue !== 1 ? 's' : '') + ' only.');
     ToastManager.show(toastMessage);
     return false;
   }

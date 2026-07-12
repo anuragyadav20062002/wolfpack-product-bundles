@@ -158,3 +158,12 @@ Decision:
 - The no-injection live proof is still blocked by a served JS/CSS asset skew: the product-page JS bundle is updated to `5.0.145`, but Shopify CDN is still serving an older Product List cascade CSS asset.
 - Do not treat `window.__BUNDLE_WIDGET_VERSION__ = "5.0.145"` alone as proof that CSS-only Product List fixes are live.
 - Re-run the no-injection proof only after the exact served `bundle-widget-product-page-cascade.css` contains `--bw-ppb-cascade-action-radius`.
+## 2026-07-13 final served-asset proof
+
+After cache-cleared hard reloads, widget `5.0.146` and the current Shopify dev Cascade CSS asset were both served. The fetched stylesheet contains `--bw-ppb-cascade-action-radius`.
+
+- Desktop `1280x800`: two selected controls each computed a `5px` wrapper radius and `5px` minus/plus button radii.
+- Mobile `390x844`: the unselected Add button, selected wrapper, minus button, and plus button all computed to `5px`.
+- Evidence: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-desktop-final-served-css-5-0-146.json` and `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-mobile-final-served-css-5-0-146.json`.
+
+Decision: the previous served-CSS skew is cleared and PL00 is accepted.

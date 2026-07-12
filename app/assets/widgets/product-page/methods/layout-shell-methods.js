@@ -10,6 +10,38 @@ export function shouldHideInpageStepChrome({ isCascade = false, steps = [], step
   return Array.isArray(steps) && steps.length === 1 && categories.length <= 1;
 }
 
+export function shouldUseCascadeStepFlow({ isInpage = false, isCascade = false, steps = [] } = {}) {
+  return Boolean(isInpage && isCascade && Array.isArray(steps) && steps.length > 1);
+}
+
+export function getCascadeStepNavigationState({
+  currentStepIndex = 0,
+  direction = 0,
+  stepCount = 0,
+  isCurrentStepValid = false,
+} = {}) {
+  const lastStepIndex = Math.max(0, Number(stepCount || 0) - 1);
+  const current = Math.min(Math.max(0, Number(currentStepIndex || 0)), lastStepIndex);
+
+  if (direction < 0) {
+    return {
+      targetStepIndex: Math.max(0, current - 1),
+      blocked: false,
+      isFinal: false,
+    };
+  }
+
+  if (current >= lastStepIndex) {
+    return { targetStepIndex: current, blocked: false, isFinal: true };
+  }
+
+  if (!isCurrentStepValid) {
+    return { targetStepIndex: current, blocked: true, isFinal: false };
+  }
+
+  return { targetStepIndex: current + 1, blocked: false, isFinal: false };
+}
+
 export const ProductPageLayoutShellMethods = {
 renderUI() {
   this._renderDirectDefaultProducts();
@@ -118,10 +150,22 @@ _createStepBannerImage(step) {
   return wrapper;
 },
 
-// Product-page bundle layout: always renders all steps at once.
-// Each step gets the appropriate card variant based on its type and selection state.
+// Product List uses an active-step flow when multiple steps are configured.
+// Other product-page templates retain their existing all-step layout.
 renderProductPageLayout() {
-  this.selectedBundle.steps.forEach((step, stepIndex) => {
+  const usesCascadeStepFlow = this._usesCascadeStepFlow();
+  const lastStepIndex = Math.max(0, this.selectedBundle.steps.length - 1);
+  this.currentStepIndex = Math.min(Math.max(0, this.currentStepIndex), lastStepIndex);
+
+  if (usesCascadeStepFlow) {
+    this.elements.stepsContainer.appendChild(this._createCascadeStepFlowHeader());
+  }
+
+  const stepsToRender = usesCascadeStepFlow
+    ? [[this.selectedBundle.steps[this.currentStepIndex], this.currentStepIndex]]
+    : this.selectedBundle.steps.map((step, stepIndex) => [step, stepIndex]);
+
+  stepsToRender.forEach(([step, stepIndex]) => {
     if (this._isProductPageInpageTemplate()) {
       const section = this._createInpageStepSection(step, stepIndex);
       const target = section.querySelector('.bw-ppb-inpage-step-grid');
@@ -198,6 +242,64 @@ renderProductPageLayout() {
   });
 },
 
+_usesCascadeStepFlow() {
+  return shouldUseCascadeStepFlow({
+    isInpage: this._isProductPageInpageTemplate?.() === true,
+    isCascade: this._isProductPageCascadeTemplate?.() === true,
+    steps: this.selectedBundle?.steps,
+  });
+},
+
+_createCascadeStepFlowHeader() {
+  const header = document.createElement('div');
+  header.className = 'bw-ppb-cascade-step-flow';
+
+  this.selectedBundle.steps.forEach((step, stepIndex) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'bw-ppb-cascade-step-flow__step';
+    button.classList.toggle('is-active', stepIndex === this.currentStepIndex);
+    button.classList.toggle('is-complete', this.validateStep(stepIndex));
+    button.setAttribute('aria-current', stepIndex === this.currentStepIndex ? 'step' : 'false');
+    button.disabled = stepIndex > this.currentStepIndex && !this.isStepAccessible(stepIndex);
+    button.innerHTML = `
+      <span class="bw-ppb-cascade-step-flow__number">${stepIndex + 1}</span>
+      <span class="bw-ppb-cascade-step-flow__label">${ComponentGenerator.escapeHtml(step.pageTitle || step.name || `Step ${stepIndex + 1}`)}</span>
+    `;
+    button.addEventListener('click', () => {
+      if (button.disabled || stepIndex === this.currentStepIndex) return;
+      this.currentStepIndex = stepIndex;
+      this.renderSteps();
+      this.renderFooter();
+      this.updateAddToCartButton();
+    });
+    header.appendChild(button);
+  });
+
+  return header;
+},
+
+navigateCascadeStep(direction) {
+  if (!this._usesCascadeStepFlow()) return false;
+
+  const navigation = getCascadeStepNavigationState({
+    currentStepIndex: this.currentStepIndex,
+    direction,
+    stepCount: this.selectedBundle.steps.length,
+    isCurrentStepValid: this.validateStep(this.currentStepIndex),
+  });
+
+  if (navigation.blocked || navigation.isFinal || navigation.targetStepIndex === this.currentStepIndex) {
+    return false;
+  }
+
+  this.currentStepIndex = navigation.targetStepIndex;
+  this.renderSteps();
+  this.renderFooter();
+  this.updateAddToCartButton();
+  return true;
+},
+
 _createInpageStepSection(step, stepIndex) {
   const section = document.createElement('div');
   const preset = this._getProductPageDesignPreset();
@@ -210,10 +312,13 @@ _createInpageStepSection(step, stepIndex) {
   section.className = `bw-ppb-inpage-step-section bw-ppb-inpage-step-section--${preset.toLowerCase()}${isCascade ? ' wpbMixCascadeBodyWrapper' : ''}`;
 
   if (!hideStepChrome) {
-    const title = document.createElement('div');
-    title.className = `bw-ppb-inpage-step-title${isCascade ? ' wpbMixCascadeBodyHeaderCategoryName' : ''}`;
-    title.textContent = step.pageTitle || step.name || '';
-    section.appendChild(title);
+    const usesCascadeStepFlow = this._usesCascadeStepFlow();
+    if (!usesCascadeStepFlow) {
+      const title = document.createElement('div');
+      title.className = `bw-ppb-inpage-step-title${isCascade ? ' wpbMixCascadeBodyHeaderCategoryName' : ''}`;
+      title.textContent = step.pageTitle || step.name || '';
+      section.appendChild(title);
+    }
 
     const tabs = this._createInpageCategoryTabs(step, stepIndex);
     if (tabs) section.appendChild(tabs);

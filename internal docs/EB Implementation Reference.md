@@ -600,6 +600,15 @@ Storefront Product List behavior:
 - With two selected products, EB removes the disabled condition class, sets `pointer-events: auto`, opacity `1`, and the bundle add-to-cart succeeds.
 - The successful cart line uses the parent bundle product and properties including `_EasyBundleId`, `_originalOfferId`, `Box`, and `Items`.
 
+2026-07-13 multi-step Product List behavior:
+- `PDP_INPAGE + CASCADE` renders only the active step's categories and products; it does not stack all configured steps into one list.
+- Intermediate steps use `Next`. The final step uses a separate Back control plus `Add Bundle to Cart`.
+- Step rules gate forward navigation. In the captured fixture, Step 1 required quantity greater than or equal to `2` before Next could transition to Step 2.
+- An exact Step 2 quantity rule of `1` disables Add Bundle to Cart at zero, enables it at one, and blocks a second selection with `Add exactly 01 products on this step` while retaining the valid selection.
+- Back returns to the previous step without clearing products selected on either step. The selected-items drawer preserves the combined cross-step selection.
+- The step indicator uses a `20px` flex gap with no connector element. Only the active `30px` badge is filled; completed inactive steps use the same light badge treatment as other inactive steps.
+- Evidence: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-step1-condition-met-2026-07-13.json`, `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-step2-exact-one-2026-07-13.json`, `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-step2-over-attempt-2026-07-13.json`, and `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-mobile-step-parts-390-2026-07-13.json`.
+
 2026-07-13 PPB Product List quantity-validation gotcha:
 - EB Admin can show `Bundle Settings -> Enable Quantity Validation` as checked for a Product Page Bundle Product List bundle while the saved `mixAndMatch/update` payload still contains `boxSelection.isEnabled: false` and `boxSelection.validateBoxSelectionQuantity: false`.
 - The same cache-bypassed storefront then emits `boxSelection.isEnabled: false`, `boxSelection.validateBoxSelectionQuantity: false`, and no quantity-option wrapper DOM.

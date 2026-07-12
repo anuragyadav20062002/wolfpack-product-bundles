@@ -355,7 +355,23 @@ export const cascadeTemplateMethods = {
     }
 
     const addToCartButton = this.elements?.addToCartButton;
-    if (shouldMountCascadeAddToCartInFooter(addToCartButton, el)) {
+    if (this._usesCascadeStepFlow?.()) {
+      const actions = document.createElement('div');
+      actions.className = 'bw-ppb-cascade-footer-actions';
+
+      if (this.currentStepIndex > 0) {
+        const backButton = document.createElement('button');
+        backButton.type = 'button';
+        backButton.className = 'bw-ppb-cascade-step-back';
+        backButton.setAttribute('aria-label', 'Previous step');
+        backButton.innerHTML = '<span aria-hidden="true"></span>';
+        backButton.addEventListener('click', () => this.navigateCascadeStep(-1));
+        actions.appendChild(backButton);
+      }
+
+      if (addToCartButton) actions.appendChild(addToCartButton);
+      el.appendChild(actions);
+    } else if (shouldMountCascadeAddToCartInFooter(addToCartButton, el)) {
       el.appendChild(addToCartButton);
     }
   },
