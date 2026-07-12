@@ -4,8 +4,6 @@
  * Spec: test-spec/ppb-select-template-default.spec.md
  */
 
-import { describe, expect, it } from "@jest/globals";
-
 import {
   PRODUCT_PAGE_DEFAULT_TEMPLATE_SELECTION,
   resolveProductPageTemplateSelection,

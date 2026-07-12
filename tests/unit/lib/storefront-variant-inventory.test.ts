@@ -1,5 +1,3 @@
-import { describe, expect, it } from "@jest/globals";
-
 import { normalizeStorefrontQuantityAvailable } from "../../../app/lib/storefront-variant-inventory";
 
 describe("normalizeStorefrontQuantityAvailable", () => {
