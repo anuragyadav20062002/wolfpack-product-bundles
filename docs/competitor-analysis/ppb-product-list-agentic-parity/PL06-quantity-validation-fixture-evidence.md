@@ -93,3 +93,20 @@ Decision:
 - PL06 remains blocked at the EB fixture layer, not by WPB runtime code.
 - Do not implement a Product List source patch from the Admin checkbox alone. The authoritative EB payload and storefront runtime do not currently prove enabled quantity-option UI or strict validation behavior for PPB Product List.
 - The next PL06 attempt needs a reliable way to make EB persist `boxSelection.isEnabled: true` and `boxSelection.validateBoxSelectionQuantity: true`, or a separate EB fixture that already emits those runtime flags.
+
+## 2026-07-13 Applicability Resolution
+
+Chrome DevTools MCP was used for the final Admin and storefront recheck.
+
+Additional evidence:
+- The active EB Product List still had two quantity-based percentage discount rules, satisfying the visible prerequisite text for `Bundle Quantity Options`.
+- Direct checkbox interaction timed out. Clicking the focusable switch wrapper and pressing Space both left the checkbox unchecked and rendered no quantity-option fields.
+- The cache-bypassed storefront runtime exposed one matching bundle in `window.gbbMix.gbbMixAndMatchBundle.state.allMixAndMatchBundlesData`: `MIX-156854`, `PDP_INPAGE + CASCADE`.
+- That authoritative bundle record still emitted `boxSelection.isEnabled: false` and `boxSelection.validateBoxSelectionQuantity: false` despite retaining rules for quantities `2` and `3`.
+- The confirmed EB architecture reference classifies Box Selection as an FPB-only feature. PPB persists the inert shape, but the live Product List does not activate it.
+
+Final decision:
+- PL06 is EB-absent for Product Page Bundle Product List, not an unimplemented WPB parity state.
+- Do not invent quantity-tier UI or strict box-selection enforcement for Product List from a non-functional EB Admin control.
+- Product List's applicable quantity behavior remains covered by `PL00` row controls and `PL02` step conditions: Add, increment/decrement, exact/min gating, over-selection blocking, and desktop/mobile behavior.
+- Reopen PL06 only if a future EB Product List storefront authoritatively emits either enabled `boxSelection` flag.
