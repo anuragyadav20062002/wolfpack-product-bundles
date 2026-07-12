@@ -66,11 +66,17 @@ describe('PPB modal category tabs', () => {
   });
 
   it('filters modal products through the active category contract', () => {
-    const step = { categories: [{ name: 'One' }, { name: 'Two' }] };
+    const step = {
+      categories: [
+        { name: 'One', displayVariantsAsIndividualProducts: true },
+        { name: 'Two', displayVariantsAsIndividualProducts: false },
+      ],
+    };
     const products = [{ id: 'product-1' }, { id: 'product-2' }];
     const productGrid = { innerHTML: '' };
     const body = { querySelector: () => null };
     const filterProducts = jest.fn(() => []);
+    const expandProductsByVariant = jest.fn((items: unknown[]) => items);
     const widget = {
       currentStepIndex: 0,
       activeInpageCategoryIndexes: { 0: 1 },
@@ -87,7 +93,7 @@ describe('PPB modal category tabs', () => {
         },
       },
       _filterProductsForInpageCategory: filterProducts,
-      expandProductsByVariant: (items: unknown[]) => items,
+      expandProductsByVariant,
       config: {},
       _stepFetchFailed: {},
     } as any;
@@ -97,7 +103,43 @@ describe('PPB modal category tabs', () => {
     widget.renderModalProducts(0);
 
     expect(filterProducts).toHaveBeenCalledWith(step, products, 0);
+    expect(expandProductsByVariant).not.toHaveBeenCalled();
     expect(productGrid.innerHTML).toContain('No products are configured');
+  });
+
+  it('expands modal variants when the active category enables individual cards', () => {
+    const step = {
+      categories: [{ name: 'One', displayVariantsAsIndividualProducts: true }],
+    };
+    const products = [{ id: 'product-1' }];
+    const productGrid = { innerHTML: '' };
+    const expandProductsByVariant = jest.fn(() => []);
+    const widget = {
+      currentStepIndex: 0,
+      activeInpageCategoryIndexes: { 0: 0 },
+      selectedBundle: { steps: [step] },
+      stepProductData: [products],
+      selectedProducts: [{}],
+      elements: {
+        modal: {
+          querySelector: (selector: string) => {
+            if (selector === '.product-grid') return productGrid;
+            if (selector === '.bw-bs-body') return { querySelector: () => null };
+            return null;
+          },
+        },
+      },
+      _filterProductsForInpageCategory: (_step: unknown, items: unknown[]) => items,
+      expandProductsByVariant,
+      config: {},
+      _stepFetchFailed: {},
+    } as any;
+    Object.assign(widget, ProductPageModalMethods);
+    widget.expandProductsByVariant = expandProductsByVariant;
+
+    widget.renderModalProducts(0);
+
+    expect(expandProductsByVariant).toHaveBeenCalledWith(products);
   });
 });
 

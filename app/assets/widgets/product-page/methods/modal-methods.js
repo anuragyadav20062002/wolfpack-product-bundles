@@ -28,6 +28,25 @@ export function shouldDisableProductPageVariantOption(variant, trackInventoryOnA
     && variant?.currentlyNotInStock !== true;
 }
 
+export function shouldDisplayVariantsAsIndividualForModalCategory(
+  step,
+  stepIndex,
+  activeCategoryIndexes = {},
+) {
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  if (categories.length > 0) {
+    const activeIndex = typeof activeCategoryIndexes?.[stepIndex] === 'number'
+      ? activeCategoryIndexes[stepIndex]
+      : 0;
+    const category = categories[activeIndex] || categories[0];
+    return category?.displayVariantsAsIndividualProducts === true
+      || category?.displayVariantsAsIndividual === true;
+  }
+
+  return step?.displayVariantsAsIndividualProducts === true
+    || step?.displayVariantsAsIndividual === true;
+}
+
 export function applyProductPageVariantSelection({
   product = {},
   variantData = {},
@@ -226,8 +245,13 @@ renderModalProducts(stepIndex, productsToRender = null) {
     rawProducts,
     stepIndex
   );
-  // Expand variants into separate cards like full-page widget
-  const products = this.expandProductsByVariant(categoryProducts);
+  const products = shouldDisplayVariantsAsIndividualForModalCategory(
+    currentStep,
+    stepIndex,
+    this.activeInpageCategoryIndexes,
+  )
+    ? this.expandProductsByVariant(categoryProducts)
+    : categoryProducts;
   const selectedProducts = this.selectedProducts[stepIndex];
   const productGrid = this.elements.modal.querySelector('.product-grid');
   const isFreeGiftStep = !!currentStep?.isFreeGift;

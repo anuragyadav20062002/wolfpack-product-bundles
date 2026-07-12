@@ -39,6 +39,7 @@ committed.
 | --- | --- | --- | --- | --- |
 | HS00 baseline | Desktop/mobile empty states captured | Desktop/mobile empty states captured on 5.0.151 | Aggregate card and 300px mobile cap fixed | Accepted empty behavior at 1280x800 and 390x844 |
 | HS01 step/category | Multi-step/category picker controls captured | Modal category controls and filtering captured on 5.0.152 | Missing category row fixed | Accepted at 390x844; desktop smoke pending |
+| HS03 variants | Grouped Pedal Ring selector with options 6-11 captured | Equivalent grouped selector and selected identity captured on 5.0.155 | Unconditional modal variant expansion fixed; EB stale-first-variant bug not copied | Accepted grouped/individual rendering; mixed inventory remains HS04 |
 | HS14 picker open/close | Desktop/mobile open, close, and backdrop states captured | Equivalent states captured on 5.0.153 | Mobile close listener fixed; no remaining open/close delta | Accepted at 390x844 and 1280x800 |
 | HS09 responsive placement | 1440x900, 768x1024, 390x844, and 360x800 captured | Same viewport matrix captured on 5.0.154 | Desktop/tablet 300px host cap fixed; real 520px/full-width placement still pending | Viewport matrix accepted; placement matrix in progress |
 | HS15 picker selection | Product stays in picker and returns to first slot on close | Equivalent return order captured on 5.0.153 | Mobile close listener fixed | Accepted at 390x844 |

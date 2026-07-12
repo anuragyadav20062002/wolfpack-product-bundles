@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.154
+ * Version : 5.0.155
  * Built   : 2026-07-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.154';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.155';
 (function() {
   'use strict';
 
@@ -7431,6 +7431,25 @@ function shouldDisableProductPageVariantOption(variant, trackInventoryOnAddToCar
     && variant?.currentlyNotInStock !== true;
 }
 
+function shouldDisplayVariantsAsIndividualForModalCategory(
+  step,
+  stepIndex,
+  activeCategoryIndexes = {},
+) {
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  if (categories.length > 0) {
+    const activeIndex = typeof activeCategoryIndexes?.[stepIndex] === 'number'
+      ? activeCategoryIndexes[stepIndex]
+      : 0;
+    const category = categories[activeIndex] || categories[0];
+    return category?.displayVariantsAsIndividualProducts === true
+      || category?.displayVariantsAsIndividual === true;
+  }
+
+  return step?.displayVariantsAsIndividualProducts === true
+    || step?.displayVariantsAsIndividual === true;
+}
+
 function applyProductPageVariantSelection({
   product = {},
   variantData = {},
@@ -7622,8 +7641,13 @@ renderModalProducts(stepIndex, productsToRender = null) {
     rawProducts,
     stepIndex
   );
-
-  const products = this.expandProductsByVariant(categoryProducts);
+  const products = shouldDisplayVariantsAsIndividualForModalCategory(
+    currentStep,
+    stepIndex,
+    this.activeInpageCategoryIndexes,
+  )
+    ? this.expandProductsByVariant(categoryProducts)
+    : categoryProducts;
   const selectedProducts = this.selectedProducts[stepIndex];
   const productGrid = this.elements.modal.querySelector('.product-grid');
   const isFreeGiftStep = !!currentStep?.isFreeGift;
