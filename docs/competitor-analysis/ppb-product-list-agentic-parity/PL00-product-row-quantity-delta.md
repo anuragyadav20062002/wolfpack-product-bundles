@@ -104,17 +104,23 @@ Browser evidence source: Chrome DevTools MCP only.
 
 Evidence files:
 - EB selected leaf proof: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/eb-desktop-after-selected-radius-leaf.json`
+- EB mobile selected leaf proof: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/eb-mobile-selected-radius-current.json`
 - WPB served before fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-selected-radius-current-page5.json`
 - WPB local proof after source fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-selected-radius-local-proof.json`
 - WPB local proof screenshot: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-selected-radius-local-proof.png`
+- WPB mobile served before fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-mobile-selected-radius-before-local-proof.json`
+- WPB mobile local proof after source fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-mobile-selected-radius-local-proof.json`
+- WPB mobile local proof screenshot: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-mobile-selected-radius-local-proof.png`
 
 Measured EB selected state:
 - Visible selected action uses the same `5px` radius as the default Add action.
 - EB's hidden quantity wrapper can report `100px`, but the visible selected Product List action remains `90px x 32px` with `5px` rounding.
+- EB mobile confirmed the same visible action: `90px x 32px`, white background, black text, `5px` radius.
 
 Measured WPB before fix on served widget `5.0.144`:
 - Selected quantity wrapper: `90px x 32px`, transparent background, `100px` radius.
 - Quantity decrement/increment buttons: `32px x 32px`, `5px` radius.
+- Mobile at `390 x 844` showed the same mismatch: selected quantity wrapper `100px`, quantity decrement/increment buttons `5px`.
 
 Fix:
 - Add `--bw-ppb-cascade-action-radius: 5px`.
@@ -125,6 +131,7 @@ Local proof after source fix:
 - Served storefront was still `5.0.144`, so the new source rule was injected as a temporary local proof layer.
 - Selected quantity wrapper measured `5px`.
 - Quantity decrement/increment buttons measured `5px`.
+- Mobile `390 x 844` local proof measured the selected quantity wrapper at `5px` and both quantity buttons at `5px`.
 
 Deploy note:
 - The built extension assets now carry widget version `5.0.145`; the live storefront will show this change after the next Shopify app deploy and CDN propagation.

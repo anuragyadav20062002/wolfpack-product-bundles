@@ -68,8 +68,11 @@ The July 11 pass treated the transparent selected quantity wrapper's `100px` rad
 
 Updated evidence:
 - EB selected leaf proof: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/eb-desktop-after-selected-radius-leaf.json`
+- EB mobile selected leaf proof: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/eb-mobile-selected-radius-current.json`
 - WPB served before fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-selected-radius-current-page5.json`
 - WPB local proof after source fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-selected-radius-local-proof.json`
+- WPB mobile served before fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-mobile-selected-radius-before-local-proof.json`
+- WPB mobile local proof after source fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-mobile-selected-radius-local-proof.json`
 
 Updated decision:
 - Product List selected quantity wrapper should use the same `5px` radius as the unselected Add action.
