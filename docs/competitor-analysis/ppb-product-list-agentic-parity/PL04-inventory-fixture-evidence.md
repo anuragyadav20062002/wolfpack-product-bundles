@@ -9,6 +9,10 @@ Evidence files:
 - WPB desktop: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/wpb-desktop-inventory-state.json`
 - EB mobile: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-mobile-inventory-state.json`
 - WPB mobile: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/wpb-mobile-inventory-state.json`
+- EB desktop refresh: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-desktop-inventory-state-refresh.json`
+- EB mobile refresh: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-mobile-inventory-state-refresh.json`
+- WPB desktop refresh: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/wpb-desktop-inventory-state-refresh.json`
+- WPB mobile refresh: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/wpb-mobile-inventory-state-refresh.json`
 
 ## State Tested
 
@@ -70,3 +74,25 @@ Visible rows match the current EB fixture:
 PL04 out-of-stock and unavailable-variant behavior cannot be proven from the current fixture because both EB and WPB storefronts currently expose only enabled rows and enabled variant options.
 
 No Product List source patch is justified from this evidence. The next PL04 step is fixture setup: create or select a shared Product List fixture where EB and WPB both include at least one sold-out product row and one unavailable variant option, then repeat the same desktop/mobile measurement loop.
+
+## Refresh Pass
+
+Chrome DevTools MCP was re-run against the same EB and WPB Product List fixtures after cache clearing and cache-bypass navigation.
+
+EB refresh:
+- Desktop and mobile both render the same six visible rows.
+- Sold-out/out-of-stock/unavailable copy present: `false`.
+- Disabled product Add controls: none.
+- Disabled variant options: none.
+- `18k Pedal Ring` exposes selectable variants `6`, `7`, `8`, `9`, `10`, `11`.
+
+WPB refresh:
+- Desktop and mobile both render the same six visible rows.
+- Widget version: `5.0.136`.
+- Runtime markers remain `data-ppb-template-type="PDP_INPAGE"` and `data-ppb-design-preset="CASCADE"`.
+- Sold-out/out-of-stock/unavailable copy present: `false`.
+- Disabled product Add controls: none.
+- Disabled variant options: none.
+- `18k Pedal Ring` exposes selectable variants `6`, `7`, `8`, `9`, `10`, `11`.
+
+Refresh decision: unchanged. The current fixture still does not exercise PL04's required sold-out product row or unavailable variant state. WPB matches EB for the enabled-only inventory state, and no source patch is justified until an EB fixture exposes the missing inventory states.
