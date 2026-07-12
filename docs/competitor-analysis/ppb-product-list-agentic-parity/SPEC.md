@@ -82,6 +82,24 @@ Stress rows:
 - `PLS6`: smoke Product Grid, Horizontal Slots, Vertical Slots after shared PPB edits.
 - `PLS7-placement-responsive`: Product List mounted in narrow product-info column, full-width product section, and constrained card/sidebar contexts. Capture EB and WPB at desktop and mobile widths, then fix only Product List-owned responsive CSS gaps.
 
+## Current Row Status
+
+Last updated: 2026-07-13.
+
+| Row | Status | Evidence | Remaining requirement |
+|---|---|---|---|
+| `PL00-baseline` | Accepted for current fixture after fixes | `PL00-product-row-quantity-delta.md`, `PL00-add-button-centering-delta.md`, `PL-quantity-behavior-evidence.md`, `PL-loading-placement-evidence.md` | Serve/deploy `5.0.145` before live no-injection proof for the selected quantity radius fix. |
+| `PL01-category-list` | Accepted for populated category tabs and switching | `PL01-category-list-fixture-evidence.md` | Empty manual category remains EB-absent in the captured fixture; do not invent WPB-only behavior. |
+| `PL02-step-conditions` | Partially accepted | `PL02-step-rules-eb-fixture-evidence.md`, `PL02-step-conditions-fixture-evidence.md` | Single-step quantity rule gating is accepted; true multi-step next/back behavior still needs an EB fixture with visible Step Setup controls. |
+| `PL03-variants` | Accepted for grouped variant selector, selected identity, price typography, and responsive select width | `PL03-variant-row-evidence.md` | Unavailable variant state is still covered under `PL04`; swatches only apply if EB exposes them for Product List. |
+| `PL04-product-source-inventory` | Fixture-gated | `PL04-inventory-fixture-evidence.md` | Need EB and WPB fixture with at least one sold-out product row and one unavailable variant option. |
+| `PL05-discounts-footer` | Accepted for percentage-tier discount footer | `PL05-discounts-footer-fixture-evidence.md` | Fixed-amount and fixed-price discount permutations remain optional fixture expansion, not a known WPB gap. |
+| `PL06-quantity-options-validation` | Fixture-gated | `PL06-quantity-validation-fixture-evidence.md` | Need EB storefront runtime with `boxSelection.isEnabled: true` and `validateBoxSelectionQuantity: true`, or a separate EB fixture that already emits those flags. |
+| `PL07-selected-drawer-footer` | Accepted for current selected-count, drawer, overflow, remove, add-while-open, and geometry states | `PL07-selected-drawer-footer-delta.md`, `PL07-one-item-drawer-overflow-delta.md`, `PL07-three-row-drawer-overflow-delta.md`, `PL07-selected-drawer-heading-gap-delta.md`, `PL-drawer-add-open-evidence.md`, `PL07-remove-expanded-evidence.md`, `PL-empty-drawer-toast-evidence.md`, `PL-drawer-top-geometry-delta.md` | Recheck after future source changes that touch shared selected-row or footer behavior. |
+| `PL08-cart-lines` | Accepted for tested variant and two-product step-rule cart lines | `PL08-cart-lines-evidence.md` | `Retail Price` remains a SIT settings difference, not a Product List parity gap. |
+| `PLS7-placement-responsive` | Accepted for measured placement widths | `PLS7-placement-responsive-evidence.md`, `PL-product-list-overflow-evidence.md` | Recheck after any Product List row/grid CSS change. |
+| `PLS1/PLS3/PLS5/PLS6` | Not yet independently closed | Existing pairwise rows cover pieces | Need combined stress passes only after fixture-gated rows are unblocked. |
+
 ## Test And Verification Plan
 
 Behavior/data tests only:
