@@ -47,6 +47,16 @@ export function shouldDisplayVariantsAsIndividualForModalCategory(
     || step?.displayVariantsAsIndividual === true;
 }
 
+export function getModalSoleVariantDisplayTitle(product = {}) {
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  if (Number(product?.sourceVariantCount || 0) <= 1 || variants.length !== 1) {
+    return '';
+  }
+
+  const title = typeof variants[0]?.title === 'string' ? variants[0].title.trim() : '';
+  return title && title !== 'Default Title' ? title : '';
+}
+
 export function applyProductPageVariantSelection({
   product = {},
   variantData = {},
@@ -322,6 +332,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
+    const soleVariantDisplayTitle = getModalSoleVariantDisplayTitle(product);
 
     // Low-stock / out-of-stock badge — shown on the image, not in the CTA.
     const stockBadge = outOfStock
@@ -354,6 +365,10 @@ renderModalProducts(stepIndex, productsToRender = null) {
           <div class="product-spacer"></div>
 
           ${this.renderVariantSelector(product)}
+
+          ${soleVariantDisplayTitle ? `
+            <div class="bw-bs-single-variant-title">${ComponentGenerator.escapeHtml(soleVariantDisplayTitle)}</div>
+          ` : ''}
 
           ${showQuantitySelector ? `
             <div class="product-quantity-wrapper">

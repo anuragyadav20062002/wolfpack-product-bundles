@@ -274,6 +274,14 @@
   display: none;
 }
 
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card .bw-bs-single-variant-title {
+  color: #1e1e1e;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: normal;
+  text-align: center;
+}
+
 #bundle-builder-modal.bw-bs-panel
   .modal-body
   .product-card:not(.selected)

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.156
+ * Version : 5.0.157
  * Built   : 2026-07-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.156';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.157';
 (function() {
   'use strict';
 
@@ -7450,6 +7450,16 @@ function shouldDisplayVariantsAsIndividualForModalCategory(
     || step?.displayVariantsAsIndividual === true;
 }
 
+function getModalSoleVariantDisplayTitle(product = {}) {
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  if (Number(product?.sourceVariantCount || 0) <= 1 || variants.length !== 1) {
+    return '';
+  }
+
+  const title = typeof variants[0]?.title === 'string' ? variants[0].title.trim() : '';
+  return title && title !== 'Default Title' ? title : '';
+}
+
 function applyProductPageVariantSelection({
   product = {},
   variantData = {},
@@ -7715,6 +7725,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
+    const soleVariantDisplayTitle = getModalSoleVariantDisplayTitle(product);
 
     const stockBadge = outOfStock
       ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
@@ -7746,6 +7757,10 @@ renderModalProducts(stepIndex, productsToRender = null) {
           <div class="product-spacer"></div>
 
           ${this.renderVariantSelector(product)}
+
+          ${soleVariantDisplayTitle ? `
+            <div class="bw-bs-single-variant-title">${ComponentGenerator.escapeHtml(soleVariantDisplayTitle)}</div>
+          ` : ''}
 
           ${showQuantitySelector ? `
             <div class="product-quantity-wrapper">

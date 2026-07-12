@@ -1,5 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { ProductPageModalMethods } = require('../../../app/assets/widgets/product-page/methods/modal-methods.js');
+const {
+  getModalSoleVariantDisplayTitle,
+  ProductPageModalMethods,
+} = require('../../../app/assets/widgets/product-page/methods/modal-methods.js');
 
 export {};
 
@@ -140,6 +143,29 @@ describe('PPB modal category tabs', () => {
     widget.renderModalProducts(0);
 
     expect(expandProductsByVariant).toHaveBeenCalledWith(products);
+  });
+});
+
+describe('PPB modal mixed-inventory variant identity', () => {
+  it('shows the sole named survivor when inventory filtering removed sibling variants', () => {
+    expect(getModalSoleVariantDisplayTitle({
+      sourceVariantCount: 3,
+      variants: [{ title: 'Grapefruit' }],
+    })).toBe('Grapefruit');
+  });
+
+  it('does not show redundant variant copy for default-only products', () => {
+    expect(getModalSoleVariantDisplayTitle({
+      sourceVariantCount: 3,
+      variants: [{ title: 'Default Title' }],
+    })).toBe('');
+  });
+
+  it('does not add a survivor label to products that were always single-variant', () => {
+    expect(getModalSoleVariantDisplayTitle({
+      sourceVariantCount: 1,
+      variants: [{ title: 'Grapefruit' }],
+    })).toBe('');
   });
 });
 
