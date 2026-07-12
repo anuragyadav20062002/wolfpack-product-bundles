@@ -96,3 +96,44 @@ WPB refresh:
 - `18k Pedal Ring` exposes selectable variants `6`, `7`, `8`, `9`, `10`, `11`.
 
 Refresh decision: unchanged. The current fixture still does not exercise PL04's required sold-out product row or unavailable variant state. WPB matches EB for the enabled-only inventory state, and no source patch is justified until an EB fixture exposes the missing inventory states.
+
+## 2026-07-13 mixed-inventory fixture
+
+Chrome DevTools MCP was used to configure and inspect both stores.
+
+EB fixture:
+- `Massage Oil / Grapefruit` was set to `1` available; Pepper and Rosemary remained `0` with sell-when-out-of-stock disabled.
+- All three variants were selected into Step 2.
+- EB renders one `Massage Oil` row using Grapefruit, shows `Grapefruit` as plain variant text below the price, and exposes no selector because only one variant is sellable.
+- Pepper and Rosemary are absent rather than disabled or labelled sold out.
+- Evidence: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-admin-massage-oil-grapefruit-stock-2026-07-13.json`, `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-desktop-massage-oil-step2-2026-07-13.json`, and `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-desktop-massage-oil-dom-2026-07-13.json`.
+
+WPB mirror fixture:
+- `Selling Plans Ski Wax` has one sellable variant and two unavailable variants.
+- The fully unavailable `The Out of Stock Snowboard` was also selected into Step 2.
+- WPB correctly omits the fully unavailable product and the two unavailable variants.
+- WPB renders the surviving `Selling Plans Ski Wax` variant as a plain product row but omits its variant identity.
+- Evidence: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/wpb-admin-step2-inventory-products-save-2026-07-13.json` and `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/wpb-desktop-step2-inventory-settled-2026-07-13.json`.
+
+Measured delta:
+- EB retains the sole surviving variant title after filtering; WPB loses the original multi-variant context and renders no variant title.
+- Preserve the original variant count during Product Page inventory normalization, then expose the sole sellable variant title only to Product List/Cascade cards. Do not reintroduce unavailable options or a sold-out row.
+
+## 2026-07-13 implementation proof
+
+Widget `5.0.147` preserves the source variant count during Product Page normalization and adds the sole sellable variant title only to grouped Cascade/Product List card data.
+
+Final desktop and mobile results:
+- WPB renders `Selling Plans Ski Wax` with the sole sellable variant title `Special Selling Plans Ski Wax`.
+- The row has no variant selector because there is only one customer-selectable variant.
+- The other two unavailable variants remain absent.
+- The fully unavailable `The Out of Stock Snowboard` remains absent.
+- No sold-out/out-of-stock/unavailable copy is rendered, matching EB's omission behavior.
+- Product rows retain the same `70px` height at desktop and `390x844` mobile.
+
+Final evidence:
+- EB mobile: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-mobile-step2-mixed-inventory-390-2026-07-13.json`
+- WPB desktop: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/wpb-desktop-step2-distinct-sole-variant-5-0-147.json`
+- WPB mobile: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/wpb-mobile-step2-distinct-sole-variant-390-5-0-147.json`
+
+Decision: PL04 is accepted for fully unavailable products and partially unavailable grouped variants on desktop and mobile.

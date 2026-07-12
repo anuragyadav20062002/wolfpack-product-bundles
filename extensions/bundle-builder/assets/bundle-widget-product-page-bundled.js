@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.146
+ * Version : 5.0.147
  * Built   : 2026-07-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.146';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.147';
 (function() {
   'use strict';
 
@@ -6242,6 +6242,17 @@ function shouldDisplayVariantsAsIndividualForInpageCategory(step, stepIndex, act
     || step?.displayVariantsAsIndividual === true;
 }
 
+function getCascadeSoleVariantDisplayProduct(product = {}) {
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  const soleVariantTitle = typeof variants[0]?.title === 'string' ? variants[0].title.trim() : '';
+  const hadMultipleSourceVariants = Number(product.sourceVariantCount || 0) > 1;
+
+  if (product.parentProductId || !hadMultipleSourceVariants || variants.length !== 1) return product;
+  if (!soleVariantTitle || soleVariantTitle === 'Default Title') return product;
+
+  return { ...product, variantTitle: soleVariantTitle };
+}
+
 const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
@@ -6303,8 +6314,9 @@ _renderInpageStepProducts(stepIndex, target) {
     const variantSelectorHtml = this.renderInlineCardVariantSelector(product, currentStep);
 
     if (usesCascadeCards) {
+      const cascadeProduct = getCascadeSoleVariantDisplayProduct(product);
       return renderSharedProductCard(
-        product,
+        cascadeProduct,
         currentQuantity,
         currencyInfo,
         {
@@ -6952,6 +6964,7 @@ processProductsForStep(products, step) {
           available: defaultVariant ? isVariantSelectableForInventory(defaultVariant) : false,
           quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
           currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
+          sourceVariantCount: sourceVariants.length,
 
           variants: processedVariants,
         options: processedOptions,

@@ -616,6 +616,12 @@ Storefront Product List behavior:
 - Treat PPB Product List quantity-validation parity as unproven unless the EB storefront runtime, not just the Admin checkbox, emits enabled `boxSelection` flags.
 - Evidence: `/private/tmp/ppb-product-list-agentic-parity/PL06-quantity-validation/eb-validation-save.request.network-request`, `/private/tmp/ppb-product-list-agentic-parity/PL06-quantity-validation/eb-validation-save.response.network-response`, and `/private/tmp/ppb-product-list-agentic-parity/PL06-quantity-validation/eb-runtime-after-validation-save-2026-07-13.json`.
 
+2026-07-13 PPB Product List mixed-inventory behavior:
+- With one sellable variant and two unavailable variants, Product List renders one grouped product row, shows the sole sellable variant title as plain text, and does not render a variant selector.
+- Unavailable variants are omitted rather than disabled or labelled out of stock. A fully unavailable configured product is omitted entirely.
+- Product List does not render sold-out copy for these filtered states.
+- Evidence: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-desktop-massage-oil-dom-2026-07-13.json` and `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-mobile-step2-mixed-inventory-390-2026-07-13.json`.
+
 ### Discount Configuration Shape (PPB — applies to FPB too)
 
 ```json

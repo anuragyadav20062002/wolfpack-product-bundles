@@ -251,6 +251,7 @@ processProductsForStep(products, step) {
           available: defaultVariant ? isVariantSelectableForInventory(defaultVariant) : false,
           quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
           currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
+          sourceVariantCount: sourceVariants.length,
           // Preserve variants and options for variant selection in modal
           variants: processedVariants,
         options: processedOptions,

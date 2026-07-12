@@ -44,6 +44,17 @@ export function shouldDisplayVariantsAsIndividualForInpageCategory(step, stepInd
     || step?.displayVariantsAsIndividual === true;
 }
 
+export function getCascadeSoleVariantDisplayProduct(product = {}) {
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  const soleVariantTitle = typeof variants[0]?.title === 'string' ? variants[0].title.trim() : '';
+  const hadMultipleSourceVariants = Number(product.sourceVariantCount || 0) > 1;
+
+  if (product.parentProductId || !hadMultipleSourceVariants || variants.length !== 1) return product;
+  if (!soleVariantTitle || soleVariantTitle === 'Default Title') return product;
+
+  return { ...product, variantTitle: soleVariantTitle };
+}
+
 export const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
@@ -105,8 +116,9 @@ _renderInpageStepProducts(stepIndex, target) {
     const variantSelectorHtml = this.renderInlineCardVariantSelector(product, currentStep);
 
     if (usesCascadeCards) {
+      const cascadeProduct = getCascadeSoleVariantDisplayProduct(product);
       return renderSharedProductCard(
-        product,
+        cascadeProduct,
         currentQuantity,
         currencyInfo,
         {

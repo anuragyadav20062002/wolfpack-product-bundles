@@ -12,9 +12,11 @@ Verify Product Page Bundle Product List follows EB's PPB variant-display contrac
 |---|---|---|---|---|
 | 1 | Active category keeps grouped variants | Active category has `displayVariantsAsIndividualProducts: false` and a multi-variant product | One grouped product row renders and the variant selector receives the product variants | PL03 grouped variants |
 | 2 | Active category expands variants | Active category has `displayVariantsAsIndividualProducts: true` and a multi-variant product | One row renders per available variant and no grouped variant selector is used | PL03 variants-as-individual |
+| 3 | Inventory filtering leaves one variant | Product originally has multiple variants but only one normalized sellable variant | Product List card data includes the sole variant title and still renders no selector | Mirrors EB without exposing unavailable variants. |
 
 ## Acceptance Criteria
 - [x] Active category controls variants-as-individual behavior.
 - [x] Grouped category keeps multi-variant products grouped.
 - [x] Individual-variant category expands available variants.
+- [x] Product List retains the sole sellable variant title after inventory filtering.
 - [x] Focused Jest test passes.
