@@ -79,3 +79,29 @@ Before changing Product List UI for this permutation, make the WPB fixture inven
 ## Next Step
 
 Use Chrome DevTools MCP against Shopify Admin to update the WPB fixture inventory or choose replacement products, then repeat the same EB/WPB storefront measurement loop.
+
+## 2026-07-13 Refresh
+
+Evidence files:
+- EB desktop: `/private/tmp/ppb-product-list-agentic-parity/PLF-six-product-fixture/eb-desktop-six-product-current.json`
+- EB mobile: `/private/tmp/ppb-product-list-agentic-parity/PLF-six-product-fixture/eb-mobile-six-product-current.json`
+- WPB desktop: `/private/tmp/ppb-product-list-agentic-parity/PLF-six-product-fixture/wpb-desktop-six-product-current.json`
+- WPB mobile: `/private/tmp/ppb-product-list-agentic-parity/PLF-six-product-fixture/wpb-mobile-six-product-current.json`
+
+Refreshed result:
+- EB and WPB both render the same six Product List rows:
+  - `14k Dangling Obsidian Earrings`
+  - `14k Dangling Pendant Earrings`
+  - `14k Interlinked Earrings`
+  - `18k Bloom Earrings`
+  - `18k Fluid Lines Necklace`
+  - `18k Pedal Ring`
+- EB and WPB both show no sold-out/unavailable state for those six rows.
+- EB and WPB both render `18k Pedal Ring` with variant selector values `6`, `7`, `8`, `9`, `10`, `11`.
+- WPB desktop and mobile proof both ran on widget version `5.0.144`.
+- WPB still keeps the Product List scroller capped at `410px` with `overflow-x: hidden` and `overflow-y: auto`; this matches the earlier accepted vertical-only overflow decision.
+
+Decision:
+- The old WPB fixture/data mismatch is no longer current.
+- No Product List source patch is justified for PLF from the refreshed evidence.
+- PLF can now be used as a stable six-product stress fixture for follow-up row, variant selector, drawer, and overflow parity checks.
