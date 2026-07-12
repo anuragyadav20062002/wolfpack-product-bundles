@@ -70,3 +70,16 @@ No Product List source patch is justified from this evidence. The next PL01 step
 - category switching on desktop and mobile.
 
 After that fixture exists, repeat this same Chrome DevTools MCP probe and compare active/inactive tab styling, wrapping, empty-state behavior, and row updates.
+
+## 2026-07-13 Data-Flow Coverage
+
+Focused behavior coverage now exists for the Product List category filter path:
+- Test: `tests/unit/assets/ppb-product-list-category-filter.test.ts`
+- Command: `npx jest tests/unit/assets/ppb-product-list-category-filter.test.ts --runInBand`
+
+Covered behavior:
+- Active category index filters Product List rows to the active category product IDs.
+- Empty manual categories produce an empty Product List result.
+- Collection-backed categories preserve hydrated products when there are no direct category product IDs.
+
+This does not close the PL01 storefront parity row. Browser completion still requires an EB and WPB Product List fixture with visible category tabs, long labels, category switching, and an empty category, then desktop/mobile Chrome DevTools MCP comparison.
