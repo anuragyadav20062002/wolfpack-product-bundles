@@ -35,11 +35,11 @@ committed.
 
 | Case | EB | WPB | Delta | Status |
 | --- | --- | --- | --- | --- |
-| HS00 baseline | Desktop empty state captured | Desktop empty state captured on 5.0.150 | Aggregate card fixed; theme host widths differ but three-column formula matches | Accepted desktop behavior; mobile pending |
+| HS00 baseline | Desktop/mobile empty states captured | Desktop/mobile empty states captured on 5.0.151 | Aggregate card and 300px mobile cap fixed | Accepted empty behavior at 1280x800 and 390x844 |
 | HS01 step/category | Fixture structure confirmed in Admin and storefront | Missing | Missing | In progress |
 | HS14 picker open/close | Desktop open state captured | Desktop open state captured | Header/body vertical geometry differs | Delta recorded |
-| HS09 responsive placement | Missing | Missing | Missing | Pending |
-| HS17 modal scroll/focus | Modal geometry and scroll owner captured; interaction proof incomplete | Missing | Missing | In progress |
+| HS09 responsive placement | 390px host captured | 390px host captured | Mobile grid cap fixed; remaining viewports pending | In progress |
+| HS17 modal scroll/focus | Modal geometry and scroll owner captured | Mobile body-scroll/footer persistence captured | Whole-panel scrolling fixed; focus proof incomplete | In progress |
 
 ## Acceptance boundary
 

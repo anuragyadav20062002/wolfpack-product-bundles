@@ -96,6 +96,35 @@
     transform: none;
     margin: 0 auto 16px;
   }
+
+  body[wpbmix-template-type="PDP_MODAL"] #bundle-builder-modal.bw-bs-panel {
+    overflow-y: hidden;
+  }
+
+  body[wpbmix-template-type="PDP_MODAL"]
+    #bundle-builder-modal.bw-bs-panel
+    .bw-bs-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  body[wpbmix-template-type="PDP_MODAL"]
+    #bundle-builder-modal.bw-bs-panel
+    .bw-bs-product-grid {
+    padding-bottom: 120px;
+  }
+
+  body[wpbmix-template-type="PDP_MODAL"]
+    #bundle-builder-modal.bw-bs-panel
+    .bw-bs-footer {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    margin: 0;
+  }
 }
 
 .bw-bs-panel .modal-body {
