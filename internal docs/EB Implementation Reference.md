@@ -600,6 +600,13 @@ Storefront Product List behavior:
 - With two selected products, EB removes the disabled condition class, sets `pointer-events: auto`, opacity `1`, and the bundle add-to-cart succeeds.
 - The successful cart line uses the parent bundle product and properties including `_EasyBundleId`, `_originalOfferId`, `Box`, and `Items`.
 
+2026-07-13 PPB Product List quantity-validation gotcha:
+- EB Admin can show `Bundle Settings -> Enable Quantity Validation` as checked for a Product Page Bundle Product List bundle while the saved `mixAndMatch/update` payload still contains `boxSelection.isEnabled: false` and `boxSelection.validateBoxSelectionQuantity: false`.
+- The same cache-bypassed storefront then emits `boxSelection.isEnabled: false`, `boxSelection.validateBoxSelectionQuantity: false`, and no quantity-option wrapper DOM.
+- Discount & Pricing exposed `Bundle Quantity Options`, but the accessibility checkbox did not toggle through direct checkbox click, wrapper click, Space, Enter, or form fill during the MCP pass.
+- Treat PPB Product List quantity-validation parity as unproven unless the EB storefront runtime, not just the Admin checkbox, emits enabled `boxSelection` flags.
+- Evidence: `/private/tmp/ppb-product-list-agentic-parity/PL06-quantity-validation/eb-validation-save.request.network-request`, `/private/tmp/ppb-product-list-agentic-parity/PL06-quantity-validation/eb-validation-save.response.network-response`, and `/private/tmp/ppb-product-list-agentic-parity/PL06-quantity-validation/eb-runtime-after-validation-save-2026-07-13.json`.
+
 ### Discount Configuration Shape (PPB — applies to FPB too)
 
 ```json
