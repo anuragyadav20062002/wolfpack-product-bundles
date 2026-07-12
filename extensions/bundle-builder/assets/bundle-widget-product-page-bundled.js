@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.137
+ * Version : 5.0.138
  * Built   : 2026-07-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.137';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.138';
 (function() {
   'use strict';
 
@@ -3785,6 +3785,44 @@ function shouldMountCascadeAddToCartInFooter(addToCartButton, footerElement) {
   return Boolean(addToCartButton && footerElement && addToCartButton.parentElement !== footerElement);
 }
 
+function formatCascadeDiscountPercentage(value) {
+  const percentage = Number(value || 0);
+  if (!Number.isFinite(percentage) || percentage <= 0) return '';
+
+  return Number.isInteger(percentage)
+    ? String(percentage)
+    : String(Number(percentage.toFixed(2)));
+}
+
+function getCascadeAddToCartButtonContent({
+  label = '',
+  finalPriceText = '',
+  totalPriceText = '',
+  discountAmountText = '',
+  discountInfo = null,
+} = {}) {
+  const hasDiscount = Boolean(discountInfo?.hasDiscount);
+  const discountMethod = discountInfo?.discountMethod || '';
+  const appliedRuleValue = Number(discountInfo?.applicableRule?.discountValue || 0);
+  const discountPercentage = appliedRuleValue || Number(discountInfo?.discountPercentage || 0);
+  let discountPillText = '';
+
+  if (hasDiscount && discountMethod === 'percentage_off') {
+    const percentText = formatCascadeDiscountPercentage(discountPercentage);
+    discountPillText = percentText ? `${percentText}% off` : '';
+  } else if (hasDiscount && discountAmountText) {
+    discountPillText = `${discountAmountText} off`;
+  }
+
+  return {
+    label,
+    separator: '\u2022',
+    finalPriceText,
+    compareAtPriceText: hasDiscount ? totalPriceText : '',
+    discountPillText,
+  };
+}
+
 const cascadeTemplateMethods = {
   _isProductPageCascadeTemplate() {
     const config = resolveProductPageTemplateConfig({
@@ -3794,6 +3832,34 @@ const cascadeTemplateMethods = {
     });
 
     return config?.id === 'LIST';
+  },
+
+  _getCascadeAddToCartButtonContent(options = {}) {
+    return getCascadeAddToCartButtonContent(options);
+  },
+
+  _renderCascadeAddToCartButtonContent(button, content = {}) {
+    if (!button) return;
+    button.textContent = '';
+
+    const appendPart = (tagName, className, text, { hidden = false } = {}) => {
+      if (!text) return null;
+      const part = document.createElement(tagName);
+      part.className = className;
+      part.textContent = text;
+      if (hidden) {
+        part.hidden = true;
+        part.setAttribute('aria-hidden', 'true');
+      }
+      button.appendChild(part);
+      return part;
+    };
+
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-label', content.label);
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-separator', content.separator);
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-price', content.finalPriceText);
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-compare', content.compareAtPriceText, { hidden: true });
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-discount-pill', content.discountPillText);
   },
 
   _getSelectedProductEntries() {
@@ -5154,8 +5220,30 @@ updateAddToCartButton() {
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const formattedPrice = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);
+    const buttonLabel = this._resolveText('addToCartButton', 'Add Bundle to Cart');
 
-    button.textContent = `${this._resolveText('addToCartButton', 'Add Bundle to Cart')} \u2022 ${formattedPrice}`;
+    if (this._isProductPageCascadeTemplate?.() === true && this._renderCascadeAddToCartButtonContent) {
+      const formattedTotalPrice = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
+      const formattedDiscountAmount = combinedDiscountInfo.discountAmount > 0
+        ? CurrencyManager.convertAndFormat(combinedDiscountInfo.discountAmount, currencyInfo)
+        : '';
+
+      this._renderCascadeAddToCartButtonContent(button, this._getCascadeAddToCartButtonContent?.({
+        label: buttonLabel,
+        totalPriceText: formattedTotalPrice,
+        finalPriceText: formattedPrice,
+        discountAmountText: formattedDiscountAmount,
+        discountInfo: combinedDiscountInfo,
+      }) || {
+        label: buttonLabel,
+        separator: '\u2022',
+        finalPriceText: formattedPrice,
+        compareAtPriceText: '',
+        discountPillText: '',
+      });
+    } else {
+      button.textContent = `${buttonLabel} \u2022 ${formattedPrice}`;
+    }
 
     button.disabled = false;
     button.classList.remove('disabled');

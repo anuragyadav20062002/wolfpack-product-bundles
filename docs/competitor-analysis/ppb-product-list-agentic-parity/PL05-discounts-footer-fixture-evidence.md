@@ -130,3 +130,44 @@ Post-fix WPB desktop storefront proof:
 
 Remaining PL05 visual follow-up:
 - Verify whether the separate visible discount badge and compare-at total need a Product List footer patch, because the text/math parity is now aligned but the accessibility extraction does not prove those visual nodes.
+
+## 2026-07-12 Discount Button Visual Patch
+
+Chrome DevTools MCP was used for all browser evidence.
+
+Fresh EB Product List footer evidence:
+- EB desktop sequence: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/eb-current-desktop-discount-visual-sequence.json`
+- EB desktop qualified button structure: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/eb-current-desktop-three-selected-button-structure.json`
+
+EB qualified Product List footer button structure:
+- The button is black, `14px`, `font-weight: 700`, `41.195px` high, and uses `5px` internal gap.
+- Empty/blocked states keep the black background and reduce opacity to `0.5`.
+- Qualified states render separate child nodes for label, separator, discounted total, hidden compare-at total, and a visible discount pill.
+- The visible discount pill is `12px`, `font-weight: 700`, black text on white, `2px 8px` padding, and `20px` high.
+- The compare-at node exists in the button structure but is hidden with line-through styling.
+
+WPB gap before patch:
+- WPB rendered the qualified button as plain text: `Add Bundle to Cart • $1100.10` / `Add Bundle to Cart • $1716.30`.
+- No visible `5% off` / `10% off` discount pill was present.
+- No hidden compare-at node was present.
+- Disabled Product List button used gray background instead of EB's black button at reduced opacity.
+
+Source patch:
+- Product List CASCADE now builds structured add-to-cart button content for qualified discount states.
+- Percentage discounts render a visible `5% off` / `10% off` pill.
+- The original total is preserved in a hidden compare-at node.
+- Product List disabled button styling now uses black background with `0.5` opacity.
+- The patch is scoped to Product List (`PDP_INPAGE` + `CASCADE`) and leaves non-Product List PPB templates on the existing text path.
+
+WPB post-patch proof:
+- Desktop after patch: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-current-desktop-discount-visual-sequence-after-pill.json`
+- Mobile after patch: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-current-mobile-discount-visual-sequence-after-pill.json`
+- Desktop and mobile served widget `5.0.138`.
+- Empty/blocked states: black background, opacity `0.5`, no stale discount pill.
+- Two selected products: button text `Add Bundle to Cart • $1100.10 5% off`, visible `5% off` pill, hidden `$1158.00` compare-at node.
+- Three selected products: button text `Add Bundle to Cart • $1716.30 10% off`, visible `10% off` pill, hidden `$1907.00` compare-at node.
+
+Remaining PL05 follow-up:
+- EB selected drawer rows show discounted line prices with original compare-at prices after a tier qualifies.
+- WPB selected drawer rows still show original prices only (`$829.00`, `$329.00`, `$749.00`) in the same qualified states.
+- Treat selected-row discount price rendering as the next PL05 drawer-price slice, not as closed by this footer-button patch.

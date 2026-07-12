@@ -275,8 +275,30 @@ updateAddToCartButton() {
     // All steps valid and products selected - enable button
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const formattedPrice = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);
+    const buttonLabel = this._resolveText('addToCartButton', 'Add Bundle to Cart');
 
-    button.textContent = `${this._resolveText('addToCartButton', 'Add Bundle to Cart')} \u2022 ${formattedPrice}`;
+    if (this._isProductPageCascadeTemplate?.() === true && this._renderCascadeAddToCartButtonContent) {
+      const formattedTotalPrice = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
+      const formattedDiscountAmount = combinedDiscountInfo.discountAmount > 0
+        ? CurrencyManager.convertAndFormat(combinedDiscountInfo.discountAmount, currencyInfo)
+        : '';
+
+      this._renderCascadeAddToCartButtonContent(button, this._getCascadeAddToCartButtonContent?.({
+        label: buttonLabel,
+        totalPriceText: formattedTotalPrice,
+        finalPriceText: formattedPrice,
+        discountAmountText: formattedDiscountAmount,
+        discountInfo: combinedDiscountInfo,
+      }) || {
+        label: buttonLabel,
+        separator: '\u2022',
+        finalPriceText: formattedPrice,
+        compareAtPriceText: '',
+        discountPillText: '',
+      });
+    } else {
+      button.textContent = `${buttonLabel} \u2022 ${formattedPrice}`;
+    }
 
     button.disabled = false;
     button.classList.remove('disabled');

@@ -106,6 +106,44 @@ export function shouldMountCascadeAddToCartInFooter(addToCartButton, footerEleme
   return Boolean(addToCartButton && footerElement && addToCartButton.parentElement !== footerElement);
 }
 
+function formatCascadeDiscountPercentage(value) {
+  const percentage = Number(value || 0);
+  if (!Number.isFinite(percentage) || percentage <= 0) return '';
+
+  return Number.isInteger(percentage)
+    ? String(percentage)
+    : String(Number(percentage.toFixed(2)));
+}
+
+export function getCascadeAddToCartButtonContent({
+  label = '',
+  finalPriceText = '',
+  totalPriceText = '',
+  discountAmountText = '',
+  discountInfo = null,
+} = {}) {
+  const hasDiscount = Boolean(discountInfo?.hasDiscount);
+  const discountMethod = discountInfo?.discountMethod || '';
+  const appliedRuleValue = Number(discountInfo?.applicableRule?.discountValue || 0);
+  const discountPercentage = appliedRuleValue || Number(discountInfo?.discountPercentage || 0);
+  let discountPillText = '';
+
+  if (hasDiscount && discountMethod === 'percentage_off') {
+    const percentText = formatCascadeDiscountPercentage(discountPercentage);
+    discountPillText = percentText ? `${percentText}% off` : '';
+  } else if (hasDiscount && discountAmountText) {
+    discountPillText = `${discountAmountText} off`;
+  }
+
+  return {
+    label,
+    separator: '\u2022',
+    finalPriceText,
+    compareAtPriceText: hasDiscount ? totalPriceText : '',
+    discountPillText,
+  };
+}
+
 export const cascadeTemplateMethods = {
   _isProductPageCascadeTemplate() {
     const config = resolveProductPageTemplateConfig({
@@ -115,6 +153,34 @@ export const cascadeTemplateMethods = {
     });
 
     return config?.id === 'LIST';
+  },
+
+  _getCascadeAddToCartButtonContent(options = {}) {
+    return getCascadeAddToCartButtonContent(options);
+  },
+
+  _renderCascadeAddToCartButtonContent(button, content = {}) {
+    if (!button) return;
+    button.textContent = '';
+
+    const appendPart = (tagName, className, text, { hidden = false } = {}) => {
+      if (!text) return null;
+      const part = document.createElement(tagName);
+      part.className = className;
+      part.textContent = text;
+      if (hidden) {
+        part.hidden = true;
+        part.setAttribute('aria-hidden', 'true');
+      }
+      button.appendChild(part);
+      return part;
+    };
+
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-label', content.label);
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-separator', content.separator);
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-price', content.finalPriceText);
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-compare', content.compareAtPriceText, { hidden: true });
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-discount-pill', content.discountPillText);
   },
 
   _getSelectedProductEntries() {
