@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 5.0.139
+ * Version : 5.0.141
  * Built   : 2026-07-12
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.139';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.141';
 (function (window) {
   'use strict';
 
@@ -929,6 +929,12 @@ class BundleDataManager {
  */
 
 
+function isDiscountedAddonStep(step) {
+  if (!step || step.isFreeGift !== true) return false;
+  if (Array.isArray(step.addonTiers) && step.addonTiers.length > 0) return true;
+  return Boolean(step.addonEligibilityCondition || step.addonDiscount);
+}
+
 class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData, steps = null) {
     let totalPrice = 0;
@@ -936,9 +942,10 @@ class PricingCalculator {
     const unitPrices = [];
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
-      // Skip only true free gifts. Optional add-on steps reuse the same
-      // non-blocking step path, but chargeable add-ons still affect totals.
-      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree === true) return;
+      // Skip only legacy free gifts. EB-style add-on tiers remain in the
+      // original subtotal so their native line discount can reduce them to zero.
+      const step = steps?.[stepIndex];
+      if (step?.isFreeGift && step?.addonDisplayFree === true && !isDiscountedAddonStep(step)) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 

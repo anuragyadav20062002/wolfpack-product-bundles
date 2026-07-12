@@ -119,3 +119,19 @@ The fix is Product List runtime scoped:
 - The renderer now reuses the already-built selector HTML instead of invoking the selector renderer twice per row.
 
 WPB post-fix Chrome proof at `390 x 844`: widget `5.0.139`, selected option `8`, row `data-product-id`, `data-current-selected-variant-id`, and all child `data-product-id` values are `48720161210627`. The selected drawer row text is `18k Pedal Ring - 8 x 1 $399.00 x 1`, with an empty separate variant field.
+
+## 2026-07-12 Native Select Width And Runtime Scope
+
+Current evidence:
+- EB desktop baseline: `/private/tmp/ppb-product-list-agentic-parity/variant-selector-eb-current.json`
+- WPB before width fix: `/private/tmp/ppb-product-list-agentic-parity/variant-selector-wpb-current.json`
+- WPB target selector before runtime-scope fix: `/private/tmp/ppb-product-list-agentic-parity/variant-selector-wpb-targeted-current.json`
+- WPB final proof: `/private/tmp/ppb-product-list-agentic-parity/variant-selector-wpb-final-color.json`
+
+EB's Product List variant selector is a native select at `121px x 28px` with `14px` text, `font-weight: 400`, `2px` padding, `1.5px solid rgb(192, 192, 192)`, `5px` radius, white background, and `rgb(30, 30, 30)` text.
+
+WPB had two remaining gaps:
+- The select was `157px` wide because the Product List rule used `width: 80%`.
+- The Product List template attributes are present on `.bundle-steps` in the live storefront DOM, so the `#bundle-builder-app[data-ppb-*]` scoped selector did not apply in that placement.
+
+The final WPB proof on widget `5.0.141` matches EB's measured native select styling: `121px x 28px`, `14px`, `font-weight: 400`, `2px` padding, `1.5px` gray border, `5px` radius, white background, `rgb(30, 30, 30)` text, and option text `67891011`.

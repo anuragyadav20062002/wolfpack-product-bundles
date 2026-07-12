@@ -17,8 +17,11 @@ Move PPB List/Cascade selected-entry traversal to a shared selector before repla
 |---|---|---|---|---|
 | 1 | Source integration | Cascade source | Imports and calls shared selector | Avoids heavy widget import in test |
 | 2 | Variant-expanded drawer row | Selected Product List variant has title `Product - Variant` and `variantTitle` | Drawer display keeps `Product - Variant x n` as the title and suppresses the duplicate variant row | Matches EB's selected variant display |
+| 3 | Discounted selected drawer row | Qualified Product List percentage discount | Drawer row display uses discounted current price plus original compare-at price | Matches EB selected-row pricing after a tier qualifies |
+| 4 | Compare-at row renderer | Prepared selected row has `priceText` and `compareAtPriceText` | Shared selected-row renderer emits separate current and compare price nodes | Keeps visual styling in CSS owner |
 
 ## Acceptance Criteria
 - [x] All listed test cases pass
 - [ ] Existing PPB live fixture still renders
 - [x] Variant-expanded selected drawer rows do not render the chosen variant twice
+- [x] Qualified percentage-discount selected drawer rows expose current and original price text

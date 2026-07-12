@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.139
+ * Version : 5.0.141
  * Built   : 2026-07-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.139';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.141';
 (function() {
   'use strict';
 
@@ -774,6 +774,12 @@ class BundleDataManager {
   }
 }
 
+function isDiscountedAddonStep(step) {
+  if (!step || step.isFreeGift !== true) return false;
+  if (Array.isArray(step.addonTiers) && step.addonTiers.length > 0) return true;
+  return Boolean(step.addonEligibilityCondition || step.addonDiscount);
+}
+
 class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData, steps = null) {
     let totalPrice = 0;
@@ -782,7 +788,8 @@ class PricingCalculator {
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
 
-      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree === true) return;
+      const step = steps?.[stepIndex];
+      if (step?.isFreeGift && step?.addonDisplayFree === true && !isDiscountedAddonStep(step)) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 
@@ -2946,7 +2953,7 @@ function renderSelectedProductRow(product = null, options = {}) {
       <div class="bw-selected-row__body">
         <div class="bw-selected-row__title">${escapeHtml(title)}</div>
         ${variantTitle ? `<div class="bw-selected-row__variant">${escapeHtml(variantTitle)}</div>` : ''}
-        ${product.priceText ? `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>` : ''}
+        ${renderPrice(product)}
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
@@ -2958,6 +2965,21 @@ function renderSelectedProductRow(product = null, options = {}) {
         ` : ''}
       </div>
     </div>
+  `;
+}
+
+function renderPrice(product) {
+  if (!product.priceText) return '';
+
+  if (!product.compareAtPriceText) {
+    return `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>`;
+  }
+
+  return `
+        <div class="bw-selected-row__price bw-selected-row__price--compare">
+          <span class="bw-selected-row__price-current">${escapeHtml(product.priceText)}</span>
+          <span class="bw-selected-row__price-compare">${escapeHtml(product.compareAtPriceText)}</span>
+        </div>
   `;
 }
 
@@ -9653,6 +9675,22 @@ function getAddonTierCandidatesWithState(step, totalPrice, totalQuantity) {
   });
 }
 
+function normalizeAddonPercentageDiscount(...sources) {
+  for (const source of sources) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) continue;
+    const type = String(source.type ?? source.discountType ?? '').toUpperCase();
+    const value = Number(source.value ?? source.discountValue ?? 0);
+    if (type === 'PERCENTAGE' && Number.isFinite(value) && value > 0) {
+      return { type: 'PERCENTAGE', value: Math.min(100, value) };
+    }
+  }
+  return null;
+}
+
+function getAddonDiscountForStepTier(step, tier) {
+  return normalizeAddonPercentageDiscount(tier?.discount, tier, step?.addonDiscount);
+}
+
 function createFreeGiftStatusIcon(state) {
   const icon = document.createElement('span');
   icon.className = `side-panel-free-gift-icon side-panel-free-gift-icon--${state}`;
@@ -9925,7 +9963,7 @@ getAddonEligibilityState(step, evaluationOverride = null) {
     : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step));
   const tier = evaluation.tier;
   const condition = tier?.eligibilityCondition || step?.addonEligibilityCondition || {};
-  const discount = tier?.discount || step?.addonDiscount || {};
+  const discount = getAddonDiscountForStepTier(step, tier) || {};
   const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
   const conditionValue = Number(condition.value || 0);
   const currencyInfo = CurrencyManager.getCurrencyInfo();
@@ -9979,11 +10017,7 @@ getAddonLineDiscount(step) {
     : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
   const tier = evaluation.tier;
   if (evaluation.isEligible !== true) return null;
-  const discount = tier?.discount || step?.addonDiscount || {};
-  const type = String(discount.type || '').toUpperCase();
-  const value = Number(discount.value || 0);
-  if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
-  return { type, value: Math.min(100, value) };
+  return getAddonDiscountForStepTier(step, tier);
 },
 
 getAddonProductSelectionKeys(step) {
@@ -10503,7 +10537,9 @@ async addBundleToCart(clickedButton = null) {
             properties.Box = String(itemNumber);
           }
           const addonEval = this.getAddonTierEvaluation?.(step) || {};
-          const addonDiscount = this.getAddonLineDiscount(step);
+          const addonDiscount = typeof this.getAddonLineDiscount === 'function'
+            ? this.getAddonLineDiscount(step)
+            : null;
           const isAddonCartLine = fullPageStepFooterMethods.isSelectedAddonCartLine.call(this, step);
           if (isAddonCartLine && addonEval?.tier) {
             hasSelectedAddonLine = true;
@@ -10562,7 +10598,10 @@ async addBundleToCart(clickedButton = null) {
     this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
     try {
-      const runtimeToken = await this.requestCartTransformRuntimeToken(items, {
+      const requestRuntimeToken = typeof this.requestCartTransformRuntimeToken === 'function'
+        ? this.requestCartTransformRuntimeToken
+        : fullPageStepFooterMethods.requestCartTransformRuntimeToken;
+      const runtimeToken = await requestRuntimeToken.call(this, items, {
         offerGroupId: baseOfferId,
         bundleType: 'full_page',
       });
@@ -10620,6 +10659,9 @@ parseRuntimeAddonDiscount(stepType) {
 async requestCartTransformRuntimeToken(items, { offerGroupId, bundleType }) {
   const components = [];
   const addons = [];
+  const parseAddonDiscount = typeof this.parseRuntimeAddonDiscount === 'function'
+    ? this.parseRuntimeAddonDiscount
+    : fullPageStepFooterMethods.parseRuntimeAddonDiscount;
 
   items.forEach((item) => {
     const stepType = item?.properties?._bundle_step_type;
@@ -10631,7 +10673,7 @@ async requestCartTransformRuntimeToken(items, { offerGroupId, bundleType }) {
     if (isAddon) {
       addons.push({
         ...line,
-        discount: this.parseRuntimeAddonDiscount(stepType),
+        discount: parseAddonDiscount.call(this, stepType),
       });
     } else {
       components.push(line);
@@ -11303,6 +11345,13 @@ function extractFullPageId(idString) {
   return idString.toString().split('/').pop();
 }
 
+function normalizeAddonPercentageDiscount(discount, tier = null) {
+  const type = String(discount?.type ?? tier?.discountType ?? '').toUpperCase();
+  const value = Number(discount?.value ?? tier?.discountValue ?? 0);
+  if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
+  return { type: 'PERCENTAGE', value: Math.min(100, value) };
+}
+
 function collectProductSelectionKeys(product) {
   const keys = new Set();
   const addKey = (value) => {
@@ -11615,8 +11664,8 @@ async loadStepProducts(stepIndex) {
     step.products = allProducts;
     step.maxQuantity = allProducts.length;
     step.displayVariantsAsIndividual = activeTier?.displayVariantsAsIndividualProducts_addons === true;
-    const activeDiscount = activeTier?.discount || {};
-    step.addonDisplayFree = activeDiscount.type === 'PERCENTAGE' && Number(activeDiscount.value || 0) >= 100;
+    const activeDiscount = normalizeAddonPercentageDiscount(activeTier?.discount, activeTier);
+    step.addonDisplayFree = activeDiscount?.value >= 100;
   }
 
   const hasEnrichedStepProducts = !step?.isFreeGift && Array.isArray(step.StepProduct) && step.StepProduct.length > 0

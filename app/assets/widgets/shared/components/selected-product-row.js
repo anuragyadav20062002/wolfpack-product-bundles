@@ -36,7 +36,7 @@ export function renderSelectedProductRow(product = null, options = {}) {
       <div class="bw-selected-row__body">
         <div class="bw-selected-row__title">${escapeHtml(title)}</div>
         ${variantTitle ? `<div class="bw-selected-row__variant">${escapeHtml(variantTitle)}</div>` : ''}
-        ${product.priceText ? `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>` : ''}
+        ${renderPrice(product)}
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
@@ -48,6 +48,21 @@ export function renderSelectedProductRow(product = null, options = {}) {
         ` : ''}
       </div>
     </div>
+  `;
+}
+
+function renderPrice(product) {
+  if (!product.priceText) return '';
+
+  if (!product.compareAtPriceText) {
+    return `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>`;
+  }
+
+  return `
+        <div class="bw-selected-row__price bw-selected-row__price--compare">
+          <span class="bw-selected-row__price-current">${escapeHtml(product.priceText)}</span>
+          <span class="bw-selected-row__price-compare">${escapeHtml(product.compareAtPriceText)}</span>
+        </div>
   `;
 }
 

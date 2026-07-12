@@ -171,3 +171,32 @@ Remaining PL05 follow-up:
 - EB selected drawer rows show discounted line prices with original compare-at prices after a tier qualifies.
 - WPB selected drawer rows still show original prices only (`$829.00`, `$329.00`, `$749.00`) in the same qualified states.
 - Treat selected-row discount price rendering as the next PL05 drawer-price slice, not as closed by this footer-button patch.
+
+## 2026-07-12 Selected Drawer Row Price Patch
+
+Chrome DevTools MCP was used for all browser evidence.
+
+Fresh selected-row evidence:
+- EB desktop selected-row proof: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/eb-2026-07-12-selected-row-discount-prices-desktop.json`
+- WPB before patch: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-2026-07-12-selected-row-discount-prices-before.json`
+- WPB mobile after patch: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-2026-07-12-selected-row-discount-prices-after.json`
+- WPB desktop after patch: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-2026-07-12-selected-row-discount-prices-after-desktop.json`
+
+EB qualified selected drawer rows:
+- Selected row price wrapper is flex with `5px` gap and baseline alignment.
+- Each row renders the discounted current price followed by the original price, for example `₹746.10₹829`, `₹296.10₹329`, and `₹674.10₹749`.
+- The original selected-row price is not line-through in the captured EB drawer.
+
+WPB gap before patch:
+- Widget `5.0.139` showed the qualified footer discount correctly, but selected drawer rows still rendered original prices only: `$829.00`, `$619.00`, and `$329.00`.
+
+Source patch:
+- Product List CASCADE selected-row display now receives the active bundle discount calculation.
+- Qualified percentage-discount rows render a discounted current unit price and the original compare-at price.
+- The shared selected-row renderer supports separate current and compare price nodes, while preserving the previous single-price markup when no compare price is provided.
+- Product List CASCADE CSS owns the two-price selected-row layout with flex, baseline alignment, and `5px` gap.
+
+WPB post-patch proof:
+- Mobile served widget `5.0.140` at `390 x 844`; selected rows render `$746.10 $829.00`, `$557.10 $619.00`, and `$296.10 $329.00`.
+- Desktop served widget `5.0.140` at `1280 x 745`; selected rows render the same discounted/current plus original prices.
+- The selected-row price wrapper is `display:flex`, `gap: 5px`, `align-items: baseline`, with current price at `16px/400` and original price at `14px/700`, matching the EB selected-row structure closely.

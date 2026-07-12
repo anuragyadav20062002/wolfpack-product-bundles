@@ -202,6 +202,34 @@ describe('PPB List Cascade selected entries integration', () => {
     });
   });
 
+  it('prepares discounted Cascade selected row prices with original compare-at text', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { prepareCascadeSelectedProductDisplay } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+
+    const product = prepareCascadeSelectedProductDisplay({
+      product: {
+        title: '14k Dangling Obsidian Earrings',
+        price: 82900,
+      },
+      variantId: 'variant_a',
+      quantity: 1,
+      discountInfo: {
+        hasDiscount: true,
+        discountPercentage: 10,
+      },
+      formatPrice: (amount: number) => `$${(amount / 100).toFixed(2)}`,
+    });
+
+    expect(product).toMatchObject({
+      title: '14k Dangling Obsidian Earrings x 1',
+      priceText: '$746.10',
+      compareAtPriceText: '$829.00',
+      quantityLabel: 'x 1',
+      quantity: 1,
+      variantId: 'variant_a',
+    });
+  });
+
   it('keeps variant-expanded Product List drawer titles on one line without a duplicate variant row', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { prepareCascadeSelectedProductDisplay } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
@@ -245,6 +273,27 @@ describe('PPB List Cascade selected entries integration', () => {
     expect(view).toContain('14k Dangling Obsidian Earrings x 2');
     expect(view).toContain('$829.00');
     expect(view).toContain('>x 2</span>');
+  });
+
+  it('renders selected row current and compare-at prices when both are provided', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { renderSelectedProductRow } = require('../../../app/assets/widgets/shared/components/selected-product-row.js');
+
+    const view = renderSelectedProductRow({
+      title: '14k Dangling Obsidian Earrings x 1',
+      variantId: 'variant_a',
+      quantity: 1,
+      quantityLabel: 'x 1',
+      priceText: '$746.10',
+      compareAtPriceText: '$829.00',
+    }, {
+      className: 'bw-ppb-cascade-selected-item',
+    });
+
+    expect(view).toContain('$746.10');
+    expect(view).toContain('$829.00');
+    expect(view).toContain('bw-selected-row__price-current');
+    expect(view).toContain('bw-selected-row__price-compare');
   });
 
   it('mounts the Cascade add-to-cart button into the Cascade footer when it is outside', () => {

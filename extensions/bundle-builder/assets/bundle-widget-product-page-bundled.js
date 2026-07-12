@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.139
+ * Version : 5.0.141
  * Built   : 2026-07-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.139';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.141';
 (function() {
   'use strict';
 
@@ -774,6 +774,12 @@ class BundleDataManager {
   }
 }
 
+function isDiscountedAddonStep(step) {
+  if (!step || step.isFreeGift !== true) return false;
+  if (Array.isArray(step.addonTiers) && step.addonTiers.length > 0) return true;
+  return Boolean(step.addonEligibilityCondition || step.addonDiscount);
+}
+
 class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData, steps = null) {
     let totalPrice = 0;
@@ -782,7 +788,8 @@ class PricingCalculator {
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
 
-      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree === true) return;
+      const step = steps?.[stepIndex];
+      if (step?.isFreeGift && step?.addonDisplayFree === true && !isDiscountedAddonStep(step)) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 
@@ -2946,7 +2953,7 @@ function renderSelectedProductRow(product = null, options = {}) {
       <div class="bw-selected-row__body">
         <div class="bw-selected-row__title">${escapeHtml(title)}</div>
         ${variantTitle ? `<div class="bw-selected-row__variant">${escapeHtml(variantTitle)}</div>` : ''}
-        ${product.priceText ? `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>` : ''}
+        ${renderPrice(product)}
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
@@ -2958,6 +2965,21 @@ function renderSelectedProductRow(product = null, options = {}) {
         ` : ''}
       </div>
     </div>
+  `;
+}
+
+function renderPrice(product) {
+  if (!product.priceText) return '';
+
+  if (!product.compareAtPriceText) {
+    return `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>`;
+  }
+
+  return `
+        <div class="bw-selected-row__price bw-selected-row__price--compare">
+          <span class="bw-selected-row__price-current">${escapeHtml(product.priceText)}</span>
+          <span class="bw-selected-row__price-compare">${escapeHtml(product.compareAtPriceText)}</span>
+        </div>
   `;
 }
 
@@ -3760,17 +3782,17 @@ function prepareCascadeSelectedProductDisplay({
   product = {},
   variantId = '',
   quantity = 1,
+  discountInfo = null,
   formatPrice = null,
 } = {}) {
   const normalizedQuantity = Math.max(1, Number(quantity || 1));
   const title = product.title || product.parentTitle || '';
   const variantTitle = normalizeSelectedRowVariantTitle(product, title);
-  const amount = Number(product.price);
-  const priceText = product.priceText || (
-    Number.isFinite(amount) && typeof formatPrice === 'function'
-      ? formatPrice(amount)
-      : ''
-  );
+  const priceDisplay = getCascadeSelectedProductPriceDisplay({
+    product,
+    discountInfo,
+    formatPrice,
+  });
 
   return {
     ...product,
@@ -3778,8 +3800,50 @@ function prepareCascadeSelectedProductDisplay({
     quantity: normalizedQuantity,
     title: `${title} x ${normalizedQuantity}`,
     variantTitle,
-    priceText,
+    priceText: priceDisplay.priceText,
+    compareAtPriceText: priceDisplay.compareAtPriceText,
     quantityLabel: `x ${normalizedQuantity}`,
+  };
+}
+
+function getCascadeSelectedProductPriceDisplay({
+  product = {},
+  discountInfo = null,
+  formatPrice = null,
+} = {}) {
+  const amount = Number(product.price);
+  const hasFormat = typeof formatPrice === 'function';
+  const originalPriceText = product.priceText || (
+    Number.isFinite(amount) && hasFormat
+      ? formatPrice(amount)
+      : ''
+  );
+  const discountPercentage = Number(discountInfo?.discountPercentage || 0);
+  const hasDiscount = discountInfo?.hasDiscount === true
+    && Number.isFinite(amount)
+    && amount > 0
+    && Number.isFinite(discountPercentage)
+    && discountPercentage > 0
+    && hasFormat;
+
+  if (!hasDiscount) {
+    return {
+      priceText: originalPriceText,
+      compareAtPriceText: '',
+    };
+  }
+
+  const discountedAmount = Math.max(0, Math.round(amount * (1 - Math.min(100, discountPercentage) / 100)));
+  if (discountedAmount >= amount) {
+    return {
+      priceText: originalPriceText,
+      compareAtPriceText: '',
+    };
+  }
+
+  return {
+    priceText: formatPrice(discountedAmount),
+    compareAtPriceText: originalPriceText,
   };
 }
 
@@ -3933,6 +3997,17 @@ const cascadeTemplateMethods = {
     el.style.cssText = '';
 
     const selectedEntries = this._getSelectedProductEntries();
+    const { totalQuantity, totalPrice, unitPrices } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const selectedRowDiscountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      unitPrices
+    );
     if (!this.cascadeSelectedDrawerState) {
       this.cascadeSelectedDrawerState = { isOpen: false };
     }
@@ -3974,6 +4049,7 @@ const cascadeTemplateMethods = {
           product,
           variantId,
           quantity,
+          discountInfo: selectedRowDiscountInfo,
           formatPrice: (amount) => CurrencyManager.convertAndFormat(amount, CurrencyManager.getCurrencyInfo()),
         }), {
           className: 'bw-ppb-cascade-selected-item wpbMixCascadeBundleCartItem',
