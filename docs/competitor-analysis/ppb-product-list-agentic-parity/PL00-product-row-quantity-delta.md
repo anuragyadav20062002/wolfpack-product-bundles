@@ -135,3 +135,26 @@ Local proof after source fix:
 
 Deploy note:
 - The built extension assets now carry widget version `5.0.145`; the live storefront will show this change after the next Shopify app deploy and CDN propagation.
+
+## 2026-07-13 Served Asset Skew Check
+
+Browser evidence source: Chrome DevTools MCP only.
+
+Evidence files:
+- WPB desktop served no-injection radius check: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-desktop-served-no-injection-radius-check.json`
+- WPB desktop served CSS cascade probe: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-desktop-served-css-cascade-5-0-145.json`
+- WPB served CSS fetch proof: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-served-css-fetch-5-0-145.json`
+- WPB mobile served no-injection radius check: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-mobile-served-no-injection-radius-check.json`
+- WPB served asset URL list: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-served-asset-urls-5-0-145.json`
+
+Observed served state:
+- `window.__BUNDLE_WIDGET_VERSION__` reported `5.0.145` on desktop and mobile.
+- No `#wpb-radius-local-proof` style was present.
+- The selected quantity wrapper still computed to `100px` on desktop and mobile.
+- The fetched Shopify CDN asset `bundle-widget-product-page-cascade.css` had no `--bw-ppb-cascade-action-radius` token and still contained `border-radius:100px`.
+- The local generated asset `extensions/bundle-builder/assets/bundle-widget-product-page-cascade.css` does contain `--bw-ppb-cascade-action-radius:5px` and the selected quantity wrapper rule uses `border-radius:var(--bw-ppb-cascade-action-radius,5px)`.
+
+Decision:
+- The no-injection live proof is still blocked by a served JS/CSS asset skew: the product-page JS bundle is updated to `5.0.145`, but Shopify CDN is still serving an older Product List cascade CSS asset.
+- Do not treat `window.__BUNDLE_WIDGET_VERSION__ = "5.0.145"` alone as proof that CSS-only Product List fixes are live.
+- Re-run the no-injection proof only after the exact served `bundle-widget-product-page-cascade.css` contains `--bw-ppb-cascade-action-radius`.
