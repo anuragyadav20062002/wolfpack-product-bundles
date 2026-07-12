@@ -59,4 +59,16 @@ WPB widget `5.0.148` at `390 x 844`:
 
 Measured result: `/private/tmp/ppb-product-list-agentic-parity/PLS3-collection-reload/wpb-mobile-card-metrics-final-5-0-148-2026-07-13.json`.
 
-Fresh screenshot proof remains pending because the Chrome extension connection became unavailable after the metric capture.
+WPB widget `5.0.148` at `1280 x 800`:
+- `Selling Plans Ski Wax` remains `70px`; title, price, and static variant identity occupy separate tracks with no overlap or clipping.
+- Both long subscription rows expand to `84px`; title, price, and selector remain separated and contained.
+- `Yellow Sofa` remains `70px` with its native selector contained.
+- Every measured overlap and clipping flag is false.
+
+EB desktop reference rows remain `70px` for ordinary/static content and expand to approximately `86.8px` for the two long selector rows. The WPB layout follows the same content-driven behavior without copying a fixed captured height.
+
+Desktop evidence:
+- EB: `/private/tmp/ppb-product-list-agentic-parity/PLS3-collection-reload/eb-desktop-card-metrics-final-2026-07-13.json`
+- WPB: `/private/tmp/ppb-product-list-agentic-parity/PLS3-collection-reload/wpb-desktop-card-metrics-final-5-0-148-2026-07-13.json`
+
+Decision: the Product List card-density defect is closed on desktop and mobile.

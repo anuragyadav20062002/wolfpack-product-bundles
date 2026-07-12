@@ -35,8 +35,8 @@ The Step 2 transition and hard reload both hydrate the collection through the Pr
 
 The collection fixture exposed fixed-height card defects for long titles, selectors, and sole-variant identity. The measured delta and widget `5.0.148` correction are recorded in `PLS3-collection-card-density-delta.md`.
 
-## Remaining Proof
+## Final Recheck
 
-- Recheck the `5.0.148` content-driven rows at desktop width.
-- Recheck narrow/default/wide Product List placements because row/grid CSS changed.
-- Capture a fresh screenshot after Chrome reconnects; prior metric evidence is retained outside the repository.
+Widget `5.0.148` passed the desktop card geometry check and the repeated desktop/mobile placement probes. Ordinary rows remain at the `70px` baseline, long selector rows grow without overlap or clipping, and no tested placement creates horizontal overflow.
+
+Decision: PLS3 collection hydration, reload behavior, overflow, and the collection-exposed card-density states are accepted.
