@@ -17,6 +17,7 @@ import {
   normalizePricingRuleMessages,
   serializePricingDisplayOptions,
 } from "../lib/pricing-display-options";
+import { ensurePricingRulesForEnabledState } from "../lib/pricing-enable-default-rule";
 import {
   DiscountMethod,
   type PricingDisplayOptions,
@@ -57,7 +58,11 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     (initialPricing?.method as DiscountMethod) || DiscountMethod.PERCENTAGE_OFF
   );
   const [discountRules, setDiscountRulesRaw] = useState<PricingRule[]>(
-    Array.isArray(initialPricing?.rules) ? initialPricing.rules : []
+    ensurePricingRulesForEnabledState({
+      enabled: initialPricing?.enabled || false,
+      method: (initialPricing?.method as DiscountMethod) || DiscountMethod.PERCENTAGE_OFF,
+      rules: Array.isArray(initialPricing?.rules) ? initialPricing.rules : [],
+    })
   );
   const [showFooter, setShowFooterRaw] = useState(initialPricing?.showFooter !== false);
   const [showDiscountProgressBar, setShowDiscountProgressBarRaw] = useState(initialPricing?.showDiscountProgressBar === true);
@@ -78,9 +83,19 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
 
   // Wrapped setters that trigger dirty flag
   const setDiscountEnabled = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    setDiscountEnabledRaw(value);
+    const nextEnabled = typeof value === "function" ? value(discountEnabled) : value;
+    if (nextEnabled) {
+      setDiscountRulesRaw((rules) =>
+        ensurePricingRulesForEnabledState({
+          enabled: nextEnabled,
+          method: discountType,
+          rules,
+        }),
+      );
+    }
+    setDiscountEnabledRaw(nextEnabled);
     onStateChange?.();
-  }, [onStateChange]);
+  }, [discountEnabled, discountType, onStateChange]);
 
   const setDiscountType = useCallback((value: DiscountMethod | ((prev: DiscountMethod) => DiscountMethod)) => {
     setDiscountTypeRaw(value);

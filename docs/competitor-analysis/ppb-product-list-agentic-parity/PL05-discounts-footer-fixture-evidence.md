@@ -16,6 +16,8 @@ Evidence files:
 - EB mobile discount tiers: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/eb-storefront-empty-mobile.txt`, `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/eb-storefront-one-selected-mobile.txt`, `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/eb-storefront-two-selected-mobile.txt`, `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/eb-storefront-three-selected-mobile.txt`
 - WPB current empty desktop before mirror: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-storefront-empty-desktop-before.txt`
 - WPB admin document payload: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-admin-config-document.response.network-response`
+- WPB discount save request: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-discount-save.request.network-request`
+- WPB discount save response: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-discount-save.response.network-response`
 
 ## State Tested
 
@@ -88,9 +90,9 @@ Observed desktop values:
 
 ## WPB Fixture Status
 
-WPB SIT fixture `cmrf19c8d0000v0xpj8rz2wgh` currently has pricing rules present in the loader payload but `rules: []` and `enabled: false`. The empty desktop storefront capture therefore has no discount message and is not yet comparable against the EB discount-tier fixture.
+WPB SIT fixture `cmrf19c8d0000v0xpj8rz2wgh` originally had pricing present in the loader payload with `rules: []` and `enabled: false`. The empty desktop storefront capture therefore had no discount message and was not comparable against the EB discount-tier fixture.
 
-Attempted WPB admin fixture mirroring through Chrome DevTools MCP:
+Initial attempted WPB admin fixture mirroring through Chrome DevTools MCP:
 - Opened embedded admin URL: `https://admin.shopify.com/store/agent-5sfidg3m/apps/wolfpack-product-bundles-sit/app/bundles/product-page-bundle/configure/cmrf19c8d0000v0xpj8rz2wgh`.
 - Opened `Discount & Pricing None`.
 - Tried `click`, `doubleClick`, `fill_form`, and single `fill` on the `Enable discount pricing` `s-switch` exposed as an accessibility checkbox.
@@ -98,6 +100,15 @@ Attempted WPB admin fixture mirroring through Chrome DevTools MCP:
 - Direct app frame navigation redirected to Shopify session-token auth and did not resolve back into the app.
 - Admin-page `fetch` to the app frame URL failed due CORS, so no browser-context POST was attempted.
 
-Decision: do not mutate the WPB fixture outside the app UI in this MCP-only pass. The next step is either:
-- manually enable WPB Discount & Pricing in the admin UI, then resume Chrome MCP storefront comparison, or
-- explicitly approve a non-UI fixture update path that uses the app save contract or database mutation for the SIT fixture only.
+Source fix: `useBundlePricing` now seeds one current-shape default rule when discount pricing is enabled from an empty-rule state. This keeps disabled empty-rule saved data empty, but lets the configure UI render editable rule fields after the merchant enables discount pricing.
+
+Post-fix WPB admin proof through Chrome DevTools MCP:
+- Reloaded the embedded admin route.
+- Opened `Discount & Pricing None`.
+- Clicked `Enable discount pricing`; the section changed to checked and rendered `Rule #1` with quantity `2` and percentage off `5`.
+- Added `Rule #2`, corrected MCP number-field replacement to quantity `3` and percentage off `10`.
+- Enabled `Discount Messaging`.
+- Saved through the Shopify save bar. The Remix save POST returned status `200`.
+- Reopened the section after save; the accessibility tree persisted `Rule #1` as `2` / `5`, `Rule #2` as `3` / `10`, and `Discount Messaging` checked.
+
+Next step: refresh the WPB storefront preview and capture empty, one-selected, two-selected, and three-selected discount states against the EB fixture on desktop and mobile.
