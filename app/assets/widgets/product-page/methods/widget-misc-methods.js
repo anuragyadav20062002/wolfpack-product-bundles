@@ -84,13 +84,13 @@ attachEventListeners() {
 
   // Modal close handlers
   const modal = this.elements.modal;
-  const closeButton = modal.querySelector('.close-button');
+  const closeButtons = modal.querySelectorAll('.close-button');
   const prevButton = modal.querySelector('.prev-button');
   const nextButton = modal.querySelector('.next-button');
 
-  if (closeButton) {
+  closeButtons.forEach((closeButton) => {
     closeButton.addEventListener('click', () => this.closeModal());
-  }
+  });
 
   // Overlay closes bottom-sheet
   if (this.elements.bsOverlay) {

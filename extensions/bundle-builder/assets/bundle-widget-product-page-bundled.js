@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.152
+ * Version : 5.0.153
  * Built   : 2026-07-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.152';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.153';
 (function() {
   'use strict';
 
@@ -5692,13 +5692,13 @@ attachEventListeners() {
   });
 
   const modal = this.elements.modal;
-  const closeButton = modal.querySelector('.close-button');
+  const closeButtons = modal.querySelectorAll('.close-button');
   const prevButton = modal.querySelector('.prev-button');
   const nextButton = modal.querySelector('.next-button');
 
-  if (closeButton) {
+  closeButtons.forEach((closeButton) => {
     closeButton.addEventListener('click', () => this.closeModal());
-  }
+  });
 
   if (this.elements.bsOverlay) {
     this.elements.bsOverlay.addEventListener('click', () => this.closeModal());
