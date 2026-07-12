@@ -121,3 +121,38 @@ Post-patch WPB proof:
 - Mobile `390 x 844`: version `5.0.144`, two tabs, both `display: flex`, `align-items: center`, `justify-content: center`, `54px` height.
 - Mobile after clicking the second category: second tab becomes active and visible rows filter to `18k Pedal Ring`.
 - Desktop `1280 x 900`: version `5.0.144`, two tabs, both `display: flex`, `align-items: center`, `justify-content: center`, `54px` height.
+
+## 2026-07-13 Hard-Refresh Served Proof
+
+Chrome DevTools MCP was used for all browser evidence after clearing client storage and Cache Storage, then hard-refreshing the storefront pages.
+
+Evidence files:
+- EB desktop before click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/eb-current-desktop-hard-refresh-before-click.json`
+- EB desktop after click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/eb-current-desktop-hard-refresh-after-click.json`
+- EB mobile before click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/eb-current-mobile-hard-refresh-before-click.json`
+- EB mobile after click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/eb-current-mobile-hard-refresh-after-click.json`
+- WPB desktop before click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/wpb-current-desktop-hard-refresh-before-click-scoped.json`
+- WPB desktop after click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/wpb-current-desktop-hard-refresh-after-click-scoped.json`
+- WPB mobile before click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/wpb-current-mobile-hard-refresh-before-click-scoped.json`
+- WPB mobile after click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/wpb-current-mobile-hard-refresh-after-click-scoped.json`
+
+EB current behavior:
+- Desktop `1280 x 900`: two Product List category tabs render at `54px` height, `display: flex`, `align-items: center`, and `justify-content: center`.
+- EB mobile resolved to `500 x 844` in the Chrome MCP viewport. The same two tabs render at `54px` height with flex centering.
+- Active tab: `rgb(30, 30, 30)` background and white text.
+- Inactive tab: `rgb(244, 249, 249)` background and `rgb(30, 30, 30)` text.
+- Clicking `Category 2Long Label Empty Category` makes that tab active and filters the Product List rows to `18k Pedal Ring`.
+
+WPB current behavior:
+- Desktop `1280 x 900`, served widget `5.0.144`: two Product List category tabs render at `54px` height, `display: flex`, `align-items: center`, and `justify-content: center`.
+- Mobile `390 x 844`, served widget `5.0.144`: two Product List category tabs render at `54px` height with the same flex-centering behavior.
+- Active and inactive colors match EB's Product List tab states.
+- Clicking `Category 2Long Label Empty Category` makes that tab active and filters the Product List rows to `18k Pedal Ring`.
+
+Fixture limitation:
+- EB did not preserve an empty manual category as a visible Product List storefront tab after save during this fixture pass.
+- Because EB does not expose that empty-category state in this fixture, PL01 accepts the empty-category storefront case as EB-absent rather than a WPB gap.
+
+Decision:
+- PL01 visible category tab styling and populated category switching are accepted on desktop and mobile for the current fixture.
+- No Product List source patch is needed from the hard-refresh proof.
