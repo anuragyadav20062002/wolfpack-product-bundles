@@ -32,7 +32,7 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Audit Report]] — What was stale or incorrect in the original `docs/` folder
 - [[Architecture/System Overview]] — App stack, services, deployment
 - [[Architecture/Database Schema]] — Authoritative Prisma schema summary
-- [[Architecture/Cart Transform Function]] — TypeScript WASM cart transform (corrected)
+- [[Architecture/Cart Transform Function]] — Rust Shopify Function cart transform and checkout discount contract
 - [[Architecture/Widget Architecture]] — FPB + PDP widgets, load strategy, versioning
 - [[Architecture/Admin Configure Page]] — shared FPB/PPB Admin configure-page adapter boundary, section rhythm, route-owned save semantics
 - [[Architecture/State Management]] — Redux Toolkit slices, RTK Query endpoint boundaries, and AppStateService migration rules
