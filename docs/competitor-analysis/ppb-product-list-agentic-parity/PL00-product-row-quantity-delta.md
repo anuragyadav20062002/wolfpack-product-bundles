@@ -97,3 +97,34 @@ Result:
 - Add text now matches EB's measured mobile typography.
 - Quantity value now matches EB's measured mobile typography.
 - Quantity decrement/increment button typography remains unchanged and still matches EB.
+
+## 2026-07-13 Selected Radius Follow-up
+
+Browser evidence source: Chrome DevTools MCP only.
+
+Evidence files:
+- EB selected leaf proof: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/eb-desktop-after-selected-radius-leaf.json`
+- WPB served before fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-selected-radius-current-page5.json`
+- WPB local proof after source fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-selected-radius-local-proof.json`
+- WPB local proof screenshot: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-selected-radius-local-proof.png`
+
+Measured EB selected state:
+- Visible selected action uses the same `5px` radius as the default Add action.
+- EB's hidden quantity wrapper can report `100px`, but the visible selected Product List action remains `90px x 32px` with `5px` rounding.
+
+Measured WPB before fix on served widget `5.0.144`:
+- Selected quantity wrapper: `90px x 32px`, transparent background, `100px` radius.
+- Quantity decrement/increment buttons: `32px x 32px`, `5px` radius.
+
+Fix:
+- Add `--bw-ppb-cascade-action-radius: 5px`.
+- Use it for Product List Add, selected quantity wrapper, and selected quantity buttons.
+- This prevents the selected state from reading as a pill while keeping the inner buttons unchanged.
+
+Local proof after source fix:
+- Served storefront was still `5.0.144`, so the new source rule was injected as a temporary local proof layer.
+- Selected quantity wrapper measured `5px`.
+- Quantity decrement/increment buttons measured `5px`.
+
+Deploy note:
+- The built extension assets now carry widget version `5.0.145`; the live storefront will show this change after the next Shopify app deploy and CDN propagation.

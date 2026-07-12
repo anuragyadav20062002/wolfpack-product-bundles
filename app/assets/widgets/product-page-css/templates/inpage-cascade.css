@@ -232,6 +232,7 @@
   --bw-ppb-cascade-product-row-height: 70px;
   --bw-ppb-cascade-product-row-media: 70px;
   --bw-ppb-cascade-product-action-width: 90px;
+  --bw-ppb-cascade-action-radius: 5px;
   --bw-ppb-cascade-product-list-max-height: min(410px, 60vh);
   gap: 10px;
   max-height: var(--bw-ppb-cascade-product-list-max-height);
@@ -519,7 +520,7 @@
   width: var(--bw-ppb-cascade-product-action-width, 90px);
   height: 32px;
   padding: 4px 14px;
-  border-radius: 5px;
+  border-radius: var(--bw-ppb-cascade-action-radius, 5px);
   background: #111111;
   color: #ffffff;
   font-size: 14px;
@@ -543,7 +544,7 @@
   width: var(--bw-ppb-cascade-product-action-width, 90px);
   height: 32px;
   padding: 0;
-  border-radius: 100px;
+  border-radius: var(--bw-ppb-cascade-action-radius, 5px);
   background: transparent;
 }
 
@@ -556,7 +557,7 @@
   width: 32px;
   height: 32px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--bw-ppb-cascade-action-radius, 5px);
   background: #111111;
   color: #ffffff;
   font-size: 14px;

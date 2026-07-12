@@ -61,3 +61,16 @@ Measured WPB mobile behavior on widget version `5.0.133`:
 ## Decision
 
 No source patch is needed for this state. WPB now matches EB's Product List quantity behavior and sizing across desktop and mobile for default add, selected quantity, increment, decrement, and the quantity-one remove state.
+
+## 2026-07-13 Radius Correction
+
+The July 11 pass treated the transparent selected quantity wrapper's `100px` radius as acceptable because the wrapper was the measured node. A later Chrome DevTools MCP leaf-button check showed the visible EB selected action uses the same `5px` radius as the default Add action.
+
+Updated evidence:
+- EB selected leaf proof: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/eb-desktop-after-selected-radius-leaf.json`
+- WPB served before fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-selected-radius-current-page5.json`
+- WPB local proof after source fix: `/private/tmp/ppb-product-list-agentic-parity/PL00-quantity-radius/wpb-selected-radius-local-proof.json`
+
+Updated decision:
+- Product List selected quantity wrapper should use the same `5px` radius as the unselected Add action.
+- The fix is documented in `PL00-product-row-quantity-delta.md` and shipped in widget version `5.0.145`.
