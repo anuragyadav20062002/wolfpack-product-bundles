@@ -205,6 +205,9 @@
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .bw-ppb-inpage-category-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 54px;
   padding: 8px 5px;
   border: 1px solid #1e1e1e;

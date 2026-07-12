@@ -83,3 +83,41 @@ Covered behavior:
 - Collection-backed categories preserve hydrated products when there are no direct category product IDs.
 
 This does not close the PL01 storefront parity row. Browser completion still requires an EB and WPB Product List fixture with visible category tabs, long labels, category switching, and an empty category, then desktop/mobile Chrome DevTools MCP comparison.
+
+## 2026-07-13 Visible Category Tabs
+
+Fixture setup:
+- EB and WPB were both configured with `Category 1` and `Category 2Long Label Empty Category`.
+- The second category contains `18k Pedal Ring - 10`.
+- EB did not keep an empty manual category visible after save until a product was added, so this pass proves populated long-label category switching rather than an empty-category storefront state.
+
+Chrome DevTools MCP evidence:
+- EB desktop before click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/eb-desktop-category-tabs-before-click.json`
+- EB desktop after click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/eb-desktop-category-tabs-after-click.json`
+- EB mobile before click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/eb-mobile-category-tabs-before-click.json`
+- EB mobile after click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/eb-mobile-category-tabs-after-click.json`
+- WPB mobile before patch: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/wpb-mobile-category-tabs-before-click.json`
+- WPB mobile after patch: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/wpb-mobile-category-tabs-after-flex-patch.json`
+- WPB mobile after second-category click: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/wpb-mobile-category-tabs-after-flex-patch-clicked.json`
+- WPB desktop after patch: `/private/tmp/ppb-product-list-agentic-parity/PL01-categories/wpb-desktop-category-tabs-after-flex-patch.json`
+
+Measured EB category tab behavior:
+- Category tabs render at `54px` height.
+- Active tab uses `rgb(30, 30, 30)` background with white text.
+- Inactive tab uses `rgb(244, 249, 249)` background with `rgb(30, 30, 30)` text.
+- Font is `14px`, weight `700`, line-height `normal`.
+- Tabs use `display: flex`, `align-items: center`, and `justify-content: center`.
+- Clicking the second category filters the Product List to `18k Pedal Ring`.
+
+WPB gap found:
+- WPB matched the EB dimensions, colors, borders, radius, font size, font weight, and category filtering.
+- WPB differed on the layout primitive: category tabs computed as `display: block` instead of EB's `display: flex`.
+
+Source change:
+- `app/assets/widgets/product-page-css/templates/inpage-cascade.css` now flex-centers Product List CASCADE category tabs.
+- `WIDGET_VERSION` bumped to `5.0.144` and generated widget assets rebuilt.
+
+Post-patch WPB proof:
+- Mobile `390 x 844`: version `5.0.144`, two tabs, both `display: flex`, `align-items: center`, `justify-content: center`, `54px` height.
+- Mobile after clicking the second category: second tab becomes active and visible rows filter to `18k Pedal Ring`.
+- Desktop `1280 x 900`: version `5.0.144`, two tabs, both `display: flex`, `align-items: center`, `justify-content: center`, `54px` height.
