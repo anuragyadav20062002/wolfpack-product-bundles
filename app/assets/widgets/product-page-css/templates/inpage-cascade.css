@@ -477,16 +477,6 @@
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .bw-ppb-cascade-product-row--has-variant-selector
-  .product-price,
-#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-  .bw-ppb-cascade-product-row--has-variant-selector
-  .product-price-strike {
-  font-size: 16px;
-  font-weight: 400;
-}
-
-#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-  .bw-ppb-cascade-product-row--has-variant-selector
   .variant-selector-wrapper,
 .bundle-steps[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .bw-ppb-cascade-product-row--has-variant-selector
@@ -504,7 +494,8 @@
   grid-column: 1;
   grid-row: 3;
   align-self: start;
-  width: min(121px, 100%);
+  width: 80%;
+  max-width: 100%;
   height: 27.5px;
   margin: 0;
   padding: 2px;
@@ -963,15 +954,6 @@
     .bw-ppb-cascade-product-row
     .product-add-btn {
     line-height: normal;
-  }
-
-  #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-    .bw-ppb-cascade-product-row--has-variant-selector
-    .product-price,
-  #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-    .bw-ppb-cascade-product-row--has-variant-selector
-    .product-price-strike {
-    font-size: 15px;
   }
 
   #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]

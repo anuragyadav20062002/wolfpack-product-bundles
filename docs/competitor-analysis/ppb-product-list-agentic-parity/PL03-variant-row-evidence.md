@@ -135,3 +135,27 @@ WPB had two remaining gaps:
 - The Product List template attributes are present on `.bundle-steps` in the live storefront DOM, so the `#bundle-builder-app[data-ppb-*]` scoped selector did not apply in that placement.
 
 The final WPB proof on widget `5.0.141` matches EB's measured native select styling: `121px x 28px`, `14px`, `font-weight: 400`, `2px` padding, `1.5px` gray border, `5px` radius, white background, `rgb(30, 30, 30)` text, and option text `67891011`.
+
+## 2026-07-13 Mobile Price Typography And Responsive Select Recheck
+
+Current EB evidence:
+- EB product-page desktop: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/eb-current-desktop-product-page-live-probe.json`
+- EB product-page mobile: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/eb-current-true-mobile-product-page-live-probe.json`
+
+Current WPB evidence:
+- WPB product-page mobile before source patch: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-current-true-mobile-direct-product-live-probe.json`
+- WPB mobile local CSS proof after source patch, injected through Chrome DevTools MCP without deploy: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-mobile-local-css-price-selector-after.json`
+
+Findings:
+- EB's true `390 x 844` Product List row uses the same price typography across normal rows and the variant-selector row.
+- WPB still had a Product List-specific override for `.bw-ppb-cascade-product-row--has-variant-selector .product-price`, making the variant row price `15px/400` on mobile while normal rows used the shared row price treatment.
+- The same recheck showed EB's mobile native select is responsive to the text column (`144px`, approximately `80%` of the `180px` detail column) rather than a fixed desktop-only `121px`.
+
+Fix:
+- Removed the variant-row-only Product List price font override so variant prices inherit the same row price rule as every other Product List product.
+- Changed the Product List variant selector width from `min(121px, 100%)` to `80%; max-width: 100%` so desktop constrained placements still land near `121px` while true mobile aligns with EB's responsive width.
+
+Post-patch local Chrome proof at `390 x 844`:
+- Normal row price: `14px`, `font-weight: 700`.
+- Variant row price: `14px`, `font-weight: 700`.
+- Variant select width: `142.391px` on the WPB direct product page, matching the EB mobile responsive target closely without a deploy.

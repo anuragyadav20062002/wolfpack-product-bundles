@@ -14,7 +14,7 @@ Verify Product Page Bundle Product List follows EB's PPB variant-display contrac
 | 2 | Active category expands variants | Active category has `displayVariantsAsIndividualProducts: true` and a multi-variant product | One row renders per available variant and no grouped variant selector is used | PL03 variants-as-individual |
 
 ## Acceptance Criteria
-- [ ] Active category controls variants-as-individual behavior.
-- [ ] Grouped category keeps multi-variant products grouped.
-- [ ] Individual-variant category expands available variants.
-- [ ] Focused Jest test passes.
+- [x] Active category controls variants-as-individual behavior.
+- [x] Grouped category keeps multi-variant products grouped.
+- [x] Individual-variant category expands available variants.
+- [x] Focused Jest test passes.
