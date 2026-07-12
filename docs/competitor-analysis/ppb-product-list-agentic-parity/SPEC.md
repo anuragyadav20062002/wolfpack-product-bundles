@@ -98,7 +98,10 @@ Last updated: 2026-07-13.
 | `PL07-selected-drawer-footer` | Accepted for current selected-count, drawer, overflow, remove, add-while-open, and geometry states | `PL07-selected-drawer-footer-delta.md`, `PL07-one-item-drawer-overflow-delta.md`, `PL07-three-row-drawer-overflow-delta.md`, `PL07-selected-drawer-heading-gap-delta.md`, `PL-drawer-add-open-evidence.md`, `PL07-remove-expanded-evidence.md`, `PL-empty-drawer-toast-evidence.md`, `PL-drawer-top-geometry-delta.md` | Recheck after future source changes that touch shared selected-row or footer behavior. |
 | `PL08-cart-lines` | Accepted for tested variant and two-product step-rule cart lines | `PL08-cart-lines-evidence.md` | `Retail Price` remains a SIT settings difference, not a Product List parity gap. |
 | `PLS7-placement-responsive` | Accepted for measured placement widths | `PLS7-placement-responsive-evidence.md`, `PL-product-list-overflow-evidence.md` | Recheck after any Product List row/grid CSS change. |
-| `PLS1/PLS3/PLS5/PLS6` | Not yet independently closed | Existing pairwise rows cover pieces | Need combined stress passes now that all pairwise rows are resolved. |
+| `PLS1-combined` | Accepted | `PLS1-combined-stress-evidence.md` | Desktop/mobile combined proof covers multi-step rules, grouped variants, mixed inventory, discount progression, cross-step drawer persistence, and final CTA state. |
+| `PLS3-collection-reload` | Not yet independently closed | Existing category and loading rows cover pieces | Need a live collection-backed Product List category plus reload/first-load proof. EB does not preserve an empty manual category, so that substate remains EB-absent. |
+| `PLS5-loading` | Accepted | `PL-loading-placement-evidence.md`, `PLS1-combined-stress-evidence.md` | Live Step 2 transition re-proves loading in the Product List target with stable drawer/footer content. |
+| `PLS6-other-template-smoke` | Not yet independently closed | Product List changes are scoped, but shared behavior changed during the loop | Need focused non-Product-List PPB smoke verification. |
 
 ## Test And Verification Plan
 
