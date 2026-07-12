@@ -1,4 +1,7 @@
-import { ensurePricingRulesForEnabledState } from "../../../app/lib/pricing-enable-default-rule";
+import {
+  ensurePricingRuleMessagesForEnabledState,
+  ensurePricingRulesForEnabledState,
+} from "../../../app/lib/pricing-enable-default-rule";
 import { DiscountMethod, type PricingRule } from "../../../app/types/pricing";
 
 describe("ensurePricingRulesForEnabledState", () => {
@@ -44,5 +47,51 @@ describe("ensurePricingRulesForEnabledState", () => {
         rules: existingRules,
       }),
     ).toBe(existingRules);
+  });
+
+  it("seeds default rule messages for newly seeded pricing rules", () => {
+    const rules = ensurePricingRulesForEnabledState({
+      enabled: true,
+      method: DiscountMethod.PERCENTAGE_OFF,
+      rules: [],
+    });
+
+    const messages = ensurePricingRuleMessagesForEnabledState({
+      method: DiscountMethod.PERCENTAGE_OFF,
+      rules,
+      existingMessages: {},
+    });
+
+    expect(messages[rules[0].id]).toEqual({
+      discountText:
+        "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!",
+      successMessage:
+        "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.",
+    });
+  });
+
+  it("preserves existing rule messages", () => {
+    const rules: PricingRule[] = [
+      {
+        id: "rule-existing",
+        conditionType: "quantity",
+        conditionValue: 2,
+        discountValue: 5,
+      },
+    ];
+    const existingMessages = {
+      "rule-existing": {
+        discountText: "Existing progress",
+        successMessage: "Existing success",
+      },
+    };
+
+    expect(
+      ensurePricingRuleMessagesForEnabledState({
+        method: DiscountMethod.PERCENTAGE_OFF,
+        rules,
+        existingMessages,
+      }),
+    ).toBe(existingMessages);
   });
 });

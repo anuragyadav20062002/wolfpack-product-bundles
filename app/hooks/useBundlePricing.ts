@@ -17,7 +17,10 @@ import {
   normalizePricingRuleMessages,
   serializePricingDisplayOptions,
 } from "../lib/pricing-display-options";
-import { ensurePricingRulesForEnabledState } from "../lib/pricing-enable-default-rule";
+import {
+  ensurePricingRuleMessagesForEnabledState,
+  ensurePricingRulesForEnabledState,
+} from "../lib/pricing-enable-default-rule";
 import {
   DiscountMethod,
   type PricingDisplayOptions,
@@ -52,18 +55,17 @@ function createInitialPricingDisplayOptions(initialPricing: UseBundlePricingProp
 }
 
 export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePricingProps) {
+  const initialDiscountType = (initialPricing?.method as DiscountMethod) || DiscountMethod.PERCENTAGE_OFF;
+  const initialDiscountRules = ensurePricingRulesForEnabledState({
+    enabled: initialPricing?.enabled || false,
+    method: initialDiscountType,
+    rules: Array.isArray(initialPricing?.rules) ? initialPricing.rules : [],
+  });
+
   // Pricing state
   const [discountEnabled, setDiscountEnabledRaw] = useState(initialPricing?.enabled || false);
-  const [discountType, setDiscountTypeRaw] = useState<DiscountMethod>(
-    (initialPricing?.method as DiscountMethod) || DiscountMethod.PERCENTAGE_OFF
-  );
-  const [discountRules, setDiscountRulesRaw] = useState<PricingRule[]>(
-    ensurePricingRulesForEnabledState({
-      enabled: initialPricing?.enabled || false,
-      method: (initialPricing?.method as DiscountMethod) || DiscountMethod.PERCENTAGE_OFF,
-      rules: Array.isArray(initialPricing?.rules) ? initialPricing.rules : [],
-    })
-  );
+  const [discountType, setDiscountTypeRaw] = useState<DiscountMethod>(initialDiscountType);
+  const [discountRules, setDiscountRulesRaw] = useState<PricingRule[]>(initialDiscountRules);
   const [showFooter, setShowFooterRaw] = useState(initialPricing?.showFooter !== false);
   const [showDiscountProgressBar, setShowDiscountProgressBarRaw] = useState(initialPricing?.showDiscountProgressBar === true);
   const [discountMessagingEnabled, setDiscountMessagingEnabledRaw] = useState(initialPricing?.messages?.showDiscountMessaging === true);
@@ -73,11 +75,15 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
 
   // Rule messaging
   const [ruleMessages, setRuleMessages] = useState<Record<string, { discountText: string; successMessage: string }>>(
-    normalizePricingRuleMessages({
-      rules: Array.isArray(initialPricing?.rules) ? initialPricing.rules : [],
-      messages: initialPricing?.messages || {},
-      method: initialPricing?.method,
-    })
+    ensurePricingRuleMessagesForEnabledState({
+      rules: initialDiscountRules,
+      existingMessages: normalizePricingRuleMessages({
+        rules: Array.isArray(initialPricing?.rules) ? initialPricing.rules : [],
+        messages: initialPricing?.messages || {},
+        method: initialPricing?.method,
+      }),
+      method: initialDiscountType,
+    }),
   );
   const [showVariables, setShowVariables] = useState(false);
 
@@ -85,17 +91,23 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
   const setDiscountEnabled = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
     const nextEnabled = typeof value === "function" ? value(discountEnabled) : value;
     if (nextEnabled) {
-      setDiscountRulesRaw((rules) =>
-        ensurePricingRulesForEnabledState({
-          enabled: nextEnabled,
+      const nextRules = ensurePricingRulesForEnabledState({
+        enabled: nextEnabled,
+        method: discountType,
+        rules: discountRules,
+      });
+      setDiscountRulesRaw(nextRules);
+      setRuleMessages((messages) =>
+        ensurePricingRuleMessagesForEnabledState({
           method: discountType,
-          rules,
+          rules: nextRules,
+          existingMessages: messages,
         }),
       );
     }
     setDiscountEnabledRaw(nextEnabled);
     onStateChange?.();
-  }, [discountEnabled, discountType, onStateChange]);
+  }, [discountEnabled, discountRules, discountType, onStateChange]);
 
   const setDiscountType = useCallback((value: DiscountMethod | ((prev: DiscountMethod) => DiscountMethod)) => {
     setDiscountTypeRaw(value);

@@ -1776,6 +1776,93 @@
   composes: selectedItemName from "./bundle-configure-shared.module.css";
 }
 
+.categorySelectedItemsChip {
+  border: 0;
+  background: transparent;
+  color: #005bd3;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.categorySelectedItemsChip:hover,
+.categorySelectedItemsChip:focus-visible {
+  color: #004299;
+  text-decoration: underline;
+}
+
+.categorySelectedItemRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 62px;
+  padding: 8px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.categorySelectedItemRemove {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #d72c0d;
+  font: inherit;
+  font-size: 13px;
+  line-height: 28px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.categorySelectedItemDrag {
+  composes: categoryDrag from "./bundle-configure-shared.module.css";
+  flex: 0 0 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+}
+
+.categorySelectedItemDrag:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+}
+
+.categorySelectedItemImage {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f1f1f1;
+}
+
+.categorySelectedItemName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categorySelectedItemRemove s-icon {
+  color: inherit;
+}
+
+.categorySelectedItemRemove:hover,
+.categorySelectedItemRemove:focus-visible {
+  background: #f1f2f3;
+  color: #8e1f0b;
+}
+
 .categoryNameInput {
   composes: categoryNameInput from "./bundle-configure-shared.module.css";
 }

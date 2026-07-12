@@ -3,16 +3,10 @@ import { usePpbConfigureContext } from "./PpbConfigureContext";
 export function PpbStepFlowCard() {
   const {
     activeTabIndex,
-    cloneStep,
-    deleteStep,
     handleAddNewStep,
-    markAsDirty,
     navigateToStep,
-    openStepMultiLanguageModal,
     productPageBundleStyles,
     QuestionHelpTooltip,
-    slideDir,
-    slideKey,
     stepsState,
   } = usePpbConfigureContext();
 
@@ -81,89 +75,6 @@ export function PpbStepFlowCard() {
           <span aria-hidden="true">+</span> <span>Add Step</span>
         </button>
       </div>
-      {stepsState.steps.map(
-        (step, index) =>
-          activeTabIndex === index && (
-            <div
-              key={`${step.id}-${slideKey}`}
-              style={{ paddingTop: "16px" }}
-              className={
-                slideDir === "forward"
-                  ? productPageBundleStyles.slideForward
-                  : slideDir === "backward"
-                    ? productPageBundleStyles.slideBackward
-                    : ""
-              }
-            >
-              <div className={productPageBundleStyles.stepSetupHeader}>
-                <div className={productPageBundleStyles.stepSetupTitleGroup}>
-                  <h3 className={productPageBundleStyles.stepSetupTitle}>
-                    Step Setup
-                  </h3>
-                  <s-switch
-                    accessibilityLabel="Enable step"
-                    checked={step.enabled !== false || undefined}
-                    onChange={(e) => {
-                      stepsState.updateStepField(
-                        step.id,
-                        "enabled",
-                        (e.target as HTMLInputElement).checked,
-                      );
-                      markAsDirty();
-                    }}
-                  />
-                </div>
-                <div className={productPageBundleStyles.stepSetupActions}>
-                  <span title="Multi Language">
-                    <s-button
-                      variant="tertiary"
-                      icon="globe"
-                      accessibilityLabel="Multi Language"
-                      onClick={() => openStepMultiLanguageModal(step.id)}
-                    />
-                  </span>
-                  <span title="Clone current step">
-                    <s-button
-                      variant="tertiary"
-                      icon="duplicate"
-                      accessibilityLabel="Clone current step"
-                      onClick={() => cloneStep(step.id)}
-                    />
-                  </span>
-                  <span title="Delete current step">
-                    <s-button
-                      variant="tertiary"
-                      icon="delete"
-                      tone="critical"
-                      accessibilityLabel="Delete current step"
-                      onClick={() => deleteStep(step.id)}
-                    />
-                  </span>
-                </div>
-              </div>
-              <p className={productPageBundleStyles.stepSetupDescription}>
-                Edit your step name (Only visible if more than one step is
-                present)
-              </p>
-              <s-stack direction="block" gap="small">
-                <s-text-field
-                  label="Step Name"
-                  placeholder="Eg:- Add product"
-                  value={step.name ?? ""}
-                  onInput={(e) => {
-                    stepsState.updateStepField(
-                      step.id,
-                      "name",
-                      (e.target as HTMLInputElement).value,
-                    );
-                    markAsDirty();
-                  }}
-                  autocomplete="off"
-                />
-              </s-stack>
-            </div>
-          ),
-      )}
     </div>
   );
 }

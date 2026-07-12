@@ -12,6 +12,16 @@ export interface ConfigureChildItem {
   label: string;
 }
 
+export interface ConfigureSectionModelItem extends ConfigureChildItem {
+  slots: string[];
+}
+
+export interface BundleSettingsSlotModel {
+  shared: string[];
+  fullPageOnly: string[];
+  productPageOnly: string[];
+}
+
 const COMMON_SETUP_ITEMS: ConfigureSetupItem[] = [
   { id: "step_setup", label: "Step Setup", iconType: "note" },
   { id: "discount_pricing", label: "Discount & Pricing", iconType: "filter" },
@@ -111,4 +121,73 @@ export function buildBundleLinkModel(input: {
 
 export function isMultiLanguageActionDisabled(locales: unknown[]): boolean {
   return locales.length === 0;
+}
+
+const STEP_SETUP_SECTION_MODEL: ConfigureSectionModelItem[] = [
+  { id: "step_flow", label: "Step Flow", slots: [] },
+  { id: "step_setup_details", label: "Step Setup", slots: [] },
+  { id: "category", label: "Category", slots: [] },
+  { id: "rules_configuration", label: "Rules Configuration", slots: [] },
+  { id: "step_config", label: "Step Config", slots: [] },
+];
+
+export function buildStepSetupSectionModel(
+  bundleType: ConfigureBundleType,
+): ConfigureSectionModelItem[] {
+  return STEP_SETUP_SECTION_MODEL.map((section) => ({
+    ...section,
+    slots:
+      bundleType === "product_page" && section.id === "category"
+        ? ["category_variant_controls"]
+        : [],
+  }));
+}
+
+const SHARED_BUNDLE_SETTINGS_SLOTS = [
+  "default_products",
+  "quantity_validation",
+  "summary_text",
+];
+
+export function buildBundleSettingsSlotModel(
+  bundleType: ConfigureBundleType,
+): BundleSettingsSlotModel {
+  return {
+    shared: [...SHARED_BUNDLE_SETTINGS_SLOTS],
+    fullPageOnly:
+      bundleType === "full_page" ? ["product_slots", "slot_icon"] : [],
+    productPageOnly:
+      bundleType === "product_page"
+        ? [
+            "variant_selector",
+            "cart_line_discount_display",
+            "bundle_banner",
+            "bundle_level_css",
+            "subscription_controls",
+            "bundle_embed",
+            "place_widget",
+          ]
+        : [],
+  };
+}
+
+export function applyPpbCategoryVariantFlags<T extends Record<string, unknown>>(
+  categories: T[],
+  flags: {
+    displayVariantsAsIndividualProducts?: boolean;
+    displayVariantsAsSwatches?: boolean;
+  },
+): T[] {
+  return categories.map((category) => ({
+    ...category,
+    ...(typeof flags.displayVariantsAsIndividualProducts === "boolean"
+      ? {
+          displayVariantsAsIndividualProducts:
+            flags.displayVariantsAsIndividualProducts,
+        }
+      : {}),
+    ...(typeof flags.displayVariantsAsSwatches === "boolean"
+      ? { displayVariantsAsSwatches: flags.displayVariantsAsSwatches }
+      : {}),
+  }));
 }

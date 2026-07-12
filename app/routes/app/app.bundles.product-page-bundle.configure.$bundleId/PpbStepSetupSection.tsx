@@ -3,6 +3,7 @@ import { PpbRulesConfigurationCard } from "./PpbRulesConfigurationCard";
 import { PpbStepCategoriesCard } from "./PpbStepCategoriesCard";
 import { PpbStepConfigCard } from "./PpbStepConfigCard";
 import { PpbStepFlowCard } from "./PpbStepFlowCard";
+import { PpbStepSetupDetailsCard } from "./PpbStepSetupDetailsCard";
 import { getStepCategories } from "./PpbStepSetupShared";
 
 export function PpbStepSetupSection() {
@@ -46,6 +47,7 @@ export function PpbStepSetupSection() {
                         </p>
                       </s-banner>
                     )}
+                  <PpbStepSetupDetailsCard step={step} />
                   <PpbStepCategoriesCard step={step} />
                   <PpbRulesConfigurationCard step={step} />
                   <PpbStepConfigCard step={step} />

@@ -1,7 +1,10 @@
 import {
+  applyPpbCategoryVariantFlags,
   buildBundleLinkModel,
+  buildBundleSettingsSlotModel,
   buildBundleVisibilityChildItems,
   buildConfigureSetupItems,
+  buildStepSetupSectionModel,
   buildEmbedStatusModel,
   isMultiLanguageActionDisabled,
 } from "../../../app/lib/bundle-config/common-configure-page-model";
@@ -84,5 +87,96 @@ describe("common configure page model", () => {
   it("disables multi-language actions when no locales are available", () => {
     expect(isMultiLanguageActionDisabled([])).toBe(true);
     expect(isMultiLanguageActionDisabled([{ locale: "en" }])).toBe(false);
+  });
+
+  it("uses the same FPB-designed Step Setup section sequence for both bundle types", () => {
+    const sharedSectionIds = [
+      "step_flow",
+      "step_setup_details",
+      "category",
+      "rules_configuration",
+      "step_config",
+    ];
+
+    expect(buildStepSetupSectionModel("full_page").map((item) => item.id)).toEqual(
+      sharedSectionIds,
+    );
+    expect(
+      buildStepSetupSectionModel("product_page").map((item) => item.id),
+    ).toEqual(sharedSectionIds);
+  });
+
+  it("keeps PPB category variant controls as an explicit category footer slot", () => {
+    expect(
+      buildStepSetupSectionModel("full_page").find(
+        (section) => section.id === "category",
+      )?.slots,
+    ).toEqual([]);
+    expect(
+      buildStepSetupSectionModel("product_page").find(
+        (section) => section.id === "category",
+      )?.slots,
+    ).toEqual(["category_variant_controls"]);
+  });
+
+  it("builds Bundle Settings slots with shared, FPB-only, and PPB-only controls", () => {
+    expect(buildBundleSettingsSlotModel("full_page")).toEqual({
+      shared: ["default_products", "quantity_validation", "summary_text"],
+      fullPageOnly: ["product_slots", "slot_icon"],
+      productPageOnly: [],
+    });
+    expect(buildBundleSettingsSlotModel("product_page")).toEqual({
+      shared: ["default_products", "quantity_validation", "summary_text"],
+      fullPageOnly: [],
+      productPageOnly: [
+        "variant_selector",
+        "cart_line_discount_display",
+        "bundle_banner",
+        "bundle_level_css",
+        "subscription_controls",
+        "bundle_embed",
+        "place_widget",
+      ],
+    });
+  });
+
+  it("applies PPB category variant controls to category-level fields", () => {
+    const categories = [
+      {
+        id: "cat-1",
+        name: "Category 1",
+        products: [{ id: "gid://shopify/Product/1" }],
+        displayVariantsAsIndividualProducts: false,
+        displayVariantsAsSwatches: true,
+      },
+      {
+        id: "cat-2",
+        name: "Category 2",
+        collections: [{ id: "gid://shopify/Collection/1" }],
+        displayVariantsAsIndividualProducts: false,
+        displayVariantsAsSwatches: false,
+      },
+    ];
+
+    expect(
+      applyPpbCategoryVariantFlags(categories, {
+        displayVariantsAsIndividualProducts: true,
+      }),
+    ).toEqual([
+      {
+        id: "cat-1",
+        name: "Category 1",
+        products: [{ id: "gid://shopify/Product/1" }],
+        displayVariantsAsIndividualProducts: true,
+        displayVariantsAsSwatches: true,
+      },
+      {
+        id: "cat-2",
+        name: "Category 2",
+        collections: [{ id: "gid://shopify/Collection/1" }],
+        displayVariantsAsIndividualProducts: true,
+        displayVariantsAsSwatches: false,
+      },
+    ]);
   });
 });

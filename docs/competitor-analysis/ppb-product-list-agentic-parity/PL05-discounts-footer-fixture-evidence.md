@@ -18,6 +18,11 @@ Evidence files:
 - WPB admin document payload: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-admin-config-document.response.network-response`
 - WPB discount save request: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-discount-save.request.network-request`
 - WPB discount save response: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-discount-save.response.network-response`
+- WPB message seed save request: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-discount-message-seed-save.request.network-request`
+- WPB message seed save response: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-discount-message-seed-save.response.network-response`
+- WPB Rule #2 message save request: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-rule2-message-save.request.network-request`
+- WPB Rule #2 message save response: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-rule2-message-save.response.network-response`
+- WPB post-fix desktop tiers: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-storefront-empty-desktop-message-seed.json`, `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-storefront-one-selected-desktop-message-seed.json`, `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-storefront-two-selected-desktop-rule2-message.json`, `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-storefront-three-selected-desktop-message-seed.json`
 
 ## State Tested
 
@@ -111,4 +116,17 @@ Post-fix WPB admin proof through Chrome DevTools MCP:
 - Saved through the Shopify save bar. The Remix save POST returned status `200`.
 - Reopened the section after save; the accessibility tree persisted `Rule #1` as `2` / `5`, `Rule #2` as `3` / `10`, and `Discount Messaging` checked.
 
-Next step: refresh the WPB storefront preview and capture empty, one-selected, two-selected, and three-selected discount states against the EB fixture on desktop and mobile.
+Rule-message parity follow-up:
+- EB admin proof showed Rule #1 Discount Text as `Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!`.
+- EB admin proof showed Rule #2 Discount Text as `Congrats! Add {{discountConditionDiff}} more product(s) to save {{discountValue}}{{discountValueUnit}}!`.
+- WPB now seeds later percentage and fixed-amount rule defaults with the same `Congrats! Add {{discountConditionDiff}} more product(s)` pattern.
+- The existing WPB SIT fixture already had a saved plain Rule #2 message, so the field was updated through the embedded admin and saved with status `200`.
+
+Post-fix WPB desktop storefront proof:
+- Empty selection: `Add 2 product(s) to save 5%!`.
+- One selected product: `Add 1 product(s) to save 5%!`.
+- Two selected products: `Congrats! Add 1 more product(s) to save 10%!`; add-to-cart shows discounted total `$1375.60`.
+- Three selected products: `Success! Your 10% discount has been applied to your cart.`; add-to-cart shows discounted total `$1599.30`.
+
+Remaining PL05 visual follow-up:
+- Verify whether the separate visible discount badge and compare-at total need a Product List footer patch, because the text/math parity is now aligned but the accessibility extraction does not prove those visual nodes.
