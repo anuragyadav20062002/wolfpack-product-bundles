@@ -77,3 +77,25 @@ Earlier files named `*-after-select-add.json` used the wrong programmatic select
 - `npm run minify:assets css`
 - `node --check app/assets/widgets/product-page/methods/inpage-render-methods.js`
 - `node --check scripts/build-widget-bundles.js`
+
+## 2026-07-12 Selector Alignment Recheck
+
+Current EB evidence:
+- EB desktop selector metrics: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/eb-current-desktop-variant-selector.json`
+- EB desktop selected variant `8`: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/eb-current-desktop-selected8.json`
+- EB narrow/mobile selector metrics: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/eb-current-mobile-variant-selector.json`
+
+Current WPB evidence:
+- WPB desktop before alignment fix: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-current-desktop-variant-selector.json`
+- WPB desktop selected variant `8` before alignment fix: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-current-desktop-selected8.json`
+- WPB desktop after alignment fix: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-current-desktop-variant-selector-after-left-align.json`
+- WPB desktop selected variant `8` after alignment fix: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-current-desktop-selected8-after-left-align.json`
+- WPB mobile after alignment fix: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-current-mobile-variant-selector-after-left-align.json`
+
+EB keeps the variant selector flush with the left edge of the product details column. WPB matched the selector dimensions, typography, border, and selected-variant behavior, but inherited centered text alignment from the Product List row. That centered the `80%` width selector inside its wrapper and created a desktop left offset of about `17.7px`.
+
+The fix is Product List CASCADE scoped:
+- `.variant-selector-wrapper` is left-aligned only inside `.bw-ppb-cascade-product-row--has-variant-selector`.
+- Desktop WPB post-fix: widget `5.0.137`, wrapper `text-align: left`, selector-to-wrapper delta `0px`.
+- Mobile WPB post-fix at `390 x 844`: widget `5.0.137`, wrapper `text-align: left`, selector-to-wrapper delta `0px`.
+- Selected variant behavior remains intact: selecting visible option `8` adds drawer text `18k Pedal Ring - 8 x 1`.

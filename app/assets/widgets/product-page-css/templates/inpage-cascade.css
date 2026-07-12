@@ -487,6 +487,12 @@
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .bw-ppb-cascade-product-row--has-variant-selector
+  .variant-selector-wrapper {
+  text-align: left;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
+  .bw-ppb-cascade-product-row--has-variant-selector
   .variant-selector {
   grid-column: 1;
   grid-row: 3;
