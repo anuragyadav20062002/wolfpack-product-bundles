@@ -54,16 +54,7 @@ export function renderSelectedProductRow(product = null, options = {}) {
 function renderPrice(product) {
   if (!product.priceText) return '';
 
-  if (!product.compareAtPriceText) {
-    return `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>`;
-  }
-
-  return `
-        <div class="bw-selected-row__price bw-selected-row__price--compare">
-          <span class="bw-selected-row__price-current">${escapeHtml(product.priceText)}</span>
-          <span class="bw-selected-row__price-compare">${escapeHtml(product.compareAtPriceText)}</span>
-        </div>
-  `;
+  return `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>`;
 }
 
 function renderEmptyRow(options) {

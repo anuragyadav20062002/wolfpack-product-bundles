@@ -824,23 +824,6 @@
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
   .bw-ppb-cascade-selected-item
-  .bw-selected-row__price--compare {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  font-size: 16px;
-  font-weight: 400;
-}
-
-#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-  .bw-ppb-cascade-selected-item
-  .bw-selected-row__price-compare {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"]
-  .bw-ppb-cascade-selected-item
   .bw-selected-row__action {
   display: flex;
   align-items: center;

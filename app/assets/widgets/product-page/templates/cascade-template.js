@@ -81,17 +81,17 @@ export function prepareCascadeSelectedProductDisplay({
   product = {},
   variantId = '',
   quantity = 1,
-  discountInfo = null,
   formatPrice = null,
 } = {}) {
   const normalizedQuantity = Math.max(1, Number(quantity || 1));
   const title = product.title || product.parentTitle || '';
   const variantTitle = normalizeSelectedRowVariantTitle(product, title);
-  const priceDisplay = getCascadeSelectedProductPriceDisplay({
-    product,
-    discountInfo,
-    formatPrice,
-  });
+  const amount = Number(product.price);
+  const priceText = product.priceText || (
+    Number.isFinite(amount) && typeof formatPrice === 'function'
+      ? formatPrice(amount)
+      : ''
+  );
 
   return {
     ...product,
@@ -99,50 +99,8 @@ export function prepareCascadeSelectedProductDisplay({
     quantity: normalizedQuantity,
     title: `${title} x ${normalizedQuantity}`,
     variantTitle,
-    priceText: priceDisplay.priceText,
-    compareAtPriceText: priceDisplay.compareAtPriceText,
+    priceText,
     quantityLabel: `x ${normalizedQuantity}`,
-  };
-}
-
-export function getCascadeSelectedProductPriceDisplay({
-  product = {},
-  discountInfo = null,
-  formatPrice = null,
-} = {}) {
-  const amount = Number(product.price);
-  const hasFormat = typeof formatPrice === 'function';
-  const originalPriceText = product.priceText || (
-    Number.isFinite(amount) && hasFormat
-      ? formatPrice(amount)
-      : ''
-  );
-  const discountPercentage = Number(discountInfo?.discountPercentage || 0);
-  const hasDiscount = discountInfo?.hasDiscount === true
-    && Number.isFinite(amount)
-    && amount > 0
-    && Number.isFinite(discountPercentage)
-    && discountPercentage > 0
-    && hasFormat;
-
-  if (!hasDiscount) {
-    return {
-      priceText: originalPriceText,
-      compareAtPriceText: '',
-    };
-  }
-
-  const discountedAmount = Math.max(0, Math.round(amount * (1 - Math.min(100, discountPercentage) / 100)));
-  if (discountedAmount >= amount) {
-    return {
-      priceText: originalPriceText,
-      compareAtPriceText: '',
-    };
-  }
-
-  return {
-    priceText: formatPrice(discountedAmount),
-    compareAtPriceText: originalPriceText,
   };
 }
 
@@ -301,12 +259,6 @@ export const cascadeTemplateMethods = {
       this.stepProductData,
       this.selectedBundle?.steps
     );
-    const selectedRowDiscountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      unitPrices
-    );
     if (!this.cascadeSelectedDrawerState) {
       this.cascadeSelectedDrawerState = { isOpen: false };
     }
@@ -348,7 +300,6 @@ export const cascadeTemplateMethods = {
           product,
           variantId,
           quantity,
-          discountInfo: selectedRowDiscountInfo,
           formatPrice: (amount) => CurrencyManager.convertAndFormat(amount, CurrencyManager.getCurrencyInfo()),
         }), {
           className: 'bw-ppb-cascade-selected-item wpbMixCascadeBundleCartItem',

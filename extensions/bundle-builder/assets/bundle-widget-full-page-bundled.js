@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.141
+ * Version : 5.0.142
  * Built   : 2026-07-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.141';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.142';
 (function() {
   'use strict';
 
@@ -2971,16 +2971,7 @@ function renderSelectedProductRow(product = null, options = {}) {
 function renderPrice(product) {
   if (!product.priceText) return '';
 
-  if (!product.compareAtPriceText) {
-    return `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>`;
-  }
-
-  return `
-        <div class="bw-selected-row__price bw-selected-row__price--compare">
-          <span class="bw-selected-row__price-current">${escapeHtml(product.priceText)}</span>
-          <span class="bw-selected-row__price-compare">${escapeHtml(product.compareAtPriceText)}</span>
-        </div>
-  `;
+  return `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>`;
 }
 
 function renderEmptyRow(options) {

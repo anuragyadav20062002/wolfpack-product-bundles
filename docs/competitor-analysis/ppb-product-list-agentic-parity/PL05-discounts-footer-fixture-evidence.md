@@ -167,36 +167,35 @@ WPB post-patch proof:
 - Two selected products: button text `Add Bundle to Cart • $1100.10 5% off`, visible `5% off` pill, hidden `$1158.00` compare-at node.
 - Three selected products: button text `Add Bundle to Cart • $1716.30 10% off`, visible `10% off` pill, hidden `$1907.00` compare-at node.
 
-Remaining PL05 follow-up:
-- EB selected drawer rows show discounted line prices with original compare-at prices after a tier qualifies.
-- WPB selected drawer rows still show original prices only (`$829.00`, `$329.00`, `$749.00`) in the same qualified states.
-- Treat selected-row discount price rendering as the next PL05 drawer-price slice, not as closed by this footer-button patch.
+PL05 drawer-price note:
+- The qualified discount belongs to the footer message and add-to-cart total.
+- EB's selected drawer row contains hidden discounted-price nodes, but the visible row price remains the single original item price.
 
-## 2026-07-12 Selected Drawer Row Price Patch
+## 2026-07-12 Selected Drawer Row Price Correction
 
 Chrome DevTools MCP was used for all browser evidence.
 
 Fresh selected-row evidence:
-- EB desktop selected-row proof: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/eb-2026-07-12-selected-row-discount-prices-desktop.json`
-- WPB before patch: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-2026-07-12-selected-row-discount-prices-before.json`
-- WPB mobile after patch: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-2026-07-12-selected-row-discount-prices-after.json`
-- WPB desktop after patch: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-2026-07-12-selected-row-discount-prices-after-desktop.json`
+- EB corrected proof: `/private/tmp/ppb-product-list-agentic-parity/selected-row-price-eb-addbtn.json`
+- WPB before correction: `/private/tmp/ppb-product-list-agentic-parity/selected-row-price-wpb-before-user-report.json`
+- WPB after correction: `/private/tmp/ppb-product-list-agentic-parity/selected-row-price-wpb-after-single-price.json`
 
 EB qualified selected drawer rows:
-- Selected row price wrapper is flex with `5px` gap and baseline alignment.
-- Each row renders the discounted current price followed by the original price, for example `₹746.10₹829`, `₹296.10₹329`, and `₹674.10₹749`.
-- The original selected-row price is not line-through in the captured EB drawer.
+- EB row text includes hidden discounted-price nodes, but those nodes have `display: none`.
+- The visible selected drawer row price is the original item price only, for example `₹829`, `₹619`, and `₹329`.
+- Footer/add-to-cart still shows the qualified discounted bundle total and discount pill.
 
-WPB gap before patch:
-- Widget `5.0.139` showed the qualified footer discount correctly, but selected drawer rows still rendered original prices only: `$829.00`, `$619.00`, and `$329.00`.
+WPB gap before correction:
+- Widget `5.0.141` showed both row prices visibly, for example `$746.10 $829.00`, `$557.10 $619.00`, and `$296.10 $329.00`.
+- This made the Product List selected drawer noisier than EB and duplicated discount information already shown in the footer.
 
-Source patch:
-- Product List CASCADE selected-row display now receives the active bundle discount calculation.
-- Qualified percentage-discount rows render a discounted current unit price and the original compare-at price.
-- The shared selected-row renderer supports separate current and compare price nodes, while preserving the previous single-price markup when no compare price is provided.
-- Product List CASCADE CSS owns the two-price selected-row layout with flex, baseline alignment, and `5px` gap.
+Source correction:
+- Product List CASCADE selected-row display no longer receives discount data.
+- Shared selected-row rendering is back to a single visible price node.
+- Footer discount total and discount pill remain unchanged.
 
-WPB post-patch proof:
-- Mobile served widget `5.0.140` at `390 x 844`; selected rows render `$746.10 $829.00`, `$557.10 $619.00`, and `$296.10 $329.00`.
-- Desktop served widget `5.0.140` at `1280 x 745`; selected rows render the same discounted/current plus original prices.
-- The selected-row price wrapper is `display:flex`, `gap: 5px`, `align-items: baseline`, with current price at `16px/400` and original price at `14px/700`, matching the EB selected-row structure closely.
+WPB post-correction proof:
+- Widget `5.0.142` shows only one visible `.bw-selected-row__price` node per selected row.
+- The selected rows show `$829.00`, `$619.00`, and `$329.00`.
+- There are zero `.bw-selected-row__price-current` nodes and zero `.bw-selected-row__price-compare` nodes in the selected rows.
+- The qualified discount proof remains in the footer message: `Success! Your 10% discount has been applied to your cart.`
