@@ -58,7 +58,7 @@
 }
 
 #bundle-builder-modal.bw-bs-panel .bw-bs-product-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(228px, 1fr));
   gap: 30px;
   padding: 16px 65px 150px;
 }
@@ -67,6 +67,16 @@
   .bw-bs-product-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
+  }
+
+  #bundle-builder-modal.bw-bs-panel .bw-bs-body {
+    padding: 0 20px;
+  }
+
+  #bundle-builder-modal.bw-bs-panel .bw-bs-product-grid {
+    grid-template-columns: repeat(auto-fit, minmax(228px, 1fr));
+    gap: 20px;
+    padding: 16px 0 120px;
   }
 }
 
@@ -86,7 +96,9 @@
   }
 
   #bundle-builder-modal.bw-bs-panel .bw-bs-product-grid {
-    padding-bottom: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    padding: 16px 0 120px;
   }
 
   #bundle-builder-modal.bw-bs-panel .bw-bs-footer {
@@ -153,9 +165,9 @@
   box-shadow: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-  padding: 12px;
-  min-height: 343px;
+  gap: 8px;
+  padding: 10px;
+  min-height: 0;
   text-align: center;
 }
 
@@ -213,7 +225,7 @@
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-title {
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 700;
   line-height: 20px;
   margin: 0;
   min-height: 20px;
@@ -226,7 +238,7 @@
   .product-content-wrapper {
   align-self: start;
   display: grid;
-  gap: 10px;
+  gap: 8px;
   min-height: 0;
   width: 100%;
 }
@@ -241,7 +253,7 @@
 }
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-price-row {
-  min-height: 21px;
+  min-height: 18px;
   margin: 0;
   gap: 0;
 }
@@ -254,8 +266,12 @@
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-price {
   font-size: 16px;
-  font-weight: 400;
-  line-height: 21px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-spacer {
+  display: none;
 }
 
 #bundle-builder-modal.bw-bs-panel
@@ -295,6 +311,7 @@
   letter-spacing: 0;
   line-height: normal;
   min-height: 33px;
+  margin-top: 8px;
   padding: 6px 10px;
   text-transform: none;
 }
