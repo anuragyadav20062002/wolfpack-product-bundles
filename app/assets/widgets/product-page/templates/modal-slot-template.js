@@ -103,6 +103,23 @@ export const modalSlotTemplateMethods = {
     return stepBox;
   },
 
+  _appendModalSlotEmptyCards(target, step, stepIndex, selectedCount = 0) {
+    const rawRequired = Number(step?.conditionValue) || 1;
+    const operator = String(step?.conditionOperator || '').toLowerCase();
+    const requiredCount = ['greater_than', 'gt', '>'].includes(operator)
+      ? rawRequired + 1
+      : rawRequired;
+    const emptyCount = Math.max(0, requiredCount - selectedCount);
+
+    for (let offset = 0; offset < emptyCount; offset += 1) {
+      target.appendChild(this.createEmptyStateCard(
+        step,
+        stepIndex,
+        selectedCount + offset
+      ));
+    }
+  },
+
   _appendSlotIcon(iconWrapper) {
     iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>

@@ -233,10 +233,18 @@ renderProductPageLayout() {
         // Show "add more" card if step condition not yet met
         if (!this.validateStep(stepIndex)) {
           const totalQty = selectedEntries.reduce((sum, [, qty]) => sum + qty, 0);
-          target.appendChild(this.createAddMoreCard(step, stepIndex, totalQty));
+          if (this._isProductPageModalSlotTemplate()) {
+            this._appendModalSlotEmptyCards(target, step, stepIndex, totalQty);
+          } else {
+            target.appendChild(this.createAddMoreCard(step, stepIndex, totalQty));
+          }
         }
       } else {
-        target.appendChild(this.createAddMoreCard(step, stepIndex, 0));
+        if (this._isProductPageModalSlotTemplate()) {
+          this._appendModalSlotEmptyCards(target, step, stepIndex, 0);
+        } else {
+          target.appendChild(this.createAddMoreCard(step, stepIndex, 0));
+        }
       }
     }
   });
