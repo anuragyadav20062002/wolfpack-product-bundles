@@ -469,6 +469,34 @@ Scope gate: Emails and Customize Emails are out of scope for the clone rewrite. 
 | `bundleDesignTemplate` | `"PDP_INPAGE" \| "PDP_MODAL"` | Set at creation |
 | `bundleDesignTemplateData.templateId` | string | Visual preset within the layout mode |
 
+### EB Parent Bundle Product Visibility
+
+Verified on 2026-07-12 with Chrome DevTools MCP and saved network/storefront evidence:
+- PPB storefront product-page proof: `/private/tmp/ppb-parent-product-eb-storefront-global-probe.json`
+- PPB Admin/API proof: `/private/tmp/eb-ppb-mixandmatch-read.response.network-response`
+- FPB Admin/API proof: `/private/tmp/eb-fpb-stepsconfiguration-read.response.network-response`
+- FPB app-proxy probe: `/private/tmp/fpb-parent-product-eb-app-proxy-probe.json`
+
+EB creates both Product Page Bundle and Full Page Bundle parent Shopify products with:
+- `parentProductShopifyData.status: "unlisted"`
+- `parentProductShopifyData.isPublishedOnOnlineStore: true`
+- default parent product image `ParentProduct...avif`
+- tags including `easy-bundle` and `smart-cart-hide-bundle-options`
+- one default parent variant with `inventory_policy: "continue"` / `availableForSale: true`
+
+The parent product `body_html` is the same contract for PPB and FPB. It starts with:
+- `Your Bundle is Unlisted`
+- `This product is automatically created with its Status set to "Unlisted".`
+- `The bundle is active and discounts will apply, but it is hidden from your store's search results and collection pages. Customers can still purchase it using a direct link.`
+- `To show this bundle on your storefront (like in collections or search), you must manually change its Status to "Active" from the easy bundles app.`
+- `Do Not Delete: Deleting this product will break the bundle's functionality.`
+
+Implications for Wolfpack:
+- PPB first-time parent product creation should default the Shopify product to `UNLISTED`, not `DRAFT`.
+- PPB preview must still work for `active`, `unlisted`, `draft`, and locally untracked/unknown states by choosing Shopify preview URLs first when needed and falling back to a direct handle URL when possible.
+- Making the parent product discoverable in storefront search or collections requires changing the Shopify parent product status to `ACTIVE`.
+- FPB uses the same unlisted parent-product status/copy for its generated Shopify parent product, even though the customer-facing FPB builder can render through an app-proxy/full-page bundle URL instead of the native Shopify product page. The app-proxy URL alone is therefore not sufficient proof of parent product status.
+
 ### PPB Step/Category Admin Payload
 
 Sent to `mixAndMatch/update`. The captured Admin update payload preserves hydrated category records and category rule arrays.

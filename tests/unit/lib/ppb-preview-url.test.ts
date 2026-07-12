@@ -53,10 +53,30 @@ describe("pickPpbPreviewUrl", () => {
     })).toBe(baseProduct.onlineStorePreviewUrl);
   });
 
+  it("falls back to onlineStorePreviewUrl when status is untracked", () => {
+    expect(pickPpbPreviewUrl({
+      appEmbedEnabled: true,
+      bundleStatus: "untracked",
+      productHandle: "summer-bundle",
+      bundleProduct: baseProduct,
+      shop: "s.myshopify.com",
+    })).toBe(baseProduct.onlineStorePreviewUrl);
+  });
+
   it("constructs a handle-based URL when no onlineStore URLs but live eligible", () => {
     expect(pickPpbPreviewUrl({
       appEmbedEnabled: true,
       bundleStatus: "active",
+      productHandle: "summer-bundle",
+      bundleProduct: { ...baseProduct, onlineStoreUrl: null, onlineStorePreviewUrl: null },
+      shop: "s.myshopify.com",
+    })).toBe("https://s.myshopify.com/products/summer-bundle");
+  });
+
+  it("constructs a handle-based URL for untracked status when Shopify preview URLs are absent", () => {
+    expect(pickPpbPreviewUrl({
+      appEmbedEnabled: true,
+      bundleStatus: "untracked",
       productHandle: "summer-bundle",
       bundleProduct: { ...baseProduct, onlineStoreUrl: null, onlineStorePreviewUrl: null },
       shop: "s.myshopify.com",
