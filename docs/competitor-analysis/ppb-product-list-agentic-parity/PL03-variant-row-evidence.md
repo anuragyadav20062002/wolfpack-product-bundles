@@ -99,3 +99,23 @@ The fix is Product List CASCADE scoped:
 - Desktop WPB post-fix: widget `5.0.137`, wrapper `text-align: left`, selector-to-wrapper delta `0px`.
 - Mobile WPB post-fix at `390 x 844`: widget `5.0.137`, wrapper `text-align: left`, selector-to-wrapper delta `0px`.
 - Selected variant behavior remains intact: selecting visible option `8` adds drawer text `18k Pedal Ring - 8 x 1`.
+
+## 2026-07-12 Variant Selector State Sync
+
+Current evidence:
+- EB desktop selector and selected drawer proof: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/eb-2026-07-12-variant-selector-behavior-desktop.json`
+- EB selected variant drawer inspection: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/eb-2026-07-12-selected-variant-drawer-proof.json`
+- WPB before fix: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-2026-07-12-variant-selector-behavior-current.json`
+- WPB after fix: `/private/tmp/ppb-product-list-agentic-parity/PL03-variants/wpb-2026-07-12-variant-selector-after-state-sync.json`
+
+WPB already matched EB's selector sizing, left alignment, border, and typography. The remaining source-level deltas were state sync issues:
+- After choosing option `8`, WPB updated row `data-product-id` but left `data-current-selected-variant-id` on the old variant.
+- The row's visible price and image were not refreshed from the newly selected variant data.
+- The selected drawer rendered the chosen variant twice for grouped variants, for example `18k Pedal Ring - 8 x 1` plus a separate `8` variant line.
+
+The fix is Product List runtime scoped:
+- Variant selector changes now sync product data, row identity, child action ids, visible price, visible image, and current selected variant marker from the selected variant.
+- Product List selected drawer display suppresses the separate variant row when the title already includes the selected variant suffix.
+- The renderer now reuses the already-built selector HTML instead of invoking the selector renderer twice per row.
+
+WPB post-fix Chrome proof at `390 x 844`: widget `5.0.139`, selected option `8`, row `data-product-id`, `data-current-selected-variant-id`, and all child `data-product-id` values are `48720161210627`. The selected drawer row text is `18k Pedal Ring - 8 x 1 $399.00 x 1`, with an empty separate variant field.

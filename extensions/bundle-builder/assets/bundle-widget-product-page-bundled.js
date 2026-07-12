@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.138
+ * Version : 5.0.139
  * Built   : 2026-07-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.138';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.139';
 (function() {
   'use strict';
 
@@ -3764,6 +3764,7 @@ function prepareCascadeSelectedProductDisplay({
 } = {}) {
   const normalizedQuantity = Math.max(1, Number(quantity || 1));
   const title = product.title || product.parentTitle || '';
+  const variantTitle = normalizeSelectedRowVariantTitle(product, title);
   const amount = Number(product.price);
   const priceText = product.priceText || (
     Number.isFinite(amount) && typeof formatPrice === 'function'
@@ -3776,9 +3777,22 @@ function prepareCascadeSelectedProductDisplay({
     variantId,
     quantity: normalizedQuantity,
     title: `${title} x ${normalizedQuantity}`,
+    variantTitle,
     priceText,
     quantityLabel: `x ${normalizedQuantity}`,
   };
+}
+
+function normalizeSelectedRowVariantTitle(product, title) {
+  const variantTitle = product.variantTitle && product.variantTitle !== 'Default Title'
+    ? String(product.variantTitle).trim()
+    : '';
+  if (!variantTitle) return '';
+
+  const normalizedTitle = String(title || '').trim();
+  if (normalizedTitle.endsWith(` - ${variantTitle}`)) return '';
+
+  return variantTitle;
 }
 
 function shouldMountCascadeAddToCartInFooter(addToCartButton, footerElement) {
@@ -6099,7 +6113,6 @@ _renderInpageStepProducts(stepIndex, target) {
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'row',
           className: [
             'bw-ppb-cascade-product-row',
@@ -7183,6 +7196,81 @@ function shouldDisableProductPageVariantOption(variant, trackInventoryOnAddToCar
     && variant?.currentlyNotInStock !== true;
 }
 
+function applyProductPageVariantSelection({
+  product = {},
+  variantData = {},
+  productCard = null,
+  formatPrice = null,
+  showCompareAtPrice = false,
+} = {}) {
+  const nextVariantId = variantData.id || product.variantId || product.id;
+  const nextVariantTitle = variantData.title && variantData.title !== 'Default Title'
+    ? variantData.title
+    : '';
+  const nextPrice = normalizeVariantPrice(variantData.price);
+  const nextCompareAtPrice = normalizeVariantPrice(variantData.compareAtPrice);
+  const nextImageUrl = resolveVariantImageUrl(variantData) || product.imageUrl || product.image?.src || '';
+
+  product.quantityAvailable = typeof variantData.quantityAvailable === 'number'
+    ? variantData.quantityAvailable
+    : null;
+  product.currentlyNotInStock = variantData.currentlyNotInStock === true;
+  product.variantId = nextVariantId;
+  product.variantTitle = nextVariantTitle;
+  if (Number.isFinite(nextPrice)) product.price = nextPrice;
+  product.compareAtPrice = Number.isFinite(nextCompareAtPrice) ? nextCompareAtPrice : null;
+  if (nextImageUrl) {
+    product.imageUrl = nextImageUrl;
+    product.image = nextImageUrl;
+  }
+
+  if (!productCard) return product;
+
+  productCard.dataset.productId = nextVariantId;
+  productCard.dataset.currentSelectedVariantId = nextVariantId;
+  productCard.querySelectorAll?.('[data-product-id]').forEach(el => {
+    el.dataset.productId = nextVariantId;
+  });
+
+  const priceEl = productCard.querySelector?.('.product-price');
+  if (priceEl && Number.isFinite(product.price) && typeof formatPrice === 'function') {
+    priceEl.textContent = formatPrice(product.price);
+  }
+
+  const compareEl = productCard.querySelector?.('.product-price-strike');
+  if (compareEl) {
+    if (showCompareAtPrice === true && Number.isFinite(product.compareAtPrice) && typeof formatPrice === 'function') {
+      compareEl.textContent = formatPrice(product.compareAtPrice);
+    } else if (typeof compareEl.remove === 'function') {
+      compareEl.remove();
+    } else {
+      compareEl.textContent = '';
+    }
+  }
+
+  const imageEl = productCard.querySelector?.('.bw-product-card__image, .product-image img');
+  if (imageEl && nextImageUrl) {
+    imageEl.src = nextImageUrl;
+  }
+
+  return product;
+}
+
+function normalizeVariantPrice(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'number') return value;
+
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) : null;
+}
+
+function resolveVariantImageUrl(variantData = {}) {
+  const image = variantData.image;
+  if (!image) return '';
+  if (typeof image === 'string') return image;
+  return image.src || image.url || image.originalSrc || '';
+}
+
 const ProductPageModalMethods = {
 renderModalTabs() {
   const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
@@ -7549,16 +7637,14 @@ attachProductEventHandlers(productGrid, stepIndex) {
             }
           }
 
-          product.variantId = newVariantId;
-          product.price = variantData.price;
-
           const productCard = e.target.closest('.product-card');
-          if (productCard) {
-            productCard.dataset.productId = newVariantId;
-            productCard.querySelectorAll('[data-product-id]').forEach(el => {
-              el.dataset.productId = newVariantId;
-            });
-          }
+          applyProductPageVariantSelection({
+            product,
+            variantData,
+            productCard,
+            formatPrice: (amount) => CurrencyManager.convertAndFormat(amount, CurrencyManager.getCurrencyInfo()),
+            showCompareAtPrice: this._shouldShowProductComparedAtPrice(),
+          });
 
           this.updateModalNavigation();
           this.updateModalFooterMessaging();

@@ -202,6 +202,32 @@ describe('PPB List Cascade selected entries integration', () => {
     });
   });
 
+  it('keeps variant-expanded Product List drawer titles on one line without a duplicate variant row', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { prepareCascadeSelectedProductDisplay } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+
+    const product = prepareCascadeSelectedProductDisplay({
+      product: {
+        title: '18k Pedal Ring - 8',
+        parentTitle: '18k Pedal Ring',
+        variantTitle: '8',
+        price: 39900,
+      },
+      variantId: 'variant_8',
+      quantity: 1,
+      formatPrice: (amount: number) => `$${(amount / 100).toFixed(2)}`,
+    });
+
+    expect(product).toMatchObject({
+      title: '18k Pedal Ring - 8 x 1',
+      priceText: '$399.00',
+      quantityLabel: 'x 1',
+      quantity: 1,
+      variantId: 'variant_8',
+    });
+    expect(product.variantTitle).toBe('');
+  });
+
   it('renders a caller-provided selected row quantity label', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { renderSelectedProductRow } = require('../../../app/assets/widgets/shared/components/selected-product-row.js');

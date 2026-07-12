@@ -28,6 +28,81 @@ export function shouldDisableProductPageVariantOption(variant, trackInventoryOnA
     && variant?.currentlyNotInStock !== true;
 }
 
+export function applyProductPageVariantSelection({
+  product = {},
+  variantData = {},
+  productCard = null,
+  formatPrice = null,
+  showCompareAtPrice = false,
+} = {}) {
+  const nextVariantId = variantData.id || product.variantId || product.id;
+  const nextVariantTitle = variantData.title && variantData.title !== 'Default Title'
+    ? variantData.title
+    : '';
+  const nextPrice = normalizeVariantPrice(variantData.price);
+  const nextCompareAtPrice = normalizeVariantPrice(variantData.compareAtPrice);
+  const nextImageUrl = resolveVariantImageUrl(variantData) || product.imageUrl || product.image?.src || '';
+
+  product.quantityAvailable = typeof variantData.quantityAvailable === 'number'
+    ? variantData.quantityAvailable
+    : null;
+  product.currentlyNotInStock = variantData.currentlyNotInStock === true;
+  product.variantId = nextVariantId;
+  product.variantTitle = nextVariantTitle;
+  if (Number.isFinite(nextPrice)) product.price = nextPrice;
+  product.compareAtPrice = Number.isFinite(nextCompareAtPrice) ? nextCompareAtPrice : null;
+  if (nextImageUrl) {
+    product.imageUrl = nextImageUrl;
+    product.image = nextImageUrl;
+  }
+
+  if (!productCard) return product;
+
+  productCard.dataset.productId = nextVariantId;
+  productCard.dataset.currentSelectedVariantId = nextVariantId;
+  productCard.querySelectorAll?.('[data-product-id]').forEach(el => {
+    el.dataset.productId = nextVariantId;
+  });
+
+  const priceEl = productCard.querySelector?.('.product-price');
+  if (priceEl && Number.isFinite(product.price) && typeof formatPrice === 'function') {
+    priceEl.textContent = formatPrice(product.price);
+  }
+
+  const compareEl = productCard.querySelector?.('.product-price-strike');
+  if (compareEl) {
+    if (showCompareAtPrice === true && Number.isFinite(product.compareAtPrice) && typeof formatPrice === 'function') {
+      compareEl.textContent = formatPrice(product.compareAtPrice);
+    } else if (typeof compareEl.remove === 'function') {
+      compareEl.remove();
+    } else {
+      compareEl.textContent = '';
+    }
+  }
+
+  const imageEl = productCard.querySelector?.('.bw-product-card__image, .product-image img');
+  if (imageEl && nextImageUrl) {
+    imageEl.src = nextImageUrl;
+  }
+
+  return product;
+}
+
+function normalizeVariantPrice(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'number') return value;
+
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) : null;
+}
+
+function resolveVariantImageUrl(variantData = {}) {
+  const image = variantData.image;
+  if (!image) return '';
+  if (typeof image === 'string') return image;
+  return image.src || image.url || image.originalSrc || '';
+}
+
 export const ProductPageModalMethods = {
 renderModalTabs() {
   const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
@@ -427,19 +502,14 @@ attachProductEventHandlers(productGrid, stepIndex) {
             }
           }
 
-          // Update product properties
-          product.variantId = newVariantId;
-          product.price = variantData.price;
-
-          // CRITICAL: Update all data-product-id attributes in the card to use the new variant ID
-          // This fixes the bug where quantity controls would use the old variant ID
           const productCard = e.target.closest('.product-card');
-          if (productCard) {
-            productCard.dataset.productId = newVariantId;
-            productCard.querySelectorAll('[data-product-id]').forEach(el => {
-              el.dataset.productId = newVariantId;
-            });
-          }
+          applyProductPageVariantSelection({
+            product,
+            variantData,
+            productCard,
+            formatPrice: (amount) => CurrencyManager.convertAndFormat(amount, CurrencyManager.getCurrencyInfo()),
+            showCompareAtPrice: this._shouldShowProductComparedAtPrice(),
+          });
 
           // Update UI without full re-render
           this.updateModalNavigation();

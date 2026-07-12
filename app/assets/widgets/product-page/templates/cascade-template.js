@@ -85,6 +85,7 @@ export function prepareCascadeSelectedProductDisplay({
 } = {}) {
   const normalizedQuantity = Math.max(1, Number(quantity || 1));
   const title = product.title || product.parentTitle || '';
+  const variantTitle = normalizeSelectedRowVariantTitle(product, title);
   const amount = Number(product.price);
   const priceText = product.priceText || (
     Number.isFinite(amount) && typeof formatPrice === 'function'
@@ -97,9 +98,22 @@ export function prepareCascadeSelectedProductDisplay({
     variantId,
     quantity: normalizedQuantity,
     title: `${title} x ${normalizedQuantity}`,
+    variantTitle,
     priceText,
     quantityLabel: `x ${normalizedQuantity}`,
   };
+}
+
+function normalizeSelectedRowVariantTitle(product, title) {
+  const variantTitle = product.variantTitle && product.variantTitle !== 'Default Title'
+    ? String(product.variantTitle).trim()
+    : '';
+  if (!variantTitle) return '';
+
+  const normalizedTitle = String(title || '').trim();
+  if (normalizedTitle.endsWith(` - ${variantTitle}`)) return '';
+
+  return variantTitle;
 }
 
 export function shouldMountCascadeAddToCartInFooter(addToCartButton, footerElement) {
