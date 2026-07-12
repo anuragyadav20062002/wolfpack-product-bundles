@@ -129,7 +129,7 @@ Post-fix WPB desktop storefront proof:
 - Three selected products: `Success! Your 10% discount has been applied to your cart.`; add-to-cart shows discounted total `$1599.30`.
 
 Remaining PL05 visual follow-up:
-- Verify whether the separate visible discount badge and compare-at total need a Product List footer patch, because the text/math parity is now aligned but the accessibility extraction does not prove those visual nodes.
+- Resolved by the discount button visual patch and the 2026-07-13 hard-refresh proof below.
 
 ## 2026-07-12 Discount Button Visual Patch
 
@@ -199,3 +199,35 @@ WPB post-correction proof:
 - The selected rows show `$829.00`, `$619.00`, and `$329.00`.
 - There are zero `.bw-selected-row__price-current` nodes and zero `.bw-selected-row__price-compare` nodes in the selected rows.
 - The qualified discount proof remains in the footer message: `Success! Your 10% discount has been applied to your cart.`
+
+## 2026-07-13 Hard-Refresh Served Proof
+
+Chrome DevTools MCP was used for all browser evidence after a hard refresh of the served storefront pages.
+
+Evidence files:
+- EB desktop: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/eb-current-desktop-hard-refresh-5-0-144-era.json`
+- WPB desktop: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-current-desktop-hard-refresh-5-0-144.json`
+- EB mobile: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/eb-current-mobile-hard-refresh-5-0-144-era.json`
+- WPB mobile: `/private/tmp/ppb-product-list-agentic-parity/PL05-discounts-footer/wpb-current-mobile-hard-refresh-5-0-144.json`
+
+EB desktop and mobile tier states:
+- Empty selection: `Add 2 product(s) to save 5%!`; black add-to-cart button at `0.5` opacity.
+- One selected product: `Add 1 product(s) to save 5%!`; selected total is shown on the button.
+- Two selected products: `Congrats! Add 1 more product(s) to save 10%!`; discounted total, compare-at total, and visible `5% off` pill are present.
+- Three selected products: `Success! Your 10% discount has been applied to your cart.`; discounted total, compare-at total, and visible `10% off` pill are present.
+
+WPB desktop and mobile served widget `5.0.144` tier states:
+- Empty selection: `Add 2 product(s) to save 5%!`; black add-to-cart button at `0.5` opacity.
+- One selected product: `Add 1 product(s) to save 5%!`.
+- Two selected products: `Congrats! Add 1 more product(s) to save 10%!`; visible `5% off` pill is present and the compare-at node exists but remains hidden.
+- Three selected products: `Success! Your 10% discount has been applied to your cart.`; visible `10% off` pill is present and the compare-at node exists but remains hidden.
+
+Expected fixture differences:
+- EB uses the EB store currency (`₹`) and WPB uses the SIT store currency (`$`).
+- WPB keeps the footer button disabled until the Product List quantity rule is satisfied, so the one-selected button label remains the disabled-state CTA instead of EB's enabled selected-total CTA. That is the existing WPB validation contract for this fixture, not a discount-footer rendering gap.
+- WPB uses `rgb(17, 17, 17)` for the Product List black token, while EB reports `rgb(0, 0, 0)`.
+
+Decision:
+- PL05 percentage-tier discount footer parity is accepted for the current fixture on desktop and mobile.
+- No Product List source patch is needed from the hard-refresh proof.
+- Remaining PL05 work, if required later, is fixture expansion for fixed-amount or fixed-price discounts rather than a known percentage-tier gap.
