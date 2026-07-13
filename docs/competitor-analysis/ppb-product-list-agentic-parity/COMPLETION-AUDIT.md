@@ -1,6 +1,8 @@
 # PPB Product List Completion Audit
 
 Date: 2026-07-13
+Status: Accepted for the original Product List run matrix; canonical PPB
+feature-to-storefront reconciliation is reopened.
 
 Objective source: `pasted-text-1.txt` supplied with the active goal.
 
@@ -29,7 +31,13 @@ This audit treats missing or stale evidence as incomplete. It does not infer com
 
 ## Completion Result
 
-All objective requirements and matrix rows have current evidence or an explicit EB-absent resolution. The final focused behavior pass contains 17 suites and 106 tests; widget `5.0.148` syntax, CSS minification, lint, diff validation, and graph rebuild pass. Every completed implementation/evidence slice is committed or staged for the final evidence commit.
+All objective requirements and Product List `SPEC.md` run rows have current
+evidence or an explicit EB-absent resolution. This does not resolve the broader
+cells in `../ppb-feature-to-storefront-matrix.md`. The final focused behavior
+pass contains 17 suites and 106 tests; widget `5.0.148` syntax, CSS minification,
+lint, diff validation, and graph rebuild pass. Every completed
+implementation/evidence slice is committed or staged for the final evidence
+commit.
 
 The focused behavior baseline passes 17 suites and 106 tests. It must be repeated only if subsequent runtime code changes affect the covered behavior.
 

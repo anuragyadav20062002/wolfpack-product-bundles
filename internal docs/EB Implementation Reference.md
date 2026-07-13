@@ -31,9 +31,11 @@ All requests go to `https://prod.backend.giftbox.giftkart.app` with `?shopName={
 
 ## Data Contracts
 
-## FPB Rules Configuration
+## FPB and PPB Rules Configuration
 
-These Rules Configuration notes are scoped to EB Landing Page Bundles, also called FPB in WPB. They must not be treated as confirmed PPB behavior unless separately verified.
+These Rules Configuration notes apply to both EB Landing Page Bundles and
+Product Page Bundles. The PPB contract was reverified from the live PPB Rules
+Configuration help article on 2026-07-13.
 
 Rules in EB FPB control customer selection requirements while building a bundle. A step can use exactly one rule mode at a time: Step Rules or Category Rules.
 

@@ -2,10 +2,9 @@
 
 ## Status
 
-In progress. Baseline slots, category controls, selection return/removal,
-responsive mobile behavior, modal scroll/close behavior, cart behavior, and
-desktop/narrow-mobile combined stress have current EB-first and WPB evidence.
-Remaining fixture, placement, and regression rows are not yet accepted.
+Accepted for this spec's scoped visual and interaction rows through HS19.
+Canonical PPB feature-to-storefront reconciliation remains reopened; see
+`../ppb-feature-to-storefront-matrix.md`.
 
 ## Contract
 

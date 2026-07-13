@@ -2,10 +2,12 @@
 
 ## Status
 
-Accepted. Empty and filled row contracts, selection/removal, progression,
+Accepted for the scoped Vertical Slots visual and interaction rows. Empty and filled row contracts, selection/removal, progression,
 discount totals, exact-one replacement, desktop/mobile/wide placement,
 modal cards, current-step mobile header, validation toast, restoration, and
 shared regression are proven through dev widget `5.0.168`.
+Canonical PPB feature-to-storefront reconciliation remains reopened; see
+`../ppb-feature-to-storefront-matrix.md`.
 
 ## Contract
 

@@ -1,7 +1,7 @@
 # Vertical Slots Completion Audit
 
 Date: 2026-07-13
-Status: Accepted
+Status: Accepted for scoped Vertical Slots rows; canonical PPB feature matrix reopened
 
 | Requirement group | Status | Evidence |
 | --- | --- | --- |
@@ -19,3 +19,5 @@ Status: Accepted
 
 Vertical Slots satisfies the per-template completion criteria in
 `broader-PPB-template-parity.md`.
+This acceptance is limited to the directly tested rows mapped as Proven in
+`../ppb-feature-to-storefront-matrix.md`.

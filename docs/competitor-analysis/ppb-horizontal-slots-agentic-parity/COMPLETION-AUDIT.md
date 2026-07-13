@@ -1,7 +1,7 @@
 # Horizontal Slots Completion Audit
 
 Date: 2026-07-13
-Status: Accepted
+Status: Accepted for scoped Horizontal Slots rows; canonical PPB feature matrix reopened
 
 ## Contract and fixture
 
@@ -69,3 +69,5 @@ Status: Accepted
 Horizontal Slots satisfies the per-template completion criteria in
 `broader-PPB-template-parity.md`, including the reopened HS19 modal-card/toast
 details verified through the hot-reloaded Shopify dev preview on widget 5.0.166.
+This acceptance is limited to the directly tested rows mapped as Proven in
+`../ppb-feature-to-storefront-matrix.md`.

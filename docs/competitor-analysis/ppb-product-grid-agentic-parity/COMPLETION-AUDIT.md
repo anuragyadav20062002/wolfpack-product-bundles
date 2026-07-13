@@ -1,7 +1,7 @@
 # Product Grid Completion Audit
 
 Date: 2026-07-13
-Status: Re-accepted after live PG08 audit
+Status: Re-accepted for scoped Product Grid rows after PG08; canonical PPB feature matrix reopened
 
 | Requirement group | Status | Evidence |
 | --- | --- | --- |
@@ -19,3 +19,5 @@ Status: Re-accepted after live PG08 audit
 
 Product Grid satisfies the per-template completion criteria in
 `broader-PPB-template-parity.md`.
+This acceptance is limited to the directly tested rows mapped as Proven in
+`../ppb-feature-to-storefront-matrix.md`.

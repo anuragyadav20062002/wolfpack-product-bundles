@@ -1,7 +1,15 @@
 Complete storefront parity between Easy Bundles and Wolfpack for the remaining Product Page Bundle templates:
 
-**Status:** Reopened on 2026-07-13 after live EB/WPB comparison disproved the
-prior acceptance. Horizontal Slots was re-accepted on dev widget `5.0.166`
+**Status:** Reopened on 2026-07-13 for feature-to-storefront reconciliation.
+The prior completion covered the scoped template visual/interaction rows, but it
+did not prove every PPB feature and configuration mode across the templates.
+
+The canonical coverage ledger is
+`docs/competitor-analysis/ppb-feature-to-storefront-matrix.md`. A template is not
+100% complete until every applicable matrix cell is Proven, an evidence-backed
+EB-absent state, an accepted divergence, or Not applicable.
+
+**Scoped template-lane result:** Horizontal Slots was re-accepted on dev widget `5.0.166`
 after the HS19 modal-card/toast pass. Product Grid was re-accepted on the
 hot-reloaded dev widget `5.0.167` after PG08 corrected the accordion flow,
 complete card presentation, selected action, and validation toast. Vertical
@@ -132,6 +140,10 @@ For each template:
 Do not mix fixes for multiple templates into one exploratory implementation commit.
 
 ## Fixture Matrix
+
+This fixture list is the original visual/interaction baseline. It does not
+replace the canonical feature-to-storefront matrix. When the two differ, the
+feature matrix defines the remaining parity work.
 
 Configure equivalent realistic fixtures in EB and WPB. Do this through the authenticated Admin UI using Chrome DevTools MCP.
 
@@ -510,6 +522,7 @@ Suggested progression per template:
 
 A template is complete only when:
 
+- Every applicable cell in `ppb-feature-to-storefront-matrix.md` is resolved.
 - Every applicable pairwise and stress row is accepted.
 - EB was inspected first for every implemented state.
 - WPB matches EB across desktop and mobile.
