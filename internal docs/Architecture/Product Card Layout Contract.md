@@ -39,6 +39,7 @@ This is a hard requirement:
 - Keep hover/focus feedback non-expanding (outline, border, iconography, color) so cards do not visually overlap neighbors while hovered.
 - Keep selection/hover feedback on the existing card frame via overlays, borders, iconography, text color, opacity, and icon badges.
 - Prefer fixed row contracts (`min-height`, `height`, flex stretch, consistent padding/line-clamp) so selected/unselected variants stay layout-stable.
+- Keep description rendering display-safe: pass only escaped merchant text, do not inject merchant description/title fields as raw HTML, and avoid trimming/normalizing merchant copy during render.
 - If new content must appear on selection, render it outside the row-level card height envelope (popover, drawer, footer/action panel, details panel, etc.).
 - Current implementation also enforces row stability at CSS-level in full-page/product-card grids by using `grid-auto-rows: minmax(0, 1fr)` across the preset templates instead of `auto`.
 - 2026-07-13: Fixed hover-overlap by forcing full-page card containers to stay `height: 100%` in:
