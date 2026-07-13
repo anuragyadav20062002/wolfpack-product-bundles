@@ -105,6 +105,25 @@ export function shouldAutoAdvanceProductPageStep({ quantity = 0, productId = '',
   });
 }
 
+export function syncProductPageSelectedOverlay(productCard, quantity) {
+  if (!productCard) return null;
+
+  let selectedOverlay = productCard.querySelector('.selected-overlay');
+  if (!selectedOverlay && quantity > 0) {
+    selectedOverlay = productCard.ownerDocument?.createElement('div');
+    if (!selectedOverlay) return null;
+    selectedOverlay.className = 'selected-overlay';
+    selectedOverlay.textContent = '✓';
+    productCard.prepend(selectedOverlay);
+  }
+
+  if (selectedOverlay) {
+    selectedOverlay.style.display = quantity > 0 ? 'flex' : 'none';
+  }
+
+  return selectedOverlay;
+}
+
 export const ProductPageSelectionMethods = {
 updateProductSelection(stepIndex, productId, newQuantity) {
   const selectionKey = this.normalizeSelectionKey(productId);
@@ -267,7 +286,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     const quantityDisplay = productCard.querySelector('.qty-display')
       || productCard.querySelector('.inline-qty-display');
     const addBtn = productCard.querySelector('.product-add-btn');
-    const selectedOverlay = productCard.querySelector('.selected-overlay');
+    syncProductPageSelectedOverlay(productCard, quantity);
     const increaseBtn = productCard.querySelector('.qty-increase');
     const actionWrapper = productCard.querySelector('.product-card-action')
       || productCard.querySelector('.bw-product-card__action');
@@ -345,14 +364,6 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
           defaultAddText,
         });
         addBtn.classList.remove('added');
-      }
-    }
-
-    if (selectedOverlay) {
-      if (quantity > 0) {
-        selectedOverlay.style.display = 'flex';
-      } else {
-        selectedOverlay.style.display = 'none';
       }
     }
 

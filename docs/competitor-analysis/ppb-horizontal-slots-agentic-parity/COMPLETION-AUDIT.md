@@ -46,7 +46,7 @@ Status: Accepted
 | Multi-step advance and persistence | Proven | HS05/HSS1. |
 | Backdrop/body lock/internal scroll/focus/Escape | Proven | HS17. |
 | Discount progression and final CTA | Proven | HS06/HSS1 cover active tiers; HSS4 covers disabled pricing with retained rules on 5.0.160. |
-| Validation toast and blocked state | Proven | HS05. |
+| Validation toast and blocked state | Proven | HS19 re-proves EB rule copy, modal ownership, and exact desktop/mobile toast geometry on dev widget 5.0.166. |
 | Cart request, transform, metadata | Proven | HS08. |
 | Dynamic checkout | Accepted safety divergence | HS10 documents EB's invalid parent-product bypass and WPB's non-mutating surface. |
 | Console and app-owned request health | Proven for reload/cart passes | HS07/HS08. |
@@ -60,11 +60,12 @@ Status: Accepted
 | Horizontal combined narrow-mobile stress | Proven | HSS2 combines long content, grouped variant 8, inventory survivor, discounts, scrolling, ordered slots, final CTA, and zero document overflow at 360x800. |
 | Product List remains accepted | Proven | HSR1 re-proves hard reload, long category, grouped variant 8, selected drawer, 5% footer, removal, dedicated WPB CASCADE asset, and zero overflow at 360x800. |
 | Product Grid/Vertical Slots leakage | Proven | Final live four-template regression proves dedicated shells and absence of competing template shells on 5.0.165. |
-| Final focused tests/build/lint/graphify | Proven | Final PPB-focused pass: 25 suites / 139 tests; widget 5.0.165 built and minified; latest code slices passed lint and graphify. |
+| Final focused tests/build/lint/graphify | Proven | HS19 adds 17 focused behavior tests across the modal copy, step validation, and incremental selected marker; widget 5.0.166 builds/minifies and passes syntax/lint. |
 | Fixture restored and carts clean | Proven current | Both fixtures restored to zero selections; both carts confirmed empty after HS08/HS10. Must recheck at final handoff. |
 | Clean worktree and focused commits | Proven current | Recheck after the remaining gates. |
 
 ## Current completion decision
 
 Horizontal Slots satisfies the per-template completion criteria in
-`broader-PPB-template-parity.md`.
+`broader-PPB-template-parity.md`, including the reopened HS19 modal-card/toast
+details verified through the hot-reloaded Shopify dev preview on widget 5.0.166.

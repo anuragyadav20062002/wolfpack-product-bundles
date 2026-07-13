@@ -10,7 +10,7 @@ export function resolveProductPageCardButtonText({
   if (outOfStock) return 'Out of stock';
 
   const rawText = currentQuantity > 0
-    ? (currentStep?.addonReplaceText || 'Selected ✓')
+    ? (currentStep?.addonReplaceText || `Added x${currentQuantity}`)
     : (currentStep?.addonAddText || defaultAddText);
 
   return String(rawText)

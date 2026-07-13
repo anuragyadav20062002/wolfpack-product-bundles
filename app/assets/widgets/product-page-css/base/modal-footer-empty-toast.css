@@ -307,6 +307,36 @@
   box-sizing: border-box;
 }
 
+#bundle-builder-modal.bw-bs-panel > .bundle-toast.bundle-toast--modal {
+  position: absolute;
+  top: auto;
+  bottom: 82px;
+  width: min(292.5px, calc(100% - 32px));
+  max-width: calc(100% - 32px);
+  height: 46px;
+  padding: 14px 16px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  background: rgba(30, 30, 30, 0.9);
+  box-shadow: none;
+  font-family: Assistant, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 28.8px;
+  letter-spacing: 0.6px;
+  z-index: 99999999;
+  animation: slideFromBottom var(--bundle-toast-animation-duration, 300ms) ease-out;
+}
+
+@media (max-width: 767px) {
+  #bundle-builder-modal.bw-bs-panel > .bundle-toast.bundle-toast--modal {
+    bottom: 98px;
+    width: 85%;
+    max-width: 85%;
+    padding: 14px 16px;
+  }
+}
+
 .bundle-toast > span,
 .bundle-toast .toast-message {
   min-width: 0;

@@ -162,13 +162,30 @@
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card {
   border: 1px solid rgb(227, 227, 227);
   border-radius: 10px;
-  box-shadow: none;
+  box-shadow:
+    rgba(0, 0, 0, 0.12) 0 1px 3px,
+    rgba(0, 0, 0, 0.24) 0 1px 2px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 10px;
   min-height: 0;
   text-align: center;
+}
+
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card.selected {
+  border: 2px solid #000000;
+}
+
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card .selected-overlay {
+  top: -17px;
+  right: -19px;
+  width: 42px;
+  height: 42px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 22px;
+  box-shadow: none;
 }
 
 .bw-bs-panel .modal-body .product-card.bw-product-card--free-gift {
@@ -284,7 +301,7 @@
 
 #bundle-builder-modal.bw-bs-panel
   .modal-body
-  .product-card:not(.selected)
+  .product-card
   .product-quantity-wrapper {
   display: none;
 }
@@ -324,6 +341,47 @@
   text-transform: none;
 }
 
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-add-btn.added {
+  background: #ffffff;
+  border: 1px solid #000000;
+  color: #000000;
+  height: 35px;
+  min-height: 35px;
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  #bundle-builder-modal.bw-bs-panel
+    .modal-body
+    .product-card
+    .product-content-wrapper {
+    gap: 10px;
+  }
+
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-spacer {
+    display: block;
+    height: 0;
+    min-height: 0;
+  }
+
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-price-row {
+    min-height: 21px;
+  }
+
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-price {
+    line-height: 21px;
+  }
+
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-add-btn {
+    margin-top: 0;
+  }
+}
+
 .bw-bs-panel .modal-body .product-card .product-add-btn:hover {
   opacity: 0.9;
 }
@@ -344,7 +402,7 @@
 #bundle-builder-modal .bw-bs-footer {
   position: absolute;
   left: 50%;
-  bottom: 18px;
+  bottom: 20px;
   transform: translateX(-50%);
   width: 300px;
   height: 84px;
@@ -527,6 +585,16 @@
   background: #ffffff;
   border: 1px solid rgb(227, 227, 227);
   color: #000000;
+}
+
+@media (max-width: 767px) {
+  body[wpbmix-template-type="PDP_MODAL"]
+    #bundle-builder-modal.bw-bs-panel
+    .bw-bs-footer {
+    bottom: 22px;
+    width: min(270px, calc(100% - 48px));
+    height: 76px;
+  }
 }
 
 @media (max-width: 767px) {

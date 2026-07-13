@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.165
+ * Version : 5.0.166
  * Built   : 2026-07-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.165';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.166';
 (function() {
   'use strict';
 
@@ -1084,7 +1084,7 @@ class ToastManager {
       .trim() === '1';
   }
 
-  static show(message, duration = 4000) {
+  static show(message, duration = 4000, options = {}) {
 
     const existingToast = document.getElementById('bundle-toast');
     if (existingToast) {
@@ -1094,21 +1094,26 @@ class ToastManager {
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast';
+    if (options.className) {
+      toast.classList.add(options.className);
+    }
     if (this._isEnterFromBottom()) {
       toast.classList.add('bundle-toast-from-bottom');
     }
-    toast.innerHTML = `
-      <span>${this._escapeHtml(message)}</span>
+    const closeControl = options.dismissible === false ? '' : `
       <svg class="toast-close" width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    `;
+      </svg>`;
+    toast.innerHTML = `<span>${this._escapeHtml(message)}</span>${closeControl}`;
 
-    toast.querySelector('.toast-close').addEventListener('click', () => {
+    toast.querySelector('.toast-close')?.addEventListener('click', () => {
       toast.remove();
     });
 
-    document.body.appendChild(toast);
+    const container = typeof Element !== 'undefined' && options.container instanceof Element
+      ? options.container
+      : document.body;
+    container.appendChild(toast);
 
     if (duration > 0) {
       setTimeout(() => {
@@ -5400,6 +5405,23 @@ function formatCascadeStepLimitToast(limitText, required) {
   return `Add ${qualifier} ${formattedRequired} products on this step`;
 }
 
+function formatProductPageStepValidationToast(step = {}) {
+  if (step.conditionType !== 'quantity') return '';
+
+  const required = Number(step.conditionValue);
+  if (!Number.isFinite(required) || required <= 0) return '';
+
+  const qualifierByOperator = {
+    equal_to: 'exactly',
+    greater_than_or_equal_to: 'at least',
+    less_than_or_equal_to: 'at most',
+  };
+  const qualifier = qualifierByOperator[step.conditionOperator];
+  if (!qualifier) return '';
+
+  return `Add ${qualifier} ${String(required).padStart(2, '0')} products on this step`;
+}
+
 const ProductPageModalStateMethods = {
 getFormattedHeaderText() {
   const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
@@ -5768,14 +5790,28 @@ async navigateModal(direction) {
 
         this.preloadNextStep();
       } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+        const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+        const message = formatProductPageStepValidationToast(currentStep)
+          || 'Please meet the quantity conditions for the current step before proceeding.';
+        ToastManager.show(message, 4000, {
+          container: this.elements.modal,
+          dismissible: false,
+          className: 'bundle-toast--modal',
+        });
       }
     } else {
 
       if (this.validateStep(this.currentStepIndex)) {
         this.closeModal();
       } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before finishing.');
+        const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+        const message = formatProductPageStepValidationToast(currentStep)
+          || 'Please meet the quantity conditions for the current step before finishing.';
+        ToastManager.show(message, 4000, {
+          container: this.elements.modal,
+          dismissible: false,
+          className: 'bundle-toast--modal',
+        });
       }
     }
   }
@@ -7424,7 +7460,7 @@ function resolveProductPageCardButtonText({
   if (outOfStock) return 'Out of stock';
 
   const rawText = currentQuantity > 0
-    ? (currentStep?.addonReplaceText || 'Selected ✓')
+    ? (currentStep?.addonReplaceText || `Added x${currentQuantity}`)
     : (currentStep?.addonAddText || defaultAddText);
 
   return String(rawText)
@@ -8088,6 +8124,25 @@ function shouldAutoAdvanceProductPageStep({ quantity = 0, productId = '', step =
   });
 }
 
+function syncProductPageSelectedOverlay(productCard, quantity) {
+  if (!productCard) return null;
+
+  let selectedOverlay = productCard.querySelector('.selected-overlay');
+  if (!selectedOverlay && quantity > 0) {
+    selectedOverlay = productCard.ownerDocument?.createElement('div');
+    if (!selectedOverlay) return null;
+    selectedOverlay.className = 'selected-overlay';
+    selectedOverlay.textContent = '✓';
+    productCard.prepend(selectedOverlay);
+  }
+
+  if (selectedOverlay) {
+    selectedOverlay.style.display = quantity > 0 ? 'flex' : 'none';
+  }
+
+  return selectedOverlay;
+}
+
 const ProductPageSelectionMethods = {
 updateProductSelection(stepIndex, productId, newQuantity) {
   const selectionKey = this.normalizeSelectionKey(productId);
@@ -8242,7 +8297,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     const quantityDisplay = productCard.querySelector('.qty-display')
       || productCard.querySelector('.inline-qty-display');
     const addBtn = productCard.querySelector('.product-add-btn');
-    const selectedOverlay = productCard.querySelector('.selected-overlay');
+    syncProductPageSelectedOverlay(productCard, quantity);
     const increaseBtn = productCard.querySelector('.qty-increase');
     const actionWrapper = productCard.querySelector('.product-card-action')
       || productCard.querySelector('.bw-product-card__action');
@@ -8320,14 +8375,6 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
           defaultAddText,
         });
         addBtn.classList.remove('added');
-      }
-    }
-
-    if (selectedOverlay) {
-      if (quantity > 0) {
-        selectedOverlay.style.display = 'flex';
-      } else {
-        selectedOverlay.style.display = 'none';
       }
     }
 

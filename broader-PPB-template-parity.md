@@ -1,8 +1,9 @@
 Complete storefront parity between Easy Bundles and Wolfpack for the remaining Product Page Bundle templates:
 
-**Completion:** Accepted on 2026-07-13. See
-`docs/competitor-analysis/ppb-remaining-template-parity-completion-audit.md`
-for the requirement-by-requirement proof and final fixture state.
+**Status:** Reopened on 2026-07-13 after live EB/WPB comparison disproved the
+prior acceptance. Horizontal Slots was re-accepted on dev widget `5.0.166`
+after the HS19 modal-card/toast pass. Product Grid is next. Vertical Slots
+remains pending and must be re-audited from the live storefront.
 
 1. Horizontal Slots
 2. Product Grid

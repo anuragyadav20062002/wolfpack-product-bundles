@@ -4,6 +4,7 @@ export {};
 const {
   ProductPageModalStateMethods,
   formatCascadeStepLimitToast,
+  formatProductPageStepValidationToast,
 } = require('../../../app/assets/widgets/product-page/methods/modal-state-methods.js');
 const {
   shouldUseCascadeStepFlow,
@@ -162,5 +163,21 @@ describe('PPB Product List step conditions', () => {
 
   it('formats the Product List exact-rule over-target message like EB', () => {
     expect(formatCascadeStepLimitToast('exactly', 1)).toBe('Add exactly 01 products on this step');
+  });
+
+  it('formats a modal lower-bound rule like EB', () => {
+    expect(formatProductPageStepValidationToast({
+      conditionType: 'quantity',
+      conditionOperator: 'greater_than_or_equal_to',
+      conditionValue: 2,
+    })).toBe('Add at least 02 products on this step');
+  });
+
+  it('formats a modal exact rule like EB', () => {
+    expect(formatProductPageStepValidationToast({
+      conditionType: 'quantity',
+      conditionOperator: 'equal_to',
+      conditionValue: 1,
+    })).toBe('Add exactly 01 products on this step');
   });
 });

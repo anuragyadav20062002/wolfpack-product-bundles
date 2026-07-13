@@ -1,7 +1,11 @@
 # PPB Remaining Template Parity Completion Audit
 
 Date: 2026-07-13
-Status: Complete
+Status: Reopened
+
+The prior three-template completion decision is superseded. Horizontal Slots
+was re-accepted through HS19 on widget 5.0.166. Product Grid and Vertical Slots
+must be re-audited and cannot inherit the earlier acceptance claims below.
 
 | Overall requirement | Status | Authoritative evidence |
 | --- | --- | --- |

@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 5.0.165
+ * Version : 5.0.166
  * Built   : 2026-07-13
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.165';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.166';
 (function (window) {
   'use strict';
 
@@ -1265,7 +1265,7 @@ class ToastManager {
       .trim() === '1';
   }
 
-  static show(message, duration = 4000) {
+  static show(message, duration = 4000, options = {}) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
     if (existingToast) {
@@ -1276,23 +1276,28 @@ class ToastManager {
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast';
+    if (options.className) {
+      toast.classList.add(options.className);
+    }
     if (this._isEnterFromBottom()) {
       toast.classList.add('bundle-toast-from-bottom');
     }
-    toast.innerHTML = `
-      <span>${this._escapeHtml(message)}</span>
+    const closeControl = options.dismissible === false ? '' : `
       <svg class="toast-close" width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    `;
+      </svg>`;
+    toast.innerHTML = `<span>${this._escapeHtml(message)}</span>${closeControl}`;
 
     // Attach close listener (consistent with showWithUndo pattern)
-    toast.querySelector('.toast-close').addEventListener('click', () => {
+    toast.querySelector('.toast-close')?.addEventListener('click', () => {
       toast.remove();
     });
 
     // Add to page (styles come from bundle-widget.css with Settings design CSS variables)
-    document.body.appendChild(toast);
+    const container = typeof Element !== 'undefined' && options.container instanceof Element
+      ? options.container
+      : document.body;
+    container.appendChild(toast);
 
     // Auto-remove after duration
     if (duration > 0) {

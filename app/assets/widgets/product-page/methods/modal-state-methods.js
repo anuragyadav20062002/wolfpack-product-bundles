@@ -12,6 +12,23 @@ export function formatCascadeStepLimitToast(limitText, required) {
   return `Add ${qualifier} ${formattedRequired} products on this step`;
 }
 
+export function formatProductPageStepValidationToast(step = {}) {
+  if (step.conditionType !== 'quantity') return '';
+
+  const required = Number(step.conditionValue);
+  if (!Number.isFinite(required) || required <= 0) return '';
+
+  const qualifierByOperator = {
+    equal_to: 'exactly',
+    greater_than_or_equal_to: 'at least',
+    less_than_or_equal_to: 'at most',
+  };
+  const qualifier = qualifierByOperator[step.conditionOperator];
+  if (!qualifier) return '';
+
+  return `Add ${qualifier} ${String(required).padStart(2, '0')} products on this step`;
+}
+
 export const ProductPageModalStateMethods = {
 getFormattedHeaderText() {
   const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];

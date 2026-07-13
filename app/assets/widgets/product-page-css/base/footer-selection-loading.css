@@ -381,15 +381,35 @@
 
 @media (min-width: 768px) {
   .bw-bs-header {
-    padding-inline: 20px;
+    display: grid;
+    grid-template-rows: 86px 47px 27px;
+    height: 160px;
+    padding: 0 20px;
+  }
+
+  .bw-bs-tabs-wrapper {
+    align-self: end;
+    height: 36px;
+  }
+
+  .bw-bs-tabs {
+    height: 36px;
   }
 
   .bw-bs-category-tabs {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    align-self: center;
     width: 60%;
     overflow: visible;
+    align-self: end;
+    justify-self: center;
+  }
+
+  #bundle-builder-modal.bw-bs-panel .bw-bs-discount-bar {
+    align-self: start;
+    min-height: 21px;
+    padding: 0 16px;
+    line-height: normal;
   }
 
   .bw-bs-category-tab {
