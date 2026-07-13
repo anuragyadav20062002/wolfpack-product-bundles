@@ -895,6 +895,26 @@ rendered no `Product 2` after selection and returned to one empty slot after
 removal. This is behavior, not merely presentation: both the modal and final
 widget permit the extra minimum-rule selection.
 
+### PPB Product Grid interaction and step-flow contract
+
+Live EB Product Grid evidence on 2026-07-13 confirms that `PDP_INPAGE + COGNIVE`
+uses an accordion step flow. The active step body is inserted immediately after
+its header. After advancing, the completed Step 1 header is followed by the
+active Step 2 header and then the Step 2 body; Product Grid does not use a
+separate horizontal step-button rail.
+
+Product cards remain complete at both viewport classes: desktop uses three
+columns inside the product form and mobile uses two, with image, two-line title,
+price, and action visible. Selecting a card replaces `Add +` with the
+quantity-aware `Added xN` button. It does not add a check marker or expose inline
+minus/quantity/plus controls; activating `Added xN` removes that product.
+
+The incomplete intermediate `Next` action remains visually and functionally
+active so it can explain the unmet rule. In the confirmed minimum-two fixture it
+shows `Add at least 02 products on this step` in a fixed, bottom-aligned,
+non-dismissible toast. Disabling the action suppresses required feedback and is
+not EB-compatible.
+
 ### PPB compare-at price ownership
 
 Live EB Admin evidence on 2026-07-13 places `Show Compare At Price` under the

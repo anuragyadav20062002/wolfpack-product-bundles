@@ -2,8 +2,10 @@ Complete storefront parity between Easy Bundles and Wolfpack for the remaining P
 
 **Status:** Reopened on 2026-07-13 after live EB/WPB comparison disproved the
 prior acceptance. Horizontal Slots was re-accepted on dev widget `5.0.166`
-after the HS19 modal-card/toast pass. Product Grid is next. Vertical Slots
-remains pending and must be re-audited from the live storefront.
+after the HS19 modal-card/toast pass. Product Grid was re-accepted on the
+hot-reloaded dev widget `5.0.167` after PG08 corrected the accordion flow,
+complete card presentation, selected action, and validation toast. Vertical
+Slots remains pending and must be re-audited from the live storefront.
 
 1. Horizontal Slots
 2. Product Grid

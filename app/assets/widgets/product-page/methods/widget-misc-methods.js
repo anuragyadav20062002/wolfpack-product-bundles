@@ -1,5 +1,6 @@
 import { createDefaultLoadingAnimation } from '../../shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from '../../shared/loading-overlay.js';
+import { ToastManager } from '../../../bundle-widget-components.js';
 import { formatProductPageStepValidationToast } from './modal-state-methods.js';
 
 const MIN_LOADING_OVERLAY_VISIBLE_MS = 180;
@@ -77,7 +78,19 @@ attachEventListeners() {
     const isIntermediateCascadeStep = this._usesCascadeStepFlow?.()
       && this.currentStepIndex < this.selectedBundle.steps.length - 1;
     if (isIntermediateCascadeStep) {
-      this.navigateCascadeStep(1);
+      const navigated = this.navigateCascadeStep(1);
+      if (!navigated && this._isProductPageGridTemplate?.() === true) {
+        const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+        ToastManager.show(
+          formatProductPageStepValidationToast(currentStep)
+            || 'Please meet the quantity conditions for the current step before proceeding.',
+          4000,
+          {
+            dismissible: false,
+            className: 'bundle-toast--cognive',
+          },
+        );
+      }
       return;
     }
     this.addToCart();

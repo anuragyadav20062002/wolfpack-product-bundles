@@ -111,7 +111,7 @@ class FakeElement {
 
 function createSharedProductCard() {
   const scope = new FakeElement('div');
-  const card = new FakeElement('div', 'bw-product-card bw-ppb-cognive-product-card');
+  const card = new FakeElement('div', 'bw-product-card');
   card.dataset.productId = 'variant-1';
 
   const action = new FakeElement('div', 'bw-product-card__action product-card-action');

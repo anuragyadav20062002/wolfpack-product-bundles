@@ -283,10 +283,15 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     : this.container;
   const productCard = scope.querySelector(`[data-product-id="${productId}"]`);
   if (productCard) {
+    const cogniveCard = productCard.classList.contains('bw-ppb-cognive-product-card');
     const quantityDisplay = productCard.querySelector('.qty-display')
       || productCard.querySelector('.inline-qty-display');
     const addBtn = productCard.querySelector('.product-add-btn');
-    syncProductPageSelectedOverlay(productCard, quantity);
+    if (cogniveCard) {
+      productCard.querySelector('.selected-overlay')?.remove();
+    } else {
+      syncProductPageSelectedOverlay(productCard, quantity);
+    }
     const increaseBtn = productCard.querySelector('.qty-increase');
     const actionWrapper = productCard.querySelector('.product-card-action')
       || productCard.querySelector('.bw-product-card__action');
@@ -315,7 +320,21 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
-    if (actionWrapper && quantity > 0) {
+    if (actionWrapper && quantity > 0 && cogniveCard) {
+      actionWrapper.classList.add('is-expanded');
+      existingInlineControls?.remove();
+      const selectedText = resolveProductPageCardButtonText({
+        currentQuantity: quantity,
+        currentStep: step,
+        outOfStock: false,
+        defaultAddText,
+      });
+      if (!addBtn) {
+        actionWrapper.appendChild(createProductPageAddButton(productId, selectedText));
+      } else {
+        addBtn.textContent = selectedText;
+      }
+    } else if (actionWrapper && quantity > 0) {
       actionWrapper.classList.add('is-expanded');
       if (addBtn) addBtn.remove();
       if (!existingInlineControls) {

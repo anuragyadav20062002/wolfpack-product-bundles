@@ -155,6 +155,8 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          selectedAction: 'button',
+          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,

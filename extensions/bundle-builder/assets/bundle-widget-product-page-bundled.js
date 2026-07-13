@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.166
+ * Version : 5.0.167
  * Built   : 2026-07-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.166';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.167';
 (function() {
   'use strict';
 
@@ -2798,7 +2798,12 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
           ` : ''}
           ${variantSelectorBeforePrice ? '' : options.variantSelectorHtml || ''}
           <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
-            ${isSelected
+            ${isSelected && options.selectedAction === 'button'
+              ? renderAddButton(selectionKey, {
+                ...options,
+                addButtonText: options.selectedButtonText || options.addButtonText,
+              })
+              : isSelected
               ? renderQuantityControl({
                 variantId: selectionKey,
                 quantity,
@@ -5040,6 +5045,13 @@ setupTabScrollArrows(modal) {
 
 };
 
+function shouldDisableIntermediateProductPageCta({
+  isGrid = false,
+  currentStepValid = false,
+} = {}) {
+  return Boolean(!isGrid && !currentStepValid);
+}
+
 const ProductPageFooterModalStateMethods = {
 renderFullPageLayout() {
 
@@ -5327,8 +5339,12 @@ updateAddToCartButton() {
     };
     if (!formattedPrice) nextButtonContent.separator = '';
     this._renderCascadeAddToCartButtonContent(button, nextButtonContent);
-    button.disabled = !currentStepValid;
-    button.classList.toggle('disabled', !currentStepValid);
+    const shouldDisable = shouldDisableIntermediateProductPageCta({
+      isGrid: this._isProductPageGridTemplate?.() === true,
+      currentStepValid,
+    });
+    button.disabled = shouldDisable;
+    button.classList.toggle('disabled', shouldDisable);
 
   } else if (paidTotalQuantity === 0 || !allStepsValid) {
     if (paidTotalQuantity === 0 || usesCascadeStepFlow) {
@@ -5724,7 +5740,19 @@ attachEventListeners() {
     const isIntermediateCascadeStep = this._usesCascadeStepFlow?.()
       && this.currentStepIndex < this.selectedBundle.steps.length - 1;
     if (isIntermediateCascadeStep) {
-      this.navigateCascadeStep(1);
+      const navigated = this.navigateCascadeStep(1);
+      if (!navigated && this._isProductPageGridTemplate?.() === true) {
+        const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+        ToastManager.show(
+          formatProductPageStepValidationToast(currentStep)
+            || 'Please meet the quantity conditions for the current step before proceeding.',
+          4000,
+          {
+            dismissible: false,
+            className: 'bundle-toast--cognive',
+          },
+        );
+      }
       return;
     }
     this.addToCart();
@@ -5914,6 +5942,21 @@ function getCascadeStepNavigationState({
   return { targetStepIndex: current + 1, blocked: false, isFinal: false };
 }
 
+function getCogniveStepRenderSequence({ stepCount = 0, currentStepIndex = 0 } = {}) {
+  const count = Math.max(0, Number(stepCount || 0));
+  const activeIndex = Math.min(Math.max(0, Number(currentStepIndex || 0)), Math.max(0, count - 1));
+  const sequence = [];
+
+  for (let stepIndex = 0; stepIndex < count; stepIndex += 1) {
+    sequence.push({ type: 'header', stepIndex });
+    if (stepIndex === activeIndex) {
+      sequence.push({ type: 'body', stepIndex });
+    }
+  }
+
+  return sequence;
+}
+
 const ProductPageLayoutShellMethods = {
 renderUI() {
   this._renderDirectDefaultProducts();
@@ -6025,6 +6068,11 @@ renderProductPageLayout() {
   const lastStepIndex = Math.max(0, this.selectedBundle.steps.length - 1);
   this.currentStepIndex = Math.min(Math.max(0, this.currentStepIndex), lastStepIndex);
 
+  if (usesCascadeStepFlow && this._isProductPageGridTemplate?.() === true) {
+    this._renderCogniveStepFlowLayout();
+    return;
+  }
+
   if (usesCascadeStepFlow) {
     this.elements.stepsContainer.appendChild(this._createCascadeStepFlowHeader());
   }
@@ -6112,6 +6160,62 @@ renderProductPageLayout() {
       }
     }
   });
+},
+
+_renderCogniveStepFlowLayout() {
+  const sequence = getCogniveStepRenderSequence({
+    stepCount: this.selectedBundle.steps.length,
+    currentStepIndex: this.currentStepIndex,
+  });
+
+  sequence.forEach(({ type, stepIndex }) => {
+    const step = this.selectedBundle.steps[stepIndex];
+    if (type === 'header') {
+      this.elements.stepsContainer.appendChild(this._createCogniveStepHeader(step, stepIndex));
+      return;
+    }
+
+    const section = this._createInpageStepSection(step, stepIndex);
+    const target = section.querySelector('.bw-ppb-inpage-step-grid');
+    this.elements.stepsContainer.appendChild(section);
+
+    const banner = this._createStepBannerImage(step);
+    if (banner) target.appendChild(banner);
+    this._renderInpageStepProducts(stepIndex, target);
+  });
+},
+
+_createCogniveStepHeader(step, stepIndex) {
+  const button = document.createElement('button');
+  const isActive = stepIndex === this.currentStepIndex;
+  button.type = 'button';
+  button.className = `bw-ppb-cognive-step${isActive ? ' is-active' : ''}${this.validateStep(stepIndex) ? ' is-complete' : ''}`;
+  button.setAttribute('aria-current', isActive ? 'step' : 'false');
+  button.innerHTML = `
+    <span class="bw-ppb-cognive-step__number">${stepIndex + 1}</span>
+    <span class="bw-ppb-cognive-step__label">${ComponentGenerator.escapeHtml(step.pageTitle || step.name || `Step ${stepIndex + 1}`)}</span>
+  `;
+  button.addEventListener('click', () => {
+    if (isActive) return;
+    if (!this.isStepAccessible(stepIndex)) {
+      const currentStep = this.selectedBundle.steps[this.currentStepIndex];
+      ToastManager.show(
+        formatProductPageStepValidationToast(currentStep)
+          || 'Please meet the quantity conditions for the current step before proceeding.',
+        4000,
+        {
+          dismissible: false,
+          className: 'bundle-toast--cognive',
+        },
+      );
+      return;
+    }
+    this.currentStepIndex = stepIndex;
+    this.renderSteps();
+    this.renderFooter();
+    this.updateAddToCartButton();
+  });
+  return button;
 },
 
 _usesCascadeStepFlow() {
@@ -6431,6 +6535,8 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          selectedAction: 'button',
+          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -8294,10 +8400,15 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     : this.container;
   const productCard = scope.querySelector(`[data-product-id="${productId}"]`);
   if (productCard) {
+    const cogniveCard = productCard.classList.contains('bw-ppb-cognive-product-card');
     const quantityDisplay = productCard.querySelector('.qty-display')
       || productCard.querySelector('.inline-qty-display');
     const addBtn = productCard.querySelector('.product-add-btn');
-    syncProductPageSelectedOverlay(productCard, quantity);
+    if (cogniveCard) {
+      productCard.querySelector('.selected-overlay')?.remove();
+    } else {
+      syncProductPageSelectedOverlay(productCard, quantity);
+    }
     const increaseBtn = productCard.querySelector('.qty-increase');
     const actionWrapper = productCard.querySelector('.product-card-action')
       || productCard.querySelector('.bw-product-card__action');
@@ -8326,7 +8437,21 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
-    if (actionWrapper && quantity > 0) {
+    if (actionWrapper && quantity > 0 && cogniveCard) {
+      actionWrapper.classList.add('is-expanded');
+      existingInlineControls?.remove();
+      const selectedText = resolveProductPageCardButtonText({
+        currentQuantity: quantity,
+        currentStep: step,
+        outOfStock: false,
+        defaultAddText,
+      });
+      if (!addBtn) {
+        actionWrapper.appendChild(createProductPageAddButton(productId, selectedText));
+      } else {
+        addBtn.textContent = selectedText;
+      }
+    } else if (actionWrapper && quantity > 0) {
       actionWrapper.classList.add('is-expanded');
       if (addBtn) addBtn.remove();
       if (!existingInlineControls) {

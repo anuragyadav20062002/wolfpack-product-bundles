@@ -2,6 +2,7 @@
   width: 100%;
   max-width: none;
   margin: 0;
+  font-family: inherit;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
@@ -10,16 +11,68 @@
   flex-direction: column;
   align-items: stretch;
   width: 100%;
-  gap: 22px;
-  margin: 0;
+  gap: 0;
+  margin: 20px 0 0;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 0 15px;
+  border: 0;
+  border-bottom: 1px solid #1e1e1e;
+  border-radius: 0;
+  background: transparent;
+  color: #1e1e1e;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-step__number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #1e1e1e;
+  border-radius: 50%;
+  background: #f4f9f9;
+  color: #1e1e1e;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-step.is-active
+  .bw-ppb-cognive-step__number {
+  border: 2px solid #1e1e1e;
+  background: #1e1e1e;
+  color: #ffffff;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-step__label {
+  color: #1e1e1e;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: normal;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
   .bw-ppb-inpage-step-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
   width: 100%;
+  padding: 28px 0 20px;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
@@ -34,8 +87,10 @@
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
   .bw-ppb-inpage-category-tabs {
-  grid-template-columns: minmax(0, 2.4fr) minmax(56px, 0.8fr);
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 10px;
+  width: 100%;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
@@ -46,6 +101,7 @@
   border-radius: 5px;
   font-size: 14px;
   line-height: normal;
+  font-family: inherit;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
@@ -59,6 +115,7 @@
   box-sizing: border-box;
   overflow: hidden auto;
   align-items: start;
+  align-content: start;
   justify-items: stretch;
 }
 
@@ -72,11 +129,14 @@
   gap: 10px;
   width: 100%;
   min-height: 0;
+  height: auto;
+  aspect-ratio: auto;
   padding: 0;
   border: 0;
   border-radius: 7px;
   background: transparent;
   box-shadow: none;
+  overflow: visible;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
@@ -184,6 +244,23 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  gap: 2px;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .product-card-action {
+  min-height: 32px;
+  height: 32px;
+  margin-top: 0;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .product-card-price-action {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
 }
 
@@ -252,12 +329,27 @@
   grid-row: auto;
   justify-self: stretch;
   padding: 4px 14px;
+  border: 0;
   border-radius: 5px;
   background: #000000;
   color: #ffffff;
   font-size: 14px;
   font-weight: 700;
   line-height: normal;
+  font-family: inherit;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .product-card.bw-product-card--selected
+  .product-add-btn,
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .product-card.selected
+  .product-add-btn {
+  border: 1px solid #000000;
+  background: #ffffff;
+  color: #000000;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
@@ -276,8 +368,19 @@
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
   .bw-ppb-cognive-footer
   .bw-ppb-cascade-selected-drawer {
-  position: relative;
+  position: absolute;
+  top: 15px;
+  left: 0;
+  width: 100%;
   min-height: 0;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-footer
+  .bw-ppb-cascade-selected-drawer--open {
+  position: relative;
+  top: auto;
+  left: auto;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
@@ -413,13 +516,14 @@
   opacity: 1;
   box-shadow: none;
   transform: none;
+  font-family: inherit;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
   .add-bundle-to-cart:disabled,
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
   .add-bundle-to-cart.disabled {
-  background: #8a8a8a;
+  background: #000000;
   color: #ffffff;
   opacity: 1;
   cursor: not-allowed;
@@ -482,5 +586,23 @@
   #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
     .bw-ppb-inpage-step-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    height: auto;
+    overflow: visible;
+  }
+
+  #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+    .bw-ppb-cognive-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    padding: 15px 4px;
+    background: #ffffff;
+  }
+
+  #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+    .bw-ppb-cognive-footer
+    .add-bundle-to-cart {
+    height: 38px;
+    line-height: 22px;
   }
 }

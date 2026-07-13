@@ -62,7 +62,12 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
           ` : ''}
           ${variantSelectorBeforePrice ? '' : options.variantSelectorHtml || ''}
           <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
-            ${isSelected
+            ${isSelected && options.selectedAction === 'button'
+              ? renderAddButton(selectionKey, {
+                ...options,
+                addButtonText: options.selectedButtonText || options.addButtonText,
+              })
+              : isSelected
               ? renderQuantityControl({
                 variantId: selectionKey,
                 quantity,

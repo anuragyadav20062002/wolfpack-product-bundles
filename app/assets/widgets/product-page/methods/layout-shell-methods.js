@@ -1,7 +1,8 @@
-import { CurrencyManager, ComponentGenerator } from '../../../bundle-widget-components.js';
+import { CurrencyManager, ComponentGenerator, ToastManager } from '../../../bundle-widget-components.js';
 import { getDiscountProgressData } from '../../shared/engine/bundle-selectors.js';
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { renderSharedProductCard } from '../../shared/components/product-card.js';
+import { formatProductPageStepValidationToast } from './modal-state-methods.js';
 
 export function shouldHideInpageStepChrome({ isCascade = false, steps = [], step = null } = {}) {
   if (!isCascade) return false;
@@ -40,6 +41,21 @@ export function getCascadeStepNavigationState({
   }
 
   return { targetStepIndex: current + 1, blocked: false, isFinal: false };
+}
+
+export function getCogniveStepRenderSequence({ stepCount = 0, currentStepIndex = 0 } = {}) {
+  const count = Math.max(0, Number(stepCount || 0));
+  const activeIndex = Math.min(Math.max(0, Number(currentStepIndex || 0)), Math.max(0, count - 1));
+  const sequence = [];
+
+  for (let stepIndex = 0; stepIndex < count; stepIndex += 1) {
+    sequence.push({ type: 'header', stepIndex });
+    if (stepIndex === activeIndex) {
+      sequence.push({ type: 'body', stepIndex });
+    }
+  }
+
+  return sequence;
 }
 
 export const ProductPageLayoutShellMethods = {
@@ -156,6 +172,11 @@ renderProductPageLayout() {
   const lastStepIndex = Math.max(0, this.selectedBundle.steps.length - 1);
   this.currentStepIndex = Math.min(Math.max(0, this.currentStepIndex), lastStepIndex);
 
+  if (usesCascadeStepFlow && this._isProductPageGridTemplate?.() === true) {
+    this._renderCogniveStepFlowLayout();
+    return;
+  }
+
   if (usesCascadeStepFlow) {
     this.elements.stepsContainer.appendChild(this._createCascadeStepFlowHeader());
   }
@@ -244,6 +265,62 @@ renderProductPageLayout() {
       }
     }
   });
+},
+
+_renderCogniveStepFlowLayout() {
+  const sequence = getCogniveStepRenderSequence({
+    stepCount: this.selectedBundle.steps.length,
+    currentStepIndex: this.currentStepIndex,
+  });
+
+  sequence.forEach(({ type, stepIndex }) => {
+    const step = this.selectedBundle.steps[stepIndex];
+    if (type === 'header') {
+      this.elements.stepsContainer.appendChild(this._createCogniveStepHeader(step, stepIndex));
+      return;
+    }
+
+    const section = this._createInpageStepSection(step, stepIndex);
+    const target = section.querySelector('.bw-ppb-inpage-step-grid');
+    this.elements.stepsContainer.appendChild(section);
+
+    const banner = this._createStepBannerImage(step);
+    if (banner) target.appendChild(banner);
+    this._renderInpageStepProducts(stepIndex, target);
+  });
+},
+
+_createCogniveStepHeader(step, stepIndex) {
+  const button = document.createElement('button');
+  const isActive = stepIndex === this.currentStepIndex;
+  button.type = 'button';
+  button.className = `bw-ppb-cognive-step${isActive ? ' is-active' : ''}${this.validateStep(stepIndex) ? ' is-complete' : ''}`;
+  button.setAttribute('aria-current', isActive ? 'step' : 'false');
+  button.innerHTML = `
+    <span class="bw-ppb-cognive-step__number">${stepIndex + 1}</span>
+    <span class="bw-ppb-cognive-step__label">${ComponentGenerator.escapeHtml(step.pageTitle || step.name || `Step ${stepIndex + 1}`)}</span>
+  `;
+  button.addEventListener('click', () => {
+    if (isActive) return;
+    if (!this.isStepAccessible(stepIndex)) {
+      const currentStep = this.selectedBundle.steps[this.currentStepIndex];
+      ToastManager.show(
+        formatProductPageStepValidationToast(currentStep)
+          || 'Please meet the quantity conditions for the current step before proceeding.',
+        4000,
+        {
+          dismissible: false,
+          className: 'bundle-toast--cognive',
+        },
+      );
+      return;
+    }
+    this.currentStepIndex = stepIndex;
+    this.renderSteps();
+    this.renderFooter();
+    this.updateAddToCartButton();
+  });
+  return button;
 },
 
 _usesCascadeStepFlow() {

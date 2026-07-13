@@ -1,5 +1,12 @@
 import { CurrencyManager, PricingCalculator, ToastManager } from '../../../bundle-widget-components.js';
 
+export function shouldDisableIntermediateProductPageCta({
+  isGrid = false,
+  currentStepValid = false,
+} = {}) {
+  return Boolean(!isGrid && !currentStepValid);
+}
+
 export const ProductPageFooterModalStateMethods = {
 renderFullPageLayout() {
   // Current fallback mirrors product-page layout until a dedicated full-page tab UI ships.
@@ -292,8 +299,12 @@ updateAddToCartButton() {
     };
     if (!formattedPrice) nextButtonContent.separator = '';
     this._renderCascadeAddToCartButtonContent(button, nextButtonContent);
-    button.disabled = !currentStepValid;
-    button.classList.toggle('disabled', !currentStepValid);
+    const shouldDisable = shouldDisableIntermediateProductPageCta({
+      isGrid: this._isProductPageGridTemplate?.() === true,
+      currentStepValid,
+    });
+    button.disabled = shouldDisable;
+    button.classList.toggle('disabled', shouldDisable);
   // Disable button if no paid products selected or not all required steps are complete.
   } else if (paidTotalQuantity === 0 || !allStepsValid) {
     if (paidTotalQuantity === 0 || usesCascadeStepFlow) {
