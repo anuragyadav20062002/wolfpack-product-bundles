@@ -2,9 +2,9 @@
 
 ## Status
 
-In progress. Runtime, responsive layout, interaction states, loading,
-inventory, discount stress, and missing-media behavior are captured. Final
-shared-template regression proof and fixture restoration remain open.
+Accepted. Runtime, responsive layout, interaction states, loading, inventory,
+discount stress, missing media, real wide placement, restoration, and final
+shared-template regression are proven.
 
 ## Contract
 

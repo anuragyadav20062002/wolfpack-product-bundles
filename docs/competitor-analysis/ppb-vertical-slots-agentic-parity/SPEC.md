@@ -2,9 +2,9 @@
 
 ## Status
 
-In progress. Empty and filled row contracts, mobile selection/removal,
-progression, discount totals, exact-one replacement, and fixture restoration are
-captured. Desktop filled-state replay and final shared regression remain open.
+Accepted. Empty and filled row contracts, selection/removal, progression,
+discount totals, exact-one replacement, desktop/mobile/wide placement,
+restoration, and final shared regression are proven.
 
 ## Contract
 

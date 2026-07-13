@@ -1,7 +1,7 @@
 # Horizontal Slots Completion Audit
 
 Date: 2026-07-13
-Status: In progress — completion is not yet proven.
+Status: Accepted
 
 ## Contract and fixture
 
@@ -59,13 +59,12 @@ Status: In progress — completion is not yet proven.
 | Horizontal combined desktop stress | Proven | HSS1. |
 | Horizontal combined narrow-mobile stress | Proven | HSS2 combines long content, grouped variant 8, inventory survivor, discounts, scrolling, ordered slots, final CTA, and zero document overflow at 360x800. |
 | Product List remains accepted | Proven | HSR1 re-proves hard reload, long category, grouped variant 8, selected drawer, 5% footer, removal, dedicated WPB CASCADE asset, and zero overflow at 360x800. |
-| Product Grid/Vertical Slots leakage | Not yet provable | Those lanes must be completed before final shared-source regression. |
-| Final focused tests/build/lint/graphify | Partial | Each implementation slice passed; final lane-wide run remains. |
+| Product Grid/Vertical Slots leakage | Proven | Final live four-template regression proves dedicated shells and absence of competing template shells on 5.0.165. |
+| Final focused tests/build/lint/graphify | Proven | Final PPB-focused pass: 25 suites / 139 tests; widget 5.0.165 built and minified; latest code slices passed lint and graphify. |
 | Fixture restored and carts clean | Proven current | Both fixtures restored to zero selections; both carts confirmed empty after HS08/HS10. Must recheck at final handoff. |
 | Clean worktree and focused commits | Proven current | Recheck after the remaining gates. |
 
 ## Current completion decision
 
-Horizontal Slots is not complete. The missing live image fixture states and
-current cross-template regression prevent acceptance under
+Horizontal Slots satisfies the per-template completion criteria in
 `broader-PPB-template-parity.md`.
