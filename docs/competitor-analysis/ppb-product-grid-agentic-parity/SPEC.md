@@ -35,6 +35,8 @@ computed geometry, interaction behavior, and an equivalent WPB pass.
 | PG02 multi-step flow | One active body/grid with step navigation and Next/final CTA | Equivalent active-step flow on 5.0.161 | Both full grids were stacked before fix | Accepted desktop and 390x844 progression |
 | PG03 categories/variants | Category switch resolves Pedal Ring; current variant title only | Same category/product; merchant-enabled full-width size selector | WPB retains explicit merchant capability absent from current EB settings | Accepted category switching and contained selector at 390x844 |
 | PG04 selected drawer | Selected rows, quantities, prices, remove actions; zero overflow | Equivalent drawer on 5.0.162 | 28px track violated shared 56px action minimum before fix | Accepted two-item open/close/remove at 390x844 |
+| PG05 loading/inventory | No app-owned loader before final Grid; current Step 2 catalog remains sellable | Grid skeleton occupies final tracks on 5.0.163; unavailable snowboard omitted; exact-one over-target blocked | Loader rows collapsed before fix; inventory identities differ by store | Accepted loading placement desktop/mobile and WPB unavailable/over-target behavior |
+| PG06 selected/discount stress | Zero, one, two, and rule-bounded three-row final state; 5% then 10% | Equivalent state matrix on 5.0.163 | Currency/component prices differ | Accepted at 390x844; both fixtures restored empty |
 
 ## Acceptance boundary
 

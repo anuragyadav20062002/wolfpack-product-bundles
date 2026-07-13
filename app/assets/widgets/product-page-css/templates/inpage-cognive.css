@@ -81,6 +81,73 @@
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
   .bw-ppb-cognive-product-grid
+  .bw-ppb-inpage-loading {
+  display: contents;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .bw-ppb-inpage-loading-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .bw-ppb-inpage-loading-media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: #e7e7e7;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .bw-ppb-inpage-loading-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .bw-ppb-inpage-loading-line,
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .bw-ppb-inpage-loading-action {
+  display: block;
+  border-radius: 5px;
+  background: #e7e7e7;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .bw-ppb-inpage-loading-line--title {
+  width: 82%;
+  height: 14px;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .bw-ppb-inpage-loading-line--price {
+  width: 48%;
+  height: 14px;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .bw-ppb-inpage-loading-action {
+  width: 100%;
+  height: 32px;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
   .product-card
   .selected-overlay,
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]

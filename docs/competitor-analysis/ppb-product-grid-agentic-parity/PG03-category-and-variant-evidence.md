@@ -19,9 +19,12 @@ The shared product has size variants `6` through `11`.
 
 EB Product Grid:
 
-- renders the current variant title (`10`) as an 18px card detail;
-- does not render an inline `select` in the current configuration;
-- Add selects the current variant directly.
+- Category 1 renders a native selector for Pedal Ring with options `6` through
+  `11`;
+- Category 2 renders only the current variant title (`10`) as an 18px card
+  detail, so Add selects that current variant directly;
+- variant presentation is therefore category-specific in the persisted EB
+  fixture.
 
 WPB Product Grid:
 
@@ -30,9 +33,10 @@ WPB Product Grid:
 - remains contained inside the two-column mobile grid with zero document
   overflow.
 
-This is an explicit configuration/capability delta, not a CSS leak. EB exposes
-no corresponding bundle-level Variant Selector switch on the inspected Bundle
-Settings surface. WPB's merchant-enabled selector is retained because removing
+This is an explicit configuration delta, not a CSS leak. EB exposes no
+corresponding bundle-level Variant Selector switch on the inspected Bundle
+Settings surface, while its category data controls whether the selector is
+shown. WPB's merchant-enabled selector is retained because removing
 merchant-controlled variant choice would be destructive and the broader parity
 scope explicitly requires responsive variant-selector behavior.
 
