@@ -1,3 +1,5 @@
+@import "../base/inpage-shared-footer.css";
+
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] {
   width: 100%;
   max-width: none;
@@ -282,12 +284,17 @@
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
   .bw-ppb-cognive-product-grid
   .product-title {
+  display: -webkit-box;
   color: #1e1e1e;
   font-size: 14px;
   font-weight: 700;
-  line-height: normal;
-  min-height: 18px;
+  line-height: 18px;
+  width: 100%;
+  min-height: 36px;
+  height: 36px;
   max-height: 36px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
 }
 
