@@ -11,7 +11,7 @@ describe('PPB single-step categories-as-steps storefront contract', () => {
         pageTitle: 'Choose products',
         conditions: [{ type: 'quantity', value: 2 }],
         categories: [
-          { id: 'cat-a', name: 'Category A', conditions: [{ type: 'quantity', value: 1 }] },
+          { id: 'cat-a', name: 'Category A', conditions: [{ type: 'quantity', value: 1, operator: 'greaterThanOrEqualTo' }] },
           { id: 'cat-b', pageTitle: 'Category B' },
         ],
       }],
@@ -24,8 +24,11 @@ describe('PPB single-step categories-as-steps storefront contract', () => {
       id: 'productsData1__category_cat-a',
       name: 'Category A',
       pageTitle: 'Category A',
-      categories: [{ id: 'cat-a', name: 'Category A', conditions: [{ type: 'quantity', value: 1 }] }],
-      conditions: [{ type: 'quantity', value: 1 }],
+      categories: [{ id: 'cat-a', name: 'Category A', conditions: [{ type: 'quantity', value: 1, operator: 'greaterThanOrEqualTo' }] }],
+      conditions: [{ type: 'quantity', value: 1, operator: 'greaterThanOrEqualTo' }],
+      conditionType: 'quantity',
+      conditionOperator: 'greater_than_or_equal_to',
+      conditionValue: 1,
       _sourceStepId: 'productsData1',
       _sourceCategoryId: 'cat-a',
       _sourceCategoryIndex: 0,
@@ -36,7 +39,53 @@ describe('PPB single-step categories-as-steps storefront contract', () => {
       pageTitle: 'Category B',
       categories: [{ id: 'cat-b', pageTitle: 'Category B' }],
       conditions: [{ type: 'quantity', value: 2 }],
+      conditionType: 'quantity',
+      conditionValue: 2,
       _sourceCategoryIndex: 1,
+    });
+    expect(expanded.steps[1]).not.toHaveProperty('conditionOperator');
+  });
+
+  it('preserves a second condition as step-level secondary fields', () => {
+    const bundle = {
+      useSingleStepCategoriesAsBundleSteps: true,
+      steps: [{
+        id: 'productsData1',
+        name: 'Choose products',
+        pageTitle: 'Choose products',
+        categories: [{
+          id: 'cat-c',
+          name: 'Category C',
+          conditions: [
+            { type: 'quantity', value: 1, operator: 'EQUAL_TO' },
+            { type: 'amount', value: 9.99, operator: 'greater_than_or_equal_to' },
+          ],
+        }, {
+          id: 'cat-d',
+          name: 'Category D',
+          conditions: [{ type: 'quantity', value: 5, operator: 'greater_than_or_equal_to' }],
+        }],
+      }],
+    };
+
+    const expanded = ppbExpandSingleStepCategoriesAsSteps(bundle);
+    const categoryStep = expanded.steps[0];
+
+    expect(categoryStep).toMatchObject({
+      id: 'productsData1__category_cat-c',
+      conditions: [
+        { type: 'quantity', value: 1, operator: 'EQUAL_TO' },
+        { type: 'amount', value: 9.99, operator: 'greater_than_or_equal_to' },
+      ],
+      conditionType: 'quantity',
+      conditionOperator: 'equal_to',
+      conditionValue: 1,
+      conditionType2: 'amount',
+      conditionOperator2: 'greater_than_or_equal_to',
+      conditionValue2: 9.99,
+      _sourceStepId: 'productsData1',
+      _sourceCategoryId: 'cat-c',
+      _sourceCategoryIndex: 0,
     });
   });
 

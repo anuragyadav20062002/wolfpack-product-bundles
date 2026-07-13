@@ -11,7 +11,23 @@ describe('PPB compare-at price visibility contract', () => {
 
   it('gates compare-at strike prices behind the EB setting', () => {
     expect(widgetSource).toContain('_shouldShowProductComparedAtPrice()');
-    expect(widgetSource).toContain('return this.selectedBundle?.showProductComparedAtPrice === true;');
+    expect(widgetSource).toContain('showCompareAtPrices');
+    expect(widgetSource).toContain('Display Compare At Price');
     expect(widgetSource).toContain('this._shouldShowProductComparedAtPrice() && product.compareAtPrice');
+  });
+
+  it('uses runtime control flags as a fallback when the bundle payload flag is absent', () => {
+    const { ProductPageConfigLifecycleMethods } = require('../../../app/assets/widgets/product-page/methods/config-lifecycle-methods.js');
+    const context = {
+      selectedBundle: {
+        showProductComparedAtPrice: false,
+      },
+      _getProductPageControls: () => ({
+        showCompareAtPrices: 'true',
+      }),
+      _shouldShowProductComparedAtPrice: ProductPageConfigLifecycleMethods._shouldShowProductComparedAtPrice,
+    };
+
+    expect(context._shouldShowProductComparedAtPrice()).toBe(true);
   });
 });
