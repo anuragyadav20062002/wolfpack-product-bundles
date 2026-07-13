@@ -26,6 +26,11 @@ and direct desktop/mobile hot-reload proof on `5.0.172`. Product Grid S08 and
 C06 are now Proven; duplicate products remain selected only in their owning
 category.
 
+Additional geometry hardening was added in this wave for card interaction states:
+product cards in grid/modal rows now use explicit stretch alignment, and selected
+markers remain in-band so hover/selection transitions do not visually bleed into
+neighboring cards.
+
 **Scoped template-lane result:** Horizontal Slots was re-accepted on dev widget `5.0.166`
 after the HS19 modal-card/toast pass. Product Grid was re-accepted on the
 hot-reloaded dev widget `5.0.167` after PG08 corrected the accordion flow,
@@ -569,6 +574,63 @@ A template is complete only when:
   toast ownership, responsive tracks, and zero-overflow checks.
 - The canonical matrix now carries the final evidence-backed status for every
   cell; Shared and Not-tested cells are deferred functional follow-on work.
+
+## Fast End-Leg Closeout Ledger (Status-only)
+
+For this end leg, the matrix is already fully tagged; no additional cells were
+promoted in-place without new template-specific proof.
+
+Current unresolved cell totals (S + T only):
+
+- Product List: **69** (**11** S, **58** T)
+- Product Grid: **77** (**13** S, **64** T)
+- Horizontal Slots: **68** (**17** S, **59** T)
+- Vertical Slots: **83** (**17** S, **66** T)
+- Matrix-wide total: **297** unresolved (**50** S, **247** T)
+
+Unresolved shared-source rows (all templates): **C03, C04, C05, C07, C10, D01,
+D09, D10, G06, G09, G17, G39, Q06, Q07, R06, S08, S09, S10, S11, S12,
+S13, S16, S17**. PG keyboard/accessibility (`Q05`) is now proven via
+`PG11-keyboard-accessibility-evidence`; HS/VS focus-containment remains shared
+`S` follow-up work.
+
+Fast functional-wave priority (Goal 1):
+
+1. **Discount/config parity:** D03–D12 (including D08, D09 and D11 transform
+   proof in PG/VS).
+2. **Selection/cart toggles:** R07–R15, S05–S17, S09–S15 for PG/VS shared-contract
+   states.
+3. **Modal/visibility/a11y controls:** Q05–Q07, plus M10–M12 and M08/HS17/VS09
+   behavior parity details for explicit scope.
+4. **Bundle-level control parity:** G01–G08, G09, G17, G21–G38 in deterministic
+   template-specific replays.
+
+Wave-1 implementation update (2026-07-13):
+- R07 (`useSingleStepCategoriesAsBundleSteps`) now emits runtime-compatible step
+  condition fields (`conditionType`, `conditionOperator`, `conditionValue`, and optional
+  secondary fields) when expanding single-category bundles. This is covered by shared-source
+  unit tests in `tests/unit/assets/bundle-widget-product-page-single-step-categories.test.ts`;
+  matrix promotion remains pending explicit template replay.
+- Q05 (keyboard access) now has source-level coverage for modal focus restoration and
+  keyboard control pathways in new product-page unit tests (`ppb-product-page-modal-accessibility.test.ts`)
+  plus a new test spec artifact (`ppb-product-page-modal-accessibility.spec.md`).
+- Additional WPB storefront replay captured for `ppb-modal-shared-card-test` on `5.0.172`:
+  - Desktop: `Tab`/`Shift+Tab` reaches step tabs, category tabs, and close control;
+    `Enter` on close button closes the modal and restores focus.
+  - Mobile: in PG (`PDP_INPAGE` + `COGNIVE`) flow, modal container remains `hidden`
+    with zero-height panel and the widget runs as in-page controls; `Tab` reaches
+    `View Bundle Items`, `Next`, `Buy it now`, and product links reliably.
+  - No modal open is currently exposed in this mobile state for this fixture.
+- S05 (validation control bypass) now has source-level coverage for CTA gating, modal
+  navigation, and auto-add paths in `ppb-product-page-validation-bypass.test.ts`.
+- D08 (discount messaging disabled/enabled) has coverage added in the product-page footer
+  discount toggle unit test and test spec.
+- These updates are intentionally not promoted to **P**; matrix status still requires EB + WPB
+  desktop/mobile replay before row-level promotion.
+
+This ledger is evidence-directed: each completed row must be reclassified in the
+matrix only after EB and WPB desktop/mobile browser proof for that specific row and
+template.
 
 ## Historical Overall Completion Criteria
 
