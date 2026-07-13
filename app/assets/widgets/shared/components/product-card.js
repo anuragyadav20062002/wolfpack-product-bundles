@@ -10,12 +10,14 @@
 import { renderQuantityControl } from './quantity-control.js';
 
 const DEFAULT_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3C/svg%3E';
+const PRODUCT_DESCRIPTION_PREVIEW_LENGTH = 110;
 
 export function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo = {}, options = {}) {
   const selectionKey = product.variantId || product.id || '';
   const quantity = Math.max(0, Number(currentQuantity || 0));
   const isSelected = quantity > 0;
   const mode = options.mode || 'grid';
+  const descriptionText = resolveProductDescriptionText(product.description);
   const variantText = getVariantDisplayText(product);
   const isIndividualVariantCard = Boolean(product.parentProductId && product.variantId && variantText);
   const title = getDisplayTitle(product, variantText);
@@ -32,6 +34,8 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
     variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
     isIndividualVariantCard ? 'bw-product-card--individual-variant product-card--individual-variant' : '',
     isSelected ? 'bw-product-card--selected' : '',
+    options.displaySeeMoreLink === true && descriptionText ? 'bw-product-card--see-more' : '',
+    options.expandProductCardOnHover === true ? 'bw-product-card--hover-expand' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
 
@@ -48,9 +52,14 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
       </div>
       ${options.cardBadgeHtml || ''}
       <div class="bw-product-card__body product-content-wrapper">
-          <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+      <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
+          ${renderProductDescription({
+            description: descriptionText,
+            displaySeeMoreLink: options.displaySeeMoreLink === true,
+            descriptionMaxLength: options.descriptionMaxLength,
+          })}
         </div>
         <div class="product-card-price-action">
           ${variantSelectorBeforePrice ? options.variantSelectorHtml || '' : ''}
@@ -161,6 +170,36 @@ function renderImageNavButton(direction) {
   `;
 }
 
+function renderProductDescription({
+  description = '',
+  displaySeeMoreLink = false,
+  descriptionMaxLength = PRODUCT_DESCRIPTION_PREVIEW_LENGTH,
+}) {
+  const descriptionText = resolveProductDescriptionText(description);
+  if (!descriptionText) return '';
+
+  const showToggle = displaySeeMoreLink === true;
+  if (!showToggle) {
+    return `
+      <div class="bw-product-card__description">${escapeHtml(descriptionText)}</div>
+    `;
+  }
+
+  const maxLength = Math.max(24, Number(descriptionMaxLength) || PRODUCT_DESCRIPTION_PREVIEW_LENGTH);
+  const isClamped = descriptionText.length > maxLength;
+  const shortDescription = isClamped
+    ? `${descriptionText.slice(0, maxLength)}...`
+    : descriptionText;
+
+  return `
+    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
+      <span class="bw-product-card__description-short"${isClamped ? '' : ' hidden'}>${escapeHtml(shortDescription)}</span>
+      <span class="bw-product-card__description-full"${isClamped ? ' hidden' : ''}>${escapeHtml(descriptionText)}</span>
+      ${isClamped ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
+    </div>
+  `;
+}
+
 function normalizeImageUrl(value) {
   if (!value) return '';
   if (typeof value === 'string') return value;
@@ -173,6 +212,12 @@ function formatPrice(value, currencyInfo) {
   const amount = Number(value || 0) / 100;
   const format = currencyInfo?.display?.format || '${{amount}}';
   return format.replace('{{amount}}', amount.toFixed(2));
+}
+
+function resolveProductDescriptionText(value) {
+  if (value == null) return '';
+
+  return String(value);
 }
 
 function escapeHtml(value) {

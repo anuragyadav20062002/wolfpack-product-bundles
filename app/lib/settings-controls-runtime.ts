@@ -13,6 +13,29 @@ type ControlsPayload = Record<string, unknown>;
 
 export type ControlsRedirectAction = "side_cart" | "checkout" | "cart";
 
+function asBoolean(payload: ControlsPayload, label: string, fallback = false) {
+  const rawValue = payload[label];
+  if (typeof rawValue === "boolean") return rawValue;
+
+  if (typeof rawValue === "string") {
+    const normalized = rawValue.trim().toLowerCase();
+    if (normalized === "checked" || normalized === "true") return true;
+    if (normalized === "unchecked" || normalized === "false" || normalized === "") return false;
+  }
+
+  return fallback;
+}
+
+function asBooleanFromAlternates(payload: ControlsPayload, labels: string[], fallback: boolean) {
+  for (const label of labels) {
+    const directValue = payload[label];
+    if (directValue !== undefined) {
+      return asBoolean(payload, label, fallback);
+    }
+  }
+  return fallback;
+}
+
 export type SettingsControlsRuntime = {
   landingPage: {
     showCompareAtPrice: boolean;
@@ -52,8 +75,10 @@ export type SettingsControlsRuntime = {
     hideOutOfStockProducts: boolean;
     trackInventoryOnAddToCart: boolean;
     addBundleToCartAfterLastStepCompleted: boolean;
+    showCompareAtPrices: boolean;
     displayEmptyStateBoxesBasedOnBundleCondition: boolean;
     hideStepTitlesInCompletedState: boolean;
+    validateConditionsBeforeAddToCart: boolean;
     addToCartWhenProductCardClicked: boolean;
     redirectCollectionQuickAddToBundle: boolean;
     redirect: {
@@ -171,10 +196,40 @@ export function buildSettingsControlsRuntime(payload: ControlsPayload): Settings
     productPage: {
       hideOutOfStockProducts: checked(payload, "Hide Out Of Stock Products"),
       trackInventoryOnAddToCart: checked(payload, "Track inventory on Add To Cart (in beta)"),
-      addBundleToCartAfterLastStepCompleted: checked(payload, "Add bundle to cart after the last step is completed"),
+      showCompareAtPrices: asBooleanFromAlternates(
+        payload,
+        [
+          "showCompareAtPrices",
+          "Show Compare At Price",
+          "Display Compare At Price",
+        ],
+        false,
+      ),
+      addBundleToCartAfterLastStepCompleted: asBooleanFromAlternates(
+        payload,
+        [
+          "Add bundle to cart after the last step is completed",
+          "addBundleToCartAfterLastStepCompleted",
+          "addBundleToCartOnDone",
+        ],
+        false,
+      ),
       displayEmptyStateBoxesBasedOnBundleCondition: checked(payload, "Display empty state boxes based on bundle condition"),
       hideStepTitlesInCompletedState: checked(payload, "Hide Step Titles in completed state"),
-      addToCartWhenProductCardClicked: checked(payload, "Add to cart when product card is clicked"),
+      validateConditionsBeforeAddToCart: asBooleanFromAlternates(
+        payload,
+        ["Validate conditions before add to cart", "validateConditionsBeforeAddToCart"],
+        true,
+      ),
+      addToCartWhenProductCardClicked: asBooleanFromAlternates(
+        payload,
+        [
+          "Add to cart when product card is clicked",
+          "addToBundleOnProductCardClick",
+          "addToBundleOnProductCardClicked",
+        ],
+        false,
+      ),
       redirectCollectionQuickAddToBundle: checked(payload, "Redirect Collection Page 'Quick Add' to Bundle"),
       redirect: {
         action: getProductPageRedirectAction(payload),

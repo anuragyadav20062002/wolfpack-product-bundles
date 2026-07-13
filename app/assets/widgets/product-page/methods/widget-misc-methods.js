@@ -118,8 +118,43 @@ attachEventListeners() {
 
   // Keyboard: close on Escape
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('bw-bs-panel--open')) {
+    if (!modal.classList.contains('bw-bs-panel--open')) return;
+
+    const target = e.target;
+    if (target && (target.tagName === 'INPUT' || target.isContentEditable)) return;
+
+    if (e.key === 'Escape') {
       this.closeModal();
+      return;
+    }
+
+    if (e.key === 'ArrowLeft' && prevButton) {
+      e.preventDefault();
+      prevButton.click?.();
+      return;
+    }
+
+    if (e.key === 'ArrowRight' && nextButton) {
+      e.preventDefault();
+      nextButton.click?.();
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      const controls = typeof this._getModalFocusableControls === 'function'
+        ? this._getModalFocusableControls()
+        : [];
+      if (!controls.length) return;
+
+      const current = controls.indexOf(globalThis.document?.activeElement);
+      const isActiveInModal = current >= 0;
+      const fromIndex = isActiveInModal ? current : -1;
+      const nextIndex = e.shiftKey
+        ? (fromIndex > 0 ? fromIndex - 1 : controls.length - 1)
+        : (fromIndex >= 0 && fromIndex < controls.length - 1 ? fromIndex + 1 : 0);
+
+      e.preventDefault();
+      controls[nextIndex]?.focus?.();
     }
   });
 },
@@ -133,7 +168,10 @@ async navigateModal(direction) {
 
     // Update modal header
     const headerText = this.getFormattedHeaderText();
-    this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+    const header = this.elements.modal.querySelector('.modal-step-title');
+    if (header) {
+      header.textContent = headerText;
+    }
 
     // OPTIMISTIC RENDERING: Update UI immediately with loading state
     this.renderModalTabs();
@@ -146,14 +184,19 @@ async navigateModal(direction) {
     this.renderModalProducts(this.currentStepIndex);
     this.updateModalFooterMessaging();
   } else if (direction > 0) {
+    const shouldValidateConditions = this._isConditionValidationEnabled?.() !== false;
+
     if (newStepIndex < this.selectedBundle.steps.length) {
       // Next step
-      if (this.validateStep(this.currentStepIndex)) {
+      if (!shouldValidateConditions || this.validateStep(this.currentStepIndex)) {
         this.currentStepIndex = newStepIndex;
 
         // Update modal header
         const headerText = this.getFormattedHeaderText();
-        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+        const header = this.elements.modal.querySelector('.modal-step-title');
+        if (header) {
+          header.textContent = headerText;
+        }
 
         // OPTIMISTIC RENDERING: Update UI immediately with loading state
         this.renderModalTabs();
@@ -176,7 +219,7 @@ async navigateModal(direction) {
       }
     } else {
       // Done button clicked on last step
-      if (this.validateStep(this.currentStepIndex)) {
+      if (!shouldValidateConditions || this.validateStep(this.currentStepIndex)) {
         this.closeModal();
       } else {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
