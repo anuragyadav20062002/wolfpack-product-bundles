@@ -92,12 +92,12 @@
 }
 
 .product-add-btn:hover {
-  transform: scale(1.1);
+  transform: none;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
 .product-add-btn:active {
-  transform: scale(0.94);
+  transform: none;
 }
 
 .product-add-btn:disabled {
@@ -162,7 +162,7 @@
 
 .inline-qty-btn:active {
   background: rgba(255, 255, 255, 0.3);
-  transform: scale(0.95);
+  transform: none;
 }
 
 .inline-qty-display {

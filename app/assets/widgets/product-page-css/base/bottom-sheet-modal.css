@@ -199,10 +199,15 @@
 }
 
 .bw-bs-panel .modal-body .product-card:hover {
-  transform: none;
+  transform: none !important;
   box-shadow:
     rgba(0, 0, 0, 0.1) 0px 1px 3px 0px;
   z-index: auto;
+}
+
+.bw-bs-panel .modal-body .product-card.selected,
+.bw-bs-panel .modal-body .product-card.bw-product-card--selected {
+  transform: none !important;
 }
 
 .bw-bs-panel .modal-body .product-card.bw-product-card--hover-expanded {

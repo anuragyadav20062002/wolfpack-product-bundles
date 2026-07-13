@@ -51,10 +51,15 @@
 }
 
 .modal-body .product-card:hover {
-  transform: none;
+  transform: none !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border-color: #d1d5db;
   z-index: auto;
+}
+
+.modal-body .product-card.selected,
+.modal-body .product-card.bw-product-card--selected {
+  transform: none !important;
 }
 
 .product-card.is-out-of-stock,
