@@ -10,6 +10,7 @@
  */
 
 import { formatStepCategoriesForRuntime } from "./bundle-config/category-runtime";
+import { resolveShowProductComparedAtPrice } from "./bundle-config/product-page-display";
 import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "./bundle-config/template-selection";
 
 /** Convert a Shopify GID to its numeric ID for storefront cart operations. */
@@ -47,7 +48,7 @@ export interface FormattedBundle {
   pricing: FormattedPricing | null;
   // Per-bundle behavioral settings
   showProductPrices: boolean;
-  showCompareAtPrices: boolean;
+  showProductComparedAtPrice: boolean;
   cartRedirectToCheckout: boolean;
   allowQuantityChanges: boolean;
   showTextOnAddButton: boolean;
@@ -303,7 +304,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
         }
       : null,
     showProductPrices: bundle.showProductPrices ?? true,
-    showCompareAtPrices: bundle.showCompareAtPrices ?? false,
+    showProductComparedAtPrice: resolveShowProductComparedAtPrice(bundle),
     cartRedirectToCheckout: bundle.cartRedirectToCheckout ?? false,
     allowQuantityChanges: bundle.allowQuantityChanges ?? true,
     showTextOnAddButton: bundle.showTextOnAddButton ?? false,

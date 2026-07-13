@@ -13,8 +13,8 @@ Status: In progress — completion is not yet proven.
 | Manual and collection products | Proven | HS03/HS04 API and live card inventories. |
 | Normal, grouped variants, sole survivor, unavailable product | Proven | HS03/HS04. |
 | Long title | Proven | Long category and product titles remain contained in HS01/HS02. |
-| Sale plus compare-at price | Missing | EB shows compare-at prices. WPB bundle persists `showCompareAtPrices=false`; the configure route has state/save support but exposes no authenticated UI control. No code or DB bypass used. |
-| Square/tall/wide images | Missing | Current products do not prove mixed source-image ratios independently of the fixed card media container. |
+| Sale plus compare-at price | Proven | HS02 mixed-media evidence proves EB-first sale pairs, the authenticated WPB setting, proxy runtime key, persistence, and equivalent live pairs. |
+| Square/tall/wide images | Proven | HS02 directly measures natural and rendered dimensions for square, tall, and wide sources in both live pickers. |
 | Missing-image fallback | Missing | No equivalent live missing-image fixture has been established. |
 | Percentage discount progression | Proven | HS06 plus HSS1. |
 | No-discount state | Proven | HSS4 disables only the master toggle, proves original totals/no discount UI on EB and WPB 5.0.160, then restores the 5%/10% tiers. |
@@ -39,7 +39,7 @@ Status: In progress — completion is not yet proven.
 | Loading and first hard reload | Proven | HS07, including cold proxy and request health. |
 | Empty/partial/full slots and slot order | Proven | HS00, HS05, HS15, HSS1. |
 | Picker open/close/header/tabs/categories/footer | Proven | HS01, HS14, HS17. |
-| Product card image/title/price/action hierarchy | Proven baseline | HS02. Compare-at/fallback media remain fixture gaps above. |
+| Product card image/title/price/action hierarchy | Proven except fallback | HS02 proves the baseline, compare-at hierarchy, and mixed source ratios. Missing-image fallback remains the fixture gap above. |
 | Variant selector and selected identity | Proven | HS03 and HSS1. |
 | Available/unavailable behavior | Proven | HS04. |
 | Selection, remove, replace flow | Proven | HS15/HS16. |

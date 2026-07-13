@@ -103,6 +103,16 @@ describe("formatBundleForWidget", () => {
     expect(result.variantSelectorEnabled).toBe(true);
   });
 
+  it("projects the persisted compare-at setting to the product-page runtime key", () => {
+    const result = formatBundleForWidget(makeBundle({
+      bundleType: "product_page",
+      showCompareAtPrices: true,
+    }) as any);
+
+    expect(result.showProductComparedAtPrice).toBe(true);
+    expect(result).not.toHaveProperty("showCompareAtPrices");
+  });
+
   it("emits the saved loading GIF for storefront runtime", () => {
     const result = formatBundleForWidget(makeBundle({
       loadingGif: "https://cdn.example.test/loading.gif",
