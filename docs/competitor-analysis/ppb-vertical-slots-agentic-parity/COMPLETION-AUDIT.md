@@ -12,7 +12,7 @@ Status: Accepted
 | Selection, row targeting, replace/remove | Proven | VS03 directly proves targeting, reindexing, exact-one reopen, and replacement on 5.0.165. |
 | Multi-step progression and persistence | Proven | VS03 proves Step 1 to exact-one Step 2 flow, retained selections, Done, and restored session state. |
 | Close, Escape, body lock, scrolling/focus | Proven | VS03 directly proves Escape/body lock; HS17 proves the shared picker scroll/backdrop/focus contract. |
-| CTA, discounts, totals, validation | Proven | VS03 proves 5%/10% totals and exact-one validation; VS04 proves the non-dismissible body-owned modal toast fixed to the viewport bottom. |
+| CTA, discounts, totals, validation | Proven | VS03 proves 5%/10% totals and exact-one validation; VS04 proves the dismissible body-owned modal toast at the measured `18vh` viewport offset. |
 | Loading ownership | Proven | The primary metafield path renders directly at the final Vertical root; HS07 proves the shared modal-widget overlay for delayed paths. A throttled cached pass showed no displaced intermediate root. |
 | Cross-template leakage | Proven | VS04 responsive sweep plus the final live four-template regression and focused shared-template tests. |
 | Restoration | Proven | Final EB/WPB state is `SIMPLIFIED`, zero filled rows, original three empty rows, default theme width. |

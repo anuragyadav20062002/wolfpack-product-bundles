@@ -923,8 +923,9 @@ desktop step rail. Selected product cards show a check marker and `Added xN`,
 with inline quantity controls hidden.
 
 Modal rule-validation feedback is body-owned rather than sheet-owned. The
-settled toast is fixed at the viewport bottom and has no close control. Product
-Grid uses the same non-dismissible validation behavior in its in-page flow.
+settled toast is fixed at `18vh` from the viewport bottom and includes a close
+control. This modal contract differs from Product Grid, whose corresponding
+in-page validation toast is non-dismissible.
 
 Vertical filled slots use image, title, remove visual order. In the confirmed
 mobile fixture each filled row was `64px` high with `50px` media and a `20px`
