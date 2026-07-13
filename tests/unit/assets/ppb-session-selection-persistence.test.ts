@@ -2,6 +2,7 @@ const {
   ProductPageSelectionPersistenceMethods,
   createProductPageSessionSelectionPayload,
   getProductPageSelectionStorageKey,
+  normalizeProductPageSessionSelectionCategories,
   normalizeProductPageSessionSelections,
 } = require("../../../app/assets/widgets/product-page/methods/selection-persistence-methods.js");
 const { readFileSync } = require("node:fs");
@@ -21,7 +22,7 @@ describe("ProductPageSessionSelectionPersistence", () => {
     expect(
       normalizeProductPageSessionSelections(
         {
-          v: 1,
+          v: 2,
           selectedProducts: [
             { "variant-1": 2, "variant-2": 0, "variant-3": -1 },
             { "variant-4": 1.9 },
@@ -36,11 +37,11 @@ describe("ProductPageSessionSelectionPersistence", () => {
   it("rejects malformed or unsupported payloads", () => {
     expect(normalizeProductPageSessionSelections(null, 2)).toBeNull();
     expect(
-      normalizeProductPageSessionSelections({ v: 2, selectedProducts: [] }, 2)
+      normalizeProductPageSessionSelections({ v: 1, selectedProducts: [] }, 2)
     ).toBeNull();
     expect(
       normalizeProductPageSessionSelections(
-        { v: 1, selectedProducts: "bad" },
+        { v: 2, selectedProducts: "bad" },
         2
       )
     ).toBeNull();
@@ -53,17 +54,31 @@ describe("ProductPageSessionSelectionPersistence", () => {
         { two: 2 },
       ])
     ).toEqual({
-      v: 1,
+      v: 2,
       selectedProducts: [{ one: 1 }, { two: 2 }],
+      selectedProductCategoryIndexes: [],
     });
+  });
+
+  it("normalizes category ownership only for positively selected variants", () => {
+    expect(normalizeProductPageSessionSelectionCategories(
+      {
+        v: 2,
+        selectedProducts: [{ one: 1, removed: 0 }],
+        selectedProductCategoryIndexes: [{ one: 0, removed: 1, bad: -1 }],
+      },
+      [{ one: 1 }],
+      1,
+    )).toEqual([{ one: 0 }]);
   });
 
   it("restores customer selections without removing configured defaults", () => {
     const storage = {
       getItem: jest.fn(() =>
         JSON.stringify({
-          v: 1,
+          v: 2,
           selectedProducts: [{ customer: 2 }, {}],
+          selectedProductCategoryIndexes: [{ customer: 1 }, {}],
         })
       ),
       setItem: jest.fn(),
@@ -71,6 +86,7 @@ describe("ProductPageSessionSelectionPersistence", () => {
     const context = {
       selectedBundle: { offerId: "MIX-1", steps: [{}, {}] },
       selectedProducts: [{ required: 1 }, {}],
+      selectedProductCategoryIndexes: [{ required: 0 }, {}],
       _getProductPageSelectionStorage: () => storage,
       _getProductPageSelectionStorageKey:
         ProductPageSelectionPersistenceMethods._getProductPageSelectionStorageKey,
@@ -84,6 +100,10 @@ describe("ProductPageSessionSelectionPersistence", () => {
     expect(restored).toBe(true);
     expect(context.selectedProducts).toEqual([
       { required: 1, customer: 2 },
+      {},
+    ]);
+    expect(context.selectedProductCategoryIndexes).toEqual([
+      { required: 0, customer: 1 },
       {},
     ]);
     expect(context._selectionPersistenceReady).toBe(true);
@@ -112,6 +132,7 @@ describe("ProductPageSessionSelectionPersistence", () => {
     const context = {
       selectedBundle: { offerId: "MIX-1" },
       selectedProducts: [{ one: 1 }],
+      selectedProductCategoryIndexes: [{ one: 0 }],
       _selectionPersistenceReady: true,
       _getProductPageSelectionStorage: () => storage,
       _getProductPageSelectionStorageKey:
@@ -125,7 +146,11 @@ describe("ProductPageSessionSelectionPersistence", () => {
     ).toBe(true);
     expect(storage.setItem).toHaveBeenCalledWith(
       "wpbPpb-cart-MIX-1",
-      JSON.stringify({ v: 1, selectedProducts: [{ one: 1 }] })
+      JSON.stringify({
+        v: 2,
+        selectedProducts: [{ one: 1 }],
+        selectedProductCategoryIndexes: [{ one: 0 }],
+      })
     );
   });
 

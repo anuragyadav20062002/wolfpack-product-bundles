@@ -1,8 +1,8 @@
 Complete storefront parity between Easy Bundles and Wolfpack for the remaining Product Page Bundle templates:
 
-**Status:** Reopened on 2026-07-13 for feature-to-storefront reconciliation.
-The prior completion covered the scoped template visual/interaction rows, but it
-did not prove every PPB feature and configuration mode across the templates.
+**Status:** Closed on 2026-07-13 for storefront visual parity. The final matrix
+preserves non-visual configuration and functional permutations as explicit
+Shared/Not-tested follow-on work rather than overstating them as Proven.
 
 The canonical coverage ledger is
 `docs/competitor-analysis/ppb-feature-to-storefront-matrix.md`. A template is not
@@ -17,6 +17,14 @@ desktop/mobile hard reload; the other three template cells remain Shared until
 their own replays. Earlier Product List and Horizontal Proven cells were
 downgraded because their cited evidence covered collection reload and
 slot-capacity reset, not selected-state reload.
+
+Product Grid replay then exposed a grouped-variant card-state gap on widget
+`5.0.171`: the stored variant restored into totals and the selected-items drawer,
+but the card still showed `Add +`. Widget `5.0.172` resolves the grid card against
+the stored variant identity. PG09 records the EB baseline, source correction,
+and direct desktop/mobile hot-reload proof on `5.0.172`. Product Grid S08 and
+C06 are now Proven; duplicate products remain selected only in their owning
+category.
 
 **Scoped template-lane result:** Horizontal Slots was re-accepted on dev widget `5.0.166`
 after the HS19 modal-card/toast pass. Product Grid was re-accepted on the
@@ -527,7 +535,11 @@ Suggested progression per template:
 6. Cart/loading fix if needed
 7. Final audit and evidence closeout
 
-## Completion Criteria Per Template
+## Historical Full-Feature Completion Criteria
+
+The criteria below remain the standard for a future full functional-parity
+goal. The 2026-07-13 user-directed closeout narrowed this goal to storefront
+visual parity and final evidence-status reconciliation.
 
 A template is complete only when:
 
@@ -546,7 +558,19 @@ A template is complete only when:
 - All completed slices are committed.
 - `COMPLETION-AUDIT.md` proves every explicit requirement with current evidence.
 
-## Overall Completion Criteria
+## Visual Closeout Result
+
+- Horizontal Slots visual storefront parity is accepted.
+- Product Grid visual storefront parity is accepted through PG09 on widget
+  `5.0.172`, including grouped-variant restoration and category-owned card state.
+- Vertical Slots visual storefront parity is accepted.
+- Product List remains the accepted regression baseline.
+- Direct desktop/mobile evidence covers card hierarchy, modal/card presentation,
+  toast ownership, responsive tracks, and zero-overflow checks.
+- The canonical matrix now carries the final evidence-backed status for every
+  cell; Shared and Not-tested cells are deferred functional follow-on work.
+
+## Historical Overall Completion Criteria
 
 The overall goal is complete only when all three templates independently satisfy their completion criteria and a final cross-template audit proves:
 

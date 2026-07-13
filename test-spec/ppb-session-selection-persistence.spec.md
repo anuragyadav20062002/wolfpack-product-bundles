@@ -21,11 +21,12 @@ templates.
 | 5   | Persist a selection mutation | Widget is ready and quantity changes                        | Current selections are written to the offer key   | Shared by every PPB template                    |
 | 6   | Preload restored steps       | Restored selections exist in selected steps                 | Only those step product datasets are loaded       | Filled cards and cart data resolve after reload |
 | 7   | Build the storefront widget  | Product Page module manifest                                | Persistence module is inlined                     | Prevents runtime `ReferenceError`               |
+| 8   | Preserve category ownership  | Selected variant plus its active category index             | Reload restores both selection and category owner | Duplicate products do not appear selected in every category |
 
 ## Acceptance Criteria
 
-- [ ] Product List, Product Grid, Horizontal Slots, and Vertical Slots use the same persistence path.
-- [ ] State is isolated by PPB offer within the current storefront tab.
-- [ ] Configured default products remain compulsory after restoration.
-- [ ] Malformed or stale storage cannot prevent widget initialization.
-- [ ] All listed test cases pass.
+- [x] Product List, Product Grid, Horizontal Slots, and Vertical Slots use the same persistence path.
+- [x] State is isolated by PPB offer within the current storefront tab.
+- [x] Configured default products remain compulsory after restoration.
+- [x] Malformed or stale storage cannot prevent widget initialization.
+- [x] All listed test cases pass.

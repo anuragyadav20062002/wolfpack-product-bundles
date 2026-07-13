@@ -16,6 +16,9 @@ renderFullPageLayout() {
 clearStepSelections(stepIndex) {
   // Clear all product selections for this step
   this.selectedProducts[stepIndex] = {};
+  if (this.selectedProductCategoryIndexes) {
+    this.selectedProductCategoryIndexes[stepIndex] = {};
+  }
   if (stepIndex === 0 && this.directDefaultProducts.length > 0) {
     this.directDefaultProducts.forEach(product => {
       this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);

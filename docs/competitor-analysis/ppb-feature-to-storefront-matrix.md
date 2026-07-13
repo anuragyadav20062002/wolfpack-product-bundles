@@ -1,6 +1,6 @@
 # PPB Feature-to-Storefront Mapping Matrix
 
-**Status:** Reopened — evidence reconciliation in progress
+**Status:** Closed for storefront visual parity; non-visual permutations deferred
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -78,7 +78,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | C03 | Sale + compare-at presentation | Compare-at belongs to the price cluster and follows the saved visibility setting | **S** Price hierarchy covered; toggle/state not isolated | **P** PG08 | **P** HS02 | **S** Shared modal cards only; no VS sale fixture |
 | C04 | Square/tall/wide media | Mixed aspect ratios remain contained | **P** PLS2 | **S** Responsive cards proven; mixed ratios not isolated | **P** HS02 | **S** Shared modal card renderer; no direct VS mixed-ratio replay |
 | C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **T** | **P** PG07 | **P** HS18 | **S** Shared modal fallback only |
-| C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **S** PG03 covers merchant selector, not the full grouped permutation | **P** HS03 | **P** VS07 |
+| C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **P** PG09 | **P** HS03 | **P** VS07 |
 | C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **S** Listed in PL03 run, but current evidence proves grouped mode | **T** | **P** HS03 | **T** |
 | C08 | Variant swatches | Saved swatch flag changes selector presentation | **T** | **T** | **T** | **T** |
 | C09 | Sole sellable variant | Omit selector but retain the surviving variant identity | **P** PL04 | **T** | **P** HS04 | **P** VS08 |
@@ -136,7 +136,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | S05 | Validation disabled | Saved control permits otherwise invalid progression/cart | **T** | **T** | **T** | **T** |
 | S06 | Default/preselected products | Valid defaults initialize; invalid/unavailable defaults resolve safely | **T** | **T** | **T** | **T** |
 | S07 | First load / final-root loading | EB can expose the native product form until its widget asset initializes under constrained network; WPB keeps native controls hidden and loads inside the final widget target | **P** PLS5 | **P** PG05 | **X** HS07 accepted final-root loader architecture | **X** VS10 accepted native-flash prevention |
-| S08 | Hard reload after selection | EB/WPB state-reset or persistence behavior matches | **S** VS12 shared source; PLS3 did not isolate selected-state reload | **S** VS12 shared source; selected-state replay pending | **S** VS12 shared source; HSS3 proved slot-capacity reset, not selected-state reload | **P** VS12 |
+| S08 | Hard reload after selection | EB/WPB state-reset or persistence behavior matches | **S** VS12 shared source; PLS3 did not isolate selected-state reload | **P** PG09 | **S** VS12 shared source; HSS3 proved slot-capacity reset, not selected-state reload | **P** VS12 |
 | S09 | Successful cart add | Valid child selection reaches the expected cart result | **P** PL08 | **S** Shared PPB cart path only | **P** HS08 | **S** Shared PPB cart path only |
 | S10 | Blocked cart add | Invalid selection cannot create a cart mutation | **P** PL02/PL08 | **S** Intermediate validation proven, cart mutation not isolated | **P** HS08/HS10 | **S** Final validation proven, cart mutation not isolated |
 | S11 | Child properties and parent transform | Offer ID, component data, parent line, and visible metadata match EB semantics | **P** PL08 | **S** HS shared contract only | **P** HS08 | **S** HS shared contract only |
@@ -207,18 +207,23 @@ toggle or alternate-value behavior.
 | Q06 | Console and app-owned request health | No unexplained app-owned errors in each feature replay | **S** Captured for selected rows | **S** Captured for selected rows | **P** HS07/HS08 | **P** VS11 |
 | Q07 | Theme typography and selector leakage | Theme styles do not distort the template | **S** Visual states proven; systematic computed sweep absent | **S** Visual states proven; systematic computed sweep absent | **P** HS01/HS02/HS04 | **S** Visual states proven; systematic computed sweep absent |
 
-## Current Reconciliation Result
+## Final Reconciliation Result
 
-The existing work proves the default visual and interaction lanes, including
-the reopened product-card, modal-card, and toast corrections. It does **not**
-prove full PPB feature parity.
+The final storefront visual pass proves the template shells, product-card and
+modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
+template isolation, and the current desktop/mobile fixtures. Product Grid PG09
+also closes grouped-variant and category-scoped reload presentation.
 
-Initial evidence counts across the 119 feature rows:
+The remaining **S** and **T** cells are final deferred statuses for non-visual
+configuration permutations or feature-specific functional proof. They are not
+silently promoted to Proven and are not blockers for this visual closeout.
+
+Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Product List | 36 | 10 | 59 | 2 | 0 | 12 |
-| Product Grid | 27 | 14 | 66 | 0 | 0 | 12 |
+| Product Grid | 29 | 12 | 66 | 0 | 0 | 12 |
 | Horizontal Slots | 47 | 7 | 61 | 0 | 3 | 1 |
 | Vertical Slots | 33 | 15 | 68 | 0 | 2 | 1 |
 
@@ -238,11 +243,13 @@ High-risk missing evidence is concentrated in:
 7. alternate global PPB control values and localized/custom text;
 8. direct Vertical Slots inventory, variant, modal-focus, and delayed-load proof.
 
-Until those rows are resolved, the correct overall status is **Reopened**.
+Those rows require a separate functional-parity goal if they are resumed. The
+storefront visual parity goal is closed with their current matrix statuses
+preserved as the handoff ledger.
 
-## Execution Order
+## Deferred Functional Follow-on
 
-Work in deterministic slices. For each row, inspect EB help content first,
+If the deferred rows are resumed, work in deterministic slices. For each row, inspect EB help content first,
 configure EB through Admin, capture EB desktop/mobile truth, mirror WPB, record
 the persisted/runtime values, exercise the behavior, and only then decide
 whether implementation is required.

@@ -88,15 +88,17 @@ Unsupported conditions:
 
 Each category's rules are configured independently.
 
-## FPB Step Flow Configuration
+## FPB and PPB Step Flow Configuration
 
-These Step Flow notes are scoped to EB Landing Page Bundles, also called FPB in WPB. They must not be treated as confirmed PPB behavior unless separately verified.
+These Step Flow notes apply to EB Landing Page Bundles and Product Page
+Bundles. The hierarchy and navigation guidance was reverified from the live PPB
+Step Flow and Categories help articles on 2026-07-13.
 
 EB FPB Step Flow defines the bundle architecture before the merchant configures detailed steps, categories, products, rules, discounts, and design.
 
 ### Steps and Categories Hierarchy
 
-These Categories notes are scoped to EB Landing Page Bundles, also called FPB in WPB. They must not be treated as confirmed PPB behavior unless separately verified.
+The same hierarchy is used by both EB bundle families.
 
 EB FPB organizes products with a strict hierarchy:
 
@@ -933,6 +935,25 @@ active so it can explain the unmet rule. In the confirmed minimum-two fixture it
 shows `Add at least 02 products on this step` in a fixed, bottom-aligned,
 non-dismissible toast. Disabling the action suppresses required feedback and is
 not EB-compatible.
+
+The same fixture also confirms Product Grid selection restoration. After
+switching the configured template from Vertical Slots to Product Grid without
+clearing the offer-scoped session cart and then performing a cache-bypassed hard
+reload, EB retained `18k Pedal Ring - 10 x 1`, the `Added x1` card action, one
+selected bundle item, and a total of `₹399`. The grouped card's visible variant
+selector reset to `6` even though the restored selected item remained variant
+`10`; selection identity therefore comes from the stored cart state, not from
+the selector's initial visual value.
+
+Product Grid selected-card state is category-scoped when the same product or
+variant is configured in more than one category. In the confirmed fixture,
+variant `10` selected from Category 1 remained in the selected-items summary,
+but the Category 2 card for that same sole configured variant rendered `Add +`.
+Returning to Category 1 restored `Added x1`. Changing the grouped selector from
+its reset value `6` to `9` made the card action `Add +` without removing stored
+variant `10`; activating it added `18k Pedal Ring - 9` as a second, independently
+identified selected item. Product Grid card state therefore depends on both the
+current card variant and the category that owns the selection.
 
 ### PPB modal header, toast, and filled-row contract
 

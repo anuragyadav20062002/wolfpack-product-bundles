@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.171
+ * Version : 5.0.172
  * Built   : 2026-07-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.171';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.172';
 (function() {
   'use strict';
 
@@ -4524,6 +4524,7 @@ initializeDataStructures() {
   const stepsCount = this.selectedBundle.steps.length;
 
   this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
+  this.selectedProductCategoryIndexes = Array(stepsCount).fill(null).map(() => ({}));
 
   this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
   this._stepFetchFailed = {};
@@ -5061,6 +5062,9 @@ renderFullPageLayout() {
 clearStepSelections(stepIndex) {
 
   this.selectedProducts[stepIndex] = {};
+  if (this.selectedProductCategoryIndexes) {
+    this.selectedProductCategoryIndexes[stepIndex] = {};
+  }
   if (stepIndex === 0 && this.directDefaultProducts.length > 0) {
     this.directDefaultProducts.forEach(product => {
       this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);
@@ -6491,6 +6495,52 @@ function getCascadeSoleVariantDisplayProduct(product = {}) {
   return { ...product, variantTitle: soleVariantTitle };
 }
 
+function resolveInpageProductSelection(
+  product = {},
+  stepSelections = {},
+  normalizeSelectionKey = (value) => String(value || ''),
+  selectedProductCategoryIndexes = {},
+  activeCategoryIndex = null,
+) {
+  const defaultSelectionKey = product.variantId || product.id || '';
+  const candidateIds = [defaultSelectionKey, product.id, product.productId];
+  if (Array.isArray(product.variants)) {
+    candidateIds.push(...product.variants.map((variant) => variant.id));
+  }
+
+  const normalizedCandidates = new Set(
+    candidateIds.map(normalizeSelectionKey).filter(Boolean),
+  );
+  const restoredEntry = Object.entries(stepSelections || {}).find(
+    ([selectionKey, rawQuantity]) => (
+      Number(rawQuantity) > 0
+      && normalizedCandidates.has(normalizeSelectionKey(selectionKey))
+    ),
+  );
+
+  if (restoredEntry) {
+    const normalizedSelectionKey = normalizeSelectionKey(restoredEntry[0]);
+    const categoryOwnerEntry = Object.entries(selectedProductCategoryIndexes || {}).find(
+      ([selectionKey]) => normalizeSelectionKey(selectionKey) === normalizedSelectionKey,
+    );
+    const categoryOwner = categoryOwnerEntry ? Number(categoryOwnerEntry[1]) : null;
+    const belongsToActiveCategory = (
+      activeCategoryIndex === null
+      || categoryOwner === null
+      || categoryOwner === activeCategoryIndex
+    );
+    return {
+      selectionKey: restoredEntry[0],
+      quantity: belongsToActiveCategory ? Number(restoredEntry[1]) || 0 : 0,
+    };
+  }
+
+  return {
+    selectionKey: defaultSelectionKey,
+    quantity: 0,
+  };
+}
+
 const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
@@ -6540,8 +6590,19 @@ _renderInpageStepProducts(stepIndex, target) {
   const currencyInfo = CurrencyManager.getCurrencyInfo();
 
   target.innerHTML = products.map(product => {
-    const selectionKey = product.variantId || product.id;
-    const currentQuantity = this.getSelectedQuantity(stepIndex, selectionKey);
+    const directSelectionKey = product.variantId || product.id;
+    const restoredGridSelection = usesGridCards
+      ? resolveInpageProductSelection(
+        product,
+        this.selectedProducts?.[stepIndex],
+        (value) => this.normalizeSelectionKey(value),
+        this.selectedProductCategoryIndexes?.[stepIndex],
+        this.activeInpageCategoryIndexes?.[stepIndex] ?? 0,
+      )
+      : null;
+    const selectionKey = restoredGridSelection?.selectionKey || directSelectionKey;
+    const currentQuantity = restoredGridSelection?.quantity
+      ?? this.getSelectedQuantity(stepIndex, selectionKey);
     const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
     const atMaxStock = available !== null && currentQuantity >= available;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
@@ -6577,7 +6638,7 @@ _renderInpageStepProducts(stepIndex, target) {
 
     if (usesGridCards) {
       return renderSharedProductCard(
-        product,
+        selectionKey === directSelectionKey ? product : { ...product, variantId: selectionKey },
         currentQuantity,
         currencyInfo,
         {
@@ -7352,8 +7413,20 @@ setSelectedQuantity(stepIndex, variantId, quantity) {
     }
   });
 
+  this.selectedProductCategoryIndexes ||= [];
+  this.selectedProductCategoryIndexes[stepIndex] ||= {};
+  Object.keys(this.selectedProductCategoryIndexes[stepIndex]).forEach((productId) => {
+    if (this.normalizeSelectionKey(productId) === normalized) {
+      delete this.selectedProductCategoryIndexes[stepIndex][productId];
+    }
+  });
+
   if (quantity > 0) {
     selectedProducts[normalized] = quantity;
+    this.selectedProductCategoryIndexes[stepIndex][normalized] =
+      this.activeInpageCategoryIndexes?.[stepIndex] ?? 0;
+  } else if (this.selectedProductCategoryIndexes?.[stepIndex]) {
+    delete this.selectedProductCategoryIndexes[stepIndex][normalized];
   }
 
   this._persistSessionSelections?.();
@@ -7609,7 +7682,7 @@ expandProductsByVariant(products) {
 }
 };
 
-const PRODUCT_PAGE_SELECTION_STORAGE_VERSION = 1;
+const PRODUCT_PAGE_SELECTION_STORAGE_VERSION = 2;
 
 function normalizeStepSelections(stepSelections) {
   if (
@@ -7650,13 +7723,72 @@ function normalizeProductPageSessionSelections(payload, stepCount) {
   );
 }
 
+function normalizeProductPageSessionSelectionCategories(
+  payload,
+  normalizedSelections,
+  stepCount,
+) {
+  if (
+    !payload
+    || payload.v !== PRODUCT_PAGE_SELECTION_STORAGE_VERSION
+    || !Array.isArray(payload.selectedProductCategoryIndexes)
+  ) {
+    return null;
+  }
+
+  const count = Math.max(0, Math.floor(Number(stepCount) || 0));
+  return Array.from({ length: count }, (_, stepIndex) => {
+    const stepSelections = normalizedSelections?.[stepIndex] || {};
+    const categoryIndexes = payload.selectedProductCategoryIndexes[stepIndex];
+    if (!categoryIndexes || typeof categoryIndexes !== 'object' || Array.isArray(categoryIndexes)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(categoryIndexes).flatMap(([selectionKey, rawCategoryIndex]) => {
+        const categoryIndex = Number(rawCategoryIndex);
+        if (
+          !Object.prototype.hasOwnProperty.call(stepSelections, selectionKey)
+          || !Number.isInteger(categoryIndex)
+          || categoryIndex < 0
+        ) {
+          return [];
+        }
+        return [[selectionKey, categoryIndex]];
+      }),
+    );
+  });
+}
+
 function createProductPageSessionSelectionPayload(
-  selectedProducts = []
+  selectedProducts = [],
+  selectedProductCategoryIndexes = [],
 ) {
   return {
     v: PRODUCT_PAGE_SELECTION_STORAGE_VERSION,
     selectedProducts: Array.isArray(selectedProducts)
       ? selectedProducts.map(normalizeStepSelections)
+      : [],
+    selectedProductCategoryIndexes: Array.isArray(selectedProductCategoryIndexes)
+      ? selectedProductCategoryIndexes.map((categoryIndexes, stepIndex) => {
+        const stepSelections = normalizeStepSelections(selectedProducts?.[stepIndex]);
+        if (!categoryIndexes || typeof categoryIndexes !== 'object' || Array.isArray(categoryIndexes)) {
+          return {};
+        }
+        return Object.fromEntries(
+          Object.entries(categoryIndexes).flatMap(([selectionKey, rawCategoryIndex]) => {
+            const categoryIndex = Number(rawCategoryIndex);
+            if (
+              !Object.prototype.hasOwnProperty.call(stepSelections, selectionKey)
+              || !Number.isInteger(categoryIndex)
+              || categoryIndex < 0
+            ) {
+              return [];
+            }
+            return [[selectionKey, categoryIndex]];
+          }),
+        );
+      })
       : [],
   };
 }
@@ -7676,6 +7808,7 @@ const ProductPageSelectionPersistenceMethods = {
 
   _restoreSessionSelections() {
     let restoredSelections = null;
+    let parsedPayload = null;
 
     try {
       const storage = this._getProductPageSelectionStorage();
@@ -7683,8 +7816,9 @@ const ProductPageSelectionPersistenceMethods = {
       const rawValue =
         storage && storageKey ? storage.getItem(storageKey) : null;
       if (rawValue) {
+        parsedPayload = JSON.parse(rawValue);
         restoredSelections = normalizeProductPageSessionSelections(
-          JSON.parse(rawValue),
+          parsedPayload,
           this.selectedBundle?.steps?.length
         );
       }
@@ -7693,11 +7827,22 @@ const ProductPageSelectionPersistenceMethods = {
     }
 
     if (restoredSelections) {
+      const restoredCategoryIndexes = normalizeProductPageSessionSelectionCategories(
+        parsedPayload,
+        restoredSelections,
+        this.selectedBundle?.steps?.length,
+      ) || restoredSelections.map(() => ({}));
       this.selectedProducts = restoredSelections.map(
         (stepSelections, stepIndex) => ({
           ...(this.selectedProducts?.[stepIndex] || {}),
           ...stepSelections,
         })
+      );
+      this.selectedProductCategoryIndexes = restoredCategoryIndexes.map(
+        (categoryIndexes, stepIndex) => ({
+          ...(this.selectedProductCategoryIndexes?.[stepIndex] || {}),
+          ...categoryIndexes,
+        }),
       );
     }
 
@@ -7716,7 +7861,10 @@ const ProductPageSelectionPersistenceMethods = {
       storage.setItem(
         storageKey,
         JSON.stringify(
-          createProductPageSessionSelectionPayload(this.selectedProducts)
+          createProductPageSessionSelectionPayload(
+            this.selectedProducts,
+            this.selectedProductCategoryIndexes,
+          )
         )
       );
       return true;
@@ -9190,6 +9338,7 @@ class BundleWidgetProductPage {
     this.container = containerElement;
     this.selectedBundle = null;
     this.selectedProducts = [];
+    this.selectedProductCategoryIndexes = [];
     this.stepProductData = [];
     this.directDefaultProducts = [];
     this.activeInpageCategoryIndexes = {};

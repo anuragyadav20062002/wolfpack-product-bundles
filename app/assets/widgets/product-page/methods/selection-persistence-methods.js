@@ -1,4 +1,4 @@
-const PRODUCT_PAGE_SELECTION_STORAGE_VERSION = 1;
+const PRODUCT_PAGE_SELECTION_STORAGE_VERSION = 2;
 
 function normalizeStepSelections(stepSelections) {
   if (
@@ -39,13 +39,72 @@ export function normalizeProductPageSessionSelections(payload, stepCount) {
   );
 }
 
+export function normalizeProductPageSessionSelectionCategories(
+  payload,
+  normalizedSelections,
+  stepCount,
+) {
+  if (
+    !payload
+    || payload.v !== PRODUCT_PAGE_SELECTION_STORAGE_VERSION
+    || !Array.isArray(payload.selectedProductCategoryIndexes)
+  ) {
+    return null;
+  }
+
+  const count = Math.max(0, Math.floor(Number(stepCount) || 0));
+  return Array.from({ length: count }, (_, stepIndex) => {
+    const stepSelections = normalizedSelections?.[stepIndex] || {};
+    const categoryIndexes = payload.selectedProductCategoryIndexes[stepIndex];
+    if (!categoryIndexes || typeof categoryIndexes !== 'object' || Array.isArray(categoryIndexes)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(categoryIndexes).flatMap(([selectionKey, rawCategoryIndex]) => {
+        const categoryIndex = Number(rawCategoryIndex);
+        if (
+          !Object.prototype.hasOwnProperty.call(stepSelections, selectionKey)
+          || !Number.isInteger(categoryIndex)
+          || categoryIndex < 0
+        ) {
+          return [];
+        }
+        return [[selectionKey, categoryIndex]];
+      }),
+    );
+  });
+}
+
 export function createProductPageSessionSelectionPayload(
-  selectedProducts = []
+  selectedProducts = [],
+  selectedProductCategoryIndexes = [],
 ) {
   return {
     v: PRODUCT_PAGE_SELECTION_STORAGE_VERSION,
     selectedProducts: Array.isArray(selectedProducts)
       ? selectedProducts.map(normalizeStepSelections)
+      : [],
+    selectedProductCategoryIndexes: Array.isArray(selectedProductCategoryIndexes)
+      ? selectedProductCategoryIndexes.map((categoryIndexes, stepIndex) => {
+        const stepSelections = normalizeStepSelections(selectedProducts?.[stepIndex]);
+        if (!categoryIndexes || typeof categoryIndexes !== 'object' || Array.isArray(categoryIndexes)) {
+          return {};
+        }
+        return Object.fromEntries(
+          Object.entries(categoryIndexes).flatMap(([selectionKey, rawCategoryIndex]) => {
+            const categoryIndex = Number(rawCategoryIndex);
+            if (
+              !Object.prototype.hasOwnProperty.call(stepSelections, selectionKey)
+              || !Number.isInteger(categoryIndex)
+              || categoryIndex < 0
+            ) {
+              return [];
+            }
+            return [[selectionKey, categoryIndex]];
+          }),
+        );
+      })
       : [],
   };
 }
@@ -65,6 +124,7 @@ export const ProductPageSelectionPersistenceMethods = {
 
   _restoreSessionSelections() {
     let restoredSelections = null;
+    let parsedPayload = null;
 
     try {
       const storage = this._getProductPageSelectionStorage();
@@ -72,8 +132,9 @@ export const ProductPageSelectionPersistenceMethods = {
       const rawValue =
         storage && storageKey ? storage.getItem(storageKey) : null;
       if (rawValue) {
+        parsedPayload = JSON.parse(rawValue);
         restoredSelections = normalizeProductPageSessionSelections(
-          JSON.parse(rawValue),
+          parsedPayload,
           this.selectedBundle?.steps?.length
         );
       }
@@ -82,11 +143,22 @@ export const ProductPageSelectionPersistenceMethods = {
     }
 
     if (restoredSelections) {
+      const restoredCategoryIndexes = normalizeProductPageSessionSelectionCategories(
+        parsedPayload,
+        restoredSelections,
+        this.selectedBundle?.steps?.length,
+      ) || restoredSelections.map(() => ({}));
       this.selectedProducts = restoredSelections.map(
         (stepSelections, stepIndex) => ({
           ...(this.selectedProducts?.[stepIndex] || {}),
           ...stepSelections,
         })
+      );
+      this.selectedProductCategoryIndexes = restoredCategoryIndexes.map(
+        (categoryIndexes, stepIndex) => ({
+          ...(this.selectedProductCategoryIndexes?.[stepIndex] || {}),
+          ...categoryIndexes,
+        }),
       );
     }
 
@@ -105,7 +177,10 @@ export const ProductPageSelectionPersistenceMethods = {
       storage.setItem(
         storageKey,
         JSON.stringify(
-          createProductPageSessionSelectionPayload(this.selectedProducts)
+          createProductPageSessionSelectionPayload(
+            this.selectedProducts,
+            this.selectedProductCategoryIndexes,
+          )
         )
       );
       return true;

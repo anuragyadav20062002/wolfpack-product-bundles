@@ -1,7 +1,7 @@
 # Product Grid Completion Audit
 
 Date: 2026-07-13
-Status: Re-accepted for scoped Product Grid rows after PG08; canonical PPB feature matrix reopened
+Status: Accepted for storefront visual parity through PG09; functional matrix gaps deferred
 
 | Requirement group | Status | Evidence |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ Status: Re-accepted for scoped Product Grid rows after PG08; canonical PPB featu
 | Loading at final tracks | Proven | PG05 proves the COGNIVE skeleton occupies the final Grid tracks on desktop/mobile. |
 | Overflow and placement matrix | Proven | PG08 re-proves the current implementation at 360, 390, 768, and 1440px with zero horizontal overflow. Full-width section remains inapplicable under product-form ownership proven by HSP1. |
 | Cross-template regression | Proven | Final live dispatch/leakage sweep and 25-suite focused pass. |
-| Restoration | Proven | PG08 leaves WPB on Product Grid for the next explicit template transition; no fixture restoration claim is required mid-sequence. |
+| Restoration | Proven | PG09 directly proves category-scoped grouped-variant restoration on desktop/mobile with widget `5.0.172`. |
 
 Product Grid satisfies the per-template completion criteria in
 `broader-PPB-template-parity.md`.

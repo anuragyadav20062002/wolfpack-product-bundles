@@ -146,8 +146,20 @@ setSelectedQuantity(stepIndex, variantId, quantity) {
     }
   });
 
+  this.selectedProductCategoryIndexes ||= [];
+  this.selectedProductCategoryIndexes[stepIndex] ||= {};
+  Object.keys(this.selectedProductCategoryIndexes[stepIndex]).forEach((productId) => {
+    if (this.normalizeSelectionKey(productId) === normalized) {
+      delete this.selectedProductCategoryIndexes[stepIndex][productId];
+    }
+  });
+
   if (quantity > 0) {
     selectedProducts[normalized] = quantity;
+    this.selectedProductCategoryIndexes[stepIndex][normalized] =
+      this.activeInpageCategoryIndexes?.[stepIndex] ?? 0;
+  } else if (this.selectedProductCategoryIndexes?.[stepIndex]) {
+    delete this.selectedProductCategoryIndexes[stepIndex][normalized];
   }
 
   this._persistSessionSelections?.();

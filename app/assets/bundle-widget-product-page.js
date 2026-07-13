@@ -137,6 +137,7 @@ class BundleWidgetProductPage {
     this.container = containerElement;
     this.selectedBundle = null;
     this.selectedProducts = [];
+    this.selectedProductCategoryIndexes = [];
     this.stepProductData = [];
     this.directDefaultProducts = [];
     this.activeInpageCategoryIndexes = {};

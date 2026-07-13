@@ -61,6 +61,52 @@ export function getCascadeSoleVariantDisplayProduct(product = {}) {
   return { ...product, variantTitle: soleVariantTitle };
 }
 
+export function resolveInpageProductSelection(
+  product = {},
+  stepSelections = {},
+  normalizeSelectionKey = (value) => String(value || ''),
+  selectedProductCategoryIndexes = {},
+  activeCategoryIndex = null,
+) {
+  const defaultSelectionKey = product.variantId || product.id || '';
+  const candidateIds = [defaultSelectionKey, product.id, product.productId];
+  if (Array.isArray(product.variants)) {
+    candidateIds.push(...product.variants.map((variant) => variant.id));
+  }
+
+  const normalizedCandidates = new Set(
+    candidateIds.map(normalizeSelectionKey).filter(Boolean),
+  );
+  const restoredEntry = Object.entries(stepSelections || {}).find(
+    ([selectionKey, rawQuantity]) => (
+      Number(rawQuantity) > 0
+      && normalizedCandidates.has(normalizeSelectionKey(selectionKey))
+    ),
+  );
+
+  if (restoredEntry) {
+    const normalizedSelectionKey = normalizeSelectionKey(restoredEntry[0]);
+    const categoryOwnerEntry = Object.entries(selectedProductCategoryIndexes || {}).find(
+      ([selectionKey]) => normalizeSelectionKey(selectionKey) === normalizedSelectionKey,
+    );
+    const categoryOwner = categoryOwnerEntry ? Number(categoryOwnerEntry[1]) : null;
+    const belongsToActiveCategory = (
+      activeCategoryIndex === null
+      || categoryOwner === null
+      || categoryOwner === activeCategoryIndex
+    );
+    return {
+      selectionKey: restoredEntry[0],
+      quantity: belongsToActiveCategory ? Number(restoredEntry[1]) || 0 : 0,
+    };
+  }
+
+  return {
+    selectionKey: defaultSelectionKey,
+    quantity: 0,
+  };
+}
+
 export const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
@@ -110,8 +156,19 @@ _renderInpageStepProducts(stepIndex, target) {
   const currencyInfo = CurrencyManager.getCurrencyInfo();
 
   target.innerHTML = products.map(product => {
-    const selectionKey = product.variantId || product.id;
-    const currentQuantity = this.getSelectedQuantity(stepIndex, selectionKey);
+    const directSelectionKey = product.variantId || product.id;
+    const restoredGridSelection = usesGridCards
+      ? resolveInpageProductSelection(
+        product,
+        this.selectedProducts?.[stepIndex],
+        (value) => this.normalizeSelectionKey(value),
+        this.selectedProductCategoryIndexes?.[stepIndex],
+        this.activeInpageCategoryIndexes?.[stepIndex] ?? 0,
+      )
+      : null;
+    const selectionKey = restoredGridSelection?.selectionKey || directSelectionKey;
+    const currentQuantity = restoredGridSelection?.quantity
+      ?? this.getSelectedQuantity(stepIndex, selectionKey);
     const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
     const atMaxStock = available !== null && currentQuantity >= available;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
@@ -147,7 +204,7 @@ _renderInpageStepProducts(stepIndex, target) {
 
     if (usesGridCards) {
       return renderSharedProductCard(
-        product,
+        selectionKey === directSelectionKey ? product : { ...product, variantId: selectionKey },
         currentQuantity,
         currencyInfo,
         {
