@@ -28,9 +28,9 @@ Status: In progress — completion is not yet proven.
 | 1280x800, 1440x900, 768x1024, 390x844, 360x800 | Proven | HS02/HS09. |
 | Default product-information placement | Proven | Real mounted WPB/EB product pages in HS09. |
 | 300px and 360px placement behavior | Proven | Real 300/360-era measurements plus fluid-source correction in HS09. |
-| Approximately 520px placement | Missing | No real mounted 520px host proof. Synthetic width overrides are not accepted. |
-| Full-width/section placement | Missing | No real theme/editor placement proof. |
-| No overflow/clipping/overlap and reachable controls | Proven for captured matrix | HS02, HS09, HS17, HSS1. Must be repeated for remaining real placements. |
+| Approximately 520px placement | Proven | HSP1 uses the saved Horizon Equal columns setting for a real 520.5px widget mount at 1180x800; no synthetic host or width override. |
+| Full-width/section placement | Not applicable, constraint proven | HSP1 saves a real new Apps section and proves runtime relocation into the EB-aligned native product-form footprint; the temporary section is then removed. |
+| No overflow/clipping/overlap and reachable controls | Proven | HS02, HS09, HS17, HSS1, and HSP1 cover the viewport matrix plus the real 520.5px mount and responsive picker. |
 
 ## Runtime behavior
 
@@ -66,6 +66,6 @@ Status: In progress — completion is not yet proven.
 
 ## Current completion decision
 
-Horizontal Slots is not complete. The missing live fixture states, real
-wide/full-width placements, and current cross-template regression prevent
-acceptance under `broader-PPB-template-parity.md`.
+Horizontal Slots is not complete. The missing live image fixture states and
+current cross-template regression prevent acceptance under
+`broader-PPB-template-parity.md`.
