@@ -109,7 +109,27 @@ export const modalSlotTemplateMethods = {
     const requiredCount = ['greater_than', 'gt', '>'].includes(operator)
       ? rawRequired + 1
       : rawRequired;
-    const emptyCount = Math.max(0, requiredCount - selectedCount);
+    const isOpenEnded = [
+      'greater_than',
+      'gt',
+      '>',
+      'greater_than_or_equal_to',
+      'greater_than_equal_to',
+      'gte',
+      '>=',
+    ].includes(operator);
+    let emptyCount = Math.max(0, requiredCount - selectedCount);
+
+    if (isOpenEnded) {
+      this._modalSlotCapacityByStep ||= {};
+      const capacity = Math.max(
+        this._modalSlotCapacityByStep[stepIndex] || 0,
+        requiredCount,
+        selectedCount + 1
+      );
+      this._modalSlotCapacityByStep[stepIndex] = capacity;
+      emptyCount = capacity - selectedCount;
+    }
 
     for (let offset = 0; offset < emptyCount; offset += 1) {
       target.appendChild(this.createEmptyStateCard(

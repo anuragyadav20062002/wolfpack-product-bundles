@@ -34,6 +34,18 @@ describe('PPB Horizontal Slots empty placeholders', () => {
       selectedCount: 0,
       labels: ['Product 1', 'Product 2', 'Product 3'],
     },
+    {
+      name: 'keeps the next slot open when a minimum target is reached',
+      step: { name: 'Step 1', conditionOperator: 'greater_than_or_equal_to', conditionValue: 2 },
+      selectedCount: 2,
+      labels: ['Product 3'],
+    },
+    {
+      name: 'keeps the next slot open after selection exceeds a minimum target',
+      step: { name: 'Step 1', conditionOperator: 'greater_than_or_equal_to', conditionValue: 2 },
+      selectedCount: 3,
+      labels: ['Product 4'],
+    },
   ])('$name', ({ step, selectedCount, labels }) => {
     const target = createFakeElement('div');
     const widget = createWidget();
@@ -41,6 +53,37 @@ describe('PPB Horizontal Slots empty placeholders', () => {
     widget._appendModalSlotEmptyCards(target, step, 0, selectedCount);
 
     expect(target.children.map((card: any) => card.children.at(-1)?.textContent)).toEqual(labels);
+  });
+
+  it('retains expanded slot capacity after selections are removed', () => {
+    const widget = createWidget();
+    const step = { name: 'Step 1', conditionOperator: 'greater_than_or_equal_to', conditionValue: 2 };
+
+    widget._appendModalSlotEmptyCards(createFakeElement('div'), step, 0, 3);
+
+    const target = createFakeElement('div');
+    widget._appendModalSlotEmptyCards(target, step, 0, 0);
+
+    expect(target.children.map((card: any) => card.children.at(-1)?.textContent)).toEqual([
+      'Product 1',
+      'Product 2',
+      'Product 3',
+      'Product 4',
+    ]);
+  });
+
+  it('does not append an overflow slot when an exact target is reached', () => {
+    const target = createFakeElement('div');
+    const widget = createWidget();
+
+    widget._appendModalSlotEmptyCards(
+      target,
+      { name: 'Step 2', conditionOperator: 'equal_to', conditionValue: 1 },
+      1,
+      1
+    );
+
+    expect(target.children).toEqual([]);
   });
 });
 

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.158
+ * Version : 5.0.159
  * Built   : 2026-07-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.158';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.159';
 (function() {
   'use strict';
 
@@ -3700,7 +3700,27 @@ const modalSlotTemplateMethods = {
     const requiredCount = ['greater_than', 'gt', '>'].includes(operator)
       ? rawRequired + 1
       : rawRequired;
-    const emptyCount = Math.max(0, requiredCount - selectedCount);
+    const isOpenEnded = [
+      'greater_than',
+      'gt',
+      '>',
+      'greater_than_or_equal_to',
+      'greater_than_equal_to',
+      'gte',
+      '>=',
+    ].includes(operator);
+    let emptyCount = Math.max(0, requiredCount - selectedCount);
+
+    if (isOpenEnded) {
+      this._modalSlotCapacityByStep ||= {};
+      const capacity = Math.max(
+        this._modalSlotCapacityByStep[stepIndex] || 0,
+        requiredCount,
+        selectedCount + 1
+      );
+      this._modalSlotCapacityByStep[stepIndex] = capacity;
+      emptyCount = capacity - selectedCount;
+    }
 
     for (let offset = 0; offset < emptyCount; offset += 1) {
       target.appendChild(this.createEmptyStateCard(
@@ -6044,14 +6064,11 @@ renderProductPageLayout() {
             }
           }
         });
-
-        if (!this.validateStep(stepIndex)) {
-          const totalQty = selectedEntries.reduce((sum, [, qty]) => sum + qty, 0);
-          if (this._isProductPageModalSlotTemplate()) {
-            this._appendModalSlotEmptyCards(target, step, stepIndex, totalQty);
-          } else {
-            target.appendChild(this.createAddMoreCard(step, stepIndex, totalQty));
-          }
+        const totalQty = selectedEntries.reduce((sum, [, qty]) => sum + qty, 0);
+        if (this._isProductPageModalSlotTemplate()) {
+          this._appendModalSlotEmptyCards(target, step, stepIndex, totalQty);
+        } else if (!this.validateStep(stepIndex)) {
+          target.appendChild(this.createAddMoreCard(step, stepIndex, totalQty));
         }
       } else {
         if (this._isProductPageModalSlotTemplate()) {

@@ -870,6 +870,25 @@ live EB proof shows a Classic-only content or presentation difference.
 
 `PDP_INPAGE` vs `PDP_MODAL` is a binary dispatch: inpage uses `gbbMix.templates`, modal uses `gbbMix.gbbMixAndMatchBundle`. `SIMPLIFIED` has zero occurrences in widget JS — its visual differentiation from `MODAL` is driven by `renderFilledSlotsAsHorizontalStacked` → CSS class `gbbMixProductPageCategoriesWrapperHStacked` / `VStacked`.
 
+### PPB modal-slot capacity by quantity operator
+
+Live Horizontal Slots evidence on 2026-07-13 confirms that modal-slot capacity
+depends on the step rule operator:
+
+- A minimum rule (`greaterThanOrEqualTo`) stays open-ended. Reaching the minimum
+  exposes the next numbered empty slot; selecting beyond it continues growing
+  capacity one slot ahead of the selection count.
+- Expanded minimum-rule capacity persists when products are removed during the
+  same storefront session. A hard reload resets it to the configured minimum.
+- An exact rule (`equalTo`) stops at its configured quantity and does not expose
+  an overflow slot after the rule is satisfied.
+
+In the confirmed two-step fixture, Step 1 (`>= 2`) grew through `Product 4` after
+three selections and retained four empty slots after removal. Step 2 (`= 1`)
+rendered no `Product 2` after selection and returned to one empty slot after
+removal. This is behavior, not merely presentation: both the modal and final
+widget permit the extra minimum-rule selection.
+
 ---
 
 ## Storefront Runtime

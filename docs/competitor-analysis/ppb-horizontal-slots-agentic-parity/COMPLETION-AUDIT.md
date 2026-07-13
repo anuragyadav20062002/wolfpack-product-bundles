@@ -19,7 +19,7 @@ Status: In progress — completion is not yet proven.
 | Percentage discount progression | Proven | HS06 plus HSS1. |
 | No-discount state | Missing | Current dedicated fixture has active 5%/10% tiers. |
 | Empty/one/multiple/exact states | Proven | HS00, HS05, HS06. |
-| Over-target and maximum/overflow selection | Partial | Three-item combined flow is proven, but an explicit over-target Step 1 and maximum selected-slot stress state is missing. |
+| Over-target and maximum/overflow selection | Proven | HSS3 proves minimum-rule overflow through three Step 1 products, dynamic Product 4 reachability, four filled cards, retained capacity after removal, exact-rule termination, and reload reset on 5.0.159. |
 
 ## Placement and responsive matrix
 
