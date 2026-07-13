@@ -10,6 +10,12 @@ function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
 
+export function resolveSelectedSlotTitle(title, isVertical) {
+  const normalizedTitle = String(title || '');
+  if (isVertical || normalizedTitle.length <= 25) return normalizedTitle;
+  return `${normalizedTitle.substring(0, 25)}...`;
+}
+
 function renderInpageProductLoadingRows(rowCount = 3) {
   const rows = Array.from({ length: rowCount }, (_, index) => `
     <div class="bw-ppb-inpage-loading-row" aria-hidden="true" data-loading-row="${index + 1}">
@@ -304,29 +310,17 @@ createSelectedProductCard(item, cardIndex) {
   // Product title at bottom
   const productTitle = document.createElement('p');
   productTitle.className = 'step-name step-name-completed product-title-state';
-  // Truncate long titles
-  const displayTitle = product.title.length > 25
-    ? product.title.substring(0, 25) + '...'
-    : product.title;
+  const displayTitle = resolveSelectedSlotTitle(
+    product.title,
+    this._usesVerticalModalSlotLayout?.() === true,
+  );
   productTitle.textContent = displayTitle;
   productTitle.title = product.title; // Full title on hover
   stepBox.appendChild(productTitle);
 
-  // Add click handler - check if step limit is reached before opening modal
-  stepBox.addEventListener('click', () => {
-    // If step has a limit of 1 and is already fulfilled, show toast instead of opening modal
-    const stepData = this.selectedBundle.steps[stepIndex];
-    if (stepData && stepData.conditionValue && stepData.conditionOperator) {
-      const isLimitOne = stepData.conditionValue === 1 &&
-        (stepData.conditionOperator === BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO ||
-         stepData.conditionOperator === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO);
-      if (isLimitOne && this.validateStep(stepIndex)) {
-        ToastManager.show('Product limit reached for this step.');
-        return;
-      }
-    }
-    this.openModal(stepIndex);
-  });
+  // Filled slots stay editable. Selection validation still runs inside the
+  // picker, while reopening lets shoppers replace an exact-one choice.
+  stepBox.addEventListener('click', () => this.openModal(stepIndex));
 
   return stepBox;
 },
@@ -439,7 +433,10 @@ createFreeGiftSlotCard(step, stepIndex) {
 
       const productTitle = document.createElement('p');
       productTitle.className = 'step-name step-name-completed product-title-state';
-      const displayTitle = product.title.length > 25 ? product.title.substring(0, 25) + '...' : product.title;
+      const displayTitle = resolveSelectedSlotTitle(
+        product.title,
+        this._usesVerticalModalSlotLayout?.() === true,
+      );
       productTitle.textContent = displayTitle;
       stepBox.appendChild(productTitle);
 

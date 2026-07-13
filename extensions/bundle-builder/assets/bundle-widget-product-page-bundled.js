@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.164
+ * Version : 5.0.165
  * Built   : 2026-07-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.164';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.165';
 (function() {
   'use strict';
 
@@ -6250,6 +6250,12 @@ function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
 
+function resolveSelectedSlotTitle(title, isVertical) {
+  const normalizedTitle = String(title || '');
+  if (isVertical || normalizedTitle.length <= 25) return normalizedTitle;
+  return `${normalizedTitle.substring(0, 25)}...`;
+}
+
 function renderInpageProductLoadingRows(rowCount = 3) {
   const rows = Array.from({ length: rowCount }, (_, index) => `
     <div class="bw-ppb-inpage-loading-row" aria-hidden="true" data-loading-row="${index + 1}">
@@ -6534,28 +6540,15 @@ createSelectedProductCard(item, cardIndex) {
 
   const productTitle = document.createElement('p');
   productTitle.className = 'step-name step-name-completed product-title-state';
-
-  const displayTitle = product.title.length > 25
-    ? product.title.substring(0, 25) + '...'
-    : product.title;
+  const displayTitle = resolveSelectedSlotTitle(
+    product.title,
+    this._usesVerticalModalSlotLayout?.() === true,
+  );
   productTitle.textContent = displayTitle;
   productTitle.title = product.title;
   stepBox.appendChild(productTitle);
 
-  stepBox.addEventListener('click', () => {
-
-    const stepData = this.selectedBundle.steps[stepIndex];
-    if (stepData && stepData.conditionValue && stepData.conditionOperator) {
-      const isLimitOne = stepData.conditionValue === 1 &&
-        (stepData.conditionOperator === BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO ||
-         stepData.conditionOperator === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO);
-      if (isLimitOne && this.validateStep(stepIndex)) {
-        ToastManager.show('Product limit reached for this step.');
-        return;
-      }
-    }
-    this.openModal(stepIndex);
-  });
+  stepBox.addEventListener('click', () => this.openModal(stepIndex));
 
   return stepBox;
 },
@@ -6663,7 +6656,10 @@ createFreeGiftSlotCard(step, stepIndex) {
 
       const productTitle = document.createElement('p');
       productTitle.className = 'step-name step-name-completed product-title-state';
-      const displayTitle = product.title.length > 25 ? product.title.substring(0, 25) + '...' : product.title;
+      const displayTitle = resolveSelectedSlotTitle(
+        product.title,
+        this._usesVerticalModalSlotLayout?.() === true,
+      );
       productTitle.textContent = displayTitle;
       stepBox.appendChild(productTitle);
 

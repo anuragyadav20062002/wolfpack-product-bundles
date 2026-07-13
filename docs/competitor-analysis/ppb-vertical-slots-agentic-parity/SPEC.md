@@ -2,8 +2,9 @@
 
 ## Status
 
-In progress. EB-first and WPB desktop empty baselines captured. Mobile,
-interactions, implementation, and regression proof remain open.
+In progress. Empty and filled row contracts, mobile selection/removal,
+progression, discount totals, exact-one replacement, and fixture restoration are
+captured. Desktop filled-state replay and final shared regression remain open.
 
 ## Contract
 
@@ -25,6 +26,8 @@ interactions, implementation, and regression proof remain open.
 | --- | --- | --- | --- | --- |
 | VS00 runtime/empty desktop | `PDP_MODAL + SIMPLIFIED`; `345x60px` rows, `16x16px` icon, `26px` group gap | pre-change `300x104px`; post-change responsive full-width `372.34x60px`, `16x16px` icon, `26px` group gap | fixed at source; width follows the host product column instead of copying EB's store-specific width | Desktop verified |
 | VS01 runtime/empty mobile | `360x60px` rows, `16x16px` icon, 10px labels | `358x60px` rows, `16x16px` icon, 10px labels | host-theme horizontal padding differs by 2px; row contract matches and overflow is zero | Mobile verified at 390x844 |
+| VS02 filled rows | mobile `360x64px`, desktop `345x64px`; 50px media, full title, dynamic Product 3 | pre-change mobile `358x200px`; post-change mobile `358x64px`, desktop responsive `372.34x64px`, 50px media, full title | general modal card styling leaked before fix | Accepted desktop/mobile on 5.0.165 |
+| VS03 progression/remove/replace | two Step 1 products, exact-one Step 2, 5% then 10%, remove reindexes slots, filled exact-one row reopens | equivalent progression/removal; exact-one row was blocked before fix and now reopens/replaces | fixed WPB edit guard | Accepted on mobile; sessions restored empty |
 
 ## Acceptance boundary
 
