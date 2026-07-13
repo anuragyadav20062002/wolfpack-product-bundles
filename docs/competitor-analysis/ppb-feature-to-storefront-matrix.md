@@ -135,7 +135,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | S04 | Validation enabled | Invalid Next/Done/cart action is blocked with EB feedback | **P** PL02 | **P** PG05/PG08 | **P** HS05/HS19 | **P** VS03/VS04 |
 | S05 | Validation disabled | Saved control permits otherwise invalid progression/cart | **T** | **T** | **T** | **T** |
 | S06 | Default/preselected products | Valid defaults initialize; invalid/unavailable defaults resolve safely | **T** | **T** | **T** | **T** |
-| S07 | First load / final-root loading | No native product-form flash; loader occupies final widget target | **P** PLS5 | **P** PG05 | **P** HS07 | **S** Cached path + shared HS07 only |
+| S07 | First load / final-root loading | EB can expose the native product form until its widget asset initializes under constrained network; WPB keeps native controls hidden and loads inside the final widget target | **P** PLS5 | **P** PG05 | **X** HS07 accepted final-root loader architecture | **X** VS10 accepted native-flash prevention |
 | S08 | Hard reload after selection | EB/WPB state-reset or persistence behavior matches | **P** PLS3 | **S** Hard reload proven; selected-state reload not isolated | **P** HSS3 | **S** Session restore noted; reload behavior not isolated |
 | S09 | Successful cart add | Valid child selection reaches the expected cart result | **P** PL08 | **S** Shared PPB cart path only | **P** HS08 | **S** Shared PPB cart path only |
 | S10 | Blocked cart add | Invalid selection cannot create a cart mutation | **P** PL02/PL08 | **S** Intermediate validation proven, cart mutation not isolated | **P** HS08/HS10 | **S** Final validation proven, cart mutation not isolated |
@@ -219,8 +219,8 @@ Initial evidence counts across the 119 feature rows:
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Product List | 37 | 9 | 59 | 2 | 0 | 12 |
 | Product Grid | 27 | 14 | 66 | 0 | 0 | 12 |
-| Horizontal Slots | 49 | 6 | 61 | 0 | 2 | 1 |
-| Vertical Slots | 31 | 18 | 68 | 0 | 1 | 1 |
+| Horizontal Slots | 48 | 6 | 61 | 0 | 3 | 1 |
+| Vertical Slots | 31 | 17 | 68 | 0 | 2 | 1 |
 
 These totals are an evidence inventory, not a product-quality score. One
 feature row can require several value permutations before it becomes Proven.

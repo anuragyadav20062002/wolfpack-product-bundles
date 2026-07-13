@@ -36,7 +36,7 @@ Status: Accepted for scoped Horizontal Slots rows; canonical PPB feature matrix 
 
 | Requirement | Status | Current evidence / remaining proof |
 | --- | --- | --- |
-| Loading and first hard reload | Proven | HS07, including cold proxy and request health. |
+| Loading and first hard reload | Accepted divergence | HS07 proves cold proxy and request health while documenting WPB's intentional final-root loader architecture. |
 | Empty/partial/full slots and slot order | Proven | HS00, HS05, HS15, HSS1. |
 | Picker open/close/header/tabs/categories/footer | Proven | HS01, HS14, HS17. |
 | Product card image/title/price/action hierarchy | Proven | HS02 proves the baseline, compare-at hierarchy, and mixed source ratios; HS18 proves the missing-image fallback at desktop/mobile. |
