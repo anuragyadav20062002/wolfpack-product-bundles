@@ -204,7 +204,7 @@ toggle or alternate-value behavior.
 | Q03 | No overflow/clipping/overlap | Document and component overflow remain zero | **P** | **P** | **P** | **P** |
 | Q04 | Cross-template CSS/DOM isolation | Only the selected shell and stylesheet own the page | **P** PLS6/final regression | **P** final regression | **P** final regression | **P** final regression |
 | Q05 | Keyboard access for core controls | Tab/Enter/Space reach all relevant actions | **T** | **T** | **T** HS17 records missing modal focus containment; full keyboard reachability is unproven | **T** VS09 records missing modal focus containment; full keyboard reachability is unproven |
-| Q06 | Console and app-owned request health | No unexplained app-owned errors in each feature replay | **S** Captured for selected rows | **S** Captured for selected rows | **P** HS07/HS08 | **S** Captured for selected rows |
+| Q06 | Console and app-owned request health | No unexplained app-owned errors in each feature replay | **S** Captured for selected rows | **S** Captured for selected rows | **P** HS07/HS08 | **P** VS11 |
 | Q07 | Theme typography and selector leakage | Theme styles do not distort the template | **S** Visual states proven; systematic computed sweep absent | **S** Visual states proven; systematic computed sweep absent | **P** HS01/HS02/HS04 | **S** Visual states proven; systematic computed sweep absent |
 
 ## Current Reconciliation Result
@@ -220,7 +220,7 @@ Initial evidence counts across the 119 feature rows:
 | Product List | 37 | 9 | 59 | 2 | 0 | 12 |
 | Product Grid | 27 | 14 | 66 | 0 | 0 | 12 |
 | Horizontal Slots | 48 | 6 | 61 | 0 | 3 | 1 |
-| Vertical Slots | 31 | 17 | 68 | 0 | 2 | 1 |
+| Vertical Slots | 32 | 16 | 68 | 0 | 2 | 1 |
 
 These totals are an evidence inventory, not a product-quality score. One
 feature row can require several value permutations before it becomes Proven.
