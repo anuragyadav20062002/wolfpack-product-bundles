@@ -915,6 +915,22 @@ shows `Add at least 02 products on this step` in a fixed, bottom-aligned,
 non-dismissible toast. Disabling the action suppresses required feedback and is
 not EB-compatible.
 
+### PPB modal header, toast, and filled-row contract
+
+Live Horizontal and Vertical Slots evidence on 2026-07-13 confirms that the
+mobile modal shows only the current step title; it does not retain the full
+desktop step rail. Selected product cards show a check marker and `Added xN`,
+with inline quantity controls hidden.
+
+Modal rule-validation feedback is body-owned rather than sheet-owned. The
+settled toast is fixed at the viewport bottom and has no close control. Product
+Grid uses the same non-dismissible validation behavior in its in-page flow.
+
+Vertical filled slots use image, title, remove visual order. In the confirmed
+mobile fixture each filled row was `64px` high with `50px` media and a `20px`
+remove control; minimum rules retain a following empty slot while exact rules
+do not.
+
 ### PPB compare-at price ownership
 
 Live EB Admin evidence on 2026-07-13 places `Show Compare At Price` under the

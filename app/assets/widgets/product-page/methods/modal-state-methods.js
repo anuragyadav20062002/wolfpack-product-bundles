@@ -29,6 +29,13 @@ export function formatProductPageStepValidationToast(step = {}) {
   return `Add ${qualifier} ${String(required).padStart(2, '0')} products on this step`;
 }
 
+export function getProductPageModalValidationToastOptions() {
+  return {
+    dismissible: true,
+    className: 'bundle-toast--modal',
+  };
+}
+
 export const ProductPageModalStateMethods = {
 getFormattedHeaderText() {
   const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];

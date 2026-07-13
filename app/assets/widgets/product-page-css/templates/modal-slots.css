@@ -276,16 +276,27 @@
   .bw-slot-card--filled
   .step-clear-badge {
   position: static;
-  flex: 0 0 32px;
-  width: 32px;
-  height: 32px;
+  order: 3;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 22px;
   margin: 0;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"]
   .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified
   .bw-slot-card--filled
+  .step-clear-badge
+  svg {
+  width: 20px;
+  height: 20px;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"]
+  .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified
+  .bw-slot-card--filled
   .bw-slot-card__image-wrapper {
+  order: 1;
   flex: 0 0 50px;
   width: 50px;
   height: 50px;
@@ -307,6 +318,7 @@
   .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified
   .bw-slot-card--filled
   .step-name {
+  order: 2;
   position: static;
   flex: 1 1 auto;
   min-width: 0;

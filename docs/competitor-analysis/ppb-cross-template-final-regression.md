@@ -1,7 +1,7 @@
 # PPB Cross-Template Final Regression
 
 Date: 2026-07-13
-Widget: `5.0.165`
+Widget: `5.0.168`
 
 ## Live dispatch and leakage sweep
 
@@ -18,6 +18,14 @@ Admin customization flow. Every storefront pass used a cache-bypassed reload at
 
 This proves the current generated bundle contains and dispatches all four
 configs without cross-template shell leakage.
+
+After the VS04 shared modal changes, the authenticated Admin flow was repeated
+on the hot-reloaded dev environment. Cache-bypassed mobile storefront passes
+confirmed `PDP_INPAGE + COGNIVE`, `PDP_MODAL + MODAL` with horizontal
+orientation, `PDP_INPAGE + CASCADE`, and the restored `PDP_MODAL + SIMPLIFIED`
+with vertical orientation. Every pass reported zero document overflow. The
+restored Vertical fixture had zero filled rows and its original three empty
+rows.
 
 ## Real wider placement
 
@@ -44,7 +52,10 @@ request returned the documented default `372.34px` Vertical Slots root.
 
 ## Final focused verification
 
-The PPB-focused command passed 25 suites and 139 tests. It covers registry
+The earlier broad PPB-focused command passed 25 suites and 139 tests. The VS04
+closeout added a 12-suite, 49-test focused pass covering the shared modal toast,
+category behavior, registry mappings, both slot shells, Vertical editing, and
+Product Grid interaction/step flow. Together they cover registry
 dispatch, Grid step flow, modal category behavior, slot capacity, Vertical
 filled-row editing, Product List flow/drawer/cart metadata, inventory,
 compare-at prices, placeholder media, bootstrap placement, and build inclusion.

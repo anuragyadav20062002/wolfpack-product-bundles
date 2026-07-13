@@ -1,7 +1,10 @@
 import { createDefaultLoadingAnimation } from '../../shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from '../../shared/loading-overlay.js';
 import { ToastManager } from '../../../bundle-widget-components.js';
-import { formatProductPageStepValidationToast } from './modal-state-methods.js';
+import {
+  formatProductPageStepValidationToast,
+  getProductPageModalValidationToastOptions,
+} from './modal-state-methods.js';
 
 const MIN_LOADING_OVERLAY_VISIBLE_MS = 180;
 
@@ -169,11 +172,7 @@ async navigateModal(direction) {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
         const message = formatProductPageStepValidationToast(currentStep)
           || 'Please meet the quantity conditions for the current step before proceeding.';
-        ToastManager.show(message, 4000, {
-          container: this.elements.modal,
-          dismissible: false,
-          className: 'bundle-toast--modal',
-        });
+        ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
     } else {
       // Done button clicked on last step
@@ -183,11 +182,7 @@ async navigateModal(direction) {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
         const message = formatProductPageStepValidationToast(currentStep)
           || 'Please meet the quantity conditions for the current step before finishing.';
-        ToastManager.show(message, 4000, {
-          container: this.elements.modal,
-          dismissible: false,
-          className: 'bundle-toast--modal',
-        });
+        ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
     }
   }

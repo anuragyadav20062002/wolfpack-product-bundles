@@ -5,7 +5,10 @@ prior acceptance. Horizontal Slots was re-accepted on dev widget `5.0.166`
 after the HS19 modal-card/toast pass. Product Grid was re-accepted on the
 hot-reloaded dev widget `5.0.167` after PG08 corrected the accordion flow,
 complete card presentation, selected action, and validation toast. Vertical
-Slots remains pending and must be re-audited from the live storefront.
+Slots was re-accepted on hot-reloaded dev widget `5.0.168` after VS04 corrected
+the mobile modal header, body-owned validation toast, and filled-row control
+order. The three requested template lanes are accepted; final cross-template
+regression is complete on the hot-reloaded dev environment.
 
 1. Horizontal Slots
 2. Product Grid

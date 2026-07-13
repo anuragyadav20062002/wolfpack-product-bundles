@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.167
+ * Version : 5.0.168
  * Built   : 2026-07-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.167';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.168';
 (function() {
   'use strict';
 
@@ -5438,6 +5438,13 @@ function formatProductPageStepValidationToast(step = {}) {
   return `Add ${qualifier} ${String(required).padStart(2, '0')} products on this step`;
 }
 
+function getProductPageModalValidationToastOptions() {
+  return {
+    dismissible: true,
+    className: 'bundle-toast--modal',
+  };
+}
+
 const ProductPageModalStateMethods = {
 getFormattedHeaderText() {
   const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
@@ -5821,11 +5828,7 @@ async navigateModal(direction) {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
         const message = formatProductPageStepValidationToast(currentStep)
           || 'Please meet the quantity conditions for the current step before proceeding.';
-        ToastManager.show(message, 4000, {
-          container: this.elements.modal,
-          dismissible: false,
-          className: 'bundle-toast--modal',
-        });
+        ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
     } else {
 
@@ -5835,11 +5838,7 @@ async navigateModal(direction) {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
         const message = formatProductPageStepValidationToast(currentStep)
           || 'Please meet the quantity conditions for the current step before finishing.';
-        ToastManager.show(message, 4000, {
-          container: this.elements.modal,
-          dismissible: false,
-          className: 'bundle-toast--modal',
-        });
+        ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
     }
   }
