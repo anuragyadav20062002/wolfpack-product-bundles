@@ -78,7 +78,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | C03 | Sale + compare-at presentation | Compare-at belongs to the price cluster and follows the saved visibility setting | **S** Price hierarchy covered; toggle/state not isolated | **P** PG08 | **P** HS02 | **S** Shared modal cards only; no VS sale fixture |
 | C04 | Square/tall/wide media | Mixed aspect ratios remain contained | **P** PLS2 | **S** Responsive cards proven; mixed ratios not isolated | **P** HS02 | **S** Shared modal card renderer; no direct VS mixed-ratio replay |
 | C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **T** | **P** PG07 | **P** HS18 | **S** Shared modal fallback only |
-| C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **S** PG03 covers merchant selector, not the full grouped permutation | **P** HS03 | **S** Shared modal path; no direct VS variant replay |
+| C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **S** PG03 covers merchant selector, not the full grouped permutation | **P** HS03 | **P** VS07 |
 | C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **S** Listed in PL03 run, but current evidence proves grouped mode | **T** | **P** HS03 | **T** |
 | C08 | Variant swatches | Saved swatch flag changes selector presentation | **T** | **T** | **T** | **T** |
 | C09 | Sole sellable variant | Omit selector but retain the surviving variant identity | **P** PL04 | **T** | **P** HS04 | **S** Shared modal path only |
@@ -220,7 +220,7 @@ Initial evidence counts across the 119 feature rows:
 | Product List | 37 | 9 | 59 | 2 | 0 | 12 |
 | Product Grid | 27 | 14 | 66 | 0 | 0 | 12 |
 | Horizontal Slots | 51 | 6 | 60 | 0 | 1 | 1 |
-| Vertical Slots | 29 | 22 | 67 | 0 | 0 | 1 |
+| Vertical Slots | 30 | 21 | 67 | 0 | 0 | 1 |
 
 These totals are an evidence inventory, not a product-quality score. One
 feature row can require several value permutations before it becomes Proven.
