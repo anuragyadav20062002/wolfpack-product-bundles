@@ -269,7 +269,7 @@
   .bw-ppb-cognive-footer
   .bw-ppb-cascade-selected-item {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) 28px;
+  grid-template-columns: 32px minmax(0, 1fr) minmax(56px, auto);
   gap: 8px;
   align-items: center;
   min-height: 34px;
