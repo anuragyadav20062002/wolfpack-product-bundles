@@ -16,7 +16,7 @@ The WPB app-proxy bundle response independently confirmed:
 
 EB renders six cards in Category 1. The Pedal Ring is a single product card with a native selector containing variants `6–11`.
 
-Changing the selector from `6` to `8` updates the card's current variant marker, but the current EB modal subsequently returns variant `6` to the slot when Add is activated. This appears to be an EB modal defect; it is documented rather than copied into WPB.
+Changing the selector from `6` to `8`, allowing the state update to settle, and adding the product returns variant `8` to the slot.
 
 ## Pre-change WPB delta
 
@@ -39,4 +39,4 @@ Selecting variant `8` synchronized the WPB card, button, and returned slot to va
 
 ## Result
 
-Grouped versus individual modal rendering is accepted. WPB intentionally retains correct selected-variant identity instead of reproducing EB's observed stale-first-variant return bug.
+Grouped versus individual modal rendering and selected-variant identity are accepted on both EB and WPB.
