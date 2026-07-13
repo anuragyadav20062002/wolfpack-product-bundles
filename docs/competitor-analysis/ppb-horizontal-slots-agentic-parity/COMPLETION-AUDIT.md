@@ -17,7 +17,7 @@ Status: In progress — completion is not yet proven.
 | Square/tall/wide images | Missing | Current products do not prove mixed source-image ratios independently of the fixed card media container. |
 | Missing-image fallback | Missing | No equivalent live missing-image fixture has been established. |
 | Percentage discount progression | Proven | HS06 plus HSS1. |
-| No-discount state | Missing | Current dedicated fixture has active 5%/10% tiers. |
+| No-discount state | Proven | HSS4 disables only the master toggle, proves original totals/no discount UI on EB and WPB 5.0.160, then restores the 5%/10% tiers. |
 | Empty/one/multiple/exact states | Proven | HS00, HS05, HS06. |
 | Over-target and maximum/overflow selection | Proven | HSS3 proves minimum-rule overflow through three Step 1 products, dynamic Product 4 reachability, four filled cards, retained capacity after removal, exact-rule termination, and reload reset on 5.0.159. |
 
@@ -45,7 +45,7 @@ Status: In progress — completion is not yet proven.
 | Selection, remove, replace flow | Proven | HS15/HS16. |
 | Multi-step advance and persistence | Proven | HS05/HSS1. |
 | Backdrop/body lock/internal scroll/focus/Escape | Proven | HS17. |
-| Discount progression and final CTA | Proven for discounted fixture | HS06/HSS1. No-discount state remains missing. |
+| Discount progression and final CTA | Proven | HS06/HSS1 cover active tiers; HSS4 covers disabled pricing with retained rules on 5.0.160. |
 | Validation toast and blocked state | Proven | HS05. |
 | Cart request, transform, metadata | Proven | HS08. |
 | Dynamic checkout | Accepted safety divergence | HS10 documents EB's invalid parent-product bypass and WPB's non-mutating surface. |

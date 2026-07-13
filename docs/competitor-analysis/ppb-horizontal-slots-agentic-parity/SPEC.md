@@ -56,6 +56,7 @@ committed.
 | HSS2 combined narrow mobile | Long content, variant 8, inventory survivor, multi-step, discounts, scrolling, ordered slots, and final CTA captured | Equivalent combined pass captured on 5.0.158 | Step 2 survivor price differs by store | Accepted at 360x800; both fixtures restored empty |
 | HSR1 Product List regression | Current Product List hard reload, long category, grouped variant 8, selected drawer, 5% footer, removal, and zero overflow captured | Equivalent `PDP_INPAGE + CASCADE` pass captured on 5.0.158 | Currency differs by store | Accepted at 360x800; both fixtures restored to empty Horizontal Slots |
 | HSS3 open-ended capacity | Minimum-rule overflow grows to Product 4, exact rule stops at one, removal retains session capacity, reload resets | Equivalent lifecycle captured on 5.0.159 | Missing dynamic next slot and retained capacity fixed | Accepted at 360x800; both fixtures restored empty |
+| HSS4 no discount | Master toggle off preserves rules but renders original totals and no discount UI | Equivalent lifecycle captured on 5.0.160 | Disabled next-rule progress leak fixed | Accepted at 360x800; discount tiers re-enabled and fixtures restored empty |
 
 ## Acceptance boundary
 

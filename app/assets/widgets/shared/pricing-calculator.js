@@ -282,7 +282,7 @@ export class PricingCalculator {
   }
 
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
-    if (!bundle?.pricing?.rules?.length) return null;
+    if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) return null;
 
     const rules = [...bundle.pricing.rules].sort((a, b) =>
       this.getRuleConditionValue(a, this.getDiscountMethod(bundle)) -

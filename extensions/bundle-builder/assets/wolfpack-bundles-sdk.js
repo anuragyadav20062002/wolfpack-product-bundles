@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 5.0.159
+ * Version : 5.0.160
  * Built   : 2026-07-13
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.159';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.160';
 (function (window) {
   'use strict';
 
@@ -1201,7 +1201,7 @@ class PricingCalculator {
   }
 
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
-    if (!bundle?.pricing?.rules?.length) return null;
+    if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) return null;
 
     const rules = [...bundle.pricing.rules].sort((a, b) =>
       this.getRuleConditionValue(a, this.getDiscountMethod(bundle)) -

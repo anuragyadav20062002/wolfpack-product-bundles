@@ -656,6 +656,12 @@ Storefront Product List behavior:
 }
 ```
 
+Disabling the master toggle does not require deleting the saved rule array. Live
+2026-07-13 PPB evidence preserved the 5%/10% rules while emitting
+`isDiscountEnabled: false`; the storefront rendered original totals with no
+progress or percent UI. Consumers must gate both discount calculation and
+next-rule progress lookup on the master enabled flag.
+
 ### Discount & Pricing — Admin UI
 
 The display-option and rule-field observations below were rechecked in the live PPB configure flow on 2026-05-25. Verify FPB visually before treating the layout as identical there.
