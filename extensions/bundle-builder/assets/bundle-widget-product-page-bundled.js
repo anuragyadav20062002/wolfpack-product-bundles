@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.169
+ * Version : 5.0.170
  * Built   : 2026-07-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.169';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.170';
 (function() {
   'use strict';
 
@@ -5066,6 +5066,7 @@ clearStepSelections(stepIndex) {
       this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);
     });
   }
+  this._persistSessionSelections?.();
 
   this._renderDirectDefaultProducts();
   this.renderSteps();
@@ -7354,6 +7355,8 @@ setSelectedQuantity(stepIndex, variantId, quantity) {
   if (quantity > 0) {
     selectedProducts[normalized] = quantity;
   }
+
+  this._persistSessionSelections?.();
 },
 
 getAddonLineDiscount(step) {
@@ -9062,6 +9065,7 @@ class BundleWidgetProductPage {
     this.directDefaultProducts = [];
     this.activeInpageCategoryIndexes = {};
     this.currentStepIndex = 0;
+    this._selectionPersistenceReady = false;
     this.isInitialized = false;
     this.config = {};
     this.elements = {};
@@ -9121,9 +9125,11 @@ class BundleWidgetProductPage {
 
       this.initializeDataStructures();
       this._initDirectDefaultProducts();
+      this._restoreSessionSelections();
       await this._preloadDirectDefaultProducts();
 
       await this._preloadDefaultStepProducts();
+      await this._preloadRestoredSelectionProducts();
 
       this._relocateContainerToProductForm();
       this._hideNativeProductPrice();
@@ -9228,6 +9234,7 @@ Object.assign(
   ProductPageInpageRenderMethods,
   ProductPageProductDataMethods,
   ProductPageSelectionDataMethods,
+  ProductPageSelectionPersistenceMethods,
   ProductPageModalMethods,
   ProductPageSelectionMethods,
   ProductPageCartMethods,

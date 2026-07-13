@@ -21,6 +21,7 @@ clearStepSelections(stepIndex) {
       this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);
     });
   }
+  this._persistSessionSelections?.();
 
   // Update UI
   this._renderDirectDefaultProducts();

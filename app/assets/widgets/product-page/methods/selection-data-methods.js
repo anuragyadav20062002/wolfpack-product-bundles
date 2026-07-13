@@ -149,6 +149,8 @@ setSelectedQuantity(stepIndex, variantId, quantity) {
   if (quantity > 0) {
     selectedProducts[normalized] = quantity;
   }
+
+  this._persistSessionSelections?.();
 },
 
 getAddonLineDiscount(step) {

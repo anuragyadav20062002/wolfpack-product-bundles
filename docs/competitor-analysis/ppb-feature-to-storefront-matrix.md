@@ -136,7 +136,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | S05 | Validation disabled | Saved control permits otherwise invalid progression/cart | **T** | **T** | **T** | **T** |
 | S06 | Default/preselected products | Valid defaults initialize; invalid/unavailable defaults resolve safely | **T** | **T** | **T** | **T** |
 | S07 | First load / final-root loading | EB can expose the native product form until its widget asset initializes under constrained network; WPB keeps native controls hidden and loads inside the final widget target | **P** PLS5 | **P** PG05 | **X** HS07 accepted final-root loader architecture | **X** VS10 accepted native-flash prevention |
-| S08 | Hard reload after selection | EB/WPB state-reset or persistence behavior matches | **P** PLS3 | **S** Hard reload proven; selected-state reload not isolated | **P** HSS3 | **S** Session restore noted; reload behavior not isolated |
+| S08 | Hard reload after selection | EB/WPB state-reset or persistence behavior matches | **S** VS12 shared source; PLS3 did not isolate selected-state reload | **S** VS12 shared source; selected-state replay pending | **S** VS12 shared source; HSS3 proved slot-capacity reset, not selected-state reload | **S** VS12 source fix; widget 5.0.170 served replay pending |
 | S09 | Successful cart add | Valid child selection reaches the expected cart result | **P** PL08 | **S** Shared PPB cart path only | **P** HS08 | **S** Shared PPB cart path only |
 | S10 | Blocked cart add | Invalid selection cannot create a cart mutation | **P** PL02/PL08 | **S** Intermediate validation proven, cart mutation not isolated | **P** HS08/HS10 | **S** Final validation proven, cart mutation not isolated |
 | S11 | Child properties and parent transform | Offer ID, component data, parent line, and visible metadata match EB semantics | **P** PL08 | **S** HS shared contract only | **P** HS08 | **S** HS shared contract only |
@@ -217,9 +217,9 @@ Initial evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 37 | 9 | 59 | 2 | 0 | 12 |
+| Product List | 36 | 10 | 59 | 2 | 0 | 12 |
 | Product Grid | 27 | 14 | 66 | 0 | 0 | 12 |
-| Horizontal Slots | 48 | 6 | 61 | 0 | 3 | 1 |
+| Horizontal Slots | 47 | 7 | 61 | 0 | 3 | 1 |
 | Vertical Slots | 32 | 16 | 68 | 0 | 2 | 1 |
 
 These totals are an evidence inventory, not a product-quality score. One

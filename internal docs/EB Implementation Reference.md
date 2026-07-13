@@ -897,6 +897,23 @@ rendered no `Product 2` after selection and returned to one empty slot after
 removal. This is behavior, not merely presentation: both the modal and final
 widget permit the extra minimum-rule selection.
 
+### PPB selected-product session restoration
+
+Live Vertical Slots evidence on 2026-07-13 confirms that EB restores customer
+product selections across a hard reload in the current storefront tab. For
+offer `MIX-156854`, EB writes equivalent cart payloads to
+`sessionStorage` keys `gbbMixSdk-cart-MIX-156854` and
+`gbbMix-cart-MIX-156854`. The payload includes `selectedCategoriesProducts`,
+`items`, totals, and `itemsTracker`.
+
+The tested bundle had empty `defaultProductsData`. Removing only those two
+offer-scoped keys and hard reloading cleared the visible selection. Selecting
+`18k Pedal Ring / 10` recreated both keys, and the next cache-bypassed hard
+reload restored variant `45038876688580`, quantity `1`, the filled slot, and
+the `Added x1` product-card state. Do not confuse this with modal slot-capacity
+state: open-ended capacity resets to its configured minimum on reload, while
+stored product selections restore.
+
 ### PPB Product Grid interaction and step-flow contract
 
 Live EB Product Grid evidence on 2026-07-13 confirms that `PDP_INPAGE + COGNIVE`
