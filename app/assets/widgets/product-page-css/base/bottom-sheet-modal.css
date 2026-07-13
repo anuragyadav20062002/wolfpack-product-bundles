@@ -53,12 +53,14 @@
 .bw-bs-product-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: minmax(0, 1fr);
   gap: 30px;
   padding: 16px 0 120px;
 }
 
 #bundle-builder-modal.bw-bs-panel .bw-bs-product-grid {
   grid-template-columns: repeat(auto-fit, minmax(228px, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
   gap: 30px;
   padding: 16px 65px 150px;
 }
@@ -157,6 +159,7 @@
   flex-direction: column;
   justify-content: flex-start;
   overflow: visible;
+  align-self: stretch;
 }
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card {
@@ -170,6 +173,8 @@
   gap: 8px;
   padding: 10px;
   min-height: 0;
+  height: 100%;
+  max-height: none;
   text-align: center;
 }
 
@@ -196,8 +201,21 @@
 .bw-bs-panel .modal-body .product-card:hover {
   transform: none;
   box-shadow:
-    rgba(0, 0, 0, 0.2) 0px 2px 6px 0px,
-    rgba(0, 0, 0, 0.3) 0px 2px 4px 0px;
+    rgba(0, 0, 0, 0.1) 0px 1px 3px 0px;
+  z-index: auto;
+}
+
+.bw-bs-panel .modal-body .product-card.bw-product-card--hover-expanded {
+  transform: none !important;
+}
+
+/* Keep card height stable when hovered/selected */
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card,
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card.selected,
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card.bw-product-card--hover-expanded {
+  min-height: 0;
+  height: 100%;
+  max-height: none;
 }
 
 .bw-bs-panel .modal-body .product-card .product-image {
@@ -247,6 +265,32 @@
   margin: 0;
   min-height: 20px;
   text-align: center;
+}
+
+.bw-bs-panel .modal-body .product-card .bw-product-card__description,
+.modal-body .product-card .bw-product-card__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin-top: 4px;
+  margin-bottom: 0;
+  line-height: 1.3;
+  min-height: calc(1.3em * 2);
+  max-height: calc(1.3em * 2);
+}
+
+.bw-bs-panel .modal-body .product-card .bw-product-card__description[data-bw-card-description-expanded='true'],
+.modal-body .product-card .bw-product-card__description[data-bw-card-description-expanded='true'] {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.bw-bs-panel .modal-body .product-card .bw-product-card__description .hidden,
+.modal-body .product-card .bw-product-card__description .hidden {
+  display: none;
 }
 
 #bundle-builder-modal.bw-bs-panel

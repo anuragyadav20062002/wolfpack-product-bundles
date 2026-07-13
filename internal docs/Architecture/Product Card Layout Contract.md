@@ -39,15 +39,18 @@ This is a hard requirement:
 - Keep hover/focus feedback non-expanding (outline, border, iconography, color) so cards do not visually overlap neighbors while hovered.
 - Keep selection/hover feedback on the existing card frame via overlays, borders, iconography, text color, opacity, and icon badges.
 - Prefer fixed row contracts (`min-height`, `height`, flex stretch, consistent padding/line-clamp) so selected/unselected variants stay layout-stable.
+- Keep PPB/inpage and PPB/modal states non-expanding on `selected` and hover-expanded transitions.
 - Keep description rendering display-safe: pass only escaped merchant text, do not inject merchant description/title fields as raw HTML, and avoid trimming/normalizing merchant copy during render.
 - If new content must appear on selection, render it outside the row-level card height envelope (popover, drawer, footer/action panel, details panel, etc.).
 - Current implementation also enforces row stability at CSS-level in full-page/product-card grids by using `grid-auto-rows: minmax(0, 1fr)` across the preset templates instead of `auto`.
-- 2026-07-13: Fixed hover-overlap by forcing full-page card containers to stay `height: 100%` in:
+- 2026-07-13: Fixed hover-overlap by forcing card containers to stay `height: 100%` in:
   - `app/assets/widgets/full-page-css/base/search-category-product-grid.css`
   - `app/assets/widgets/full-page-css/templates/side-footer-standard.css`
   - `app/assets/widgets/full-page-css/templates/side-footer-classic.css`
   - `app/assets/widgets/full-page-css/templates/side-footer-compact.css`
   - `app/assets/widgets/full-page-css/templates/side-footer-horizontal.css`
+  - `app/assets/widgets/product-page-css/base/modal-product-grid.css`
+  - `app/assets/widgets/product-page-css/base/bottom-sheet-modal.css`
 
 ## Acceptance
 
