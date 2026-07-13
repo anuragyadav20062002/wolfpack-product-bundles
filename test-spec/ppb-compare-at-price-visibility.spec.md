@@ -10,9 +10,9 @@ Verify PPB storefront compare-at strike prices follow EB's `showProductComparedA
 |---|---|---|---|---|
 | 1 | Setting is absent/default false | Product with `compareAtPrice` | No `.product-price-strike` markup | Matches EB default |
 | 2 | Setting is true | Product with `compareAtPrice` | `.product-price-strike` markup is rendered | Merchant opt-in |
-| 3 | Storefront DTO | Bundle configuration | `showProductComparedAtPrice` is present with default `false` | Runtime receives setting |
+| 3 | Storefront DTO | Persisted `showCompareAtPrices` bundle field | `showProductComparedAtPrice` mirrors the persisted boolean and defaults to `false` | Runtime receives the saved setting |
 
 ## Acceptance Criteria
-- [ ] Product-page DTO writes `showProductComparedAtPrice`.
-- [ ] PPB widget uses a helper gate before rendering compare-at strike prices.
+- [x] Product-page DTO writes `showProductComparedAtPrice` from persisted `showCompareAtPrices`.
+- [x] PPB widget uses a helper gate before rendering compare-at strike prices.
 - [ ] Widget assets are rebuilt after version bump.

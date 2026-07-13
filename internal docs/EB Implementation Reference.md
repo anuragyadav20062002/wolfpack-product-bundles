@@ -895,6 +895,22 @@ rendered no `Product 2` after selection and returned to one empty slot after
 removal. This is behavior, not merely presentation: both the modal and final
 widget permit the extra minimum-rule selection.
 
+### PPB compare-at price ownership
+
+Live EB Admin evidence on 2026-07-13 places `Show Compare At Price` under the
+global Settings → Controls → Configuration → Bundle Settings surface, not inside
+an individual PPB bundle's Bundle Settings section. The control was checked on
+`yash-wolfpack`; the inspected Horizontal Slots products still rendered ordinary
+prices because their hydrated product data did not contain a usable compare-at
+value. Treat the global control and product data as independent gates when
+building a compare-at fixture.
+
+Wolfpack persists the current bundle-level projection as `showCompareAtPrices`,
+while the storefront DTO key intentionally remains EB-compatible
+`showProductComparedAtPrice`. The metafield writer must map between those names;
+reading `showProductComparedAtPrice` directly from the persisted bundle silently
+forces the storefront flag to false.
+
 ---
 
 ## Storefront Runtime
