@@ -81,7 +81,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **S** PG03 covers merchant selector, not the full grouped permutation | **P** HS03 | **P** VS07 |
 | C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **S** Listed in PL03 run, but current evidence proves grouped mode | **T** | **P** HS03 | **T** |
 | C08 | Variant swatches | Saved swatch flag changes selector presentation | **T** | **T** | **T** | **T** |
-| C09 | Sole sellable variant | Omit selector but retain the surviving variant identity | **P** PL04 | **T** | **P** HS04 | **S** Shared modal path only |
+| C09 | Sole sellable variant | Omit selector but retain the surviving variant identity | **P** PL04 | **T** | **P** HS04 | **P** VS08 |
 | C10 | Fully unavailable product | Hide or block exactly as the saved EB inventory setting requires | **P** PL04 | **P** PG05 | **P** HS04 | **S** Shared modal path only |
 | C11 | Quantity/add/selected action | Default Add and selected quantity/action states match EB | **P** PL00 | **P** PG04/PG08 | **P** HS19 | **P** VS04 |
 | C12 | Add on product-card click setting | Toggle between card-click selection and explicit action | **T** | **T** | **T** | **T** |
@@ -220,7 +220,7 @@ Initial evidence counts across the 119 feature rows:
 | Product List | 37 | 9 | 59 | 2 | 0 | 12 |
 | Product Grid | 27 | 14 | 66 | 0 | 0 | 12 |
 | Horizontal Slots | 51 | 6 | 60 | 0 | 1 | 1 |
-| Vertical Slots | 30 | 21 | 67 | 0 | 0 | 1 |
+| Vertical Slots | 31 | 20 | 67 | 0 | 0 | 1 |
 
 These totals are an evidence inventory, not a product-quality score. One
 feature row can require several value permutations before it becomes Proven.

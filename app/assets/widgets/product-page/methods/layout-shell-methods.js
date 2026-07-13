@@ -474,19 +474,69 @@ _categoryHasCollections(category) {
 
 _filterProductsForInpageCategory(step, products, stepIndex) {
   const categories = Array.isArray(step?.categories) ? step.categories : [];
-  if (categories.length <= 1) return products;
+  if (categories.length === 0) return products;
 
   const activeIndex = this.activeInpageCategoryIndexes[stepIndex] || 0;
   const category = categories[activeIndex];
   const categoryProductIds = this._getCategoryProductIds(category);
+  const configuredProducts = [
+    ...(Array.isArray(category?.products) ? category.products : []),
+    ...(Array.isArray(category?.selectedProducts) ? category.selectedProducts : []),
+  ];
 
   if (categoryProductIds.size === 0) {
     return this._categoryHasCollections(category) ? products : [];
   }
 
-  return products.filter(product => {
+  const categoryProducts = categories.length > 1
+    ? products.filter(product => {
+      const productId = this.extractId(product.parentProductId || product.id);
+      return categoryProductIds.has(productId);
+    })
+    : products;
+
+  return categoryProducts.flatMap(product => {
     const productId = this.extractId(product.parentProductId || product.id);
-    return categoryProductIds.has(productId);
+    const configuredProduct = configuredProducts.find(candidate => (
+      this.extractId(candidate?.id || candidate?.graphqlId || candidate?.productId) === productId
+    ));
+    const configuredVariantIds = new Set(
+      (Array.isArray(configuredProduct?.variants) ? configuredProduct.variants : [])
+        .map(variant => this.extractId(variant?.id || variant?.variantId))
+        .filter(Boolean)
+    );
+
+    if (configuredVariantIds.size === 0 || !Array.isArray(product?.variants)) {
+      return [product];
+    }
+
+    const variants = product.variants.filter(variant => (
+      configuredVariantIds.has(this.extractId(variant?.id || variant?.variantId))
+    ));
+    if (variants.length === 0) return [];
+
+    const selectedVariant = variants.find(variant => variant?.available !== false) || variants[0];
+    const variantImageUrl = selectedVariant?.image?.src
+      || selectedVariant?.image?.url
+      || selectedVariant?.imageUrl
+      || product.imageUrl;
+
+    return [{
+      ...product,
+      variantId: this.extractId(selectedVariant?.id || selectedVariant?.variantId),
+      variantTitle: selectedVariant?.title && selectedVariant.title !== 'Default Title'
+        ? selectedVariant.title
+        : '',
+      price: selectedVariant?.price ?? product.price,
+      compareAtPrice: selectedVariant?.compareAtPrice ?? null,
+      available: selectedVariant?.available !== false,
+      quantityAvailable: typeof selectedVariant?.quantityAvailable === 'number'
+        ? selectedVariant.quantityAvailable
+        : null,
+      currentlyNotInStock: selectedVariant?.currentlyNotInStock === true,
+      imageUrl: variantImageUrl,
+      variants,
+    }];
   });
 }
 };
