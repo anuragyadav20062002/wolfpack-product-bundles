@@ -44,7 +44,7 @@ Status: Accepted for scoped Horizontal Slots rows; canonical PPB feature matrix 
 | Available/unavailable behavior | Proven | HS04. |
 | Selection, remove, replace flow | Proven | HS15/HS16. |
 | Multi-step advance and persistence | Proven | HS05/HSS1. |
-| Backdrop/body lock/internal scroll/focus/Escape | Proven | HS17. |
+| Backdrop/body lock/internal scroll/focus/Escape | Accepted divergence | HS17 proves the shared pointer/scroll behavior and records WPB-only dialog semantics/Escape close; focus containment remains absent and Q05 is reopened in the canonical matrix. |
 | Discount progression and final CTA | Proven | HS06/HSS1 cover active tiers; HSS4 covers disabled pricing with retained rules on 5.0.160. |
 | Validation toast and blocked state | Proven | HS19 re-proves EB rule copy, modal ownership, and exact desktop/mobile toast geometry on dev widget 5.0.166. |
 | Cart request, transform, metadata | Proven | HS08. |

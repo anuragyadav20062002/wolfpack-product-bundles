@@ -101,7 +101,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | M05 | Picker header and current-step ownership | Mobile shows the current step title once | **N/A** | **N/A** | **P** HS19 | **P** VS04 |
 | M06 | Picker product cards | Full product-card hierarchy and selected action | **N/A** | **N/A** | **P** HS02/HS19 | **P** VS04 |
 | M07 | Modal validation toast ownership | Dismissible toast is mounted under the document body, fixed relative to the viewport, and not positioned by the modal sheet/footer | **N/A** | **N/A** | **P** HS19 | **P** VS04 |
-| M08 | Backdrop, body lock, scroll, focus, Escape | Modal remains accessible and internally scrollable | **N/A** | **N/A** | **P** HS17 | **S** VS03 + shared HS17; direct VS focus cycle not isolated |
+| M08 | Backdrop, body lock, internal scroll, focus, and Escape | EB locks body scroll and uses an internal modal scroller, but does not trap focus or close on Escape | **N/A** | **N/A** | **X** HS17 WPB retains dialog semantics and Escape-to-close; focus containment remains absent | **X** VS09 WPB retains Escape-to-close as an accessibility/safety improvement; focus containment remains absent |
 | M09 | Horizontal/vertical orientation isolation | Only the selected orientation styles and child order apply | **N/A** | **N/A** | **P** HS09/final regression | **P** VS04/final regression |
 | M10 | `maxSlotsPerRow` variations | Saved global value changes responsive slot tracks | **N/A** | **N/A** | **T** | **T** |
 | M11 | Filled-slot stacking control | `renderFilledSlotsAsHorizontalStacked` changes filled presentation | **N/A** | **N/A** | **T** | **T** |
@@ -203,7 +203,7 @@ toggle or alternate-value behavior.
 | Q02 | Narrow/tablet/wide hosts | 360, 768, 1440, and real wider product-form placement | **P** PLS7 | **P** PG08 | **P** HS09/HSP1 | **P** VS04/final regression |
 | Q03 | No overflow/clipping/overlap | Document and component overflow remain zero | **P** | **P** | **P** | **P** |
 | Q04 | Cross-template CSS/DOM isolation | Only the selected shell and stylesheet own the page | **P** PLS6/final regression | **P** final regression | **P** final regression | **P** final regression |
-| Q05 | Keyboard access for core controls | Tab/Enter/Space reach all relevant actions | **T** | **T** | **P** HS17 modal focus/Escape | **S** Shared modal path only |
+| Q05 | Keyboard access for core controls | Tab/Enter/Space reach all relevant actions | **T** | **T** | **T** HS17 records missing modal focus containment; full keyboard reachability is unproven | **T** VS09 records missing modal focus containment; full keyboard reachability is unproven |
 | Q06 | Console and app-owned request health | No unexplained app-owned errors in each feature replay | **S** Captured for selected rows | **S** Captured for selected rows | **P** HS07/HS08 | **S** Captured for selected rows |
 | Q07 | Theme typography and selector leakage | Theme styles do not distort the template | **S** Visual states proven; systematic computed sweep absent | **S** Visual states proven; systematic computed sweep absent | **P** HS01/HS02/HS04 | **S** Visual states proven; systematic computed sweep absent |
 
@@ -219,8 +219,8 @@ Initial evidence counts across the 119 feature rows:
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Product List | 37 | 9 | 59 | 2 | 0 | 12 |
 | Product Grid | 27 | 14 | 66 | 0 | 0 | 12 |
-| Horizontal Slots | 51 | 6 | 60 | 0 | 1 | 1 |
-| Vertical Slots | 31 | 20 | 67 | 0 | 0 | 1 |
+| Horizontal Slots | 49 | 6 | 61 | 0 | 2 | 1 |
+| Vertical Slots | 31 | 18 | 68 | 0 | 1 | 1 |
 
 These totals are an evidence inventory, not a product-quality score. One
 feature row can require several value permutations before it becomes Proven.
