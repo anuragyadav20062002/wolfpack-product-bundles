@@ -993,3 +993,14 @@
     font-weight: 700;
   }
 }
+
+#bundle-builder-app .full-page-product-grid .product-card,
+#bundle-builder-app .fpb-mobile-summary-tray .product-card,
+#bundle-builder-app .full-page-product-grid .product-card.bw-product-card--hover-expanded,
+#bundle-builder-app .full-page-product-grid .product-card.bw-product-card--selected,
+#bundle-builder-app .fpb-mobile-summary-tray .product-card.bw-product-card--hover-expanded,
+#bundle-builder-app .fpb-mobile-summary-tray .product-card.bw-product-card--selected {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
