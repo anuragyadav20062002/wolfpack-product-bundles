@@ -58,7 +58,7 @@ Status: In progress — completion is not yet proven.
 | --- | --- | --- |
 | Horizontal combined desktop stress | Proven | HSS1. |
 | Horizontal combined narrow-mobile stress | Proven | HSS2 combines long content, grouped variant 8, inventory survivor, discounts, scrolling, ordered slots, final CTA, and zero document overflow at 360x800. |
-| Product List remains accepted | Missing current regression | Must smoke the accepted Product List fixture after shared modal/card changes. |
+| Product List remains accepted | Proven | HSR1 re-proves hard reload, long category, grouped variant 8, selected drawer, 5% footer, removal, dedicated WPB CASCADE asset, and zero overflow at 360x800. |
 | Product Grid/Vertical Slots leakage | Not yet provable | Those lanes must be completed before final shared-source regression. |
 | Final focused tests/build/lint/graphify | Partial | Each implementation slice passed; final lane-wide run remains. |
 | Fixture restored and carts clean | Proven current | Both fixtures restored to zero selections; both carts confirmed empty after HS08/HS10. Must recheck at final handoff. |

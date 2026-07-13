@@ -54,6 +54,7 @@ committed.
 | HS17 modal scroll/focus | Mobile/desktop body lock, internal scroll, backdrop, focus, and Escape captured | Identical core behavior; WPB adds dialog semantics and Escape close | No visual or pointer interaction delta | Accepted at 390x844 and 1280x800 |
 | HSS1 combined desktop | Variant 8, inventory survivor, multi-step, discounts, scrolling, and final CTA captured | Equivalent combined pass captured on 5.0.158 | Step 2 survivor price differs by store | Accepted at 1280x800 |
 | HSS2 combined narrow mobile | Long content, variant 8, inventory survivor, multi-step, discounts, scrolling, ordered slots, and final CTA captured | Equivalent combined pass captured on 5.0.158 | Step 2 survivor price differs by store | Accepted at 360x800; both fixtures restored empty |
+| HSR1 Product List regression | Current Product List hard reload, long category, grouped variant 8, selected drawer, 5% footer, removal, and zero overflow captured | Equivalent `PDP_INPAGE + CASCADE` pass captured on 5.0.158 | Currency differs by store | Accepted at 360x800; both fixtures restored to empty Horizontal Slots |
 
 ## Acceptance boundary
 
