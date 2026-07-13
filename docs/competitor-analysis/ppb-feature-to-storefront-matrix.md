@@ -57,7 +57,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | R02 | Product-form ownership / placement | PPB replaces or owns the native product-form area | **P** PLS7 | **P** PG08/HSP1 | **P** HS09/HSP1 | **P** VS04/final regression |
 | R03 | Single-step bundle | One active step with final CTA | **P** PL00 | **P** PG00 | **P** HS00 | **P** VS00 |
 | R04 | Multi-step navigation | One active step; Next/Back/Done and retained selections | **P** PL02/PLS1 | **P** PG02/PG08 | **P** HS05/HSS1 | **P** VS03 |
-| R05 | Multiple categories and switching | Current category changes the visible catalog | **P** PL01 | **P** PG03 | **P** HS01 | **S** Shared modal path; VS04 does not isolate category switching |
+| R05 | Multiple categories and switching | Current category changes the visible catalog | **P** PL01 | **P** PG03 | **P** HS01 | **P** VS05 |
 | R06 | Empty category | EB behavior for a category with no persisted products | **E** PL01/PLS3 | **S** Fixture records an empty category; rendered state not isolated | **T** | **T** |
 | R07 | `useSingleStepCategoriesAsBundleSteps` | Categories become navigable steps when true | **T** | **T** | **T** | **T** |
 | R08 | Manual product source | Manually selected catalog products render | **P** PL00 | **P** PG00/PG08 | **P** HS02 | **P** VS04 |
@@ -144,7 +144,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | S13 | Discount transform proof | Cart price/allocation agrees with displayed discount | **P** PL08 | **S** HS shared contract only | **P** HS08 | **S** HS shared contract only |
 | S14 | Dynamic checkout / accelerated checkout | Native bypass behavior explicitly accepted or prevented | **T** | **T** | **X** HS10 safety divergence | **T** |
 | S15 | `addBundleToCartOnDone` | Saved global setting controls final-step cart behavior | **T** | **T** | **T** | **T** |
-| S16 | Per-product quantity validation | `validateQuantityPerProduct` and maximum quantity are enforced independently of step rules | **S** Default quantity behavior proven; enabled/disabled control not isolated | **T** | **T** | **T** |
+| S16 | Per-product quantity validation | `validateQuantityPerProduct` and maximum quantity are enforced independently of step rules | **S** Default quantity behavior proven; enabled/disabled control not isolated | **T** | **T** | **T** VS06 current configuration mismatch recorded |
 | S17 | Catalog pagination counts | Product and collection fetch counts load additional products without duplicates or lost selection | **P** PLS3 collection reload | **T** | **S** Collection hydration proven; pagination boundary not isolated | **T** |
 
 ## 6. Bundle Settings, Visibility, Subscriptions, and Global Controls
@@ -220,7 +220,7 @@ Initial evidence counts across the 119 feature rows:
 | Product List | 37 | 9 | 59 | 2 | 0 | 12 |
 | Product Grid | 27 | 14 | 66 | 0 | 0 | 12 |
 | Horizontal Slots | 51 | 6 | 60 | 0 | 1 | 1 |
-| Vertical Slots | 28 | 23 | 67 | 0 | 0 | 1 |
+| Vertical Slots | 29 | 22 | 67 | 0 | 0 | 1 |
 
 These totals are an evidence inventory, not a product-quality score. One
 feature row can require several value permutations before it becomes Proven.
