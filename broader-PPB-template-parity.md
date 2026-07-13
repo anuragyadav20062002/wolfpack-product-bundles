@@ -11,12 +11,12 @@ EB-absent state, an accepted divergence, or Not applicable.
 
 **2026-07-13 matrix reconciliation update:** row S08 exposed a shared selected-
 state reload gap. EB restores offer-scoped selections from `sessionStorage`,
-while WPB widget `5.0.169` reset them. Shared widget `5.0.170` now persists and
-restores PPB selections after configured defaults. The row remains Shared for
-all templates until direct hot-reloaded EB/WPB selected-state replays are
-captured; earlier Product List and Horizontal Proven cells were downgraded
-because their cited evidence covered collection reload and slot-capacity reset,
-not selected-state reload.
+while WPB widget `5.0.169` reset them. Shared widget `5.0.171` now persists and
+restores PPB selections after configured defaults. Vertical Slots is Proven on
+desktop/mobile hard reload; the other three template cells remain Shared until
+their own replays. Earlier Product List and Horizontal Proven cells were
+downgraded because their cited evidence covered collection reload and
+slot-capacity reset, not selected-state reload.
 
 **Scoped template-lane result:** Horizontal Slots was re-accepted on dev widget `5.0.166`
 after the HS19 modal-card/toast pass. Product Grid was re-accepted on the

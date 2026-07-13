@@ -20,6 +20,7 @@ templates.
 | 4   | Preserve configured defaults | Existing default selection plus restored customer selection | Both selections remain                            | Session state cannot remove required defaults   |
 | 5   | Persist a selection mutation | Widget is ready and quantity changes                        | Current selections are written to the offer key   | Shared by every PPB template                    |
 | 6   | Preload restored steps       | Restored selections exist in selected steps                 | Only those step product datasets are loaded       | Filled cards and cart data resolve after reload |
+| 7   | Build the storefront widget  | Product Page module manifest                                | Persistence module is inlined                     | Prevents runtime `ReferenceError`               |
 
 ## Acceptance Criteria
 

@@ -36,7 +36,7 @@ reload therefore cleared customer selections.
 
 ## Shared Source Correction
 
-Widget `5.0.170` adds an offer-scoped, versioned session-selection payload for
+Widget `5.0.171` adds an offer-scoped, versioned session-selection payload for
 the shared Product Page Bundle controller. It:
 
 - restores customer selections after configured defaults, so compulsory
@@ -52,14 +52,31 @@ Focused behavior coverage is in
 `tests/unit/assets/ppb-session-selection-persistence.test.ts`; its TDD contract
 is `test-spec/ppb-session-selection-persistence.spec.md`.
 
-## Current Evidence Gate
+## Build Inclusion Correction
 
-The local generated asset is widget `5.0.170`, but repeated cache-bypassed dev
-storefront reloads still served widget `5.0.169` from the current Shopify dev
-extension asset URL. No deploy wait is required or requested; the browser proof
-remains open until the existing hot-reloaded dev asset serves `5.0.170`.
+The first hot-reloaded `5.0.170` asset exposed
+`ProductPageSelectionPersistenceMethods is not defined`: the source entry
+import existed, but `PRODUCT_PAGE_MODULES` did not inline the new module. A
+failing build-manifest regression test was added before correcting the module
+list and bumping to `5.0.171`. The generated Product Page asset now declares
+the persistence methods before composing them into the controller.
 
-Matrix row `S08` is therefore Shared, not Proven, for all four templates. PLS3
-proved collection hydration/reload and HSS3 proved dynamic slot-capacity reset;
-neither isolated selected-state reload and their prior Proven cells were
-corrected.
+## WPB Result On 5.0.171
+
+On desktop, WPB selected store-equivalent `18k Pedal Ring / 10` variant
+`48720161276163`. The widget wrote
+`wpbPpb-cart-cmrf19c8d0000v0xpj8rz2wgh` with version `1`, Step 1 quantity `1`,
+and an empty Step 2 object. A cache-bypassed hard reload restored the filled
+Vertical row as `18k Pedal Ring - 10` plus the remaining `Product 2` and Step 2
+empty slot.
+
+The same cache-bypassed reload at `390 x 844 x 2, mobile, touch` restored the
+same image/title/variant identity. The document had zero horizontal overflow.
+The only console error was the theme-owned `/favicon.ico` 404; bundle data,
+products, design, language, controls, JS, and CSS requests succeeded.
+
+Vertical Slots `S08` is Proven. Product List, Product Grid, and Horizontal Slots
+remain Shared until the identical selected-state desktop/mobile replay is run
+for each template. PLS3 proved collection hydration/reload and HSS3 proved
+dynamic slot-capacity reset; neither isolated selected-state reload, so their
+prior Proven cells remain corrected.
