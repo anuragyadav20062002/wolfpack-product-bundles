@@ -2,8 +2,8 @@
 
 ## Status
 
-In progress. EB-first desktop empty baseline captured. WPB comparison,
-mobile/interactions, deltas, implementation, and regression proof remain open.
+In progress. EB-first and WPB desktop empty baselines captured. Mobile,
+interactions, implementation, and regression proof remain open.
 
 ## Contract
 
@@ -23,7 +23,8 @@ mobile/interactions, deltas, implementation, and regression proof remain open.
 
 | Case | EB | WPB | Delta | Status |
 | --- | --- | --- | --- | --- |
-| VS00 runtime/empty desktop | `PDP_MODAL + SIMPLIFIED`; three vertical rows captured | Pending | Pending | EB captured at 1280x800 |
+| VS00 runtime/empty desktop | `PDP_MODAL + SIMPLIFIED`; `345x60px` rows, `16x16px` icon, `26px` group gap | pre-change `300x104px`; post-change responsive full-width `372.34x60px`, `16x16px` icon, `26px` group gap | fixed at source; width follows the host product column instead of copying EB's store-specific width | Desktop verified |
+| VS01 runtime/empty mobile | `360x60px` rows, `16x16px` icon, 10px labels | `358x60px` rows, `16x16px` icon, 10px labels | host-theme horizontal padding differs by 2px; row contract matches and overflow is zero | Mobile verified at 390x844 |
 
 ## Acceptance boundary
 
