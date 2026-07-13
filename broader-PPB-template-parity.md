@@ -53,6 +53,10 @@ Do not infer the active template from appearance alone.
 
 Use direct Chrome DevTools MCP functions for all browser evidence and browser interaction.
 
+**Direct means direct:** invoke the `mcp__chrome_devtools__*` tools themselves for
+every browser action. Do not load or use the `chrome:control-chrome` skill, the
+`browser:control-in-app-browser` skill, or any plugin-provided browser abstraction.
+
 **Tooling constraint:** Call the Chrome DevTools MCP tools directly. Do not use the
 Chrome plugin, Browser plugin, browser-control skill, browser extension bridge,
 `browser-client`, Node REPL browser runtime, or any wrapper around Chrome DevTools

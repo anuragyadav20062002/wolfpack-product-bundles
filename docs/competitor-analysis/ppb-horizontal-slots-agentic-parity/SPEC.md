@@ -3,9 +3,9 @@
 ## Status
 
 In progress. Baseline slots, category controls, selection return/removal,
-responsive mobile behavior, and modal scroll/close behavior have current EB-first
-and WPB evidence. Remaining pairwise, stress, placement, cart, and regression rows
-are not yet accepted.
+responsive mobile behavior, modal scroll/close behavior, cart behavior, and
+desktop/narrow-mobile combined stress have current EB-first and WPB evidence.
+Remaining fixture, placement, and regression rows are not yet accepted.
 
 ## Contract
 
@@ -48,10 +48,12 @@ committed.
 | HS08 cart | Three child selections transform to one discounted parent line with EB metadata | Equivalent signed runtime request and transformed parent captured on 5.0.157 | App namespaces differ; visible and transform contracts match | Accepted; both test carts cleared after capture |
 | HS14 picker open/close | Desktop/mobile open, close, and backdrop states captured | Equivalent states captured on 5.0.153 | Mobile close listener fixed; no remaining open/close delta | Accepted at 390x844 and 1280x800 |
 | HS09 responsive placement | 1440x900, 768x1024, 390x844, and 360x800 captured | Same viewport matrix captured on 5.0.154 | Desktop/tablet 300px host cap fixed; real 520px/full-width placement still pending | Viewport matrix accepted; placement matrix in progress |
+| HS10 unsupported | Native accelerated checkout bypasses EB validation at zero selections | Visual counterpart remains non-mutating and cart-safe | Unsafe parent-product checkout bypass intentionally not copied | Accepted safety divergence |
 | HS15 picker selection | Product stays in picker and returns to first slot on close | Equivalent return order captured on 5.0.153 | Mobile close listener fixed | Accepted at 390x844 |
 | HS16 replace/remove | Filled slot is inert; remove restores empty slot | Equivalent remove-first replacement flow captured | No remaining behavior delta | Accepted at 390x844 |
 | HS17 modal scroll/focus | Mobile/desktop body lock, internal scroll, backdrop, focus, and Escape captured | Identical core behavior; WPB adds dialog semantics and Escape close | No visual or pointer interaction delta | Accepted at 390x844 and 1280x800 |
 | HSS1 combined desktop | Variant 8, inventory survivor, multi-step, discounts, scrolling, and final CTA captured | Equivalent combined pass captured on 5.0.158 | Step 2 survivor price differs by store | Accepted at 1280x800 |
+| HSS2 combined narrow mobile | Long content, variant 8, inventory survivor, multi-step, discounts, scrolling, ordered slots, and final CTA captured | Equivalent combined pass captured on 5.0.158 | Step 2 survivor price differs by store | Accepted at 360x800; both fixtures restored empty |
 
 ## Acceptance boundary
 
