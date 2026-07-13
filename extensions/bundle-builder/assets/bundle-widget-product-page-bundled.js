@@ -19,37 +19,77 @@ const ConditionValidator = (function () {
     LESS_THAN_OR_EQUAL_TO:   'less_than_or_equal_to',
   };
 
-  function calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity) {
+  function calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity, options = {}) {
     const selections = currentSelections || {};
+    const conditionType = _normalizeConditionType(options.conditionType);
+    const targetAmountPerUnit = Number(options.targetAmountPerUnit);
+    const targetWeightPerUnit = Number(options.targetWeightPerUnit);
+    const normalizedQuantity = Number(newQuantity) || 0;
 
-    let total = newQuantity;
+    let total = 0;
 
     for (const pid of Object.keys(selections)) {
       if (pid !== targetProductId) {
-        total += selections[pid] || 0;
+        total += _getSelectionValueByConditionType(selections[pid], conditionType);
       }
+    }
+
+    if (conditionType === 'amount') {
+      const perUnitAmount = Number.isFinite(targetAmountPerUnit) ? targetAmountPerUnit : 0;
+      total += perUnitAmount * normalizedQuantity;
+    } else if (conditionType === 'weight') {
+      const perUnitWeight = Number.isFinite(targetWeightPerUnit) ? targetWeightPerUnit : 0;
+      total += perUnitWeight * normalizedQuantity;
+    } else {
+      total += normalizedQuantity;
     }
 
     return total;
   }
 
-  function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
+  /**
+   * Determine whether a proposed quantity update is permitted by the step's condition.
+   *
+   * Only blocks INCREASES that would violate an upper-bound operator.
+   * Decreases are always permitted regardless of the condition state (so the
+   * customer can switch products without getting permanently stuck).
+   *
+   * @param {object}  step              Step config object (conditionType, conditionOperator, conditionValue)
+   * @param {Record<string, number>} currentSelections  Current selections for this step
+   * @param {string}  targetProductId   Product being updated
+   * @param {number}  newQuantity       Proposed quantity (0 = remove)
+   * @returns {{ allowed: boolean, limitText: string|null }}
+   */
+  function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity, targetValues) {
 
     if (!step || !step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       return { allowed: true, limitText: null };
     }
 
+    const conditionType = _normalizeConditionType(step.conditionType);
+    const targetMetric = _getTargetMetric(targetValues);
+    const required = _normalizeConditionRuleValue(conditionType, step.conditionValue);
+
     const totalAfter = calculateStepTotalAfterUpdate(
       currentSelections,
       targetProductId,
       newQuantity,
+      {
+        conditionType,
+        targetAmountPerUnit: targetMetric.amount,
+        targetWeightPerUnit: targetMetric.weight,
+      },
     );
 
-    const primary = _evaluateCanUpdate(step.conditionOperator, step.conditionValue, totalAfter);
+    const primary = _evaluateCanUpdate(step.conditionOperator, required, totalAfter);
     if (!primary.allowed) return primary;
 
     if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
-      const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
+      const secondary = _evaluateCanUpdate(
+        step.conditionOperator2,
+        _normalizeConditionRuleValue(conditionType, step.conditionValue2),
+        totalAfter,
+      );
       if (!secondary.allowed) return secondary;
     }
 
@@ -69,6 +109,33 @@ const ConditionValidator = (function () {
       total += _getSelectionQuantity(qty);
     }
     return total;
+  }
+
+  function _normalizeConditionType(conditionType) {
+    if (conditionType === 'amount') return 'amount';
+    if (conditionType === 'weight') return 'weight';
+    return 'quantity';
+  }
+
+  function _normalizeConditionRuleValue(conditionType, value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return numeric;
+    return _normalizeConditionType(conditionType) === 'amount' ? numeric * 100 : numeric;
+  }
+
+  function _getSelectionValueByConditionType(selection, conditionType) {
+    if (conditionType === 'amount') return _getSelectionAmount(selection);
+    if (conditionType === 'weight') return _getSelectionWeight(selection);
+    return _getSelectionQuantity(selection);
+  }
+
+  function _getTargetMetric(values) {
+    const amount = Number(values && values.amount);
+    const weight = Number(values && values.weight);
+    return {
+      amount: Number.isFinite(amount) ? amount : 0,
+      weight: Number.isFinite(weight) ? weight : 0,
+    };
   }
 
   function _isPositiveConditionValue(value) {
@@ -158,6 +225,7 @@ const ConditionValidator = (function () {
 
   function isStepConditionSatisfied(step, currentSelections) {
     if (!step) return true;
+    const conditionType = _normalizeConditionType(step.conditionType);
 
     if (_isCategoryRuleMode(step)) {
       const categories = Array.isArray(step.categories) ? step.categories : [];
@@ -169,19 +237,21 @@ const ConditionValidator = (function () {
 
     const selections = currentSelections || {};
     let total = 0;
-    for (const qty of Object.values(selections)) {
-      total += _getSelectionQuantity(qty);
+    for (const value of Object.values(selections)) {
+      total += _getSelectionValueByConditionType(value, conditionType);
     }
+    const normalizedConditionValue = _normalizeConditionRuleValue(conditionType, step.conditionValue);
+    const normalizedConditionValue2 = _normalizeConditionRuleValue(conditionType, step.conditionValue2);
 
     if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
 
-    if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
+    if (!_evaluateSatisfied(step.conditionOperator, normalizedConditionValue, total)) return false;
 
     if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
-      return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
+      return _evaluateSatisfied(step.conditionOperator2, normalizedConditionValue2, total);
     }
 
     return true;
@@ -338,21 +408,35 @@ const BUNDLE_WIDGET = {
  */
 
 class CurrencyManager {
+  static getShopify() {
+    if (typeof window !== 'undefined' && window.Shopify) return window.Shopify;
+    if (typeof Shopify !== 'undefined') return Shopify;
+    return null;
+  }
+
+  static getShopMoneyFormat() {
+    if (typeof window !== 'undefined' && window.shopMoneyFormat) return window.shopMoneyFormat;
+    if (typeof shopMoneyFormat !== 'undefined') return shopMoneyFormat;
+    return '{{amount}}';
+  }
+
   static getShopBaseCurrency() {
+    const shopify = this.getShopify();
 
     return {
-      code: window.Shopify?.shop?.currency || 'USD',
-      format: window.shopMoneyFormat || '{{amount}}'
+      code: shopify?.shop?.currency || 'USD',
+      format: this.getShopMoneyFormat(),
     };
   }
 
   static detectCustomerCurrency() {
+    const shopify = this.getShopify();
 
-    if (window.Shopify?.currency?.active) {
+    if (shopify?.currency?.active) {
       return {
-        code: window.Shopify.currency.active,
-        format: window.Shopify.currency.format || window.shopMoneyFormat || '{{amount}}',
-        rate: window.Shopify.currency.rate || 1
+        code: shopify.currency.active,
+        format: shopify.currency.format || this.getShopMoneyFormat(),
+        rate: shopify.currency.rate || 1,
       };
     }
 
@@ -361,10 +445,11 @@ class CurrencyManager {
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
     if (fromCurrency === toCurrency) return amount;
+    const shopify = this.getShopify();
 
-    if (window.Shopify?.currency?.convert) {
+    if (shopify?.currency?.convert) {
       try {
-        return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
+        return shopify.currency.convert(amount, fromCurrency, toCurrency);
       } catch (e) {
         console.warn('[BUNDLE_WIDGET] Shopify.currency.convert failed, using rate fallback:', e);
       }
@@ -374,8 +459,9 @@ class CurrencyManager {
   }
 
   static formatMoney(amount, format) {
-    if (typeof Shopify !== 'undefined' && window.Shopify.formatMoney) {
-      return window.Shopify.formatMoney(amount, format);
+    const shopify = this.getShopify();
+    if (shopify?.formatMoney) {
+      return shopify.formatMoney(amount, format);
     }
 
     const formatted = (amount / 100).toFixed(2);
@@ -412,11 +498,12 @@ class CurrencyManager {
   }
 
   static getCurrencyInfo() {
+    const shopify = this.getShopify();
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
     const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
     const displayFormat = this.normalizeCurrencyFormat(
-      window.Shopify?.currency?.format,
+      shopify?.currency?.format,
       customerCurrency.code,
       displaySymbol
     );
@@ -2746,12 +2833,14 @@ function escapeHtml(value) {
 }
 
 const DEFAULT_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3C/svg%3E';
+const PRODUCT_DESCRIPTION_PREVIEW_LENGTH = 110;
 
 function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo = {}, options = {}) {
   const selectionKey = product.variantId || product.id || '';
   const quantity = Math.max(0, Number(currentQuantity || 0));
   const isSelected = quantity > 0;
   const mode = options.mode || 'grid';
+  const descriptionText = resolveProductDescriptionText(product.description);
   const variantText = getVariantDisplayText(product);
   const isIndividualVariantCard = Boolean(product.parentProductId && product.variantId && variantText);
   const title = getDisplayTitle(product, variantText);
@@ -2768,6 +2857,8 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
     variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
     isIndividualVariantCard ? 'bw-product-card--individual-variant product-card--individual-variant' : '',
     isSelected ? 'bw-product-card--selected' : '',
+    options.displaySeeMoreLink === true && descriptionText ? 'bw-product-card--see-more' : '',
+    options.expandProductCardOnHover === true ? 'bw-product-card--hover-expand' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
 
@@ -2784,9 +2875,14 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
       </div>
       ${options.cardBadgeHtml || ''}
       <div class="bw-product-card__body product-content-wrapper">
-          <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+      <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
+          ${renderProductDescription({
+            description: descriptionText,
+            displaySeeMoreLink: options.displaySeeMoreLink === true,
+            descriptionMaxLength: options.descriptionMaxLength,
+          })}
         </div>
         <div class="product-card-price-action">
           ${variantSelectorBeforePrice ? options.variantSelectorHtml || '' : ''}
@@ -2897,6 +2993,36 @@ function renderImageNavButton(direction) {
   `;
 }
 
+function renderProductDescription({
+  description = '',
+  displaySeeMoreLink = false,
+  descriptionMaxLength = PRODUCT_DESCRIPTION_PREVIEW_LENGTH,
+}) {
+  const descriptionText = resolveProductDescriptionText(description);
+  if (!descriptionText) return '';
+
+  const showToggle = displaySeeMoreLink === true;
+  if (!showToggle) {
+    return `
+      <div class="bw-product-card__description">${escapeHtml(descriptionText)}</div>
+    `;
+  }
+
+  const maxLength = Math.max(24, Number(descriptionMaxLength) || PRODUCT_DESCRIPTION_PREVIEW_LENGTH);
+  const isClamped = descriptionText.length > maxLength;
+  const shortDescription = isClamped
+    ? `${descriptionText.slice(0, maxLength)}...`
+    : descriptionText;
+
+  return `
+    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
+      <span class="bw-product-card__description-short"${isClamped ? '' : ' hidden'}>${escapeHtml(shortDescription)}</span>
+      <span class="bw-product-card__description-full"${isClamped ? ' hidden' : ''}>${escapeHtml(descriptionText)}</span>
+      ${isClamped ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
+    </div>
+  `;
+}
+
 function normalizeImageUrl(value) {
   if (!value) return '';
   if (typeof value === 'string') return value;
@@ -2909,6 +3035,12 @@ function formatPrice(value, currencyInfo) {
   const amount = Number(value || 0) / 100;
   const format = currencyInfo?.display?.format || '${{amount}}';
   return format.replace('{{amount}}', amount.toFixed(2));
+}
+
+function resolveProductDescriptionText(value) {
+  if (value == null) return '';
+
+  return String(value);
 }
 
 function escapeHtml(value) {
@@ -3466,6 +3598,77 @@ function buildProductPageCartFormData(cartItems = [], {
   };
 }
 
+function normalizeConditionType(value) {
+  if (typeof value !== 'string') return value;
+  return value.trim().toLowerCase();
+}
+
+function normalizeConditionOperator(value) {
+  if (typeof value !== 'string') return value;
+  const normalized = value.trim();
+  if (normalized.indexOf('_') !== -1) return normalized.toLowerCase();
+  return normalized.replace(/([A-Z])/g, '_$1').toLowerCase();
+}
+
+function normalizeConditionValue(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : value;
+}
+
+function cloneConditionFields(conditions, fallbackCondition, fallbackStep) {
+  const sourceConditions = Array.isArray(conditions)
+    ? conditions
+    : (Array.isArray(fallbackCondition) ? fallbackCondition : undefined);
+  const conditionsArray = Array.isArray(sourceConditions) ? sourceConditions : [];
+
+  const primary = conditionsArray[0] || {};
+  const secondary = conditionsArray[1] || {};
+
+  const normalizedPrimaryType = normalizeConditionType(
+    primary?.type
+    ?? primary?.conditionType
+    ?? fallbackStep?.conditionType
+  );
+  const normalizedPrimaryOperator = normalizeConditionOperator(
+    primary?.operator
+    ?? primary?.condition
+    ?? primary?.conditionOperator
+    ?? fallbackStep?.conditionOperator
+  );
+  const normalizedPrimaryValue = normalizeConditionValue(
+    primary?.value ?? fallbackStep?.conditionValue,
+  );
+
+  const normalizedSecondaryType = normalizeConditionType(
+    secondary?.type
+    ?? secondary?.conditionType
+    ?? fallbackStep?.conditionType2
+  );
+  const normalizedSecondaryOperator = normalizeConditionOperator(
+    secondary?.operator
+    ?? secondary?.condition
+    ?? secondary?.conditionOperator
+    ?? fallbackStep?.conditionOperator2
+  );
+  const normalizedSecondaryValue = normalizeConditionValue(
+    secondary?.value ?? fallbackStep?.conditionValue2,
+  );
+
+  const next = {
+    conditions: sourceConditions,
+  };
+
+  if (normalizedPrimaryType != null) next.conditionType = normalizedPrimaryType;
+  if (normalizedPrimaryOperator != null) next.conditionOperator = normalizedPrimaryOperator;
+  if (normalizedPrimaryValue != null) next.conditionValue = normalizedPrimaryValue;
+
+  if (normalizedSecondaryType != null) next.conditionType2 = normalizedSecondaryType;
+  if (normalizedSecondaryOperator != null) next.conditionOperator2 = normalizedSecondaryOperator;
+  if (normalizedSecondaryValue != null) next.conditionValue2 = normalizedSecondaryValue;
+
+  return next;
+}
+
 function ppbExpandSingleStepCategoriesAsSteps(bundle) {
   if (!bundle?.useSingleStepCategoriesAsBundleSteps) return bundle;
   if (!Array.isArray(bundle.steps) || bundle.steps.length !== 1) return bundle;
@@ -3493,7 +3696,7 @@ function ppbExpandSingleStepCategoriesAsSteps(bundle) {
         name: categoryLabel,
         pageTitle: categoryLabel,
         categories: [category],
-        conditions: category?.conditions || step.conditions,
+        ...cloneConditionFields(category?.conditions, step.conditions, step),
         _sourceStepId: step.id || null,
         _sourceCategoryId: category?.id || category?.categoryId || null,
         _sourceCategoryIndex: categoryIndex,
@@ -4138,6 +4341,33 @@ const cogniveTemplateMethods = {
   },
 };
 
+function getWindow() {
+  return typeof window === 'undefined' ? null : window;
+}
+
+function parseBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (['true', 'checked', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', 'unchecked', '0', 'off', 'no'].includes(normalized)) return false;
+  return undefined;
+}
+
+function parseControlBoolean(controls, labels, fallback) {
+  if (!controls || typeof controls !== 'object') {
+    return fallback;
+  }
+
+  for (const label of labels) {
+    if (!(label in controls)) continue;
+    const parsed = parseBoolean(controls[label]);
+    if (parsed === undefined) continue;
+    return parsed;
+  }
+  return fallback;
+}
+
 const ProductPageConfigLifecycleMethods = {
 _getProductPageControls() {
   return this.config.controlsSettings?.activeControls
@@ -4147,13 +4377,28 @@ _getProductPageControls() {
 
 _isProductCardClickAddEnabled() {
   const controls = this._getProductPageControls();
-  return controls?.addToCartWhenProductCardClicked === true;
+  return parseControlBoolean(
+    controls,
+    [
+      'addToCartWhenProductCardClicked',
+      'addToBundleOnProductCardClicked',
+      'addToBundleOnProductCardClick',
+    ],
+    false,
+  ) === true;
+},
+
+_isConditionValidationEnabled() {
+  const controls = this._getProductPageControls();
+  return parseControlBoolean(controls, ['validateConditionsBeforeAddToCart'], true) !== false;
 },
 
 _runControlsScript(script) {
   if (!script || typeof script !== 'string') return;
+  const runtimeWindow = getWindow();
+  if (!runtimeWindow) return;
   try {
-    new Function(script).call(window);
+    new Function(script).call(runtimeWindow);
   } catch (_) {
 
   }
@@ -4167,8 +4412,11 @@ _handlePostAddToCartAction(actionConfig) {
 
   const action = redirect.action || 'cart';
   if (action === 'checkout') {
+    const runtimeWindow = getWindow();
+    if (!runtimeWindow) return;
+
     setTimeout(() => {
-      window.location.href = '/checkout';
+      runtimeWindow.location.href = '/checkout';
     }, 1000);
     return;
   }
@@ -4187,32 +4435,60 @@ _handlePostAddToCartAction(actionConfig) {
   }
 
   setTimeout(() => {
-    window.location.href = '/cart';
+    const runtimeWindow = getWindow();
+    if (!runtimeWindow) return;
+
+    runtimeWindow.location.href = '/cart';
   }, 1000);
 },
 
-  parseConfiguration() {
-    const dataset = this.container.dataset;
+parseConfiguration() {
+  const runtimeWindow = getWindow();
+  const dataset = this.container.dataset;
+  const existingConfig = this.config || {};
+  const controlsSettings = existingConfig.controlsSettings || null;
+  const controls = this._getProductPageControls() || {};
+  const datasetShowQuantity = dataset.showQuantitySelectorOnCard !== 'false';
+  const showQuantitySelectorOnCard = parseControlBoolean(
+    controls,
+    ['displayQuantityInput', 'displayQuantitySelectorOnCard', 'displayQuantity'],
+    datasetShowQuantity,
+  );
+  const displaySeeMoreLink = parseControlBoolean(
+    controls,
+    ['displaySeeMoreLink', 'displaySeeMore'],
+    undefined,
+  );
+  const expandProductCardOnHover = parseControlBoolean(
+    controls,
+    ['expandProductCardOnHover', 'productCardHoverExpansion'],
+    false,
+  );
 
-    this.config = {
-      bundleId: dataset.bundleId || null,
-      isContainerProduct: dataset.isContainerProduct === 'true',
-      containerBundleId: dataset.containerBundleId || null,
-      hideDefaultButtons: dataset.hideDefaultButtons === 'true',
-      showStepNumbers: dataset.showStepNumbers !== 'false',
+  this.config = {
+    ...existingConfig,
+    bundleId: dataset.bundleId || null,
+    isContainerProduct: dataset.isContainerProduct === 'true',
+    containerBundleId: dataset.containerBundleId || null,
+    hideDefaultButtons: dataset.hideDefaultButtons === 'true',
+    showStepNumbers: dataset.showStepNumbers !== 'false',
 
-      showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
+    showQuantitySelectorOnCard,
 
-      discountTextTemplate: 'Add {conditionText} to get {discountText}',
-      successMessageTemplate: 'Congratulations! You got {discountText}!',
-      currentProductId: window.currentProductId,
-      currentProductGid: window.currentProductGid,
-      currentProductHandle: window.currentProductHandle,
-      currentProductCollections: window.currentProductCollections
-    };
-  },
+    displaySeeMoreLink,
+    expandProductCardOnHover,
+    controlsSettings,
 
-  _parseBundleConfigPayload(rawValue) {
+    discountTextTemplate: 'Add {conditionText} to get {discountText}',
+    successMessageTemplate: 'Congratulations! You got {discountText}!',
+    currentProductId: runtimeWindow ? runtimeWindow.currentProductId : null,
+    currentProductGid: runtimeWindow ? runtimeWindow.currentProductGid : null,
+    currentProductHandle: runtimeWindow ? runtimeWindow.currentProductHandle : null,
+    currentProductCollections: runtimeWindow ? runtimeWindow.currentProductCollections : null
+  };
+},
+
+_parseBundleConfigPayload(rawValue) {
     if (!rawValue || rawValue.trim() === '' || rawValue === 'null' || rawValue === 'undefined') {
       return null;
     }
@@ -4287,10 +4563,11 @@ _handlePostAddToCartAction(actionConfig) {
     }
 
     if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
-      const isThemeEditor = window.Shopify?.designMode ||
-                           window.isThemeEditorContext ||
-                           window.location.pathname.includes('/editor') ||
-                           window.location.search.includes('preview_theme_id');
+      const runtimeWindow = getWindow();
+      const isThemeEditor = runtimeWindow?.Shopify?.designMode ||
+                           runtimeWindow?.isThemeEditorContext ||
+                           runtimeWindow?.location?.pathname?.includes('/editor') ||
+                           runtimeWindow?.location?.search?.includes('preview_theme_id');
 
       const bundleIdFromDataset = bundleId || this.container.dataset.bundleId;
 
@@ -4342,13 +4619,25 @@ _isProductPageInpageTemplate() {
 },
 
 _shouldShowProductComparedAtPrice() {
+  const controls = this._getProductPageControls();
+  const controlSetting = parseControlBoolean(
+    controls,
+    ['showCompareAtPrices', 'showProductComparedAtPrice', 'Display Compare At Price', 'displayCompareAtPrices'],
+    undefined,
+  );
+
+  if (controlSetting === true || controlSetting === false) {
+    return controlSetting;
+  }
+
   return this.selectedBundle?.showProductComparedAtPrice === true;
 },
 
 ensureProductPageTemplateStylesheet(templateType, designPreset) {
   const templateKey = String(templateType || 'PDP_MODAL').trim().toUpperCase() || 'PDP_MODAL';
   const presetKey = String(designPreset || '').trim().toUpperCase();
-  const urls = window.__WOLFPACK_PPB_TEMPLATE_CSS_URLS__ || {};
+  const runtimeWindow = getWindow();
+  const urls = runtimeWindow?.__WOLFPACK_PPB_TEMPLATE_CSS_URLS__ || {};
   const href = templateKey === 'PDP_MODAL'
     ? urls[presetKey] || urls.MODAL || urls.SIMPLIFIED
     : urls[presetKey] || urls.CASCADE || urls.COGNIVE;
@@ -5046,6 +5335,61 @@ setupTabScrollArrows(modal) {
 
 };
 
+function resolveDiscountProgressMode(displayOptions = {}) {
+  const type = String(displayOptions?.type || '').toLowerCase().trim();
+  return type === 'step_based' ? 'step_based' : 'simple';
+}
+
+function getDiscountProgressMilestones(bundle, totalPrice = 0, totalQuantity = 0) {
+  const pricing = bundle?.pricing || {};
+  const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
+  const method = String(pricing.method || '');
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const tierTextByRuleId = pricing?.messages?.tierTextByRuleId || {};
+
+  return rules
+    .filter((rule) => rule?.conditionType === 'quantity' || rule?.conditionType === 'amount')
+    .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
+    .map((rule) => {
+      const ruleId = String(rule?.id || '');
+      const threshold = Number(rule?.conditionValue || 0) || 0;
+      if (!ruleId || threshold <= 0) return null;
+
+      const savedMilestone = tierTextByRuleId?.[ruleId] || {};
+      const boxLabel = savedMilestone?.tierText;
+      const boxSubtext = savedMilestone?.tierSubtext;
+
+      const fallbackTitle = rule.conditionType === 'quantity'
+        ? `${threshold} Pack`
+        : CurrencyManager.convertAndFormat(threshold, currencyInfo);
+
+      const discountValue = Number(rule.discountValue ?? rule.discount?.value ?? 0) || 0;
+      let fallbackSubText = '';
+      if (discountValue > 0) {
+        if (method === 'fixed_amount_off') {
+          fallbackSubText = `Save ${CurrencyManager.convertAndFormat(discountValue, currencyInfo)}`;
+        } else if (method === 'percentage_off' || method === 'percentage') {
+          fallbackSubText = `Save ${Math.round(discountValue)}%`;
+        } else {
+          fallbackSubText = `Save ${discountValue}`;
+        }
+      }
+
+      const isReached = rule.conditionType === 'amount'
+        ? Number(totalPrice || 0) >= threshold
+        : Number(totalQuantity || 0) >= threshold;
+
+      return {
+        ruleId,
+        title: boxLabel || fallbackTitle,
+        subTitle: boxSubtext || fallbackSubText,
+        isReached,
+      };
+    })
+    .filter(Boolean)
+    .filter((milestone) => milestone.title);
+}
+
 function shouldDisableIntermediateProductPageCta({
   isGrid = false,
   currentStepValid = false,
@@ -5108,6 +5452,11 @@ renderFooter() {
 
   const displayOptions = this.selectedBundle?.messaging?.displayOptions;
   const pbConfig = displayOptions?.progressBar;
+  const isDiscountMessagingEnabled = this.config?.showDiscountMessaging !== false;
+  if (!isDiscountMessagingEnabled) {
+    el.style.display = 'none';
+    return;
+  }
   if (!pbConfig?.enabled) {
     el.style.display = 'none';
     return;
@@ -5127,55 +5476,75 @@ renderFooter() {
 
   const rule = rules[0];
   const discountMethod = PricingCalculator.getDiscountMethod(this.selectedBundle);
-  const conditionValue = PricingCalculator.getRuleConditionValue(rule, discountMethod);
   const conditionType = PricingCalculator.getRuleConditionType(rule);
-  const current = conditionType === 'quantity' ? totalQuantity : totalPrice / 100;
-  const progress = conditionValue > 0 ? Math.min(1, current / conditionValue) : 1;
-  const met = progress >= 1;
+  const current = conditionType === 'quantity' ? totalQuantity : totalPrice;
 
   const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity, unitPrices);
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-  const discountText = combinedDiscountInfo.hasDiscount
-    ? (this.selectedBundle.pricing.method === 'percentage_off'
-        ? `${rule.discountValue ?? 0}% off`
-        : CurrencyManager.convertAndFormat(combinedDiscountInfo.savings, CurrencyManager.getCurrencyInfo()))
-    : '';
-
-  const template = met
+  const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
+  const ruleToUse = combinedDiscountInfo.applicableRule || nextRule || rule;
+  const messageType = nextRule ? 'progress' : (combinedDiscountInfo.qualifiesForDiscount ? 'success' : 'progress');
+  const met = !nextRule && combinedDiscountInfo.qualifiesForDiscount;
+  const conditionTarget = PricingCalculator.getRuleConditionValue(ruleToUse, discountMethod);
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const variables = TemplateManager.createDiscountVariables(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    combinedDiscountInfo,
+    currencyInfo,
+    { rule: ruleToUse, messageType }
+  );
+  const fallbackTemplate = met
     ? (pbConfig.successText || this.selectedBundle.messaging?.successTemplate || 'You got {discountText}!')
     : (pbConfig.progressText || this.selectedBundle.messaging?.progressTemplate || 'Add {conditionText} more to get {discountText}');
-
-  const diff = Math.max(0, conditionValue - current);
-  const conditionText = conditionType === 'quantity'
-    ? `${Math.ceil(diff)} item${Math.ceil(diff) !== 1 ? 's' : ''}`
-    : CurrencyManager.convertAndFormat(diff * 100, CurrencyManager.getCurrencyInfo());
-
-  const message = template
-    .replace(/{discountText}/g, discountText)
-    .replace(/{conditionText}/g, conditionText)
-    .replace(/{amountNeeded}/g, conditionText)
-    .replace(/{itemsNeeded}/g, `${Math.ceil(diff)}`)
-    .replace(/{progressPercentage}/g, `${Math.round(progress * 100)}`);
+  const progressMode = resolveDiscountProgressMode(pbConfig);
+  const milestones = progressMode === 'step_based'
+    ? getDiscountProgressMilestones(this.selectedBundle, totalPrice, totalQuantity)
+    : [];
+  const template = progressMode === 'simple'
+    ? TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType,
+      fallbackTemplate,
+      locale: window.Shopify?.locale,
+    })
+    : '';
+  const message = progressMode === 'simple'
+    ? TemplateManager.replaceVariables(template, variables)
+    : '';
 
   const primary = getComputedStyle(document.documentElement).getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
   el.style.display = '';
   const progressData = getDiscountProgressData({
     currentValue: current,
-    targetValue: conditionValue,
+    targetValue: conditionTarget,
     message,
   });
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = renderDiscountProgress(progressData, {
+  const progressMarkup = renderDiscountProgress(progressData, {
     className: `bundle-footer-messaging bw-ppb-discount-progress${met ? ' bw-ppb-discount-progress--met' : ''}`,
     messageClassName: 'bw-ppb-discount-progress__message',
     trackClassName: 'bw-ppb-discount-progress__track',
     fillClassName: 'bw-ppb-discount-progress__fill',
-  }).trim();
-  const progressEl = wrapper.firstElementChild;
-  if (!progressEl) return;
-  progressEl.style.setProperty('--bw-discount-progress-color', primary);
-  el.replaceWith(progressEl);
-  this.elements.footer = progressEl;
+    milestoneListClassName: 'bw-discount-progress__milestones',
+    milestoneClassName: 'bw-discount-progress__milestone',
+    milestoneReachedClassName: 'bw-discount-progress__milestone--reached',
+    milestoneTitleClassName: 'bw-discount-progress__milestone-title',
+    milestoneSubtitleClassName: 'bw-discount-progress__milestone-subtitle',
+    renderInlineSubtitles: false,
+    renderSubtitleList: false,
+    milestones,
+    mode: progressMode === 'simple' ? 'bar' : 'stepped',
+  });
+  const modeClassName = progressMode === 'simple'
+    ? 'bw-discount-progress--mode-bar'
+    : 'bw-discount-progress--mode-stepped';
+  el.className = `bundle-footer-messaging bw-ppb-discount-progress${met ? ' bw-ppb-discount-progress--met' : ''} ${modeClassName}`;
+  el.innerHTML = progressMarkup;
+  el.style.setProperty('--bw-discount-progress-color', primary);
 },
 
 updateFooterMessaging() {
@@ -5304,11 +5673,17 @@ updateAddToCartButton() {
   const usesCascadeStepFlow = this._usesCascadeStepFlow?.() === true;
   const isIntermediateCascadeStep = usesCascadeStepFlow
     && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+  const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
 
-  const allStepsValid = this.selectedBundle.steps.every((step, index) => {
+  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
     if (step.isFreeGift || step.isDefault) return true;
     return this.validateStep(index);
-  });
+  }) : true;
+
+  const boxSelectionState = this.validateProductPageBoxSelectionCheckout
+    ? this.validateProductPageBoxSelectionCheckout.call(this)
+    : { valid: true };
+  const canCheckoutByBoxSelection = boxSelectionState.valid !== false;
 
   const paidTotalQuantity = this.selectedProducts.reduce((sum, stepSelections, i) => {
     const step = this.selectedBundle.steps[i];
@@ -5351,7 +5726,7 @@ updateAddToCartButton() {
     button.disabled = shouldDisable;
     button.classList.toggle('disabled', shouldDisable);
 
-  } else if (paidTotalQuantity === 0 || !allStepsValid) {
+  } else if (paidTotalQuantity === 0 || !allStepsValid || !canCheckoutByBoxSelection) {
     if (paidTotalQuantity === 0 || usesCascadeStepFlow) {
       button.textContent = this._resolveText('addToCartButton', 'Add Bundle to Cart');
     } else {
@@ -5451,6 +5826,80 @@ function getProductPageModalValidationToastOptions() {
 }
 
 const ProductPageModalStateMethods = {
+_getModalFocusableSelectors() {
+  return [
+    '.close-button',
+    '.prev-button',
+    '.next-button',
+    '.product-add-btn',
+    '.bw-quantity-control__button',
+    'button:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+  ];
+},
+
+_isElementVisibleForFocus(element) {
+  if (!element || typeof element !== 'object') return false;
+  if (element.disabled === true) return false;
+  if (element.getAttribute && element.getAttribute('aria-hidden') === 'true') return false;
+
+  const modal = this.elements?.modal;
+  if (modal && typeof modal.contains === 'function' && !modal.contains(element)) return false;
+
+  return typeof element.focus === 'function';
+},
+
+_getModalFocusableControls() {
+  const modal = this.elements?.modal;
+  if (!modal) return [];
+
+  const controls = [];
+  const seen = new Set();
+  const selectors = this._getModalFocusableSelectors();
+
+  selectors.forEach((selector) => {
+    const list = typeof modal.querySelectorAll === 'function'
+      ? modal.querySelectorAll(selector)
+      : [];
+
+    if (!list) return;
+    list.forEach((el) => {
+      if (!this._isElementVisibleForFocus(el) || seen.has(el)) return;
+      seen.add(el);
+      controls.push(el);
+    });
+  });
+
+  return controls;
+},
+
+_captureActiveElementBeforeModalOpen() {
+  const activeElement = globalThis.document?.activeElement;
+  if (activeElement && typeof activeElement.focus === 'function') {
+    this._modalOriginFocusElement = activeElement;
+  } else {
+    this._modalOriginFocusElement = null;
+  }
+},
+
+_restoreActiveElementAfterModalClose() {
+  const previousFocus = this._modalOriginFocusElement;
+  this._modalOriginFocusElement = null;
+  if (previousFocus && typeof previousFocus.focus === 'function') {
+    previousFocus.focus();
+  }
+},
+
+_focusFirstModalControl() {
+  const candidates = this._getModalFocusableControls();
+  const nextTarget = candidates[0];
+  if (nextTarget) {
+    nextTarget.focus();
+    return true;
+  }
+  return false;
+},
+
 getFormattedHeaderText() {
   const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
   return currentStep?.name || `Step ${this.currentStepIndex + 1}`;
@@ -5458,11 +5907,14 @@ getFormattedHeaderText() {
 
 openModal(stepIndex) {
   this.currentStepIndex = stepIndex;
+  this._captureActiveElementBeforeModalOpen();
 
   const modal = this.elements.modal;
   const headerText = this.getFormattedHeaderText();
-
-  modal.querySelector('.modal-step-title').innerHTML = headerText;
+  const header = modal.querySelector('.modal-step-title');
+  if (header) {
+    header.textContent = headerText;
+  }
 
   this.renderModalTabs();
   this.renderModalProductsLoading(stepIndex);
@@ -5471,8 +5923,15 @@ openModal(stepIndex) {
 
   this.setBottomSheetVisibility(true);
   if (this.elements.bsOverlay) this.elements.bsOverlay.classList.add('bw-bs-overlay--open');
-  requestAnimationFrame(() => {
+  const runAfterFrame = (typeof requestAnimationFrame === 'function')
+    ? requestAnimationFrame
+    : (callback) => {
+      callback();
+    };
+
+  runAfterFrame(() => {
     modal.classList.add('bw-bs-panel--open');
+    this._focusFirstModalControl();
   });
   document.body.style.overflow = 'hidden';
 
@@ -5487,7 +5946,13 @@ openModal(stepIndex) {
   }).catch(() => {
     if (this.currentStepIndex !== capturedStepIndex) return;
     const productGrid = this.elements.modal.querySelector('.product-grid');
-    if (productGrid) productGrid.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+    if (productGrid) {
+      productGrid.textContent = '';
+      const messageEl = document.createElement('p');
+      messageEl.className = 'error-message';
+      messageEl.textContent = 'Failed to load products. Please try again.';
+      productGrid.appendChild(messageEl);
+    }
     ToastManager.show('Failed to load products for this step');
   });
 },
@@ -5497,6 +5962,7 @@ closeModal() {
   if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
   document.body.style.overflow = '';
   this.setBottomSheetVisibility(false);
+  this._restoreActiveElementAfterModalClose();
 
   this.renderSteps();
   this.updateAddToCartButton();
@@ -5508,12 +5974,25 @@ validateStepCondition(stepIndex, productId, newQuantity) {
   const currentSelections = this.selectedProducts[stepIndex] || {};
   const currentQty = this.getSelectedQuantity(stepIndex, productId);
   const normalizedProductId = this.normalizeSelectionKey(productId);
+  const stepProducts = this.stepProductData[stepIndex] || [];
+  const isAmountOrWeight = step.conditionType === 'amount' || step.conditionType === 'weight';
+  const conditionSelections = isAmountOrWeight
+    ? this._buildConditionAwareStepSelections(stepProducts, currentSelections)
+    : currentSelections;
+  const targetProduct = isAmountOrWeight ? this.findProductBySelectionKey(stepProducts, normalizedProductId) : null;
+  const targetValues = targetProduct
+    ? {
+      amount: Number(targetProduct?.price || 0),
+      weight: Number(targetProduct?.weight || targetProduct?.weightInGrams || targetProduct?.grams || 0),
+    }
+    : null;
 
   const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
     step,
-    currentSelections,
+    conditionSelections,
     normalizedProductId,
     newQuantity,
+    targetValues,
   );
 
   if (!allowed && newQuantity > currentQty) {
@@ -5529,6 +6008,26 @@ validateStepCondition(stepIndex, productId, newQuantity) {
 
   return true;
 },
+
+  _buildConditionAwareStepSelections(stepProducts, currentSelections) {
+    const selections = currentSelections || {};
+    const translated = {};
+    for (const [selKey, qty] of Object.entries(selections)) {
+      const quantity = Number(qty) || 0;
+      if (quantity <= 0) continue;
+
+      const product = this.findProductBySelectionKey(stepProducts, selKey);
+      const unitAmount = Number(product?.price || 0);
+      const unitWeight = Number(product?.weight || product?.weightInGrams || product?.grams || 0);
+      const current = translated[selKey] || { quantity: 0, amount: 0, weight: 0 };
+      translated[selKey] = {
+        quantity: current.quantity + quantity,
+        amount: current.amount + (unitAmount * quantity),
+        weight: current.weight + (unitWeight * quantity),
+      };
+    }
+    return translated;
+  },
 
 validateStep(stepIndex) {
   const step = this.selectedBundle.steps[stepIndex];
@@ -5553,10 +6052,20 @@ validateStep(stepIndex) {
     return ConditionValidator.isStepConditionSatisfied(step, translated);
   }
 
+  if (step.conditionType === 'amount' || step.conditionType === 'weight') {
+    return ConditionValidator.isStepConditionSatisfied(
+      step,
+      this._buildConditionAwareStepSelections(this.stepProductData[stepIndex] || [], currentSelections),
+    );
+  }
+
   return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
 },
 
 isStepAccessible(stepIndex) {
+  if (this._isConditionValidationEnabled?.() === false) {
+    return true;
+  }
 
   for (let i = 0; i < stepIndex; i++) {
     const step = this.selectedBundle?.steps[i];
@@ -5618,7 +6127,7 @@ updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
   if (!modalStepTitle) return;
 
   const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-  modalStepTitle.innerHTML = currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+  modalStepTitle.textContent = currentStep?.name || `Step ${this.currentStepIndex + 1}`;
 },
 
 updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
@@ -5631,6 +6140,13 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
   const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
   const ruleToUse = discountInfo.applicableRule || nextRule;
   const hasDiscountRules = !!ruleToUse;
+  const pbConfig = this.selectedBundle?.messaging?.displayOptions?.progressBar || {};
+  const messageType = nextRule
+    ? 'progress'
+    : (discountInfo.qualifiesForDiscount ? 'success' : 'progress');
+  const fallbackTemplate = messageType === 'success'
+    ? (pbConfig.successText || this.selectedBundle.messaging?.successTemplate || 'You got {discountText}!')
+    : (pbConfig.progressText || this.selectedBundle.messaging?.progressTemplate || 'Add {conditionText} more to get {discountText}');
 
   if (discountSection) {
     discountSection.style.display = (this.config.showDiscountMessaging && hasDiscountRules) ? 'block' : 'none';
@@ -5638,32 +6154,34 @@ updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyIn
 
   if (!hasDiscountRules) return;
 
+  const template = TemplateManager.getDiscountMessageTemplate({
+    bundle: this.selectedBundle,
+    totalQuantity,
+    totalPrice,
+    discountInfo,
+    messageType,
+    fallbackTemplate,
+    locale: window.Shopify?.locale,
+  });
   const variables = TemplateManager.createDiscountVariables(
     this.selectedBundle,
     totalPrice,
     totalQuantity,
     discountInfo,
     currencyInfo,
-    { messageType: nextRule ? 'progress' : 'success' }
+    { rule: ruleToUse, messageType }
   );
+  const message = TemplateManager.replaceVariables(template, variables);
 
-  if (nextRule) {
-    const progressMessage = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = progressMessage;
-    if (discountSection) discountSection.classList.remove('qualified');
-  } else if (discountInfo.qualifiesForDiscount) {
-    const successMessage = TemplateManager.replaceVariables(
-      this.config.successMessageTemplate,
-      variables
-    );
-    footerDiscountText.innerHTML = successMessage;
-    if (discountSection) discountSection.classList.add('qualified');
-  } else {
-    footerDiscountText.innerHTML = '';
-    if (discountSection) discountSection.classList.remove('qualified');
+  footerDiscountText.textContent = discountInfo.qualifiesForDiscount && !nextRule
+    ? message
+    : message || '';
+  if (discountSection) {
+    if (discountInfo.qualifiesForDiscount && !nextRule) {
+      discountSection.classList.add('qualified');
+    } else {
+      discountSection.classList.remove('qualified');
+    }
   }
 },
 
@@ -5786,8 +6304,43 @@ attachEventListeners() {
   if (nextButton) nextButton.addEventListener('click', () => this.navigateModal(1));
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('bw-bs-panel--open')) {
+    if (!modal.classList.contains('bw-bs-panel--open')) return;
+
+    const target = e.target;
+    if (target && (target.tagName === 'INPUT' || target.isContentEditable)) return;
+
+    if (e.key === 'Escape') {
       this.closeModal();
+      return;
+    }
+
+    if (e.key === 'ArrowLeft' && prevButton) {
+      e.preventDefault();
+      prevButton.click?.();
+      return;
+    }
+
+    if (e.key === 'ArrowRight' && nextButton) {
+      e.preventDefault();
+      nextButton.click?.();
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      const controls = typeof this._getModalFocusableControls === 'function'
+        ? this._getModalFocusableControls()
+        : [];
+      if (!controls.length) return;
+
+      const current = controls.indexOf(globalThis.document?.activeElement);
+      const isActiveInModal = current >= 0;
+      const fromIndex = isActiveInModal ? current : -1;
+      const nextIndex = e.shiftKey
+        ? (fromIndex > 0 ? fromIndex - 1 : controls.length - 1)
+        : (fromIndex >= 0 && fromIndex < controls.length - 1 ? fromIndex + 1 : 0);
+
+      e.preventDefault();
+      controls[nextIndex]?.focus?.();
     }
   });
 },
@@ -5800,7 +6353,10 @@ async navigateModal(direction) {
     this.currentStepIndex = newStepIndex;
 
     const headerText = this.getFormattedHeaderText();
-    this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+    const header = this.elements.modal.querySelector('.modal-step-title');
+    if (header) {
+      header.textContent = headerText;
+    }
 
     this.renderModalTabs();
     this.renderModalProductsLoading(newStepIndex);
@@ -5811,13 +6367,18 @@ async navigateModal(direction) {
     this.renderModalProducts(this.currentStepIndex);
     this.updateModalFooterMessaging();
   } else if (direction > 0) {
+    const shouldValidateConditions = this._isConditionValidationEnabled?.() !== false;
+
     if (newStepIndex < this.selectedBundle.steps.length) {
 
-      if (this.validateStep(this.currentStepIndex)) {
+      if (!shouldValidateConditions || this.validateStep(this.currentStepIndex)) {
         this.currentStepIndex = newStepIndex;
 
         const headerText = this.getFormattedHeaderText();
-        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+        const header = this.elements.modal.querySelector('.modal-step-title');
+        if (header) {
+          header.textContent = headerText;
+        }
 
         this.renderModalTabs();
         this.renderModalProductsLoading(newStepIndex);
@@ -5837,7 +6398,7 @@ async navigateModal(direction) {
       }
     } else {
 
-      if (this.validateStep(this.currentStepIndex)) {
+      if (!shouldValidateConditions || this.validateStep(this.currentStepIndex)) {
         this.closeModal();
       } else {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
@@ -6541,6 +7102,37 @@ function resolveInpageProductSelection(
   };
 }
 
+const INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
+
+function resolveProductCardDescription(product = {}) {
+  const candidate =
+    (typeof product.description === 'string' && product.description.trim())
+    || (typeof product.descriptionHtml === 'string' && product.descriptionHtml.trim())
+    || '';
+
+  return String(candidate).trim();
+}
+
+function renderInpageProductCardDescription(product = {}, showSeeMore) {
+  if (!showSeeMore) return '';
+
+  const description = resolveProductCardDescription(product);
+  if (!description) return '';
+
+  const showToggle = description.length > INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
+  const shortDescription = showToggle
+    ? `${description.slice(0, INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
+    : description;
+
+  return `
+    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
+      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
+      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
+      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
+    </div>
+  `;
+}
+
 const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
@@ -6583,6 +7175,11 @@ _renderInpageStepProducts(stepIndex, target) {
 
   const usesCascadeCards = this._isProductPageCascadeTemplate();
   const usesGridCards = this._isProductPageGridTemplate();
+  const widgetConfig = this.config || {};
+  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
+  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
+  const cardHoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
+  const cardSeeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
 
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
     this.selectedBundle?.validateQuantityPerProduct
@@ -6622,11 +7219,17 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'row',
           className: [
             'bw-ppb-cascade-product-row',
+            cardHoverClass,
+            cardSeeMoreClass,
             'wpbMixCascadeProductWrapper',
             variantSelectorHtml ? 'bw-ppb-cascade-product-row--has-variant-selector' : '',
             currentQuantity > 0 ? 'selected' : '',
             outOfStock ? 'is-out-of-stock' : '',
           ].filter(Boolean).join(' '),
+          description: resolveProductCardDescription(product),
+          displaySeeMoreLink: showSeeMoreLink,
+          descriptionMaxLength: INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH,
+          expandProductCardOnHover: expandOnHover,
           variantSelectorHtml,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled: outOfStock,
@@ -6643,8 +7246,12 @@ _renderInpageStepProducts(stepIndex, target) {
         currencyInfo,
         {
           variantSelectorHtml,
+          description: resolveProductCardDescription(product),
+          displaySeeMoreLink: showSeeMoreLink,
+          descriptionMaxLength: INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH,
+          expandProductCardOnHover: expandOnHover,
           mode: 'grid',
-          className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
+          className: `${cardHoverClass} ${cardSeeMoreClass} bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`.trim(),
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           selectedAction: 'button',
           selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
@@ -6657,7 +7264,8 @@ _renderInpageStepProducts(stepIndex, target) {
 
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const showQuantitySelector = !this._usesCompactInpageProductCards()
-      && this.config.showQuantitySelectorOnCard;
+      && widgetConfig.showQuantitySelectorOnCard;
+    const showSeeMoreLinkOnRow = widgetConfig.displaySeeMoreLink === true;
     const productContent = `
       <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
       ${product.price ? `
@@ -6667,6 +7275,7 @@ _renderInpageStepProducts(stepIndex, target) {
         </div>
       ` : ''}
       ${this.renderInlineCardVariantSelector(product, currentStep)}
+      ${renderInpageProductCardDescription(product, showSeeMoreLinkOnRow)}
       ${showQuantitySelector ? `
         <div class="product-quantity-wrapper">
           <div class="product-quantity-selector">
@@ -6684,7 +7293,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
 
     return `
-      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${cardHoverClass} ${cardSeeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
@@ -7932,6 +8541,37 @@ function shouldDisplayVariantsAsIndividualForModalCategory(
     || step?.displayVariantsAsIndividual === true;
 }
 
+const MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
+
+function resolveProductCardDescription(product = {}) {
+  const candidate =
+    (typeof product.description === 'string' && product.description)
+    || (typeof product.descriptionHtml === 'string' && product.descriptionHtml)
+    || '';
+
+  return String(candidate);
+}
+
+function renderModalProductCardDescription(product, showSeeMore) {
+  if (!showSeeMore) return '';
+
+  const description = resolveProductCardDescription(product);
+  if (!description) return '';
+
+  const showToggle = description.length > MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
+  const shortDescription = showToggle
+    ? `${description.slice(0, MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
+    : description;
+
+  return `
+    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
+      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
+      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
+      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
+    </div>
+  `;
+}
+
 function getModalSoleVariantDisplayTitle(product = {}) {
   const variants = Array.isArray(product?.variants) ? product.variants : [];
   if (Number(product?.sourceVariantCount || 0) <= 1 || variants.length !== 1) {
@@ -8050,7 +8690,8 @@ renderModalTabs() {
         return;
       }
 
-      if (index > this.currentStepIndex && !this.validateStep(this.currentStepIndex)) {
+      const shouldValidateConditions = this._isConditionValidationEnabled?.() !== false;
+      if (shouldValidateConditions && index > this.currentStepIndex && !this.validateStep(this.currentStepIndex)) {
         ToastManager.show('Please meet the step conditions before proceeding.');
         return;
       }
@@ -8058,7 +8699,10 @@ renderModalTabs() {
       this.currentStepIndex = index;
 
       const headerText = this.getFormattedHeaderText();
-      this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+      const header = this.elements.modal.querySelector('.modal-step-title');
+      if (header) {
+        header.textContent = headerText;
+      }
 
       this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
       try {
@@ -8128,6 +8772,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
 
   const rawProducts = productsToRender || this.stepProductData[stepIndex];
   const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  const widgetConfig = this.config || {};
   const categoryProducts = this._filterProductsForInpageCategory(
     currentStep,
     rawProducts,
@@ -8189,7 +8834,11 @@ renderModalProducts(stepIndex, productsToRender = null) {
     return;
   }
 
-  const showQuantitySelector = this.config.showQuantitySelectorOnCard;
+  const showQuantitySelector = widgetConfig.showQuantitySelectorOnCard;
+  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
+  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
+  const hoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
+  const seeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
 
   const freeGiftCardClass = isFreeGiftStep ? ' bw-product-card--free-gift' : '';
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
@@ -8209,14 +8858,15 @@ renderModalProducts(stepIndex, productsToRender = null) {
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const soleVariantDisplayTitle = getModalSoleVariantDisplayTitle(product);
 
-    const stockBadge = outOfStock
-      ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
-      : lowStock
-        ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
-        : '';
+      const stockBadge = outOfStock
+        ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
+        : lowStock
+          ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
+          : '';
+      const descriptionMarkup = renderModalProductCardDescription(product, showSeeMoreLink);
 
-    return `
-      <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+      return `
+      <div class="product-card${freeGiftCardClass} ${hoverClass} ${seeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         ${currentQuantity > 0 ? `
           <div class="selected-overlay">✓</div>
         ` : ''}
@@ -8253,6 +8903,8 @@ renderModalProducts(stepIndex, productsToRender = null) {
               </div>
             </div>
           ` : ''}
+
+          ${descriptionMarkup}
 
           <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
             ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add to Cart' })}
@@ -8330,16 +8982,113 @@ attachProductEventHandlers(productGrid, stepIndex) {
   productGrid.parentNode.replaceChild(newProductGrid, productGrid);
 
   const step = this.selectedBundle.steps[stepIndex];
+  const widgetConfig = this.config || {};
 
   const findProduct = (productId) => {
     return this.findProductBySelectionKey(this.stepProductData[stepIndex] || [], productId);
   };
+  const hasDomElement = typeof Element !== 'undefined';
+  const getEventTarget = (eventTarget) => {
+    if (!eventTarget) return null;
+    if (!hasDomElement) return eventTarget;
+    return eventTarget instanceof Element ? eventTarget : eventTarget.parentElement;
+  };
+
+  const matchesSelector = (element, selector) => {
+    if (!element) return false;
+    if (typeof element.matches === 'function') {
+      return element.matches(selector);
+    }
+
+    if (selector.startsWith('.')) {
+      return element.classList?.contains(selector.slice(1));
+    }
+
+    const dataProductId = selector.match(/^\[data-product-id="(.+)"\]$/);
+    if (dataProductId) {
+      return element.dataset?.productId === dataProductId[1];
+    }
+
+    return false;
+  };
+
+  const findClosest = (element, selector) => {
+    if (!element) return null;
+    const selectors = selector
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    let current = element;
+    while (current) {
+      if (selectors.some((candidate) => matchesSelector(current, candidate))) {
+        return current;
+      }
+      current = current.parentElement;
+    }
+
+    return null;
+  };
+
+  const setProductCardDescriptionExpanded = (productCard, expandedValue) => {
+    if (!productCard) return;
+
+    const root = productCard.querySelector('[data-bw-card-description="true"]');
+    if (!root) return;
+
+    const shortDescription = root.querySelector('.bw-product-card__description-short');
+    const fullDescription = root.querySelector('.bw-product-card__description-full');
+    const button = root.querySelector('.bw-product-card__see-more');
+    if (!shortDescription || !fullDescription || !button) return;
+
+    const isExpanded = typeof expandedValue === 'boolean'
+      ? expandedValue
+      : root.dataset.bwCardDescriptionExpanded === 'false';
+
+    root.dataset.bwCardDescriptionExpanded = isExpanded ? 'true' : 'false';
+    shortDescription.classList.toggle('hidden', isExpanded);
+    fullDescription.classList.toggle('hidden', !isExpanded);
+    button.textContent = isExpanded ? 'See less' : 'See more';
+    button.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+  };
+
+  if (widgetConfig.displaySeeMoreLink === true) {
+
+    newProductGrid.addEventListener('click', (e) => {
+      const eventTarget = getEventTarget(e.target);
+      if (!eventTarget) return;
+
+      const seeMoreButton = findClosest(eventTarget, '.bw-product-card__see-more');
+      if (!seeMoreButton) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const productCard = findClosest(seeMoreButton, '.product-card');
+      setProductCardDescriptionExpanded(productCard);
+    });
+  }
+
+  if (widgetConfig.expandProductCardOnHover === true) {
+    newProductGrid.querySelectorAll('.product-card.bw-product-card--hover-expand').forEach(card => {
+      card.classList.remove('bw-product-card--hover-expanded');
+      card.addEventListener('mouseenter', () => {
+        card.classList.add('bw-product-card--hover-expanded');
+      });
+      card.addEventListener('mouseleave', () => {
+        card.classList.remove('bw-product-card--hover-expanded');
+      });
+    });
+  }
 
   newProductGrid.addEventListener('click', (e) => {
-    if (e.target.classList.contains('qty-btn') || e.target.classList.contains('inline-qty-btn')) {
+    const eventTarget = getEventTarget(e.target);
+    if (!eventTarget) return;
+
+    if (eventTarget.classList.contains('qty-btn') || eventTarget.classList.contains('inline-qty-btn')) {
       e.stopPropagation();
-      const productId = e.target.dataset.productId;
-      const isIncrease = e.target.classList.contains('qty-increase');
+      const productId = eventTarget.dataset.productId;
+      const isIncrease = eventTarget.classList.contains('qty-increase');
       const currentQuantity = this.getSelectedQuantity(stepIndex, productId);
 
       const newQuantity = isIncrease ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
@@ -8348,9 +9097,12 @@ attachProductEventHandlers(productGrid, stepIndex) {
   });
 
   newProductGrid.addEventListener('click', (e) => {
-    if (e.target.classList.contains('product-add-btn')) {
+    const eventTarget = getEventTarget(e.target);
+    if (!eventTarget) return;
+
+    if (eventTarget.classList.contains('product-add-btn')) {
       e.stopPropagation();
-      const productId = e.target.dataset.productId;
+      const productId = eventTarget.dataset.productId;
       const product = findProduct(productId);
 
       if (product && product.variants && product.variants.length > 1 && this.productModal) {
@@ -8364,12 +9116,15 @@ attachProductEventHandlers(productGrid, stepIndex) {
   });
 
   newProductGrid.addEventListener('click', (e) => {
-    const productCard = e.target.closest('.product-card');
-    if (!productCard) return;
-    if (e.target.closest('.product-add-btn, .qty-btn, .inline-qty-btn, .variant-selector, button, input, select, a')) return;
+    const eventTarget = getEventTarget(e.target);
+    if (!eventTarget) return;
 
-    const productImage = e.target.closest('.product-image');
-    const productTitle = e.target.closest('.product-title');
+    const productCard = findClosest(eventTarget, '.product-card');
+    if (!productCard) return;
+    if (findClosest(eventTarget, '.product-add-btn, .qty-btn, .inline-qty-btn, .variant-selector, button, input, select, a')) return;
+
+    const productImage = findClosest(eventTarget, '.product-image');
+    const productTitle = findClosest(eventTarget, '.product-title');
     const canClickCardToAdd = this._isProductCardClickAddEnabled();
     if (!canClickCardToAdd && !productImage && !productTitle) return;
 
@@ -8539,6 +9294,16 @@ function collectCategoryAutoNextProductIds(category) {
 }
 
 function shouldAutoAdvanceProductPageStep({ quantity = 0, productId = '', step = null } = {}) {
+  if (
+    quantity > 0
+    && step?.autoNextStepOnConditionMet === true
+    && step?.conditionType
+    && step?.conditionOperator
+    && Number(step.conditionValue || 0) > 0
+  ) {
+    return true;
+  }
+
   const categories = Array.isArray(step?.categories) ? step.categories : [];
   const categoryRuleCategories = categories.filter(category =>
     Array.isArray(category?.conditions) && category.conditions.length > 0
@@ -8641,7 +9406,8 @@ updateProductSelection(stepIndex, productId, newQuantity) {
   const stepProducts = this.stepProductData?.[stepIndex] || [];
   const selectedProduct = this.findProductBySelectionKey(stepProducts, selectionKey);
   const selectedProductId = selectedProduct?.parentProductId || selectedProduct?.productId || selectedProduct?.id || selectionKey;
-  if (shouldAutoAdvanceProductPageStep({ quantity, productId: selectedProductId, step: currentStep })) {
+  if (!this._autoAdvancePending && shouldAutoAdvanceProductPageStep({ quantity, productId: selectedProductId, step: currentStep })) {
+    this._autoAdvancePending = true;
     this._autoProgressBottomSheet(stepIndex);
   }
   this._maybeAutoAddAfterLastStep();
@@ -8649,14 +9415,18 @@ updateProductSelection(stepIndex, productId, newQuantity) {
 
 _maybeAutoAddAfterLastStep() {
   const controls = this._getProductPageControls();
-  if (controls?.addBundleToCartAfterLastStepCompleted !== true) return;
+  if (!(
+    controls?.addBundleToCartAfterLastStepCompleted === true
+    || controls?.addBundleToCartOnDone === true
+  )) return;
   if (this._autoAddingFromControls) return;
   if (!this.selectedBundle?.steps?.length) return;
 
-  const allStepsValid = this.selectedBundle.steps.every((step, index) => {
+  const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
+  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
     if (step.isFreeGift || step.isDefault) return true;
     return this.validateStep(index);
-  });
+  }) : true;
   if (!allStepsValid) return;
 
   this._autoAddingFromControls = true;
@@ -8688,7 +9458,14 @@ _syncFreeGiftSlotCard() {
  * or closes the modal if all steps are complete.
  */
 _autoProgressBottomSheet(stepIndex) {
-  if (!this.validateStep(stepIndex)) return;
+  const clearAutoAdvance = () => {
+    this._autoAdvancePending = false;
+  };
+
+  if (!this.validateStep(stepIndex)) {
+    clearAutoAdvance();
+    return;
+  }
 
   const next = bsFindNextIncompleteStep(
     this.selectedBundle.steps,
@@ -8700,7 +9477,10 @@ _autoProgressBottomSheet(stepIndex) {
   if (next === -1) {
 
     this.renderModalTabs();
-    setTimeout(() => this.closeModal(), 500);
+    setTimeout(() => {
+      clearAutoAdvance();
+      this.closeModal();
+    }, 500);
   } else {
 
     this.renderModalTabs();
@@ -8708,16 +9488,25 @@ _autoProgressBottomSheet(stepIndex) {
       this.currentStepIndex = next;
       const modal = this.elements.modal;
       const headerText = this.getFormattedHeaderText();
-      modal.querySelector('.modal-step-title').innerHTML = headerText;
+      const header = modal.querySelector('.modal-step-title');
+      if (header) {
+        header.textContent = headerText;
+      }
       this.renderModalProductsLoading(next);
       this.renderModalTabs();
       this.updateModalNavigation();
       this.loadStepProducts(next).then(() => {
-        if (this.currentStepIndex !== next) return;
+        if (this.currentStepIndex !== next) {
+          clearAutoAdvance();
+          return;
+        }
         this.renderModalProducts(next);
         this.updateModalFooterMessaging();
         this.preloadNextStep();
-      }).catch(() => {});
+      }).catch(() => {})
+        .finally(() => {
+          clearAutoAdvance();
+        });
     }, 300);
   }
 },
@@ -8833,9 +9622,9 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     }
 
     if (quantity > 0) {
-      productCard.classList.add('selected');
+      productCard.classList.add('bw-product-card--selected');
     } else {
-      productCard.classList.remove('selected');
+      productCard.classList.remove('bw-product-card--selected');
     }
   }
 }
@@ -8873,10 +9662,12 @@ const ProductPageCartMethods = {
         return;
       }
 
-      const allStepsValid = this.selectedBundle.steps.every((step, index) => {
+      const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
+      const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
         if (step.isFreeGift || step.isDefault) return true;
         return this.validateStep(index);
-      });
+      }) : true;
+
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;

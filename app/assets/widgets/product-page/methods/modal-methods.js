@@ -47,6 +47,37 @@ export function shouldDisplayVariantsAsIndividualForModalCategory(
     || step?.displayVariantsAsIndividual === true;
 }
 
+const MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
+
+function resolveProductCardDescription(product = {}) {
+  const candidate =
+    (typeof product.description === 'string' && product.description)
+    || (typeof product.descriptionHtml === 'string' && product.descriptionHtml)
+    || '';
+
+  return String(candidate);
+}
+
+function renderModalProductCardDescription(product, showSeeMore) {
+  if (!showSeeMore) return '';
+
+  const description = resolveProductCardDescription(product);
+  if (!description) return '';
+
+  const showToggle = description.length > MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
+  const shortDescription = showToggle
+    ? `${description.slice(0, MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
+    : description;
+
+  return `
+    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
+      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
+      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
+      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
+    </div>
+  `;
+}
+
 export function getModalSoleVariantDisplayTitle(product = {}) {
   const variants = Array.isArray(product?.variants) ? product.variants : [];
   if (Number(product?.sourceVariantCount || 0) <= 1 || variants.length !== 1) {
@@ -168,7 +199,8 @@ renderModalTabs() {
         return;
       }
       // Block forward navigation if current step condition is not met
-      if (index > this.currentStepIndex && !this.validateStep(this.currentStepIndex)) {
+      const shouldValidateConditions = this._isConditionValidationEnabled?.() !== false;
+      if (shouldValidateConditions && index > this.currentStepIndex && !this.validateStep(this.currentStepIndex)) {
         ToastManager.show('Please meet the step conditions before proceeding.');
         return;
       }
@@ -177,7 +209,10 @@ renderModalTabs() {
 
       // Update modal header
       const headerText = this.getFormattedHeaderText();
-      this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+      const header = this.elements.modal.querySelector('.modal-step-title');
+      if (header) {
+        header.textContent = headerText;
+      }
 
       // Load products for this step if not already loaded
       this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
@@ -250,6 +285,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
   // Use all products from step data
   const rawProducts = productsToRender || this.stepProductData[stepIndex];
   const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  const widgetConfig = this.config || {};
   const categoryProducts = this._filterProductsForInpageCategory(
     currentStep,
     rawProducts,
@@ -312,7 +348,11 @@ renderModalProducts(stepIndex, productsToRender = null) {
     return;
   }
 
-  const showQuantitySelector = this.config.showQuantitySelectorOnCard;
+  const showQuantitySelector = widgetConfig.showQuantitySelectorOnCard;
+  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
+  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
+  const hoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
+  const seeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
 
   // Free gift product cards use a different border (gray instead of gold)
   const freeGiftCardClass = isFreeGiftStep ? ' bw-product-card--free-gift' : '';
@@ -335,14 +375,15 @@ renderModalProducts(stepIndex, productsToRender = null) {
     const soleVariantDisplayTitle = getModalSoleVariantDisplayTitle(product);
 
     // Low-stock / out-of-stock badge — shown on the image, not in the CTA.
-    const stockBadge = outOfStock
-      ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
-      : lowStock
-        ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
-        : '';
+      const stockBadge = outOfStock
+        ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
+        : lowStock
+          ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
+          : '';
+      const descriptionMarkup = renderModalProductCardDescription(product, showSeeMoreLink);
 
-    return `
-      <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+      return `
+      <div class="product-card${freeGiftCardClass} ${hoverClass} ${seeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         ${currentQuantity > 0 ? `
           <div class="selected-overlay">✓</div>
         ` : ''}
@@ -379,6 +420,8 @@ renderModalProducts(stepIndex, productsToRender = null) {
               </div>
             </div>
           ` : ''}
+
+          ${descriptionMarkup}
 
           <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
             ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add to Cart' })}
@@ -466,18 +509,116 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
   // Get step data for modal
   const step = this.selectedBundle.steps[stepIndex];
+  const widgetConfig = this.config || {};
 
   // Helper to find product by ID
   const findProduct = (productId) => {
     return this.findProductBySelectionKey(this.stepProductData[stepIndex] || [], productId);
   };
+  const hasDomElement = typeof Element !== 'undefined';
+  const getEventTarget = (eventTarget) => {
+    if (!eventTarget) return null;
+    if (!hasDomElement) return eventTarget;
+    return eventTarget instanceof Element ? eventTarget : eventTarget.parentElement;
+  };
+
+  const matchesSelector = (element, selector) => {
+    if (!element) return false;
+    if (typeof element.matches === 'function') {
+      return element.matches(selector);
+    }
+
+    if (selector.startsWith('.')) {
+      return element.classList?.contains(selector.slice(1));
+    }
+
+    const dataProductId = selector.match(/^\[data-product-id="(.+)"\]$/);
+    if (dataProductId) {
+      return element.dataset?.productId === dataProductId[1];
+    }
+
+    return false;
+  };
+
+  const findClosest = (element, selector) => {
+    if (!element) return null;
+    const selectors = selector
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    let current = element;
+    while (current) {
+      if (selectors.some((candidate) => matchesSelector(current, candidate))) {
+        return current;
+      }
+      current = current.parentElement;
+    }
+
+    return null;
+  };
+
+  const setProductCardDescriptionExpanded = (productCard, expandedValue) => {
+    if (!productCard) return;
+
+    const root = productCard.querySelector('[data-bw-card-description="true"]');
+    if (!root) return;
+
+    const shortDescription = root.querySelector('.bw-product-card__description-short');
+    const fullDescription = root.querySelector('.bw-product-card__description-full');
+    const button = root.querySelector('.bw-product-card__see-more');
+    if (!shortDescription || !fullDescription || !button) return;
+
+    const isExpanded = typeof expandedValue === 'boolean'
+      ? expandedValue
+      : root.dataset.bwCardDescriptionExpanded === 'false';
+
+    root.dataset.bwCardDescriptionExpanded = isExpanded ? 'true' : 'false';
+    shortDescription.classList.toggle('hidden', isExpanded);
+    fullDescription.classList.toggle('hidden', !isExpanded);
+    button.textContent = isExpanded ? 'See less' : 'See more';
+    button.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+  };
+
+  if (widgetConfig.displaySeeMoreLink === true) {
+    // Description toggle (See more / See less)
+    newProductGrid.addEventListener('click', (e) => {
+      const eventTarget = getEventTarget(e.target);
+      if (!eventTarget) return;
+
+      const seeMoreButton = findClosest(eventTarget, '.bw-product-card__see-more');
+      if (!seeMoreButton) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const productCard = findClosest(seeMoreButton, '.product-card');
+      setProductCardDescriptionExpanded(productCard);
+    });
+  }
+
+  // Hover expansion for controls that enable description-on-hover behavior.
+  if (widgetConfig.expandProductCardOnHover === true) {
+    newProductGrid.querySelectorAll('.product-card.bw-product-card--hover-expand').forEach(card => {
+      card.classList.remove('bw-product-card--hover-expanded');
+      card.addEventListener('mouseenter', () => {
+        card.classList.add('bw-product-card--hover-expanded');
+      });
+      card.addEventListener('mouseleave', () => {
+        card.classList.remove('bw-product-card--hover-expanded');
+      });
+    });
+  }
 
   // Quantity button handlers
   newProductGrid.addEventListener('click', (e) => {
-    if (e.target.classList.contains('qty-btn') || e.target.classList.contains('inline-qty-btn')) {
+    const eventTarget = getEventTarget(e.target);
+    if (!eventTarget) return;
+
+    if (eventTarget.classList.contains('qty-btn') || eventTarget.classList.contains('inline-qty-btn')) {
       e.stopPropagation();
-      const productId = e.target.dataset.productId;
-      const isIncrease = e.target.classList.contains('qty-increase');
+      const productId = eventTarget.dataset.productId;
+      const isIncrease = eventTarget.classList.contains('qty-increase');
       const currentQuantity = this.getSelectedQuantity(stepIndex, productId);
 
       const newQuantity = isIncrease ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
@@ -487,9 +628,12 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
   // Add to Bundle button handler
   newProductGrid.addEventListener('click', (e) => {
-    if (e.target.classList.contains('product-add-btn')) {
+    const eventTarget = getEventTarget(e.target);
+    if (!eventTarget) return;
+
+    if (eventTarget.classList.contains('product-add-btn')) {
       e.stopPropagation();
-      const productId = e.target.dataset.productId;
+      const productId = eventTarget.dataset.productId;
       const product = findProduct(productId);
 
       // If product has variants and modal is available, open the modal
@@ -505,12 +649,15 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
   // Product card click follows Settings -> Controls. Product image/title still opens variants when card add is disabled.
   newProductGrid.addEventListener('click', (e) => {
-    const productCard = e.target.closest('.product-card');
-    if (!productCard) return;
-    if (e.target.closest('.product-add-btn, .qty-btn, .inline-qty-btn, .variant-selector, button, input, select, a')) return;
+    const eventTarget = getEventTarget(e.target);
+    if (!eventTarget) return;
 
-    const productImage = e.target.closest('.product-image');
-    const productTitle = e.target.closest('.product-title');
+    const productCard = findClosest(eventTarget, '.product-card');
+    if (!productCard) return;
+    if (findClosest(eventTarget, '.product-add-btn, .qty-btn, .inline-qty-btn, .variant-selector, button, input, select, a')) return;
+
+    const productImage = findClosest(eventTarget, '.product-image');
+    const productTitle = findClosest(eventTarget, '.product-title');
     const canClickCardToAdd = this._isProductCardClickAddEnabled();
     if (!canClickCardToAdd && !productImage && !productTitle) return;
 
