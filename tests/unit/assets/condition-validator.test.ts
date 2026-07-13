@@ -190,7 +190,7 @@ describe('canUpdateQuantity — EQUAL_TO', () => {
 
 // ─── canUpdateQuantity — LESS_THAN_OR_EQUAL_TO ────────────────────────────────
 
-describe('canUpdateQuantity — LESS_THAN_OR_EQUAL_TO', () => {
+  describe('canUpdateQuantity — LESS_THAN_OR_EQUAL_TO', () => {
   const step = makeStep(LTE, 3);
 
   it('allows total equal to N (3 ≤ 3)', () => {
@@ -204,8 +204,46 @@ describe('canUpdateQuantity — LESS_THAN_OR_EQUAL_TO', () => {
   });
 
   it('blocks when new product pushes total above N', () => {
-    // A:3 satisfies LTE 3. Adding B:1 → total 4 > 3 → blocked.
-    expect(canUpdateQuantity(step, { A: 3 }, 'B', 1).allowed).toBe(false);
+      // A:3 satisfies LTE 3. Adding B:1 → total 4 > 3 → blocked.
+      expect(canUpdateQuantity(step, { A: 3 }, 'B', 1).allowed).toBe(false);
+    });
+  });
+
+describe('canUpdateQuantity — amount condition', () => {
+  const productPrices = { A: 600, B: 450 };
+  const step = makeStep(LTE, 10, 'amount');
+
+  it('allows updates while running total stays within amount threshold', () => {
+    const selections = {
+      A: { quantity: 1, amount: 400, weight: 0 },
+    };
+    expect(canUpdateQuantity(step, selections, 'B', 1, { amount: productPrices.B, weight: 0 }).allowed).toBe(true);
+  });
+
+  it('blocks updates when proposed amount exceeds threshold', () => {
+    const selections = {
+      A: { quantity: 1, amount: 600, weight: 0 },
+    };
+    expect(canUpdateQuantity(step, selections, 'B', 2, { amount: productPrices.B, weight: 0 }).allowed).toBe(false);
+  });
+
+  it('allows no-op updates that remain below threshold for equal condition', () => {
+    const equalStep = makeStep(EQ, 10, 'amount');
+    const selections = {
+      A: { quantity: 1, amount: 700, weight: 0 },
+    };
+    expect(canUpdateQuantity(equalStep, selections, 'A', 1, { amount: productPrices.A, weight: 0 }).allowed).toBe(true);
+  });
+});
+
+describe('canUpdateQuantity — weight condition', () => {
+  it('uses per-product weights in condition math', () => {
+    const step = makeStep(LTE, 1000, 'weight');
+    const selections = {
+      A: { quantity: 1, amount: 0, weight: 600 },
+    };
+    const result = canUpdateQuantity(step, selections, 'B', 1, { amount: 0, weight: 500 });
+    expect(result.allowed).toBe(false);
   });
 });
 
@@ -430,6 +468,20 @@ describe('isStepConditionSatisfied — two conditions (GTE 2 AND LTE 6)', () => 
 
   it('not satisfied with null selections', () => {
     expect(isStepConditionSatisfied(step, null)).toBe(false);
+  });
+});
+
+describe('isStepConditionSatisfied — amount condition', () => {
+  it('compares against amount totals when conditionType is amount', () => {
+    const step = makeStep(EQ, 10, 'amount');
+    expect(isStepConditionSatisfied(step, { A: { quantity: 1, amount: 1000, weight: 0 } })).toBe(true);
+    expect(isStepConditionSatisfied(step, { A: { quantity: 2, amount: 600, weight: 0 } })).toBe(false);
+  });
+
+  it('compares against weight totals when conditionType is weight', () => {
+    const step = makeStep(LTE, 1200, 'weight');
+    expect(isStepConditionSatisfied(step, { A: { quantity: 1, amount: 0, weight: 600 } })).toBe(true);
+    expect(isStepConditionSatisfied(step, { A: { quantity: 1, amount: 0, weight: 1400 } })).toBe(false);
   });
 });
 

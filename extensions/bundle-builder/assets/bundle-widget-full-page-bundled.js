@@ -19,37 +19,64 @@ const ConditionValidator = (function () {
     LESS_THAN_OR_EQUAL_TO:   'less_than_or_equal_to',
   };
 
-  function calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity) {
+  function calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity, options = {}) {
     const selections = currentSelections || {};
+    const conditionType = _normalizeConditionType(options.conditionType);
+    const targetAmountPerUnit = Number(options.targetAmountPerUnit);
+    const targetWeightPerUnit = Number(options.targetWeightPerUnit);
+    const normalizedQuantity = Number(newQuantity) || 0;
 
-    let total = newQuantity;
+    let total = 0;
 
     for (const pid of Object.keys(selections)) {
       if (pid !== targetProductId) {
-        total += selections[pid] || 0;
+        total += _getSelectionValueByConditionType(selections[pid], conditionType);
       }
+    }
+
+    if (conditionType === 'amount') {
+      const perUnitAmount = Number.isFinite(targetAmountPerUnit) ? targetAmountPerUnit : 0;
+      total += perUnitAmount * normalizedQuantity;
+    } else if (conditionType === 'weight') {
+      const perUnitWeight = Number.isFinite(targetWeightPerUnit) ? targetWeightPerUnit : 0;
+      total += perUnitWeight * normalizedQuantity;
+    } else {
+      total += normalizedQuantity;
     }
 
     return total;
   }
 
-  function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
+  function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity, targetValues) {
 
     if (!step || !step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       return { allowed: true, limitText: null };
     }
 
+    const conditionType = _normalizeConditionType(step.conditionType);
+    const targetMetric = _getTargetMetric(targetValues);
+    const required = _normalizeConditionRuleValue(conditionType, step.conditionValue);
+
     const totalAfter = calculateStepTotalAfterUpdate(
       currentSelections,
       targetProductId,
       newQuantity,
+      {
+        conditionType,
+        targetAmountPerUnit: targetMetric.amount,
+        targetWeightPerUnit: targetMetric.weight,
+      },
     );
 
-    const primary = _evaluateCanUpdate(step.conditionOperator, step.conditionValue, totalAfter);
+    const primary = _evaluateCanUpdate(step.conditionOperator, required, totalAfter);
     if (!primary.allowed) return primary;
 
     if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
-      const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
+      const secondary = _evaluateCanUpdate(
+        step.conditionOperator2,
+        _normalizeConditionRuleValue(conditionType, step.conditionValue2),
+        totalAfter,
+      );
       if (!secondary.allowed) return secondary;
     }
 
@@ -69,6 +96,33 @@ const ConditionValidator = (function () {
       total += _getSelectionQuantity(qty);
     }
     return total;
+  }
+
+  function _normalizeConditionType(conditionType) {
+    if (conditionType === 'amount') return 'amount';
+    if (conditionType === 'weight') return 'weight';
+    return 'quantity';
+  }
+
+  function _normalizeConditionRuleValue(conditionType, value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return numeric;
+    return _normalizeConditionType(conditionType) === 'amount' ? numeric * 100 : numeric;
+  }
+
+  function _getSelectionValueByConditionType(selection, conditionType) {
+    if (conditionType === 'amount') return _getSelectionAmount(selection);
+    if (conditionType === 'weight') return _getSelectionWeight(selection);
+    return _getSelectionQuantity(selection);
+  }
+
+  function _getTargetMetric(values) {
+    const amount = Number(values && values.amount);
+    const weight = Number(values && values.weight);
+    return {
+      amount: Number.isFinite(amount) ? amount : 0,
+      weight: Number.isFinite(weight) ? weight : 0,
+    };
   }
 
   function _isPositiveConditionValue(value) {
@@ -158,6 +212,7 @@ const ConditionValidator = (function () {
 
   function isStepConditionSatisfied(step, currentSelections) {
     if (!step) return true;
+    const conditionType = _normalizeConditionType(step.conditionType);
 
     if (_isCategoryRuleMode(step)) {
       const categories = Array.isArray(step.categories) ? step.categories : [];
@@ -169,19 +224,21 @@ const ConditionValidator = (function () {
 
     const selections = currentSelections || {};
     let total = 0;
-    for (const qty of Object.values(selections)) {
-      total += _getSelectionQuantity(qty);
+    for (const value of Object.values(selections)) {
+      total += _getSelectionValueByConditionType(value, conditionType);
     }
+    const normalizedConditionValue = _normalizeConditionRuleValue(conditionType, step.conditionValue);
+    const normalizedConditionValue2 = _normalizeConditionRuleValue(conditionType, step.conditionValue2);
 
     if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
 
-    if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
+    if (!_evaluateSatisfied(step.conditionOperator, normalizedConditionValue, total)) return false;
 
     if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
-      return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
+      return _evaluateSatisfied(step.conditionOperator2, normalizedConditionValue2, total);
     }
 
     return true;
@@ -328,31 +385,36 @@ const BUNDLE_WIDGET = {
   PLACEHOLDER_IMAGE_FALLBACK: INLINE_PLACEHOLDER_IMAGE
 };
 
-/**
- * Bundle Widget - Currency Management System
- *
- * Handles multi-currency detection, conversion, and formatting.
- * Integrates with Shopify Markets for automatic currency handling.
- *
- * @version 4.0.0
- */
-
 class CurrencyManager {
+  static getShopify() {
+    if (typeof window !== 'undefined' && window.Shopify) return window.Shopify;
+    if (typeof Shopify !== 'undefined') return Shopify;
+    return null;
+  }
+
+  static getShopMoneyFormat() {
+    if (typeof window !== 'undefined' && window.shopMoneyFormat) return window.shopMoneyFormat;
+    if (typeof shopMoneyFormat !== 'undefined') return shopMoneyFormat;
+    return '{{amount}}';
+  }
+
   static getShopBaseCurrency() {
+    const shopify = this.getShopify();
 
     return {
-      code: window.Shopify?.shop?.currency || 'USD',
-      format: window.shopMoneyFormat || '{{amount}}'
+      code: shopify?.shop?.currency || 'USD',
+      format: this.getShopMoneyFormat(),
     };
   }
 
   static detectCustomerCurrency() {
+    const shopify = this.getShopify();
 
-    if (window.Shopify?.currency?.active) {
+    if (shopify?.currency?.active) {
       return {
-        code: window.Shopify.currency.active,
-        format: window.Shopify.currency.format || window.shopMoneyFormat || '{{amount}}',
-        rate: window.Shopify.currency.rate || 1
+        code: shopify.currency.active,
+        format: shopify.currency.format || this.getShopMoneyFormat(),
+        rate: shopify.currency.rate || 1,
       };
     }
 
@@ -361,10 +423,11 @@ class CurrencyManager {
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
     if (fromCurrency === toCurrency) return amount;
+    const shopify = this.getShopify();
 
-    if (window.Shopify?.currency?.convert) {
+    if (shopify?.currency?.convert) {
       try {
-        return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
+        return shopify.currency.convert(amount, fromCurrency, toCurrency);
       } catch (e) {
         console.warn('[BUNDLE_WIDGET] Shopify.currency.convert failed, using rate fallback:', e);
       }
@@ -374,8 +437,9 @@ class CurrencyManager {
   }
 
   static formatMoney(amount, format) {
-    if (typeof Shopify !== 'undefined' && window.Shopify.formatMoney) {
-      return window.Shopify.formatMoney(amount, format);
+    const shopify = this.getShopify();
+    if (shopify?.formatMoney) {
+      return shopify.formatMoney(amount, format);
     }
 
     const formatted = (amount / 100).toFixed(2);
@@ -412,11 +476,12 @@ class CurrencyManager {
   }
 
   static getCurrencyInfo() {
+    const shopify = this.getShopify();
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
     const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
     const displayFormat = this.normalizeCurrencyFormat(
-      window.Shopify?.currency?.format,
+      shopify?.currency?.format,
       customerCurrency.code,
       displaySymbol
     );
@@ -2746,12 +2811,14 @@ function escapeHtml(value) {
 }
 
 const DEFAULT_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3C/svg%3E';
+const PRODUCT_DESCRIPTION_PREVIEW_LENGTH = 110;
 
 function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo = {}, options = {}) {
   const selectionKey = product.variantId || product.id || '';
   const quantity = Math.max(0, Number(currentQuantity || 0));
   const isSelected = quantity > 0;
   const mode = options.mode || 'grid';
+  const descriptionText = resolveProductDescriptionText(product.description);
   const variantText = getVariantDisplayText(product);
   const isIndividualVariantCard = Boolean(product.parentProductId && product.variantId && variantText);
   const title = getDisplayTitle(product, variantText);
@@ -2768,6 +2835,8 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
     variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
     isIndividualVariantCard ? 'bw-product-card--individual-variant product-card--individual-variant' : '',
     isSelected ? 'bw-product-card--selected' : '',
+    options.displaySeeMoreLink === true && descriptionText ? 'bw-product-card--see-more' : '',
+    options.expandProductCardOnHover === true ? 'bw-product-card--hover-expand' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
 
@@ -2784,9 +2853,14 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
       </div>
       ${options.cardBadgeHtml || ''}
       <div class="bw-product-card__body product-content-wrapper">
-          <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+      <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
           <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
           ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
+          ${renderProductDescription({
+            description: descriptionText,
+            displaySeeMoreLink: options.displaySeeMoreLink === true,
+            descriptionMaxLength: options.descriptionMaxLength,
+          })}
         </div>
         <div class="product-card-price-action">
           ${variantSelectorBeforePrice ? options.variantSelectorHtml || '' : ''}
@@ -2897,6 +2971,36 @@ function renderImageNavButton(direction) {
   `;
 }
 
+function renderProductDescription({
+  description = '',
+  displaySeeMoreLink = false,
+  descriptionMaxLength = PRODUCT_DESCRIPTION_PREVIEW_LENGTH,
+}) {
+  const descriptionText = resolveProductDescriptionText(description);
+  if (!descriptionText) return '';
+
+  const showToggle = displaySeeMoreLink === true;
+  if (!showToggle) {
+    return `
+      <div class="bw-product-card__description">${escapeHtml(descriptionText)}</div>
+    `;
+  }
+
+  const maxLength = Math.max(24, Number(descriptionMaxLength) || PRODUCT_DESCRIPTION_PREVIEW_LENGTH);
+  const isClamped = descriptionText.length > maxLength;
+  const shortDescription = isClamped
+    ? `${descriptionText.slice(0, maxLength)}...`
+    : descriptionText;
+
+  return `
+    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
+      <span class="bw-product-card__description-short"${isClamped ? '' : ' hidden'}>${escapeHtml(shortDescription)}</span>
+      <span class="bw-product-card__description-full"${isClamped ? ' hidden' : ''}>${escapeHtml(descriptionText)}</span>
+      ${isClamped ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
+    </div>
+  `;
+}
+
 function normalizeImageUrl(value) {
   if (!value) return '';
   if (typeof value === 'string') return value;
@@ -2911,6 +3015,12 @@ function formatPrice(value, currencyInfo) {
   return format.replace('{{amount}}', amount.toFixed(2));
 }
 
+function resolveProductDescriptionText(value) {
+  if (value == null) return '';
+
+  return String(value);
+}
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -2923,13 +3033,6 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
-
-/**
- * Shared selected product row renderer.
- *
- * Renders prepared display data only; selection rules, default-product rules,
- * and free-gift lock state stay in the caller until templates migrate.
- */
 
 const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
 
@@ -12196,13 +12299,6 @@ processProductsForStep(products, step) {
   });
 },
 
-/**
- * Look up real stock for a variant in a step's product data.
- * Returns:
- *   - available: positive numeric remaining stock, or null when uncapped
- *   - outOfStock: true only when Shopify marks the variant unavailable
- *   - acceptsBackorder: true when Shopify marks the variant as backorderable
- */
 isVariantOutOfStock(product) {
   if (!product) {
     return false;
@@ -12983,21 +13079,34 @@ findProductById(stepIndex, productId) {
   return products.find(p => (p.variantId || p.id) === productId);
 },
 
-validateStepCondition(stepIndex, productId, newQuantity) {
-  const step = this.selectedBundle.steps[stepIndex];
-  const currentSelections = this.selectedProducts[stepIndex] || {};
-  const currentQty = currentSelections[productId] || 0;
-  const conditionSelections = this._getStepConditionSelections(stepIndex, currentSelections);
-  const directDefaultQuantities = this._getDirectDefaultSelectionQuantities(stepIndex);
-  const directDefaultQuantity = Number(directDefaultQuantities[String(productId)] || 0);
-  const conditionNewQuantity = Math.max(0, Number(newQuantity || 0) - directDefaultQuantity);
+  validateStepCondition(stepIndex, productId, newQuantity) {
+    const step = this.selectedBundle.steps[stepIndex];
+    const currentSelections = this.selectedProducts[stepIndex] || {};
+    const currentQty = currentSelections[productId] || 0;
+    const conditionSelections = this._getStepConditionSelections(stepIndex, currentSelections);
+    const directDefaultQuantities = this._getDirectDefaultSelectionQuantities(stepIndex);
+    const directDefaultQuantity = Number(directDefaultQuantities[String(productId)] || 0);
+    const conditionNewQuantity = Math.max(0, Number(newQuantity || 0) - directDefaultQuantity);
+    const stepProducts = this.stepProductData[stepIndex] || [];
+    const isAmountOrWeight = step.conditionType === 'amount' || step.conditionType === 'weight';
+    const conditionSelectionTotals = isAmountOrWeight
+      ? this._buildConditionAwareStepSelections(stepProducts, conditionSelections)
+      : conditionSelections;
+    const targetProduct = stepProducts.find(p => (p.variantId || p.id) === productId);
+    const targetValues = isAmountOrWeight
+      ? {
+        amount: Number(targetProduct?.price || 0),
+        weight: Number(targetProduct?.weight || targetProduct?.weightInGrams || targetProduct?.grams || 0),
+      }
+      : null;
 
-  const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
-    step,
-    conditionSelections,
-    productId,
-    conditionNewQuantity,
-  );
+    const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
+      step,
+      conditionSelectionTotals,
+      productId,
+      conditionNewQuantity,
+      targetValues,
+    );
 
   if (!allowed && newQuantity > currentQty) {
     const toastMessage = typeof ConditionValidator._formatStepLimitToast === 'function'
@@ -13010,12 +13119,12 @@ validateStepCondition(stepIndex, productId, newQuantity) {
   return true;
 },
 
-validateStep(stepIndex) {
-  const step = this.selectedBundle.steps[stepIndex];
-  const currentSelections = this.selectedProducts[stepIndex] || {};
-  const conditionSelections = typeof this._getStepConditionSelections === 'function'
-    ? this._getStepConditionSelections(stepIndex, currentSelections)
-    : currentSelections;
+  validateStep(stepIndex) {
+    const step = this.selectedBundle.steps[stepIndex];
+    const currentSelections = this.selectedProducts[stepIndex] || {};
+    const conditionSelections = typeof this._getStepConditionSelections === 'function'
+      ? this._getStepConditionSelections(stepIndex, currentSelections)
+      : currentSelections;
 
   const validationStep = buildCategoryRuleValidationStep(
     step,
@@ -13038,11 +13147,37 @@ validateStep(stepIndex) {
         weight: (current.weight || 0) + ((Number(product?.weight) || 0) * quantity),
       };
     }
-    return ConditionValidator.isStepConditionSatisfied(validationStep, translated);
-  }
+      return ConditionValidator.isStepConditionSatisfied(validationStep, translated);
+    }
 
-  return ConditionValidator.isStepConditionSatisfied(validationStep, conditionSelections);
-},
+    if (validationStep.conditionType === 'amount' || validationStep.conditionType === 'weight') {
+      return ConditionValidator.isStepConditionSatisfied(
+        validationStep,
+        this._buildConditionAwareStepSelections(this.stepProductData[stepIndex] || [], conditionSelections),
+      );
+    }
+
+    return ConditionValidator.isStepConditionSatisfied(validationStep, conditionSelections);
+  },
+
+  _buildConditionAwareStepSelections(stepProducts, currentSelections) {
+    const selections = currentSelections || {};
+    const translated = {};
+    for (const [selKey, qty] of Object.entries(selections)) {
+      const quantity = Number(qty) || 0;
+      if (quantity <= 0) continue;
+      const product = stepProducts.find(p => (p.variantId || p.id) === selKey);
+      const unitAmount = Number(product?.price || 0);
+      const unitWeight = Number(product?.weight || product?.weightInGrams || product?.grams || 0);
+      const current = translated[selKey] || { quantity: 0, amount: 0, weight: 0 };
+      translated[selKey] = {
+        quantity: current.quantity + quantity,
+        amount: current.amount + (unitAmount * quantity),
+        weight: current.weight + (unitWeight * quantity),
+      };
+    }
+    return translated;
+  },
 
 isStepAccessible(stepIndex) {
 

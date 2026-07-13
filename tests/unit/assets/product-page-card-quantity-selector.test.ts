@@ -158,7 +158,7 @@ describe('PPB shared card quantity selector state', () => {
     expect(addButton.removed).toBe(true);
     expect(quantityControls).not.toBeNull();
     expect(quantityDisplay?.textContent).toBe('2');
-    expect(card.classList.contains('selected')).toBe(true);
+    expect(card.classList.contains('bw-product-card--selected')).toBe(true);
   });
 
   it('delegates inline quantity button clicks to the quantity update path', () => {

@@ -56,6 +56,8 @@
   grid-auto-rows: minmax(0, 1fr);
   gap: 30px;
   padding: 16px 0 120px;
+  align-items: stretch;
+  justify-items: stretch;
 }
 
 #bundle-builder-modal.bw-bs-panel .bw-bs-product-grid {
@@ -178,18 +180,23 @@
   text-align: center;
 }
 
-#bundle-builder-modal.bw-bs-panel .modal-body .product-card.selected {
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card.selected,
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card.bw-product-card--selected {
   border: 2px solid #000000;
 }
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .selected-overlay {
-  top: -17px;
-  right: -19px;
-  width: 42px;
-  height: 42px;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
   background: #000000;
   color: #ffffff;
-  font-size: 22px;
+  font-size: 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: none;
 }
 

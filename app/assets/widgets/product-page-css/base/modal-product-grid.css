@@ -6,6 +6,8 @@
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
+  align-items: stretch;
+  justify-items: stretch;
 }
 
 @media (min-width: 769px) {
@@ -400,7 +402,7 @@
   max-height: none;
 }
 
-.product-card.selected {
+.product-card.bw-product-card--selected {
   border-color: #000;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
