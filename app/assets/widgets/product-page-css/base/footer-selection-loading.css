@@ -379,6 +379,25 @@
   color: var(--bundle-global-button-text, #ffffff);
 }
 
+@media (min-width: 768px) {
+  .bw-bs-header {
+    padding-inline: 20px;
+  }
+
+  .bw-bs-category-tabs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    align-self: center;
+    width: 60%;
+    overflow: visible;
+  }
+
+  .bw-bs-category-tab {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 .bw-bs-close-desktop {
   position: absolute;
   top: 10px;

@@ -56,3 +56,24 @@ The 5.0.152 accessibility snapshot exposes both `Category 1` and
   remain green.
 - Raw widget source syntax checks pass.
 - Widget build and CSS minification pass.
+
+## 2026-07-13 desktop replay
+
+At 1280 x 800, EB centers a two-column category wrapper inside the modal header:
+
+- parent content width: 1240px from 20px modal gutters;
+- category wrapper: 744px, `max-width: 60%`, two equal 363px tracks;
+- gap: 16px;
+- each button: 33px high;
+- selecting the long second category changes the active colors and filters six Category 1 products to the single grouped `18k Pedal Ring` card.
+
+WPB filtering and active-state colors match, but the pre-fix row used intrinsic text widths: approximately 94.86px and 312.44px, left-aligned at x=21. The desktop correction must use the same centered 60% equal-track wrapper while preserving the already accepted intrinsic, horizontally scrollable mobile row.
+
+Widget `5.0.158` post-fix proof:
+
+- desktop row: x=268, width=744px, height=35px;
+- equal 363px tracks with 16px gap;
+- buttons: x=269 and x=648, each 363 x 33px, matching EB;
+- active colors and long-label filtering remain correct;
+- after product hydration, Category 2 renders the single grouped `18k Pedal Ring` product;
+- mobile regression at 390 x 844 retains the 350px horizontally scrollable flex row with intrinsic 94.86px and 312.44px buttons.

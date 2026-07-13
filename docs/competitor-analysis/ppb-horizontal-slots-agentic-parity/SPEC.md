@@ -38,7 +38,7 @@ committed.
 | Case | EB | WPB | Delta | Status |
 | --- | --- | --- | --- | --- |
 | HS00 baseline | Desktop/mobile empty states captured | Desktop/mobile empty states captured on 5.0.151 | Aggregate card and 300px mobile cap fixed | Accepted empty behavior at 1280x800 and 390x844 |
-| HS01 step/category | Multi-step/category picker controls captured | Modal category controls and filtering captured on 5.0.152 | Missing category row fixed | Accepted at 390x844; desktop smoke pending |
+| HS01 step/category | Multi-step/category picker controls captured on mobile/desktop | Equivalent controls, filtering, and desktop equal-track row captured on 5.0.158 | Missing category row and desktop text-width sizing fixed | Accepted at 390x844 and 1280x800 |
 | HS02 product cards | EB card grid and core card parts captured at 1440, 1280, 768, and 390 | Equivalent responsive grid and card geometry captured on 5.0.156 | High-specificity five-column/mobile padding and card hierarchy fixed | Accepted baseline cards; sale/fallback/inventory remain dedicated rows |
 | HS03 variants | Grouped Pedal Ring selector with options 6-11 captured | Equivalent grouped selector and selected identity captured on 5.0.155 | Unconditional modal variant expansion fixed; EB stale-first-variant bug not copied | Accepted grouped/individual rendering; mixed inventory remains HS04 |
 | HS04 inventory | Sole sellable survivor and fully unavailable omission captured | Equivalent Ski Wax survivor and unavailable snowboard omission captured on 5.0.157 | Missing sole-survivor identity fixed | Accepted desktop/mobile; store-specific inventory counts documented |
