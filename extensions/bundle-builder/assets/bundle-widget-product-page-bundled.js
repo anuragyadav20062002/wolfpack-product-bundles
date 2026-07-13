@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.160
+ * Version : 5.0.161
  * Built   : 2026-07-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.160';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.161';
 (function() {
   'use strict';
 
@@ -5849,8 +5849,8 @@ function shouldHideInpageStepChrome({ isCascade = false, steps = [], step = null
   return Array.isArray(steps) && steps.length === 1 && categories.length <= 1;
 }
 
-function shouldUseCascadeStepFlow({ isInpage = false, isCascade = false, steps = [] } = {}) {
-  return Boolean(isInpage && isCascade && Array.isArray(steps) && steps.length > 1);
+function shouldUseCascadeStepFlow({ isInpage = false, isCascade = false, isGrid = false, steps = [] } = {}) {
+  return Boolean(isInpage && (isCascade || isGrid) && Array.isArray(steps) && steps.length > 1);
 }
 
 function getCascadeStepNavigationState({
@@ -6085,6 +6085,7 @@ _usesCascadeStepFlow() {
   return shouldUseCascadeStepFlow({
     isInpage: this._isProductPageInpageTemplate?.() === true,
     isCascade: this._isProductPageCascadeTemplate?.() === true,
+    isGrid: this._isProductPageGridTemplate?.() === true,
     steps: this.selectedBundle?.steps,
   });
 },

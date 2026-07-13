@@ -1,7 +1,7 @@
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] {
   width: 100%;
-  max-width: 300px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]

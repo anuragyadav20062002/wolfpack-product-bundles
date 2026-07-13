@@ -10,8 +10,8 @@ export function shouldHideInpageStepChrome({ isCascade = false, steps = [], step
   return Array.isArray(steps) && steps.length === 1 && categories.length <= 1;
 }
 
-export function shouldUseCascadeStepFlow({ isInpage = false, isCascade = false, steps = [] } = {}) {
-  return Boolean(isInpage && isCascade && Array.isArray(steps) && steps.length > 1);
+export function shouldUseCascadeStepFlow({ isInpage = false, isCascade = false, isGrid = false, steps = [] } = {}) {
+  return Boolean(isInpage && (isCascade || isGrid) && Array.isArray(steps) && steps.length > 1);
 }
 
 export function getCascadeStepNavigationState({
@@ -150,8 +150,7 @@ _createStepBannerImage(step) {
   return wrapper;
 },
 
-// Product List uses an active-step flow when multiple steps are configured.
-// Other product-page templates retain their existing all-step layout.
+// In-page templates use an active-step flow when multiple steps are configured.
 renderProductPageLayout() {
   const usesCascadeStepFlow = this._usesCascadeStepFlow();
   const lastStepIndex = Math.max(0, this.selectedBundle.steps.length - 1);
@@ -251,6 +250,7 @@ _usesCascadeStepFlow() {
   return shouldUseCascadeStepFlow({
     isInpage: this._isProductPageInpageTemplate?.() === true,
     isCascade: this._isProductPageCascadeTemplate?.() === true,
+    isGrid: this._isProductPageGridTemplate?.() === true,
     steps: this.selectedBundle?.steps,
   });
 },

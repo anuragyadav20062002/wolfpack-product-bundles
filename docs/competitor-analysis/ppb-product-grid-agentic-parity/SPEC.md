@@ -30,8 +30,9 @@ computed geometry, interaction behavior, and an equivalent WPB pass.
 
 | Case | EB | WPB | Delta | Status |
 | --- | --- | --- | --- | --- |
-| PG00 runtime/baseline | `PDP_INPAGE + COGNIVE` proven at 1280x800 and 390x844 | Pending | Pending | EB captured |
-| PG01 responsive grid | Three columns in 345px host; two columns in 360px mobile grid; 15px gap and 8px side padding | Pending | Pending | EB captured |
+| PG00 runtime/baseline | `PDP_INPAGE + COGNIVE` proven at 1280x800 and 390x844 | Equivalent runtime contract proven on 5.0.161 | None | Accepted runtime dispatch |
+| PG01 responsive grid | Three columns in 345px host; two columns in 360px mobile grid; 15px gap and 8px side padding | Three columns in real 372.34px host; two columns in 358px mobile host; same gap/padding | Fixed 300px cap removed; exact owner width differs by theme | Accepted responsive ownership at 1280x800 and 390x844 |
+| PG02 multi-step flow | One active body/grid with step navigation and Next/final CTA | Equivalent active-step flow on 5.0.161 | Both full grids were stacked before fix | Accepted desktop progression; mobile interaction replay remains |
 
 ## Acceptance boundary
 
