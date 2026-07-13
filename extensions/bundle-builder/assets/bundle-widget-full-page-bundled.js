@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.163
+ * Version : 5.0.164
  * Built   : 2026-07-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.163';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.164';
 (function() {
   'use strict';
 
@@ -284,6 +284,9 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports.ConditionValidator = ConditionValidator;
 }
 
+const INLINE_PLACEHOLDER_IMAGE =
+  'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22 viewBox=%220 0 400 400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23f3f4f6%22/%3E%3C/svg%3E';
+
 const BUNDLE_WIDGET = {
   VERSION: '4.0.0',
   LOG_PREFIX: '[BUNDLE_WIDGET]',
@@ -321,9 +324,18 @@ const BUNDLE_WIDGET = {
     BUY_X_GET_Y: 'buy_x_get_y'
   },
 
-  PLACEHOLDER_IMAGE: '/bundle-product-placeholder.avif',
-  PLACEHOLDER_IMAGE_FALLBACK: '/bundle-product-placeholder.png'
+  PLACEHOLDER_IMAGE: INLINE_PLACEHOLDER_IMAGE,
+  PLACEHOLDER_IMAGE_FALLBACK: INLINE_PLACEHOLDER_IMAGE
 };
+
+/**
+ * Bundle Widget - Currency Management System
+ *
+ * Handles multi-currency detection, conversion, and formatting.
+ * Integrates with Shopify Markets for automatic currency handling.
+ *
+ * @version 4.0.0
+ */
 
 class CurrencyManager {
   static getShopBaseCurrency() {
@@ -393,13 +405,6 @@ class CurrencyManager {
     return symbols[currencyCode] || currencyCode;
   }
 
-  /**
-   * Ensure the format string uses the proper symbol for the given currency.
-   * If Shopify's format contains the 3-letter currency code (e.g. "PKR {{amount}}"),
-   * replace it with the symbol from our map ("Rs. {{amount}}"). This preserves
-   * the merchant's decimal/thousand-separator placeholder choice
-   * (e.g. {{amount_with_comma_separator}}) while ensuring symbols always render.
-   */
   static normalizeCurrencyFormat(format, code, symbol) {
     if (!format) return `${symbol}{{amount}}`;
     if (!code || !symbol || symbol === code) return format;
@@ -435,14 +440,6 @@ class CurrencyManager {
     };
   }
 
-  /**
-   * Convert an amount from shop base currency to the customer's display currency,
-   * then format it. Use this everywhere a price is rendered to the customer.
-   *
-   * @param {number} amount  Price in shop base currency cents
-   * @param {object} currencyInfo  Result of getCurrencyInfo()
-   * @returns {string}  Formatted price string in the display currency
-   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)

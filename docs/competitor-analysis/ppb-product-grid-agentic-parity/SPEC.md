@@ -2,9 +2,9 @@
 
 ## Status
 
-In progress. EB-first runtime and responsive baseline captured. WPB comparison,
-interaction states, implementation deltas, regression proof, and fixture
-restoration remain open.
+In progress. Runtime, responsive layout, interaction states, loading,
+inventory, discount stress, and missing-media behavior are captured. Final
+shared-template regression proof and fixture restoration remain open.
 
 ## Contract
 
@@ -37,6 +37,7 @@ computed geometry, interaction behavior, and an equivalent WPB pass.
 | PG04 selected drawer | Selected rows, quantities, prices, remove actions; zero overflow | Equivalent drawer on 5.0.162 | 28px track violated shared 56px action minimum before fix | Accepted two-item open/close/remove at 390x844 |
 | PG05 loading/inventory | No app-owned loader before final Grid; current Step 2 catalog remains sellable | Grid skeleton occupies final tracks on 5.0.163; unavailable snowboard omitted; exact-one over-target blocked | Loader rows collapsed before fix; inventory identities differ by store | Accepted loading placement desktop/mobile and WPB unavailable/over-target behavior |
 | PG06 selected/discount stress | Zero, one, two, and rule-bounded three-row final state; 5% then 10% | Equivalent state matrix on 5.0.163 | Currency/component prices differ | Accepted at 390x844; both fixtures restored empty |
+| PG07 missing media | Live image-less `Message` card renders a broken `src="undefined"` image in the final Grid | Live image-less `Message` card uses a self-contained 400x400 neutral SVG on 5.0.164 | WPB intentionally does not copy EB's broken image request | Accepted fallback behavior at 1280x800 and 390x844; zero overflow |
 
 ## Acceptance boundary
 

@@ -15,7 +15,7 @@ Status: In progress — completion is not yet proven.
 | Long title | Proven | Long category and product titles remain contained in HS01/HS02. |
 | Sale plus compare-at price | Proven | HS02 mixed-media evidence proves EB-first sale pairs, the authenticated WPB setting, proxy runtime key, persistence, and equivalent live pairs. |
 | Square/tall/wide images | Proven | HS02 directly measures natural and rendered dimensions for square, tall, and wide sources in both live pickers. |
-| Missing-image fallback | Missing | No equivalent live missing-image fixture has been established. |
+| Missing-image fallback | Proven | HS18 uses equivalent live `Message` products with no media. EB exposes a broken `undefined` image; WPB 5.0.164 renders a self-contained decoded fallback at desktop/mobile with zero overflow. |
 | Percentage discount progression | Proven | HS06 plus HSS1. |
 | No-discount state | Proven | HSS4 disables only the master toggle, proves original totals/no discount UI on EB and WPB 5.0.160, then restores the 5%/10% tiers. |
 | Empty/one/multiple/exact states | Proven | HS00, HS05, HS06. |
@@ -39,7 +39,7 @@ Status: In progress — completion is not yet proven.
 | Loading and first hard reload | Proven | HS07, including cold proxy and request health. |
 | Empty/partial/full slots and slot order | Proven | HS00, HS05, HS15, HSS1. |
 | Picker open/close/header/tabs/categories/footer | Proven | HS01, HS14, HS17. |
-| Product card image/title/price/action hierarchy | Proven except fallback | HS02 proves the baseline, compare-at hierarchy, and mixed source ratios. Missing-image fallback remains the fixture gap above. |
+| Product card image/title/price/action hierarchy | Proven | HS02 proves the baseline, compare-at hierarchy, and mixed source ratios; HS18 proves the missing-image fallback at desktop/mobile. |
 | Variant selector and selected identity | Proven | HS03 and HSS1. |
 | Available/unavailable behavior | Proven | HS04. |
 | Selection, remove, replace flow | Proven | HS15/HS16. |
