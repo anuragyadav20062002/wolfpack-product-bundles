@@ -1,50 +1,62 @@
 ---
-title: FPB Host Evaluation
-type: architecture-decision-deferred
-audited: 2026-07-14
-sources: app/services/widget-installation/widget-full-page-bundle.server.ts; app/routes/app/app.bundles.full-page-bundle.configure.$bundleId
+schema_version: 1
+id: fpb-host-evaluation
+title: FPB App Proxy Host
+type: architecture-decision
+status: accepted
+summary: Full Page Bundles use the signed app proxy as their sole storefront document host.
+last_audited: 2026-07-14
+owners:
+  - engineering
+domains:
+  - storefront
+systems:
+  - fpb-app-proxy
+source_paths:
+  - app/routes/root/wpb.$bundleId.tsx
+  - app/services/bundles/fpb-page-host-migration.server.ts
+related_docs:
+  - Architecture/Widget Architecture.md
+  - Operations/Deployment Backfill.md
+tags:
+  - architecture
+  - fpb
+keywords:
+  - application/liquid
+  - wpb_preview
 ---
 
-# FPB Host Evaluation
+# FPB App Proxy Host
 
-## Decision status
+## Decision
 
-Deferred. FPB continues to use a Shopify Page at `/pages/{handle}`. This slice does not change routes, widget loading, preview behavior, publishing behavior, or theme-extension placement.
+`/apps/product-bundles/wpb/{bundleId}` is the only FPB storefront document host. Shopify verifies and forwards the request through the installed default app-proxy root. The Remix route verifies the proxy HMAC before database access and returns `application/liquid`, so Shopify wraps the response in the active theme layout.
 
-## Current blast radius
+Active and unlisted bundles are public. Draft bundles require a 15-minute `wpb_preview` token bound to version, shop, bundle ID, and expiry. Archived, missing, cross-shop, and invalid-preview requests return `404`; invalid Shopify signatures return `400`.
 
-A 2026-07-14 source scan found:
+Admin Preview actions mint a fresh signed URL for every FPB status. Public bundles do not require the token, but using the same stateless action for active, unlisted, and draft previews prevents Admin surfaces from diverging and guarantees a new URL on every click.
 
-- 46 files in `app/`, `extensions/`, `tests/`, `prisma/`, and `scripts/` that reference FPB page IDs or page/preview handles.
-- 27 files with explicit `/pages/` or `pages/` URL contracts, excluding generated Admin API schema data.
+The Liquid response embeds the complete formatted runtime configuration in `data-bundle-config`. The single app embed detects that marker and loads widget JavaScript and CSS from theme-extension assets through Shopify `asset_url`. App-proxy asset URLs and a Page fallback are not supported.
 
-This is larger than the earlier lower-bound estimate of 38 page-handle-dependent files and 24 `/pages/` contracts. A host migration is a breaking cross-layer change, not a route-only refactor.
+## Canonical URL
 
-## Shopify Page benefits
+The application builds one canonical FPB URL:
 
-- Native Shopify canonical URL and Shopify-hosted document availability.
-- Theme integration through the current page template/app-embed flow.
-- Merchant navigation and SEO controls.
-- Existing preview, publish, slug, redirect, and page-metafield workflows.
-- Storefront document availability is not coupled to Wolfpack application uptime.
+```text
+https://{shop}/apps/product-bundles/wpb/{bundleId}
+```
 
-## App proxy benefits
+Merchant-customized proxy prefixes and subpaths are unsupported in this migration. PPB remains at `/products/{handle}`.
 
-- Can match an EB-style app-owned route exactly.
-- Removes the Shopify Page create/update/delete lifecycle.
-- Keeps dynamic document generation in the application.
+## Migration order
 
-## App proxy risks and constraints
+Existing hosts migrate in this order:
 
-- The storefront document becomes dependent on application uptime and cold-start latency.
-- Shopify permits one proxy root per app; child paths share that root.
-- Merchants can customize the proxy prefix and subpath, so application code cannot assume one immutable public route for every installed shop.
-- Shopify strips a documented set of response headers from app-proxy responses.
-- Migrating existing page URLs, navigation, previews, redirects, and SEO behavior would be breaking.
-- Theme app extensions still have their own app block/embed placement and theme-support constraints; an app proxy does not remove those concerns.
+1. Ensure `/pages/{oldHandle}` redirects to the proxy path.
+2. Ensure `/products/{parentHandle}` redirects to the proxy path.
+3. Delete the stored public and preview Page GIDs.
+4. Clear Page references only after both redirects and Page cleanup succeed.
 
-References: [Shopify app proxies](https://shopify.dev/docs/apps/build/online-store/app-proxies) and [theme app extension configuration](https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration).
+Retries accept already-correct redirects and already-deleted Pages. A redirect failure stops before Page deletion.
 
-## Revisit criteria
-
-Reopen this decision only with a migration plan covering URL redirects, merchant navigation, canonical/SEO behavior, preview and publish flows, proxy customization, app availability, cold-start behavior, and all page-handle consumers. No migration decision was made in the parent-product parity slice.
+The Page columns remain temporarily available only to drive this guarded migration. Remove them after an approved apply run and a zero-reference preflight.

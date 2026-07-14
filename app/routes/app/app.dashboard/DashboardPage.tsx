@@ -8,6 +8,11 @@ import { DashboardBannerSkeleton } from "../../../components/skeletons/Dashboard
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
 import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
+import {
+  closePendingDashboardPreview,
+  navigatePendingDashboardPreview,
+  openPendingDashboardPreview,
+} from "../../../lib/dashboard-preview-window";
 import { openSupportChat } from "../../../lib/support-chat.client";
 import { openThemeEditorInNewTab } from "../../../lib/theme-editor-navigation.client";
 import { checkAppEmbedStatusFromCurrentRoute } from "../../../lib/app-embed-status-check.client";
@@ -90,6 +95,7 @@ export function DashboardPage() {
   const statusPopoverRef = useRef<any>(null);
   const typePopoverRef = useRef<any>(null);
   const fetcherIntentRef = useRef<string | null>(null);
+  const pendingPreviewWindowRef = useRef<Window | null>(null);
   const lastAppliedLocaleSaveRef = useRef<string | null>(null);
   const [previewingBundleId, setPreviewingBundleId] = useState<string | null>(null);
   const [editingBundleId, setEditingBundleId] = useState<string | null>(null);
@@ -116,13 +122,19 @@ export function DashboardPage() {
     if (!intent) return;
     const data = fetcher.data as Record<string, unknown>;
     if (data.success) {
-      if (intent === 'createPreviewPage') {
+      if (intent === 'createFpbPreview') {
         const previewUrl = typeof data.shareablePreviewUrl === 'string' ? data.shareablePreviewUrl : '';
         if (previewUrl) {
           shopify.toast.show("Opening preview in new tab…", { duration: 2000 });
-          window.open(previewUrl, "_blank", "noopener,noreferrer");
+          const pendingWindow = pendingPreviewWindowRef.current;
+          pendingPreviewWindowRef.current = null;
+          if (!navigatePendingDashboardPreview(pendingWindow, previewUrl)) {
+            window.open(previewUrl, "_blank", "noopener,noreferrer");
+          }
         } else {
-          shopify.toast.show("Preview page was created, but no preview URL was returned.", { isError: true, duration: 5000 });
+          closePendingDashboardPreview(pendingPreviewWindowRef.current);
+          pendingPreviewWindowRef.current = null;
+          shopify.toast.show("No preview URL was returned.", { isError: true, duration: 5000 });
         }
       } else if (intent === 'cloneBundle' && data.bundleId) {
         shopify.toast.show(t("dashboard.actions.cloneSuccess"));
@@ -131,9 +143,13 @@ export function DashboardPage() {
         shopify.toast.show(t("dashboard.actions.deleteSuccess"));
       }
     } else if (data.error) {
+      if (intent === 'createFpbPreview') {
+        closePendingDashboardPreview(pendingPreviewWindowRef.current);
+        pendingPreviewWindowRef.current = null;
+      }
       shopify.toast.show(String(data.error), { isError: true, duration: 5000 });
     }
-    if (intent === 'createPreviewPage') {
+    if (intent === 'createFpbPreview') {
       setPreviewingBundleId(null);
     }
     fetcherIntentRef.current = null;
@@ -229,7 +245,6 @@ export function DashboardPage() {
         bundleType: bundle.bundleType as "full_page" | "product_page",
         bundleId: bundle.id,
         shopifyProductHandle: bundle.shopifyProductHandle,
-        shopifyPageHandle: bundle.shopifyPageHandle,
         shop,
         appEmbedEnabled: resolvedAppEmbedStatus.appEmbedEnabled,
         bundleStatus: bundle.status,
@@ -241,11 +256,13 @@ export function DashboardPage() {
         return;
       }
 
-      if (action.kind === "create_preview_page") {
+      if (action.kind === "create_fpb_preview") {
+        closePendingDashboardPreview(pendingPreviewWindowRef.current);
+        pendingPreviewWindowRef.current = openPendingDashboardPreview();
         const formData = new FormData();
-        formData.append("intent", "createPreviewPage");
+        formData.append("intent", "createFpbPreview");
         formData.append("bundleId", bundle.id);
-        fetcherIntentRef.current = "createPreviewPage";
+        fetcherIntentRef.current = "createFpbPreview";
         fetcher.submit(formData, { method: "post" });
         return;
       }

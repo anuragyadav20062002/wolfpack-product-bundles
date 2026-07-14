@@ -1,10 +1,35 @@
+---
+schema_version: 1
+id: app-navigation-map
+title: Wolfpack Product Bundles App Navigation and UI Map
+type: navigation-map
+status: authoritative
+summary: Routes, screens, actions, modals, and storefront-preview flows for the embedded app.
+last_audited: 2026-07-14
+owners:
+  - engineering
+domains:
+  - admin
+systems:
+  - remix-routes
+source_paths:
+  - app/routes/app/
+related_docs:
+  - internal docs/Architecture/FPB Host Evaluation.md
+tags:
+  - navigation
+keywords:
+  - dashboard
+  - configure
+---
+
 # Wolfpack Product Bundles — App Navigation & UI Map
 
 > **KEEP THIS UP TO DATE.**
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-07-08
+**Last Updated:** 2026-07-14
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -65,7 +90,7 @@ Dashboard
 
 Dashboard preview behavior:
 - Product-page bundle preview opens `/products/{shopifyProductHandle}`.
-- Full-page bundle preview opens the bundle page when published or creates/opens the draft preview page when no page exists.
+- Every full-page bundle preview requests a new 15-minute signed `wpb_preview` URL on each click; active and unlisted bundles remain publicly accessible at the canonical URL without the token.
 - First successful preview records the Admin `bundle_previewed` event with bundle id, type, status, and link.
 
 #### "Create Bundle" Button
@@ -250,9 +275,8 @@ FPB Configure Page
 │   ├── Bundle Settings
 │   │   ├── Bundle name / description
 │   │   ├── Status selector → opens Status Modal
-│   │   ├── Target page selector → opens Page Selector Modal
 │   │   ├── Product selector → opens Product Picker Modal
-│   │   └── Theme template selector → opens Theme Templates Modal
+│   │   └── Bundle Visibility → read-only proxy URL + Copy Link
 │   │
 │   ├── Steps
 │   │   ├── List of configured steps
@@ -267,8 +291,7 @@ FPB Configure Page
 │   │   └── Discount Messaging: per-rule Discount Text, one Success Message, Variables modal
 │   │
 │   ├── Sync Bundle
-│   │   ├── Sync status / last synced timestamp
-│   │   └── [Button] "Sync Now" → background job
+│   │   └── [Button] "Sync Now" → ensure parent + metafields; returns canonical proxy URL
 │   │
 │   └── Select Template        → select_template section
 │       ├── Heading: "Customize your bundle"
@@ -282,9 +305,6 @@ FPB Configure Page
 └── Modals:
     ├── Bundle Status Modal (Draft / Active / Unlisted)
     ├── Product Picker Modal (Shopify resource picker)
-    ├── Page Selector Modal (select Shopify page)
-    ├── Theme Templates Modal (choose product template)
-    ├── Widget Placement Validation Modal
     ├── Variables Modal (Discount Messaging variable reference)
     ├── Bundle Quantity Options Multi Language Modal (Box Label / Box Subtext)
     └── Progress Bar Multi Language Modal (Tier Text / Tier Subtext)

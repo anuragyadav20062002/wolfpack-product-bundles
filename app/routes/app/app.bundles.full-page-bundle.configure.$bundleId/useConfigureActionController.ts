@@ -105,27 +105,10 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
     }
     const executePreviewBundle = (): "opened" | "pending_fetcher" => {
       if (flow.bundle.bundleType === "full_page") {
-        if (!flow.bundle.shopifyPageHandle) {
-          const formData = new FormData();
-          formData.append("intent", "createPreviewPage");
-          flow.fetcher.submit(formData, { method: "post" });
-          return "pending_fetcher";
-        }
-        const shopDomain = flow.shop.includes(".myshopify.com")
-          ? flow.shop.replace(".myshopify.com", "")
-          : flow.shop.split(".")[0];
-        const pageUrl = `https://${shopDomain}.myshopify.com/pages/${flow.bundle.shopifyPageHandle}`;
-        open(pageUrl, "_blank");
-        recordBundlePreview(pageUrl, "fpb_configure");
-        markBundlePreviewComplete({
-          bundleId: flow.bundle.id,
-          storage: window.localStorage,
-          setHasPreview: flow.setHasPreview,
-        });
-        flow.shopify.toast.show("Bundle page opened in new tab", {
-          isError: false,
-        });
-        return "opened";
+        const formData = new FormData();
+        formData.append("intent", "createFpbPreview");
+        flow.fetcher.submit(formData, { method: "post" });
+        return "pending_fetcher";
       }
       let productUrl = null;
       const productHandle =

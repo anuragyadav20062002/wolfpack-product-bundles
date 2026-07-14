@@ -7,31 +7,24 @@
 import { decideDashboardPreviewAction } from "../../../app/lib/dashboard-preview-action";
 
 describe("decideDashboardPreviewAction", () => {
-  it("returns Shopify page URL for FPB with a linked Shopify Page", () => {
+  it("requests a fresh signed preview URL for a public FPB", () => {
     const result = decideDashboardPreviewAction({
       bundleType: "full_page",
       bundleId: "abc",
       shopifyProductHandle: null,
-      shopifyPageHandle: "build-your-box",
       shop: "s.myshopify.com",
     });
-    expect(result).toEqual({
-      kind: "open_url",
-      url: "https://s.myshopify.com/pages/build-your-box",
-    });
+    expect(result).toEqual({ kind: "create_fpb_preview" });
   });
 
-  it("returns create_preview_page for FPB without a Shopify Page", () => {
+  it("does not require a Shopify Page handle to request an FPB preview", () => {
     const result = decideDashboardPreviewAction({
       bundleType: "full_page",
       bundleId: "abc",
       shopifyProductHandle: null,
-      shopifyPageHandle: null,
       shop: "s.myshopify.com",
     });
-    expect(result).toEqual({
-      kind: "create_preview_page",
-    });
+    expect(result).toEqual({ kind: "create_fpb_preview" });
   });
 
   it("returns open_url for PPB with a product handle", () => {
@@ -39,7 +32,6 @@ describe("decideDashboardPreviewAction", () => {
       bundleType: "product_page",
       bundleId: "abc",
       shopifyProductHandle: "summer-bundle",
-      shopifyPageHandle: null,
       shop: "s.myshopify.com",
     });
     expect(result).toEqual({
@@ -53,7 +45,6 @@ describe("decideDashboardPreviewAction", () => {
       bundleType: "product_page",
       bundleId: "abc",
       shopifyProductHandle: null,
-      shopifyPageHandle: null,
       shop: "s.myshopify.com",
     });
     expect(result).toEqual({
@@ -62,18 +53,14 @@ describe("decideDashboardPreviewAction", () => {
     });
   });
 
-  it("strips an accidental https:// prefix from shop", () => {
+  it("does not depend on shop normalization before requesting an FPB preview", () => {
     const result = decideDashboardPreviewAction({
       bundleType: "full_page",
       bundleId: "abc",
       shopifyProductHandle: null,
-      shopifyPageHandle: "x",
       shop: "https://s.myshopify.com",
     });
-    expect(result).toEqual({
-      kind: "open_url",
-      url: "https://s.myshopify.com/pages/x",
-    });
+    expect(result).toEqual({ kind: "create_fpb_preview" });
   });
 
   describe("live URL preference when embed enabled", () => {
@@ -81,49 +68,47 @@ describe("decideDashboardPreviewAction", () => {
       bundleType: "full_page" as const,
       bundleId: "abc",
       shopifyProductHandle: null,
-      shopifyPageHandle: "build-your-box",
       shop: "s.myshopify.com",
     };
 
-    it("prefers the Shopify Page URL for FPB when embed enabled + status active + pageHandle set", () => {
+    it("requests a fresh signed URL for active FPBs", () => {
       expect(decideDashboardPreviewAction({
         ...baseFpb,
         appEmbedEnabled: true,
         bundleStatus: "active",
-      })).toEqual({ kind: "open_url", url: "https://s.myshopify.com/pages/build-your-box" });
+      })).toEqual({ kind: "create_fpb_preview" });
     });
 
-    it("prefers the Shopify Page URL for FPB when status is unlisted", () => {
+    it("requests a fresh signed URL for unlisted FPBs", () => {
       expect(decideDashboardPreviewAction({
         ...baseFpb,
         appEmbedEnabled: true,
         bundleStatus: "unlisted",
-      })).toEqual({ kind: "open_url", url: "https://s.myshopify.com/pages/build-your-box" });
+      })).toEqual({ kind: "create_fpb_preview" });
     });
 
-    it("keeps the Shopify Page URL for FPB when status is draft", () => {
+    it("requests a fresh signed URL for draft FPBs", () => {
       expect(decideDashboardPreviewAction({
         ...baseFpb,
         appEmbedEnabled: true,
         bundleStatus: "draft",
-      })).toEqual({ kind: "open_url", url: "https://s.myshopify.com/pages/build-your-box" });
+      })).toEqual({ kind: "create_fpb_preview" });
     });
 
-    it("keeps the Shopify Page URL for FPB when embed is disabled", () => {
+    it("keeps signed preview generation independent of embed status", () => {
       expect(decideDashboardPreviewAction({
         ...baseFpb,
         appEmbedEnabled: false,
         bundleStatus: "active",
-      })).toEqual({ kind: "open_url", url: "https://s.myshopify.com/pages/build-your-box" });
+      })).toEqual({ kind: "create_fpb_preview" });
     });
 
-    it("requests preview page creation when embed enabled + active but no pageHandle", () => {
+    it("does not require a page handle when embed enabled", () => {
       expect(decideDashboardPreviewAction({
         ...baseFpb,
-        shopifyPageHandle: null,
         appEmbedEnabled: true,
         bundleStatus: "active",
-      })).toEqual({ kind: "create_preview_page" });
+      })).toEqual({ kind: "create_fpb_preview" });
     });
 
     it("PPB is unaffected by the live URL preference branch", () => {
@@ -131,7 +116,6 @@ describe("decideDashboardPreviewAction", () => {
         bundleType: "product_page",
         bundleId: "abc",
         shopifyProductHandle: "summer-bundle",
-        shopifyPageHandle: null,
         shop: "s.myshopify.com",
         appEmbedEnabled: true,
         bundleStatus: "active",

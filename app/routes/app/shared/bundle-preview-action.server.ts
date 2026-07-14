@@ -5,6 +5,42 @@ import db from "../../../db.server";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { BundleType } from "../../../constants/bundle";
 import { recordFirstBundlePreviewEvent } from "../../../services/bundles/bundle-preview-event.server";
+import { createFpbPreviewToken } from "../../../lib/fpb-preview-token.server";
+import { appendFpbPreviewToken, buildFpbStorefrontUrl } from "../../../lib/fpb-storefront-url";
+
+export async function handleCreateFpbPreview(
+  admin: ShopifyAdmin,
+  session: Session,
+  bundleId: string,
+  routeFamily = "fpb_configure",
+) {
+  const bundle = await db.bundle.findUnique({
+    where: { id: bundleId, shopId: session.shop },
+    select: { id: true, bundleType: true, status: true },
+  });
+
+  if (!bundle || bundle.bundleType !== BundleType.FULL_PAGE) {
+    return json(
+      { success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND },
+      { status: 404 },
+    );
+  }
+
+  const shareablePreviewUrl = appendFpbPreviewToken(
+    buildFpbStorefrontUrl(session.shop, bundleId),
+    createFpbPreviewToken({ shop: session.shop, bundleId }),
+  );
+
+  await recordFirstBundlePreviewEvent({
+    admin,
+    shopDomain: session.shop,
+    bundle,
+    bundleLink: shareablePreviewUrl,
+    routeFamily,
+  });
+
+  return json({ success: true, shareablePreviewUrl });
+}
 
 export async function handleRecordBundlePreview(
   admin: ShopifyAdmin,
@@ -19,8 +55,6 @@ export async function handleRecordBundlePreview(
       bundleType: true,
       status: true,
       shopifyProductHandle: true,
-      shopifyPageHandle: true,
-      shopifyPreviewPageHandle: true,
     },
   });
 
@@ -64,10 +98,9 @@ function resolveRouteFamily(formData: FormData, bundleType: string | null): stri
 function resolveBundleLink(
   shopDomain: string,
   bundle: {
+    id: string;
     bundleType: string | null;
     shopifyProductHandle: string | null;
-    shopifyPageHandle: string | null;
-    shopifyPreviewPageHandle: string | null;
   },
 ): string {
   const host = shopDomain.includes(".myshopify.com")
@@ -78,8 +111,9 @@ function resolveBundleLink(
     return `https://${host}/products/${bundle.shopifyProductHandle}`;
   }
 
-  const pageHandle = bundle.shopifyPageHandle ?? bundle.shopifyPreviewPageHandle;
-  if (pageHandle) return `https://${host}/pages/${pageHandle}`;
+  if (bundle.bundleType === BundleType.FULL_PAGE) {
+    return buildFpbStorefrontUrl(host, bundle.id);
+  }
 
   return "";
 }

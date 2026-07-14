@@ -103,9 +103,9 @@ export function buildBundleLinkModel(input: {
   if (input.bundleType === "full_page") {
     return {
       kind: "page",
-      isLinked: Boolean(input.pageHandle && input.fullPageUrl),
+      isLinked: Boolean(input.fullPageUrl),
       url: input.fullPageUrl ?? "",
-      emptyMessage: "Bundle page not yet linked.",
+      emptyMessage: "Bundle link is unavailable.",
     };
   }
 
