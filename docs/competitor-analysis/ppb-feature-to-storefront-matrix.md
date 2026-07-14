@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, and C07 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07, C08, and G12 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -107,7 +107,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **T** | **P** PG07 | **P** HS18 | **S** Shared modal fallback only |
 | C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **P** PG09 | **P** HS03 | **P** VS07 |
 | C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** HS03 | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) |
-| C08 | Variant swatches | Saved swatch flag changes selector presentation | **T** | **T** | **T** | **T** |
+| C08 | Variant swatches | Current EB PPB admin/runtime does not expose or execute swatch presentation | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) |
 | C09 | Sole sellable variant | Omit selector but retain the surviving variant identity | **P** PL04 | **T** | **P** HS04 | **P** VS08 |
 | C10 | Fully unavailable product | Hide or block exactly as the saved EB inventory setting requires | **P** PL04 | **P** PG05 | **P** HS04 | **S** Shared modal path only |
 | C11 | Quantity/add/selected action | Default Add and selected quantity/action states match EB | **P** PL00 | **P** PG04/PG08 | **P** HS19 | **P** VS04 |
@@ -193,7 +193,7 @@ toggle or alternate-value behavior.
 | G09 | `hideOutOfStockProducts` | Alternate true/false states match EB | **S** True/default behavior proven | **S** True/default behavior proven | **S** True/default behavior proven | **S** Shared modal behavior only |
 | G10 | `displayPrices` | Prices hide/show without breaking card geometry | **T** | **T** | **T** | **T** |
 | G11 | `displayCompareAtPrices` | Compare-at visibility follows the saved global setting | **T** | **T** | **P** HS02 | **T** |
-| G12 | `displaySwatchColours` / `displaySwatchImages` | Swatch controls alter variant presentation | **T** | **T** | **T** | **T** |
+| G12 | `displaySwatchColours` / `displaySwatchImages` | Current EB PPB admin/runtime does not expose or execute global swatch controls | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) |
 | G13 | `displayConditionDescriptions` | Rule descriptions appear only when enabled | **T** | **T** | **T** | **T** |
 | G14 | Cart icon and cart style | Alternate icon/style values render correctly | **T** | **T** | **T** | **T** |
 | G15 | Product/slot card style presets | Alternate card style values remain template-correct | **T** | **T** | **T** | **T** |
@@ -299,6 +299,13 @@ mobile sizes. Wolfpack served widget `5.0.182`. EB was restored to Product Grid
 with grouped variants, and the Wolfpack SIT fixture was restored to Vertical
 Slots with the temporary variant payload removed.
 
+The 2026-07-15 C08/G12 review resolves swatches as EB-absent for current PPB.
+The live EB admin exposed the category-level individual-products checkbox but no
+category swatch control, and Bundle Settings exposed no global swatch
+colour/image controls. Current EB runtime reported `displayVariantsAsSwatches:
+false`, no swatch-related runtime keys, and a grouped variant selector instead
+of swatch DOM.
+
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
 template isolation, and the current desktop/mobile fixtures. Product Grid PG09
@@ -312,18 +319,18 @@ Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 54 | 8 | 41 | 3 | 1 | 12 |
-| Product Grid | 51 | 10 | 44 | 1 | 1 | 12 |
-| Horizontal Slots | 64 | 7 | 42 | 1 | 4 | 1 |
-| Vertical Slots | 54 | 15 | 45 | 1 | 3 | 1 |
+| Product List | 54 | 8 | 39 | 5 | 1 | 12 |
+| Product Grid | 51 | 10 | 42 | 3 | 1 | 12 |
+| Horizontal Slots | 64 | 7 | 40 | 3 | 4 | 1 |
+| Vertical Slots | 54 | 15 | 43 | 3 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
 - Proven: **223**
 - Shared/partial: **40**
-- Not tested: **172**
-- EB-absent: **6**
+- Not tested: **164**
+- EB-absent: **14**
 - Accepted divergence: **9**
 - Not applicable: **26**
 
@@ -335,12 +342,11 @@ High-risk missing evidence is concentrated in:
 1. fixed amount, fixed bundle price, BOGO, amount thresholds, and independent
    discount display controls;
 2. default/preselected products and disabled-validation behavior;
-3. variant swatches across each applicable template;
-4. template-specific cart/metadata proof for Product Grid and Vertical Slots;
-5. Bundle Visibility, browsed-product preselection, subscriptions/selling plans,
+3. template-specific cart/metadata proof for Product Grid and Vertical Slots;
+4. Bundle Visibility, browsed-product preselection, subscriptions/selling plans,
    and cart-line discount display;
-6. alternate global PPB control values and localized/custom text;
-7. direct Vertical Slots inventory, variant, and delayed-load proof.
+5. alternate global PPB control values and localized/custom text;
+6. direct Vertical Slots inventory, variant, and delayed-load proof.
 
 Those rows are being completed through the active functional-parity goal. The
 earlier storefront visual replay remains valid, but it is not the completion
