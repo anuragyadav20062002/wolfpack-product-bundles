@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, and R14 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, and C07 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -106,7 +106,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | C04 | Square/tall/wide media | Mixed aspect ratios remain contained | **P** PLS2 | **S** Responsive cards proven; mixed ratios not isolated | **P** HS02 | **S** Shared modal card renderer; no direct VS mixed-ratio replay |
 | C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **T** | **P** PG07 | **P** HS18 | **S** Shared modal fallback only |
 | C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **P** PG09 | **P** HS03 | **P** VS07 |
-| C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **S** Listed in PL03 run, but current evidence proves grouped mode | **T** | **P** HS03 | **T** |
+| C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** HS03 | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) |
 | C08 | Variant swatches | Saved swatch flag changes selector presentation | **T** | **T** | **T** | **T** |
 | C09 | Sole sellable variant | Omit selector but retain the surviving variant identity | **P** PL04 | **T** | **P** HS04 | **P** VS08 |
 | C10 | Fully unavailable product | Hide or block exactly as the saved EB inventory setting requires | **P** PL04 | **P** PG05 | **P** HS04 | **S** Shared modal path only |
@@ -291,6 +291,14 @@ PPB upsell block/button handoff. The complete configure audit already records
 desktop/mobile storefront proof for the enabled all-products upsell widget state,
 and current focused persistence/runtime tests passed 43/43.
 
+The 2026-07-15 C07 replay grouped Product List, Product Grid, and Vertical Slots
+under one shared category fixture. EB and Wolfpack both persisted
+`displayVariantsAsIndividualProducts: true` with swatches disabled and rendered
+the six `18k Pedal Ring` variants as separate selectable products at desktop and
+mobile sizes. Wolfpack served widget `5.0.182`. EB was restored to Product Grid
+with grouped variants, and the Wolfpack SIT fixture was restored to Vertical
+Slots with the temporary variant payload removed.
+
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
 template isolation, and the current desktop/mobile fixtures. Product Grid PG09
@@ -304,17 +312,17 @@ Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 53 | 9 | 41 | 3 | 1 | 12 |
-| Product Grid | 50 | 10 | 45 | 1 | 1 | 12 |
+| Product List | 54 | 8 | 41 | 3 | 1 | 12 |
+| Product Grid | 51 | 10 | 44 | 1 | 1 | 12 |
 | Horizontal Slots | 64 | 7 | 42 | 1 | 4 | 1 |
-| Vertical Slots | 53 | 15 | 46 | 1 | 3 | 1 |
+| Vertical Slots | 54 | 15 | 45 | 1 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **220**
-- Shared/partial: **41**
-- Not tested: **174**
+- Proven: **223**
+- Shared/partial: **40**
+- Not tested: **172**
 - EB-absent: **6**
 - Accepted divergence: **9**
 - Not applicable: **26**
@@ -327,7 +335,7 @@ High-risk missing evidence is concentrated in:
 1. fixed amount, fixed bundle price, BOGO, amount thresholds, and independent
    discount display controls;
 2. default/preselected products and disabled-validation behavior;
-3. individual variants and swatches across each applicable template;
+3. variant swatches across each applicable template;
 4. template-specific cart/metadata proof for Product Grid and Vertical Slots;
 5. Bundle Visibility, browsed-product preselection, subscriptions/selling plans,
    and cart-line discount display;
