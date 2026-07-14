@@ -85,7 +85,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | R03 | Single-step bundle | One active step with final CTA | **P** PL00 | **P** PG00 | **P** HS00 | **P** VS00 |
 | R04 | Multi-step navigation | One active step; Next/Back/Done and retained selections | **P** PL02/PLS1 | **P** PG02/PG08 | **P** HS05/HSS1 | **P** VS03 |
 | R05 | Multiple categories and switching | Current category changes the visible catalog | **P** PL01 | **P** PG03 | **P** HS01 | **P** VS05 |
-| R06 | Empty category | EB behavior for a category with no persisted products | **E** PL01/PLS3 | **S** Fixture records an empty category; rendered state not isolated | **T** | **T** |
+| R06 | Empty category | EB behavior for a category with no persisted products | **E** PL01/PLS3 | **P** [R06 deferred replay](ppb-deferred-functional-parity/R06-empty-category-evidence.md) | **P** [R06 deferred replay](ppb-deferred-functional-parity/R06-empty-category-evidence.md) | **P** [R06 deferred replay](ppb-deferred-functional-parity/R06-empty-category-evidence.md) |
 | R07 | `useSingleStepCategoriesAsBundleSteps` | Categories become navigable steps when true | **S** Shared-source category-expansion contract (`bundle-widget-product-page-single-step-categories.test.ts`) | **S** Shared-source category-expansion contract (`bundle-widget-product-page-single-step-categories.test.ts`) | **S** Shared-source category-expansion contract (`bundle-widget-product-page-single-step-categories.test.ts`) | **S** Shared-source category-expansion contract (`bundle-widget-product-page-single-step-categories.test.ts`) |
 | R08 | Manual product source | Manually selected catalog products render | **P** PL00 | **P** PG00/PG08 | **P** HS02 | **P** VS04 |
 | R09 | Collection-backed source | Collection products hydrate, paginate, and obey inventory filtering | **P** PLS3 | **T** | **P** HS04/HSS1 | **T** |
@@ -263,16 +263,16 @@ Final evidence counts across the 119 feature rows:
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Product List | 46 | 16 | 43 | 2 | 0 | 12 |
-| Product Grid | 41 | 17 | 49 | 0 | 0 | 12 |
-| Horizontal Slots | 57 | 12 | 46 | 0 | 3 | 1 |
-| Vertical Slots | 43 | 21 | 52 | 0 | 2 | 1 |
+| Product Grid | 42 | 16 | 49 | 0 | 0 | 12 |
+| Horizontal Slots | 58 | 12 | 45 | 0 | 3 | 1 |
+| Vertical Slots | 44 | 21 | 51 | 0 | 2 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **187**
-- Shared/partial: **66**
-- Not tested: **190**
+- Proven: **190**
+- Shared/partial: **65**
+- Not tested: **188**
 - EB-absent: **2**
 - Accepted divergence: **5**
 - Not applicable: **26**
