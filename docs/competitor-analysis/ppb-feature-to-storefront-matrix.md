@@ -5,7 +5,7 @@ title: Product Page Bundle Feature-to-Storefront Verification Matrix
 type: verification-matrix
 status: active
 summary: Maps Product Page Bundle feature states to direct storefront evidence across all four PPB designs.
-last_audited: 2026-07-14
+last_audited: 2026-07-15
 owners:
   - Wolfpack Product Bundles
 domains:
@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R07 replayed directly
+**Status:** Functional parity completion in progress; R06-R10 replayed directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -88,8 +88,8 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | R06 | Empty category | EB behavior for a category with no persisted products | **E** PL01/PLS3 | **P** [R06 deferred replay](ppb-deferred-functional-parity/R06-empty-category-evidence.md) | **P** [R06 deferred replay](ppb-deferred-functional-parity/R06-empty-category-evidence.md) | **P** [R06 deferred replay](ppb-deferred-functional-parity/R06-empty-category-evidence.md) |
 | R07 | `useSingleStepCategoriesAsBundleSteps` | Current EB Admin exposes no control and its raw/processed runtime values are false; Wolfpack's true mode is an accepted extension | **X** [R07 category-step replay](ppb-deferred-functional-parity/R07-category-steps-evidence.md) | **X** [R07 category-step replay](ppb-deferred-functional-parity/R07-category-steps-evidence.md) | **X** [R07 category-step replay](ppb-deferred-functional-parity/R07-category-steps-evidence.md) | **X** [R07 category-step replay](ppb-deferred-functional-parity/R07-category-steps-evidence.md) |
 | R08 | Manual product source | Manually selected catalog products render | **P** PL00 | **P** PG00/PG08 | **P** HS02 | **P** VS04 |
-| R09 | Collection-backed source | Collection products hydrate, paginate, and obey inventory filtering | **P** PLS3 | **T** | **P** HS04/HSS1 | **T** |
-| R10 | Mixed manual + collection source | Both sources coexist without duplicates/state loss | **P** PL04/PLS3 | **T** | **P** HSS1 | **T** |
+| R09 | Collection-backed source | Collection products hydrate, paginate, and obey inventory filtering | **P** PLS3 | **P** [R09-R10 collection replay](ppb-deferred-functional-parity/R09-R10-collection-sources-evidence.md) | **P** HS04/HSS1 | **P** [R09-R10 collection replay](ppb-deferred-functional-parity/R09-R10-collection-sources-evidence.md) |
+| R10 | Mixed manual + collection source | Both sources coexist without duplicates/state loss | **P** PL04/PLS3 | **P** [R09-R10 collection replay](ppb-deferred-functional-parity/R09-R10-collection-sources-evidence.md) | **P** HSS1 | **P** [R09-R10 collection replay](ppb-deferred-functional-parity/R09-R10-collection-sources-evidence.md) |
 | R11 | Quantity step rule: minimum | Blocks progression below the threshold and permits overflow where EB does | **P** PL02 | **P** PG05/PG06 | **P** HSS3 | **P** VS03 |
 | R12 | Quantity step rule: exact / maximum | Prevents over-target selection and supports edit/replacement | **P** PL02 | **P** PG05 | **P** HSS3 | **P** VS03 |
 | R13 | Amount-based condition | Price threshold controls progression | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) |
@@ -253,6 +253,11 @@ The later Q05-Q07 modal-slot quality replay served widget `5.0.181` and
 revalidated Horizontal and Vertical Slots after the keyboard and responsive
 focus fixes documented in the linked evidence note.
 
+The 2026-07-15 R09-R10 collection-source replay served Wolfpack widget
+`5.0.182`. Direct reference and Wolfpack passes proved collection-only hydration,
+mixed manual-plus-collection de-duplication, inventory filtering, and selected
+state retention for Product Grid and Vertical Slots at 1280x800 and 390x844.
+
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
 template isolation, and the current desktop/mobile fixtures. Product Grid PG09
@@ -267,16 +272,16 @@ Final evidence counts across the 119 feature rows:
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Product List | 49 | 12 | 43 | 2 | 1 | 12 |
-| Product Grid | 44 | 13 | 49 | 0 | 1 | 12 |
+| Product Grid | 46 | 13 | 47 | 0 | 1 | 12 |
 | Horizontal Slots | 59 | 10 | 45 | 0 | 4 | 1 |
-| Vertical Slots | 46 | 18 | 51 | 0 | 3 | 1 |
+| Vertical Slots | 48 | 18 | 49 | 0 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **198**
+- Proven: **202**
 - Shared/partial: **53**
-- Not tested: **188**
+- Not tested: **184**
 - EB-absent: **2**
 - Accepted divergence: **9**
 - Not applicable: **26**
@@ -289,13 +294,12 @@ High-risk missing evidence is concentrated in:
 1. fixed amount, fixed bundle price, BOGO, amount thresholds, and independent
    discount display controls;
 2. default/preselected products and disabled-validation behavior;
-3. collection-backed Product Grid and Vertical Slots;
-4. individual variants and swatches across each applicable template;
-5. template-specific cart/metadata proof for Product Grid and Vertical Slots;
-6. Bundle Visibility, browsed-product preselection, subscriptions/selling plans,
+3. individual variants and swatches across each applicable template;
+4. template-specific cart/metadata proof for Product Grid and Vertical Slots;
+5. Bundle Visibility, browsed-product preselection, subscriptions/selling plans,
    and cart-line discount display;
-7. alternate global PPB control values and localized/custom text;
-8. direct Vertical Slots inventory, variant, and delayed-load proof.
+6. alternate global PPB control values and localized/custom text;
+7. direct Vertical Slots inventory, variant, and delayed-load proof.
 
 Those rows are being completed through the active functional-parity goal. The
 earlier storefront visual replay remains valid, but it is not the completion
