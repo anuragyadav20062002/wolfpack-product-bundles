@@ -1,6 +1,33 @@
-# PPB Feature-to-Storefront Mapping Matrix
+---
+schema_version: 1
+id: ppb-feature-to-storefront-matrix
+title: Product Page Bundle Feature-to-Storefront Verification Matrix
+type: verification-matrix
+status: active
+summary: Maps Product Page Bundle feature states to direct storefront evidence across all four PPB designs.
+last_audited: 2026-07-14
+owners:
+  - Wolfpack Product Bundles
+domains:
+  - storefront
+systems:
+  - product-page-bundle-widget
+source_paths:
+  - app/assets/widgets/product-page
+related_docs:
+  - docs/issues-prod/product-page-bundle-template-fixture-spec.md
+  - docs/refactor/full-page-and-product-page-template-verification-matrix.md
+tags:
+  - ppb
+  - verification
+keywords:
+  - feature storefront matrix
+  - PPB templates
+---
 
-**Status:** Closed for storefront visual parity; non-visual permutations deferred
+# Product Page Bundle Feature-to-Storefront Verification Matrix
+
+**Status:** Current design replay complete; non-visual permutations remain explicitly deferred
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -208,6 +235,19 @@ toggle or alternate-value behavior.
 | Q07 | Theme typography and selector leakage | Theme styles do not distort the template | **S** Visual states proven; systematic computed sweep absent | **S** Visual states proven; systematic computed sweep absent | **P** HS01/HS02/HS04 | **S** Visual states proven; systematic computed sweep absent |
 
 ## Final Reconciliation Result
+
+### 2026-07-14 current design replay
+
+The agent-store PPB fixture was replayed through all four saved designs with direct Chrome DevTools. Cache Storage was cleared and each desktop/mobile evidence pass used a cache-bypassed hard reload.
+
+| Design | Runtime contract | Desktop 1280x800 | Mobile 390x844 | Interaction evidence | Overflow | Active stylesheet |
+| --- | --- | --- | --- | --- | --- | --- |
+| Product List | `PDP_INPAGE + CASCADE` | Pass | Pass | Two selections, discount progress, selected drawer, Next, Step 2, Previous | None | `bundle-widget-product-page-cascade.css` |
+| Product Grid | `PDP_INPAGE + COGNIVE` | Pass | Pass | Categories, Add actions, active Next, unmet-rule toast | None | `bundle-widget-product-page-cognive.css` |
+| Horizontal Slots | `PDP_MODAL + MODAL` | Pass | Pass | Slot picker, selected state, total/count update, incomplete-step enforcement | None | `bundle-widget-product-page-modal.css` |
+| Vertical Slots | `PDP_MODAL + SIMPLIFIED` | Pass | Pass | Vertical slot picker, selected state, total/count update, incomplete-step enforcement | None | `bundle-widget-product-page-modal.css` |
+
+All four designs served widget `5.0.174`, loaded their active stylesheet through Shopify CDN, and restored Product Grid after the replay. This replay revalidates the existing template-shell, responsive, step/category, selection, discount-progress, and validation-toast rows. It does not promote the explicitly deferred `S` or `T` feature permutations below.
 
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,

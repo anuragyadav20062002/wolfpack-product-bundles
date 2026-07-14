@@ -1,3 +1,29 @@
+---
+schema_version: 1
+id: fpb-product-card-micro-parity-1
+title: FPB Product Card Micro-Parity Across Templates
+type: issue
+status: active
+summary: Tracks compact product-card details shared across Full Page Bundle templates.
+last_audited: 2026-07-14
+owners:
+  - Wolfpack Product Bundles
+domains:
+  - storefront
+systems:
+  - full-page-bundle-widget
+source_paths:
+  - app/assets/widgets/full-page
+related_docs:
+  - docs/issues-prod/full-page-bundle-template-fixture-spec.md
+tags:
+  - fpb
+  - product-card
+keywords:
+  - product card
+  - template parity
+---
+
 # Issue: FPB Product Card Micro-Parity Across Templates
 
 **Issue ID:** fpb-product-card-micro-parity-1
@@ -93,7 +119,7 @@ This slice is intentionally narrower than a full template pass. It only covers p
 - `test-spec/fpb-horizontal-design-storefront.spec.md`
 - `test-spec/shared-product-card.spec.md`
 - `docs/issues-prod/fpb-template-deep-parity-audit-1.md`
-- `docs/issues-prod/fpb-fresh-template-parity-1.md`
+- `docs/issues-prod/full-page-bundle-template-fixture-spec.md`
 
 ## Progress Log
 
