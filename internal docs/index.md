@@ -36,6 +36,8 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Architecture/Widget Architecture]] — FPB + PDP widgets, load strategy, versioning
 - [[Architecture/Product Card Layout Contract]] — Hard rule for row-level card size behavior across all templates and interaction states
 - [[Architecture/Admin Configure Page]] — shared FPB/PPB Admin configure-page adapter boundary, section rhythm, route-owned save semantics
+- [[Architecture/Bundle Parent Product]] — shared neutral FPB/PPB Shopify parent contract, merchant metadata ownership, sync invariants, and host separation
+- [[Architecture/FPB Host Evaluation]] — deferred Shopify Page versus app-proxy decision, current blast radius, benefits, and migration risks
 - [[Architecture/State Management]] — Redux Toolkit slices, RTK Query endpoint boundaries, and AppStateService migration rules
 - [[Architecture/Diagrams/index|Architecture Diagram Catalog]] — indexed Mermaid diagrams for Cart Transform, metafield ownership/consumption, storefront runtime, backend layers, and embedded Admin UI
 - [[Shopify Integration/Admin API]] — Rate limits, GraphQL patterns, session handling

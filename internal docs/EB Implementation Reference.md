@@ -495,11 +495,15 @@ The parent product `body_html` is the same contract for PPB and FPB. It starts w
 - `To show this bundle on your storefront (like in collections or search), you must manually change its Status to "Active" from the easy bundles app.`
 - `Do Not Delete: Deleting this product will break the bundle's functionality.`
 
-Implications for Wolfpack:
-- PPB first-time parent product creation should default the Shopify product to `UNLISTED`, not `DRAFT`.
+Implications for Wolfpack (implemented 2026-07-14):
+- FPB and PPB first-time parent product creation both default the Shopify product to `UNLISTED`, not `DRAFT`.
+- Both bundle types use the same neutral default variant: `0.00`, continue selling, non-taxable, and `requiresComponents: true`.
+- The parent is published to Online Store without publishing it to incompatible sales channels.
+- Shopify title, description, handle, media, and status become merchant-owned after creation. Explicit sync refreshes only the stored live handle and does not rewrite merchant metadata.
+- Wolfpack bundle activation and Shopify product discoverability are separate. Merchants change discoverability through **Edit Product** in Shopify Admin.
 - PPB preview must still work for `active`, `unlisted`, `draft`, and locally untracked/unknown states by choosing Shopify preview URLs first when needed and falling back to a direct handle URL when possible.
-- Making the parent product discoverable in storefront search or collections requires changing the Shopify parent product status to `ACTIVE`.
-- FPB uses the same unlisted parent-product status/copy for its generated Shopify parent product, even though the customer-facing FPB builder can render through an app-proxy/full-page bundle URL instead of the native Shopify product page. The app-proxy URL alone is therefore not sufficient proof of parent product status.
+- Making the parent product discoverable in storefront search or collections requires changing the Shopify parent product status to `ACTIVE` in Shopify Admin.
+- FPB retains its Shopify Page host at `/pages/{handle}` while PPB retains its product host at `/products/{handle}`. The FPB host decision is documented separately and remains deferred.
 
 ### PPB Step/Category Admin Payload
 
