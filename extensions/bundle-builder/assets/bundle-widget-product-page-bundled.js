@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.177
+ * Version : 5.0.178
  * Built   : 2026-07-14
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.177';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.178';
 (function() {
   'use strict';
 
@@ -7115,13 +7115,16 @@ function resolveInpageProductSelection(
 const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
+  if (!this._inpageStepProductsLoaded) this._inpageStepProductsLoaded = {};
   target.classList.toggle('bw-ppb-cascade-product-list', this._isProductPageCascadeTemplate());
   target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
 
-  if (rawProducts.length === 0 && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
+  const stepProductsLoaded = this._inpageStepProductsLoaded[stepIndex] === true;
+  if (rawProducts.length === 0 && !stepProductsLoaded && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
     target.setAttribute?.('aria-busy', 'true');
     target.innerHTML = renderInpageProductLoadingRows();
     this.loadStepProducts(stepIndex).then(() => {
+      this._inpageStepProductsLoaded[stepIndex] = true;
       if (target.isConnected) this._renderInpageStepProducts(stepIndex, target);
     }).catch(() => {
       if (!this._stepFetchFailed) this._stepFetchFailed = {};

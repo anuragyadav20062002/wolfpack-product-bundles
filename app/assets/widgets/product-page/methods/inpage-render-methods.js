@@ -110,13 +110,16 @@ export function resolveInpageProductSelection(
 export const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
+  if (!this._inpageStepProductsLoaded) this._inpageStepProductsLoaded = {};
   target.classList.toggle('bw-ppb-cascade-product-list', this._isProductPageCascadeTemplate());
   target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
 
-  if (rawProducts.length === 0 && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
+  const stepProductsLoaded = this._inpageStepProductsLoaded[stepIndex] === true;
+  if (rawProducts.length === 0 && !stepProductsLoaded && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
     target.setAttribute?.('aria-busy', 'true');
     target.innerHTML = renderInpageProductLoadingRows();
     this.loadStepProducts(stepIndex).then(() => {
+      this._inpageStepProductsLoaded[stepIndex] = true;
       if (target.isConnected) this._renderInpageStepProducts(stepIndex, target);
     }).catch(() => {
       if (!this._stepFetchFailed) this._stepFetchFailed = {};

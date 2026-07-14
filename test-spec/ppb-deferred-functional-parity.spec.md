@@ -49,6 +49,7 @@ Close every Product Page Bundle feature-to-storefront matrix cell currently mark
 | 8 | Four-template regression | Product List, Product Grid, Horizontal Slots, and Vertical Slots at desktop and mobile after all changes | Existing selection, validation, discount, modal, and responsive behavior remains green | Cache Storage cleared and cache bypassed before each evidence pass |
 | 9 | Product descriptions stay hidden | Products with populated plain-text and HTML descriptions in every PPB template | Product cards, rows, slots, and selected-item surfaces never render merchant product descriptions or description controls | Product detail data may remain available to non-card consumers |
 | 10 | Selected cards have no tick badges | Select and deselect products in every PPB template | Quantity controls, selected styling, and totals update without rendering a checkmark overlay on any card or selected item | Stale overlays are removed during an in-place quantity update |
+| 11 | Loaded empty category-step terminates loading | Advance from a populated category-step into a category-step whose product load resolves empty | The empty-state message renders after one request; the renderer does not recursively reload or freeze the storefront | Covers R07 with an empty category |
 
 ## Acceptance Criteria
 
