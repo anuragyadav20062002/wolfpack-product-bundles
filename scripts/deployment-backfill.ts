@@ -8,6 +8,7 @@ import {
 } from "../app/services/deployment-backfill.server";
 import { syncBundleStorefrontNow } from "../app/services/bundles/storefront-sync.server";
 import { migrateFpbPageHost } from "../app/services/bundles/fpb-page-host-migration.server";
+import { CartTransformService } from "../app/services/cart-transform-service.server";
 
 async function main() {
   const options = parseDeploymentBackfillEnv(process.env);
@@ -17,6 +18,8 @@ async function main() {
       const { admin } = await unauthenticated.admin(shopDomain);
       return admin;
     },
+    replaceCartTransform: (admin, shopDomain) =>
+      CartTransformService.replaceForDeploymentBackfill(admin as any, shopDomain),
     syncBundle: syncBundleStorefrontNow as any,
     migrateFpbPageHost: migrateFpbPageHost as any,
     logger: console,
@@ -24,7 +27,7 @@ async function main() {
 
   console.log(JSON.stringify(summary, null, 2));
 
-  if (summary.failedBundles > 0) {
+  if (summary.failedShops > 0 || summary.failedBundles > 0) {
     process.exitCode = 1;
   }
 }

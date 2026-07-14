@@ -481,6 +481,17 @@ Storefront bundle add
               └── CartTransform blockOnFailure=true → cart / checkout error; unmodified pricing is not accepted
 ```
 
+### Flow F: Deployment Backfill Apply
+```
+Selected installed shops
+  └── acquire one compliant offline Admin client per shop
+      └── delete current CartTransform and verify deletedId
+          └── recreate with blockOnFailure=true
+              └── restore runtime-token secret
+                  ├── success → migrate/sync that shop's FPB and PPB bundles
+                  └── failure → skip that shop's bundles and exit non-zero
+```
+
 ---
 
 ## 4. API Routes Reference

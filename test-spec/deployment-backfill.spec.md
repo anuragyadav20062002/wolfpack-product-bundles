@@ -15,6 +15,8 @@ systems:
 source_paths:
   - app/services/deployment-backfill.server.ts
   - app/services/bundles/fpb-page-host-migration.server.ts
+  - app/services/cart-transform-service.server.ts
+  - scripts/deployment-backfill.ts
 related_docs:
   - internal docs/Operations/Deployment Backfill.md
 tags:
@@ -48,9 +50,16 @@ Provide a guarded deployment-time maintenance script that migrates FPB Page host
 | 11 | Partial handle-move retry | Shopify handle already moved but DB still stores old handle | Repairs/verifies old redirect and persists live internal handle without another rename | Idempotent after interrupted apply |
 | 12 | Parent handle update failure | `productUpdate` user error | Preserves Page references and skips FPB sync | No partial Page cleanup |
 | 13 | Deleted parent | Stored product ID no longer resolves | Keeps old route redirect, completes Page cleanup, then normal sync recreates parent | Deleted route is already redirect-eligible |
+| 14 | Cart Transform apply sweep | Confirmed apply across selected shops | Deletes and recreates one CartTransform per shop with `blockOnFailure: true` before bundle sync | Includes shops with no bundles |
+| 15 | Cart Transform dry-run | Enabled without apply | Reports transforms to replace without acquiring Admin clients or mutating Shopify | Mutation-free preview |
+| 16 | Cart Transform deletion failure | Delete returns a Shopify error | Does not create a replacement, skips that shop's bundles, records failure, exits non-zero | Avoids ambiguous active configuration |
+| 17 | Runtime-secret restoration | Replacement succeeds | Writes the derived runtime-token secret to the new CartTransform owner | Keeps signed runtime validation operational |
+| 18 | Ambiguous delete response | Delete returns no user errors but omits `deletedId` | Does not create a replacement and records failure | Requires positive deletion confirmation |
 
 ## Acceptance Criteria
-- [ ] All listed test cases pass
-- [ ] Deploy scripts invoke the backfill gate before Shopify deploy but the gate is disabled by default
-- [ ] Docs warn that production apply mode is dangerous and requires manual user approval
-- [ ] FPB parent handle migration never changes product status, publication, media, variant, or PPB handles
+- [x] All listed test cases pass
+- [x] Deploy scripts invoke the backfill gate before Shopify deploy but the gate is disabled by default
+- [x] Docs warn that production apply mode is dangerous and requires manual user approval
+- [x] FPB parent handle migration never changes product status, publication, media, variant, or PPB handles
+- [x] Apply replaces the CartTransform exactly once per selected shop before syncing its bundles
+- [x] A shop-level replacement failure skips that shop's bundles and produces a non-zero command result

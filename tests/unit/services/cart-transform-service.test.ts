@@ -44,6 +44,141 @@ describe('CartTransformService', () => {
     process.env.SHOPIFY_API_SECRET = originalSecret;
   });
 
+  describe('replaceForDeploymentBackfill', () => {
+    const shopDomain = 'test-shop.myshopify.com';
+
+    it('deletes and recreates even an already compliant transform', async () => {
+      const existingTransformId = 'gid://shopify/CartTransform/existing';
+      const replacementTransformId = 'gid://shopify/CartTransform/replacement';
+      mockShopifyAdmin.graphql
+        .mockResolvedValueOnce(rustFunctionsMock())
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransforms: {
+            edges: [{
+              node: {
+                id: existingTransformId,
+                functionId: MOCK_RUST_FUNCTION_ID,
+                blockOnFailure: true,
+              },
+            }],
+          },
+        }))
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransformDelete: { deletedId: existingTransformId, userErrors: [] },
+        }))
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransformCreate: {
+            cartTransform: {
+              id: replacementTransformId,
+              functionId: MOCK_RUST_FUNCTION_ID,
+              blockOnFailure: true,
+            },
+            userErrors: [],
+          },
+        }))
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          metafieldsSet: { metafields: [], userErrors: [] },
+        }));
+
+      const result = await CartTransformService.replaceForDeploymentBackfill(
+        mockShopifyAdmin,
+        shopDomain,
+      );
+
+      expect(result).toEqual({
+        success: true,
+        cartTransformId: replacementTransformId,
+      });
+      expect(mockShopifyAdmin.graphql.mock.calls[2][1]).toEqual({
+        variables: { id: existingTransformId },
+      });
+      expect(mockShopifyAdmin.graphql.mock.calls[3][1]).toEqual({
+        variables: {
+          functionHandle: 'bundle-cart-transform-rs',
+          blockOnFailure: true,
+        },
+      });
+      expect(mockShopifyAdmin.graphql.mock.calls[4][1]).toEqual({
+        variables: {
+          metafields: [{
+            ownerId: replacementTransformId,
+            namespace: '$app',
+            key: 'runtime_token_secret',
+            type: 'single_line_text_field',
+            value: expect.any(String),
+          }],
+        },
+      });
+    });
+
+    it('does not create a replacement when deletion fails', async () => {
+      const existingTransformId = 'gid://shopify/CartTransform/existing';
+      mockShopifyAdmin.graphql
+        .mockResolvedValueOnce(rustFunctionsMock())
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransforms: {
+            edges: [{
+              node: {
+                id: existingTransformId,
+                functionId: MOCK_RUST_FUNCTION_ID,
+                blockOnFailure: true,
+              },
+            }],
+          },
+        }))
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransformDelete: {
+            deletedId: null,
+            userErrors: [{ field: ['id'], message: 'Delete rejected' }],
+          },
+        }));
+
+      const result = await CartTransformService.replaceForDeploymentBackfill(
+        mockShopifyAdmin,
+        shopDomain,
+      );
+
+      expect(result).toEqual({
+        success: false,
+        cartTransformId: existingTransformId,
+        error: 'Could not delete CartTransform for deployment backfill',
+      });
+      expect(mockShopifyAdmin.graphql).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not create a replacement when Shopify omits the deleted ID', async () => {
+      const existingTransformId = 'gid://shopify/CartTransform/existing';
+      mockShopifyAdmin.graphql
+        .mockResolvedValueOnce(rustFunctionsMock())
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransforms: {
+            edges: [{
+              node: {
+                id: existingTransformId,
+                functionId: MOCK_RUST_FUNCTION_ID,
+                blockOnFailure: true,
+              },
+            }],
+          },
+        }))
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransformDelete: { deletedId: null, userErrors: [] },
+        }));
+
+      const result = await CartTransformService.replaceForDeploymentBackfill(
+        mockShopifyAdmin,
+        shopDomain,
+      );
+
+      expect(result).toEqual({
+        success: false,
+        cartTransformId: existingTransformId,
+        error: 'Could not delete CartTransform for deployment backfill',
+      });
+      expect(mockShopifyAdmin.graphql).toHaveBeenCalledTimes(3);
+    });
+  });
+
   describe('activateForNewInstallation', () => {
     const shopDomain = 'test-shop.myshopify.com';
 

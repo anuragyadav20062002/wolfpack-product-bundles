@@ -40,6 +40,8 @@ As of 2026-07-08, MERGE validation is runtime-token based. Storefront widgets PO
 
 CartTransform activation is fail-closed. `CartTransformService` creates the Shopify CartTransform with `blockOnFailure: true`, so a Function timeout, resource-limit breach, trap, or other execution failure blocks cart and checkout operations instead of accepting Shopify's unmodified component prices. The earlier activation mutation omitted this argument; Shopify therefore applied its `false` default and could fall through to ordinary pricing. Existing Rust transforms with `blockOnFailure: false` are deleted and recreated by `completeSetup()`, while already-compliant transforms are reused.
 
+The guarded deployment backfill is intentionally stronger than normal setup: apply mode deletes and recreates the CartTransform once for every selected shop, even when the existing transform is already compliant. It restores the runtime-token secret before allowing that shop's bundle synchronization to proceed. Dry-run reports the selected shop count and performs no Admin API calls.
+
 > ⚠️ The original `docs/CART_TRANSFORM_FUNCTION.md` contained multiple critical errors. This note is the authoritative reference.
 
 ---

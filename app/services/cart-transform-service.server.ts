@@ -79,11 +79,20 @@ export class CartTransformService {
     try {
       const response = await admin.graphql(MUTATION, { variables: { id } });
       const data = await response.json() as any;
-      if (data.errors || data.data?.cartTransformDelete?.userErrors?.length > 0) {
+      const deletion = data.data?.cartTransformDelete;
+      if (
+        data.errors
+        || deletion?.userErrors?.length > 0
+        || deletion?.deletedId !== id
+      ) {
         AppLogger.warn('Failed to delete CartTransform', {
           component: 'cart-transform',
           operation: 'delete'
-        }, { id, errors: data.errors ?? data.data?.cartTransformDelete?.userErrors });
+        }, {
+          id,
+          deletedId: deletion?.deletedId,
+          errors: data.errors ?? deletion?.userErrors,
+        });
         return false;
       }
       return true;
@@ -233,6 +242,65 @@ export class CartTransformService {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error during cart transform creation'
+      };
+    }
+  }
+
+  /**
+   * Force one delete/recreate cycle for a deployment-backfill shop.
+   * This intentionally replaces even an already-compliant transform so the
+   * backfill establishes the current fail-closed contract deterministically.
+   */
+  static async replaceForDeploymentBackfill(
+    admin: AdminApiContext,
+    shopDomain: string,
+  ): Promise<CartTransformActivationResult> {
+    try {
+      const rustFunctionId = await this.getRustFunctionId(admin);
+      if (!rustFunctionId) {
+        return {
+          success: false,
+          error: `Rust function handle '${RUST_FUNCTION_HANDLE}' not found — has the app been deployed?`,
+        };
+      }
+
+      const existing = await this.checkExistingCartTransform(admin);
+      if (existing.exists && existing.id) {
+        const deleted = await this.deleteCartTransform(admin, existing.id);
+        if (!deleted) {
+          return {
+            success: false,
+            cartTransformId: existing.id,
+            error: 'Could not delete CartTransform for deployment backfill',
+          };
+        }
+      }
+
+      const created = await this.createCartTransform(admin, RUST_FUNCTION_HANDLE);
+      if (!created.success || !created.cartTransformId) {
+        return created;
+      }
+
+      const secretSync = await this.syncRuntimeTokenSecret(
+        admin,
+        shopDomain,
+        created.cartTransformId,
+      );
+      if (!secretSync.success) {
+        return {
+          success: false,
+          cartTransformId: created.cartTransformId,
+          error: secretSync.error ?? 'Runtime token secret sync failed',
+        };
+      }
+
+      return created;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error
+          ? error.message
+          : 'Unknown error replacing CartTransform for deployment backfill',
       };
     }
   }
