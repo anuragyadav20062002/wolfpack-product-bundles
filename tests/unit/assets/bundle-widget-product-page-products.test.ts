@@ -102,6 +102,7 @@ describe('processProductPageProductsForStep', () => {
       available: true,
       quantityAvailable: 4,
       currentlyNotInStock: false,
+      sourceVariantCount: 2,
     });
     expect(products[0].variants.map((variant: StorefrontVariant) => variant.id)).toEqual(['222']);
   });

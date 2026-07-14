@@ -265,6 +265,8 @@ ensureBottomSheet() {
         </div>
         <!-- "Choose X" step title -->
         <div class="modal-step-title bw-bs-choose-title"></div>
+        <!-- Current-step categories -->
+        <div class="bw-bs-category-tabs" hidden></div>
         <!-- Discount / progress messaging -->
         <div class="bw-bs-discount-bar footer-discount-text"></div>
       </div>

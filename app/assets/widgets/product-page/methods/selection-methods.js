@@ -81,10 +81,20 @@ function collectCategoryAutoNextProductIds(category) {
   return ids;
 }
 
-// Mirrors `shouldAutoAdvanceFullPageStep` in the full-page widget: auto-next is
-// an explicit per-category opt-in via `autoNextStepOnConditionMet`. Removals
-// and step-rule-only configurations never auto-advance.
+// Mirrors `shouldAutoAdvanceFullPageStep` in the full-page widget: auto-next can
+// be enabled per step or per category rule.
+// Removals and non-configured conditions never auto-advance.
 export function shouldAutoAdvanceProductPageStep({ quantity = 0, productId = '', step = null } = {}) {
+  if (
+    quantity > 0
+    && step?.autoNextStepOnConditionMet === true
+    && step?.conditionType
+    && step?.conditionOperator
+    && Number(step.conditionValue || 0) > 0
+  ) {
+    return true;
+  }
+
   const categories = Array.isArray(step?.categories) ? step.categories : [];
   const categoryRuleCategories = categories.filter(category =>
     Array.isArray(category?.conditions) && category.conditions.length > 0
@@ -103,6 +113,25 @@ export function shouldAutoAdvanceProductPageStep({ quantity = 0, productId = '',
     }
     return categoryProductIds.has(selectedProductId);
   });
+}
+
+export function syncProductPageSelectedOverlay(productCard, quantity) {
+  if (!productCard) return null;
+
+  let selectedOverlay = productCard.querySelector('.selected-overlay');
+  if (!selectedOverlay && quantity > 0) {
+    selectedOverlay = productCard.ownerDocument?.createElement('div');
+    if (!selectedOverlay) return null;
+    selectedOverlay.className = 'selected-overlay';
+    selectedOverlay.textContent = '✓';
+    productCard.prepend(selectedOverlay);
+  }
+
+  if (selectedOverlay) {
+    selectedOverlay.style.display = quantity > 0 ? 'flex' : 'none';
+  }
+
+  return selectedOverlay;
 }
 
 export const ProductPageSelectionMethods = {
@@ -176,7 +205,8 @@ updateProductSelection(stepIndex, productId, newQuantity) {
   const stepProducts = this.stepProductData?.[stepIndex] || [];
   const selectedProduct = this.findProductBySelectionKey(stepProducts, selectionKey);
   const selectedProductId = selectedProduct?.parentProductId || selectedProduct?.productId || selectedProduct?.id || selectionKey;
-  if (shouldAutoAdvanceProductPageStep({ quantity, productId: selectedProductId, step: currentStep })) {
+  if (!this._autoAdvancePending && shouldAutoAdvanceProductPageStep({ quantity, productId: selectedProductId, step: currentStep })) {
+    this._autoAdvancePending = true;
     this._autoProgressBottomSheet(stepIndex);
   }
   this._maybeAutoAddAfterLastStep();
@@ -184,14 +214,18 @@ updateProductSelection(stepIndex, productId, newQuantity) {
 
 _maybeAutoAddAfterLastStep() {
   const controls = this._getProductPageControls();
-  if (controls?.addBundleToCartAfterLastStepCompleted !== true) return;
+  if (!(
+    controls?.addBundleToCartAfterLastStepCompleted === true
+    || controls?.addBundleToCartOnDone === true
+  )) return;
   if (this._autoAddingFromControls) return;
   if (!this.selectedBundle?.steps?.length) return;
 
-  const allStepsValid = this.selectedBundle.steps.every((step, index) => {
+  const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
+  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
     if (step.isFreeGift || step.isDefault) return true;
     return this.validateStep(index);
-  });
+  }) : true;
   if (!allStepsValid) return;
 
   this._autoAddingFromControls = true;
@@ -223,7 +257,14 @@ _syncFreeGiftSlotCard() {
  * or closes the modal if all steps are complete.
  */
 _autoProgressBottomSheet(stepIndex) {
-  if (!this.validateStep(stepIndex)) return; // current step not yet complete
+  const clearAutoAdvance = () => {
+    this._autoAdvancePending = false;
+  };
+
+  if (!this.validateStep(stepIndex)) {
+    clearAutoAdvance();
+    return; // current step not yet complete
+  }
 
   const next = bsFindNextIncompleteStep(
     this.selectedBundle.steps,
@@ -235,7 +276,10 @@ _autoProgressBottomSheet(stepIndex) {
   if (next === -1) {
     // All steps complete — refresh tabs with checkmarks, then close
     this.renderModalTabs();
-    setTimeout(() => this.closeModal(), 500);
+    setTimeout(() => {
+      clearAutoAdvance();
+      this.closeModal();
+    }, 500);
   } else {
     // Advance to next incomplete step tab
     this.renderModalTabs();
@@ -243,16 +287,25 @@ _autoProgressBottomSheet(stepIndex) {
       this.currentStepIndex = next;
       const modal = this.elements.modal;
       const headerText = this.getFormattedHeaderText();
-      modal.querySelector('.modal-step-title').innerHTML = headerText;
+      const header = modal.querySelector('.modal-step-title');
+      if (header) {
+        header.textContent = headerText;
+      }
       this.renderModalProductsLoading(next);
       this.renderModalTabs();
       this.updateModalNavigation();
       this.loadStepProducts(next).then(() => {
-        if (this.currentStepIndex !== next) return;
+        if (this.currentStepIndex !== next) {
+          clearAutoAdvance();
+          return;
+        }
         this.renderModalProducts(next);
         this.updateModalFooterMessaging();
         this.preloadNextStep();
-      }).catch(() => {});
+      }).catch(() => {})
+        .finally(() => {
+          clearAutoAdvance();
+        });
     }, 300);
   }
 },
@@ -264,10 +317,15 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     : this.container;
   const productCard = scope.querySelector(`[data-product-id="${productId}"]`);
   if (productCard) {
+    const cogniveCard = productCard.classList.contains('bw-ppb-cognive-product-card');
     const quantityDisplay = productCard.querySelector('.qty-display')
       || productCard.querySelector('.inline-qty-display');
     const addBtn = productCard.querySelector('.product-add-btn');
-    const selectedOverlay = productCard.querySelector('.selected-overlay');
+    if (cogniveCard) {
+      productCard.querySelector('.selected-overlay')?.remove();
+    } else {
+      syncProductPageSelectedOverlay(productCard, quantity);
+    }
     const increaseBtn = productCard.querySelector('.qty-increase');
     const actionWrapper = productCard.querySelector('.product-card-action')
       || productCard.querySelector('.bw-product-card__action');
@@ -296,7 +354,21 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
-    if (actionWrapper && quantity > 0) {
+    if (actionWrapper && quantity > 0 && cogniveCard) {
+      actionWrapper.classList.add('is-expanded');
+      existingInlineControls?.remove();
+      const selectedText = resolveProductPageCardButtonText({
+        currentQuantity: quantity,
+        currentStep: step,
+        outOfStock: false,
+        defaultAddText,
+      });
+      if (!addBtn) {
+        actionWrapper.appendChild(createProductPageAddButton(productId, selectedText));
+      } else {
+        addBtn.textContent = selectedText;
+      }
+    } else if (actionWrapper && quantity > 0) {
       actionWrapper.classList.add('is-expanded');
       if (addBtn) addBtn.remove();
       if (!existingInlineControls) {
@@ -348,19 +420,11 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
-    if (selectedOverlay) {
-      if (quantity > 0) {
-        selectedOverlay.style.display = 'flex';
-      } else {
-        selectedOverlay.style.display = 'none';
-      }
-    }
-
     // Update card visual state
     if (quantity > 0) {
-      productCard.classList.add('selected');
+      productCard.classList.add('bw-product-card--selected');
     } else {
-      productCard.classList.remove('selected');
+      productCard.classList.remove('bw-product-card--selected');
     }
   }
 }

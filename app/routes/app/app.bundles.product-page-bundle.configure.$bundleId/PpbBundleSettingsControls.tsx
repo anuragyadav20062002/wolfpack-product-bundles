@@ -1,4 +1,5 @@
 import { PpbBundleStatusCard } from "./PpbBundleStatusCard";
+import { PpbCompareAtPriceSettings } from "./PpbBundleSettingsControls.compareAt";
 import { PpbBundleBannerSettings } from "./PpbBundleSettingsControls.banner";
 import { PpbBundleLevelCssSettings } from "./PpbBundleSettingsControls.css";
 import { PpbCartDiscountDisplaySettings } from "./PpbBundleSettingsControls.discount";
@@ -10,6 +11,7 @@ export function PpbBundleSettingsControls() {
     <div data-tour-target="ppb-bundle-status">
       <s-stack direction="block" gap="base">
         <PpbDefaultProductsSettings />
+        <PpbCompareAtPriceSettings />
         <PpbQuantityAndSellingPlanSettings />
         <PpbCartDiscountDisplaySettings />
         <PpbBundleBannerSettings />

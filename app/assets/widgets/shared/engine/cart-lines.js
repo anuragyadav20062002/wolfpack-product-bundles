@@ -14,6 +14,15 @@ const DEFAULT_CART_LINE_LABELS = {
   youSave: 'You Save',
 };
 
+function formatCartLineItemTitle(product = {}) {
+  const title = String(product.title || product.id || '');
+  const variantTitle = String(product.variantTitle || product.variant || '').trim();
+  if (!variantTitle || variantTitle === 'Default Title' || title.endsWith(`(${variantTitle})`)) {
+    return title;
+  }
+  return `${title} (${variantTitle})`;
+}
+
 export function buildCartLineSourceProperties({
   selectedLines = [],
   retailPrice = '',
@@ -24,7 +33,7 @@ export function buildCartLineSourceProperties({
 } = {}) {
   const displayProperties = {
     items: selectedLines
-      .map(({ product = {}, quantity = 0 }) => `${Number(quantity || 0)} x ${product.title || product.id}`)
+      .map(({ product = {}, quantity = 0 }) => `${Number(quantity || 0)} x ${formatCartLineItemTitle(product)}`)
       .join(', '),
     retailPrice: String(retailPrice || ''),
   };

@@ -22,7 +22,7 @@ export interface KpiTileProps {
   sparkline?: number[];
 }
 
-export const KPI_ACCENT_VAR: Record<KpiAccent, string> = {
+const KPI_ACCENT_VAR: Record<KpiAccent, string> = {
   engagement: "var(--wpb-accent-engagement)",
   revenue: "var(--wpb-accent-revenue)",
   warning: "var(--wpb-accent-warning)",

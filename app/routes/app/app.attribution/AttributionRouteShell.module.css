@@ -9,10 +9,42 @@
   min-height: 96px;
 }
 
+.dashboardShell {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 4px 88px;
+}
+
+.dashboardStack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dashboardChartGrid,
+.dashboardActivityGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.dashboardChartGrid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.dashboardActivityGrid {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+
 .analyticsSkeletonCard {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid rgba(21, 20, 15, 0.08);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(21, 20, 15, 0.04), 0 4px 16px rgba(21, 20, 15, 0.06);
+  padding: 24px;
 }
 
 .analyticsSkeletonCard[data-size="funnel"] {
@@ -29,4 +61,123 @@
 
 .analyticsSkeletonCard[data-size="activity"] {
   min-height: 220px;
+}
+
+.criticalHeroShell,
+.pixelStatusShell {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 4px;
+}
+
+.criticalHeroShell {
+  margin-block-end: 20px;
+}
+
+.criticalHeroCard {
+  border: 1px solid rgba(21, 20, 15, 0.08);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(21, 20, 15, 0.04), 0 4px 16px rgba(21, 20, 15, 0.06);
+  padding: 32px;
+}
+
+.criticalHeroHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.criticalHeroKicker {
+  margin: 0 0 4px;
+  color: #918c80;
+  font:
+    600 11px/16px ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.criticalHeroTitle {
+  margin: 0;
+  color: #15140f;
+  font:
+    600 22px/24px ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
+
+.pixelStatusBoundary {
+  margin-block-end: 1rem;
+}
+
+.pixelStatusCard {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-block-size: 3.625rem;
+  border: 1px solid #e1e3e5;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: 0.875rem 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.pixelStatusCard > s-stack {
+  width: 100%;
+}
+
+.pixelStatusCard[data-status="checking"] {
+  border-color: #d8dde3;
+}
+
+.pixelStatusCard[data-status="online"] {
+  border-color: #a8e6c1;
+}
+
+.pixelStatusCard[data-status="online"] .pixelStatusDot {
+  background: #00a47c;
+  box-shadow: 0 0 0 0.1875rem rgba(0, 164, 124, 0.18);
+}
+
+.pixelStatusDot {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  flex: 0 0 0.625rem;
+  border-radius: 50%;
+  background: #8c9196;
+}
+
+.pixelStatusTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.pixelDisclosureText {
+  margin: 0;
+  color: #3d4045;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .dashboardChartGrid,
+  .dashboardActivityGrid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,32 +1,19 @@
 import {
   BUNDLE_WIDGET,
-  CurrencyManager,
-  BundleDataManager,
-  PricingCalculator,
-  ToastManager,
-  TemplateManager,
-  ComponentGenerator
 } from '../../../bundle-widget-components.js';
-import { ConditionValidator } from '../../shared/condition-validator.js';
-import { createDefaultLoadingAnimation } from '../../shared/default-loading-animation.js';
-import { hideLoadingOverlayElement, markLoadingOverlayVisible } from '../../shared/loading-overlay.js';
-import { getDiscountProgressData, getSelectedQuantity, getTimelineEntryState } from '../../shared/engine/bundle-selectors.js';
-import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
-import { createBundleBannerElement, createStepBannerImageElement } from '../../shared/components/bundle-banners.js';
-import { renderSharedProductCard } from '../../shared/components/product-card.js';
-import { renderSelectedProductRow } from '../../shared/components/selected-product-row.js';
-import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
-import { renderStepTimelineEntry } from '../../shared/components/step-timeline.js';
-import {
-  buildCartLineDisplayProperties,
-  buildCartLineSourceProperties,
-} from '../../shared/engine/cart-lines.js';
 
 function extractFullPageId(idString) {
   if (!idString) return null;
   const gidMatch = idString.toString().match(/gid:\/\/shopify\/\w+\/(\d+)/);
   if (gidMatch) return gidMatch[1];
   return idString.toString().split('/').pop();
+}
+
+function normalizeAddonPercentageDiscount(discount, tier = null) {
+  const type = String(discount?.type ?? tier?.discountType ?? '').toUpperCase();
+  const value = Number(discount?.value ?? tier?.discountValue ?? 0);
+  if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
+  return { type: 'PERCENTAGE', value: Math.min(100, value) };
 }
 
 function collectProductSelectionKeys(product) {
@@ -342,8 +329,8 @@ async loadStepProducts(stepIndex) {
     step.products = allProducts;
     step.maxQuantity = allProducts.length;
     step.displayVariantsAsIndividual = activeTier?.displayVariantsAsIndividualProducts_addons === true;
-    const activeDiscount = activeTier?.discount || {};
-    step.addonDisplayFree = activeDiscount.type === 'PERCENTAGE' && Number(activeDiscount.value || 0) >= 100;
+    const activeDiscount = normalizeAddonPercentageDiscount(activeTier?.discount, activeTier);
+    step.addonDisplayFree = activeDiscount?.value >= 100;
   }
 
   // Process explicit products.

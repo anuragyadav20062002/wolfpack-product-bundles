@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Card, BlockStack, InlineStack, Text } from "@shopify/polaris";
+import { BlockStack, InlineStack, Text } from "@shopify/polaris";
 
 const LIQUID_SNIPPET = `or property.first contains '_'`;
 
@@ -193,35 +193,5 @@ export function CartPropertyFixContent() {
       </div>
 
     </BlockStack>
-  );
-}
-
-/**
- * Standalone Card-wrapped version — kept for potential single-card use.
- */
-export function CartPropertyFixCard() {
-  return (
-    <Card>
-      <BlockStack gap="200">
-        <InlineStack gap="200" blockAlign="center">
-          <Text variant="headingSm" as="h3">Cart Property Display Fix</Text>
-          <span style={{
-            background: '#e8f4fd',
-            color: '#0066b2',
-            borderRadius: 20,
-            padding: '2px 10px',
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.02em',
-            textTransform: 'uppercase',
-          }}>
-            Custom themes only
-          </span>
-        </InlineStack>
-      </BlockStack>
-      <div style={{ marginTop: 16 }}>
-        <CartPropertyFixContent />
-      </div>
-    </Card>
   );
 }

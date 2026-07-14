@@ -118,3 +118,36 @@ describe('ProductPageWidgetMiscMethods loading overlay', () => {
     expect(container.dataset.wpbBootstrapLoading).toBeUndefined();
   });
 });
+
+describe('ProductPageWidgetMiscMethods modal controls', () => {
+  it('attaches the close behavior to every rendered modal close control', () => {
+    const listeners: Array<() => void> = [];
+    const closeButtons = [createMockElement(), createMockElement()];
+    closeButtons.forEach((button) => {
+      button.addEventListener = (name, listener) => {
+        if (name === 'click') listeners.push(listener);
+      };
+    });
+    const modal = createMockElement() as MockElement & {
+      querySelectorAll: (selector: string) => MockElement[];
+    };
+    modal.querySelectorAll = (selector) => selector === '.close-button' ? closeButtons : [];
+    const addToCartButton = createMockElement();
+    const closeModal = jest.fn();
+    global.document = {
+      addEventListener: jest.fn(),
+    } as unknown as Document;
+    const widget = {
+      elements: { addToCartButton, modal, bsOverlay: null },
+      selectedBundle: { steps: [] },
+      currentStepIndex: 0,
+      closeModal,
+    };
+
+    ProductPageWidgetMiscMethods.attachEventListeners.call(widget);
+    listeners.forEach((listener) => listener());
+
+    expect(listeners).toHaveLength(2);
+    expect(closeModal).toHaveBeenCalledTimes(2);
+  });
+});

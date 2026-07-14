@@ -19,4 +19,13 @@ describe('PPB product card button copy', () => {
       defaultAddText: 'Add to Cart',
     })).toBe('Add to Cart');
   });
+
+  it('uses quantity-aware selected copy when no replacement text is configured', () => {
+    expect(resolveProductPageCardButtonText({
+      currentQuantity: 2,
+      currentStep: {},
+      outOfStock: false,
+      defaultAddText: 'Add to Cart',
+    })).toBe('Added x2');
+  });
 });

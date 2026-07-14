@@ -16,6 +16,7 @@ import type { BundleUiConfig, ComponentPricing } from "../types";
 import { BundleStatus, BundleType } from "../../../../constants/bundle";
 import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "../../../../lib/bundle-config/template-selection";
 import { formatStepCategoriesForRuntime } from "../../../../lib/bundle-config/category-runtime";
+import { resolveShowProductComparedAtPrice } from "../../../../lib/bundle-config/product-page-display";
 
 async function ensureBundleParentVariantRequiresComponents(
   admin: ShopifyAdmin,
@@ -457,7 +458,7 @@ export async function updateBundleProductMetafields(
         bundleConfiguration.bundleDesignTemplate,
         bundleDesignTemplateData?.templateId,
       ),
-    showProductComparedAtPrice: bundleConfiguration.showProductComparedAtPrice ?? false,
+    showProductComparedAtPrice: resolveShowProductComparedAtPrice(bundleConfiguration),
     bundleVariantId: bundleVariantId, // Bundle parent variant ID for cart transform EXPAND operation
     steps: (bundleConfiguration.steps || []).map((step: any) => ({
       id: step.id,

@@ -15,4 +15,3 @@ export { SubscriptionErrorBanner, type SubscriptionErrorBannerProps } from "./Su
 export { UpgradeConfirmationModal, type UpgradeConfirmationModalProps } from "./UpgradeConfirmationModal";
 export { ValuePropsSection, type ValuePropsSectionProps } from "./ValuePropsSection";
 export { FAQSection, type FAQSectionProps } from "./FAQSection";
-export { UpgradeCTACard, type UpgradeCTACardProps } from "./UpgradeCTACard";

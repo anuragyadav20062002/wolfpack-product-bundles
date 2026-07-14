@@ -6,6 +6,8 @@
     "build": "npm run optimise:images && remix vite:build",
     "build-dev": "remix vite:build",
     "optimise:images": "node scripts/optimise-public-images.mjs",
+    "prepare": "node scripts/install-git-hooks.mjs --prepare",
+    "hooks:install": "node scripts/install-git-hooks.mjs",
     "build:widgets": "node scripts/build-widget-bundles.js all && node scripts/minify-assets.js js",
     "build:widgets:full-page": "node scripts/build-widget-bundles.js full-page && node scripts/minify-assets.js js",
     "build:widgets:product-page": "node scripts/build-widget-bundles.js product-page && node scripts/minify-assets.js js",
@@ -53,7 +55,6 @@
   },
   "dependencies": {
     "@heymantle/client": "^1.1.75",
-    "@heymantle/react": "^0.0.73",
     "@prisma/client": "^6.14.0",
     "@reduxjs/toolkit": "^2.12.0",
     "@remix-run/dev": "^2.16.1",

@@ -1,7 +1,15 @@
 export {};
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { ProductPageModalStateMethods } = require('../../../app/assets/widgets/product-page/methods/modal-state-methods.js');
+const {
+  ProductPageModalStateMethods,
+  formatCascadeStepLimitToast,
+  formatProductPageStepValidationToast,
+} = require('../../../app/assets/widgets/product-page/methods/modal-state-methods.js');
+const {
+  shouldUseCascadeStepFlow,
+  getCascadeStepNavigationState,
+} = require('../../../app/assets/widgets/product-page/methods/layout-shell-methods.js');
 
 function makeConditionContext(overrides: Record<string, unknown> = {}) {
   return {
@@ -95,5 +103,81 @@ describe('PPB Product List step conditions', () => {
     });
 
     expect(ProductPageModalStateMethods.isStepAccessible.call(context, 1)).toBe(true);
+  });
+
+  it('enables step-flow mode only for multi-step Product List bundles', () => {
+    expect(shouldUseCascadeStepFlow({
+      isInpage: true,
+      isCascade: true,
+      steps: [{ id: 'step-1' }, { id: 'step-2' }],
+    })).toBe(true);
+
+    expect(shouldUseCascadeStepFlow({
+      isInpage: true,
+      isCascade: true,
+      steps: [{ id: 'step-1' }],
+    })).toBe(false);
+
+    expect(shouldUseCascadeStepFlow({
+      isInpage: true,
+      isCascade: false,
+      steps: [{ id: 'step-1' }, { id: 'step-2' }],
+    })).toBe(false);
+  });
+
+  it('blocks forward Product List navigation until the current step is complete', () => {
+    expect(getCascadeStepNavigationState({
+      currentStepIndex: 0,
+      direction: 1,
+      stepCount: 2,
+      isCurrentStepValid: false,
+    })).toEqual({ targetStepIndex: 0, blocked: true, isFinal: false });
+  });
+
+  it('moves forward after the current Product List step is complete', () => {
+    expect(getCascadeStepNavigationState({
+      currentStepIndex: 0,
+      direction: 1,
+      stepCount: 2,
+      isCurrentStepValid: true,
+    })).toEqual({ targetStepIndex: 1, blocked: false, isFinal: false });
+  });
+
+  it('moves backward without validating the current Product List step', () => {
+    expect(getCascadeStepNavigationState({
+      currentStepIndex: 1,
+      direction: -1,
+      stepCount: 2,
+      isCurrentStepValid: false,
+    })).toEqual({ targetStepIndex: 0, blocked: false, isFinal: false });
+  });
+
+  it('reports the final Product List step instead of navigating past it', () => {
+    expect(getCascadeStepNavigationState({
+      currentStepIndex: 1,
+      direction: 1,
+      stepCount: 2,
+      isCurrentStepValid: true,
+    })).toEqual({ targetStepIndex: 1, blocked: false, isFinal: true });
+  });
+
+  it('formats the Product List exact-rule over-target message like EB', () => {
+    expect(formatCascadeStepLimitToast('exactly', 1)).toBe('Add exactly 01 products on this step');
+  });
+
+  it('formats a modal lower-bound rule like EB', () => {
+    expect(formatProductPageStepValidationToast({
+      conditionType: 'quantity',
+      conditionOperator: 'greater_than_or_equal_to',
+      conditionValue: 2,
+    })).toBe('Add at least 02 products on this step');
+  });
+
+  it('formats a modal exact rule like EB', () => {
+    expect(formatProductPageStepValidationToast({
+      conditionType: 'quantity',
+      conditionOperator: 'equal_to',
+      conditionValue: 1,
+    })).toBe('Add exactly 01 products on this step');
   });
 });

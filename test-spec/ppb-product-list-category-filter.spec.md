@@ -15,7 +15,7 @@ Verify Product Page Bundle Product List keeps EB-style category behavior at the 
 | 3 | Collection-backed category without direct ids | Active category has selected collection metadata and no direct product ids | Products are preserved for collection hydration/display | PL01 collection-backed categories |
 
 ## Acceptance Criteria
-- [ ] Active category index controls Product List filtering.
-- [ ] Empty manual categories produce an empty product list.
-- [ ] Collection-backed categories do not drop hydrated products.
-- [ ] Focused Jest test passes.
+- [x] Active category index controls Product List filtering.
+- [x] Empty manual categories produce an empty product list.
+- [x] Collection-backed categories do not drop hydrated products.
+- [x] Focused Jest test passes.

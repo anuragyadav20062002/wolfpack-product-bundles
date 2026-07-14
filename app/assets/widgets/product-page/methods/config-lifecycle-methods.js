@@ -1,5 +1,32 @@
 import { TemplateManager } from '../../../bundle-widget-components.js';
 
+function getWindow() {
+  return typeof window === 'undefined' ? null : window;
+}
+
+function parseBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (['true', 'checked', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', 'unchecked', '0', 'off', 'no'].includes(normalized)) return false;
+  return undefined;
+}
+
+function parseControlBoolean(controls, labels, fallback) {
+  if (!controls || typeof controls !== 'object') {
+    return fallback;
+  }
+
+  for (const label of labels) {
+    if (!(label in controls)) continue;
+    const parsed = parseBoolean(controls[label]);
+    if (parsed === undefined) continue;
+    return parsed;
+  }
+  return fallback;
+}
+
 export const ProductPageConfigLifecycleMethods = {
 _getProductPageControls() {
   return this.config.controlsSettings?.activeControls
@@ -9,13 +36,28 @@ _getProductPageControls() {
 
 _isProductCardClickAddEnabled() {
   const controls = this._getProductPageControls();
-  return controls?.addToCartWhenProductCardClicked === true;
+  return parseControlBoolean(
+    controls,
+    [
+      'addToCartWhenProductCardClicked',
+      'addToBundleOnProductCardClicked',
+      'addToBundleOnProductCardClick',
+    ],
+    false,
+  ) === true;
+},
+
+_isConditionValidationEnabled() {
+  const controls = this._getProductPageControls();
+  return parseControlBoolean(controls, ['validateConditionsBeforeAddToCart'], true) !== false;
 },
 
 _runControlsScript(script) {
   if (!script || typeof script !== 'string') return;
+  const runtimeWindow = getWindow();
+  if (!runtimeWindow) return;
   try {
-    new Function(script).call(window);
+    new Function(script).call(runtimeWindow);
   } catch (_) {
     // Merchant-authored integration script should not block bundle checkout.
   }
@@ -29,8 +71,11 @@ _handlePostAddToCartAction(actionConfig) {
 
   const action = redirect.action || 'cart';
   if (action === 'checkout') {
+    const runtimeWindow = getWindow();
+    if (!runtimeWindow) return;
+
     setTimeout(() => {
-      window.location.href = '/checkout';
+      runtimeWindow.location.href = '/checkout';
     }, 1000);
     return;
   }
@@ -49,32 +94,60 @@ _handlePostAddToCartAction(actionConfig) {
   }
 
   setTimeout(() => {
-    window.location.href = '/cart';
+    const runtimeWindow = getWindow();
+    if (!runtimeWindow) return;
+
+    runtimeWindow.location.href = '/cart';
   }, 1000);
 },
 
-  parseConfiguration() {
-    const dataset = this.container.dataset;
+parseConfiguration() {
+  const runtimeWindow = getWindow();
+  const dataset = this.container.dataset;
+  const existingConfig = this.config || {};
+  const controlsSettings = existingConfig.controlsSettings || null;
+  const controls = this._getProductPageControls() || {};
+  const datasetShowQuantity = dataset.showQuantitySelectorOnCard !== 'false';
+  const showQuantitySelectorOnCard = parseControlBoolean(
+    controls,
+    ['displayQuantityInput', 'displayQuantitySelectorOnCard', 'displayQuantity'],
+    datasetShowQuantity,
+  );
+  const displaySeeMoreLink = parseControlBoolean(
+    controls,
+    ['displaySeeMoreLink', 'displaySeeMore'],
+    undefined,
+  );
+  const expandProductCardOnHover = parseControlBoolean(
+    controls,
+    ['expandProductCardOnHover', 'productCardHoverExpansion'],
+    false,
+  );
 
-    this.config = {
-      bundleId: dataset.bundleId || null,
-      isContainerProduct: dataset.isContainerProduct === 'true',
-      containerBundleId: dataset.containerBundleId || null,
-      hideDefaultButtons: dataset.hideDefaultButtons === 'true',
-      showStepNumbers: dataset.showStepNumbers !== 'false',
-      // Quantity selector visibility settings (default: show on card)
-      showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
-      // Messages will be set from bundle.pricing.messages after bundle loads
-      discountTextTemplate: 'Add {conditionText} to get {discountText}',
-      successMessageTemplate: 'Congratulations! You got {discountText}!',
-      currentProductId: window.currentProductId,
-      currentProductGid: window.currentProductGid,
-      currentProductHandle: window.currentProductHandle,
-      currentProductCollections: window.currentProductCollections
-    };
-  },
+  this.config = {
+    ...existingConfig,
+    bundleId: dataset.bundleId || null,
+    isContainerProduct: dataset.isContainerProduct === 'true',
+    containerBundleId: dataset.containerBundleId || null,
+    hideDefaultButtons: dataset.hideDefaultButtons === 'true',
+    showStepNumbers: dataset.showStepNumbers !== 'false',
+    // Quantity selector visibility settings (default: show on card)
+    showQuantitySelectorOnCard,
+    // Product card expansion and truncation settings.
+    displaySeeMoreLink,
+    expandProductCardOnHover,
+    controlsSettings,
+    // Messages will be set from bundle.pricing.messages after bundle loads
+    discountTextTemplate: 'Add {conditionText} to get {discountText}',
+    successMessageTemplate: 'Congratulations! You got {discountText}!',
+    currentProductId: runtimeWindow ? runtimeWindow.currentProductId : null,
+    currentProductGid: runtimeWindow ? runtimeWindow.currentProductGid : null,
+    currentProductHandle: runtimeWindow ? runtimeWindow.currentProductHandle : null,
+    currentProductCollections: runtimeWindow ? runtimeWindow.currentProductCollections : null
+  };
+},
 
-  _parseBundleConfigPayload(rawValue) {
+_parseBundleConfigPayload(rawValue) {
     if (!rawValue || rawValue.trim() === '' || rawValue === 'null' || rawValue === 'undefined') {
       return null;
     }
@@ -150,10 +223,11 @@ _handlePostAddToCartAction(actionConfig) {
 
     // Widget only works on container products with bundleConfig marker.
     if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
-      const isThemeEditor = window.Shopify?.designMode ||
-                           window.isThemeEditorContext ||
-                           window.location.pathname.includes('/editor') ||
-                           window.location.search.includes('preview_theme_id');
+      const runtimeWindow = getWindow();
+      const isThemeEditor = runtimeWindow?.Shopify?.designMode ||
+                           runtimeWindow?.isThemeEditorContext ||
+                           runtimeWindow?.location?.pathname?.includes('/editor') ||
+                           runtimeWindow?.location?.search?.includes('preview_theme_id');
 
       const bundleIdFromDataset = bundleId || this.container.dataset.bundleId;
 
@@ -206,13 +280,25 @@ _isProductPageInpageTemplate() {
 },
 
 _shouldShowProductComparedAtPrice() {
+  const controls = this._getProductPageControls();
+  const controlSetting = parseControlBoolean(
+    controls,
+    ['showCompareAtPrices', 'showProductComparedAtPrice', 'Display Compare At Price', 'displayCompareAtPrices'],
+    undefined,
+  );
+
+  if (controlSetting === true || controlSetting === false) {
+    return controlSetting;
+  }
+
   return this.selectedBundle?.showProductComparedAtPrice === true;
 },
 
 ensureProductPageTemplateStylesheet(templateType, designPreset) {
   const templateKey = String(templateType || 'PDP_MODAL').trim().toUpperCase() || 'PDP_MODAL';
   const presetKey = String(designPreset || '').trim().toUpperCase();
-  const urls = window.__WOLFPACK_PPB_TEMPLATE_CSS_URLS__ || {};
+  const runtimeWindow = getWindow();
+  const urls = runtimeWindow?.__WOLFPACK_PPB_TEMPLATE_CSS_URLS__ || {};
   const href = templateKey === 'PDP_MODAL'
     ? urls[presetKey] || urls.MODAL || urls.SIMPLIFIED
     : urls[presetKey] || urls.CASCADE || urls.COGNIVE;

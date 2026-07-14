@@ -1,7 +1,10 @@
 export {};
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { ProductPageInpageRenderMethods } = require('../../../app/assets/widgets/product-page/methods/inpage-render-methods.js');
+const {
+  ProductPageInpageRenderMethods,
+  getCascadeSoleVariantDisplayProduct,
+} = require('../../../app/assets/widgets/product-page/methods/inpage-render-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ProductPageLayoutShellMethods } = require('../../../app/assets/widgets/product-page/methods/layout-shell-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -124,5 +127,19 @@ describe('PPB Product List category variant display', () => {
     expect(target.innerHTML).toContain('Small');
     expect(target.innerHTML).toContain('Large');
     expect(target.innerHTML).not.toContain('data-grouped-product="Variant Product"');
+  });
+
+  it('retains the sole sellable variant title after inventory filtering', () => {
+    const product = {
+      id: 'product-1',
+      title: 'Massage Oil',
+      sourceVariantCount: 3,
+      variants: [{ id: 'variant-1', title: 'Grapefruit', available: true }],
+    };
+
+    expect(getCascadeSoleVariantDisplayProduct(product)).toEqual({
+      ...product,
+      variantTitle: 'Grapefruit',
+    });
   });
 });

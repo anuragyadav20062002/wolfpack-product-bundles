@@ -25,28 +25,48 @@ const ConditionValidator = (function () {
   };
 
   /**
-   * Calculate the total quantity in a step AFTER a proposed update.
+   * Calculate the step total in a single condition metric AFTER a proposed update.
    *
    * Correctly handles both:
-   *  - Existing products: replaces their current quantity with newQuantity
+   *  - Existing products: replaces their current count with newQuantity
    *  - New products (not yet in currentSelections): adds newQuantity to existing total
    *
-   * @param {Record<string, number>} currentSelections  Current { productId → qty } map
+   * Supports quantity, amount, and weight semantics. For amount/weight conditions
+   * the `options` parameter accepts per-unit unit values for the target product.
+   *
+   * @param {Record<string, any>} currentSelections  Current { productId → value } map
    * @param {string}  targetProductId  The product whose quantity is being changed
    * @param {number}  newQuantity      The proposed new quantity (0 = remove)
-   * @returns {number}  Total quantity across all products in the step after the update
+   * @param {object}  options
+   * @param {string}  options.conditionType  'quantity' (default), 'amount', or 'weight'
+   * @param {number}  options.targetAmountPerUnit  Per-unit amount for the target product
+   * @param {number}  options.targetWeightPerUnit  Per-unit weight for the target product
+   * @returns {number}  Total across all products in the step after the update
    */
-  function calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity) {
+  function calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity, options = {}) {
     const selections = currentSelections || {};
+    const conditionType = _normalizeConditionType(options.conditionType);
+    const targetAmountPerUnit = Number(options.targetAmountPerUnit);
+    const targetWeightPerUnit = Number(options.targetWeightPerUnit);
+    const normalizedQuantity = Number(newQuantity) || 0;
 
-    // Start with the target product's new quantity (handles new products correctly).
-    let total = newQuantity;
+    let total = 0;
 
     // Add every OTHER product's existing quantity unchanged.
     for (const pid of Object.keys(selections)) {
       if (pid !== targetProductId) {
-        total += selections[pid] || 0;
+        total += _getSelectionValueByConditionType(selections[pid], conditionType);
       }
+    }
+
+    if (conditionType === 'amount') {
+      const perUnitAmount = Number.isFinite(targetAmountPerUnit) ? targetAmountPerUnit : 0;
+      total += perUnitAmount * normalizedQuantity;
+    } else if (conditionType === 'weight') {
+      const perUnitWeight = Number.isFinite(targetWeightPerUnit) ? targetWeightPerUnit : 0;
+      total += perUnitWeight * normalizedQuantity;
+    } else {
+      total += normalizedQuantity;
     }
 
     return total;
@@ -65,25 +85,38 @@ const ConditionValidator = (function () {
    * @param {number}  newQuantity       Proposed quantity (0 = remove)
    * @returns {{ allowed: boolean, limitText: string|null }}
    */
-  function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
+  function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity, targetValues) {
     // No explicit condition configured → no upper bound; always allow increases
     if (!step || !step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       return { allowed: true, limitText: null };
     }
 
+    const conditionType = _normalizeConditionType(step.conditionType);
+    const targetMetric = _getTargetMetric(targetValues);
+    const required = _normalizeConditionRuleValue(conditionType, step.conditionValue);
+
     const totalAfter = calculateStepTotalAfterUpdate(
       currentSelections,
       targetProductId,
       newQuantity,
+      {
+        conditionType,
+        targetAmountPerUnit: targetMetric.amount,
+        targetWeightPerUnit: targetMetric.weight,
+      },
     );
 
     // Primary condition
-    const primary = _evaluateCanUpdate(step.conditionOperator, step.conditionValue, totalAfter);
+    const primary = _evaluateCanUpdate(step.conditionOperator, required, totalAfter);
     if (!primary.allowed) return primary;
 
     // Secondary condition — AND logic (only when both fields are non-null)
     if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
-      const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
+      const secondary = _evaluateCanUpdate(
+        step.conditionOperator2,
+        _normalizeConditionRuleValue(conditionType, step.conditionValue2),
+        totalAfter,
+      );
       if (!secondary.allowed) return secondary;
     }
 
@@ -110,6 +143,33 @@ const ConditionValidator = (function () {
       total += _getSelectionQuantity(qty);
     }
     return total;
+  }
+
+  function _normalizeConditionType(conditionType) {
+    if (conditionType === 'amount') return 'amount';
+    if (conditionType === 'weight') return 'weight';
+    return 'quantity';
+  }
+
+  function _normalizeConditionRuleValue(conditionType, value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return numeric;
+    return _normalizeConditionType(conditionType) === 'amount' ? numeric * 100 : numeric;
+  }
+
+  function _getSelectionValueByConditionType(selection, conditionType) {
+    if (conditionType === 'amount') return _getSelectionAmount(selection);
+    if (conditionType === 'weight') return _getSelectionWeight(selection);
+    return _getSelectionQuantity(selection);
+  }
+
+  function _getTargetMetric(values) {
+    const amount = Number(values && values.amount);
+    const weight = Number(values && values.weight);
+    return {
+      amount: Number.isFinite(amount) ? amount : 0,
+      weight: Number.isFinite(weight) ? weight : 0,
+    };
   }
 
   function _isPositiveConditionValue(value) {
@@ -216,6 +276,7 @@ const ConditionValidator = (function () {
    */
   function isStepConditionSatisfied(step, currentSelections) {
     if (!step) return true;
+    const conditionType = _normalizeConditionType(step.conditionType);
 
     // Category-rule mode: when any category has non-empty `conditions`, the
     // step is satisfied when every category with conditions is independently
@@ -231,9 +292,11 @@ const ConditionValidator = (function () {
 
     const selections = currentSelections || {};
     let total = 0;
-    for (const qty of Object.values(selections)) {
-      total += _getSelectionQuantity(qty);
+    for (const value of Object.values(selections)) {
+      total += _getSelectionValueByConditionType(value, conditionType);
     }
+    const normalizedConditionValue = _normalizeConditionRuleValue(conditionType, step.conditionValue);
+    const normalizedConditionValue2 = _normalizeConditionRuleValue(conditionType, step.conditionValue2);
 
     // No explicit condition configured → only enforce minQuantity; no upper bound
     if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
@@ -242,11 +305,11 @@ const ConditionValidator = (function () {
     }
 
     // Primary condition
-    if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
+    if (!_evaluateSatisfied(step.conditionOperator, normalizedConditionValue, total)) return false;
 
     // Secondary condition — AND logic
     if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
-      return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
+      return _evaluateSatisfied(step.conditionOperator2, normalizedConditionValue2, total);
     }
 
     return true;

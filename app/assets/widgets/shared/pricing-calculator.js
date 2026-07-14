@@ -10,6 +10,12 @@
 
 import { BUNDLE_WIDGET } from './constants.js';
 
+function isDiscountedAddonStep(step) {
+  if (!step || step.isFreeGift !== true) return false;
+  if (Array.isArray(step.addonTiers) && step.addonTiers.length > 0) return true;
+  return Boolean(step.addonEligibilityCondition || step.addonDiscount);
+}
+
 export class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData, steps = null) {
     let totalPrice = 0;
@@ -17,9 +23,10 @@ export class PricingCalculator {
     const unitPrices = [];
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
-      // Skip only true free gifts. Optional add-on steps reuse the same
-      // non-blocking step path, but chargeable add-ons still affect totals.
-      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree === true) return;
+      // Skip only legacy free gifts. EB-style add-on tiers remain in the
+      // original subtotal so their native line discount can reduce them to zero.
+      const step = steps?.[stepIndex];
+      if (step?.isFreeGift && step?.addonDisplayFree === true && !isDiscountedAddonStep(step)) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 
@@ -275,7 +282,7 @@ export class PricingCalculator {
   }
 
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
-    if (!bundle?.pricing?.rules?.length) return null;
+    if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) return null;
 
     const rules = [...bundle.pricing.rules].sort((a, b) =>
       this.getRuleConditionValue(a, this.getDiscountMethod(bundle)) -

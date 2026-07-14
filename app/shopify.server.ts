@@ -3,7 +3,6 @@ import {
   ApiVersion,
   AppDistribution,
   shopifyApp,
-  LATEST_API_VERSION,
 } from "@shopify/shopify-app-remix/server";
 import { CachedSessionStorage } from "./lib/cached-session-storage.server";
 import prisma from "./db.server";
@@ -277,7 +276,6 @@ const shopify = shopifyApp({
 });
 
 export default shopify;
-export const apiVersion = ApiVersion.October25; // Match the runtime API version
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const unauthenticated = shopify.unauthenticated;

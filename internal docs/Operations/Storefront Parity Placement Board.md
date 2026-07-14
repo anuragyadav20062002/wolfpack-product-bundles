@@ -10,6 +10,23 @@ Use a placement board when storefront parity depends on where a widget is mounte
 
 The board is a temporary Chrome DevTools MCP probe. It must not be committed to theme files and must not mutate merchant themes. It clones the already-hydrated live widget DOM into controlled proof containers, then records screenshots and layout metrics under `/private/tmp`.
 
+## PPB product-form ownership constraint
+
+Live Theme Editor evidence on 2026-07-13 confirms that Product Page Bundle
+placement remains owned by the native Buy buttons/product-form footprint. Even
+when Shopify inserts the Bundle Builder block into a real standalone Apps section
+through `target=newAppsSection`, WPB relocates that root into the product form and
+marks it `bundle-widget-container--product-form-mounted`. This matches the current
+EB placement reference.
+
+Therefore, a full-width standalone Apps section is not an applicable final PPB
+placement unless the product-form ownership contract changes. For real wide-host
+proof, use an actual theme layout control that widens the product-information
+column. Horizon's saved Equal columns setting produced a `520.5px` live widget
+mount at an 1180px desktop viewport; restore the theme setting immediately after
+capture. Synthetic placement boards remain supplemental only when a task
+explicitly requires real mounted-location proof.
+
 ## When To Use
 
 - A widget must stay responsive across different merchant theme placements.

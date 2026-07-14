@@ -26,6 +26,8 @@ Verify that the partially implemented FPB Free Gift & Add Ons feature matches th
 | 8 | Discount values | `0`, `10`, `100` | Full price, partial, and free cart behavior respectively | Cart Transform consumes step type. |
 | 9 | Non-positive paid step rule | Saved step rule `Quantity is equal to 0` | Rule is treated as absent for selection/update and does not block all product adds | Prevents impossible storefront state from bad Admin input. |
 | 10 | Non-positive category rule | Saved category rule value `0` | Category rule is ignored instead of marking the category permanently complete or blocked | Paid validation remains usable. |
+| 11 | Flat tier discount shape | Active add-on tier has `discountType=PERCENTAGE`, `discountValue=100` | Summary subtracts the selected add-on price and cart line emits `addon:PERCENTAGE:100` | Current Admin draft/runtime shape must not lose EB add-on discount semantics. |
+| 12 | Free gift checkout line | Paid item plus eligible 100% add-on selected | Add-on is a separate line with native 100% add-on discount, final line price `0`, and savings visible at checkout | Mirrors EB cart/checkout behavior. |
 
 ## Acceptance Criteria
 - [ ] All listed automated test cases pass.

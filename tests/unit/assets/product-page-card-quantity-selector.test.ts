@@ -111,7 +111,7 @@ class FakeElement {
 
 function createSharedProductCard() {
   const scope = new FakeElement('div');
-  const card = new FakeElement('div', 'bw-product-card bw-ppb-cognive-product-card');
+  const card = new FakeElement('div', 'bw-product-card');
   card.dataset.productId = 'variant-1';
 
   const action = new FakeElement('div', 'bw-product-card__action product-card-action');
@@ -158,7 +158,7 @@ describe('PPB shared card quantity selector state', () => {
     expect(addButton.removed).toBe(true);
     expect(quantityControls).not.toBeNull();
     expect(quantityDisplay?.textContent).toBe('2');
-    expect(card.classList.contains('selected')).toBe(true);
+    expect(card.classList.contains('bw-product-card--selected')).toBe(true);
   });
 
   it('delegates inline quantity button clicks to the quantity update path', () => {

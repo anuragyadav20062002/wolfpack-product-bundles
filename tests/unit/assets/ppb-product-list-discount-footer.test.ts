@@ -1,7 +1,10 @@
 export {};
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { cascadeTemplateMethods } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+const {
+  cascadeTemplateMethods,
+  getCascadeAddToCartButtonContent,
+} = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PricingCalculator } = require('../../../app/assets/widgets/shared/pricing-calculator.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -89,5 +92,47 @@ describe('PPB Product List discount footer messaging', () => {
     const context = makeDiscountFooterContext(4);
 
     expect(cascadeTemplateMethods._getCascadeFooterMessage.call(context)).toBe('Tier 2 success 20%');
+  });
+
+  it('builds EB-style Product List add-to-cart content for a qualified percentage discount', () => {
+    expect(getCascadeAddToCartButtonContent({
+      label: 'Add Bundle to Cart',
+      totalPriceText: '$1907.00',
+      finalPriceText: '$1716.30',
+      discountInfo: {
+        hasDiscount: true,
+        discountAmount: 19070,
+        discountPercentage: 10,
+        discountMethod: 'percentage_off',
+        applicableRule: {
+          discountValue: 10,
+        },
+      },
+    })).toEqual({
+      label: 'Add Bundle to Cart',
+      separator: '\u2022',
+      finalPriceText: '$1716.30',
+      compareAtPriceText: '$1907.00',
+      discountPillText: '10% off',
+    });
+  });
+
+  it('omits Product List discount button extras when no discount is qualified', () => {
+    expect(getCascadeAddToCartButtonContent({
+      label: 'Add Bundle to Cart',
+      totalPriceText: '$1907.00',
+      finalPriceText: '$1907.00',
+      discountInfo: {
+        hasDiscount: false,
+        discountAmount: 0,
+        discountPercentage: 0,
+      },
+    })).toEqual({
+      label: 'Add Bundle to Cart',
+      separator: '\u2022',
+      finalPriceText: '$1907.00',
+      compareAtPriceText: '',
+      discountPillText: '',
+    });
   });
 });

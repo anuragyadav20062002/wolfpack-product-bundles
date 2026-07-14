@@ -37,6 +37,7 @@ const controlsPayload = {
   "Hide Step Titles in completed state": "Checked",
   "Add to cart when product card is clicked": "",
   "Redirect Settings": "Redirect to Cart",
+  "Validate conditions before add to cart": "Checked",
   "Custom CSS for Mix And Match Bundles": ".wpbMixBundle { color: purple; }",
   "Execute Custom Script": "window.__ppbCustom = true;",
   "Side cart selector": ".side-cart",
@@ -90,9 +91,11 @@ describe("Settings Controls runtime mapping", () => {
     expect(runtime.settingsControls.productPage).toMatchObject({
       hideOutOfStockProducts: true,
       trackInventoryOnAddToCart: true,
+      showCompareAtPrices: true,
       addBundleToCartAfterLastStepCompleted: true,
       displayEmptyStateBoxesBasedOnBundleCondition: false,
       hideStepTitlesInCompletedState: true,
+      validateConditionsBeforeAddToCart: true,
       addToCartWhenProductCardClicked: false,
       redirectCollectionQuickAddToBundle: true,
       redirect: {
@@ -171,5 +174,44 @@ describe("Settings Controls runtime mapping", () => {
     });
 
     expect(runtime.settingsControls.landingPage.checkout.providerId).toBe("kaching_cart");
+  });
+
+  it("defaults missing validate-conditions control to enabled", async () => {
+    const { buildSettingsControlsRuntime } = await import("../../../app/lib/settings-controls-runtime");
+
+    const payloadWithoutValidationControl = { ...controlsPayload };
+    delete payloadWithoutValidationControl["Validate conditions before add to cart"];
+    const runtime = buildSettingsControlsRuntime(payloadWithoutValidationControl);
+
+    expect(runtime.settingsControls.productPage.validateConditionsBeforeAddToCart).toBe(true);
+  });
+
+  it("supports EB-mapped alias controls for runtime toggles", async () => {
+    const { buildSettingsControlsRuntime } = await import("../../../app/lib/settings-controls-runtime");
+
+    const payloadWithoutDeprecatedAlias = { ...controlsPayload };
+    delete payloadWithoutDeprecatedAlias["Add to cart when product card is clicked"];
+    const runtime = buildSettingsControlsRuntime({
+      ...payloadWithoutDeprecatedAlias,
+      "addToBundleOnProductCardClicked": "true",
+      "addBundleToCartAfterLastStepCompleted": "",
+      "addBundleToCartOnDone": "true",
+    });
+
+    expect(runtime.settingsControls.productPage.addToCartWhenProductCardClicked).toBe(true);
+    expect(runtime.settingsControls.productPage.addBundleToCartAfterLastStepCompleted).toBe(true);
+  });
+
+  it("supports compare-at visibility aliases for product-page runtime controls", async () => {
+    const { buildSettingsControlsRuntime } = await import("../../../app/lib/settings-controls-runtime");
+
+    const payload = {
+      ...controlsPayload,
+      "Show Compare At Price": "",
+      showCompareAtPrices: "true",
+    };
+    const runtime = buildSettingsControlsRuntime(payload);
+
+    expect(runtime.settingsControls.productPage.showCompareAtPrices).toBe(true);
   });
 });
