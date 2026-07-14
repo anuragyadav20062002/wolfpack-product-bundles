@@ -15,6 +15,7 @@ systems:
 source_paths:
   - app/routes/root/wpb.$bundleId.tsx
   - app/services/bundles/fpb-page-host-migration.server.ts
+  - extensions/bundle-builder/blocks/bundle-app-embed.liquid
 related_docs:
   - Architecture/Widget Architecture.md
   - Operations/Deployment Backfill.md
@@ -53,10 +54,12 @@ Merchant-customized proxy prefixes and subpaths are unsupported in this migratio
 Existing hosts migrate in this order:
 
 1. Ensure `/pages/{oldHandle}` redirects to the proxy path.
-2. Ensure `/products/{parentHandle}` redirects to the proxy path.
+2. Ensure a `/products/{parentHandle}` redirect record targets the proxy path.
 3. Delete the stored public and preview Page GIDs.
 4. Clear Page references only after both redirects and Page cleanup succeed.
 
 Retries accept already-correct redirects and already-deleted Pages. A redirect failure stops before Page deletion.
+
+Shopify applies URL redirects only when the source path returns `404`. The FPB parent product must remain published because its variant is the storefront cart and Cart Transform identity, so its product route remains a valid `200` document and takes precedence over the redirect record. The single app embed closes that platform gap: when the current product variant's public `$app.bundle_ui_config` identifies a `full_page` bundle, it replaces the browser location with the canonical proxy path. It does not redirect PPB parents and it is disabled when `request.design_mode` is true so Theme Editor remains usable.
 
 The Page columns remain temporarily available only to drive this guarded migration. Remove them after an approved apply run and a zero-reference preflight.

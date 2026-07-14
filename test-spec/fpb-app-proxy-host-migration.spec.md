@@ -72,6 +72,14 @@ Make the signed FPB app-proxy route the only runtime document host while keeping
 | 2 | Preview PPB | Parent product handle | Open product URL | PPB behavior unchanged |
 | 3 | Async signed preview response | FPB preview click followed by action response | Reserve a blank tab during the click and navigate it after the URL arrives | Avoid popup blocking |
 
+### ParentProductRedirect
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Published FPB parent route | Product variant has a `full_page` bundle UI config | App embed replaces the location with the canonical proxy URL | Shopify URL redirects only run for 404 source paths |
+| 2 | PPB parent route | Product variant has a `product_page` bundle UI config | No redirect | PPB remains product-hosted |
+| 3 | Theme Editor | FPB parent product opened in design mode | No redirect | Preserve merchant theme editing |
+
 ## Acceptance Criteria
 
 - [ ] All listed test cases pass
@@ -82,3 +90,4 @@ Make the signed FPB app-proxy route the only runtime document host while keeping
 - [ ] App-proxy documents render from their complete inline payload without a bundle JSON fallback
 - [ ] Every dashboard FPB preview click requests a new signed URL
 - [ ] Dashboard FPB previews open after the asynchronous signed URL response
+- [ ] Published FPB parent-product documents redirect through the app embed without affecting PPB or Theme Editor

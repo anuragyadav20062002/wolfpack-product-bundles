@@ -47,6 +47,8 @@ WPB_DEPLOYMENT_BACKFILL_CONFIRM=I_UNDERSTAND_THIS_CAN_MUTATE_PRODUCTION \
 npm run deployment:backfill
 ```
 
-For each FPB, apply mode acquires the compliant offline Admin client, ensures Page and parent-product redirects to the canonical proxy path, deletes stored public/preview Pages, clears Page references after cleanup, and only then runs proxy-hosted storefront sync. A migration failure skips normal sync for that FPB, records a failure, and makes the command exit non-zero. PPB continues through unchanged product-host synchronization.
+For each FPB, apply mode acquires the compliant offline Admin client, ensures Page and parent-product redirect records target the canonical proxy path, deletes stored public/preview Pages, clears Page references after cleanup, and only then runs proxy-hosted storefront sync. A migration failure skips normal sync for that FPB, records a failure, and makes the command exit non-zero. PPB continues through unchanged product-host synchronization.
+
+The parent-product redirect record is intentionally paired with the theme app embed redirect. Shopify URL redirects only activate for source paths that return `404`, while the published FPB parent must remain available for cart and Cart Transform behavior. On a live FPB parent product document, the app embed reads the public variant bundle config and replaces the location with the canonical proxy URL; PPB and Theme Editor documents are left unchanged.
 
 Use `WPB_DEPLOYMENT_BACKFILL_SHOP` and `WPB_DEPLOYMENT_BACKFILL_LIMIT` to narrow scope. Never run apply mode without explicit approval for the exact environment and shop scope. Page-column removal requires a separate zero-reference preflight after the approved migration succeeds.
