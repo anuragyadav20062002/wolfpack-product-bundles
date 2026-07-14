@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10 and R14 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10 and R14 reconciled directly, R13 replay partially complete
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -92,7 +92,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | R10 | Mixed manual + collection source | Both sources coexist without duplicates/state loss | **P** PL04/PLS3 | **P** [R09-R10 collection replay](ppb-deferred-functional-parity/R09-R10-collection-sources-evidence.md) | **P** HSS1 | **P** [R09-R10 collection replay](ppb-deferred-functional-parity/R09-R10-collection-sources-evidence.md) |
 | R11 | Quantity step rule: minimum | Blocks progression below the threshold and permits overflow where EB does | **P** PL02 | **P** PG05/PG06 | **P** HSS3 | **P** VS03 |
 | R12 | Quantity step rule: exact / maximum | Prevents over-target selection and supports edit/replacement | **P** PL02 | **P** PG05 | **P** HSS3 | **P** VS03 |
-| R13 | Amount-based condition | Price threshold controls progression | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) |
+| R13 | Amount-based condition | Price threshold controls progression | **S** Direct EB desktop/mobile replay complete; equivalent WPB live replay pending | **S** Direct EB desktop/mobile replay complete; equivalent WPB live replay pending | **S** Direct EB desktop/mobile replay complete; equivalent WPB live replay pending | **S** Direct EB desktop/mobile and WPB desktop replay complete; WPB mobile replay remains required |
 | R14 | Weight-based condition | Current PPB Admin exposes no Weight metric despite stale help copy | **E** [R14 live Admin absence](ppb-deferred-functional-parity/R14-weight-condition-absence-evidence.md) | **E** [R14 live Admin absence](ppb-deferred-functional-parity/R14-weight-condition-absence-evidence.md) | **E** [R14 live Admin absence](ppb-deferred-functional-parity/R14-weight-condition-absence-evidence.md) | **E** [R14 live Admin absence](ppb-deferred-functional-parity/R14-weight-condition-absence-evidence.md) |
 | R15 | Auto-next behavior | Eligible selection advances only when the saved EB rule enables it | **T** | **P** `PG09-session-restoration-evidence` | **T** | **T** |
 
@@ -257,6 +257,16 @@ The 2026-07-15 R09-R10 collection-source replay served Wolfpack widget
 `5.0.182`. Direct reference and Wolfpack passes proved collection-only hydration,
 mixed manual-plus-collection de-duplication, inventory filtering, and selected
 state retention for Product Grid and Vertical Slots at 1280x800 and 390x844.
+
+The 2026-07-15 R13 reference replay persisted a category amount condition of at
+least 300 and proved below-threshold blocking plus above-threshold progression
+in all four reference templates at desktop and mobile sizes. The equivalent
+Wolfpack Vertical Slots desktop replay confirmed the saved API condition
+(`amount`, `greaterThanOrEqualTo`, `300`), a disabled final CTA with no
+selection, and an enabled `$829.00` CTA plus forward navigation after selecting
+the qualifying product. R13 remains **S** because Wolfpack mobile proof is still
+missing for Vertical Slots and the equivalent Wolfpack live replay is still
+missing for Product List, Product Grid, and Horizontal Slots.
 
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
