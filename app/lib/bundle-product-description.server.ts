@@ -42,10 +42,10 @@ export function buildBundleProductDescriptionHtml({
     return [
       '<p><strong>Category:</strong> Visibility</p>',
       "<h3>Your Bundle is Unlisted</h3>",
-      '<p>This product is automatically managed by Wolfpack Product Bundles with its <strong>Status</strong> set to <strong>"Unlisted"</strong>.</p>',
+      '<p>This product is automatically created with its <strong>Status</strong> set to <strong>"Unlisted"</strong>.</p>',
       "<p>The bundle is active and discounts will apply, but it is hidden from your store's search results and collection pages. Customers can still purchase it using a direct link.</p>",
       "<h3>To Make It Discoverable</h3>",
-      '<p>To show this bundle on your storefront, including collections or search, change its <strong>Status</strong> to <strong>"Active"</strong> from Wolfpack Product Bundles.</p>',
+      '<p>To show this bundle on your storefront, including collections or search, use <strong>Edit Product</strong> and change its <strong>Status</strong> to <strong>"Active"</strong> in Shopify Admin.</p>',
       "<h3>Management</h3>",
       "<p><strong>Customization:</strong> Edit the title, images, and product media as you would for any standard product.</p>",
       "<p><strong>Do Not Delete:</strong> Deleting this product will break the bundle's functionality.</p>",
