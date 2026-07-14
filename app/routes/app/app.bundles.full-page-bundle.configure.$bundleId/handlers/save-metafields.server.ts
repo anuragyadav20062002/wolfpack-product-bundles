@@ -2,10 +2,6 @@ import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { AppLogger } from "../../../../lib/logger";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import {
-  refreshFullPageBundlePageBody,
-  writeBundleConfigPageMetafield,
-} from "../../../../services/widget-installation/widget-full-page-bundle.server";
-import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
 } from "../../../../services/bundles/metafield-sync.server";
@@ -46,29 +42,6 @@ export async function syncSavedFpbBundleStorefrontState({
     });
   }
 
-  if (updatedBundle.shopifyPageId) {
-    const bodyRefresh = await refreshFullPageBundlePageBody(
-      admin,
-      updatedBundle.shopifyPageId,
-      updatedBundle.id ?? bundleId,
-      shopDomain,
-      updatedBundle,
-    );
-    if (!bodyRefresh.success) {
-      AppLogger.warn("Failed to refresh full-page bundle page body on save (non-fatal)", {
-        component: "FullPageBundleSave",
-        bundleId,
-        pageId: updatedBundle.shopifyPageId,
-        error: bodyRefresh.error,
-      });
-    }
-
-    await writeBundleConfigPageMetafield(
-      admin,
-      updatedBundle.shopifyPageId,
-      updatedBundle,
-    );
-  }
 }
 
 async function syncSavedFpbBundleProductState({

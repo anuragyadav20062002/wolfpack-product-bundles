@@ -427,9 +427,6 @@ export async function updateBundleProductMetafields(
     status: bundleConfiguration.status || BundleStatus.ACTIVE, // Widget needs this for filtering
     bundleType: bundleConfiguration.bundleType || BundleType.PRODUCT_PAGE, // Widget needs this for selection
     shopifyProductId: bundleConfiguration.shopifyProductId || null, // Product ID for matching
-    fullPagePageHandle: bundleConfiguration.bundleType === BundleType.FULL_PAGE
-      ? (bundleConfiguration.shopifyPageHandle || null)
-      : null,
     bundleDesignTemplate: bundleConfiguration.bundleDesignTemplate ?? null,
     bundleDesignPresetId: bundleConfiguration.bundleDesignPresetId ?? null,
     bundleDesignTemplateData,

@@ -7,6 +7,7 @@ import {
   runDeploymentBackfill,
 } from "../app/services/deployment-backfill.server";
 import { syncBundleStorefrontNow } from "../app/services/bundles/storefront-sync.server";
+import { migrateFpbPageHost } from "../app/services/bundles/fpb-page-host-migration.server";
 
 async function main() {
   const options = parseDeploymentBackfillEnv(process.env);
@@ -17,6 +18,7 @@ async function main() {
       return admin;
     },
     syncBundle: syncBundleStorefrontNow as any,
+    migrateFpbPageHost: migrateFpbPageHost as any,
     logger: console,
   });
 

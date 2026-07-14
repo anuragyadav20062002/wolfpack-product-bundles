@@ -19,6 +19,11 @@ export interface DeploymentBackfillSummary {
   syncedBundles: number;
   failedBundles: number;
   failures: Array<{ shopDomain: string; bundleId: string; error: string }>;
+  fpbProxyMigrations: number;
+  publicPagesToDelete: number;
+  previewPagesToDelete: number;
+  pageRedirectsToCreate: number;
+  productRedirectsToUpdate: number;
 }
 
 interface BackfillShop {
@@ -29,6 +34,11 @@ interface BackfillBundle {
   id: string;
   shopId: string;
   bundleType: BundleType | string;
+  shopifyPageId: string | null;
+  shopifyPageHandle: string | null;
+  shopifyPreviewPageId: string | null;
+  shopifyPreviewPageHandle: string | null;
+  shopifyProductHandle: string | null;
 }
 
 interface PrismaBackfillClient {
@@ -37,6 +47,7 @@ interface PrismaBackfillClient {
   };
   bundle: {
     findMany: (args: unknown) => Promise<BackfillBundle[]>;
+    update: (args: unknown) => Promise<unknown>;
   };
 }
 
@@ -49,6 +60,11 @@ export interface DeploymentBackfillDependencies {
     bundleId: string;
     bundleType: BundleType;
     reason: "sync_bundle";
+  }) => Promise<unknown>;
+  migrateFpbPageHost: (input: {
+    admin: unknown;
+    prisma: PrismaBackfillClient;
+    bundle: BackfillBundle;
   }) => Promise<unknown>;
   logger?: Pick<Console, "info" | "warn" | "error">;
 }
@@ -123,6 +139,11 @@ async function listTargetBundles(
       id: true,
       shopId: true,
       bundleType: true,
+      shopifyPageId: true,
+      shopifyPageHandle: true,
+      shopifyPreviewPageId: true,
+      shopifyPreviewPageHandle: true,
+      shopifyProductHandle: true,
     },
     orderBy: [
       { shopId: "asc" },
@@ -153,6 +174,11 @@ export async function runDeploymentBackfill(
       syncedBundles: 0,
       failedBundles: 0,
       failures: [],
+      fpbProxyMigrations: 0,
+      publicPagesToDelete: 0,
+      previewPagesToDelete: 0,
+      pageRedirectsToCreate: 0,
+      productRedirectsToUpdate: 0,
     };
   }
 
@@ -168,6 +194,11 @@ export async function runDeploymentBackfill(
     syncedBundles: 0,
     failedBundles: 0,
     failures: [],
+    fpbProxyMigrations: bundles.filter((bundle) => bundle.bundleType === "full_page").length,
+    publicPagesToDelete: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyPageId).length,
+    previewPagesToDelete: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyPreviewPageId).length,
+    pageRedirectsToCreate: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyPageHandle).length,
+    productRedirectsToUpdate: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyProductHandle).length,
   };
 
   deps.logger?.info?.("[DEPLOYMENT_BACKFILL] Target scan complete.", {
@@ -197,6 +228,14 @@ export async function runDeploymentBackfill(
       if (!admin) {
         admin = await deps.getAdmin(bundle.shopId);
         adminByShop.set(bundle.shopId, admin);
+      }
+
+      if (bundle.bundleType === "full_page") {
+        await deps.migrateFpbPageHost({
+          admin,
+          prisma: deps.prisma,
+          bundle,
+        });
       }
 
       await deps.syncBundle({

@@ -16,13 +16,15 @@ function makeDeps() {
       },
       bundle: {
         findMany: jest.fn().mockResolvedValue([
-          { id: "bundle-1", shopId: "alpha.myshopify.com", bundleType: "full_page" },
-          { id: "bundle-2", shopId: "beta.myshopify.com", bundleType: "product_page" },
+          { id: "bundle-1", shopId: "alpha.myshopify.com", bundleType: "full_page", shopifyPageId: "page-1", shopifyPageHandle: "old-page", shopifyPreviewPageId: "preview-1", shopifyPreviewPageHandle: "preview-page", shopifyProductHandle: "bundle-product" },
+          { id: "bundle-2", shopId: "beta.myshopify.com", bundleType: "product_page", shopifyPageId: null, shopifyPageHandle: null, shopifyPreviewPageId: null, shopifyPreviewPageHandle: null, shopifyProductHandle: "ppb" },
         ]),
+        update: jest.fn(),
       },
     },
     getAdmin: jest.fn().mockResolvedValue(admin),
     syncBundle: jest.fn().mockResolvedValue({ synced: true }),
+    migrateFpbPageHost: jest.fn().mockResolvedValue({ migrated: true }),
     logger: {
       info: jest.fn(),
       warn: jest.fn(),
@@ -71,6 +73,11 @@ describe("deployment backfill", () => {
       scannedBundles: 2,
       syncedBundles: 0,
       failedBundles: 0,
+      fpbProxyMigrations: 1,
+      publicPagesToDelete: 1,
+      previewPagesToDelete: 1,
+      pageRedirectsToCreate: 1,
+      productRedirectsToUpdate: 1,
     });
     expect(deps.syncBundle).not.toHaveBeenCalled();
   });
@@ -94,6 +101,11 @@ describe("deployment backfill", () => {
     });
     expect(deps.getAdmin).toHaveBeenCalledWith("alpha.myshopify.com");
     expect(deps.getAdmin).toHaveBeenCalledWith("beta.myshopify.com");
+    expect(deps.migrateFpbPageHost).toHaveBeenCalledWith({
+      admin: expect.objectContaining({ graphql: expect.any(Function) }),
+      prisma: deps.prisma,
+      bundle: expect.objectContaining({ id: "bundle-1" }),
+    });
     expect(deps.syncBundle).toHaveBeenCalledWith({
       admin: expect.objectContaining({ graphql: expect.any(Function) }),
       shopDomain: "alpha.myshopify.com",
@@ -108,6 +120,22 @@ describe("deployment backfill", () => {
       bundleType: "product_page",
       reason: "sync_bundle",
     });
+  });
+
+  it("does not sync an FPB when host migration fails", async () => {
+    const deps = makeDeps();
+    deps.migrateFpbPageHost.mockRejectedValueOnce(new Error("redirect failed"));
+    const options = parseDeploymentBackfillEnv({
+      WPB_DEPLOYMENT_BACKFILL_ENABLED: "true",
+      WPB_DEPLOYMENT_BACKFILL_APPLY: "true",
+      WPB_DEPLOYMENT_BACKFILL_CONFIRM: DEPLOYMENT_BACKFILL_CONFIRMATION,
+    });
+
+    const result = await runDeploymentBackfill(options, deps);
+
+    expect(result.failedBundles).toBe(1);
+    expect(deps.syncBundle).not.toHaveBeenCalledWith(expect.objectContaining({ bundleId: "bundle-1" }));
+    expect(deps.syncBundle).toHaveBeenCalledWith(expect.objectContaining({ bundleId: "bundle-2" }));
   });
 
   it("can limit the run to a single shop from env", async () => {

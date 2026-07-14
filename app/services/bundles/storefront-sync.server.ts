@@ -10,10 +10,6 @@ import {
   convertBundleToStandardMetafields,
   updateProductStandardMetafields,
 } from "./standard-metafields.server";
-import {
-  refreshFullPageBundlePageBody,
-  writeBundleConfigPageMetafield,
-} from "../widget-installation/widget-full-page-bundle.server";
 import { syncThemeColors } from "../theme-colors.server";
 import { buildFullPageBundleMetafieldConfig } from "../../routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/shared.server";
 import {
@@ -178,32 +174,9 @@ async function syncFullPageBundleFromDb(
   const stats = {
     bundleType: BundleType.FULL_PAGE,
     productMetafields: false,
-    pageMetafield: false,
-    pageBody: false,
+    proxyHost: true,
     themeColors: false,
   };
-
-  if (bundle.shopifyPageId) {
-    const bodyRefresh = await refreshFullPageBundlePageBody(
-      admin,
-      bundle.shopifyPageId,
-      bundle.id,
-      shopDomain,
-      bundle,
-    );
-    stats.pageBody = bodyRefresh.success === true;
-    if (!bodyRefresh.success) {
-      AppLogger.warn("[STOREFRONT_SYNC] Failed to refresh full-page body", {
-        component: "storefront-sync",
-        bundleId: bundle.id,
-        pageId: bundle.shopifyPageId,
-        error: bodyRefresh.error,
-      });
-    }
-
-    await writeBundleConfigPageMetafield(admin, bundle.shopifyPageId, bundle);
-    stats.pageMetafield = true;
-  }
 
   if (!bundle.shopifyProductId) {
     return stats;
