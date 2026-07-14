@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Current design replay complete; non-visual permutations remain explicitly deferred
+**Status:** Functional parity completion in progress; R06-R07 replayed directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -86,7 +86,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | R04 | Multi-step navigation | One active step; Next/Back/Done and retained selections | **P** PL02/PLS1 | **P** PG02/PG08 | **P** HS05/HSS1 | **P** VS03 |
 | R05 | Multiple categories and switching | Current category changes the visible catalog | **P** PL01 | **P** PG03 | **P** HS01 | **P** VS05 |
 | R06 | Empty category | EB behavior for a category with no persisted products | **E** PL01/PLS3 | **P** [R06 deferred replay](ppb-deferred-functional-parity/R06-empty-category-evidence.md) | **P** [R06 deferred replay](ppb-deferred-functional-parity/R06-empty-category-evidence.md) | **P** [R06 deferred replay](ppb-deferred-functional-parity/R06-empty-category-evidence.md) |
-| R07 | `useSingleStepCategoriesAsBundleSteps` | Categories become navigable steps when true | **S** Shared-source category-expansion contract (`bundle-widget-product-page-single-step-categories.test.ts`) | **S** Shared-source category-expansion contract (`bundle-widget-product-page-single-step-categories.test.ts`) | **S** Shared-source category-expansion contract (`bundle-widget-product-page-single-step-categories.test.ts`) | **S** Shared-source category-expansion contract (`bundle-widget-product-page-single-step-categories.test.ts`) |
+| R07 | `useSingleStepCategoriesAsBundleSteps` | Current EB Admin exposes no control and its raw/processed runtime values are false; Wolfpack's true mode is an accepted extension | **X** [R07 category-step replay](ppb-deferred-functional-parity/R07-category-steps-evidence.md) | **X** [R07 category-step replay](ppb-deferred-functional-parity/R07-category-steps-evidence.md) | **X** [R07 category-step replay](ppb-deferred-functional-parity/R07-category-steps-evidence.md) | **X** [R07 category-step replay](ppb-deferred-functional-parity/R07-category-steps-evidence.md) |
 | R08 | Manual product source | Manually selected catalog products render | **P** PL00 | **P** PG00/PG08 | **P** HS02 | **P** VS04 |
 | R09 | Collection-backed source | Collection products hydrate, paginate, and obey inventory filtering | **P** PLS3 | **T** | **P** HS04/HSS1 | **T** |
 | R10 | Mixed manual + collection source | Both sources coexist without duplicates/state loss | **P** PL04/PLS3 | **T** | **P** HSS1 | **T** |
@@ -254,27 +254,27 @@ modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
 template isolation, and the current desktop/mobile fixtures. Product Grid PG09
 also closes grouped-variant and category-scoped reload presentation.
 
-The remaining **S** and **T** cells are final deferred statuses for non-visual
-configuration permutations or feature-specific functional proof. They are not
-silently promoted to Proven and are not blockers for this visual closeout.
+The remaining **S** and **T** cells are active functional-verification work.
+They are not silently promoted from source coverage or another template's
+evidence.
 
 Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 46 | 16 | 43 | 2 | 0 | 12 |
-| Product Grid | 42 | 16 | 49 | 0 | 0 | 12 |
-| Horizontal Slots | 58 | 12 | 45 | 0 | 3 | 1 |
-| Vertical Slots | 44 | 21 | 51 | 0 | 2 | 1 |
+| Product List | 46 | 15 | 43 | 2 | 1 | 12 |
+| Product Grid | 42 | 15 | 49 | 0 | 1 | 12 |
+| Horizontal Slots | 58 | 11 | 45 | 0 | 4 | 1 |
+| Vertical Slots | 44 | 20 | 51 | 0 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
 - Proven: **190**
-- Shared/partial: **65**
+- Shared/partial: **61**
 - Not tested: **188**
 - EB-absent: **2**
-- Accepted divergence: **5**
+- Accepted divergence: **9**
 - Not applicable: **26**
 
 These totals are an evidence inventory, not a product-quality score. One
@@ -293,18 +293,18 @@ High-risk missing evidence is concentrated in:
 7. alternate global PPB control values and localized/custom text;
 8. direct Vertical Slots inventory, variant, modal-focus, and delayed-load proof.
 
-Those rows require a separate functional-parity goal if they are resumed. The
-storefront visual parity goal is closed with their current matrix statuses
-preserved as the handoff ledger.
+Those rows are being completed through the active functional-parity goal. The
+earlier storefront visual replay remains valid, but it is not the completion
+boundary for this matrix.
 
-## Deferred Functional Follow-on
+## Active Functional Completion
 
-If the deferred rows are resumed, work in deterministic slices. For each row, inspect EB help content first,
+Work through the remaining rows in deterministic slices. For each row, inspect EB help content first,
 configure EB through Admin, capture EB desktop/mobile truth, mirror WPB, record
 the persisted/runtime values, exercise the behavior, and only then decide
 whether implementation is required.
 
-1. **Data and selection:** R07-R15, C06-C12, S05-S08.
+1. **Data and selection:** R08-R15, C06-C12, S05-S08.
 2. **Discount modes:** D03-D12.
 3. **Cart contracts:** S09-S15 for PG and VS first, then any changed template.
 4. **Bundle-level features:** G01-G08.
