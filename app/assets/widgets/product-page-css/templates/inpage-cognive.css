@@ -268,10 +268,31 @@
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
   .bw-ppb-cognive-product-grid
   .product-card-price-action {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: minmax(18px, auto) minmax(32px, auto) minmax(32px, auto);
   align-items: stretch;
   gap: 10px;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .product-card-price-action
+  .product-price-row {
+  grid-row: 1;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .product-card-price-action
+  .variant-selector-wrapper {
+  grid-row: 2;
+}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+  .bw-ppb-cognive-product-grid
+  .product-card-price-action
+  .product-card-action {
+  grid-row: 3;
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
