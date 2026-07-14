@@ -184,7 +184,7 @@ toggle or alternate-value behavior.
 | --- | --- | --- | --- | --- | --- | --- |
 | G01 | Bundle Visibility product/collection targeting | Widget appears only on configured product contexts | **T** | **T** | **T** | **T** |
 | G02 | Add Browsed Product / preselection | Browsed product is preselected when eligible | **T** | **T** | **T** | **T** |
-| G03 | Upsell block/button handoff | Builder/upsell entry preserves offer and selection context | **T** | **T** | **T** | **T** |
+| G03 | Upsell block/button handoff | Builder/upsell entry preserves offer and selection context | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) |
 | G04 | Pre-order and Subscription Integration | Selling-plan selection reaches product cards and cart payload | **T** | **T** | **T** | **T** |
 | G05 | PPB Subscriptions | Common-plan validation and selected plan affect the storefront/cart | **T** | **T** | **T** | **T** |
 | G06 | Cart line-item discount display | Saved retail/savings display option reaches cart lines | **S** PL08 records a settings difference | **T** | **T** | **T** |
@@ -286,6 +286,11 @@ complete configure audit already records desktop/mobile storefront proof for the
 enabled all-products embed state, and current focused persistence/runtime tests
 passed 43/43.
 
+The 2026-07-15 G03 review applies the same shared-path classification to the
+PPB upsell block/button handoff. The complete configure audit already records
+desktop/mobile storefront proof for the enabled all-products upsell widget state,
+and current focused persistence/runtime tests passed 43/43.
+
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
 template isolation, and the current desktop/mobile fixtures. Product Grid PG09
@@ -299,17 +304,17 @@ Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 52 | 9 | 42 | 3 | 1 | 12 |
-| Product Grid | 49 | 10 | 46 | 1 | 1 | 12 |
-| Horizontal Slots | 63 | 7 | 43 | 1 | 4 | 1 |
-| Vertical Slots | 52 | 15 | 47 | 1 | 3 | 1 |
+| Product List | 53 | 9 | 41 | 3 | 1 | 12 |
+| Product Grid | 50 | 10 | 45 | 1 | 1 | 12 |
+| Horizontal Slots | 64 | 7 | 42 | 1 | 4 | 1 |
+| Vertical Slots | 53 | 15 | 46 | 1 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **216**
+- Proven: **220**
 - Shared/partial: **41**
-- Not tested: **178**
+- Not tested: **174**
 - EB-absent: **6**
 - Accepted divergence: **9**
 - Not applicable: **26**
