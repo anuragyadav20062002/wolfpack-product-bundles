@@ -219,7 +219,7 @@ toggle or alternate-value behavior.
 | G35 | Product Page custom CSS scope | Store-level PPB CSS remains scoped and distinct from Landing Page CSS | **T** | **T** | **T** | **T** |
 | G36 | Product Card language fields | Add, variant, added, and inline-add labels use the active Product Page locale | **T** | **T** | **T** | **T** |
 | G37 | Bundle Cart / Bundle / Toast language fields | Summary, CTA, validation, and toast copy use the active locale | **T** | **T** | **T** | **T** |
-| G38 | Bundle Embed | Saved embed configuration mounts and hands off the correct offer context | **T** | **T** | **T** | **T** |
+| G38 | Bundle Embed | Saved embed configuration mounts and hands off the correct offer context | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) |
 | G39 | Place Widget | Theme placement workflow preserves parent-product context and active template | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) |
 
 ## 7. Responsive, Accessibility, Isolation, and Runtime Health
@@ -280,6 +280,12 @@ slots from `renderFilledSlotsAsHorizontalStacked`; the current formatter and
 template-registry contracts passed 41/41 focused tests, and R13 live replay
 verified the HS/VS runtime orientation markers.
 
+The 2026-07-15 G38 review classifies Bundle Embed as a shared PPB
+visibility/runtime path rather than a per-template renderer permutation. The
+complete configure audit already records desktop/mobile storefront proof for the
+enabled all-products embed state, and current focused persistence/runtime tests
+passed 43/43.
+
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
 template isolation, and the current desktop/mobile fixtures. Product Grid PG09
@@ -293,17 +299,17 @@ Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 51 | 9 | 43 | 3 | 1 | 12 |
-| Product Grid | 48 | 10 | 47 | 1 | 1 | 12 |
-| Horizontal Slots | 62 | 7 | 44 | 1 | 4 | 1 |
-| Vertical Slots | 51 | 15 | 48 | 1 | 3 | 1 |
+| Product List | 52 | 9 | 42 | 3 | 1 | 12 |
+| Product Grid | 49 | 10 | 46 | 1 | 1 | 12 |
+| Horizontal Slots | 63 | 7 | 43 | 1 | 4 | 1 |
+| Vertical Slots | 52 | 15 | 47 | 1 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **212**
+- Proven: **216**
 - Shared/partial: **41**
-- Not tested: **182**
+- Not tested: **178**
 - EB-absent: **6**
 - Accepted divergence: **9**
 - Not applicable: **26**
