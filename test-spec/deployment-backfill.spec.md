@@ -44,8 +44,13 @@ Provide a guarded deployment-time maintenance script that migrates FPB Page host
 | 7 | FPB apply ordering | Confirmed apply | Redirects and deletes Pages before FPB sync | PPB skips host migration |
 | 8 | FPB migration failure | Redirect or Page cleanup failure | Does not sync failed FPB and records failure | Process exits non-zero |
 | 9 | Retry | Existing correct redirects or missing Pages | Succeeds and clears Page references | Idempotent |
+| 10 | Native FPB product redirect | Published FPB parent with merchant-facing handle | Reserves redirect, moves product to deterministic internal handle with automatic redirect disabled, verifies proxy redirect | Shopify serves the old route as a platform 301 |
+| 11 | Partial handle-move retry | Shopify handle already moved but DB still stores old handle | Repairs/verifies old redirect and persists live internal handle without another rename | Idempotent after interrupted apply |
+| 12 | Parent handle update failure | `productUpdate` user error | Preserves Page references and skips FPB sync | No partial Page cleanup |
+| 13 | Deleted parent | Stored product ID no longer resolves | Keeps old route redirect, completes Page cleanup, then normal sync recreates parent | Deleted route is already redirect-eligible |
 
 ## Acceptance Criteria
 - [ ] All listed test cases pass
 - [ ] Deploy scripts invoke the backfill gate before Shopify deploy but the gate is disabled by default
 - [ ] Docs warn that production apply mode is dangerous and requires manual user approval
+- [ ] FPB parent handle migration never changes product status, publication, media, variant, or PPB handles

@@ -1,3 +1,5 @@
+import { isFpbInternalParentHandle } from "./bundles/fpb-page-host-migration.server";
+
 export const DEPLOYMENT_BACKFILL_CONFIRMATION =
   "I_UNDERSTAND_THIS_CAN_MUTATE_PRODUCTION";
 
@@ -24,6 +26,7 @@ export interface DeploymentBackfillSummary {
   previewPagesToDelete: number;
   pageRedirectsToCreate: number;
   productRedirectsToUpdate: number;
+  productHandlesToInternalize: number;
 }
 
 interface BackfillShop {
@@ -34,6 +37,7 @@ interface BackfillBundle {
   id: string;
   shopId: string;
   bundleType: BundleType | string;
+  shopifyProductId: string | null;
   shopifyPageId: string | null;
   shopifyPageHandle: string | null;
   shopifyPreviewPageId: string | null;
@@ -139,6 +143,7 @@ async function listTargetBundles(
       id: true,
       shopId: true,
       bundleType: true,
+      shopifyProductId: true,
       shopifyPageId: true,
       shopifyPageHandle: true,
       shopifyPreviewPageId: true,
@@ -179,6 +184,7 @@ export async function runDeploymentBackfill(
       previewPagesToDelete: 0,
       pageRedirectsToCreate: 0,
       productRedirectsToUpdate: 0,
+      productHandlesToInternalize: 0,
     };
   }
 
@@ -199,6 +205,10 @@ export async function runDeploymentBackfill(
     previewPagesToDelete: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyPreviewPageId).length,
     pageRedirectsToCreate: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyPageHandle).length,
     productRedirectsToUpdate: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyProductHandle).length,
+    productHandlesToInternalize: bundles.filter((bundle) =>
+      bundle.bundleType === "full_page"
+      && bundle.shopifyProductHandle
+      && !isFpbInternalParentHandle(bundle.id, bundle.shopifyProductHandle)).length,
   };
 
   deps.logger?.info?.("[DEPLOYMENT_BACKFILL] Target scan complete.", {

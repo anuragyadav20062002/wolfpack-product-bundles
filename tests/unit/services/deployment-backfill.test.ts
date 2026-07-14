@@ -16,8 +16,8 @@ function makeDeps() {
       },
       bundle: {
         findMany: jest.fn().mockResolvedValue([
-          { id: "bundle-1", shopId: "alpha.myshopify.com", bundleType: "full_page", shopifyPageId: "page-1", shopifyPageHandle: "old-page", shopifyPreviewPageId: "preview-1", shopifyPreviewPageHandle: "preview-page", shopifyProductHandle: "bundle-product" },
-          { id: "bundle-2", shopId: "beta.myshopify.com", bundleType: "product_page", shopifyPageId: null, shopifyPageHandle: null, shopifyPreviewPageId: null, shopifyPreviewPageHandle: null, shopifyProductHandle: "ppb" },
+          { id: "bundle-1", shopId: "alpha.myshopify.com", bundleType: "full_page", shopifyProductId: "product-1", shopifyPageId: "page-1", shopifyPageHandle: "old-page", shopifyPreviewPageId: "preview-1", shopifyPreviewPageHandle: "preview-page", shopifyProductHandle: "bundle-product" },
+          { id: "bundle-2", shopId: "beta.myshopify.com", bundleType: "product_page", shopifyProductId: "product-2", shopifyPageId: null, shopifyPageHandle: null, shopifyPreviewPageId: null, shopifyPreviewPageHandle: null, shopifyProductHandle: "ppb" },
         ]),
         update: jest.fn(),
       },
@@ -78,6 +78,7 @@ describe("deployment backfill", () => {
       previewPagesToDelete: 1,
       pageRedirectsToCreate: 1,
       productRedirectsToUpdate: 1,
+      productHandlesToInternalize: 1,
     });
     expect(deps.syncBundle).not.toHaveBeenCalled();
   });

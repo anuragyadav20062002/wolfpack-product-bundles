@@ -4,10 +4,15 @@ import { AppLogger } from "../../lib/logger";
 import { buildBundleProductDescriptionHtml } from "../../lib/bundle-product-description.server";
 import { buildGeneratedBundleProductMetadata } from "../../lib/bundle-product-data.server";
 import { buildBundleProductPlaceholderMediaInput } from "../../lib/bundle-product-media.server";
+import {
+  buildFpbInternalParentHandle,
+  ensureFpbParentProductHost,
+} from "./fpb-page-host-migration.server";
 
 type BundleParentProductRecord = {
   id: string;
   name: string;
+  bundleType?: string | null;
   shopifyProductId?: string | null;
   shopifyProductHandle?: string | null;
 };
@@ -145,6 +150,9 @@ async function createParentProduct(input: {
       variables: {
         product: {
           ...productMetadata,
+          ...(input.bundle.bundleType === "full_page"
+            ? { handle: buildFpbInternalParentHandle(input.bundle.id) }
+            : {}),
           status: "UNLISTED",
           descriptionHtml: buildBundleProductDescriptionHtml({
             bundleName: input.bundle.name,
@@ -303,11 +311,24 @@ export async function ensureBundleParentProduct(input: {
         shopifyProductHandle: product.handle,
       },
     });
-  } else if (product.handle !== input.bundle.shopifyProductHandle) {
-    await db.bundle.update({
-      where: { id: input.bundle.id, shopId: input.shopDomain },
-      data: { shopifyProductHandle: product.handle },
-    });
+  } else {
+    if (input.bundle.bundleType === "full_page") {
+      const host = await ensureFpbParentProductHost({
+        admin: input.admin,
+        bundleId: input.bundle.id,
+        shopId: input.shopDomain,
+        productId: product.id,
+        storedHandle: input.bundle.shopifyProductHandle ?? null,
+        liveHandle: product.handle,
+      });
+      if (host.handle) product.handle = host.handle;
+    }
+    if (product.handle !== input.bundle.shopifyProductHandle) {
+      await db.bundle.update({
+        where: { id: input.bundle.id, shopId: input.shopDomain },
+        data: { shopifyProductHandle: product.handle },
+      });
+    }
   }
 
   const variantId = product.variants?.nodes?.[0]?.id;

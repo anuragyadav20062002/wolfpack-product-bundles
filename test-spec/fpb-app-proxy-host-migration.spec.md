@@ -76,9 +76,11 @@ Make the signed FPB app-proxy route the only runtime document host while keeping
 
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | Published FPB parent route | Product variant has a `full_page` bundle UI config | App embed replaces the location with the canonical proxy URL | Shopify URL redirects only run for 404 source paths |
+| 1 | Migrated FPB parent route | Old product URL no longer owns the synthetic parent handle | Shopify serves the stored redirect to the canonical proxy | Native redirect is the primary path |
 | 2 | PPB parent route | Product variant has a `product_page` bundle UI config | No redirect | PPB remains product-hosted |
 | 3 | Theme Editor | FPB parent product opened in design mode | No redirect | Preserve merchant theme editing |
+| 4 | Existing published FPB fallback | Parent has not completed native handle migration | App embed replaces the location with the canonical proxy | Safety fallback until migration succeeds |
+| 5 | New FPB parent | Parent product creation | Deterministic `wpb-parent-{bundleId}` handle | No merchant-facing FPB product route is created |
 
 ## Acceptance Criteria
 
@@ -91,3 +93,4 @@ Make the signed FPB app-proxy route the only runtime document host while keeping
 - [ ] Every dashboard FPB preview click requests a new signed URL
 - [ ] Dashboard FPB previews open after the asynchronous signed URL response
 - [ ] Published FPB parent-product documents redirect through the app embed without affecting PPB or Theme Editor
+- [ ] Shopify-native redirects are primary after FPB parents move to deterministic internal handles

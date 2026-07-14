@@ -7,6 +7,7 @@ interface AdminGraphqlClient {
 export interface FpbPageHostMigrationBundle {
   id: string;
   shopId: string;
+  shopifyProductId: string | null;
   shopifyPageId: string | null;
   shopifyPageHandle: string | null;
   shopifyPreviewPageId: string | null;
@@ -55,8 +56,40 @@ const DELETE_PAGE = `#graphql
   }
 `;
 
+const GET_PARENT_PRODUCT_HANDLE = `#graphql
+  query GetFpbParentProductHandle($id: ID!) {
+    product(id: $id) { id handle }
+  }
+`;
+
+const UPDATE_PARENT_PRODUCT_HANDLE = `#graphql
+  mutation UpdateFpbParentProductHandle($product: ProductUpdateInput!) {
+    productUpdate(product: $product) {
+      product { id handle }
+      userErrors { field message }
+    }
+  }
+`;
+
 function proxyTarget(bundle: FpbPageHostMigrationBundle): string {
   return new URL(buildFpbStorefrontUrl(bundle.shopId, bundle.id)).pathname;
+}
+
+export function buildFpbInternalParentHandle(bundleId: string): string {
+  const normalizedBundleId = bundleId
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `wpb-parent-${normalizedBundleId}`;
+}
+
+function isInternalParentHandle(handle: string, canonicalHandle: string): boolean {
+  return handle === canonicalHandle || handle.startsWith(`${canonicalHandle}-`);
+}
+
+export function isFpbInternalParentHandle(bundleId: string, handle: string): boolean {
+  return isInternalParentHandle(handle, buildFpbInternalParentHandle(bundleId));
 }
 
 async function ensureRedirect(
@@ -106,6 +139,74 @@ async function deletePageIfPresent(
   }
 }
 
+export async function ensureFpbParentProductHost(input: {
+  admin: AdminGraphqlClient;
+  bundleId: string;
+  shopId: string;
+  productId: string | null;
+  storedHandle: string | null;
+  liveHandle?: string | null;
+}) {
+  const target = new URL(buildFpbStorefrontUrl(input.shopId, input.bundleId)).pathname;
+  const canonicalHandle = buildFpbInternalParentHandle(input.bundleId);
+  let liveHandle = input.liveHandle;
+
+  if (liveHandle === undefined && input.productId) {
+    const response = await input.admin.graphql(GET_PARENT_PRODUCT_HANDLE, {
+      variables: { id: input.productId },
+    });
+    const data = await response.json() as any;
+    if (data.errors?.length) {
+      throw new Error(`Failed to load FPB parent product: ${data.errors[0]?.message ?? "unknown error"}`);
+    }
+    liveHandle = data.data?.product?.handle ?? null;
+  }
+
+  const legacyHandles = [...new Set([input.storedHandle, liveHandle])]
+    .filter((handle): handle is string =>
+      Boolean(handle) && !isInternalParentHandle(handle as string, canonicalHandle));
+
+  for (const handle of legacyHandles) {
+    await ensureRedirect(input.admin, `/products/${handle}`, target);
+  }
+
+  if (!liveHandle || isInternalParentHandle(liveHandle, canonicalHandle)) {
+    return { handle: liveHandle ?? null, renamed: false, target };
+  }
+  if (!input.productId) {
+    throw new Error("Failed to move FPB parent product: missing Shopify product ID");
+  }
+
+  const response = await input.admin.graphql(UPDATE_PARENT_PRODUCT_HANDLE, {
+    variables: {
+      product: {
+        id: input.productId,
+        handle: canonicalHandle,
+        redirectNewHandle: false,
+      },
+    },
+  });
+  const data = await response.json() as any;
+  const payload = data.data?.productUpdate;
+  const errors = [...(data.errors ?? []), ...(payload?.userErrors ?? [])];
+  const updatedHandle = payload?.product?.handle;
+  if (
+    errors.length > 0
+    || typeof updatedHandle !== "string"
+    || !isInternalParentHandle(updatedHandle, canonicalHandle)
+  ) {
+    throw new Error(
+      `Failed to move FPB parent product: ${errors[0]?.message ?? "Shopify returned an unexpected handle"}`,
+    );
+  }
+
+  for (const handle of legacyHandles) {
+    await ensureRedirect(input.admin, `/products/${handle}`, target);
+  }
+
+  return { handle: updatedHandle, renamed: true, target };
+}
+
 export async function migrateFpbPageHost(input: {
   admin: AdminGraphqlClient;
   prisma: MigrationPrismaClient;
@@ -120,13 +221,13 @@ export async function migrateFpbPageHost(input: {
       target,
     );
   }
-  if (input.bundle.shopifyProductHandle) {
-    await ensureRedirect(
-      input.admin,
-      `/products/${input.bundle.shopifyProductHandle}`,
-      target,
-    );
-  }
+  const parentHost = await ensureFpbParentProductHost({
+    admin: input.admin,
+    bundleId: input.bundle.id,
+    shopId: input.bundle.shopId,
+    productId: input.bundle.shopifyProductId,
+    storedHandle: input.bundle.shopifyProductHandle,
+  });
 
   await deletePageIfPresent(input.admin, input.bundle.shopifyPageId);
   await deletePageIfPresent(input.admin, input.bundle.shopifyPreviewPageId);
@@ -138,6 +239,7 @@ export async function migrateFpbPageHost(input: {
       shopifyPageHandle: null,
       shopifyPreviewPageId: null,
       shopifyPreviewPageHandle: null,
+      ...(parentHost.handle ? { shopifyProductHandle: parentHost.handle } : {}),
     },
   });
 
