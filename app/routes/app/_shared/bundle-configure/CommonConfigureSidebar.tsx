@@ -222,6 +222,9 @@ export function CommonConfigureSidebar({
                 {parentProductStatusUi.label}
               </s-badge>
             </div>
+            <s-text tone="neutral">
+              Change product discoverability through Edit Product in Shopify Admin.
+            </s-text>
           </s-stack>
         </s-section>
 

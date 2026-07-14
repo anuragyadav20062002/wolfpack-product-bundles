@@ -13,16 +13,13 @@ import {
   convertBundleToStandardMetafields,
   updateProductStandardMetafields,
 } from "../../../../services/bundles/standard-metafields.server";
-import { BundleStatus } from "../../../../constants/bundle";
 import { buildFpbBaseConfig } from "./shared.server";
-import { syncFpbProductStatus } from "./product-status.server";
 
 export async function syncSavedFpbBundleStorefrontState({
   admin,
   bundleId,
   directBoxSelection,
   discountData,
-  finalStatus,
   shopDomain,
   stepConditionsData,
   stepsData,
@@ -32,7 +29,6 @@ export async function syncSavedFpbBundleStorefrontState({
   bundleId: string;
   directBoxSelection: any;
   discountData: any;
-  finalStatus: BundleStatus;
   shopDomain: string;
   stepConditionsData: Record<string, any[]>;
   stepsData: any[];
@@ -44,7 +40,6 @@ export async function syncSavedFpbBundleStorefrontState({
       bundleId,
       directBoxSelection,
       discountData,
-      finalStatus,
       stepConditionsData,
       stepsData,
       updatedBundle,
@@ -81,7 +76,6 @@ async function syncSavedFpbBundleProductState({
   bundleId,
   directBoxSelection,
   discountData,
-  finalStatus,
   stepConditionsData,
   stepsData,
   updatedBundle,
@@ -90,23 +84,10 @@ async function syncSavedFpbBundleProductState({
   bundleId: string;
   directBoxSelection: any;
   discountData: any;
-  finalStatus: BundleStatus;
   stepConditionsData: Record<string, any[]>;
   stepsData: any[];
   updatedBundle: any;
 }) {
-  AppLogger.debug(
-    `[PRODUCT_SYNC] Syncing status '${finalStatus}' to product ${updatedBundle.shopifyProductId}`,
-  );
-  await syncFpbProductStatus(
-    admin,
-    updatedBundle.shopifyProductId,
-    bundleId,
-    finalStatus,
-    updatedBundle.name,
-    updatedBundle.description || "",
-  );
-
   const bundleParentVariantId = await getBundleProductVariantId(
     admin,
     updatedBundle.shopifyProductId,

@@ -15,12 +15,10 @@ import {
   writeBundleConfigPageMetafield,
 } from "../widget-installation/widget-full-page-bundle.server";
 import { syncThemeColors } from "../theme-colors.server";
-import { syncFpbProductStatus } from "../../routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/product-status.server";
 import { buildFullPageBundleMetafieldConfig } from "../../routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/shared.server";
 import {
   buildSyncBundleConfiguration,
 } from "../../routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/runtime-config.server";
-import { syncBundleProductToShopify } from "../../routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/product-sync.server";
 
 export type StorefrontSyncReason = "save" | "retry" | "sync_bundle" | "preview";
 
@@ -211,14 +209,6 @@ async function syncFullPageBundleFromDb(
     return stats;
   }
 
-  await syncFpbProductStatus(
-    admin,
-    bundle.shopifyProductId,
-    bundle.id,
-    bundle.status,
-    bundle.name,
-    bundle.description || "",
-  );
   const bundleConfig = buildFullPageBundleMetafieldConfig(bundle);
   await updateStandardMetafields(admin, bundle.shopifyProductId, bundleConfig);
   await updateBundleProductMetafields(admin, bundle.shopifyProductId, bundleConfig);
@@ -244,24 +234,7 @@ async function syncProductPageBundleFromDb(
     return stats;
   }
 
-  const productSyncResult = await syncBundleProductToShopify(
-    admin,
-    bundle.shopifyProductId,
-    bundle.status,
-    bundle.name,
-    bundle.description,
-    bundle.id,
-  );
   stats.productState = true;
-  if (
-    productSyncResult.handle &&
-    productSyncResult.handle !== bundle.shopifyProductHandle
-  ) {
-    await (db.bundle as any).update({
-      where: { id: bundle.id },
-      data: { shopifyProductHandle: productSyncResult.handle },
-    });
-  }
 
   const bundleConfig = buildSyncBundleConfiguration(bundle, bundle.shopifyProductId);
   await updateStandardMetafields(admin, bundle.shopifyProductId, bundleConfig);

@@ -9,7 +9,7 @@ import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
 } from "../../../../services/bundles/metafield-sync.server";
-import { calculateBundlePrice } from "../../../../services/bundles/pricing-calculation.server";
+import { ensureBundleParentProduct } from "../../../../services/bundles/bundle-parent-product.server";
 import {
   convertBundleToStandardMetafields,
   updateProductStandardMetafields,
@@ -161,121 +161,28 @@ export async function handleSyncBundle(
     // 5b. Write bundle config metafield on the new page (non-fatal)
     await writeBundleConfigPageMetafield(admin, result.pageId ?? null, bundle);
 
-    // 6. Ensure a Shopify product exists — required for Cart Transform MERGE.
-    //    If the bundle was created before product auto-creation was added (or the product was
-    //    deleted), create one now and wire up the URL redirect.
-    let shopifyProductId = bundle.shopifyProductId;
-    if (!shopifyProductId) {
-      AppLogger.info(
-        "[SYNC_BUNDLE] No Shopify product — creating one for Cart Transform MERGE",
-        { bundleId },
-      );
-      try {
-        const bundlePrice = await calculateBundlePrice(admin, bundle);
-        const createResponse = await admin.graphql(
-          `
-          mutation CreateBundleProduct($input: ProductInput!) {
-            productCreate(input: $input) {
-              product {
-                id handle
-                variants(first: 1) { edges { node { id } } }
-              }
-              userErrors { field message }
-            }
-          }
-        `,
-          {
-            variables: {
-              input: {
-                title: bundle.name,
-                handle: `bundle-${bundle.id}`,
-                productType: "Bundle",
-                vendor: "Bundle Builder",
-                status: "DRAFT",
-                descriptionHtml:
-                  bundle.description || `${bundle.name} - Bundle Product`,
-                tags: ["WP-Bundles"],
-              },
-            },
-          },
-        );
-        const createData = (await createResponse.json()) as {
-          data?: Record<string, any>;
-        };
-        const productErrors = createData.data?.productCreate?.userErrors ?? [];
-        if (productErrors.length > 0) {
-          AppLogger.error(
-            "[SYNC_BUNDLE] Failed to create Shopify product",
-            { bundleId },
-            productErrors,
-          );
-        } else {
-          shopifyProductId =
-            createData.data?.productCreate?.product?.id ?? null;
-          if (shopifyProductId) {
-            // Set price and inventory policy on the auto-created default variant
-            // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
-            const defaultVariantId =
-              createData.data?.productCreate?.product?.variants?.edges?.[0]
-                ?.node?.id;
-            if (defaultVariantId && shopifyProductId) {
-              await admin.graphql(
-                `
-                mutation UpdateBundleVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-                  productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-                    productVariants { id price }
-                    userErrors { field message }
-                  }
-                }
-              `,
-                {
-                  variables: {
-                    productId: shopifyProductId,
-                    variants: [
-                      {
-                        id: defaultVariantId,
-                        price: bundlePrice,
-                        inventoryPolicy: "CONTINUE",
-                      },
-                    ],
-                  },
-                },
-              );
-            }
-            await db.bundle.update({
-              where: { id: bundleId },
-              data: {
-                shopifyProductId,
-                shopifyProductHandle: `bundle-${bundleId}`,
-              },
-            });
-            // Create URL redirect /products/{handle} → /pages/{pageHandle} (non-fatal)
-            if (result.pageHandle) {
-              createProductPageRedirect(
-                admin,
-                shopifyProductId,
-                result.pageHandle,
-              ).catch(() => {});
-            }
-            AppLogger.info("[SYNC_BUNDLE] Created Shopify product for bundle", {
-              bundleId,
-              shopifyProductId,
-            });
-          }
-        }
-      } catch (createError) {
-        AppLogger.error(
-          "[SYNC_BUNDLE] Exception creating Shopify product (non-fatal)",
-          { bundleId },
-          createError as Error,
-        );
-      }
+    // 6. Ensure the shared neutral parent product contract.
+    const parent = await ensureBundleParentProduct({
+      admin,
+      shopDomain: session.shop,
+      appUrl: process.env.SHOPIFY_APP_URL,
+      bundle,
+    });
+    const shopifyProductId = parent.productId;
+    if (parent.created && result.pageHandle) {
+      createProductPageRedirect(
+        admin,
+        shopifyProductId,
+        result.pageHandle,
+      ).catch(() => {});
     }
 
     // 7. Re-run metafield operations from DB-authoritative state (if shopifyProductId exists)
     if (shopifyProductId) {
       const bundleConfig = buildFullPageBundleMetafieldConfig({
         ...bundle,
+        shopifyProductId,
+        shopifyProductHandle: parent.handle,
         shopifyPageHandle: result.pageHandle,
       });
 
