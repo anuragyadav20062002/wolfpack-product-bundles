@@ -58,8 +58,10 @@ export const modalSlotTemplateMethods = {
 
   // Create an empty state card for a step (shown when no products selected)
   createEmptyStateCard(step, stepIndex, instanceIndex = 0) {
-    const stepBox = document.createElement('div');
+    const stepBox = document.createElement('button');
+    stepBox.type = 'button';
     stepBox.dataset.stepIndex = stepIndex;
+    stepBox.dataset.cardIndex = instanceIndex;
 
     stepBox.className = 'step-box bw-slot-card bw-slot-card--empty';
 

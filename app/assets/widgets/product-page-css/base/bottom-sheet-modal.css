@@ -647,6 +647,7 @@
 }
 
 .bw-slot-card {
+  appearance: none;
   border-radius: var(--bundle-state-card-border-radius, 12px);
   overflow: hidden;
   cursor: pointer;
@@ -655,4 +656,7 @@
     box-shadow 0.2s ease;
   position: relative;
   background: var(--bundle-empty-state-card-bg, #ffffff);
+  color: inherit;
+  font: inherit;
+  padding: 0;
 }

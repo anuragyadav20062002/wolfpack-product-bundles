@@ -230,9 +230,9 @@ toggle or alternate-value behavior.
 | Q02 | Narrow/tablet/wide hosts | 360, 768, 1440, and real wider product-form placement | **P** PLS7 | **P** PG08 | **P** HS09/HSP1 | **P** VS04/final regression |
 | Q03 | No overflow/clipping/overlap | Document and component overflow remain zero | **P** | **P** | **P** | **P** |
 | Q04 | Cross-template CSS/DOM isolation | Only the selected shell and stylesheet own the page | **P** PLS6/final regression | **P** final regression | **P** final regression | **P** final regression |
-| Q05 | Keyboard access for core controls | Tab/Enter/Space reach all relevant actions | **S** Source coverage for modal focus and keyboard handling added via unit tests; template replay pending | **P** PG11-keyboard-accessibility-evidence | **S** Source coverage for modal focus and keyboard handling added via unit tests; focus containment replay still required | **S** Source coverage for modal focus and keyboard handling added via unit tests; focus containment replay still required |
-| Q06 | Console and app-owned request health | No unexplained app-owned errors in each feature replay | **S** Captured for selected rows | **S** Captured for selected rows | **P** HS07/HS08 | **P** VS11 |
-| Q07 | Theme typography and selector leakage | Theme styles do not distort the template | **S** Visual states proven; systematic computed sweep absent | **S** Visual states proven; systematic computed sweep absent | **P** HS01/HS02/HS04 | **S** Visual states proven; systematic computed sweep absent |
+| Q05 | Keyboard access for core controls | Tab/Enter/Space reach all relevant actions | **S** Source coverage for modal focus and keyboard handling added via unit tests; template replay pending | **P** PG11-keyboard-accessibility-evidence | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) |
+| Q06 | Console and app-owned request health | No unexplained app-owned errors in each feature replay | **S** Captured for selected rows | **S** Captured for selected rows | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) |
+| Q07 | Theme typography and selector leakage | Theme styles do not distort the template | **S** Visual states proven; systematic computed sweep absent | **S** Visual states proven; systematic computed sweep absent | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) |
 
 ## Final Reconciliation Result
 
@@ -249,6 +249,10 @@ The agent-store PPB fixture was replayed through all four saved designs with dir
 
 All four designs served widget `5.0.174`, loaded their active stylesheet through Shopify CDN, and restored Product Grid after the replay. This replay revalidates the existing template-shell, responsive, step/category, selection, discount-progress, and validation-toast rows. It does not promote the explicitly deferred `S` or `T` feature permutations below.
 
+The later Q05-Q07 modal-slot quality replay served widget `5.0.181` and
+revalidated Horizontal and Vertical Slots after the keyboard and responsive
+focus fixes documented in the linked evidence note.
+
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
 template isolation, and the current desktop/mobile fixtures. Product Grid PG09
@@ -264,14 +268,14 @@ Final evidence counts across the 119 feature rows:
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Product List | 46 | 15 | 43 | 2 | 1 | 12 |
 | Product Grid | 42 | 15 | 49 | 0 | 1 | 12 |
-| Horizontal Slots | 58 | 11 | 45 | 0 | 4 | 1 |
-| Vertical Slots | 44 | 20 | 51 | 0 | 3 | 1 |
+| Horizontal Slots | 59 | 10 | 45 | 0 | 4 | 1 |
+| Vertical Slots | 46 | 18 | 51 | 0 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **190**
-- Shared/partial: **61**
+- Proven: **193**
+- Shared/partial: **58**
 - Not tested: **188**
 - EB-absent: **2**
 - Accepted divergence: **9**
@@ -291,7 +295,7 @@ High-risk missing evidence is concentrated in:
 6. Bundle Visibility, browsed-product preselection, subscriptions/selling plans,
    and cart-line discount display;
 7. alternate global PPB control values and localized/custom text;
-8. direct Vertical Slots inventory, variant, modal-focus, and delayed-load proof.
+8. direct Vertical Slots inventory, variant, and delayed-load proof.
 
 Those rows are being completed through the active functional-parity goal. The
 earlier storefront visual replay remains valid, but it is not the completion

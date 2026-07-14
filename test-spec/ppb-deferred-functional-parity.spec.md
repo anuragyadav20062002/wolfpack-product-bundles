@@ -50,6 +50,8 @@ Close every Product Page Bundle feature-to-storefront matrix cell currently mark
 | 9 | Product descriptions stay hidden | Products with populated plain-text and HTML descriptions in every PPB template | Product cards, rows, slots, and selected-item surfaces never render merchant product descriptions or description controls | Product detail data may remain available to non-card consumers |
 | 10 | Selected cards have no tick badges | Select and deselect products in every PPB template | Quantity controls, selected styling, and totals update without rendering a checkmark overlay on any card or selected item | Stale overlays are removed during an in-place quantity update |
 | 11 | Loaded empty category-step terminates loading | Advance from a populated category-step into a category-step whose product load resolves empty | The empty-state message renders after one request; the renderer does not recursively reload or freeze the storefront | Covers R07 with an empty category |
+| 12 | Modal slot keyboard controls | Render empty and filled Horizontal/Vertical slot cards, then activate the filled card with Enter and Space | Empty slots and remove actions are labelled native controls; filled slots reopen from either activation key | Covers Q05 for both modal templates |
+| 13 | Responsive modal focus lifecycle | Open a modal where the desktop close control is breakpoint-hidden and the mobile close control is visible, then close it after the main slots rerender | Initial focus skips the hidden control, lands on the visible close control, and focus returns to the opener after the slot rerender | Covers mobile Q05 focus behavior |
 
 ## Acceptance Criteria
 

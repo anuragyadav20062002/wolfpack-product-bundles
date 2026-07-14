@@ -53,6 +53,7 @@ _isElementVisibleForFocus(element) {
   if (!element || typeof element !== 'object') return false;
   if (element.disabled === true) return false;
   if (element.getAttribute && element.getAttribute('aria-hidden') === 'true') return false;
+  if (typeof element.getClientRects === 'function' && element.getClientRects().length === 0) return false;
 
   const modal = this.elements?.modal;
   if (modal && typeof modal.contains === 'function' && !modal.contains(element)) return false;
@@ -88,16 +89,35 @@ _captureActiveElementBeforeModalOpen() {
   const activeElement = globalThis.document?.activeElement;
   if (activeElement && typeof activeElement.focus === 'function') {
     this._modalOriginFocusElement = activeElement;
+    this._modalOriginFocusKey = {
+      stepIndex: activeElement.dataset?.stepIndex,
+      cardIndex: activeElement.dataset?.cardIndex,
+      variantId: activeElement.dataset?.variantId,
+    };
   } else {
     this._modalOriginFocusElement = null;
+    this._modalOriginFocusKey = null;
   }
 },
 
 _restoreActiveElementAfterModalClose() {
   const previousFocus = this._modalOriginFocusElement;
+  const previousFocusKey = this._modalOriginFocusKey;
   this._modalOriginFocusElement = null;
-  if (previousFocus && typeof previousFocus.focus === 'function') {
-    previousFocus.focus();
+  this._modalOriginFocusKey = null;
+
+  let nextFocus = previousFocus;
+  if (previousFocus?.isConnected === false && previousFocusKey?.stepIndex !== undefined) {
+    const candidates = this.elements?.stepsContainer?.querySelectorAll?.('[data-step-index]') || [];
+    nextFocus = [...candidates].find((candidate) => (
+      candidate.dataset?.stepIndex === previousFocusKey.stepIndex
+      && (previousFocusKey.cardIndex === undefined || candidate.dataset?.cardIndex === previousFocusKey.cardIndex)
+      && (previousFocusKey.variantId === undefined || candidate.dataset?.variantId === previousFocusKey.variantId)
+    ));
+  }
+
+  if (nextFocus && typeof nextFocus.focus === 'function') {
+    nextFocus.focus();
   }
 },
 
@@ -179,12 +199,12 @@ closeModal() {
   if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
   document.body.style.overflow = '';
   this.setBottomSheetVisibility(false);
-  this._restoreActiveElementAfterModalClose();
 
   // Update main UI
   this.renderSteps();
   this.updateAddToCartButton();
   this.updateFooterMessaging();
+  this._restoreActiveElementAfterModalClose();
 },
 
 validateStepCondition(stepIndex, productId, newQuantity) {

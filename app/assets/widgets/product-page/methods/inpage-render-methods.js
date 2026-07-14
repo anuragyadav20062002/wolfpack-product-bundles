@@ -10,6 +10,18 @@ function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
 
+function makeSlotCardKeyboardAccessible(card, activate) {
+  card.setAttribute('role', 'button');
+  card.tabIndex = 0;
+  card.addEventListener('click', activate);
+  card.addEventListener('keydown', (event) => {
+    if (event.target && event.target !== card) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    activate();
+  });
+}
+
 export function resolveSelectedSlotTitle(title, isVertical) {
   const normalizedTitle = String(title || '');
   if (isVertical || normalizedTitle.length <= 25) return normalizedTitle;
@@ -340,7 +352,8 @@ createSelectedProductCard(item, cardIndex) {
 
   // Remove button — hidden for default (non-removable) steps
   if (!isDefault) {
-    const clearBadge = document.createElement('div');
+    const clearBadge = document.createElement('button');
+    clearBadge.type = 'button';
     clearBadge.className = 'step-clear-badge';
     clearBadge.innerHTML = `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -349,6 +362,7 @@ createSelectedProductCard(item, cardIndex) {
       </svg>
     `;
     clearBadge.title = 'Remove this product';
+    clearBadge.setAttribute('aria-label', clearBadge.title);
     clearBadge.addEventListener('click', (e) => {
       e.stopPropagation();
       this.removeProductFromSelection(stepIndex, variantId);
@@ -387,7 +401,7 @@ createSelectedProductCard(item, cardIndex) {
 
   // Filled slots stay editable. Selection validation still runs inside the
   // picker, while reopening lets shoppers replace an exact-one choice.
-  stepBox.addEventListener('click', () => this.openModal(stepIndex));
+  makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
 
   return stepBox;
 },
@@ -489,9 +503,12 @@ createFreeGiftSlotCard(step, stepIndex) {
       stepBox.appendChild(imageWrapper);
 
       // Remove button
-      const clearBadge = document.createElement('div');
+      const clearBadge = document.createElement('button');
+      clearBadge.type = 'button';
       clearBadge.className = 'step-clear-badge';
       clearBadge.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#f3f4f6"/><path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      clearBadge.title = 'Remove this product';
+      clearBadge.setAttribute('aria-label', clearBadge.title);
       clearBadge.addEventListener('click', (e) => {
         e.stopPropagation();
         this.removeProductFromSelection(stepIndex, variantId);
@@ -509,7 +526,7 @@ createFreeGiftSlotCard(step, stepIndex) {
 
       // Ribbon overlay even in filled state
       stepBox.appendChild(this._createRibbonSvg());
-      stepBox.addEventListener('click', () => this.openModal(stepIndex));
+      makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
       return stepBox;
     }
   }
@@ -544,7 +561,7 @@ createFreeGiftSlotCard(step, stepIndex) {
   stepBox.appendChild(this._createRibbonSvg());
 
   if (unlocked) {
-    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+    makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
   }
 
   return stepBox;

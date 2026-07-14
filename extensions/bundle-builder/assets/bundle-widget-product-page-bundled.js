@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.178
+ * Version : 5.0.181
  * Built   : 2026-07-14
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.178';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.181';
 (function() {
   'use strict';
 
@@ -3872,8 +3872,10 @@ const modalSlotTemplateMethods = {
   },
 
   createEmptyStateCard(step, stepIndex, instanceIndex = 0) {
-    const stepBox = document.createElement('div');
+    const stepBox = document.createElement('button');
+    stepBox.type = 'button';
     stepBox.dataset.stepIndex = stepIndex;
+    stepBox.dataset.cardIndex = instanceIndex;
 
     stepBox.className = 'step-box bw-slot-card bw-slot-card--empty';
 
@@ -5852,6 +5854,7 @@ _isElementVisibleForFocus(element) {
   if (!element || typeof element !== 'object') return false;
   if (element.disabled === true) return false;
   if (element.getAttribute && element.getAttribute('aria-hidden') === 'true') return false;
+  if (typeof element.getClientRects === 'function' && element.getClientRects().length === 0) return false;
 
   const modal = this.elements?.modal;
   if (modal && typeof modal.contains === 'function' && !modal.contains(element)) return false;
@@ -5887,16 +5890,35 @@ _captureActiveElementBeforeModalOpen() {
   const activeElement = globalThis.document?.activeElement;
   if (activeElement && typeof activeElement.focus === 'function') {
     this._modalOriginFocusElement = activeElement;
+    this._modalOriginFocusKey = {
+      stepIndex: activeElement.dataset?.stepIndex,
+      cardIndex: activeElement.dataset?.cardIndex,
+      variantId: activeElement.dataset?.variantId,
+    };
   } else {
     this._modalOriginFocusElement = null;
+    this._modalOriginFocusKey = null;
   }
 },
 
 _restoreActiveElementAfterModalClose() {
   const previousFocus = this._modalOriginFocusElement;
+  const previousFocusKey = this._modalOriginFocusKey;
   this._modalOriginFocusElement = null;
-  if (previousFocus && typeof previousFocus.focus === 'function') {
-    previousFocus.focus();
+  this._modalOriginFocusKey = null;
+
+  let nextFocus = previousFocus;
+  if (previousFocus?.isConnected === false && previousFocusKey?.stepIndex !== undefined) {
+    const candidates = this.elements?.stepsContainer?.querySelectorAll?.('[data-step-index]') || [];
+    nextFocus = [...candidates].find((candidate) => (
+      candidate.dataset?.stepIndex === previousFocusKey.stepIndex
+      && (previousFocusKey.cardIndex === undefined || candidate.dataset?.cardIndex === previousFocusKey.cardIndex)
+      && (previousFocusKey.variantId === undefined || candidate.dataset?.variantId === previousFocusKey.variantId)
+    ));
+  }
+
+  if (nextFocus && typeof nextFocus.focus === 'function') {
+    nextFocus.focus();
   }
 },
 
@@ -5972,11 +5994,11 @@ closeModal() {
   if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
   document.body.style.overflow = '';
   this.setBottomSheetVisibility(false);
-  this._restoreActiveElementAfterModalClose();
 
   this.renderSteps();
   this.updateAddToCartButton();
   this.updateFooterMessaging();
+  this._restoreActiveElementAfterModalClose();
 },
 
 validateStepCondition(stepIndex, productId, newQuantity) {
@@ -7015,6 +7037,18 @@ function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
 
+function makeSlotCardKeyboardAccessible(card, activate) {
+  card.setAttribute('role', 'button');
+  card.tabIndex = 0;
+  card.addEventListener('click', activate);
+  card.addEventListener('keydown', (event) => {
+    if (event.target && event.target !== card) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    activate();
+  });
+}
+
 function resolveSelectedSlotTitle(title, isVertical) {
   const normalizedTitle = String(title || '');
   if (isVertical || normalizedTitle.length <= 25) return normalizedTitle;
@@ -7338,7 +7372,8 @@ createSelectedProductCard(item, cardIndex) {
   stepBox.dataset.cardIndex = cardIndex;
 
   if (!isDefault) {
-    const clearBadge = document.createElement('div');
+    const clearBadge = document.createElement('button');
+    clearBadge.type = 'button';
     clearBadge.className = 'step-clear-badge';
     clearBadge.innerHTML = `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -7347,6 +7382,7 @@ createSelectedProductCard(item, cardIndex) {
       </svg>
     `;
     clearBadge.title = 'Remove this product';
+    clearBadge.setAttribute('aria-label', clearBadge.title);
     clearBadge.addEventListener('click', (e) => {
       e.stopPropagation();
       this.removeProductFromSelection(stepIndex, variantId);
@@ -7380,7 +7416,7 @@ createSelectedProductCard(item, cardIndex) {
   productTitle.title = product.title;
   stepBox.appendChild(productTitle);
 
-  stepBox.addEventListener('click', () => this.openModal(stepIndex));
+  makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
 
   return stepBox;
 },
@@ -7477,9 +7513,12 @@ createFreeGiftSlotCard(step, stepIndex) {
       imageWrapper.appendChild(img);
       stepBox.appendChild(imageWrapper);
 
-      const clearBadge = document.createElement('div');
+      const clearBadge = document.createElement('button');
+      clearBadge.type = 'button';
       clearBadge.className = 'step-clear-badge';
       clearBadge.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#f3f4f6"/><path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      clearBadge.title = 'Remove this product';
+      clearBadge.setAttribute('aria-label', clearBadge.title);
       clearBadge.addEventListener('click', (e) => {
         e.stopPropagation();
         this.removeProductFromSelection(stepIndex, variantId);
@@ -7496,7 +7535,7 @@ createFreeGiftSlotCard(step, stepIndex) {
       stepBox.appendChild(productTitle);
 
       stepBox.appendChild(this._createRibbonSvg());
-      stepBox.addEventListener('click', () => this.openModal(stepIndex));
+      makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
       return stepBox;
     }
   }
@@ -7529,7 +7568,7 @@ createFreeGiftSlotCard(step, stepIndex) {
   stepBox.appendChild(this._createRibbonSvg());
 
   if (unlocked) {
-    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+    makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
   }
 
   return stepBox;
