@@ -354,11 +354,21 @@ _createCascadeStepFlowHeader() {
       this.renderSteps();
       this.renderFooter();
       this.updateAddToCartButton();
+      this._focusCascadeStepFlowButton(stepIndex);
     });
     header.appendChild(button);
   });
 
   return header;
+},
+
+_focusCascadeStepFlowButton(stepIndex) {
+  const buttons = this.elements?.stepsContainer
+    ?.querySelectorAll?.('.bw-ppb-cascade-step-flow__step') || [];
+  const target = buttons[stepIndex];
+  if (target && typeof target.focus === 'function') {
+    target.focus();
+  }
 },
 
 navigateCascadeStep(direction) {
@@ -379,6 +389,7 @@ navigateCascadeStep(direction) {
   this.renderSteps();
   this.renderFooter();
   this.updateAddToCartButton();
+  this._focusCascadeStepFlowButton(this.currentStepIndex);
   return true;
 },
 

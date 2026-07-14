@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.181
+ * Version : 5.0.182
  * Built   : 2026-07-14
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.181';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.182';
 (function() {
   'use strict';
 
@@ -6846,11 +6846,21 @@ _createCascadeStepFlowHeader() {
       this.renderSteps();
       this.renderFooter();
       this.updateAddToCartButton();
+      this._focusCascadeStepFlowButton(stepIndex);
     });
     header.appendChild(button);
   });
 
   return header;
+},
+
+_focusCascadeStepFlowButton(stepIndex) {
+  const buttons = this.elements?.stepsContainer
+    ?.querySelectorAll?.('.bw-ppb-cascade-step-flow__step') || [];
+  const target = buttons[stepIndex];
+  if (target && typeof target.focus === 'function') {
+    target.focus();
+  }
 },
 
 navigateCascadeStep(direction) {
@@ -6871,6 +6881,7 @@ navigateCascadeStep(direction) {
   this.renderSteps();
   this.renderFooter();
   this.updateAddToCartButton();
+  this._focusCascadeStepFlowButton(this.currentStepIndex);
   return true;
 },
 

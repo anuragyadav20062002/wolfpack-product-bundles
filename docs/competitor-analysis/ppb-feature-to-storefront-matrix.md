@@ -230,9 +230,9 @@ toggle or alternate-value behavior.
 | Q02 | Narrow/tablet/wide hosts | 360, 768, 1440, and real wider product-form placement | **P** PLS7 | **P** PG08 | **P** HS09/HSP1 | **P** VS04/final regression |
 | Q03 | No overflow/clipping/overlap | Document and component overflow remain zero | **P** | **P** | **P** | **P** |
 | Q04 | Cross-template CSS/DOM isolation | Only the selected shell and stylesheet own the page | **P** PLS6/final regression | **P** final regression | **P** final regression | **P** final regression |
-| Q05 | Keyboard access for core controls | Tab/Enter/Space reach all relevant actions | **S** Source coverage for modal focus and keyboard handling added via unit tests; template replay pending | **P** PG11-keyboard-accessibility-evidence | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) |
-| Q06 | Console and app-owned request health | No unexplained app-owned errors in each feature replay | **S** Captured for selected rows | **S** Captured for selected rows | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) |
-| Q07 | Theme typography and selector leakage | Theme styles do not distort the template | **S** Visual states proven; systematic computed sweep absent | **S** Visual states proven; systematic computed sweep absent | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) |
+| Q05 | Keyboard access for core controls | Tab/Enter/Space reach all relevant actions | **P** [Q05-Q07 in-page quality evidence](ppb-deferred-functional-parity/Q05-Q07-inpage-quality-evidence.md) | **P** PG11-keyboard-accessibility-evidence | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) |
+| Q06 | Console and app-owned request health | No unexplained app-owned errors in each feature replay | **P** [Q05-Q07 in-page quality evidence](ppb-deferred-functional-parity/Q05-Q07-inpage-quality-evidence.md) | **P** [Q05-Q07 in-page quality evidence](ppb-deferred-functional-parity/Q05-Q07-inpage-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) |
+| Q07 | Theme typography and selector leakage | Theme styles do not distort the template | **P** [Q05-Q07 in-page quality evidence](ppb-deferred-functional-parity/Q05-Q07-inpage-quality-evidence.md) | **P** [Q05-Q07 in-page quality evidence](ppb-deferred-functional-parity/Q05-Q07-inpage-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) | **P** [Q05-Q07 modal-slot quality evidence](ppb-deferred-functional-parity/Q05-Q07-modal-slot-quality-evidence.md) |
 
 ## Final Reconciliation Result
 
@@ -266,16 +266,16 @@ Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 46 | 15 | 43 | 2 | 1 | 12 |
-| Product Grid | 42 | 15 | 49 | 0 | 1 | 12 |
+| Product List | 49 | 12 | 43 | 2 | 1 | 12 |
+| Product Grid | 44 | 13 | 49 | 0 | 1 | 12 |
 | Horizontal Slots | 59 | 10 | 45 | 0 | 4 | 1 |
 | Vertical Slots | 46 | 18 | 51 | 0 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **193**
-- Shared/partial: **58**
+- Proven: **198**
+- Shared/partial: **53**
 - Not tested: **188**
 - EB-absent: **2**
 - Accepted divergence: **9**
@@ -313,7 +313,7 @@ whether implementation is required.
 3. **Cart contracts:** S09-S15 for PG and VS first, then any changed template.
 4. **Bundle-level features:** G01-G08.
 5. **Global controls/design/language:** G09-G21.
-6. **Final quality sweep:** Q05-Q07 and all four-template regression.
+6. **Final quality sweep:** Q05-Q07 are complete; rerun all four templates after the remaining functional rows close.
 
 Every completed row must link its durable evidence note from this matrix. If a
 row is proven inapplicable or EB-absent, record the EB Admin/runtime evidence

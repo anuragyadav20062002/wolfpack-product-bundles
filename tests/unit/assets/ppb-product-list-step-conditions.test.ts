@@ -7,6 +7,7 @@ const {
   formatProductPageStepValidationToast,
 } = require('../../../app/assets/widgets/product-page/methods/modal-state-methods.js');
 const {
+  ProductPageLayoutShellMethods,
   shouldUseCascadeStepFlow,
   getCascadeStepNavigationState,
 } = require('../../../app/assets/widgets/product-page/methods/layout-shell-methods.js');
@@ -152,6 +153,39 @@ describe('PPB Product List step conditions', () => {
     })).toEqual({ targetStepIndex: 0, blocked: false, isFinal: false });
   });
 
+  it('restores focus to the active Product List step after its step strip rerenders', () => {
+    const originalDocument = global.document;
+    const replacementButtons = [{ focus: jest.fn() }, { focus: jest.fn() }];
+    global.document = createStepFlowDocument() as unknown as Document;
+    const context = {
+      ...ProductPageLayoutShellMethods,
+      currentStepIndex: 0,
+      selectedBundle: {
+        steps: [{ name: 'Step 1' }, { name: 'Step 2' }],
+      },
+      elements: {
+        stepsContainer: {
+          querySelectorAll: jest.fn(() => replacementButtons),
+        },
+      },
+      validateStep: jest.fn(() => true),
+      isStepAccessible: jest.fn(() => true),
+      renderSteps: jest.fn(),
+      renderFooter: jest.fn(),
+      updateAddToCartButton: jest.fn(),
+    } as any;
+
+    try {
+      const header = context._createCascadeStepFlowHeader();
+      header.children[1].dispatch('click');
+
+      expect(context.currentStepIndex).toBe(1);
+      expect(replacementButtons[1].focus).toHaveBeenCalledTimes(1);
+    } finally {
+      global.document = originalDocument;
+    }
+  });
+
   it('reports the final Product List step instead of navigating past it', () => {
     expect(getCascadeStepNavigationState({
       currentStepIndex: 1,
@@ -181,3 +215,30 @@ describe('PPB Product List step conditions', () => {
     })).toBe('Add exactly 01 products on this step');
   });
 });
+
+function createStepFlowDocument() {
+  return {
+    createElement: (tagName: string) => {
+      const listeners = new Map<string, () => void>();
+      return {
+        tagName: tagName.toUpperCase(),
+        children: [] as any[],
+        className: '',
+        classList: { toggle: jest.fn() },
+        disabled: false,
+        setAttribute: jest.fn(),
+        addEventListener(name: string, listener: () => void) {
+          listeners.set(name, listener);
+        },
+        appendChild(child: any) {
+          this.children.push(child);
+          return child;
+        },
+        dispatch(name: string) {
+          listeners.get(name)?.();
+        },
+        set innerHTML(_value: string) {},
+      };
+    },
+  };
+}
