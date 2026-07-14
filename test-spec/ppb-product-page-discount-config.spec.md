@@ -1,3 +1,29 @@
+---
+schema_version: 1
+id: ppb-product-page-discount-config
+title: PPB Product Page Discount Messaging Config Parity
+type: test-spec
+status: active
+summary: Verify PPB footer discount messaging toggles, templates, and stepped milestone rendering.
+last_audited: 2026-07-14
+owners:
+  - engineering
+domains:
+  - storefront
+systems:
+  - product-page-widget
+source_paths:
+  - app/assets/widgets/product-page/methods/footer-modal-state-methods.js
+  - tests/unit/assets/ppb-product-page-footer-discount-messaging-toggle.test.ts
+related_docs: []
+tags:
+  - tdd
+  - discount-messaging
+keywords:
+  - step_based
+  - discount milestones
+---
+
 # Test Spec: PPB Product Page Discount Messaging Config Parity
 **Spec ID:** ppb-product-page-discount-config  **Created:** 2026-07-13
 
@@ -19,7 +45,7 @@ Verify PPB Product Page discount messaging follows bundle-side toggles and messa
 | 9 | Locale fallback for missing locale | `ruleMessagesByLocale` lacks active locale | Footer falls back to default `ruleMessages` for active locale | Verifies D12 |
 
 ## Acceptance Criteria
-- [ ] Product Page footer discount messaging is hidden when the toggle is false.
-- [ ] Discount message and progress UI render when toggle is true and rules exist.
-- [ ] Product Page config lifecycle preserves explicit bundle messaging toggles.
-- [ ] Legacy fallback keeps discount messaging enabled when pricing is enabled and messaging payload is absent.
+- [x] Product Page footer discount messaging is hidden when the toggle is false.
+- [x] Discount message and progress UI render when toggle is true and rules exist.
+- [x] Product Page config lifecycle preserves explicit bundle messaging toggles.
+- [x] Legacy fallback keeps discount messaging enabled when pricing is enabled and messaging payload is absent.
