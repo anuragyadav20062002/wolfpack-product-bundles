@@ -8,6 +8,7 @@ import {
   updateBundleProductPrice,
 } from "../../../../services/bundles/pricing-calculation.server";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
+import { BundleStatus } from "../../../../constants/bundle";
 import { buildBundleProductDescriptionHtml } from "../../../../lib/bundle-product-description.server";
 import { buildBundleProductPlaceholderMediaInput } from "../../../../lib/bundle-product-media.server";
 import { buildGeneratedBundleProductMetadata } from "../../../../lib/bundle-product-data.server";
@@ -278,11 +279,11 @@ export async function handleSyncProduct(
       variables: {
         product: {
           ...productMetadata,
-          status: "DRAFT",
+          status: "UNLISTED",
           descriptionHtml: buildBundleProductDescriptionHtml({
             bundleName: bundle.name,
             customDescription: bundle.description,
-            status: bundle.status,
+            status: BundleStatus.UNLISTED,
           }),
           tags: ["WP-Bundles"],
         },
@@ -346,28 +347,6 @@ export async function handleSyncProduct(
       productId,
       "ppb-sync-product-create",
     );
-    const productSyncResult = await syncBundleProductToShopify(
-      admin,
-      productId,
-      bundle.status,
-      bundle.name,
-      bundle.description,
-      bundleId,
-      {
-        shopName,
-        mediaNodes: createdProduct?.media?.nodes,
-        skipMediaSync: true,
-      },
-    );
-    if (
-      productSyncResult.handle &&
-      productSyncResult.handle !== productHandle
-    ) {
-      await db.bundle.update({
-        where: { id: bundleId },
-        data: { shopifyProductHandle: productSyncResult.handle },
-      });
-    }
   } else {
     // Update existing bundle product price if configuration changed
     try {

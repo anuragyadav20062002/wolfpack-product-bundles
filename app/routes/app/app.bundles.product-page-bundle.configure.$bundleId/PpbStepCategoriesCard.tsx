@@ -1,3 +1,4 @@
+import { applyPpbCategoryVariantFlags } from "../../../lib/bundle-config/common-configure-page-model";
 import { PpbCategoryAccordion } from "./PpbCategoryAccordion";
 import { usePpbConfigureContext } from "./PpbConfigureContext";
 import { getStepCategories, PlusIcon } from "./PpbStepSetupShared";
@@ -77,29 +78,47 @@ export function PpbStepCategoriesCard({ step }: { step: any }) {
         <PlusIcon />
         Add Category
       </button>
+      <PpbCategoryVariantControlsSlot step={step} categories={stepCategories} />
+    </div>
+  );
+}
+
+function PpbCategoryVariantControlsSlot({
+  step,
+  categories,
+}: {
+  step: any;
+  categories: any[];
+}) {
+  const { markAsDirty, stepsState } = usePpbConfigureContext();
+
+  return (
+    <>
       <div style={{ margin: "12px 0" }}>
         <s-divider />
       </div>
       <s-checkbox
         label="Display variants as individual products"
         checked={
-          (stepCategories.length > 0 &&
-            stepCategories.every(
+          (categories.length > 0 &&
+            categories.every(
               (category: any) =>
                 category.displayVariantsAsIndividualProducts === true,
             )) ||
           undefined
         }
-        onChange={(e) => {
-          const checked = (e.target as HTMLInputElement).checked;
-          const updated = stepCategories.map((category: any) => ({
-            ...category,
-            displayVariantsAsIndividualProducts: checked,
-          }));
-          stepsState.updateStepField(step.id, "StepCategory", updated);
+        onChange={(event) => {
+          const checked = (event.target as HTMLInputElement).checked;
+          stepsState.updateStepField(
+            step.id,
+            "StepCategory",
+            applyPpbCategoryVariantFlags(categories, {
+              displayVariantsAsIndividualProducts: checked,
+            }),
+          );
           markAsDirty();
         }}
       />
-    </div>
+    </>
   );
 }

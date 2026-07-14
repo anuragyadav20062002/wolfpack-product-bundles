@@ -2,7 +2,7 @@
 const { shouldAutoAdvanceProductPageStep } = require('../../../app/assets/widgets/product-page/methods/selection-methods.js');
 
 describe('PPB auto-next rule decision', () => {
-  it('does not auto-next for step rules', () => {
+  it('does not auto-next for step rules without explicit auto-next flag', () => {
     expect(shouldAutoAdvanceProductPageStep({
       quantity: 1,
       step: {
@@ -11,6 +11,18 @@ describe('PPB auto-next rule decision', () => {
         conditionValue: 1,
       },
     })).toBe(false);
+  });
+
+  it('auto-nexts for step rules with explicit auto-next configuration', () => {
+    expect(shouldAutoAdvanceProductPageStep({
+      quantity: 1,
+      step: {
+        conditionType: 'quantity',
+        conditionOperator: 'greater_than_or_equal_to',
+        conditionValue: 1,
+        autoNextStepOnConditionMet: true,
+      },
+    })).toBe(true);
   });
 
   it('does not auto-next for category rules when the category flag is disabled', () => {

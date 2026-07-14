@@ -51,10 +51,14 @@ export const bundleSetupItems = buildConfigureSetupItems("product_page");
 export const bundleVisibilityChildItems =
   buildBundleVisibilityChildItems("product_page");
 
+export const PRODUCT_PAGE_DEFAULT_TEMPLATE_SELECTION = {
+  presetId: "CASCADE",
+  layoutTemplate: "PDP_INPAGE",
+} as const;
+
 export const productPageTemplateOptions = [
   {
-    presetId: "CASCADE",
-    layoutTemplate: "PDP_INPAGE",
+    ...PRODUCT_PAGE_DEFAULT_TEMPLATE_SELECTION,
     label: "Product List",
     image: "/PPB-List.avif",
   },
@@ -77,6 +81,39 @@ export const productPageTemplateOptions = [
     image: "/PPB-VerticalSlots.avif",
   },
 ] as const;
+
+export function resolveProductPageTemplateSelection(
+  bundle:
+    | {
+        bundleDesignTemplate?: unknown;
+        bundleDesignPresetId?: unknown;
+      }
+    | null
+    | undefined,
+) {
+  const layoutTemplate =
+    typeof bundle?.bundleDesignTemplate === "string" &&
+    bundle.bundleDesignTemplate.trim()
+      ? bundle.bundleDesignTemplate.trim()
+      : null;
+  const presetId =
+    typeof bundle?.bundleDesignPresetId === "string" &&
+    bundle.bundleDesignPresetId.trim()
+      ? bundle.bundleDesignPresetId.trim()
+      : null;
+  const savedTemplate = productPageTemplateOptions.find(
+    (templateOption) =>
+      templateOption.layoutTemplate === layoutTemplate &&
+      templateOption.presetId === presetId,
+  );
+
+  return savedTemplate
+    ? {
+        layoutTemplate: savedTemplate.layoutTemplate,
+        presetId: savedTemplate.presetId,
+      }
+    : PRODUCT_PAGE_DEFAULT_TEMPLATE_SELECTION;
+}
 
 export const PPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
 

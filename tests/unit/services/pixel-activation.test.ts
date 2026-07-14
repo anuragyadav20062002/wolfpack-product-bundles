@@ -123,7 +123,45 @@ describe("activateUtmPixel", () => {
     // document.location.hostname (which can be null in Shopify's checkout sandbox)
     expect(graphql.mock.calls[1][1]).toEqual({
       variables: {
-        webPixel: { settings: { app_server_url: "https://app.example.com", shop_domain: "test.myshopify.com" } },
+        webPixel: {
+          settings: {
+            app_server_url: "https://app.example.com",
+            shop_domain: "test.myshopify.com",
+            custom_utm_parameters: "__none__",
+          },
+        },
+      },
+    });
+  });
+
+  it("keeps merchant custom UTM parameters comma-separated when creating the pixel", async () => {
+    const graphql = jest.fn()
+      .mockRejectedValueOnce(new Error("No web pixel was found"))
+      .mockResolvedValueOnce(
+        makeResponse({
+          data: {
+            webPixelCreate: {
+              webPixel: { id: "gid://shopify/WebPixel/2", settings: {} },
+              userErrors: [],
+            },
+          },
+        })
+      );
+
+    await activateUtmPixel(
+      makeAdmin(graphql),
+      "https://app.example.com",
+      "test.myshopify.com",
+      ["utm_influencer", "partner_id"],
+    );
+
+    expect(graphql.mock.calls[1][1]).toMatchObject({
+      variables: {
+        webPixel: {
+          settings: {
+            custom_utm_parameters: "utm_influencer,partner_id",
+          },
+        },
       },
     });
   });

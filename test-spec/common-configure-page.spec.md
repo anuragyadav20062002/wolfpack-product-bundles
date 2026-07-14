@@ -16,6 +16,11 @@ Verify the shared FPB/PPB configure page model and dispatch behavior without ass
 | 6 | PPB bundle link | shop plus product handle | Link model returns product URL and linked state | Visibility behavior |
 | 7 | App embed status parity | enabled and disabled states for both types | Same enabled/disabled label and tone per state | Shared status model |
 | 8 | Locale action gate | empty and non-empty locales | Empty locales disable multi-language action | Behavior helper |
+| 9 | FPB Step Setup model | `bundleType: full_page` | Step Flow, Step Setup, Category, Rules Configuration, and Step Config sections; no PPB-only category controls | Shared section contract |
+| 10 | PPB Step Setup model | `bundleType: product_page` | Same FPB-designed section sequence plus PPB variant controls in the category footer slot | PPB-only slot contract |
+| 11 | FPB Bundle Settings slots | `bundleType: full_page` | Shared default-products, quantity, summary text plus FPB-only product slots/slot icon | Bundle Settings adapter contract |
+| 12 | PPB Bundle Settings slots | `bundleType: product_page` | Shared default-products, quantity, summary text plus PPB-only variant selector, discount display, banner, CSS, subscription, and embed/place-widget slots | Bundle Settings adapter contract |
+| 13 | PPB category variant update | categories plus `displayVariantsAsIndividualProducts=true` | All categories update that PPB category field and preserve other category data | Shared slot behavior |
 
 ### ConfigureActionDispatch
 | # | Scenario | Input | Expected Output | Notes |

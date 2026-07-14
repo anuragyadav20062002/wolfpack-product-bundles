@@ -5,6 +5,7 @@ initializeDataStructures() {
 
   // Initialize selected products array (one object per step)
   this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
+  this.selectedProductCategoryIndexes = Array(stepsCount).fill(null).map(() => ({}));
 
   // Initialize step product data cache
   this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));

@@ -1,11 +1,9 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { Await, useLoaderData, useNavigate } from "@remix-run/react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
 import { navigateBackOrFallback } from "../../../lib/navigation";
 import type { loader } from "../app.attribution";
 import styles from "./AttributionRouteShell.module.css";
-import attributionStyles from "../../../styles/routes/app-attribution.module.css";
 import { AttributionDashboardSkeleton } from "./AttributionDashboardSkeleton";
-import "../../../components/analytics/shared/tokens.css";
 
 const AttributionDashboard = lazy(() => import("./AttributionDashboard"));
 const PixelStatusCard = lazy(() =>
@@ -16,22 +14,37 @@ const PixelStatusCard = lazy(() =>
 const DASHBOARD_IMPORT_DELAY_MS = 3000;
 
 function AttributionStatusPending() {
-  return <div aria-hidden="true" className={styles.statusPending} />;
+  return (
+    <div
+      className={styles.pixelStatusCard}
+      data-status="checking"
+      aria-busy="true"
+    >
+      <s-stack direction="inline" alignItems="center" justifyContent="space-between" gap="base">
+        <s-stack direction="inline" alignItems="center" gap="small">
+          <span className={styles.pixelStatusDot} aria-hidden="true" />
+          <h2 className={styles.pixelStatusTitle}>UTM Pixel Tracking</h2>
+          <s-badge tone="neutral">Checking</s-badge>
+        </s-stack>
+        <s-spinner size="base" />
+      </s-stack>
+    </div>
+  );
 }
 
 function AttributionCriticalFunnelHeader() {
   return (
-    <div className={attributionStyles.criticalHeroShell}>
+    <div className={styles.criticalHeroShell}>
       <section
-        className="wpb-card wpb-card--hero"
+        className={styles.criticalHeroCard}
         aria-labelledby="wpb-critical-funnel-hero-title"
       >
-        <header className="wpb-section-header">
+        <header className={styles.criticalHeroHeader}>
           <div>
-            <p className="wpb-label wpb-section-kicker">Bundle Funnel</p>
+            <p className={styles.criticalHeroKicker}>Bundle Funnel</p>
             <h2
               id="wpb-critical-funnel-hero-title"
-              className="wpb-section-title wpb-section-title--hero"
+              className={styles.criticalHeroTitle}
             >
               How shoppers move through your bundles
             </h2>
@@ -47,16 +60,39 @@ function AttributionCriticalStatus({
 }: {
   pixelStatus: Promise<{ active: boolean }>;
 }) {
+  const [status, setStatus] = useState<{ active: boolean } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus(null);
+
+    void pixelStatus
+      .then((nextStatus) => {
+        if (!cancelled) {
+          setStatus({ active: Boolean(nextStatus.active) });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStatus({ active: false });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pixelStatus]);
+
   return (
-    <div className={attributionStyles.pixelStatusBoundary}>
-      <div className={attributionStyles.pixelStatusShell}>
-        <Suspense fallback={<AttributionStatusPending />}>
-          <Await resolve={pixelStatus}>
-            {(status) => (
-              <PixelStatusCard pixelActive={Boolean(status.active)} />
-            )}
-          </Await>
-        </Suspense>
+    <div className={styles.pixelStatusBoundary}>
+      <div className={styles.pixelStatusShell}>
+        {status ? (
+          <Suspense fallback={<AttributionStatusPending />}>
+            <PixelStatusCard pixelActive={status.active} />
+          </Suspense>
+        ) : (
+          <AttributionStatusPending />
+        )}
       </div>
     </div>
   );

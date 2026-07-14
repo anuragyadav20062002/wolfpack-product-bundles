@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 5.0.123
- * Built   : 2026-07-11
+ * Version : 5.0.172
+ * Built   : 2026-07-13
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.123';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.172';
 (function (window) {
   'use strict';
 
@@ -39,28 +39,48 @@ const ConditionValidator = (function () {
   };
 
   /**
-   * Calculate the total quantity in a step AFTER a proposed update.
+   * Calculate the step total in a single condition metric AFTER a proposed update.
    *
    * Correctly handles both:
-   *  - Existing products: replaces their current quantity with newQuantity
+   *  - Existing products: replaces their current count with newQuantity
    *  - New products (not yet in currentSelections): adds newQuantity to existing total
    *
-   * @param {Record<string, number>} currentSelections  Current { productId → qty } map
+   * Supports quantity, amount, and weight semantics. For amount/weight conditions
+   * the `options` parameter accepts per-unit unit values for the target product.
+   *
+   * @param {Record<string, any>} currentSelections  Current { productId → value } map
    * @param {string}  targetProductId  The product whose quantity is being changed
    * @param {number}  newQuantity      The proposed new quantity (0 = remove)
-   * @returns {number}  Total quantity across all products in the step after the update
+   * @param {object}  options
+   * @param {string}  options.conditionType  'quantity' (default), 'amount', or 'weight'
+   * @param {number}  options.targetAmountPerUnit  Per-unit amount for the target product
+   * @param {number}  options.targetWeightPerUnit  Per-unit weight for the target product
+   * @returns {number}  Total across all products in the step after the update
    */
-  function calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity) {
+  function calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity, options = {}) {
     const selections = currentSelections || {};
+    const conditionType = _normalizeConditionType(options.conditionType);
+    const targetAmountPerUnit = Number(options.targetAmountPerUnit);
+    const targetWeightPerUnit = Number(options.targetWeightPerUnit);
+    const normalizedQuantity = Number(newQuantity) || 0;
 
-    // Start with the target product's new quantity (handles new products correctly).
-    let total = newQuantity;
+    let total = 0;
 
     // Add every OTHER product's existing quantity unchanged.
     for (const pid of Object.keys(selections)) {
       if (pid !== targetProductId) {
-        total += selections[pid] || 0;
+        total += _getSelectionValueByConditionType(selections[pid], conditionType);
       }
+    }
+
+    if (conditionType === 'amount') {
+      const perUnitAmount = Number.isFinite(targetAmountPerUnit) ? targetAmountPerUnit : 0;
+      total += perUnitAmount * normalizedQuantity;
+    } else if (conditionType === 'weight') {
+      const perUnitWeight = Number.isFinite(targetWeightPerUnit) ? targetWeightPerUnit : 0;
+      total += perUnitWeight * normalizedQuantity;
+    } else {
+      total += normalizedQuantity;
     }
 
     return total;
@@ -79,25 +99,38 @@ const ConditionValidator = (function () {
    * @param {number}  newQuantity       Proposed quantity (0 = remove)
    * @returns {{ allowed: boolean, limitText: string|null }}
    */
-  function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
+  function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity, targetValues) {
     // No explicit condition configured → no upper bound; always allow increases
     if (!step || !step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       return { allowed: true, limitText: null };
     }
 
+    const conditionType = _normalizeConditionType(step.conditionType);
+    const targetMetric = _getTargetMetric(targetValues);
+    const required = _normalizeConditionRuleValue(conditionType, step.conditionValue);
+
     const totalAfter = calculateStepTotalAfterUpdate(
       currentSelections,
       targetProductId,
       newQuantity,
+      {
+        conditionType,
+        targetAmountPerUnit: targetMetric.amount,
+        targetWeightPerUnit: targetMetric.weight,
+      },
     );
 
     // Primary condition
-    const primary = _evaluateCanUpdate(step.conditionOperator, step.conditionValue, totalAfter);
+    const primary = _evaluateCanUpdate(step.conditionOperator, required, totalAfter);
     if (!primary.allowed) return primary;
 
     // Secondary condition — AND logic (only when both fields are non-null)
     if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
-      const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
+      const secondary = _evaluateCanUpdate(
+        step.conditionOperator2,
+        _normalizeConditionRuleValue(conditionType, step.conditionValue2),
+        totalAfter,
+      );
       if (!secondary.allowed) return secondary;
     }
 
@@ -124,6 +157,33 @@ const ConditionValidator = (function () {
       total += _getSelectionQuantity(qty);
     }
     return total;
+  }
+
+  function _normalizeConditionType(conditionType) {
+    if (conditionType === 'amount') return 'amount';
+    if (conditionType === 'weight') return 'weight';
+    return 'quantity';
+  }
+
+  function _normalizeConditionRuleValue(conditionType, value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return numeric;
+    return _normalizeConditionType(conditionType) === 'amount' ? numeric * 100 : numeric;
+  }
+
+  function _getSelectionValueByConditionType(selection, conditionType) {
+    if (conditionType === 'amount') return _getSelectionAmount(selection);
+    if (conditionType === 'weight') return _getSelectionWeight(selection);
+    return _getSelectionQuantity(selection);
+  }
+
+  function _getTargetMetric(values) {
+    const amount = Number(values && values.amount);
+    const weight = Number(values && values.weight);
+    return {
+      amount: Number.isFinite(amount) ? amount : 0,
+      weight: Number.isFinite(weight) ? weight : 0,
+    };
   }
 
   function _isPositiveConditionValue(value) {
@@ -230,6 +290,7 @@ const ConditionValidator = (function () {
    */
   function isStepConditionSatisfied(step, currentSelections) {
     if (!step) return true;
+    const conditionType = _normalizeConditionType(step.conditionType);
 
     // Category-rule mode: when any category has non-empty `conditions`, the
     // step is satisfied when every category with conditions is independently
@@ -245,9 +306,11 @@ const ConditionValidator = (function () {
 
     const selections = currentSelections || {};
     let total = 0;
-    for (const qty of Object.values(selections)) {
-      total += _getSelectionQuantity(qty);
+    for (const value of Object.values(selections)) {
+      total += _getSelectionValueByConditionType(value, conditionType);
     }
+    const normalizedConditionValue = _normalizeConditionRuleValue(conditionType, step.conditionValue);
+    const normalizedConditionValue2 = _normalizeConditionRuleValue(conditionType, step.conditionValue2);
 
     // No explicit condition configured → only enforce minQuantity; no upper bound
     if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
@@ -256,11 +319,11 @@ const ConditionValidator = (function () {
     }
 
     // Primary condition
-    if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
+    if (!_evaluateSatisfied(step.conditionOperator, normalizedConditionValue, total)) return false;
 
     // Secondary condition — AND logic
     if (step.conditionOperator2 != null && _isPositiveConditionValue(step.conditionValue2)) {
-      return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
+      return _evaluateSatisfied(step.conditionOperator2, normalizedConditionValue2, total);
     }
 
     return true;
@@ -385,6 +448,9 @@ if (typeof module !== 'undefined' && module.exports) {
  */
 
 
+const INLINE_PLACEHOLDER_IMAGE =
+  'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22 viewBox=%220 0 400 400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23f3f4f6%22/%3E%3C/svg%3E';
+
 const BUNDLE_WIDGET = {
   VERSION: '4.0.0',
   LOG_PREFIX: '[BUNDLE_WIDGET]',
@@ -427,11 +493,10 @@ const BUNDLE_WIDGET = {
     BUY_X_GET_Y: 'buy_x_get_y'
   },
 
-  // Shared asset URLs
-  // AVIF is default for lower bytes and better decoding efficiency; PNG remains as a guaranteed fallback via
-  // component-level onerror handling.
-  PLACEHOLDER_IMAGE: '/bundle-product-placeholder.avif',
-  PLACEHOLDER_IMAGE_FALLBACK: '/bundle-product-placeholder.png'
+  // Self-contained so storefront widgets never resolve an app-owned asset
+  // against the merchant's theme origin.
+  PLACEHOLDER_IMAGE: INLINE_PLACEHOLDER_IMAGE,
+  PLACEHOLDER_IMAGE_FALLBACK: INLINE_PLACEHOLDER_IMAGE
 };
 
 
@@ -446,22 +511,37 @@ const BUNDLE_WIDGET = {
 
 
 class CurrencyManager {
+  static getShopify() {
+    if (typeof window !== 'undefined' && window.Shopify) return window.Shopify;
+    if (typeof Shopify !== 'undefined') return Shopify;
+    return null;
+  }
+
+  static getShopMoneyFormat() {
+    if (typeof window !== 'undefined' && window.shopMoneyFormat) return window.shopMoneyFormat;
+    if (typeof shopMoneyFormat !== 'undefined') return shopMoneyFormat;
+    return '{{amount}}';
+  }
+
   static getShopBaseCurrency() {
+    const shopify = this.getShopify();
     // Shop's base currency from Shopify object (official source)
     return {
-      code: window.Shopify?.shop?.currency || 'USD',
-      format: window.shopMoneyFormat || '{{amount}}'
+      code: shopify?.shop?.currency || 'USD',
+      format: this.getShopMoneyFormat(),
     };
   }
 
   static detectCustomerCurrency() {
+    const shopify = this.getShopify();
+
     // Primary: Shopify Markets active currency (official method)
     // Shopify Markets handles geolocation and user preferences automatically
-    if (window.Shopify?.currency?.active) {
+    if (shopify?.currency?.active) {
       return {
-        code: window.Shopify.currency.active,
-        format: window.Shopify.currency.format || window.shopMoneyFormat || '{{amount}}',
-        rate: window.Shopify.currency.rate || 1
+        code: shopify.currency.active,
+        format: shopify.currency.format || this.getShopMoneyFormat(),
+        rate: shopify.currency.rate || 1,
       };
     }
 
@@ -471,11 +551,12 @@ class CurrencyManager {
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
     if (fromCurrency === toCurrency) return amount;
+    const shopify = this.getShopify();
 
     // Use Shopify's conversion if available
-    if (window.Shopify?.currency?.convert) {
+    if (shopify?.currency?.convert) {
       try {
-        return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
+        return shopify.currency.convert(amount, fromCurrency, toCurrency);
       } catch (e) {
         console.warn('[BUNDLE_WIDGET] Shopify.currency.convert failed, using rate fallback:', e);
       }
@@ -485,8 +566,9 @@ class CurrencyManager {
   }
 
   static formatMoney(amount, format) {
-    if (typeof Shopify !== 'undefined' && window.Shopify.formatMoney) {
-      return window.Shopify.formatMoney(amount, format);
+    const shopify = this.getShopify();
+    if (shopify?.formatMoney) {
+      return shopify.formatMoney(amount, format);
     }
 
     // Fallback formatting
@@ -531,11 +613,12 @@ class CurrencyManager {
   }
 
   static getCurrencyInfo() {
+    const shopify = this.getShopify();
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
     const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
     const displayFormat = this.normalizeCurrencyFormat(
-      window.Shopify?.currency?.format,
+      shopify?.currency?.format,
       customerCurrency.code,
       displaySymbol
     );
@@ -929,6 +1012,12 @@ class BundleDataManager {
  */
 
 
+function isDiscountedAddonStep(step) {
+  if (!step || step.isFreeGift !== true) return false;
+  if (Array.isArray(step.addonTiers) && step.addonTiers.length > 0) return true;
+  return Boolean(step.addonEligibilityCondition || step.addonDiscount);
+}
+
 class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData, steps = null) {
     let totalPrice = 0;
@@ -936,9 +1025,10 @@ class PricingCalculator {
     const unitPrices = [];
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
-      // Skip only true free gifts. Optional add-on steps reuse the same
-      // non-blocking step path, but chargeable add-ons still affect totals.
-      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree === true) return;
+      // Skip only legacy free gifts. EB-style add-on tiers remain in the
+      // original subtotal so their native line discount can reduce them to zero.
+      const step = steps?.[stepIndex];
+      if (step?.isFreeGift && step?.addonDisplayFree === true && !isDiscountedAddonStep(step)) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 
@@ -1194,7 +1284,7 @@ class PricingCalculator {
   }
 
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
-    if (!bundle?.pricing?.rules?.length) return null;
+    if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) return null;
 
     const rules = [...bundle.pricing.rules].sort((a, b) =>
       this.getRuleConditionValue(a, this.getDiscountMethod(bundle)) -
@@ -1256,7 +1346,7 @@ class ToastManager {
       .trim() === '1';
   }
 
-  static show(message, duration = 4000) {
+  static show(message, duration = 4000, options = {}) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
     if (existingToast) {
@@ -1267,23 +1357,28 @@ class ToastManager {
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast';
+    if (options.className) {
+      toast.classList.add(options.className);
+    }
     if (this._isEnterFromBottom()) {
       toast.classList.add('bundle-toast-from-bottom');
     }
-    toast.innerHTML = `
-      <span>${this._escapeHtml(message)}</span>
+    const closeControl = options.dismissible === false ? '' : `
       <svg class="toast-close" width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    `;
+      </svg>`;
+    toast.innerHTML = `<span>${this._escapeHtml(message)}</span>${closeControl}`;
 
     // Attach close listener (consistent with showWithUndo pattern)
-    toast.querySelector('.toast-close').addEventListener('click', () => {
+    toast.querySelector('.toast-close')?.addEventListener('click', () => {
       toast.remove();
     });
 
     // Add to page (styles come from bundle-widget.css with Settings design CSS variables)
-    document.body.appendChild(toast);
+    const container = typeof Element !== 'undefined' && options.container instanceof Element
+      ? options.container
+      : document.body;
+    container.appendChild(toast);
 
     // Auto-remove after duration
     if (duration > 0) {

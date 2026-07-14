@@ -368,21 +368,34 @@ findProductById(stepIndex, productId) {
   return products.find(p => (p.variantId || p.id) === productId);
 },
 
-validateStepCondition(stepIndex, productId, newQuantity) {
-  const step = this.selectedBundle.steps[stepIndex];
-  const currentSelections = this.selectedProducts[stepIndex] || {};
-  const currentQty = currentSelections[productId] || 0;
-  const conditionSelections = this._getStepConditionSelections(stepIndex, currentSelections);
-  const directDefaultQuantities = this._getDirectDefaultSelectionQuantities(stepIndex);
-  const directDefaultQuantity = Number(directDefaultQuantities[String(productId)] || 0);
-  const conditionNewQuantity = Math.max(0, Number(newQuantity || 0) - directDefaultQuantity);
+  validateStepCondition(stepIndex, productId, newQuantity) {
+    const step = this.selectedBundle.steps[stepIndex];
+    const currentSelections = this.selectedProducts[stepIndex] || {};
+    const currentQty = currentSelections[productId] || 0;
+    const conditionSelections = this._getStepConditionSelections(stepIndex, currentSelections);
+    const directDefaultQuantities = this._getDirectDefaultSelectionQuantities(stepIndex);
+    const directDefaultQuantity = Number(directDefaultQuantities[String(productId)] || 0);
+    const conditionNewQuantity = Math.max(0, Number(newQuantity || 0) - directDefaultQuantity);
+    const stepProducts = this.stepProductData[stepIndex] || [];
+    const isAmountOrWeight = step.conditionType === 'amount' || step.conditionType === 'weight';
+    const conditionSelectionTotals = isAmountOrWeight
+      ? this._buildConditionAwareStepSelections(stepProducts, conditionSelections)
+      : conditionSelections;
+    const targetProduct = stepProducts.find(p => (p.variantId || p.id) === productId);
+    const targetValues = isAmountOrWeight
+      ? {
+        amount: Number(targetProduct?.price || 0),
+        weight: Number(targetProduct?.weight || targetProduct?.weightInGrams || targetProduct?.grams || 0),
+      }
+      : null;
 
-  const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
-    step,
-    conditionSelections,
-    productId,
-    conditionNewQuantity,
-  );
+    const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
+      step,
+      conditionSelectionTotals,
+      productId,
+      conditionNewQuantity,
+      targetValues,
+    );
 
   // Only block and toast on increases — decreases are always permitted.
   if (!allowed && newQuantity > currentQty) {
@@ -396,12 +409,12 @@ validateStepCondition(stepIndex, productId, newQuantity) {
   return true;
 },
 
-validateStep(stepIndex) {
-  const step = this.selectedBundle.steps[stepIndex];
-  const currentSelections = this.selectedProducts[stepIndex] || {};
-  const conditionSelections = typeof this._getStepConditionSelections === 'function'
-    ? this._getStepConditionSelections(stepIndex, currentSelections)
-    : currentSelections;
+  validateStep(stepIndex) {
+    const step = this.selectedBundle.steps[stepIndex];
+    const currentSelections = this.selectedProducts[stepIndex] || {};
+    const conditionSelections = typeof this._getStepConditionSelections === 'function'
+      ? this._getStepConditionSelections(stepIndex, currentSelections)
+      : currentSelections;
 
   // In category-rule mode, selection keys are numeric variant IDs but
   // category product IDs are numeric product IDs (GID-stripped). Translate
@@ -427,11 +440,37 @@ validateStep(stepIndex) {
         weight: (current.weight || 0) + ((Number(product?.weight) || 0) * quantity),
       };
     }
-    return ConditionValidator.isStepConditionSatisfied(validationStep, translated);
-  }
+      return ConditionValidator.isStepConditionSatisfied(validationStep, translated);
+    }
 
-  return ConditionValidator.isStepConditionSatisfied(validationStep, conditionSelections);
-},
+    if (validationStep.conditionType === 'amount' || validationStep.conditionType === 'weight') {
+      return ConditionValidator.isStepConditionSatisfied(
+        validationStep,
+        this._buildConditionAwareStepSelections(this.stepProductData[stepIndex] || [], conditionSelections),
+      );
+    }
+
+    return ConditionValidator.isStepConditionSatisfied(validationStep, conditionSelections);
+  },
+
+  _buildConditionAwareStepSelections(stepProducts, currentSelections) {
+    const selections = currentSelections || {};
+    const translated = {};
+    for (const [selKey, qty] of Object.entries(selections)) {
+      const quantity = Number(qty) || 0;
+      if (quantity <= 0) continue;
+      const product = stepProducts.find(p => (p.variantId || p.id) === selKey);
+      const unitAmount = Number(product?.price || 0);
+      const unitWeight = Number(product?.weight || product?.weightInGrams || product?.grams || 0);
+      const current = translated[selKey] || { quantity: 0, amount: 0, weight: 0 };
+      translated[selKey] = {
+        quantity: current.quantity + quantity,
+        amount: current.amount + (unitAmount * quantity),
+        weight: current.weight + (unitWeight * quantity),
+      };
+    }
+    return translated;
+  },
 
 isStepAccessible(stepIndex) {
   // Default steps are always accessible (read-only, pre-selected)

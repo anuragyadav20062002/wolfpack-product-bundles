@@ -397,6 +397,8 @@ describe("PPB handleSyncProduct", () => {
             handle: "ppb-bundle",
             productType: "product",
             vendor: "Test Shop",
+            status: "UNLISTED",
+            descriptionHtml: expect.stringContaining("Your Bundle is Unlisted"),
           }),
           media: [
             expect.objectContaining({
@@ -407,6 +409,18 @@ describe("PPB handleSyncProduct", () => {
           ],
         }),
       }),
+    );
+    expect(admin.graphql.mock.calls).not.toEqual(
+      expect.arrayContaining([
+        [
+          expect.stringContaining("UpdateProductStatus"),
+          expect.objectContaining({
+            variables: expect.objectContaining({
+              product: expect.objectContaining({ status: "ACTIVE" }),
+            }),
+          }),
+        ],
+      ]),
     );
   });
 

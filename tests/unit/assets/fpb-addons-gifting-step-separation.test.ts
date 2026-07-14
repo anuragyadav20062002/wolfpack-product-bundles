@@ -20,6 +20,9 @@ const { fullPageProductCardFooterMethods } =
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageProductProcessingMethods } =
   require("../../../app/assets/widgets/full-page/methods/product-processing-methods.js");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { PricingCalculator } =
+  require("../../../app/assets/bundle-widget-components.js");
 
 const buildAddonStepFromPersonalization =
   fullPageInitialRenderMethods.buildAddonStepFromPersonalization;
@@ -57,7 +60,8 @@ if (
   typeof buildPaidAddonProductDisplayData !== "function" ||
   typeof createProductCard !== "function" ||
   typeof getProductCardAddButtonText !== "function" ||
-  typeof loadStepProducts !== "function"
+  typeof loadStepProducts !== "function" ||
+  typeof PricingCalculator?.calculateBundleTotal !== "function"
 ) {
   throw new Error("Expected FPB add-on methods missing");
 }
@@ -683,6 +687,67 @@ describe("FPB add-ons / gifting step separation", () => {
     };
 
     expect(calculateSelectedAddonDiscountAmount.call(ctx)).toBe(82900);
+  });
+
+  it("counts active flat 100 percent add-on tier savings in the sidebar total", () => {
+    const addonStep = {
+      isFreeGift: true,
+      addonDisplayFree: true,
+      StepProduct: [makeProduct()],
+      products: [makeProduct()],
+      addonTiers: [
+        {
+          eligibilityCondition: { type: "QUANTITY", value: 1 },
+          discountType: "PERCENTAGE",
+          discountValue: 100,
+          selectedAddonProducts: [makeProduct()],
+        },
+      ],
+    };
+    const ctx = {
+      ...fullPageValidationAddonsMethods,
+      selectedProducts: [{ paidVariant: 1 }, { addonVariant: 1 }],
+      stepProductData: [
+        [{ variantId: "paidVariant", price: 82900 }],
+        [{ variantId: "addonVariant", price: 82900 }],
+      ],
+      selectedBundle: { steps: [{ id: "paid" }, addonStep] },
+      getAllSelectedProductsData: () => [
+        {
+          stepIndex: 1,
+          variantId: "addonVariant",
+          quantity: 1,
+          price: 82900,
+          isFreeGift: true,
+          addonDisplayFree: true,
+        },
+      ],
+      extractId: (value: unknown) => String(value ?? "").split("/").pop(),
+    };
+
+    expect(getAddonLineDiscount.call(ctx, addonStep)).toEqual({
+      type: "PERCENTAGE",
+      value: 100,
+    });
+    expect(
+      PricingCalculator.calculateBundleTotal(
+        ctx.selectedProducts,
+        ctx.stepProductData,
+        ctx.selectedBundle.steps,
+      ).totalPrice,
+    ).toBe(165800);
+    expect(calculateSelectedAddonDiscountAmount.call(ctx)).toBe(82900);
+    expect(
+      fullPageValidationAddonsMethods.getDiscountInfoWithSelectedAddonDiscount.call(
+        ctx,
+        { hasDiscount: false, discountAmount: 0, finalPrice: 165800 },
+        165800,
+      ),
+    ).toMatchObject({
+      hasDiscount: true,
+      addonDiscountAmount: 82900,
+      finalPrice: 82900,
+    });
   });
 
   it("derives paid add-on card display pricing from the active add-on discount", () => {

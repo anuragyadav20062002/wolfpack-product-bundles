@@ -10,22 +10,37 @@
 'use strict';
 
 export class CurrencyManager {
+  static getShopify() {
+    if (typeof window !== 'undefined' && window.Shopify) return window.Shopify;
+    if (typeof Shopify !== 'undefined') return Shopify;
+    return null;
+  }
+
+  static getShopMoneyFormat() {
+    if (typeof window !== 'undefined' && window.shopMoneyFormat) return window.shopMoneyFormat;
+    if (typeof shopMoneyFormat !== 'undefined') return shopMoneyFormat;
+    return '{{amount}}';
+  }
+
   static getShopBaseCurrency() {
+    const shopify = this.getShopify();
     // Shop's base currency from Shopify object (official source)
     return {
-      code: window.Shopify?.shop?.currency || 'USD',
-      format: window.shopMoneyFormat || '{{amount}}'
+      code: shopify?.shop?.currency || 'USD',
+      format: this.getShopMoneyFormat(),
     };
   }
 
   static detectCustomerCurrency() {
+    const shopify = this.getShopify();
+
     // Primary: Shopify Markets active currency (official method)
     // Shopify Markets handles geolocation and user preferences automatically
-    if (window.Shopify?.currency?.active) {
+    if (shopify?.currency?.active) {
       return {
-        code: window.Shopify.currency.active,
-        format: window.Shopify.currency.format || window.shopMoneyFormat || '{{amount}}',
-        rate: window.Shopify.currency.rate || 1
+        code: shopify.currency.active,
+        format: shopify.currency.format || this.getShopMoneyFormat(),
+        rate: shopify.currency.rate || 1,
       };
     }
 
@@ -35,11 +50,12 @@ export class CurrencyManager {
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
     if (fromCurrency === toCurrency) return amount;
+    const shopify = this.getShopify();
 
     // Use Shopify's conversion if available
-    if (window.Shopify?.currency?.convert) {
+    if (shopify?.currency?.convert) {
       try {
-        return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
+        return shopify.currency.convert(amount, fromCurrency, toCurrency);
       } catch (e) {
         console.warn('[BUNDLE_WIDGET] Shopify.currency.convert failed, using rate fallback:', e);
       }
@@ -49,8 +65,9 @@ export class CurrencyManager {
   }
 
   static formatMoney(amount, format) {
-    if (typeof Shopify !== 'undefined' && window.Shopify.formatMoney) {
-      return window.Shopify.formatMoney(amount, format);
+    const shopify = this.getShopify();
+    if (shopify?.formatMoney) {
+      return shopify.formatMoney(amount, format);
     }
 
     // Fallback formatting
@@ -95,11 +112,12 @@ export class CurrencyManager {
   }
 
   static getCurrencyInfo() {
+    const shopify = this.getShopify();
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
     const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
     const displayFormat = this.normalizeCurrencyFormat(
-      window.Shopify?.currency?.format,
+      shopify?.currency?.format,
       customerCurrency.code,
       displaySymbol
     );

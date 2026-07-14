@@ -214,6 +214,12 @@ describe("normalizePricingRuleMessages", () => {
     expect(getDefaultDiscountRuleText(DiscountMethod.FIXED_AMOUNT_OFF)).toBe(
       "Add {{discountConditionDiff}} product(s) to save {{discountValueUnit}}{{discountValue}}!"
     );
+    expect(getDefaultDiscountRuleText(DiscountMethod.FIXED_AMOUNT_OFF, 1)).toBe(
+      "Congrats! Add {{discountConditionDiff}} more product(s) to save {{discountValueUnit}}{{discountValue}}!"
+    );
+    expect(getDefaultDiscountRuleText(DiscountMethod.PERCENTAGE_OFF, 1)).toBe(
+      "Congrats! Add {{discountConditionDiff}} more product(s) to save {{discountValue}}{{discountValueUnit}}!"
+    );
     expect(getDefaultDiscountRuleText(DiscountMethod.BUY_X_GET_Y)).toBe(
       "Add {{discountConditionDiff}} product(s) to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!"
     );

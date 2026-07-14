@@ -106,7 +106,6 @@ describe("Full Page widget direct Add-ons contract", () => {
     expect(source).toContain("const progressBar = this._renderDiscountProgress({");
     expect(source).toContain("combinedDiscountInfo,");
     expect(source).toContain("const discountInfo = this.getDiscountInfoWithSelectedAddonDiscount(");
-    expect(source).toContain("this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo");
     expect(source).toContain("this.updateModalHeaderText(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);");
     expect(source).toContain("this.updateModalDiscountMessaging(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);");
     expect(source).toContain("this.updateFooterTotalPrices(totalPrice, combinedDiscountInfo, currencyInfo);");

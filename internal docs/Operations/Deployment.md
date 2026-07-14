@@ -31,6 +31,8 @@ sources: docs/DEPLOYMENT.md (largely current as of Jan 14 2026)
 5. Wait 2–10 min for Shopify CDN cache to propagate
 6. Verify: `console.log(window.__BUNDLE_WIDGET_VERSION__)` in storefront DevTools
 
+For CSS changes, also verify the exact served CSS asset. `window.__BUNDLE_WIDGET_VERSION__` only proves the JS bundle is current. Product Page template styles are separate assets such as `bundle-widget-product-page-cascade.css`; Shopify CDN can serve an updated JS bundle while still serving an older CSS asset. Fetch the active CSS URL from the storefront and confirm the expected token or rule exists before accepting visual proof.
+
 ## Cart Transform WASM
 
 ```bash

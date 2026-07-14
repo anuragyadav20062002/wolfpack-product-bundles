@@ -67,8 +67,10 @@ export interface NormalizedRuleMessageInput {
 export const DEFAULT_PROGRESS_BAR_PROGRESS_TEXT = "Add {{conditionText}} to unlock {{discountText}}";
 export const DEFAULT_PROGRESS_BAR_SUCCESS_TEXT = "{{discountText}} unlocked";
 export const DEFAULT_DISCOUNT_RULE_TEXT = "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!";
+export const DEFAULT_DISCOUNT_RULE_TEXT_MORE = "Congrats! Add {{discountConditionDiff}} more product(s) to save {{discountValue}}{{discountValueUnit}}!";
 export const DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE = "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.";
 export const DEFAULT_FIXED_AMOUNT_RULE_TEXT = "Add {{discountConditionDiff}} product(s) to save {{discountValueUnit}}{{discountValue}}!";
+export const DEFAULT_FIXED_AMOUNT_RULE_TEXT_MORE = "Congrats! Add {{discountConditionDiff}} more product(s) to save {{discountValueUnit}}{{discountValue}}!";
 export const DEFAULT_FIXED_AMOUNT_RULE_SUCCESS_MESSAGE = "Success! Your {{discountValueUnit}}{{discountValue}} discount has been applied to your cart.";
 export const DEFAULT_DISCOUNT_RULE_TEXT_BXY = "Add {{discountConditionDiff}} product(s) to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!";
 export const DEFAULT_DISCOUNT_RULE_TEXT_BXY_MORE = "Add {{discountConditionDiff}} more to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!";
@@ -80,10 +82,10 @@ export function getDefaultDiscountRuleText(method?: DiscountMethod | string, rul
   }
 
   if (method === DiscountMethod.FIXED_AMOUNT_OFF) {
-    return DEFAULT_FIXED_AMOUNT_RULE_TEXT;
+    return ruleIndex === 0 ? DEFAULT_FIXED_AMOUNT_RULE_TEXT : DEFAULT_FIXED_AMOUNT_RULE_TEXT_MORE;
   }
 
-  return DEFAULT_DISCOUNT_RULE_TEXT;
+  return ruleIndex === 0 ? DEFAULT_DISCOUNT_RULE_TEXT : DEFAULT_DISCOUNT_RULE_TEXT_MORE;
 }
 
 export function getDefaultDiscountRuleSuccessMessage(method?: DiscountMethod | string): string {

@@ -1,5 +1,6 @@
 import { buildCartLineSourceProperties } from '../../shared/engine/cart-lines.js';
 import { buildProductPageCartFormData } from '../../shared/engine/cart-submit.js';
+import { ToastManager, CurrencyManager, PricingCalculator } from '../../../bundle-widget-components.js';
 
 function getProductPageSelectedQuantityTotal(selectedProducts = []) {
   return selectedProducts.reduce((sum, stepSelections) => {
@@ -33,10 +34,12 @@ export const ProductPageCartMethods = {
         return;
       }
 
-      const allStepsValid = this.selectedBundle.steps.every((step, index) => {
+      const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
+      const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
         if (step.isFreeGift || step.isDefault) return true;
         return this.validateStep(index);
-      });
+      }) : true;
+
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;

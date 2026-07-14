@@ -30,6 +30,7 @@ function makeProductPageContext() {
       {
         'gid://shopify/ProductVariant/101': 2,
         'gid://shopify/ProductVariant/102': 1,
+        'gid://shopify/ProductVariant/103': 1,
       },
     ],
     stepProductData: [
@@ -46,6 +47,14 @@ function makeProductPageContext() {
           variantId: 'gid://shopify/ProductVariant/102',
           title: '14k Dangling Pendant Earrings',
           price: 61900,
+          available: true,
+        },
+        {
+          id: 'gid://shopify/Product/3',
+          variantId: 'gid://shopify/ProductVariant/103',
+          title: '18k Pedal Ring - 8',
+          variantTitle: '8',
+          price: 39900,
           available: true,
         },
       ],
@@ -90,7 +99,7 @@ describe('PPB Product List cart display metadata', () => {
 
     const items = ProductPageCartMethods.buildCartItems.call(context, 'MIX-894502', 'K1K');
 
-    expect(items).toHaveLength(2);
+    expect(items).toHaveLength(3);
     for (const item of items) {
       expect(item.properties._bundle_display_properties).toBeDefined();
     }
@@ -98,14 +107,14 @@ describe('PPB Product List cart display metadata', () => {
     const displayProperties = JSON.parse(items[0].properties._bundle_display_properties);
     expect(displayProperties).toEqual({
       box: '1',
-      items: '2 x 14k Dangling Obsidian Earrings, 1 x 14k Dangling Pendant Earrings',
-      retailPrice: '$2277.00',
+      items: '2 x 14k Dangling Obsidian Earrings, 1 x 14k Dangling Pendant Earrings, 1 x 18k Pedal Ring - 8 (8)',
+      retailPrice: '$2676.00',
     });
 
     expect(ProductPageCartMethods.buildBundleDetailsDisplayProperties.call(context, items[0].properties)).toEqual({
       Box: '1',
-      Items: '2 x 14k Dangling Obsidian Earrings, 1 x 14k Dangling Pendant Earrings',
-      'Retail Price': '$2277.00',
+      Items: '2 x 14k Dangling Obsidian Earrings, 1 x 14k Dangling Pendant Earrings, 1 x 18k Pedal Ring - 8 (8)',
+      'Retail Price': '$2676.00',
     });
 
     const cartContext = ProductPageCartMethods.buildProductPageCartFormData.call(context, items, {
@@ -118,6 +127,7 @@ describe('PPB Product List cart display metadata', () => {
     expect((Array.from(cartContext.formData.entries()) as Array<[string, unknown]>).filter(([key]) => key.endsWith('[_wolfpackProductBundle:OfferId]'))).toEqual([
       ['items[0][properties][_wolfpackProductBundle:OfferId]', 'MIX-894502_K1K_1'],
       ['items[1][properties][_wolfpackProductBundle:OfferId]', 'MIX-894502_K1K_2'],
+      ['items[2][properties][_wolfpackProductBundle:OfferId]', 'MIX-894502_K1K_3'],
     ]);
   });
 });

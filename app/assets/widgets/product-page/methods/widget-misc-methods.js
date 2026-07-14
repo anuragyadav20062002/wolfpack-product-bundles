@@ -1,5 +1,10 @@
 import { createDefaultLoadingAnimation } from '../../shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from '../../shared/loading-overlay.js';
+import { ToastManager } from '../../../bundle-widget-components.js';
+import {
+  formatProductPageStepValidationToast,
+  getProductPageModalValidationToastOptions,
+} from './modal-state-methods.js';
 
 const MIN_LOADING_OVERLAY_VISIBLE_MS = 180;
 
@@ -72,17 +77,37 @@ hideLoadingOverlay() {
 
 attachEventListeners() {
   // Add to cart button
-  this.elements.addToCartButton.addEventListener('click', () => this.addToCart());
+  this.elements.addToCartButton.addEventListener('click', () => {
+    const isIntermediateCascadeStep = this._usesCascadeStepFlow?.()
+      && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+    if (isIntermediateCascadeStep) {
+      const navigated = this.navigateCascadeStep(1);
+      if (!navigated && this._isProductPageGridTemplate?.() === true) {
+        const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+        ToastManager.show(
+          formatProductPageStepValidationToast(currentStep)
+            || 'Please meet the quantity conditions for the current step before proceeding.',
+          4000,
+          {
+            dismissible: false,
+            className: 'bundle-toast--cognive',
+          },
+        );
+      }
+      return;
+    }
+    this.addToCart();
+  });
 
   // Modal close handlers
   const modal = this.elements.modal;
-  const closeButton = modal.querySelector('.close-button');
+  const closeButtons = modal.querySelectorAll('.close-button');
   const prevButton = modal.querySelector('.prev-button');
   const nextButton = modal.querySelector('.next-button');
 
-  if (closeButton) {
+  closeButtons.forEach((closeButton) => {
     closeButton.addEventListener('click', () => this.closeModal());
-  }
+  });
 
   // Overlay closes bottom-sheet
   if (this.elements.bsOverlay) {
@@ -93,8 +118,43 @@ attachEventListeners() {
 
   // Keyboard: close on Escape
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('bw-bs-panel--open')) {
+    if (!modal.classList.contains('bw-bs-panel--open')) return;
+
+    const target = e.target;
+    if (target && (target.tagName === 'INPUT' || target.isContentEditable)) return;
+
+    if (e.key === 'Escape') {
       this.closeModal();
+      return;
+    }
+
+    if (e.key === 'ArrowLeft' && prevButton) {
+      e.preventDefault();
+      prevButton.click?.();
+      return;
+    }
+
+    if (e.key === 'ArrowRight' && nextButton) {
+      e.preventDefault();
+      nextButton.click?.();
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      const controls = typeof this._getModalFocusableControls === 'function'
+        ? this._getModalFocusableControls()
+        : [];
+      if (!controls.length) return;
+
+      const current = controls.indexOf(globalThis.document?.activeElement);
+      const isActiveInModal = current >= 0;
+      const fromIndex = isActiveInModal ? current : -1;
+      const nextIndex = e.shiftKey
+        ? (fromIndex > 0 ? fromIndex - 1 : controls.length - 1)
+        : (fromIndex >= 0 && fromIndex < controls.length - 1 ? fromIndex + 1 : 0);
+
+      e.preventDefault();
+      controls[nextIndex]?.focus?.();
     }
   });
 },
@@ -108,7 +168,10 @@ async navigateModal(direction) {
 
     // Update modal header
     const headerText = this.getFormattedHeaderText();
-    this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+    const header = this.elements.modal.querySelector('.modal-step-title');
+    if (header) {
+      header.textContent = headerText;
+    }
 
     // OPTIMISTIC RENDERING: Update UI immediately with loading state
     this.renderModalTabs();
@@ -121,14 +184,19 @@ async navigateModal(direction) {
     this.renderModalProducts(this.currentStepIndex);
     this.updateModalFooterMessaging();
   } else if (direction > 0) {
+    const shouldValidateConditions = this._isConditionValidationEnabled?.() !== false;
+
     if (newStepIndex < this.selectedBundle.steps.length) {
       // Next step
-      if (this.validateStep(this.currentStepIndex)) {
+      if (!shouldValidateConditions || this.validateStep(this.currentStepIndex)) {
         this.currentStepIndex = newStepIndex;
 
         // Update modal header
         const headerText = this.getFormattedHeaderText();
-        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+        const header = this.elements.modal.querySelector('.modal-step-title');
+        if (header) {
+          header.textContent = headerText;
+        }
 
         // OPTIMISTIC RENDERING: Update UI immediately with loading state
         this.renderModalTabs();
@@ -144,14 +212,20 @@ async navigateModal(direction) {
         // PRELOAD NEXT STEP
         this.preloadNextStep();
       } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+        const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+        const message = formatProductPageStepValidationToast(currentStep)
+          || 'Please meet the quantity conditions for the current step before proceeding.';
+        ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
     } else {
       // Done button clicked on last step
-      if (this.validateStep(this.currentStepIndex)) {
+      if (!shouldValidateConditions || this.validateStep(this.currentStepIndex)) {
         this.closeModal();
       } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before finishing.');
+        const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+        const message = formatProductPageStepValidationToast(currentStep)
+          || 'Please meet the quantity conditions for the current step before finishing.';
+        ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
     }
   }

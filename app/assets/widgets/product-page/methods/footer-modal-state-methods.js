@@ -1,4 +1,68 @@
-import { CurrencyManager, PricingCalculator, ToastManager } from '../../../bundle-widget-components.js';
+import { CurrencyManager, PricingCalculator, TemplateManager, ToastManager } from '../../../bundle-widget-components.js';
+import { getDiscountProgressData } from '../../shared/engine/bundle-selectors.js';
+import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
+
+function resolveDiscountProgressMode(displayOptions = {}) {
+  const type = String(displayOptions?.type || '').toLowerCase().trim();
+  return type === 'step_based' ? 'step_based' : 'simple';
+}
+
+function getDiscountProgressMilestones(bundle, totalPrice = 0, totalQuantity = 0) {
+  const pricing = bundle?.pricing || {};
+  const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
+  const method = String(pricing.method || '');
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const tierTextByRuleId = pricing?.messages?.tierTextByRuleId || {};
+
+  return rules
+    .filter((rule) => rule?.conditionType === 'quantity' || rule?.conditionType === 'amount')
+    .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
+    .map((rule) => {
+      const ruleId = String(rule?.id || '');
+      const threshold = Number(rule?.conditionValue || 0) || 0;
+      if (!ruleId || threshold <= 0) return null;
+
+      const savedMilestone = tierTextByRuleId?.[ruleId] || {};
+      const boxLabel = savedMilestone?.tierText;
+      const boxSubtext = savedMilestone?.tierSubtext;
+
+      const fallbackTitle = rule.conditionType === 'quantity'
+        ? `${threshold} Pack`
+        : CurrencyManager.convertAndFormat(threshold, currencyInfo);
+
+      const discountValue = Number(rule.discountValue ?? rule.discount?.value ?? 0) || 0;
+      let fallbackSubText = '';
+      if (discountValue > 0) {
+        if (method === 'fixed_amount_off') {
+          fallbackSubText = `Save ${CurrencyManager.convertAndFormat(discountValue, currencyInfo)}`;
+        } else if (method === 'percentage_off' || method === 'percentage') {
+          fallbackSubText = `Save ${Math.round(discountValue)}%`;
+        } else {
+          fallbackSubText = `Save ${discountValue}`;
+        }
+      }
+
+      const isReached = rule.conditionType === 'amount'
+        ? Number(totalPrice || 0) >= threshold
+        : Number(totalQuantity || 0) >= threshold;
+
+      return {
+        ruleId,
+        title: boxLabel || fallbackTitle,
+        subTitle: boxSubtext || fallbackSubText,
+        isReached,
+      };
+    })
+    .filter(Boolean)
+    .filter((milestone) => milestone.title);
+}
+
+export function shouldDisableIntermediateProductPageCta({
+  isGrid = false,
+  currentStepValid = false,
+} = {}) {
+  return Boolean(!isGrid && !currentStepValid);
+}
 
 export const ProductPageFooterModalStateMethods = {
 renderFullPageLayout() {
@@ -9,11 +73,15 @@ renderFullPageLayout() {
 clearStepSelections(stepIndex) {
   // Clear all product selections for this step
   this.selectedProducts[stepIndex] = {};
+  if (this.selectedProductCategoryIndexes) {
+    this.selectedProductCategoryIndexes[stepIndex] = {};
+  }
   if (stepIndex === 0 && this.directDefaultProducts.length > 0) {
     this.directDefaultProducts.forEach(product => {
       this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);
     });
   }
+  this._persistSessionSelections?.();
 
   // Update UI
   this._renderDirectDefaultProducts();
@@ -53,6 +121,11 @@ renderFooter() {
 
   const displayOptions = this.selectedBundle?.messaging?.displayOptions;
   const pbConfig = displayOptions?.progressBar;
+  const isDiscountMessagingEnabled = this.config?.showDiscountMessaging !== false;
+  if (!isDiscountMessagingEnabled) {
+    el.style.display = 'none';
+    return;
+  }
   if (!pbConfig?.enabled) {
     el.style.display = 'none';
     return;
@@ -73,55 +146,75 @@ renderFooter() {
 
   const rule = rules[0];
   const discountMethod = PricingCalculator.getDiscountMethod(this.selectedBundle);
-  const conditionValue = PricingCalculator.getRuleConditionValue(rule, discountMethod);
   const conditionType = PricingCalculator.getRuleConditionType(rule);
-  const current = conditionType === 'quantity' ? totalQuantity : totalPrice / 100;
-  const progress = conditionValue > 0 ? Math.min(1, current / conditionValue) : 1;
-  const met = progress >= 1;
+  const current = conditionType === 'quantity' ? totalQuantity : totalPrice;
 
   const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity, unitPrices);
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-  const discountText = combinedDiscountInfo.hasDiscount
-    ? (this.selectedBundle.pricing.method === 'percentage_off'
-        ? `${rule.discountValue ?? 0}% off`
-        : CurrencyManager.convertAndFormat(combinedDiscountInfo.savings, CurrencyManager.getCurrencyInfo()))
-    : '';
-
-  const template = met
+  const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
+  const ruleToUse = combinedDiscountInfo.applicableRule || nextRule || rule;
+  const messageType = nextRule ? 'progress' : (combinedDiscountInfo.qualifiesForDiscount ? 'success' : 'progress');
+  const met = !nextRule && combinedDiscountInfo.qualifiesForDiscount;
+  const conditionTarget = PricingCalculator.getRuleConditionValue(ruleToUse, discountMethod);
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const variables = TemplateManager.createDiscountVariables(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    combinedDiscountInfo,
+    currencyInfo,
+    { rule: ruleToUse, messageType }
+  );
+  const fallbackTemplate = met
     ? (pbConfig.successText || this.selectedBundle.messaging?.successTemplate || 'You got {discountText}!')
     : (pbConfig.progressText || this.selectedBundle.messaging?.progressTemplate || 'Add {conditionText} more to get {discountText}');
-
-  const diff = Math.max(0, conditionValue - current);
-  const conditionText = conditionType === 'quantity'
-    ? `${Math.ceil(diff)} item${Math.ceil(diff) !== 1 ? 's' : ''}`
-    : CurrencyManager.convertAndFormat(diff * 100, CurrencyManager.getCurrencyInfo());
-
-  const message = template
-    .replace(/{discountText}/g, discountText)
-    .replace(/{conditionText}/g, conditionText)
-    .replace(/{amountNeeded}/g, conditionText)
-    .replace(/{itemsNeeded}/g, `${Math.ceil(diff)}`)
-    .replace(/{progressPercentage}/g, `${Math.round(progress * 100)}`);
+  const progressMode = resolveDiscountProgressMode(pbConfig);
+  const milestones = progressMode === 'step_based'
+    ? getDiscountProgressMilestones(this.selectedBundle, totalPrice, totalQuantity)
+    : [];
+  const template = progressMode === 'simple'
+    ? TemplateManager.getDiscountMessageTemplate({
+      bundle: this.selectedBundle,
+      totalQuantity,
+      totalPrice,
+      discountInfo: combinedDiscountInfo,
+      messageType,
+      fallbackTemplate,
+      locale: window.Shopify?.locale,
+    })
+    : '';
+  const message = progressMode === 'simple'
+    ? TemplateManager.replaceVariables(template, variables)
+    : '';
 
   const primary = getComputedStyle(document.documentElement).getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
   el.style.display = '';
   const progressData = getDiscountProgressData({
     currentValue: current,
-    targetValue: conditionValue,
+    targetValue: conditionTarget,
     message,
   });
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = renderDiscountProgress(progressData, {
+  const progressMarkup = renderDiscountProgress(progressData, {
     className: `bundle-footer-messaging bw-ppb-discount-progress${met ? ' bw-ppb-discount-progress--met' : ''}`,
     messageClassName: 'bw-ppb-discount-progress__message',
     trackClassName: 'bw-ppb-discount-progress__track',
     fillClassName: 'bw-ppb-discount-progress__fill',
-  }).trim();
-  const progressEl = wrapper.firstElementChild;
-  if (!progressEl) return;
-  progressEl.style.setProperty('--bw-discount-progress-color', primary);
-  el.replaceWith(progressEl);
-  this.elements.footer = progressEl;
+    milestoneListClassName: 'bw-discount-progress__milestones',
+    milestoneClassName: 'bw-discount-progress__milestone',
+    milestoneReachedClassName: 'bw-discount-progress__milestone--reached',
+    milestoneTitleClassName: 'bw-discount-progress__milestone-title',
+    milestoneSubtitleClassName: 'bw-discount-progress__milestone-subtitle',
+    renderInlineSubtitles: false,
+    renderSubtitleList: false,
+    milestones,
+    mode: progressMode === 'simple' ? 'bar' : 'stepped',
+  });
+  const modeClassName = progressMode === 'simple'
+    ? 'bw-discount-progress--mode-bar'
+    : 'bw-discount-progress--mode-stepped';
+  el.className = `bundle-footer-messaging bw-ppb-discount-progress${met ? ' bw-ppb-discount-progress--met' : ''} ${modeClassName}`;
+  el.innerHTML = progressMarkup;
+  el.style.setProperty('--bw-discount-progress-color', primary);
 },
 
 updateFooterMessaging() {
@@ -247,12 +340,21 @@ updateAddToCartButton() {
   const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
   const button = this.elements.addToCartButton;
+  const usesCascadeStepFlow = this._usesCascadeStepFlow?.() === true;
+  const isIntermediateCascadeStep = usesCascadeStepFlow
+    && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+  const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
 
   // Check if all required steps are complete (free gift and default steps are not required)
-  const allStepsValid = this.selectedBundle.steps.every((step, index) => {
+  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
     if (step.isFreeGift || step.isDefault) return true;
     return this.validateStep(index);
-  });
+  }) : true;
+
+  const boxSelectionState = this.validateProductPageBoxSelectionCheckout
+    ? this.validateProductPageBoxSelectionCheckout.call(this)
+    : { valid: true };
+  const canCheckoutByBoxSelection = boxSelectionState.valid !== false;
 
   // Count only paid (non-free-gift, non-default) step selections for the total check
   const paidTotalQuantity = this.selectedProducts.reduce((sum, stepSelections, i) => {
@@ -261,9 +363,43 @@ updateAddToCartButton() {
     return sum + Object.values(stepSelections || {}).reduce((s, qty) => s + qty, 0);
   }, 0);
 
+  if (isIntermediateCascadeStep) {
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const currentStepValid = this.validateStep(this.currentStepIndex);
+    const formattedPrice = totalQuantity > 0
+      ? CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo)
+      : '';
+    const formattedTotalPrice = totalQuantity > 0
+      ? CurrencyManager.convertAndFormat(totalPrice, currencyInfo)
+      : '';
+    const formattedDiscountAmount = combinedDiscountInfo.discountAmount > 0
+      ? CurrencyManager.convertAndFormat(combinedDiscountInfo.discountAmount, currencyInfo)
+      : '';
+
+    const nextButtonContent = this._getCascadeAddToCartButtonContent?.({
+      label: this._resolveText('nextButton', 'Next'),
+      totalPriceText: formattedTotalPrice,
+      finalPriceText: formattedPrice,
+      discountAmountText: formattedDiscountAmount,
+      discountInfo: combinedDiscountInfo,
+    }) || {
+      label: this._resolveText('nextButton', 'Next'),
+      separator: formattedPrice ? '\u2022' : '',
+      finalPriceText: formattedPrice,
+      compareAtPriceText: '',
+      discountPillText: '',
+    };
+    if (!formattedPrice) nextButtonContent.separator = '';
+    this._renderCascadeAddToCartButtonContent(button, nextButtonContent);
+    const shouldDisable = shouldDisableIntermediateProductPageCta({
+      isGrid: this._isProductPageGridTemplate?.() === true,
+      currentStepValid,
+    });
+    button.disabled = shouldDisable;
+    button.classList.toggle('disabled', shouldDisable);
   // Disable button if no paid products selected or not all required steps are complete.
-  if (paidTotalQuantity === 0 || !allStepsValid) {
-    if (paidTotalQuantity === 0) {
+  } else if (paidTotalQuantity === 0 || !allStepsValid || !canCheckoutByBoxSelection) {
+    if (paidTotalQuantity === 0 || usesCascadeStepFlow) {
       button.textContent = this._resolveText('addToCartButton', 'Add Bundle to Cart');
     } else {
       // Some products selected but not all required steps complete
@@ -275,8 +411,30 @@ updateAddToCartButton() {
     // All steps valid and products selected - enable button
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const formattedPrice = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);
+    const buttonLabel = this._resolveText('addToCartButton', 'Add Bundle to Cart');
 
-    button.textContent = `${this._resolveText('addToCartButton', 'Add Bundle to Cart')} \u2022 ${formattedPrice}`;
+    if (this._isProductPageCascadeTemplate?.() === true && this._renderCascadeAddToCartButtonContent) {
+      const formattedTotalPrice = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
+      const formattedDiscountAmount = combinedDiscountInfo.discountAmount > 0
+        ? CurrencyManager.convertAndFormat(combinedDiscountInfo.discountAmount, currencyInfo)
+        : '';
+
+      this._renderCascadeAddToCartButtonContent(button, this._getCascadeAddToCartButtonContent?.({
+        label: buttonLabel,
+        totalPriceText: formattedTotalPrice,
+        finalPriceText: formattedPrice,
+        discountAmountText: formattedDiscountAmount,
+        discountInfo: combinedDiscountInfo,
+      }) || {
+        label: buttonLabel,
+        separator: '\u2022',
+        finalPriceText: formattedPrice,
+        compareAtPriceText: '',
+        discountPillText: '',
+      });
+    } else {
+      button.textContent = `${buttonLabel} \u2022 ${formattedPrice}`;
+    }
 
     button.disabled = false;
     button.classList.remove('disabled');

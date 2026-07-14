@@ -6,6 +6,7 @@ import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 import { createStorefrontAccessToken } from "../../services/storefront-token.server";
 import { getOfflineSessionForShop } from "../../services/offline-token.server";
 import { sessionStorage } from "../../shopify.server";
+import { normalizeStorefrontQuantityAvailable } from "../../lib/storefront-variant-inventory";
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
 const CORS_HEADERS = {
@@ -26,6 +27,15 @@ const CORS_HEADERS = {
  * Storefront API rejects the whole query with "Access denied".
  */
 const INVENTORY_FIELDS = "quantityAvailable currentlyNotInStock";
+const SELLING_PLAN_ALLOCATION_FIELDS = `
+                sellingPlanAllocations(first: 100) {
+                  edges {
+                    node {
+                      priceAdjustments { price { amount currencyCode } }
+                      sellingPlan { id name }
+                    }
+                  }
+                }`;
 
 function mapStorefrontVariant(edge: any) {
   return {
@@ -35,11 +45,13 @@ function mapStorefrontVariant(edge: any) {
     compareAtPrice: edge.node.compareAtPrice?.amount || null,
     sellingPlanAllocations: (edge.node.sellingPlanAllocations?.edges || [])
       .map((allocationEdge: any) => allocationEdge?.node)
+      .map((allocation: any) => ({
+        ...allocation,
+        id: allocation?.id ?? allocation?.sellingPlan?.id ?? null,
+      }))
       .filter((allocation: any) => Boolean(allocation)),
     available: edge.node.availableForSale,
-    quantityAvailable: typeof edge.node.quantityAvailable === 'number'
-      ? edge.node.quantityAvailable
-      : null,
+    quantityAvailable: normalizeStorefrontQuantityAvailable(edge.node),
     currentlyNotInStock: edge.node.currentlyNotInStock === true,
     weight: edge.node.weight ?? 0,
     weightUnit: edge.node.weightUnit ?? 'GRAMS',
@@ -59,9 +71,11 @@ async function fetchAllVariants(
   productId: string,
   country: string | null,
   hasInventoryScope: boolean,
+  hasSellingPlanScope: boolean,
   cursor?: string
 ): Promise<any[]> {
   const inventoryFields = hasInventoryScope ? ` ${INVENTORY_FIELDS}` : "";
+  const sellingPlanAllocationFields = hasSellingPlanScope ? SELLING_PLAN_ALLOCATION_FIELDS : "";
 
   const VARIANT_QUERY = country
     ? `query getProductVariants($id: ID!, $cursor: String, $country: CountryCode!) @inContext(country: $country) {
@@ -76,15 +90,7 @@ async function fetchAllVariants(
                 weight
                 weightUnit
                 image { url }
-                sellingPlanAllocations(first: 100) {
-                  edges {
-                    node {
-                      id
-                      priceAdjustments { price { amount currencyCode } }
-                      sellingPlan { id name }
-                    }
-                  }
-                }
+${sellingPlanAllocationFields}
               }
             }
           }
@@ -102,15 +108,7 @@ async function fetchAllVariants(
                 weight
                 weightUnit
                 image { url }
-                sellingPlanAllocations(first: 100) {
-                  edges {
-                    node {
-                      id
-                      priceAdjustments { price { amount currencyCode } }
-                      sellingPlan { id name }
-                    }
-                  }
-                }
+${sellingPlanAllocationFields}
               }
             }
           }
@@ -135,7 +133,7 @@ async function fetchAllVariants(
 
   const data = await response.json();
 
-  if (data.errors) {
+  if (data.errors && !data.data?.product?.variants) {
     throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
   }
 
@@ -155,6 +153,7 @@ async function fetchAllVariants(
       productId,
       country,
       hasInventoryScope,
+      hasSellingPlanScope,
       endCursor
     );
     return [...variants, ...nextPageVariants];
@@ -282,6 +281,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Scope is synced from Shopify on install and on every app/scopes_update webhook
     // (see handleScopesUpdate in lifecycle.server.ts), so session.scope is authoritative.
     const hasInventoryScope = (session.scope ?? "").includes("unauthenticated_read_product_inventory");
+    const hasSellingPlanScope = (session.scope ?? "").includes("unauthenticated_read_selling_plans");
     const STOREFRONT_QUERY = buildProductsQuery(country, hasInventoryScope);
     const storefrontUrl = `https://${shop}/api/${SHOPIFY_REST_API_VERSION}/graphql.json`;
 
@@ -304,7 +304,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     const data = await response.json();
 
-    if (data.errors) {
+    if (data.errors && !data.data?.nodes) {
       AppLogger.error("[STOREFRONT_API] GraphQL errors", { component: "api.storefront-products" }, data.errors);
       return json({ error: "GraphQL errors", details: data.errors }, { status: 500, headers: CORS_HEADERS });
     }
@@ -324,7 +324,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
             storefrontAccessToken,
             product.id,
             country,
-            hasInventoryScope
+            hasInventoryScope,
+            hasSellingPlanScope
           );
 
           return {

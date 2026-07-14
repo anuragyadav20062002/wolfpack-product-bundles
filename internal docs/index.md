@@ -32,8 +32,10 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Audit Report]] — What was stale or incorrect in the original `docs/` folder
 - [[Architecture/System Overview]] — App stack, services, deployment
 - [[Architecture/Database Schema]] — Authoritative Prisma schema summary
-- [[Architecture/Cart Transform Function]] — TypeScript WASM cart transform (corrected)
+- [[Architecture/Cart Transform Function]] — Rust Shopify Function cart transform and checkout discount contract
 - [[Architecture/Widget Architecture]] — FPB + PDP widgets, load strategy, versioning
+- [[Architecture/Product Card Layout Contract]] — Hard rule for row-level card size behavior across all templates and interaction states
+- [[Architecture/Admin Configure Page]] — shared FPB/PPB Admin configure-page adapter boundary, section rhythm, route-owned save semantics
 - [[Architecture/State Management]] — Redux Toolkit slices, RTK Query endpoint boundaries, and AppStateService migration rules
 - [[Shopify Integration/Admin API]] — Rate limits, GraphQL patterns, session handling
 - [[Shopify Integration/Storefront API]] — Storefront GraphQL field gotchas, including product description HTML handling
@@ -41,6 +43,7 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Shopify Integration/Checkout UI Extension]] — Preact targets, build rules
 - [[Shopify Integration/Metafields]] — Bundle config metafield sync strategy
 - [[Shopify Integration/Theme App Extensions]] — Theme app extension handles, app embed detection, and MAIN-theme status rules
+- [[Shopify Integration/Web Pixels]] — UTM Web Pixel settings payload rules, including nonblank custom-parameter sentinel behavior
 - [[Shopify Integration/Webhooks]] — Subscribed webhook topics, removed broad topics, and delivery-volume rationale
 - [[Features/Bundle Types]] — FPB vs PDP, layout modes, step config
 - [[Features/Pricing Pipeline]] — UI → DB → Metafield → Cart Transform units
@@ -53,4 +56,6 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Operations/Mantle Integration]] — Admin Mantle provider bootstrap, required env vars, and the `MANTLE_API_KEY` vs Shopify client id gotcha
 - [[Operations/Admin Performance]] — App Bridge Web Vitals source, retired custom telemetry, Admin loader critical path
 - [[Operations/LCP and CLS Playbook]] — Home bootstrap strategy, CLS stabilization order, and Knip-guided dead-code cleanup
+- [[Operations/Knip Prune Guardrails]] — known Knip false positives, convention-loaded runtime assets, and required skip rules for future dead-code pruning
+- [[Operations/Knip Candidate Inventory]] — exhaustive current Knip candidate list from the 2026-07-13 report; use with the guardrails before pruning
 - [[Operations/Storefront Parity Placement Board]] — Chrome DevTools MCP placement-board method for EB/WPB storefront responsiveness proof across narrow, column, mobile, and wide widget contexts

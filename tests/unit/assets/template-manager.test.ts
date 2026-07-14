@@ -61,6 +61,7 @@ describe('TemplateManager evidence-matched variables', () => {
       {
         name: 'Test Bundle',
         pricing: {
+          enabled: true,
           method: 'percentage_off',
           rules: [{
             id: 'rule-1',
@@ -92,6 +93,7 @@ describe('TemplateManager evidence-matched variables', () => {
       {
         name: 'Test Bundle',
         pricing: {
+          enabled: true,
           method: 'fixed_amount_off',
           rules: [{
             id: 'rule-fixed',
@@ -122,6 +124,7 @@ describe('TemplateManager evidence-matched variables', () => {
       {
         name: 'Test Bundle',
         pricing: {
+          enabled: true,
           method: 'fixed_amount_off',
           rules: [{
             id: 'rule-fixed',
@@ -161,6 +164,7 @@ describe('TemplateManager evidence-matched variables', () => {
       {
         name: 'Daily Essentials',
         pricing: {
+          enabled: true,
           method: 'percentage_off',
           rules: [
             {
@@ -208,6 +212,7 @@ describe('TemplateManager evidence-matched variables', () => {
 describe('TemplateManager.getDiscountMessageTemplate', () => {
   const bundle = {
     pricing: {
+      enabled: true,
       rules: [
         { id: 'rule-2', conditionType: 'quantity', conditionOperator: 'gte', conditionValue: 2, discountValue: 770 },
         { id: 'rule-3', conditionType: 'quantity', conditionOperator: 'gte', conditionValue: 3, discountValue: 1540 },
@@ -263,6 +268,7 @@ describe('TemplateManager.getDiscountMessageTemplate', () => {
     const template = TemplateManager.getDiscountMessageTemplate({
       bundle: {
         pricing: {
+          enabled: true,
           rules: bundle.pricing.rules,
           messages: {
             ruleMessages: bundle.pricing.messages.ruleMessages,

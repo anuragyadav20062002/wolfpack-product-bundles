@@ -134,6 +134,51 @@ describe('PPB List Cascade selected entries integration', () => {
     expect(onEmpty).toHaveBeenCalledTimes(1);
   });
 
+  it('sizes the selected drawer from list content plus the drawer border', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCascadeSelectedDrawerHeight } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+    const list = { scrollHeight: 175 };
+    const drawer = {};
+    const previousGetComputedStyle = global.getComputedStyle;
+    global.getComputedStyle = jest.fn(() => ({ borderTopWidth: '1px' })) as any;
+
+    try {
+      expect(getCascadeSelectedDrawerHeight({ list, drawer, viewportHeight: 800 })).toBe(176);
+    } finally {
+      global.getComputedStyle = previousGetComputedStyle;
+    }
+  });
+
+  it('caps the selected drawer to three visible rows before overflow scrolling', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCascadeSelectedDrawerHeight } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+    const title = { getBoundingClientRect: () => ({ height: 25 }) };
+    const rows = [
+      { getBoundingClientRect: () => ({ height: 60 }) },
+      { getBoundingClientRect: () => ({ height: 60 }) },
+      { getBoundingClientRect: () => ({ height: 60 }) },
+      { getBoundingClientRect: () => ({ height: 60 }) },
+    ];
+    const list = {
+      scrollHeight: 325,
+      querySelector: jest.fn(() => title),
+      querySelectorAll: jest.fn(() => rows),
+    };
+    const drawer = {};
+    const previousGetComputedStyle = global.getComputedStyle;
+    global.getComputedStyle = jest.fn((element) => {
+      if (element === drawer) return { borderTopWidth: '1px' };
+      if (element === list) return { paddingTop: '0px', rowGap: '10px', gap: '10px' };
+      return {};
+    }) as any;
+
+    try {
+      expect(getCascadeSelectedDrawerHeight({ list, drawer, viewportHeight: 800 })).toBe(236);
+    } finally {
+      global.getComputedStyle = previousGetComputedStyle;
+    }
+  });
+
   it('prepares EB-style Cascade selected row display data', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { prepareCascadeSelectedProductDisplay } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
@@ -155,6 +200,60 @@ describe('PPB List Cascade selected entries integration', () => {
       quantity: 2,
       variantId: 'variant_a',
     });
+  });
+
+  it('keeps Cascade selected row prices single-valued when a discount qualifies', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { prepareCascadeSelectedProductDisplay } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+
+    const product = prepareCascadeSelectedProductDisplay({
+      product: {
+        title: '14k Dangling Obsidian Earrings',
+        price: 82900,
+      },
+      variantId: 'variant_a',
+      quantity: 1,
+      discountInfo: {
+        hasDiscount: true,
+        discountPercentage: 10,
+      },
+      formatPrice: (amount: number) => `$${(amount / 100).toFixed(2)}`,
+    });
+
+    expect(product).toMatchObject({
+      title: '14k Dangling Obsidian Earrings x 1',
+      priceText: '$829.00',
+      quantityLabel: 'x 1',
+      quantity: 1,
+      variantId: 'variant_a',
+    });
+    expect(product.compareAtPriceText).toBeUndefined();
+  });
+
+  it('keeps variant-expanded Product List drawer titles on one line without a duplicate variant row', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { prepareCascadeSelectedProductDisplay } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
+
+    const product = prepareCascadeSelectedProductDisplay({
+      product: {
+        title: '18k Pedal Ring - 8',
+        parentTitle: '18k Pedal Ring',
+        variantTitle: '8',
+        price: 39900,
+      },
+      variantId: 'variant_8',
+      quantity: 1,
+      formatPrice: (amount: number) => `$${(amount / 100).toFixed(2)}`,
+    });
+
+    expect(product).toMatchObject({
+      title: '18k Pedal Ring - 8 x 1',
+      priceText: '$399.00',
+      quantityLabel: 'x 1',
+      quantity: 1,
+      variantId: 'variant_8',
+    });
+    expect(product.variantTitle).toBe('');
   });
 
   it('renders a caller-provided selected row quantity label', () => {

@@ -28,6 +28,10 @@ Source module names should describe their storefront responsibility. Avoid mecha
 
 The shared Bundle Product Modal is intentionally a single-image product details modal: product image, name, description, variant controls when needed, quantity, and Add To Box. Do not reintroduce modal thumbnails, image counters, or carousel/gallery controls; EB's landing-page quick-view modal does not use a gallery.
 
+PPB Product List (`PDP_INPAGE + CASCADE`) owns its multi-step navigation in the Product Page layout, footer, and validation method modules. A multi-step Product List renders only `currentStepIndex`; intermediate primary actions navigate Next after current-step validation, the final step uses Add Bundle to Cart, and Back preserves selections across steps. Single-step Product List and the other PPB templates keep their existing rendering paths. Product List exact-rule over-selection is blocked before state mutation so the current step and selected-items drawer remain stable.
+
+Product Page inventory normalization preserves `sourceVariantCount` after unavailable variants are filtered. Product List uses that metadata only when a grouped product originally had multiple variants but now has one sellable variant: the shared row shows the surviving variant title as static identity while keeping the selector absent. Fully unavailable products and unavailable options remain filtered.
+
 ---
 
 ## Storefront Surfaces
@@ -164,6 +168,19 @@ The Liquid blocks expose template CSS URL maps and the widget runtime loads the 
 Shopify CDN `asset_url` filter appends `?v=HASH` — this hash only changes on `shopify app deploy`. Custom query params are NOT on the allowlist. Always deploy after widget changes.
 
 Storefront JS/CSS loading strategy: FPB and Product Page bundle blocks load assets from Shopify theme-extension assets with Liquid `asset_url`. App proxy remains for API/data routes only.
+
+### JS/CSS Asset Skew
+
+Do not trust `window.__BUNDLE_WIDGET_VERSION__` by itself for CSS-only or CSS-heavy storefront fixes. The value proves the served JS bundle executed, but Product Page template CSS is a separate Shopify extension asset such as `bundle-widget-product-page-cascade.css`.
+
+Observed 2026-07-13 in SIT: the storefront served `bundle-widget-product-page-bundled.js` with `window.__BUNDLE_WIDGET_VERSION__ = "5.0.145"` while the exact Shopify CDN `bundle-widget-product-page-cascade.css` still lacked `--bw-ppb-cascade-action-radius` and still contained the older `border-radius:100px` Product List quantity-wrapper rule. The local generated CSS asset was correct.
+
+For storefront visual proof after CSS changes:
+- Hard reload after clearing Cache Storage.
+- Record `window.__BUNDLE_WIDGET_VERSION__`.
+- Record the exact active CSS asset URL.
+- Fetch the active CSS asset URL and verify the expected token/rule is present.
+- Then measure computed styles. If JS is current but CSS is stale, proof is blocked by extension asset propagation/deploy state, not by the source patch.
 
 ### Dev Preview Asset 404 / ORB Failure
 

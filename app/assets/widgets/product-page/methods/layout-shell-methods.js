@@ -1,13 +1,61 @@
-import { CurrencyManager, ComponentGenerator } from '../../../bundle-widget-components.js';
+import { CurrencyManager, ComponentGenerator, ToastManager } from '../../../bundle-widget-components.js';
 import { getDiscountProgressData } from '../../shared/engine/bundle-selectors.js';
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { renderSharedProductCard } from '../../shared/components/product-card.js';
+import { formatProductPageStepValidationToast } from './modal-state-methods.js';
 
 export function shouldHideInpageStepChrome({ isCascade = false, steps = [], step = null } = {}) {
   if (!isCascade) return false;
 
   const categories = Array.isArray(step?.categories) ? step.categories : [];
   return Array.isArray(steps) && steps.length === 1 && categories.length <= 1;
+}
+
+export function shouldUseCascadeStepFlow({ isInpage = false, isCascade = false, isGrid = false, steps = [] } = {}) {
+  return Boolean(isInpage && (isCascade || isGrid) && Array.isArray(steps) && steps.length > 1);
+}
+
+export function getCascadeStepNavigationState({
+  currentStepIndex = 0,
+  direction = 0,
+  stepCount = 0,
+  isCurrentStepValid = false,
+} = {}) {
+  const lastStepIndex = Math.max(0, Number(stepCount || 0) - 1);
+  const current = Math.min(Math.max(0, Number(currentStepIndex || 0)), lastStepIndex);
+
+  if (direction < 0) {
+    return {
+      targetStepIndex: Math.max(0, current - 1),
+      blocked: false,
+      isFinal: false,
+    };
+  }
+
+  if (current >= lastStepIndex) {
+    return { targetStepIndex: current, blocked: false, isFinal: true };
+  }
+
+  if (!isCurrentStepValid) {
+    return { targetStepIndex: current, blocked: true, isFinal: false };
+  }
+
+  return { targetStepIndex: current + 1, blocked: false, isFinal: false };
+}
+
+export function getCogniveStepRenderSequence({ stepCount = 0, currentStepIndex = 0 } = {}) {
+  const count = Math.max(0, Number(stepCount || 0));
+  const activeIndex = Math.min(Math.max(0, Number(currentStepIndex || 0)), Math.max(0, count - 1));
+  const sequence = [];
+
+  for (let stepIndex = 0; stepIndex < count; stepIndex += 1) {
+    sequence.push({ type: 'header', stepIndex });
+    if (stepIndex === activeIndex) {
+      sequence.push({ type: 'body', stepIndex });
+    }
+  }
+
+  return sequence;
 }
 
 export const ProductPageLayoutShellMethods = {
@@ -118,10 +166,26 @@ _createStepBannerImage(step) {
   return wrapper;
 },
 
-// Product-page bundle layout: always renders all steps at once.
-// Each step gets the appropriate card variant based on its type and selection state.
+// In-page templates use an active-step flow when multiple steps are configured.
 renderProductPageLayout() {
-  this.selectedBundle.steps.forEach((step, stepIndex) => {
+  const usesCascadeStepFlow = this._usesCascadeStepFlow();
+  const lastStepIndex = Math.max(0, this.selectedBundle.steps.length - 1);
+  this.currentStepIndex = Math.min(Math.max(0, this.currentStepIndex), lastStepIndex);
+
+  if (usesCascadeStepFlow && this._isProductPageGridTemplate?.() === true) {
+    this._renderCogniveStepFlowLayout();
+    return;
+  }
+
+  if (usesCascadeStepFlow) {
+    this.elements.stepsContainer.appendChild(this._createCascadeStepFlowHeader());
+  }
+
+  const stepsToRender = usesCascadeStepFlow
+    ? [[this.selectedBundle.steps[this.currentStepIndex], this.currentStepIndex]]
+    : this.selectedBundle.steps.map((step, stepIndex) => [step, stepIndex]);
+
+  stepsToRender.forEach(([step, stepIndex]) => {
     if (this._isProductPageInpageTemplate()) {
       const section = this._createInpageStepSection(step, stepIndex);
       const target = section.querySelector('.bw-ppb-inpage-step-grid');
@@ -186,16 +250,136 @@ renderProductPageLayout() {
             }
           }
         });
-        // Show "add more" card if step condition not yet met
-        if (!this.validateStep(stepIndex)) {
-          const totalQty = selectedEntries.reduce((sum, [, qty]) => sum + qty, 0);
+        const totalQty = selectedEntries.reduce((sum, [, qty]) => sum + qty, 0);
+        if (this._isProductPageModalSlotTemplate()) {
+          this._appendModalSlotEmptyCards(target, step, stepIndex, totalQty);
+        } else if (!this.validateStep(stepIndex)) {
           target.appendChild(this.createAddMoreCard(step, stepIndex, totalQty));
         }
       } else {
-        target.appendChild(this.createAddMoreCard(step, stepIndex, 0));
+        if (this._isProductPageModalSlotTemplate()) {
+          this._appendModalSlotEmptyCards(target, step, stepIndex, 0);
+        } else {
+          target.appendChild(this.createAddMoreCard(step, stepIndex, 0));
+        }
       }
     }
   });
+},
+
+_renderCogniveStepFlowLayout() {
+  const sequence = getCogniveStepRenderSequence({
+    stepCount: this.selectedBundle.steps.length,
+    currentStepIndex: this.currentStepIndex,
+  });
+
+  sequence.forEach(({ type, stepIndex }) => {
+    const step = this.selectedBundle.steps[stepIndex];
+    if (type === 'header') {
+      this.elements.stepsContainer.appendChild(this._createCogniveStepHeader(step, stepIndex));
+      return;
+    }
+
+    const section = this._createInpageStepSection(step, stepIndex);
+    const target = section.querySelector('.bw-ppb-inpage-step-grid');
+    this.elements.stepsContainer.appendChild(section);
+
+    const banner = this._createStepBannerImage(step);
+    if (banner) target.appendChild(banner);
+    this._renderInpageStepProducts(stepIndex, target);
+  });
+},
+
+_createCogniveStepHeader(step, stepIndex) {
+  const button = document.createElement('button');
+  const isActive = stepIndex === this.currentStepIndex;
+  button.type = 'button';
+  button.className = `bw-ppb-cognive-step${isActive ? ' is-active' : ''}${this.validateStep(stepIndex) ? ' is-complete' : ''}`;
+  button.setAttribute('aria-current', isActive ? 'step' : 'false');
+  button.innerHTML = `
+    <span class="bw-ppb-cognive-step__number">${stepIndex + 1}</span>
+    <span class="bw-ppb-cognive-step__label">${ComponentGenerator.escapeHtml(step.pageTitle || step.name || `Step ${stepIndex + 1}`)}</span>
+  `;
+  button.addEventListener('click', () => {
+    if (isActive) return;
+    if (!this.isStepAccessible(stepIndex)) {
+      const currentStep = this.selectedBundle.steps[this.currentStepIndex];
+      ToastManager.show(
+        formatProductPageStepValidationToast(currentStep)
+          || 'Please meet the quantity conditions for the current step before proceeding.',
+        4000,
+        {
+          dismissible: false,
+          className: 'bundle-toast--cognive',
+        },
+      );
+      return;
+    }
+    this.currentStepIndex = stepIndex;
+    this.renderSteps();
+    this.renderFooter();
+    this.updateAddToCartButton();
+  });
+  return button;
+},
+
+_usesCascadeStepFlow() {
+  return shouldUseCascadeStepFlow({
+    isInpage: this._isProductPageInpageTemplate?.() === true,
+    isCascade: this._isProductPageCascadeTemplate?.() === true,
+    isGrid: this._isProductPageGridTemplate?.() === true,
+    steps: this.selectedBundle?.steps,
+  });
+},
+
+_createCascadeStepFlowHeader() {
+  const header = document.createElement('div');
+  header.className = 'bw-ppb-cascade-step-flow';
+
+  this.selectedBundle.steps.forEach((step, stepIndex) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'bw-ppb-cascade-step-flow__step';
+    button.classList.toggle('is-active', stepIndex === this.currentStepIndex);
+    button.classList.toggle('is-complete', this.validateStep(stepIndex));
+    button.setAttribute('aria-current', stepIndex === this.currentStepIndex ? 'step' : 'false');
+    button.disabled = stepIndex > this.currentStepIndex && !this.isStepAccessible(stepIndex);
+    button.innerHTML = `
+      <span class="bw-ppb-cascade-step-flow__number">${stepIndex + 1}</span>
+      <span class="bw-ppb-cascade-step-flow__label">${ComponentGenerator.escapeHtml(step.pageTitle || step.name || `Step ${stepIndex + 1}`)}</span>
+    `;
+    button.addEventListener('click', () => {
+      if (button.disabled || stepIndex === this.currentStepIndex) return;
+      this.currentStepIndex = stepIndex;
+      this.renderSteps();
+      this.renderFooter();
+      this.updateAddToCartButton();
+    });
+    header.appendChild(button);
+  });
+
+  return header;
+},
+
+navigateCascadeStep(direction) {
+  if (!this._usesCascadeStepFlow()) return false;
+
+  const navigation = getCascadeStepNavigationState({
+    currentStepIndex: this.currentStepIndex,
+    direction,
+    stepCount: this.selectedBundle.steps.length,
+    isCurrentStepValid: this.validateStep(this.currentStepIndex),
+  });
+
+  if (navigation.blocked || navigation.isFinal || navigation.targetStepIndex === this.currentStepIndex) {
+    return false;
+  }
+
+  this.currentStepIndex = navigation.targetStepIndex;
+  this.renderSteps();
+  this.renderFooter();
+  this.updateAddToCartButton();
+  return true;
 },
 
 _createInpageStepSection(step, stepIndex) {
@@ -210,10 +394,13 @@ _createInpageStepSection(step, stepIndex) {
   section.className = `bw-ppb-inpage-step-section bw-ppb-inpage-step-section--${preset.toLowerCase()}${isCascade ? ' wpbMixCascadeBodyWrapper' : ''}`;
 
   if (!hideStepChrome) {
-    const title = document.createElement('div');
-    title.className = `bw-ppb-inpage-step-title${isCascade ? ' wpbMixCascadeBodyHeaderCategoryName' : ''}`;
-    title.textContent = step.pageTitle || step.name || '';
-    section.appendChild(title);
+    const usesCascadeStepFlow = this._usesCascadeStepFlow();
+    if (!usesCascadeStepFlow) {
+      const title = document.createElement('div');
+      title.className = `bw-ppb-inpage-step-title${isCascade ? ' wpbMixCascadeBodyHeaderCategoryName' : ''}`;
+      title.textContent = step.pageTitle || step.name || '';
+      section.appendChild(title);
+    }
 
     const tabs = this._createInpageCategoryTabs(step, stepIndex);
     if (tabs) section.appendChild(tabs);
@@ -287,19 +474,69 @@ _categoryHasCollections(category) {
 
 _filterProductsForInpageCategory(step, products, stepIndex) {
   const categories = Array.isArray(step?.categories) ? step.categories : [];
-  if (categories.length <= 1) return products;
+  if (categories.length === 0) return products;
 
   const activeIndex = this.activeInpageCategoryIndexes[stepIndex] || 0;
   const category = categories[activeIndex];
   const categoryProductIds = this._getCategoryProductIds(category);
+  const configuredProducts = [
+    ...(Array.isArray(category?.products) ? category.products : []),
+    ...(Array.isArray(category?.selectedProducts) ? category.selectedProducts : []),
+  ];
 
   if (categoryProductIds.size === 0) {
     return this._categoryHasCollections(category) ? products : [];
   }
 
-  return products.filter(product => {
+  const categoryProducts = categories.length > 1
+    ? products.filter(product => {
+      const productId = this.extractId(product.parentProductId || product.id);
+      return categoryProductIds.has(productId);
+    })
+    : products;
+
+  return categoryProducts.flatMap(product => {
     const productId = this.extractId(product.parentProductId || product.id);
-    return categoryProductIds.has(productId);
+    const configuredProduct = configuredProducts.find(candidate => (
+      this.extractId(candidate?.id || candidate?.graphqlId || candidate?.productId) === productId
+    ));
+    const configuredVariantIds = new Set(
+      (Array.isArray(configuredProduct?.variants) ? configuredProduct.variants : [])
+        .map(variant => this.extractId(variant?.id || variant?.variantId))
+        .filter(Boolean)
+    );
+
+    if (configuredVariantIds.size === 0 || !Array.isArray(product?.variants)) {
+      return [product];
+    }
+
+    const variants = product.variants.filter(variant => (
+      configuredVariantIds.has(this.extractId(variant?.id || variant?.variantId))
+    ));
+    if (variants.length === 0) return [];
+
+    const selectedVariant = variants.find(variant => variant?.available !== false) || variants[0];
+    const variantImageUrl = selectedVariant?.image?.src
+      || selectedVariant?.image?.url
+      || selectedVariant?.imageUrl
+      || product.imageUrl;
+
+    return [{
+      ...product,
+      variantId: this.extractId(selectedVariant?.id || selectedVariant?.variantId),
+      variantTitle: selectedVariant?.title && selectedVariant.title !== 'Default Title'
+        ? selectedVariant.title
+        : '',
+      price: selectedVariant?.price ?? product.price,
+      compareAtPrice: selectedVariant?.compareAtPrice ?? null,
+      available: selectedVariant?.available !== false,
+      quantityAvailable: typeof selectedVariant?.quantityAvailable === 'number'
+        ? selectedVariant.quantityAvailable
+        : null,
+      currentlyNotInStock: selectedVariant?.currentlyNotInStock === true,
+      imageUrl: variantImageUrl,
+      variants,
+    }];
   });
 }
 };

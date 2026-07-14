@@ -24,6 +24,14 @@ export interface PixelDeactivationResult {
   error?: string;
 }
 
+const NO_CUSTOM_UTM_PARAMETERS_SENTINEL = "__none__";
+
+function buildCustomUtmParametersSetting(customUtmParameters: string[]): string {
+  return customUtmParameters.length > 0
+    ? customUtmParameters.join(",")
+    : NO_CUSTOM_UTM_PARAMETERS_SENTINEL;
+}
+
 /**
  * Queries the live pixel status from Shopify's Admin API.
  * Returns active:false (not an error) when no pixel exists.
@@ -151,7 +159,7 @@ export async function activateUtmPixel(
           settings: {
             app_server_url: appUrl,
             shop_domain: shopDomain,
-            custom_utm_parameters: customUtmParameters.join(","),
+            custom_utm_parameters: buildCustomUtmParametersSetting(customUtmParameters),
           },
         },
       },
