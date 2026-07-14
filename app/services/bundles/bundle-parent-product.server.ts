@@ -239,7 +239,7 @@ async function publishParentToOnlineStore(
       publications(first: 50) {
         nodes {
           id
-          catalog { title }
+          name
         }
       }
     }
@@ -249,7 +249,7 @@ async function publishParentToOnlineStore(
       publications?: {
         nodes?: Array<{
           id: string;
-          catalog?: { title?: string | null } | null;
+          name?: string | null;
         }>;
       };
     };
@@ -257,8 +257,7 @@ async function publishParentToOnlineStore(
   };
   throwTransportErrors("load Online Store publication", publicationsData.errors);
   const onlineStore = publicationsData.data?.publications?.nodes?.find(
-    (publication) =>
-      publication.catalog?.title?.endsWith(" for Online Store") === true,
+    (publication) => publication.name === "Online Store",
   );
   if (!onlineStore) {
     throw new BundleParentProductError("load Online Store publication", [

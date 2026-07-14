@@ -84,6 +84,7 @@ createProductCard(product, stepIndex, options = {}) {
       currentQuantity,
       currencyInfo,
       {
+        description: '',
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         className: outOfStock ? 'is-out-of-stock' : '',

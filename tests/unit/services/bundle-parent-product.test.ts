@@ -75,17 +75,21 @@ function makeCreateAdmin(options: { publicationErrors?: unknown[]; variantErrors
               nodes: [
                 {
                   id: "gid://shopify/Publication/1",
+                  name: "Online Store",
                   catalog: {
                     title: "Channel Catalog 1 for Online Store",
                     apps: { nodes: [{ title: "Online Store" }] },
                   },
+                  channels: { nodes: [{ handle: "online_store" }] },
                 },
                 {
                   id: "gid://shopify/Publication/2",
+                  name: "Point of Sale",
                   catalog: {
                     title: "Channel Catalog 2 for Point of Sale",
                     apps: { nodes: [{ title: "Point of Sale" }] },
                   },
+                  channels: { nodes: [{ handle: "pos" }] },
                 },
               ],
             },
@@ -236,6 +240,53 @@ describe("ensureBundleParentProduct", () => {
     );
   });
 
+  it("resolves Online Store when the app token cannot access publication catalogs", async () => {
+    const admin = makeCreateAdmin();
+    const original = admin.graphql.getMockImplementation()!;
+    admin.graphql.mockImplementation(async (query: string, options?: unknown) => {
+      if (query.includes("GetOnlineStorePublication")) {
+        return response({
+          data: {
+            publications: {
+              nodes: [
+                {
+                  id: "gid://shopify/Publication/2",
+                  name: "Point of Sale",
+                  catalog: { title: "Generated point of sale catalog" },
+                  channels: { nodes: [{ handle: "pos" }] },
+                },
+                {
+                  id: "gid://shopify/Publication/1",
+                  name: "Online Store",
+                  catalog: null,
+                  channels: { nodes: [{ handle: "online_store" }] },
+                },
+              ],
+            },
+          },
+        });
+      }
+      return original(query, options);
+    });
+
+    await ensureBundleParentProduct({
+      admin,
+      shopDomain: "test-shop.myshopify.com",
+      appUrl: process.env.SHOPIFY_APP_URL,
+      bundle,
+    });
+
+    expect(admin.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("PublishBundleParentProduct"),
+      {
+        variables: {
+          id: "gid://shopify/Product/10",
+          input: [{ publicationId: "gid://shopify/Publication/1" }],
+        },
+      },
+    );
+  });
+
   it("preserves merchant metadata and refreshes only the stored handle for an existing product", async () => {
     const existingBundle = {
       ...bundle,
@@ -267,7 +318,9 @@ describe("ensureBundleParentProduct", () => {
               nodes: [
                 {
                   id: "gid://shopify/Publication/1",
+                  name: "Online Store",
                   catalog: { title: "Channel Catalog 1 for Online Store" },
+                  channels: { nodes: [{ handle: "online_store" }] },
                 },
               ],
             },
@@ -380,7 +433,9 @@ describe("ensureBundleParentProduct", () => {
               nodes: [
                 {
                   id: "gid://shopify/Publication/1",
+                  name: "Online Store",
                   catalog: { title: "Channel Catalog 1 for Online Store" },
+                  channels: { nodes: [{ handle: "online_store" }] },
                 },
               ],
             },
