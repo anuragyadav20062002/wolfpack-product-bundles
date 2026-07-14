@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07, C08, and G12 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07, C08, D11, and G12 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -148,7 +148,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | D08 | Discount messaging disabled/enabled | Message visibility follows its own toggle | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show |
 | D09 | Discount message variables and custom copy | Remaining quantity/amount, value/unit, discounted items | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` |
 | D10 | Progress bar off / simple / step-based | Each saved display mode renders independently | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-discount-config.spec.md` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-discount-config.spec.md` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-discount-config.spec.md` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-discount-config.spec.md` |
-| D11 | Bundle Quantity Options | EB applicability and runtime output explicitly resolved per template | **E** PL06 captured inert/false state | **T** | **T** | **T** |
+| D11 | Bundle Quantity Options | Current EB PPB admin/runtime does not expose or execute box selection | **E** [D11 bundle quantity absence](ppb-deferred-functional-parity/D11-bundle-quantity-options-absence-evidence.md) | **E** [D11 bundle quantity absence](ppb-deferred-functional-parity/D11-bundle-quantity-options-absence-evidence.md) | **E** [D11 bundle quantity absence](ppb-deferred-functional-parity/D11-bundle-quantity-options-absence-evidence.md) | **E** [D11 bundle quantity absence](ppb-deferred-functional-parity/D11-bundle-quantity-options-absence-evidence.md) |
 | D12 | Multi-language discount/progress labels | Active locale selects the correct saved copy | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` |
 | D13 | Totals and CTA content | Original, discounted, incomplete, and complete states | **P** PL05/PL08 | **P** PG06/PG08 | **P** HS06/HSS4 | **P** VS03 |
 
@@ -306,6 +306,11 @@ colour/image controls. Current EB runtime reported `displayVariantsAsSwatches:
 false`, no swatch-related runtime keys, and a grouped variant selector instead
 of swatch DOM.
 
+The 2026-07-15 D11 review resolves Bundle Quantity Options as EB-absent for
+current PPB. The live EB admin exposed no box-selection or bundle-quantity
+control in Step Setup or Bundle Settings, and the storefront runtime reported
+`boxSelection.isEnabled: false` with no visible box quantity UI.
+
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
 template isolation, and the current desktop/mobile fixtures. Product Grid PG09
@@ -320,17 +325,17 @@ Final evidence counts across the 119 feature rows:
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Product List | 54 | 8 | 39 | 5 | 1 | 12 |
-| Product Grid | 51 | 10 | 42 | 3 | 1 | 12 |
-| Horizontal Slots | 64 | 7 | 40 | 3 | 4 | 1 |
-| Vertical Slots | 54 | 15 | 43 | 3 | 3 | 1 |
+| Product Grid | 51 | 10 | 41 | 4 | 1 | 12 |
+| Horizontal Slots | 64 | 7 | 39 | 4 | 4 | 1 |
+| Vertical Slots | 54 | 15 | 42 | 4 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
 - Proven: **223**
 - Shared/partial: **40**
-- Not tested: **164**
-- EB-absent: **14**
+- Not tested: **161**
+- EB-absent: **17**
 - Accepted divergence: **9**
 - Not applicable: **26**
 
