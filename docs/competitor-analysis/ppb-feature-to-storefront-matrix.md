@@ -131,7 +131,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | M08 | Backdrop, body lock, internal scroll, focus, and Escape | EB locks body scroll and uses an internal modal scroller, but does not trap focus or close on Escape | **N/A** | **N/A** | **X** HS17 WPB retains dialog semantics and Escape-to-close; focus containment remains absent | **X** VS09 WPB retains Escape-to-close as an accessibility/safety improvement; focus containment remains absent |
 | M09 | Horizontal/vertical orientation isolation | Only the selected orientation styles and child order apply | **N/A** | **N/A** | **P** HS09/final regression | **P** VS04/final regression |
 | M10 | `maxSlotsPerRow` variations | Saved global value changes responsive slot tracks | **N/A** | **N/A** | **T** | **T** |
-| M11 | Filled-slot stacking control | `renderFilledSlotsAsHorizontalStacked` changes filled presentation | **N/A** | **N/A** | **T** | **T** |
+| M11 | Filled-slot stacking control | `renderFilledSlotsAsHorizontalStacked` changes filled presentation | **N/A** | **N/A** | **P** [M11 filled-slot stacking evidence](ppb-deferred-functional-parity/M11-filled-slot-stacking-evidence.md) | **P** [M11 filled-slot stacking evidence](ppb-deferred-functional-parity/M11-filled-slot-stacking-evidence.md) |
 | M12 | Slot rendering based on condition toggle | `renderSlotsBasedOnCondition` false/true permutations | **N/A** | **N/A** | **T** | **T** |
 
 ## 4. Discounts, Progress, Messaging, and Totals
@@ -274,6 +274,12 @@ contracts revalidated selected-template preservation, bundle parent-product
 preview context, draft-product preview URL handling, template-suffix assignment,
 and merchant theme-template listing with 18/18 Jest tests passing.
 
+The 2026-07-15 M11 review classifies filled-slot stacking as a modal-only
+runtime setting. EB and Wolfpack both drive Horizontal versus Vertical modal
+slots from `renderFilledSlotsAsHorizontalStacked`; the current formatter and
+template-registry contracts passed 41/41 focused tests, and R13 live replay
+verified the HS/VS runtime orientation markers.
+
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
 template isolation, and the current desktop/mobile fixtures. Product Grid PG09
@@ -289,15 +295,15 @@ Final evidence counts across the 119 feature rows:
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Product List | 51 | 9 | 43 | 3 | 1 | 12 |
 | Product Grid | 48 | 10 | 47 | 1 | 1 | 12 |
-| Horizontal Slots | 61 | 7 | 45 | 1 | 4 | 1 |
-| Vertical Slots | 50 | 15 | 49 | 1 | 3 | 1 |
+| Horizontal Slots | 62 | 7 | 44 | 1 | 4 | 1 |
+| Vertical Slots | 51 | 15 | 48 | 1 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **210**
+- Proven: **212**
 - Shared/partial: **41**
-- Not tested: **184**
+- Not tested: **182**
 - EB-absent: **6**
 - Accepted divergence: **9**
 - Not applicable: **26**
