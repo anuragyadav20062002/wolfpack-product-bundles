@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.182
+ * Version : 5.0.183
  * Built   : 2026-07-14
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.182';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.183';
 (function() {
   'use strict';
 
@@ -5683,14 +5683,14 @@ updateAddToCartButton() {
 
   const button = this.elements.addToCartButton;
   const usesCascadeStepFlow = this._usesCascadeStepFlow?.() === true;
+  const lastRequiredStepIndex = getLastRequiredProductPageStepIndex(this.selectedBundle?.steps);
   const isIntermediateCascadeStep = usesCascadeStepFlow
-    && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+    && this.currentStepIndex < lastRequiredStepIndex;
   const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
 
-  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
-    if (step.isFreeGift || step.isDefault) return true;
-    return this.validateStep(index);
-  }) : true;
+  const allStepsValid = isConditionValidationEnabled
+    ? areRequiredProductPageStepsValid(this.selectedBundle.steps, this.validateStep.bind(this))
+    : true;
 
   const boxSelectionState = this.validateProductPageBoxSelectionCheckout
     ? this.validateProductPageBoxSelectionCheckout.call(this)
@@ -6299,8 +6299,9 @@ hideLoadingOverlay() {
 attachEventListeners() {
 
   this.elements.addToCartButton.addEventListener('click', () => {
+    const lastRequiredStepIndex = getLastRequiredProductPageStepIndex(this.selectedBundle?.steps);
     const isIntermediateCascadeStep = this._usesCascadeStepFlow?.()
-      && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+      && this.currentStepIndex < lastRequiredStepIndex;
     if (isIntermediateCascadeStep) {
       const navigated = this.navigateCascadeStep(1);
       if (!navigated && this._isProductPageGridTemplate?.() === true) {
@@ -9329,10 +9330,9 @@ _maybeAutoAddAfterLastStep() {
   if (!this.selectedBundle?.steps?.length) return;
 
   const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
-  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
-    if (step.isFreeGift || step.isDefault) return true;
-    return this.validateStep(index);
-  }) : true;
+  const allStepsValid = isConditionValidationEnabled
+    ? areRequiredProductPageStepsValid(this.selectedBundle.steps, this.validateStep.bind(this))
+    : true;
   if (!allStepsValid) return;
 
   this._autoAddingFromControls = true;
@@ -9565,10 +9565,9 @@ const ProductPageCartMethods = {
       }
 
       const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
-      const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
-        if (step.isFreeGift || step.isDefault) return true;
-        return this.validateStep(index);
-      }) : true;
+      const allStepsValid = isConditionValidationEnabled
+        ? areRequiredProductPageStepsValid(this.selectedBundle.steps, this.validateStep.bind(this))
+        : true;
 
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');

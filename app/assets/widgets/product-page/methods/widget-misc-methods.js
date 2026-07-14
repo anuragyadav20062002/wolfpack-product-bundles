@@ -5,6 +5,7 @@ import {
   formatProductPageStepValidationToast,
   getProductPageModalValidationToastOptions,
 } from './modal-state-methods.js';
+import { getLastRequiredProductPageStepIndex } from './step-validation.js';
 
 const MIN_LOADING_OVERLAY_VISIBLE_MS = 180;
 
@@ -78,8 +79,9 @@ hideLoadingOverlay() {
 attachEventListeners() {
   // Add to cart button
   this.elements.addToCartButton.addEventListener('click', () => {
+    const lastRequiredStepIndex = getLastRequiredProductPageStepIndex(this.selectedBundle?.steps);
     const isIntermediateCascadeStep = this._usesCascadeStepFlow?.()
-      && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+      && this.currentStepIndex < lastRequiredStepIndex;
     if (isIntermediateCascadeStep) {
       const navigated = this.navigateCascadeStep(1);
       if (!navigated && this._isProductPageGridTemplate?.() === true) {

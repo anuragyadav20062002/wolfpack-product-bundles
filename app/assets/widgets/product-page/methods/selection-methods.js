@@ -1,6 +1,7 @@
 import { ConditionValidator } from '../../shared/condition-validator.js';
 import { ToastManager } from '../../../bundle-widget-components.js';
 import { resolveProductPageCardButtonText } from './modal-methods.js';
+import { areRequiredProductPageStepsValid } from './step-validation.js';
 
 function createInlineQuantityControl(productId, quantity, increaseDisabled) {
   const wrapper = document.createElement('div');
@@ -203,10 +204,9 @@ _maybeAutoAddAfterLastStep() {
   if (!this.selectedBundle?.steps?.length) return;
 
   const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
-  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
-    if (step.isFreeGift || step.isDefault) return true;
-    return this.validateStep(index);
-  }) : true;
+  const allStepsValid = isConditionValidationEnabled
+    ? areRequiredProductPageStepsValid(this.selectedBundle.steps, this.validateStep.bind(this))
+    : true;
   if (!allStepsValid) return;
 
   this._autoAddingFromControls = true;
