@@ -50,12 +50,21 @@ export function shouldDisplayVariantsAsIndividualForModalCategory(
 const MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
 
 function resolveProductCardDescription(product = {}) {
-  const candidate =
-    (typeof product.description === 'string' && product.description)
-    || (typeof product.descriptionHtml === 'string' && product.descriptionHtml)
-    || '';
+  const plainDescription = typeof product.description === 'string'
+    ? product.description.trim()
+    : '';
+  if (plainDescription) return plainDescription;
 
-  return String(candidate);
+  const descriptionHtml = typeof product.descriptionHtml === 'string'
+    ? product.descriptionHtml.trim()
+    : '';
+  const visibleHtmlText = descriptionHtml
+    .replace(/<[^>]*>/g, '')
+    .replace(/&(?:nbsp|#160|#x0*a0);/gi, '')
+    .trim();
+  if (!visibleHtmlText) return '';
+
+  return descriptionHtml;
 }
 
 function renderModalProductCardDescription(product, showSeeMore) {

@@ -110,12 +110,21 @@ export function resolveInpageProductSelection(
 const INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
 
 function resolveProductCardDescription(product = {}) {
-  const candidate =
-    (typeof product.description === 'string' && product.description.trim())
-    || (typeof product.descriptionHtml === 'string' && product.descriptionHtml.trim())
-    || '';
+  const plainDescription = typeof product.description === 'string'
+    ? product.description.trim()
+    : '';
+  if (plainDescription) return plainDescription;
 
-  return String(candidate).trim();
+  const descriptionHtml = typeof product.descriptionHtml === 'string'
+    ? product.descriptionHtml.trim()
+    : '';
+  const visibleHtmlText = descriptionHtml
+    .replace(/<[^>]*>/g, '')
+    .replace(/&(?:nbsp|#160|#x0*a0);/gi, '')
+    .trim();
+  if (!visibleHtmlText) return '';
+
+  return descriptionHtml;
 }
 
 function renderInpageProductCardDescription(product = {}, showSeeMore) {

@@ -2,6 +2,7 @@ export {};
 
 const { ProductPageConfigLifecycleMethods } = require('../../../app/assets/widgets/product-page/methods/config-lifecycle-methods.js');
 const { ProductPageInpageRenderMethods } = require('../../../app/assets/widgets/product-page/methods/inpage-render-methods.js');
+const { ProductPageModalMethods } = require('../../../app/assets/widgets/product-page/methods/modal-methods.js');
 const { renderSharedProductCard } = require('../../../app/assets/widgets/shared/components/product-card.js');
 
 function createTarget() {
@@ -105,6 +106,31 @@ describe('PPB card control setting parsing', () => {
 });
 
 describe('PPB in-page rendering control wiring', () => {
+  it('omits empty Shopify HTML descriptions from product cards', () => {
+    const target = createTarget();
+    const context = {
+      ...ProductPageInpageRenderMethods,
+      ...createBaseContext({
+        config: {
+          displaySeeMoreLink: true,
+        },
+        stepProductData: [[{
+          id: 'variant-empty-description',
+          price: 1200,
+          title: 'Empty description product',
+          description: '',
+          descriptionHtml: '<p></p>',
+        }]],
+        _isProductPageCascadeTemplate: () => true,
+      }),
+    } as any;
+
+    ProductPageInpageRenderMethods._renderInpageStepProducts.call(context, 0, target);
+
+    expect(target.innerHTML).not.toContain('bw-product-card__description');
+    expect(target.innerHTML).not.toContain('&lt;p&gt;&lt;/p&gt;');
+  });
+
   it('omits row quantity selectors when the showQuantityInput control is disabled', () => {
     const target = createTarget();
     const context = {
@@ -167,5 +193,51 @@ describe('PPB shared product card control classes', () => {
     });
 
     expect(html).toContain('bw-product-card--hover-expand');
+  });
+});
+
+describe('PPB modal product-card description wiring', () => {
+  it('omits empty Shopify HTML descriptions from modal product cards', () => {
+    const productGrid = {
+      innerHTML: '',
+      classList: { add: jest.fn(), remove: jest.fn() },
+      offsetWidth: 0,
+    } as any;
+    const context = {
+      ...ProductPageModalMethods,
+      config: { displaySeeMoreLink: true },
+      selectedBundle: { steps: [{}], validateQuantityPerProduct: null },
+      stepProductData: [[{
+        id: 'modal-empty-description',
+        imageUrl: '/empty-description.png',
+        price: 1200,
+        title: 'Modal empty description product',
+        description: '',
+        descriptionHtml: '<p></p>',
+      }]],
+      selectedProducts: [{}],
+      activeInpageCategoryIndexes: {},
+      elements: {
+        modal: {
+          querySelector: (selector: string) => {
+            if (selector === '.product-grid') return productGrid;
+            if (selector === '.bw-bs-body') return { querySelector: () => null };
+            return null;
+          },
+        },
+      },
+      _filterProductsForInpageCategory: (_step: unknown, products: unknown[]) => products,
+      expandProductsByVariant: (products: unknown[]) => products,
+      getSelectedQuantity: () => 0,
+      getVariantAvailable: () => ({ available: null, outOfStock: false }),
+      _shouldShowProductComparedAtPrice: () => false,
+      renderVariantSelector: () => '',
+      attachProductEventHandlers: jest.fn(),
+    } as any;
+
+    ProductPageModalMethods.renderModalProducts.call(context, 0);
+
+    expect(productGrid.innerHTML).not.toContain('bw-product-card__description');
+    expect(productGrid.innerHTML).not.toContain('&lt;p&gt;&lt;/p&gt;');
   });
 });
