@@ -476,9 +476,6 @@
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"]:not([data-ppb-design-preset="PDP_MODAL"])
   .bw-ppb-cascade-product-row
-  .selected-overlay,
-#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"]:not([data-ppb-design-preset="PDP_MODAL"])
-  .bw-ppb-cascade-product-row
   .product-stock-badge {
   display: none;
 }

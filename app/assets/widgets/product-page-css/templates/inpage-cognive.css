@@ -221,10 +221,6 @@
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
   .bw-ppb-cognive-product-grid
   .product-card
-  .selected-overlay,
-#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
-  .bw-ppb-cognive-product-grid
-  .product-card
   .product-stock-badge {
   display: none;
 }

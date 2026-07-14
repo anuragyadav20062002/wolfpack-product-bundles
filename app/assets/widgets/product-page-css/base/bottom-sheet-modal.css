@@ -185,21 +185,6 @@
   border: 2px solid #000000;
 }
 
-#bundle-builder-modal.bw-bs-panel .modal-body .product-card .selected-overlay {
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  background: #000000;
-  color: #ffffff;
-  font-size: 14px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: none;
-}
-
 .bw-bs-panel .modal-body .product-card.bw-product-card--free-gift {
   border-radius: 12px;
   border: 1px solid rgb(227, 227, 227);

@@ -47,6 +47,8 @@ Close every Product Page Bundle feature-to-storefront matrix cell currently mark
 | 6 | Global design and language permutations | Price, compare-at, swatch, condition, card, CTA, animation, summary, locale, colors, typography, corners, media, and CSS settings | Each saved value affects only its owner surface across all applicable templates | Covers G09-G21 and G25-G37 |
 | 7 | Accessibility and runtime health | Keyboard traversal, modal focus behavior, request health, and computed typography sweep | Core controls remain keyboard reachable and no unexplained app-owned errors or theme leakage occur | Covers Q05-Q07 |
 | 8 | Four-template regression | Product List, Product Grid, Horizontal Slots, and Vertical Slots at desktop and mobile after all changes | Existing selection, validation, discount, modal, and responsive behavior remains green | Cache Storage cleared and cache bypassed before each evidence pass |
+| 9 | Product descriptions stay hidden | Products with populated plain-text and HTML descriptions in every PPB template | Product cards, rows, slots, and selected-item surfaces never render merchant product descriptions or description controls | Product detail data may remain available to non-card consumers |
+| 10 | Selected cards have no tick badges | Select and deselect products in every PPB template | Quantity controls, selected styling, and totals update without rendering a checkmark overlay on any card or selected item | Stale overlays are removed during an in-place quantity update |
 
 ## Acceptance Criteria
 

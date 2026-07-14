@@ -107,46 +107,6 @@ export function resolveInpageProductSelection(
   };
 }
 
-const INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
-
-function resolveProductCardDescription(product = {}) {
-  const plainDescription = typeof product.description === 'string'
-    ? product.description.trim()
-    : '';
-  if (plainDescription) return plainDescription;
-
-  const descriptionHtml = typeof product.descriptionHtml === 'string'
-    ? product.descriptionHtml.trim()
-    : '';
-  const visibleHtmlText = descriptionHtml
-    .replace(/<[^>]*>/g, '')
-    .replace(/&(?:nbsp|#160|#x0*a0);/gi, '')
-    .trim();
-  if (!visibleHtmlText) return '';
-
-  return descriptionHtml;
-}
-
-function renderInpageProductCardDescription(product = {}, showSeeMore) {
-  if (!showSeeMore) return '';
-
-  const description = resolveProductCardDescription(product);
-  if (!description) return '';
-
-  const showToggle = description.length > INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
-  const shortDescription = showToggle
-    ? `${description.slice(0, INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
-    : description;
-
-  return `
-    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
-      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
-      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
-      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
-    </div>
-  `;
-}
-
 export const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
@@ -190,11 +150,6 @@ _renderInpageStepProducts(stepIndex, target) {
   const usesCascadeCards = this._isProductPageCascadeTemplate();
   const usesGridCards = this._isProductPageGridTemplate();
   const widgetConfig = this.config || {};
-  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
-  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
-  const cardHoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
-  const cardSeeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
-
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
     this.selectedBundle?.validateQuantityPerProduct
   );
@@ -233,17 +188,14 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'row',
           className: [
             'bw-ppb-cascade-product-row',
-            cardHoverClass,
-            cardSeeMoreClass,
             'wpbMixCascadeProductWrapper',
             variantSelectorHtml ? 'bw-ppb-cascade-product-row--has-variant-selector' : '',
             currentQuantity > 0 ? 'selected' : '',
             outOfStock ? 'is-out-of-stock' : '',
           ].filter(Boolean).join(' '),
-          description: resolveProductCardDescription(product),
-          displaySeeMoreLink: showSeeMoreLink,
-          descriptionMaxLength: INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH,
-          expandProductCardOnHover: expandOnHover,
+          description: '',
+          displaySeeMoreLink: false,
+          expandProductCardOnHover: false,
           variantSelectorHtml,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled: outOfStock,
@@ -278,7 +230,6 @@ _renderInpageStepProducts(stepIndex, target) {
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const showQuantitySelector = !this._usesCompactInpageProductCards()
       && widgetConfig.showQuantitySelectorOnCard;
-    const showSeeMoreLinkOnRow = widgetConfig.displaySeeMoreLink === true;
     const productContent = `
       <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
       ${product.price ? `
@@ -288,7 +239,6 @@ _renderInpageStepProducts(stepIndex, target) {
         </div>
       ` : ''}
       ${this.renderInlineCardVariantSelector(product, currentStep)}
-      ${renderInpageProductCardDescription(product, showSeeMoreLinkOnRow)}
       ${showQuantitySelector ? `
         <div class="product-quantity-wrapper">
           <div class="product-quantity-selector">
@@ -306,8 +256,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
 
     return `
-      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${cardHoverClass} ${cardSeeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
+      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}

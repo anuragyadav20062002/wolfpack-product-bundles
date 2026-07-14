@@ -106,6 +106,37 @@ describe('PPB card control setting parsing', () => {
 });
 
 describe('PPB in-page rendering control wiring', () => {
+  it.each([
+    ['Product List', true],
+    ['generic in-page rows', false],
+  ])('omits populated product descriptions from %s', (_template, usesCascade) => {
+    const target = createTarget();
+    const context = {
+      ...ProductPageInpageRenderMethods,
+      ...createBaseContext({
+        config: {
+          displaySeeMoreLink: true,
+          expandProductCardOnHover: true,
+        },
+        stepProductData: [[{
+          id: 'variant-with-description',
+          price: 1200,
+          title: 'Described product',
+          description: 'Merchant description must stay hidden.',
+          descriptionHtml: '<p>Merchant <strong>HTML</strong> description must stay hidden.</p>',
+        }]],
+        _isProductPageCascadeTemplate: () => usesCascade,
+      }),
+    } as any;
+
+    ProductPageInpageRenderMethods._renderInpageStepProducts.call(context, 0, target);
+
+    expect(target.innerHTML).not.toContain('Merchant description must stay hidden.');
+    expect(target.innerHTML).not.toContain('Merchant &lt;strong&gt;HTML&lt;/strong&gt; description');
+    expect(target.innerHTML).not.toContain('bw-product-card__description');
+    expect(target.innerHTML).not.toContain('bw-product-card__see-more');
+  });
+
   it('omits empty Shopify HTML descriptions from product cards', () => {
     const target = createTarget();
     const context = {
@@ -197,6 +228,51 @@ describe('PPB shared product card control classes', () => {
 });
 
 describe('PPB modal product-card description wiring', () => {
+  it('omits populated descriptions from Horizontal and Vertical Slots product cards', () => {
+    const productGrid = {
+      innerHTML: '',
+      classList: { add: jest.fn(), remove: jest.fn() },
+      offsetWidth: 0,
+    } as any;
+    const context = {
+      ...ProductPageModalMethods,
+      config: { displaySeeMoreLink: true, expandProductCardOnHover: true },
+      selectedBundle: { steps: [{}], validateQuantityPerProduct: null },
+      stepProductData: [[{
+        id: 'modal-with-description',
+        imageUrl: '/described-product.png',
+        price: 1200,
+        title: 'Modal described product',
+        description: 'Modal merchant description must stay hidden.',
+        descriptionHtml: '<p>Modal merchant HTML description must stay hidden.</p>',
+      }]],
+      selectedProducts: [{}],
+      activeInpageCategoryIndexes: {},
+      elements: {
+        modal: {
+          querySelector: (selector: string) => {
+            if (selector === '.product-grid') return productGrid;
+            if (selector === '.bw-bs-body') return { querySelector: () => null };
+            return null;
+          },
+        },
+      },
+      _filterProductsForInpageCategory: (_step: unknown, products: unknown[]) => products,
+      expandProductsByVariant: (products: unknown[]) => products,
+      getSelectedQuantity: () => 0,
+      getVariantAvailable: () => ({ available: null, outOfStock: false }),
+      _shouldShowProductComparedAtPrice: () => false,
+      renderVariantSelector: () => '',
+      attachProductEventHandlers: jest.fn(),
+    } as any;
+
+    ProductPageModalMethods.renderModalProducts.call(context, 0);
+
+    expect(productGrid.innerHTML).not.toContain('Modal merchant description must stay hidden.');
+    expect(productGrid.innerHTML).not.toContain('bw-product-card__description');
+    expect(productGrid.innerHTML).not.toContain('bw-product-card__see-more');
+  });
+
   it('omits empty Shopify HTML descriptions from modal product cards', () => {
     const productGrid = {
       innerHTML: '',

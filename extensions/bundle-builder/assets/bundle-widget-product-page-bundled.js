@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.175
+ * Version : 5.0.176
  * Built   : 2026-07-14
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.175';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.176';
 (function() {
   'use strict';
 
@@ -7112,46 +7112,6 @@ function resolveInpageProductSelection(
   };
 }
 
-const INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
-
-function resolveProductCardDescription(product = {}) {
-  const plainDescription = typeof product.description === 'string'
-    ? product.description.trim()
-    : '';
-  if (plainDescription) return plainDescription;
-
-  const descriptionHtml = typeof product.descriptionHtml === 'string'
-    ? product.descriptionHtml.trim()
-    : '';
-  const visibleHtmlText = descriptionHtml
-    .replace(/<[^>]*>/g, '')
-    .replace(/&(?:nbsp|#160|#x0*a0);/gi, '')
-    .trim();
-  if (!visibleHtmlText) return '';
-
-  return descriptionHtml;
-}
-
-function renderInpageProductCardDescription(product = {}, showSeeMore) {
-  if (!showSeeMore) return '';
-
-  const description = resolveProductCardDescription(product);
-  if (!description) return '';
-
-  const showToggle = description.length > INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
-  const shortDescription = showToggle
-    ? `${description.slice(0, INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
-    : description;
-
-  return `
-    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
-      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
-      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
-      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
-    </div>
-  `;
-}
-
 const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
@@ -7195,11 +7155,6 @@ _renderInpageStepProducts(stepIndex, target) {
   const usesCascadeCards = this._isProductPageCascadeTemplate();
   const usesGridCards = this._isProductPageGridTemplate();
   const widgetConfig = this.config || {};
-  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
-  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
-  const cardHoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
-  const cardSeeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
-
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
     this.selectedBundle?.validateQuantityPerProduct
   );
@@ -7238,17 +7193,14 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'row',
           className: [
             'bw-ppb-cascade-product-row',
-            cardHoverClass,
-            cardSeeMoreClass,
             'wpbMixCascadeProductWrapper',
             variantSelectorHtml ? 'bw-ppb-cascade-product-row--has-variant-selector' : '',
             currentQuantity > 0 ? 'selected' : '',
             outOfStock ? 'is-out-of-stock' : '',
           ].filter(Boolean).join(' '),
-          description: resolveProductCardDescription(product),
-          displaySeeMoreLink: showSeeMoreLink,
-          descriptionMaxLength: INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH,
-          expandProductCardOnHover: expandOnHover,
+          description: '',
+          displaySeeMoreLink: false,
+          expandProductCardOnHover: false,
           variantSelectorHtml,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled: outOfStock,
@@ -7283,7 +7235,6 @@ _renderInpageStepProducts(stepIndex, target) {
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const showQuantitySelector = !this._usesCompactInpageProductCards()
       && widgetConfig.showQuantitySelectorOnCard;
-    const showSeeMoreLinkOnRow = widgetConfig.displaySeeMoreLink === true;
     const productContent = `
       <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
       ${product.price ? `
@@ -7293,7 +7244,6 @@ _renderInpageStepProducts(stepIndex, target) {
         </div>
       ` : ''}
       ${this.renderInlineCardVariantSelector(product, currentStep)}
-      ${renderInpageProductCardDescription(product, showSeeMoreLinkOnRow)}
       ${showQuantitySelector ? `
         <div class="product-quantity-wrapper">
           <div class="product-quantity-selector">
@@ -7311,8 +7261,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
 
     return `
-      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${cardHoverClass} ${cardSeeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
+      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}
@@ -8559,46 +8508,6 @@ function shouldDisplayVariantsAsIndividualForModalCategory(
     || step?.displayVariantsAsIndividual === true;
 }
 
-const MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
-
-function resolveProductCardDescription(product = {}) {
-  const plainDescription = typeof product.description === 'string'
-    ? product.description.trim()
-    : '';
-  if (plainDescription) return plainDescription;
-
-  const descriptionHtml = typeof product.descriptionHtml === 'string'
-    ? product.descriptionHtml.trim()
-    : '';
-  const visibleHtmlText = descriptionHtml
-    .replace(/<[^>]*>/g, '')
-    .replace(/&(?:nbsp|#160|#x0*a0);/gi, '')
-    .trim();
-  if (!visibleHtmlText) return '';
-
-  return descriptionHtml;
-}
-
-function renderModalProductCardDescription(product, showSeeMore) {
-  if (!showSeeMore) return '';
-
-  const description = resolveProductCardDescription(product);
-  if (!description) return '';
-
-  const showToggle = description.length > MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
-  const shortDescription = showToggle
-    ? `${description.slice(0, MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
-    : description;
-
-  return `
-    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
-      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
-      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
-      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
-    </div>
-  `;
-}
-
 function getModalSoleVariantDisplayTitle(product = {}) {
   const variants = Array.isArray(product?.variants) ? product.variants : [];
   if (Number(product?.sourceVariantCount || 0) <= 1 || variants.length !== 1) {
@@ -8862,10 +8771,6 @@ renderModalProducts(stepIndex, productsToRender = null) {
   }
 
   const showQuantitySelector = widgetConfig.showQuantitySelectorOnCard;
-  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
-  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
-  const hoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
-  const seeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
 
   const freeGiftCardClass = isFreeGiftStep ? ' bw-product-card--free-gift' : '';
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
@@ -8890,14 +8795,8 @@ renderModalProducts(stepIndex, productsToRender = null) {
         : lowStock
           ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
           : '';
-      const descriptionMarkup = renderModalProductCardDescription(product, showSeeMoreLink);
-
       return `
-      <div class="product-card${freeGiftCardClass} ${hoverClass} ${seeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 ? `
-          <div class="selected-overlay">✓</div>
-        ` : ''}
-
+      <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}
@@ -8930,8 +8829,6 @@ renderModalProducts(stepIndex, productsToRender = null) {
               </div>
             </div>
           ` : ''}
-
-          ${descriptionMarkup}
 
           <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
             ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add to Cart' })}
@@ -9009,7 +8906,6 @@ attachProductEventHandlers(productGrid, stepIndex) {
   productGrid.parentNode.replaceChild(newProductGrid, productGrid);
 
   const step = this.selectedBundle.steps[stepIndex];
-  const widgetConfig = this.config || {};
 
   const findProduct = (productId) => {
     return this.findProductBySelectionKey(this.stepProductData[stepIndex] || [], productId);
@@ -9056,57 +8952,6 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
     return null;
   };
-
-  const setProductCardDescriptionExpanded = (productCard, expandedValue) => {
-    if (!productCard) return;
-
-    const root = productCard.querySelector('[data-bw-card-description="true"]');
-    if (!root) return;
-
-    const shortDescription = root.querySelector('.bw-product-card__description-short');
-    const fullDescription = root.querySelector('.bw-product-card__description-full');
-    const button = root.querySelector('.bw-product-card__see-more');
-    if (!shortDescription || !fullDescription || !button) return;
-
-    const isExpanded = typeof expandedValue === 'boolean'
-      ? expandedValue
-      : root.dataset.bwCardDescriptionExpanded === 'false';
-
-    root.dataset.bwCardDescriptionExpanded = isExpanded ? 'true' : 'false';
-    shortDescription.classList.toggle('hidden', isExpanded);
-    fullDescription.classList.toggle('hidden', !isExpanded);
-    button.textContent = isExpanded ? 'See less' : 'See more';
-    button.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
-  };
-
-  if (widgetConfig.displaySeeMoreLink === true) {
-
-    newProductGrid.addEventListener('click', (e) => {
-      const eventTarget = getEventTarget(e.target);
-      if (!eventTarget) return;
-
-      const seeMoreButton = findClosest(eventTarget, '.bw-product-card__see-more');
-      if (!seeMoreButton) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      const productCard = findClosest(seeMoreButton, '.product-card');
-      setProductCardDescriptionExpanded(productCard);
-    });
-  }
-
-  if (widgetConfig.expandProductCardOnHover === true) {
-    newProductGrid.querySelectorAll('.product-card.bw-product-card--hover-expand').forEach(card => {
-      card.classList.remove('bw-product-card--hover-expanded');
-      card.addEventListener('mouseenter', () => {
-        card.classList.add('bw-product-card--hover-expanded');
-      });
-      card.addEventListener('mouseleave', () => {
-        card.classList.remove('bw-product-card--hover-expanded');
-      });
-    });
-  }
 
   newProductGrid.addEventListener('click', (e) => {
     const eventTarget = getEventTarget(e.target);
@@ -9351,25 +9196,6 @@ function shouldAutoAdvanceProductPageStep({ quantity = 0, productId = '', step =
   });
 }
 
-function syncProductPageSelectedOverlay(productCard, quantity) {
-  if (!productCard) return null;
-
-  let selectedOverlay = productCard.querySelector('.selected-overlay');
-  if (!selectedOverlay && quantity > 0) {
-    selectedOverlay = productCard.ownerDocument?.createElement('div');
-    if (!selectedOverlay) return null;
-    selectedOverlay.className = 'selected-overlay';
-    selectedOverlay.textContent = '✓';
-    productCard.prepend(selectedOverlay);
-  }
-
-  if (selectedOverlay) {
-    selectedOverlay.style.display = quantity > 0 ? 'flex' : 'none';
-  }
-
-  return selectedOverlay;
-}
-
 const ProductPageSelectionMethods = {
 updateProductSelection(stepIndex, productId, newQuantity) {
   const selectionKey = this.normalizeSelectionKey(productId);
@@ -9549,11 +9375,7 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     const quantityDisplay = productCard.querySelector('.qty-display')
       || productCard.querySelector('.inline-qty-display');
     const addBtn = productCard.querySelector('.product-add-btn');
-    if (cogniveCard) {
-      productCard.querySelector('.selected-overlay')?.remove();
-    } else {
-      syncProductPageSelectedOverlay(productCard, quantity);
-    }
+    productCard.querySelector('.selected-overlay')?.remove();
     const increaseBtn = productCard.querySelector('.qty-increase');
     const actionWrapper = productCard.querySelector('.product-card-action')
       || productCard.querySelector('.bw-product-card__action');

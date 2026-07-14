@@ -31,27 +31,6 @@
   font-size: var(--bundle-quantity-selector-font-size, 1.1em);
 }
 
-.selected-overlay {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background-color: #4caf50;
-  color: white;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 14px;
-  font-weight: bold;
-  z-index: 1;
-  font-weight: bold;
-  pointer-events: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 10;
-}
-
 .modal-footer {
   position: relative;
   height: 80px;
