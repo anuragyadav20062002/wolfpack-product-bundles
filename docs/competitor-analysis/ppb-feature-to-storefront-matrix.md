@@ -220,7 +220,7 @@ toggle or alternate-value behavior.
 | G36 | Product Card language fields | Add, variant, added, and inline-add labels use the active Product Page locale | **T** | **T** | **T** | **T** |
 | G37 | Bundle Cart / Bundle / Toast language fields | Summary, CTA, validation, and toast copy use the active locale | **T** | **T** | **T** | **T** |
 | G38 | Bundle Embed | Saved embed configuration mounts and hands off the correct offer context | **T** | **T** | **T** | **T** |
-| G39 | Place Widget | Theme placement workflow preserves parent-product context and active template | **S** Product-form ownership proven, placement workflow not replayed | **S** Product-form ownership proven, placement workflow not replayed | **S** HSP1 ownership proven, placement workflow not fully replayed | **S** Final placement proven, workflow not replayed |
+| G39 | Place Widget | Theme placement workflow preserves parent-product context and active template | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) |
 
 ## 7. Responsive, Accessibility, Isolation, and Runtime Health
 
@@ -268,6 +268,12 @@ Slots used `PDP_MODAL + MODAL`, and Vertical Slots used
 the storefront bundle JSON as Vertical Slots with Step 2 disabled and Step 1
 Quantity greater than or equal to two.
 
+The 2026-07-15 G39 review classifies Place Widget as a shared Admin placement
+workflow rather than a per-template storefront renderer permutation. Focused
+contracts revalidated selected-template preservation, bundle parent-product
+preview context, draft-product preview URL handling, template-suffix assignment,
+and merchant theme-template listing with 18/18 Jest tests passing.
+
 The final storefront visual pass proves the template shells, product-card and
 modal-card hierarchy, selected states, toasts, responsive tracks, overflow,
 template isolation, and the current desktop/mobile fixtures. Product Grid PG09
@@ -281,16 +287,16 @@ Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 50 | 10 | 43 | 3 | 1 | 12 |
-| Product Grid | 47 | 11 | 47 | 1 | 1 | 12 |
-| Horizontal Slots | 60 | 8 | 45 | 1 | 4 | 1 |
-| Vertical Slots | 49 | 16 | 49 | 1 | 3 | 1 |
+| Product List | 51 | 9 | 43 | 3 | 1 | 12 |
+| Product Grid | 48 | 10 | 47 | 1 | 1 | 12 |
+| Horizontal Slots | 61 | 7 | 45 | 1 | 4 | 1 |
+| Vertical Slots | 50 | 15 | 49 | 1 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **206**
-- Shared/partial: **45**
+- Proven: **210**
+- Shared/partial: **41**
 - Not tested: **184**
 - EB-absent: **6**
 - Accepted divergence: **9**
