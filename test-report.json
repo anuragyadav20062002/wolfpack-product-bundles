@@ -1,46 +1,22 @@
 {
-  "timestamp": "2026-07-06T20:06:03.186Z",
+  "timestamp": "2026-07-11T12:15:08.881Z",
   "summary": {
-    "totalSuites": 4,
-    "totalTests": 1351,
-    "totalPassed": 1345,
-    "totalFailed": 6,
+    "totalSuites": 1,
+    "totalTests": 34,
+    "totalPassed": 34,
+    "totalFailed": 0,
     "totalSkipped": 0,
-    "totalDuration": 9326
+    "totalDuration": 2010
   },
-  "totalDuration": 9331,
+  "totalDuration": 2011,
   "suites": [
     {
-      "suite": "Unit Tests - Services",
-      "passed": 232,
+      "suite": "Integration Tests",
+      "passed": 34,
       "failed": 0,
       "skipped": 0,
-      "duration": 2121,
+      "duration": 2010,
       "commandFailed": false
-    },
-    {
-      "suite": "Unit Tests - Extensions",
-      "passed": 13,
-      "failed": 0,
-      "skipped": 0,
-      "duration": 1000,
-      "commandFailed": false
-    },
-    {
-      "suite": "Unit Tests - Routes",
-      "passed": 340,
-      "failed": 0,
-      "skipped": 0,
-      "duration": 2450,
-      "commandFailed": false
-    },
-    {
-      "suite": "Unit Tests - Assets",
-      "passed": 760,
-      "failed": 6,
-      "skipped": 0,
-      "duration": 3755,
-      "commandFailed": true
     }
   ],
   "environment": {

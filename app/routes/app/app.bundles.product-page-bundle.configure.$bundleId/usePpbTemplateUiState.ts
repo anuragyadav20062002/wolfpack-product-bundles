@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "@remix-run/react";
 import { getPreviewReadinessStorageKey } from "../../../lib/bundle-preview-readiness";
+import { resolveProductPageTemplateSelection } from "./ConfigureBundleFlow.helpers";
 
 export function usePpbTemplateUiState({ bundle }: { bundle: any }) {
+  const initialTemplateSelection = resolveProductPageTemplateSelection(bundle);
   const [bundleDesignTemplate, setBundleDesignTemplate] = useState<
     string | null
-  >((bundle as any).bundleDesignTemplate ?? null);
+  >(initialTemplateSelection.layoutTemplate);
   const [bundleDesignPresetId, setBundleDesignPresetId] = useState<
     string | null
-  >((bundle as any).bundleDesignPresetId ?? null);
+  >(initialTemplateSelection.presetId);
   const [pendingDesignTemplate, setPendingDesignTemplate] = useState<
     string | null
   >(null);

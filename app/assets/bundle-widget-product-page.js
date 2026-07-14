@@ -120,6 +120,7 @@ import { ProductPageModalMethods } from './widgets/product-page/methods/modal-me
 import { ProductPageSelectionMethods } from './widgets/product-page/methods/selection-methods.js';
 import { ProductPageProductDataMethods } from './widgets/product-page/methods/product-data-methods.js';
 import { ProductPageSelectionDataMethods } from './widgets/product-page/methods/selection-data-methods.js';
+import { ProductPageSelectionPersistenceMethods } from './widgets/product-page/methods/selection-persistence-methods.js';
 import { ProductPageLayoutShellMethods } from './widgets/product-page/methods/layout-shell-methods.js';
 import { ProductPageInpageRenderMethods } from './widgets/product-page/methods/inpage-render-methods.js';
 import { ProductPageConfigLifecycleMethods } from './widgets/product-page/methods/config-lifecycle-methods.js';
@@ -136,10 +137,12 @@ class BundleWidgetProductPage {
     this.container = containerElement;
     this.selectedBundle = null;
     this.selectedProducts = [];
+    this.selectedProductCategoryIndexes = [];
     this.stepProductData = [];
     this.directDefaultProducts = [];
     this.activeInpageCategoryIndexes = {};
     this.currentStepIndex = 0;
+    this._selectionPersistenceReady = false;
     this.isInitialized = false;
     this.config = {};
     this.elements = {};
@@ -214,10 +217,12 @@ class BundleWidgetProductPage {
       // Initialize data structures
       this.initializeDataStructures();
       this._initDirectDefaultProducts();
+      this._restoreSessionSelections();
       await this._preloadDirectDefaultProducts();
 
       // Pre-load product data for default steps so filled cards show real image/title
       await this._preloadDefaultStepProducts();
+      await this._preloadRestoredSelectionProducts();
 
       this._relocateContainerToProductForm();
       this._hideNativeProductPrice();
@@ -331,6 +336,7 @@ Object.assign(
   ProductPageInpageRenderMethods,
   ProductPageProductDataMethods,
   ProductPageSelectionDataMethods,
+  ProductPageSelectionPersistenceMethods,
   ProductPageModalMethods,
   ProductPageSelectionMethods,
   ProductPageCartMethods,

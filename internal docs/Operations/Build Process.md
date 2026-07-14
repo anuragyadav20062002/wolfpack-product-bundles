@@ -63,6 +63,26 @@ npx eslint --max-warnings 9999 <file1> <file2>
 
 `--max-warnings 9999` prevents pre-existing warnings (~6500 project-wide) from blocking the check. Fix new **errors** you introduced; leave pre-existing warnings alone.
 
+## Pre-Commit Hook
+
+Tracked hooks live in `.githooks/`. Install them with:
+
+```bash
+npm run hooks:install
+```
+
+`npm install` also runs a warning-only `prepare` installer unless `CI=true` or
+`WPB_SKIP_HOOK_INSTALL=1` is set.
+
+The pre-commit hook is staged-file aware. It blocks commits for critical
+breakage: staged diff whitespace errors, partially staged checked source files,
+ESLint errors on staged source, raw JS syntax errors, banned styling unit-test
+patterns, related Jest failures, and stale generated widget/CSS assets when
+their source files are staged. It also attempts `npm run graphify:rebuild` and
+auto-stages `graphify-out/GRAPH_REPORT.md` plus `graphify-out/graph.json` when
+the rebuild succeeds. Local graphify runtime/configuration failures warn only so
+developer-specific Python or uv setup does not block unrelated commits.
+
 ## Graphify Knowledge Graph
 
 After modifying code files:

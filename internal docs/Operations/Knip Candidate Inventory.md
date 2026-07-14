@@ -1,0 +1,565 @@
+---
+title: Knip Candidate Inventory
+type: operations
+last_audited: 2026-07-13
+---
+
+# Knip Candidate Inventory
+
+Generated from `./node_modules/.bin/knip --reporter json --no-exit-code --no-progress` on 2026-07-13 after verified prune batches. This is a candidate inventory, not a removal instruction. Check [[Operations/Knip Prune Guardrails]] before deleting anything listed here.
+
+## Counts
+- files: 151
+- dependencies: 1
+- devDependencies: 0
+- optionalPeerDependencies: 0
+- unlisted: 1
+- binaries: 3
+- unresolved: 1
+- exports: 126
+- types: 236
+- duplicates: 0
+- catalog: 0
+- enumMembers: 1
+
+## Unused File Candidates
+- graphql.config.js
+- app/routes.ts
+- app/assets/bundle-widget-full-page.js
+- app/assets/bundle-widget-product-page.js
+- extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js
+- extensions/bundle-builder/assets/bundle-widget-full-page-classic.css
+- extensions/bundle-builder/assets/bundle-widget-full-page-compact.css
+- extensions/bundle-builder/assets/bundle-widget-full-page-horizontal.css
+- extensions/bundle-builder/assets/bundle-widget-full-page-standard.css
+- extensions/bundle-builder/assets/bundle-widget-full-page.css
+- extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js
+- extensions/bundle-builder/assets/bundle-widget-product-page-cascade.css
+- extensions/bundle-builder/assets/bundle-widget-product-page-cognive.css
+- extensions/bundle-builder/assets/bundle-widget-product-page-modal.css
+- extensions/bundle-builder/assets/bundle-widget.css
+- extensions/bundle-builder/assets/modal-discount-bar.css
+- extensions/bundle-builder/assets/modal-discount-bar.js
+- extensions/bundle-builder/assets/wolfpack-bundles-sdk.js
+- app/assets/sdk/cart.js
+- app/assets/sdk/config-loader.js
+- app/assets/sdk/debug.js
+- app/assets/sdk/events.js
+- app/assets/sdk/get-display-price.js
+- app/assets/sdk/state.js
+- app/assets/sdk/validate-bundle.js
+- app/assets/sdk/wolfpack-bundles.js
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page-bundled.js
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page-classic.css
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page-compact.css
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page-horizontal.css
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page-standard.css
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page.css
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-product-page-bundled.js
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-product-page-cascade.css
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-product-page-cognive.css
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-product-page-modal.css
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget.css
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/modal-discount-bar.css
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/modal-discount-bar.js
+- .shopify/deploy-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/wolfpack-bundles-sdk.js
+- .shopify/deploy-bundle/9c39afc7-f730-af5d-e507-823597e5186693eb73cf/dist/wolfpack-utm-pixel.js
+- .shopify/deploy-bundle/feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf/dist/bundle-checkout-ui.js
+- .shopify/dev-bundle/9c39afc7-f730-af5d-e507-823597e5186693eb73cf/dist/wolfpack-utm-pixel.js
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page-bundled.js
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page-classic.css
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page-compact.css
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page-horizontal.css
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page-standard.css
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-full-page.css
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-product-page-bundled.js
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-product-page-cascade.css
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-product-page-cognive.css
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget-product-page-modal.css
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/bundle-widget.css
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/modal-discount-bar.css
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/modal-discount-bar.js
+- .shopify/dev-bundle/23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2/assets/wolfpack-bundles-sdk.js
+- .shopify/dev-bundle/feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf/dist/bundle-checkout-ui.js
+- app/assets/widgets/full-page-css/bundle-widget-full-page.css
+- app/assets/widgets/product-page/single-step-categories.js
+- app/assets/widgets/product-page-css/bundle-widget.css
+- app/assets/widgets/shared/full-page-preset.js
+- app/assets/widgets/shared/index.js
+- app/assets/widgets/shared/mixin-descriptors.js
+- app/assets/widgets/shared/variant-selector.js
+- app/assets/widgets/full-page/methods/analytics-config-methods.js
+- app/assets/widgets/full-page/methods/box-selection-sidebar-methods.js
+- app/assets/widgets/full-page/methods/discount-modal-methods.js
+- app/assets/widgets/full-page/methods/footer-selection-methods.js
+- app/assets/widgets/full-page/methods/initial-render-methods.js
+- app/assets/widgets/full-page/methods/mobile-summary-methods.js
+- app/assets/widgets/full-page/methods/modal-product-methods.js
+- app/assets/widgets/full-page/methods/product-card-footer-methods.js
+- app/assets/widgets/full-page/methods/product-grid-methods.js
+- app/assets/widgets/full-page/methods/product-processing-methods.js
+- app/assets/widgets/full-page/methods/runtime-cart-settings-methods.js
+- app/assets/widgets/full-page/methods/selection-navigation-methods.js
+- app/assets/widgets/full-page/methods/side-panel-methods.js
+- app/assets/widgets/full-page/methods/step-footer-methods.js
+- app/assets/widgets/full-page/methods/tier-floating-runtime-methods.js
+- app/assets/widgets/full-page/methods/timeline-banner-methods.js
+- app/assets/widgets/full-page/methods/validation-addons-methods.js
+- app/assets/widgets/full-page/shared/summary-pricing-display.js
+- app/assets/widgets/full-page/templates/classic-template.js
+- app/assets/widgets/full-page/templates/classic.config.js
+- app/assets/widgets/full-page/templates/compact-template.js
+- app/assets/widgets/full-page/templates/compact.config.js
+- app/assets/widgets/full-page/templates/horizontal-template.js
+- app/assets/widgets/full-page/templates/horizontal.config.js
+- app/assets/widgets/full-page/templates/registry.js
+- app/assets/widgets/full-page/templates/standard-template.js
+- app/assets/widgets/full-page/templates/standard.config.js
+- app/assets/widgets/full-page-css/base/clear-cart-confirmation.css
+- app/assets/widgets/full-page-css/base/floating-badge-sidebar-progress.css
+- app/assets/widgets/full-page-css/base/layout-tiers-timeline.css
+- app/assets/widgets/full-page-css/base/loading-spinner-keyframes.css
+- app/assets/widgets/full-page-css/base/product-actions-loading.css
+- app/assets/widgets/full-page-css/base/product-modal-controls.css
+- app/assets/widgets/full-page-css/base/product-modal-shell.css
+- app/assets/widgets/full-page-css/base/search-category-product-grid.css
+- app/assets/widgets/full-page-css/base/sidebar-totals-discounts.css
+- app/assets/widgets/full-page-css/base/steps-header-banners.css
+- app/assets/widgets/full-page-css/base/toast-sidebar-shell.css
+- app/assets/widgets/full-page-css/templates/side-footer-classic.css
+- app/assets/widgets/full-page-css/templates/side-footer-compact.css
+- app/assets/widgets/full-page-css/templates/side-footer-horizontal.css
+- app/assets/widgets/full-page-css/templates/side-footer-standard.css
+- app/assets/widgets/full-page-css/templates/standard-step-timeline.css
+- app/assets/widgets/product-page/methods/cart-methods.js
+- app/assets/widgets/product-page/methods/config-lifecycle-methods.js
+- app/assets/widgets/product-page/methods/default-product-methods.js
+- app/assets/widgets/product-page/methods/dom-methods.js
+- app/assets/widgets/product-page/methods/footer-modal-state-methods.js
+- app/assets/widgets/product-page/methods/inpage-render-methods.js
+- app/assets/widgets/product-page/methods/layout-shell-methods.js
+- app/assets/widgets/product-page/methods/modal-methods.js
+- app/assets/widgets/product-page/methods/modal-state-methods.js
+- app/assets/widgets/product-page/methods/product-data-methods.js
+- app/assets/widgets/product-page/methods/selection-data-methods.js
+- app/assets/widgets/product-page/methods/selection-methods.js
+- app/assets/widgets/product-page/methods/widget-misc-methods.js
+- app/assets/widgets/product-page/templates/cascade-template.js
+- app/assets/widgets/product-page/templates/cognive-template.js
+- app/assets/widgets/product-page/templates/grid.config.js
+- app/assets/widgets/product-page/templates/horizontal-slots.config.js
+- app/assets/widgets/product-page/templates/list.config.js
+- app/assets/widgets/product-page/templates/modal-slot-template.js
+- app/assets/widgets/product-page/templates/registry.js
+- app/assets/widgets/product-page/templates/vertical-slots.config.js
+- app/assets/widgets/product-page-css/base/bottom-sheet-modal.css
+- app/assets/widgets/product-page-css/base/discount-footer-shared.css
+- app/assets/widgets/product-page-css/base/footer-selection-loading.css
+- app/assets/widgets/product-page-css/base/layout-steps-summary.css
+- app/assets/widgets/product-page-css/base/modal-footer-empty-toast.css
+- app/assets/widgets/product-page-css/base/modal-product-grid.css
+- app/assets/widgets/product-page-css/base/modal-shell-tabs.css
+- app/assets/widgets/product-page-css/base/quantity-pills-skeletons.css
+- app/assets/widgets/product-page-css/base/slot-cards-default-products.css
+- app/assets/widgets/product-page-css/templates/inpage-cascade.css
+- app/assets/widgets/product-page-css/templates/inpage-cognive.css
+- app/assets/widgets/product-page-css/templates/modal-slots.css
+- app/assets/widgets/shared/engine/bundle-actions.js
+- app/assets/widgets/shared/engine/cart-submit.js
+- app/assets/widgets/shared/engine/create-bundle-state.js
+- app/assets/widgets/full-page-css/templates/classic/base.css
+- app/assets/widgets/full-page-css/templates/classic/desktop-products.css
+- app/assets/widgets/full-page-css/templates/classic/desktop-sidebar.css
+- app/assets/widgets/full-page-css/templates/classic/mobile.css
+- app/assets/widgets/full-page-css/templates/classic/product-modal.css
+- app/assets/widgets/full-page-css/templates/classic/variant-selector.css
+- extensions/bundle-checkout-ui/src/TotalSavings.tsx
+
+## dependencies
+- package.json: @remix-run/fs-routes
+
+## devDependencies
+- None
+
+## optionalPeerDependencies
+- None
+
+## unlisted
+- tsconfig.json: @shopify/app-bridge-types
+
+## binaries
+- package.json: shopify
+- package.json: rustup
+- package.json: graphql-codegen
+
+## unresolved
+- jest.config.js: babel-jest
+
+## exports
+- app/services/bundles/storefront-sync.server.ts: createStorefrontSyncAttemptId
+- app/services/bundles/storefront-sync.server.ts: getBundleStorefrontSyncState
+- app/services/webhook-worker.server.ts: stopWebhookWorker
+- app/services/bundles/metafield-sync.server.ts: checkMetafieldSize
+- app/services/bundles/metafield-sync.server.ts: safeJsonParse
+- app/services/bundles/metafield-sync.server.ts: METAFIELD_SIZE_WARNING
+- app/services/bundles/metafield-sync.server.ts: METAFIELD_SIZE_CRITICAL
+- app/services/bundles/metafield-sync.server.ts: METAFIELD_SIZE_LIMIT
+- app/services/bundles/metafield-sync.server.ts: calculateComponentPricing
+- app/services/bundles/metafield-sync.server.ts: ensureCustomPageBundleConfigDefinition
+- app/lib/analytics/index.ts: formatDelta
+- app/lib/analytics/attribution-controls.ts: DEFAULT_ATTRIBUTION_DAYS
+- app/lib/analytics/attribution-controls.ts: MAX_ATTRIBUTION_DAYS
+- app/lib/analytics/attribution-controls.ts: MAX_CUSTOM_UTM_PARAMETERS
+- app/lib/admin-configuration-surfaces.ts: CHECKOUT_INTEGRATION_OPTIONS
+- app/constants/bundle.ts: BUNDLE_TYPE_OPTIONS
+- app/constants/bundle.ts: DISCOUNT_CONDITION_TYPE_OPTIONS
+- app/constants/bundle.ts: DISCOUNT_OPERATOR_OPTIONS
+- app/lib/settings-language-runtime.ts: buildPpbCustomTextSettings
+- app/i18n/polaris-locales.server.ts: POLARIS_LOCALES
+- app/services/app-events.server.ts: sanitizeAppEventAttributes
+- app/services/storefront-token.server.ts: getStorefrontAccessToken
+- app/utils/variant-lookup.server.ts: batchGetFirstVariants
+- app/lib/checkout-integrations.ts: CHECKOUT_INTEGRATION_PROVIDERS
+- app/lib/checkout-integrations.ts: CHECKOUT_INTEGRATION_PROVIDER_IDS
+- app/lib/css-sanitizer.ts: validateCssSyntax
+- app/lib/css-generators/index.ts: generateCSSVariables
+- app/lib/css-generators/index.ts: generateEBDcpBridgeCSS
+- app/lib/css-generators/index.ts: generateFullPageVariables
+- app/lib/css-generators/index.ts: generateProductCardCSS
+- app/lib/css-generators/index.ts: generateButtonCSS
+- app/lib/css-generators/index.ts: generateFooterCSS
+- app/lib/css-generators/index.ts: generateModalCSS
+- app/lib/css-generators/index.ts: generateResponsiveCSS
+- app/assets/bundle-widget-components.js: shouldRenderInlineVariantSelector
+- app/assets/widgets/shared/engine/bundle-selectors.js: getSelectedEntries
+- extensions/bundle-checkout-ui/src/Checkout.tsx: TotalSavingsExtension
+- app/lib/bundle-product-media.server.ts: BUNDLE_PRODUCT_PLACEHOLDER_IMAGE_PATH
+- app/types/pricing.ts: validatePricingRule
+- app/types/pricing.ts: getOperatorText
+- app/types/pricing.ts: getDiscountMethodText
+- app/types/pricing.ts: generateRulePreview
+- app/lib/loader-cache.server.ts: LOADER_CACHE_DEFAULT_TTL_MS
+- app/lib/pricing-display-options.ts: DEFAULT_DISCOUNT_RULE_TEXT
+- app/lib/pricing-display-options.ts: DEFAULT_DISCOUNT_RULE_TEXT_MORE
+- app/lib/pricing-display-options.ts: DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE
+- app/lib/pricing-display-options.ts: DEFAULT_FIXED_AMOUNT_RULE_TEXT
+- app/lib/pricing-display-options.ts: DEFAULT_FIXED_AMOUNT_RULE_TEXT_MORE
+- app/lib/pricing-display-options.ts: DEFAULT_FIXED_AMOUNT_RULE_SUCCESS_MESSAGE
+- app/lib/pricing-display-options.ts: DEFAULT_DISCOUNT_RULE_TEXT_BXY
+- app/lib/pricing-display-options.ts: DEFAULT_DISCOUNT_RULE_TEXT_BXY_MORE
+- app/lib/pricing-display-options.ts: DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY
+- app/store/api/adminApi.ts: useGetUploadStoreFileStatusQuery
+- app/store/api/adminApi.ts: useListStoreFilesQuery
+- app/store/slices/adminRouteStateSlice.ts: defaultAdminRouteState
+- app/store/slices/adminRouteStateSlice.ts: adminRouteStateSlice
+- app/store/slices/bundleConfigureSlice.ts: defaultBundleConfigureState
+- app/store/slices/bundleConfigureSlice.ts: bundleConfigureSlice
+- app/store/slices/bundleConfigureSlice.ts: markBundleConfigurationDirty
+- app/store/slices/bundleConfigureSlice.ts: setBundleConfigurationLoading
+- app/store/slices/bundleConfigureSlice.ts: setBundleSteps
+- app/store/slices/bundleConfigureSlice.ts: updateBundleStep
+- app/store/slices/configureRouteStateSlice.ts: defaultConfigureRouteState
+- app/store/slices/configureRouteStateSlice.ts: configureRouteStateSlice
+- app/store/slices/designSettingsSlice.ts: defaultDesignSettingsState
+- app/store/slices/designSettingsSlice.ts: designSettingsSlice
+- app/store/slices/designSettingsSlice.ts: resetDesignSettingsState
+- app/store/slices/designSettingsSlice.ts: setDesignSettingsLoading
+- app/store/slices/preferencesSlice.ts: preferencesSlice
+- app/store/slices/preferencesSlice.ts: resetPreferencesState
+- app/store/slices/uiSlice.ts: defaultUIState
+- app/store/slices/uiSlice.ts: uiSlice
+- app/store/slices/uiSlice.ts: resetUIState
+- app/services/bundles/pricing-calculation.server.ts: getPriceCacheStats
+- app/services/bundles/pricing-calculation.server.ts: getProductPrice
+- app/services/bundles/pricing-calculation.server.ts: calculateBundleTotalPrice
+- app/constants/pricing-data.ts: GROW_PLAN_BENEFITS
+- app/store/store.ts: rootReducer
+- app/store/store.ts: store
+- app/store/slices/metaSlice.ts: defaultMetaState
+- app/store/slices/metaSlice.ts: metaSlice
+- app/store/slices/metaSlice.ts: resetMeta
+- app/store/slices/metaSlice.ts: touchMeta
+- app/store/slices/subscriptionSlice.ts: subscriptionSlice
+- app/store/slices/subscriptionSlice.ts: resetSubscription
+- app/store/slices/subscriptionSlice.ts: setSubscription
+- app/services/webhooks/index.ts: handleSubscriptionUpdate
+- app/services/webhooks/index.ts: handleSubscriptionCancelled
+- app/services/webhooks/index.ts: handleSubscriptionApproachingCap
+- app/services/webhooks/index.ts: handlePurchaseUpdate
+- app/services/webhooks/index.ts: mapSubscriptionStatus
+- app/services/webhooks/index.ts: handleProductUpdate
+- app/services/webhooks/index.ts: handleProductDelete
+- app/services/webhooks/index.ts: handleCustomerDataRequest
+- app/services/webhooks/index.ts: handleCustomerRedact
+- app/services/webhooks/index.ts: handleShopRedact
+- app/services/widget-installation/index.ts: generateThemeEditorDeepLink
+- app/services/widget-installation/index.ts: generateProductBundleInstallationLink
+- app/services/widget-installation/index.ts: generateProductBundleConfigurationLink
+- app/services/widget-installation/index.ts: createFullPageBundle
+- app/services/widget-installation/index.ts: validateProductBundleWidgetSetup
+- app/services/bundles/metafield-sync/index.ts: checkMetafieldSize
+- app/services/bundles/metafield-sync/index.ts: safeJsonParse
+- app/services/bundles/metafield-sync/index.ts: METAFIELD_SIZE_WARNING
+- app/services/bundles/metafield-sync/index.ts: METAFIELD_SIZE_CRITICAL
+- app/services/bundles/metafield-sync/index.ts: METAFIELD_SIZE_LIMIT
+- app/services/bundles/metafield-sync/index.ts: calculateComponentPricing
+- app/services/bundles/metafield-sync/index.ts: ensureCustomPageBundleConfigDefinition
+- app/services/webhooks/handlers/index.ts: handleSubscriptionUpdate
+- app/services/webhooks/handlers/index.ts: handleSubscriptionCancelled
+- app/services/webhooks/handlers/index.ts: handleSubscriptionApproachingCap
+- app/services/webhooks/handlers/index.ts: handlePurchaseUpdate
+- app/services/webhooks/handlers/index.ts: mapSubscriptionStatus
+- app/services/webhooks/handlers/index.ts: handleProductUpdate
+- app/services/webhooks/handlers/index.ts: handleProductDelete
+- app/services/webhooks/handlers/index.ts: handleCustomerDataRequest
+- app/services/webhooks/handlers/index.ts: handleCustomerRedact
+- app/services/webhooks/handlers/index.ts: handleShopRedact
+- app/services/webhooks/handlers/index.ts: handleAppUninstalled
+- app/services/webhooks/handlers/index.ts: handleScopesUpdate
+- app/services/webhooks/handlers/subscription.server.ts: mapSubscriptionStatus
+- app/services/bundles/metafield-sync/utils/size-check.ts: METAFIELD_SIZE_WARNING
+- app/services/bundles/metafield-sync/utils/size-check.ts: METAFIELD_SIZE_CRITICAL
+- app/services/bundles/metafield-sync/utils/size-check.ts: METAFIELD_SIZE_LIMIT
+- app/services/bundles/metafield-sync/utils/size-check.ts: safeJsonParse
+- app/services/bundles/metafield-sync/operations/definitions.server.ts: ensureCustomPageBundleConfigDefinition
+
+## types
+- app/services/bundles/storefront-sync.server.ts: BundleStorefrontSyncState
+- app/services/bundles/metafield-sync.server.ts: ComponentPricing
+- app/services/bundles/metafield-sync.server.ts: MetafieldSizeCheck
+- app/services/bundles/metafield-sync.server.ts: PriceAdjustment
+- app/services/bundles/metafield-sync.server.ts: BundleUiConfig
+- app/services/bundles/metafield-sync.server.ts: BundleUiStep
+- app/services/bundles/metafield-sync.server.ts: BundleUiPricing
+- app/services/bundles/metafield-sync.server.ts: BundleUiPricingRule
+- app/services/bundles/metafield-sync.server.ts: BundleUiMessaging
+- app/services/bundles/metafield-sync.server.ts: ComponentParentsData
+- app/lib/analytics/index.ts: LeaderboardRow
+- app/lib/analytics/index.ts: DeltaDirection
+- app/lib/analytics/index.ts: FormattedDelta
+- app/lib/analytics/index.ts: BundleEngagementRow
+- app/lib/analytics/index.ts: BundleSummaryInput
+- app/lib/analytics/attribution-controls.ts: AttributionWindow
+- app/lib/analytics/attribution-controls.ts: CustomUtmInputAnalysis
+- app/lib/admin-configuration-surfaces.ts: SettingsCard
+- app/lib/admin-configuration-surfaces.ts: SettingsTab
+- app/lib/admin-configuration-surfaces.ts: SettingsFieldGroup
+- app/lib/admin-configuration-surfaces.ts: SettingsPanel
+- app/lib/admin-configuration-surfaces.ts: LanguageConfiguration
+- app/lib/admin-configuration-surfaces.ts: ControlsLayout
+- app/lib/admin-configuration-surfaces.ts: IntegrationCard
+- app/lib/admin-configuration-surfaces.ts: IntegrationCategory
+- app/lib/settings-language-runtime.ts: SettingsLanguageRuntime
+- app/i18n/polaris-locales.server.ts: PolarisLocaleKey
+- app/services/app-events.server.ts: BusinessEventInput
+- app/services/app-events.server.ts: ShopifyAppEventInput
+- app/services/app-events.server.ts: ShopifyDeliveryResult
+- app/lib/checkout-integrations.ts: CheckoutIntegrationCallbackMode
+- app/lib/checkout-integrations.ts: ThirdPartyCheckoutIntegrationProviderId
+- app/lib/css-sanitizer.ts: CssSanitizeResult
+- app/lib/css-generators/index.ts: CSSDesignSettings
+- app/lib/css-generators/index.ts: CSSGenerationContext
+- app/types/pricing.ts: BundleQuantityOptionDisplay
+- app/lib/pricing-display-options.ts: PricingDisplayStep
+- app/lib/pricing-display-options.ts: NormalizedBundleQuantityOption
+- app/lib/pricing-display-options.ts: NormalizedProgressMilestone
+- app/lib/pricing-display-options.ts: NormalizedPricingDisplayOptions
+- app/lib/pricing-display-options.ts: SerializedBoxSelection
+- app/lib/pricing-display-options.ts: NormalizedRuleMessageInput
+- app/store/api/adminApi.ts: StoreFilesResponse
+- app/store/api/adminApi.ts: ListStoreFilesArgs
+- app/store/api/adminApi.ts: UploadStoreFileResult
+- app/store/api/adminApi.ts: UploadStoreFileStatus
+- app/store/api/adminApi.ts: EnsureProductTemplateArgs
+- app/store/slices/adminRouteStateSlice.ts: AdminRouteState
+- app/store/slices/configureRouteStateSlice.ts: ConfigureModalKey
+- app/store/slices/configureRouteStateSlice.ts: ConfigureRouteState
+- app/services/webhooks/index.ts: ShopifySubscriptionStatus
+- app/services/webhooks/index.ts: PubSubMessage
+- app/services/webhooks/index.ts: WebhookProcessResult
+- app/services/webhooks/index.ts: SubscriptionPayload
+- app/services/webhooks/index.ts: PurchasePayload
+- app/services/webhooks/index.ts: ProductPayload
+- app/services/webhooks/index.ts: CustomerDataRequestPayload
+- app/services/webhooks/index.ts: CustomerRedactPayload
+- app/services/webhooks/index.ts: ShopRedactPayload
+- app/services/widget-installation/index.ts: WidgetInstallationStatus
+- app/services/widget-installation/index.ts: ThemeEditorDeepLink
+- app/services/widget-installation/index.ts: FullPageBundleResult
+- app/services/widget-installation/index.ts: ProductBundleWidgetStatus
+- app/services/bundles/metafield-sync/index.ts: ComponentPricing
+- app/services/bundles/metafield-sync/index.ts: MetafieldSizeCheck
+- app/services/bundles/metafield-sync/index.ts: PriceAdjustment
+- app/services/bundles/metafield-sync/index.ts: BundleUiConfig
+- app/services/bundles/metafield-sync/index.ts: BundleUiStep
+- app/services/bundles/metafield-sync/index.ts: BundleUiPricing
+- app/services/bundles/metafield-sync/index.ts: BundleUiPricingRule
+- app/services/bundles/metafield-sync/index.ts: BundleUiMessaging
+- app/services/bundles/metafield-sync/index.ts: ComponentParentsData
+- app/services/cart-transform-service.server.ts: CartTransformActivationResult
+- app/services/cart-transform-service.server.ts: CartTransformMetafieldSyncResult
+- app/services/cart-transform-repair.server.ts: CartTransformRepairOptions
+- app/services/cart-transform-repair.server.ts: CartTransformRepairSummary
+- app/services/cart-transform-repair.server.ts: CartTransformRepairDependencies
+- app/services/deployment-backfill.server.ts: DeploymentBackfillOptions
+- app/services/deployment-backfill.server.ts: DeploymentBackfillSummary
+- app/services/deployment-backfill.server.ts: DeploymentBackfillDependencies
+- app/services/pixel-activation.server.ts: PixelActivationResult
+- app/services/pixel-activation.server.ts: PixelStatus
+- app/services/pixel-activation.server.ts: PixelDeactivationResult
+- app/services/analytics/order-backfill.server.ts: BackfillResult
+- app/services/billing.server.ts: CreateSubscriptionParams
+- app/services/billing.server.ts: CreateSubscriptionResult
+- app/lib/logger.ts: AppLogContext
+- app/services/bundle-analytics.server.ts: BundleStats
+- app/services/bundle-analytics.server.ts: BundlePerformanceMetrics
+- app/services/bundle-analytics.server.ts: ShopAnalyticsSummary
+- app/constants/plans.ts: PlanConfig
+- app/constants/plans.ts: GrowOnlyFeature
+- app/hooks/useBillingState.ts: BillingLoaderData
+- app/utils/pricing.ts: ProgressBarTone
+- app/utils/pricing.ts: BadgeTone
+- app/components/billing/index.ts: SubscriptionQuotaCardProps
+- app/components/billing/index.ts: FreePlanCardProps
+- app/components/billing/index.ts: GrowPlanCardProps
+- app/components/billing/index.ts: FeatureComparisonTableProps
+- app/components/billing/index.ts: UpgradeSuccessBannerProps
+- app/components/billing/index.ts: SubscriptionErrorBannerProps
+- app/components/billing/index.ts: UpgradeConfirmationModalProps
+- app/components/billing/index.ts: ValuePropsSectionProps
+- app/components/billing/index.ts: FAQSectionProps
+- app/lib/settings-controls-runtime.ts: ControlsRedirectAction
+- app/lib/settings-controls-runtime.ts: SettingsControlsRuntime
+- app/lib/settings-controls-runtime.ts: BundleCartLineMessagingRuntime
+- app/lib/settings-controls-runtime.ts: SettingsControlsRuntimeResult
+- app/lib/bundle-formatter.server.ts: FormattedBundle
+- app/services/cart-transform-runtime-token.server.ts: RuntimeTokenDiscount
+- app/services/checkout-integration-discount-code-service.server.ts: CheckoutIntegrationDiscountCodeResult
+- app/services/webhook-processor.server.ts: ShopifySubscriptionStatus
+- app/services/webhook-processor.server.ts: PubSubMessage
+- app/services/webhook-processor.server.ts: WebhookProcessResult
+- app/services/webhook-processor.server.ts: SubscriptionPayload
+- app/services/webhook-processor.server.ts: PurchasePayload
+- app/services/webhook-processor.server.ts: ProductPayload
+- app/services/webhook-processor.server.ts: CustomerDataRequestPayload
+- app/services/webhook-processor.server.ts: CustomerRedactPayload
+- app/services/webhook-processor.server.ts: ShopRedactPayload
+- app/hooks/useEnablePreviewGate.ts: EnablePreviewGateInput
+- app/hooks/useEnablePreviewGate.ts: EnablePreviewGateDecision
+- app/hooks/useEnablePreviewGate.ts: UseEnablePreviewGateOptions
+- app/hooks/useBundleConfigurationState.ts: BundleStatus
+- app/hooks/useBundleConfigurationState.ts: BundleData
+- app/hooks/useBundleConfigurationState.ts: BundleProductData
+- app/hooks/useBundleConfigurationState.ts: UseBundleConfigurationProps
+- app/hooks/useSharedBundleHandlers.ts: SharedBundleHandlersParams
+- app/lib/addon-step-lock.ts: AddonStepLockInput
+- app/lib/addon-tier-accordion.ts: AddonTierAccordionIndex
+- app/lib/analytics/analytics-helpers.ts: LeaderboardRow
+- app/lib/analytics/analytics-helpers.ts: DeltaDirection
+- app/lib/analytics/analytics-helpers.ts: FormattedDelta
+- app/lib/app-embed-status-check.client.ts: AppEmbedStatusCheckResult
+- app/lib/bundle-config/template-selection.ts: BundleContractType
+- app/lib/bundle-config/template-selection.ts: FullPageTemplateKey
+- app/lib/bundle-config/template-selection.ts: ProductPageTemplateKey
+- app/lib/bundle-config/template-selection.ts: TemplateKey
+- app/lib/bundle-config/template-selection.ts: TemplateSelection
+- app/lib/bundle-config/control-dependencies.ts: RuleMode
+- app/lib/bundle-config/control-dependencies.ts: DiscountMode
+- app/lib/bundle-config/control-dependencies.ts: RuleBasis
+- app/lib/bundle-config/control-dependencies.ts: ProgressType
+- app/lib/bundle-config/control-dependencies.ts: ControlDependencyInput
+- app/lib/bundle-config/control-dependencies.ts: ControlDependencyState
+- app/lib/bundle-config/category-contracts.ts: CategoryBundleType
+- app/lib/bundle-config/category-contracts.ts: CategoryConditionContract
+- app/lib/bundle-config/category-contracts.ts: CategoryProductContract
+- app/lib/bundle-config/category-contracts.ts: CategoryCollectionContract
+- app/lib/bundle-config/category-contracts.ts: CategoryContractInput
+- app/lib/bundle-config/cart-line-messaging.ts: CartLineMessagingSettings
+- app/lib/bundle-config/cart-line-messaging.ts: CartLineMessagingValues
+- app/lib/bundle-config/cart-line-messaging.ts: CartLineDisplayProperties
+- app/services/theme/app-embed-check.server.ts: AppEmbedCheckResult
+- app/lib/bundle-product-description.server.ts: BundleProductTroubleshootingCategory
+- app/lib/bundle-config/common-configure-page-model.ts: ConfigureBundleType
+- app/lib/bundle-config/common-configure-page-model.ts: ConfigureSetupItem
+- app/lib/bundle-config/common-configure-page-model.ts: ConfigureSectionModelItem
+- app/lib/bundle-config/common-configure-page-model.ts: BundleSettingsSlotModel
+- app/lib/dashboard-preview-action.ts: DashboardPreviewInput
+- app/lib/dashboard-preview-action.ts: DashboardPreviewAction
+- app/lib/bundle-config/default-products.ts: DefaultProductVariant
+- app/lib/analytics/engagement-helpers.ts: TrendPoint
+- app/lib/ppb-preview-url.ts: PpbPreviewInput
+- app/lib/bundle-config/product-page-admin-sections.ts: ProductPageSetupItem
+- app/lib/bundle-config/product-page-admin-sections.ts: ProductPageThemeTemplateOption
+- app/lib/bundle-config/product-page-admin-sections.ts: ProductPageThemeEditorDeepLinkInput
+- app/lib/bundle-config/product-page-admin-sections.ts: SellingPlanValidationSources
+- app/lib/bundle-config/product-page-admin-sections.ts: SellingPlanGroupSummary
+- app/lib/server-timing.server.ts: ServerTimingEntry
+- app/lib/step-filter.ts: StepFilterConfig
+- app/lib/step-filter.ts: FilterableProduct
+- app/lib/utm-pixel-status-banner.ts: UtmPixelStatusBannerModel
+- app/lib/wizard-preview-url.ts: WizardPreviewInput
+- app/lib/wizard-preview-url.ts: WizardPreviewResult
+- app/types/state.types.ts: GlobalColorSettings
+- app/types/state.types.ts: ProductCardSettings
+- app/types/state.types.ts: ButtonSettings
+- app/types/state.types.ts: QuantitySelectorSettings
+- app/types/state.types.ts: VariantSelectorSettings
+- app/types/state.types.ts: ModalSettings
+- app/types/state.types.ts: FooterSettings
+- app/types/state.types.ts: SuccessMessageSettings
+- app/types/state.types.ts: HeaderTabSettings
+- app/types/state.types.ts: StepBarSettings
+- app/types/state.types.ts: TabSettings
+- app/types/state.types.ts: EmptyStateSettings
+- app/types/state.types.ts: GeneralSettings
+- app/types/state.types.ts: TierPillSettingsType
+- app/types/state.types.ts: AccessibilitySettingsType
+- app/types/state.types.ts: SearchInputSettingsType
+- app/types/state.types.ts: SkeletonSettingsType
+- app/types/state.types.ts: WidgetStyleSettingsType
+- app/types/state.types.ts: PromoBannerSettings
+- app/types/state.types.ts: StepTimelineSettings
+- app/types/state.types.ts: ProductVariant
+- app/types/state.types.ts: StateAction
+- app/types/state.types.ts: StateListener
+- app/types/state.types.ts: StateSelector
+- app/types/state.types.ts: Unsubscribe
+- app/services/addon-discount-function-service.server.ts: AddOnDiscountActivationResult
+- app/services/mantle.server.ts: MantleProviderConfig
+- app/services/shopify-publications.server.ts: SalesChannelPublication
+- app/components/OptimisedImage.tsx: OptimisedImageProps
+- app/constants/help-tooltips.ts: HelpTooltipDetails
+- app/hooks/useDashboardState.ts: DeleteModalState
+- app/services/bundles/metafield-sync/utils/addon-components.ts: AddonComponentVariant
+- app/components/billing/FAQSection.tsx: FAQSectionProps
+- app/components/billing/FeatureComparisonTable.tsx: FeatureComparisonTableProps
+- app/components/billing/FreePlanCard.tsx: FreePlanCardProps
+- app/components/billing/GrowPlanCard.tsx: GrowPlanCardProps
+- app/components/billing/SubscriptionErrorBanner.tsx: SubscriptionErrorBannerProps
+- app/components/billing/SubscriptionQuotaCard.tsx: SubscriptionQuotaCardProps
+- app/components/billing/UpgradeConfirmationModal.tsx: UpgradeConfirmationModalProps
+- app/components/billing/UpgradeSuccessBanner.tsx: UpgradeSuccessBannerProps
+- app/components/billing/ValuePropsSection.tsx: ValuePropsSectionProps
+- app/components/analytics/shared/SortableHeader.tsx: SortableHeaderProps
+- app/components/analytics/BundlePerformanceMatrix.tsx: BundlePerformanceMatrixProps
+- app/components/analytics/shared/KpiTile.tsx: KpiAccent
+- app/components/analytics/shared/KpiTile.tsx: KpiTileProps
+- app/components/analytics/EngagementPulse.tsx: EngagementPulseProps
+- app/components/analytics/shared/FunnelStepBar.tsx: FunnelStepBarProps
+- app/components/analytics/FunnelHero.tsx: FunnelHeroProps
+- app/components/analytics/LiveActivityFeed.tsx: ActivityEvent
+- app/components/analytics/LiveActivityFeed.tsx: LiveActivityFeedProps
+- app/components/analytics/RevenueAttribution.tsx: RevenueAttributionProps
+- app/components/analytics/TopCampaigns.tsx: TopCampaignsRow
+- app/components/analytics/TopCampaigns.tsx: TopCampaignsProps
+- app/services/webhooks/types.ts: SubscriptionPayload
+- app/services/webhooks/types.ts: PurchasePayload
+- app/services/webhooks/types.ts: ProductPayload
+- app/services/webhooks/types.ts: CustomerDataRequestPayload
+- app/services/webhooks/types.ts: CustomerRedactPayload
+- app/services/webhooks/types.ts: ShopRedactPayload
+- app/services/widget-installation/types.ts: WidgetInstallationStatus
+- app/services/bundles/metafield-sync/types.ts: BundleUiPricingRule
+
+## enumMembers
+- app/constants/bundle.ts: FullPageLayout.FOOTER_SIDE

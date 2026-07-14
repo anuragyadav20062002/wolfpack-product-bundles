@@ -14,7 +14,10 @@ import {
   AttributionAnalyticsSkeletonCard,
   AttributionDashboardSkeleton,
 } from "./AttributionDashboardSkeleton";
-import { shouldRenderAnalyticsNoDataBanner } from "./attribution-lcp-state";
+import {
+  ANALYTICS_NO_DATA_BANNER_COPY,
+  shouldRenderAnalyticsNoDataBanner,
+} from "./attribution-lcp-state";
 import { analyzeCustomUtmInput } from "../../../lib/analytics/attribution-controls";
 
 type PixelStatusPayload = {
@@ -174,6 +177,13 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
 
 // ─── Main Component ───────────────────────────────────────────
 
+export function removeCustomUtmParameter(
+  parameters: string[],
+  parameterToRemove: string,
+): string[] {
+  return parameters.filter((parameter) => parameter !== parameterToRemove);
+}
+
 function NoDataBanner({
   hasNoData,
   pixelStatus,
@@ -188,16 +198,10 @@ function NoDataBanner({
       <Await resolve={pixelStatus}>
         {(status) => (
           shouldRenderAnalyticsNoDataBanner({ hasNoData, pixelActive: Boolean(status.active) }) ? (
-            <s-banner heading="No data for this period" tone="info">
+            <s-banner heading={ANALYTICS_NO_DATA_BANNER_COPY.heading} tone="info">
               <s-stack direction="block" gap="small-100">
                 <p className={styles.bodyText}>
-                  Tracking is active but no attributed orders were recorded yet. Values will populate once customers arrive via UTM-tagged links and complete a purchase.
-                </p>
-                <p className={styles.bodyText}>
-                  Make sure your ad links include UTM parameters — e.g.{" "}
-                  <code className={styles.codeSample}>
-                    ?utm_source=facebook&utm_campaign=bundles
-                  </code>
+                  {ANALYTICS_NO_DATA_BANNER_COPY.body}
                 </p>
               </s-stack>
             </s-banner>
@@ -208,7 +212,7 @@ function NoDataBanner({
   );
 }
 
-function CustomUtmTrackingCard({
+export function CustomUtmTrackingCard({
   customUtmParameters,
 }: {
   customUtmParameters: string[];
@@ -220,15 +224,18 @@ function CustomUtmTrackingCard({
     error?: string;
   }>();
   const [input, setInput] = useState(customUtmParameters.join("\n"));
+  const [savedParameters, setSavedParameters] = useState(customUtmParameters);
   const inputAnalysis = useMemo(() => analyzeCustomUtmInput(input), [input]);
 
   useEffect(() => {
     setInput(customUtmParameters.join("\n"));
+    setSavedParameters(customUtmParameters);
   }, [customUtmParameters]);
 
   useEffect(() => {
-    if (fetcher.data?.success && Array.isArray(fetcher.data.customUtmParameters)) {
+    if (Array.isArray(fetcher.data?.customUtmParameters)) {
       setInput(fetcher.data.customUtmParameters.join("\n"));
+      setSavedParameters(fetcher.data.customUtmParameters);
     }
   }, [fetcher.data]);
 
@@ -237,9 +244,33 @@ function CustomUtmTrackingCard({
   const previewLabel = inputAnalysis.accepted.length > 0
     ? `Wolfpack will track: ${inputAnalysis.accepted.join(", ")}`
     : "No valid custom attributes will be tracked yet.";
-  const savedLabel = customUtmParameters.length > 0
-    ? `Currently tracking: ${customUtmParameters.join(", ")}`
+  const savedLabel = savedParameters.length > 0
+    ? "Currently tracking"
     : "No custom attributes are configured yet.";
+
+  function submitCustomUtmParameters(nextInput: string, nextSavedParameters: string[]) {
+    setSavedParameters(nextSavedParameters);
+    setInput(nextInput);
+    fetcher.submit(
+      {
+        intent: "saveCustomUtms",
+        customUtmParameters: nextInput,
+      },
+      { method: "post" },
+    );
+  }
+
+  function handleSaveSubmit(event?: { preventDefault: () => void }) {
+    event?.preventDefault();
+    submitCustomUtmParameters(input, inputAnalysis.accepted);
+  }
+
+  function handleRemoveSavedParameter(parameterToRemove: string) {
+    const nextParameters = removeCustomUtmParameter(savedParameters, parameterToRemove);
+    const nextInput = nextParameters.join("\n");
+
+    submitCustomUtmParameters(nextInput, nextParameters);
+  }
 
   return (
     <section className={styles.sectionCard}>
@@ -250,9 +281,38 @@ function CustomUtmTrackingCard({
             Enter parameter names separated by commas or new lines. Wolfpack captures matching URL values on future visits and stores them with checkout attribution.
           </p>
         </div>
+        <s-button
+          variant="secondary"
+          commandFor="custom-utm-attributes-help"
+          command="--show"
+        >
+          Learn More
+        </s-button>
       </div>
       <div className={styles.customUtmBody}>
-        <fetcher.Form method="post" className={styles.customUtmForm}>
+        {savedParameters.length > 0 ? (
+          <div className={styles.customUtmSavedBlock}>
+            <p className={styles.mutedBodyText}>{savedLabel}</p>
+            <div className={styles.customUtmChipList} aria-label="Saved custom UTM attributes">
+              {savedParameters.map((parameter) => (
+                <span key={parameter} className={styles.customUtmChip}>
+                  <span className={styles.customUtmChipText}>{parameter}</span>
+                  <button
+                    type="button"
+                    className={styles.customUtmChipRemove}
+                    aria-label={`Remove ${parameter}`}
+                    disabled={isSaving || undefined}
+                    onClick={() => handleRemoveSavedParameter(parameter)}
+                  >
+                    <s-icon type="x" size="small"></s-icon>
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <fetcher.Form method="post" className={styles.customUtmForm} onSubmit={handleSaveSubmit}>
           <input type="hidden" name="intent" value="saveCustomUtms" />
           <input type="hidden" name="customUtmParameters" value={input} />
           <s-text-area
@@ -266,9 +326,11 @@ function CustomUtmTrackingCard({
           />
           <div className={styles.customUtmFeedback} aria-live="polite">
             <p className={styles.customUtmPreview}>{previewLabel}</p>
-            <p className={styles.mutedBodyText}>
-              {savedLabel}
-            </p>
+            {savedParameters.length === 0 ? (
+              <p className={styles.mutedBodyText}>
+                {savedLabel}
+              </p>
+            ) : null}
             {inputAnalysis.rejected.length > 0 ? (
               <p className={styles.errorText}>
                 Ignored: {inputAnalysis.rejected.join(", ")}. Use URL parameter names only, not shopper identifiers.
@@ -281,8 +343,20 @@ function CustomUtmTrackingCard({
             ) : null}
           </div>
           <s-stack direction="inline" alignItems="center" gap="small-100">
-            <s-button variant="primary" disabled={isSaving || undefined}>
-              {isSaving ? "Updating tracking" : "Save custom attributes"}
+            <s-button
+              variant="primary"
+              onClick={() => handleSaveSubmit()}
+            >
+              <span className={styles.customUtmSaveButtonContent}>
+                <span
+                  className={styles.customUtmSaveButtonSpinner}
+                  aria-hidden={!isSaving}
+                  data-visible={isSaving ? "true" : "false"}
+                >
+                  <s-spinner size="base" />
+                </span>
+                <span>Save custom attributes</span>
+              </span>
             </s-button>
             {feedback ? (
               <span className={fetcher.data?.error ? styles.errorText : styles.successText}>
@@ -292,6 +366,51 @@ function CustomUtmTrackingCard({
           </s-stack>
         </fetcher.Form>
       </div>
+      <s-modal
+        id="custom-utm-attributes-help"
+        heading="Custom UTM attributes"
+      >
+        <s-button
+          slot="secondary-actions"
+          commandFor="custom-utm-attributes-help"
+          command="--hide"
+        >
+          Close
+        </s-button>
+
+        <s-stack direction="block" gap="base">
+          <div>
+            <h3 className={styles.sectionTitle}>How custom attributes work</h3>
+            <p className={styles.mutedBodyText}>
+              Custom attributes are extra URL query parameters you add to campaign, affiliate, influencer, or creator links when the standard UTM fields are not enough.
+            </p>
+          </div>
+          <div>
+            <h3 className={styles.sectionTitle}>How to set them up</h3>
+            <p className={styles.mutedBodyText}>
+              Add parameter names one per line or separated by commas. Enter only the parameter name, not the full URL and not the value.
+            </p>
+            <p className={styles.mutedBodyText}>
+              Example names: <code className={styles.codeSample}>utm_influencer, partner_id</code>
+            </p>
+            <p className={styles.mutedBodyText}>
+              Example link: <code className={styles.codeSample}>https://store.com/products/bundle?utm_source=instagram&utm_influencer=maya&amp;partner_id=summer-drop</code>
+            </p>
+          </div>
+          <div>
+            <h3 className={styles.sectionTitle}>What happens after saving</h3>
+            <p className={styles.mutedBodyText}>
+              Wolfpack saves up to 10 valid names, updates the tracking pixel settings, and starts capturing those attributes for new visits after you save.
+            </p>
+            <p className={styles.mutedBodyText}>
+              When a shopper reaches checkout from a matching link, the saved values are stored with the order attribution record and included in analytics exports.
+            </p>
+          </div>
+          <s-banner tone="warning">
+            Do not track shopper identifiers such as email addresses, phone numbers, customer IDs, or any value that can identify a person.
+          </s-banner>
+        </s-stack>
+      </s-modal>
     </section>
   );
 }

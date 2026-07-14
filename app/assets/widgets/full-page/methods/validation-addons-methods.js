@@ -1,26 +1,8 @@
 import {
-  BUNDLE_WIDGET,
   CurrencyManager,
-  BundleDataManager,
   PricingCalculator,
-  ToastManager,
-  TemplateManager,
-  ComponentGenerator
 } from '../../../bundle-widget-components.js';
 import { ConditionValidator } from '../../shared/condition-validator.js';
-import { createDefaultLoadingAnimation } from '../../shared/default-loading-animation.js';
-import { hideLoadingOverlayElement, markLoadingOverlayVisible } from '../../shared/loading-overlay.js';
-import { getDiscountProgressData, getSelectedQuantity, getTimelineEntryState } from '../../shared/engine/bundle-selectors.js';
-import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
-import { createBundleBannerElement, createStepBannerImageElement } from '../../shared/components/bundle-banners.js';
-import { renderSharedProductCard } from '../../shared/components/product-card.js';
-import { renderSelectedProductRow } from '../../shared/components/selected-product-row.js';
-import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
-import { renderStepTimelineEntry } from '../../shared/components/step-timeline.js';
-import {
-  buildCartLineDisplayProperties,
-  buildCartLineSourceProperties,
-} from '../../shared/engine/cart-lines.js';
 
 function getAddonTiersForStep(step) {
   return Array.isArray(step?.addonTiers) ? step.addonTiers.filter(Boolean) : [];
@@ -56,6 +38,22 @@ function getAddonTierCandidatesWithState(step, totalPrice, totalQuantity) {
     const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
     return { tier, index, conditionType, threshold, currentValue, isEligible: currentValue >= threshold };
   });
+}
+
+function normalizeAddonPercentageDiscount(...sources) {
+  for (const source of sources) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) continue;
+    const type = String(source.type ?? source.discountType ?? '').toUpperCase();
+    const value = Number(source.value ?? source.discountValue ?? 0);
+    if (type === 'PERCENTAGE' && Number.isFinite(value) && value > 0) {
+      return { type: 'PERCENTAGE', value: Math.min(100, value) };
+    }
+  }
+  return null;
+}
+
+function getAddonDiscountForStepTier(step, tier) {
+  return normalizeAddonPercentageDiscount(tier?.discount, tier, step?.addonDiscount);
 }
 
 function createFreeGiftStatusIcon(state) {
@@ -344,7 +342,7 @@ getAddonEligibilityState(step, evaluationOverride = null) {
     : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step));
   const tier = evaluation.tier;
   const condition = tier?.eligibilityCondition || step?.addonEligibilityCondition || {};
-  const discount = tier?.discount || step?.addonDiscount || {};
+  const discount = getAddonDiscountForStepTier(step, tier) || {};
   const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
   const conditionValue = Number(condition.value || 0);
   const currencyInfo = CurrencyManager.getCurrencyInfo();
@@ -398,11 +396,7 @@ getAddonLineDiscount(step) {
     : fullPageValidationAddonsMethods.getAddonTierEvaluation.call(this, step);
   const tier = evaluation.tier;
   if (evaluation.isEligible !== true) return null;
-  const discount = tier?.discount || step?.addonDiscount || {};
-  const type = String(discount.type || '').toUpperCase();
-  const value = Number(discount.value || 0);
-  if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
-  return { type, value: Math.min(100, value) };
+  return getAddonDiscountForStepTier(step, tier);
 },
 
 getAddonProductSelectionKeys(step) {

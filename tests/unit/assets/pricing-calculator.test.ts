@@ -634,6 +634,11 @@ describe('PricingCalculator.getNextDiscountRule', () => {
     expect(PricingCalculator.getNextDiscountRule({ pricing: null }, 0, 0)).toBeNull();
   });
 
+  it('returns null when pricing is disabled but saved rules remain', () => {
+    const bundle = makeBundle(false, rules);
+    expect(PricingCalculator.getNextDiscountRule(bundle, 0, 0)).toBeNull();
+  });
+
   it('qty=0 — returns first rule (qty>=2 not yet satisfied)', () => {
     const bundle = makeBundle(true, rules);
     const next = PricingCalculator.getNextDiscountRule(bundle, 0, 0);

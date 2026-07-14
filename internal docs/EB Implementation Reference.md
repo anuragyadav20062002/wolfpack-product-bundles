@@ -1,7 +1,7 @@
 ---
 title: EB Implementation Reference
 type: reference
-last_updated: 2026-06-12
+last_updated: 2026-07-12
 source: docs/competitor-analysis/16-eb-full-data-flow-investigation.md; docs/competitor-analysis/17-eb-complete-configure-e2e-audit.md
 ---
 
@@ -31,9 +31,11 @@ All requests go to `https://prod.backend.giftbox.giftkart.app` with `?shopName={
 
 ## Data Contracts
 
-## FPB Rules Configuration
+## FPB and PPB Rules Configuration
 
-These Rules Configuration notes are scoped to EB Landing Page Bundles, also called FPB in WPB. They must not be treated as confirmed PPB behavior unless separately verified.
+These Rules Configuration notes apply to both EB Landing Page Bundles and
+Product Page Bundles. The PPB contract was reverified from the live PPB Rules
+Configuration help article on 2026-07-13.
 
 Rules in EB FPB control customer selection requirements while building a bundle. A step can use exactly one rule mode at a time: Step Rules or Category Rules.
 
@@ -86,15 +88,17 @@ Unsupported conditions:
 
 Each category's rules are configured independently.
 
-## FPB Step Flow Configuration
+## FPB and PPB Step Flow Configuration
 
-These Step Flow notes are scoped to EB Landing Page Bundles, also called FPB in WPB. They must not be treated as confirmed PPB behavior unless separately verified.
+These Step Flow notes apply to EB Landing Page Bundles and Product Page
+Bundles. The hierarchy and navigation guidance was reverified from the live PPB
+Step Flow and Categories help articles on 2026-07-13.
 
 EB FPB Step Flow defines the bundle architecture before the merchant configures detailed steps, categories, products, rules, discounts, and design.
 
 ### Steps and Categories Hierarchy
 
-These Categories notes are scoped to EB Landing Page Bundles, also called FPB in WPB. They must not be treated as confirmed PPB behavior unless separately verified.
+The same hierarchy is used by both EB bundle families.
 
 EB FPB organizes products with a strict hierarchy:
 
@@ -469,6 +473,34 @@ Scope gate: Emails and Customize Emails are out of scope for the clone rewrite. 
 | `bundleDesignTemplate` | `"PDP_INPAGE" \| "PDP_MODAL"` | Set at creation |
 | `bundleDesignTemplateData.templateId` | string | Visual preset within the layout mode |
 
+### EB Parent Bundle Product Visibility
+
+Verified on 2026-07-12 with Chrome DevTools MCP and saved network/storefront evidence:
+- PPB storefront product-page proof: `/private/tmp/ppb-parent-product-eb-storefront-global-probe.json`
+- PPB Admin/API proof: `/private/tmp/eb-ppb-mixandmatch-read.response.network-response`
+- FPB Admin/API proof: `/private/tmp/eb-fpb-stepsconfiguration-read.response.network-response`
+- FPB app-proxy probe: `/private/tmp/fpb-parent-product-eb-app-proxy-probe.json`
+
+EB creates both Product Page Bundle and Full Page Bundle parent Shopify products with:
+- `parentProductShopifyData.status: "unlisted"`
+- `parentProductShopifyData.isPublishedOnOnlineStore: true`
+- default parent product image `ParentProduct...avif`
+- tags including `easy-bundle` and `smart-cart-hide-bundle-options`
+- one default parent variant with `inventory_policy: "continue"` / `availableForSale: true`
+
+The parent product `body_html` is the same contract for PPB and FPB. It starts with:
+- `Your Bundle is Unlisted`
+- `This product is automatically created with its Status set to "Unlisted".`
+- `The bundle is active and discounts will apply, but it is hidden from your store's search results and collection pages. Customers can still purchase it using a direct link.`
+- `To show this bundle on your storefront (like in collections or search), you must manually change its Status to "Active" from the easy bundles app.`
+- `Do Not Delete: Deleting this product will break the bundle's functionality.`
+
+Implications for Wolfpack:
+- PPB first-time parent product creation should default the Shopify product to `UNLISTED`, not `DRAFT`.
+- PPB preview must still work for `active`, `unlisted`, `draft`, and locally untracked/unknown states by choosing Shopify preview URLs first when needed and falling back to a direct handle URL when possible.
+- Making the parent product discoverable in storefront search or collections requires changing the Shopify parent product status to `ACTIVE`.
+- FPB uses the same unlisted parent-product status/copy for its generated Shopify parent product, even though the customer-facing FPB builder can render through an app-proxy/full-page bundle URL instead of the native Shopify product page. The app-proxy URL alone is therefore not sufficient proof of parent product status.
+
 ### PPB Step/Category Admin Payload
 
 Sent to `mixAndMatch/update`. The captured Admin update payload preserves hydrated category records and category rule arrays.
@@ -541,6 +573,59 @@ Sent to `mixAndMatch/update`. The captured Admin update payload preserves hydrat
 - FPB additionally preserves a `selectedProducts` array in the captured category object; it was empty in the step-setup proof.
 - PPB stores `displayVariantsAsIndividualProducts` and `displayVariantsAsSwatches` per **category** — confirmed at category level
 
+### PPB Product List Step Rules
+
+Verified on 2026-07-12 against EB Product Page Bundle Product List (`PDP_INPAGE` + `CASCADE`) for offer `MIX-156854`.
+
+Admin behavior:
+- Selecting the `Step rules` label exposes an `Add Rule` control.
+- A newly added rule exposes:
+  - metric options: `Quantity`, `Amount`
+  - condition options: `is less than or equal to`, `is greater than or equal to`, `is equal to`
+  - numeric value spinbutton
+- Saving a quantity rule for at least two items persists as:
+
+```json
+{
+  "productsData1": {
+    "conditions": {
+      "isEnabled": true,
+      "rules": [
+        { "type": "quantity", "condition": "greaterThanOrEqualTo", "value": "02" }
+      ]
+    }
+  }
+}
+```
+
+Storefront Product List behavior:
+- With one selected product, the footer `Add Bundle to Cart` element keeps the class `gbbMixCascadeAddToCartBtn--disabled-conditionsNotMet`, has `pointer-events: none`, and opacity `0.5`.
+- Under the same one-product state, no cart line is added.
+- With two selected products, EB removes the disabled condition class, sets `pointer-events: auto`, opacity `1`, and the bundle add-to-cart succeeds.
+- The successful cart line uses the parent bundle product and properties including `_EasyBundleId`, `_originalOfferId`, `Box`, and `Items`.
+
+2026-07-13 multi-step Product List behavior:
+- `PDP_INPAGE + CASCADE` renders only the active step's categories and products; it does not stack all configured steps into one list.
+- Intermediate steps use `Next`. The final step uses a separate Back control plus `Add Bundle to Cart`.
+- Step rules gate forward navigation. In the captured fixture, Step 1 required quantity greater than or equal to `2` before Next could transition to Step 2.
+- An exact Step 2 quantity rule of `1` disables Add Bundle to Cart at zero, enables it at one, and blocks a second selection with `Add exactly 01 products on this step` while retaining the valid selection.
+- Back returns to the previous step without clearing products selected on either step. The selected-items drawer preserves the combined cross-step selection.
+- The step indicator uses a `20px` flex gap with no connector element. Only the active `30px` badge is filled; completed inactive steps use the same light badge treatment as other inactive steps.
+- Evidence: `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-step1-condition-met-2026-07-13.json`, `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-step2-exact-one-2026-07-13.json`, `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-desktop-step2-over-attempt-2026-07-13.json`, and `/private/tmp/ppb-product-list-agentic-parity/PL02-step-conditions/eb-mobile-step-parts-390-2026-07-13.json`.
+
+2026-07-13 PPB Product List quantity-validation gotcha:
+- EB Admin can show `Bundle Settings -> Enable Quantity Validation` as checked for a Product Page Bundle Product List bundle while the saved `mixAndMatch/update` payload still contains `boxSelection.isEnabled: false` and `boxSelection.validateBoxSelectionQuantity: false`.
+- The same cache-bypassed storefront then emits `boxSelection.isEnabled: false`, `boxSelection.validateBoxSelectionQuantity: false`, and no quantity-option wrapper DOM.
+- Discount & Pricing exposed `Bundle Quantity Options`, but the accessibility checkbox did not toggle through direct checkbox click, wrapper click, Space, Enter, or form fill during the MCP pass.
+- Treat PPB Product List quantity-validation parity as unproven unless the EB storefront runtime, not just the Admin checkbox, emits enabled `boxSelection` flags.
+- Evidence: `/private/tmp/ppb-product-list-agentic-parity/PL06-quantity-validation/eb-validation-save.request.network-request`, `/private/tmp/ppb-product-list-agentic-parity/PL06-quantity-validation/eb-validation-save.response.network-response`, and `/private/tmp/ppb-product-list-agentic-parity/PL06-quantity-validation/eb-runtime-after-validation-save-2026-07-13.json`.
+
+2026-07-13 PPB Product List mixed-inventory behavior:
+- With one sellable variant and two unavailable variants, Product List renders one grouped product row, shows the sole sellable variant title as plain text, and does not render a variant selector.
+- Unavailable variants are omitted rather than disabled or labelled out of stock. A fully unavailable configured product is omitted entirely.
+- Product List does not render sold-out copy for these filtered states.
+- Evidence: `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-desktop-massage-oil-dom-2026-07-13.json` and `/private/tmp/ppb-product-list-agentic-parity/PL04-inventory/eb-mobile-step2-mixed-inventory-390-2026-07-13.json`.
+
 ### Discount Configuration Shape (PPB — applies to FPB too)
 
 ```json
@@ -574,6 +659,12 @@ Sent to `mixAndMatch/update`. The captured Admin update payload preserves hydrat
   }
 }
 ```
+
+Disabling the master toggle does not require deleting the saved rule array. Live
+2026-07-13 PPB evidence preserved the 5%/10% rules while emitting
+`isDiscountEnabled: false`; the storefront rendered original totals with no
+progress or percent UI. Consumers must gate both discount calculation and
+next-rule progress lookup on the master enabled flag.
 
 ### Discount & Pricing — Admin UI
 
@@ -788,6 +879,114 @@ live EB proof shows a Classic-only content or presentation difference.
 | Vertical Slots | `PDP_MODAL` | `SIMPLIFIED` | same as MODAL (admin-only label; CSS-class differentiated) |
 
 `PDP_INPAGE` vs `PDP_MODAL` is a binary dispatch: inpage uses `gbbMix.templates`, modal uses `gbbMix.gbbMixAndMatchBundle`. `SIMPLIFIED` has zero occurrences in widget JS — its visual differentiation from `MODAL` is driven by `renderFilledSlotsAsHorizontalStacked` → CSS class `gbbMixProductPageCategoriesWrapperHStacked` / `VStacked`.
+
+### PPB modal-slot capacity by quantity operator
+
+Live Horizontal Slots evidence on 2026-07-13 confirms that modal-slot capacity
+depends on the step rule operator:
+
+- A minimum rule (`greaterThanOrEqualTo`) stays open-ended. Reaching the minimum
+  exposes the next numbered empty slot; selecting beyond it continues growing
+  capacity one slot ahead of the selection count.
+- Expanded minimum-rule capacity persists when products are removed during the
+  same storefront session. A hard reload resets it to the configured minimum.
+- An exact rule (`equalTo`) stops at its configured quantity and does not expose
+  an overflow slot after the rule is satisfied.
+
+In the confirmed two-step fixture, Step 1 (`>= 2`) grew through `Product 4` after
+three selections and retained four empty slots after removal. Step 2 (`= 1`)
+rendered no `Product 2` after selection and returned to one empty slot after
+removal. This is behavior, not merely presentation: both the modal and final
+widget permit the extra minimum-rule selection.
+
+### PPB selected-product session restoration
+
+Live Vertical Slots evidence on 2026-07-13 confirms that EB restores customer
+product selections across a hard reload in the current storefront tab. For
+offer `MIX-156854`, EB writes equivalent cart payloads to
+`sessionStorage` keys `gbbMixSdk-cart-MIX-156854` and
+`gbbMix-cart-MIX-156854`. The payload includes `selectedCategoriesProducts`,
+`items`, totals, and `itemsTracker`.
+
+The tested bundle had empty `defaultProductsData`. Removing only those two
+offer-scoped keys and hard reloading cleared the visible selection. Selecting
+`18k Pedal Ring / 10` recreated both keys, and the next cache-bypassed hard
+reload restored variant `45038876688580`, quantity `1`, the filled slot, and
+the `Added x1` product-card state. Do not confuse this with modal slot-capacity
+state: open-ended capacity resets to its configured minimum on reload, while
+stored product selections restore.
+
+### PPB Product Grid interaction and step-flow contract
+
+Live EB Product Grid evidence on 2026-07-13 confirms that `PDP_INPAGE + COGNIVE`
+uses an accordion step flow. The active step body is inserted immediately after
+its header. After advancing, the completed Step 1 header is followed by the
+active Step 2 header and then the Step 2 body; Product Grid does not use a
+separate horizontal step-button rail.
+
+Product cards remain complete at both viewport classes: desktop uses three
+columns inside the product form and mobile uses two, with image, two-line title,
+price, and action visible. Selecting a card replaces `Add +` with the
+quantity-aware `Added xN` button. It does not add a check marker or expose inline
+minus/quantity/plus controls; activating `Added xN` removes that product.
+
+The incomplete intermediate `Next` action remains visually and functionally
+active so it can explain the unmet rule. In the confirmed minimum-two fixture it
+shows `Add at least 02 products on this step` in a fixed, bottom-aligned,
+non-dismissible toast. Disabling the action suppresses required feedback and is
+not EB-compatible.
+
+The same fixture also confirms Product Grid selection restoration. After
+switching the configured template from Vertical Slots to Product Grid without
+clearing the offer-scoped session cart and then performing a cache-bypassed hard
+reload, EB retained `18k Pedal Ring - 10 x 1`, the `Added x1` card action, one
+selected bundle item, and a total of `₹399`. The grouped card's visible variant
+selector reset to `6` even though the restored selected item remained variant
+`10`; selection identity therefore comes from the stored cart state, not from
+the selector's initial visual value.
+
+Product Grid selected-card state is category-scoped when the same product or
+variant is configured in more than one category. In the confirmed fixture,
+variant `10` selected from Category 1 remained in the selected-items summary,
+but the Category 2 card for that same sole configured variant rendered `Add +`.
+Returning to Category 1 restored `Added x1`. Changing the grouped selector from
+its reset value `6` to `9` made the card action `Add +` without removing stored
+variant `10`; activating it added `18k Pedal Ring - 9` as a second, independently
+identified selected item. Product Grid card state therefore depends on both the
+current card variant and the category that owns the selection.
+
+### PPB modal header, toast, and filled-row contract
+
+Live Horizontal and Vertical Slots evidence on 2026-07-13 confirms that the
+mobile modal shows only the current step title; it does not retain the full
+desktop step rail. Selected product cards show a check marker and `Added xN`,
+with inline quantity controls hidden.
+
+Modal rule-validation feedback is body-owned rather than sheet-owned. The
+settled toast is fixed at `18vh` from the viewport bottom and includes a close
+control. This modal contract differs from Product Grid, whose corresponding
+in-page validation toast is non-dismissible.
+
+Vertical filled slots use image, title, remove visual order. In the confirmed
+mobile fixture each filled row was `64px` high with `50px` media and a `20px`
+remove control; minimum rules retain a following empty slot while exact rules
+do not.
+
+### PPB compare-at price ownership
+
+Live EB Admin evidence on 2026-07-13 places `Show Compare At Price` under the
+global Settings → Controls → Configuration → Bundle Settings surface, not inside
+an individual PPB bundle's Bundle Settings section. The control was checked on
+`yash-wolfpack`; the inspected Horizontal Slots products still rendered ordinary
+prices because their hydrated product data did not contain a usable compare-at
+value. Treat the global control and product data as independent gates when
+building a compare-at fixture.
+
+Wolfpack persists the current bundle-level projection as `showCompareAtPrices`,
+while the storefront DTO key intentionally remains EB-compatible
+`showProductComparedAtPrice`. The metafield writer must map between those names;
+reading `showProductComparedAtPrice` directly from the persisted bundle silently
+forces the storefront flag to false.
 
 ---
 

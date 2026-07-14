@@ -10,6 +10,12 @@ function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
 
+export function resolveSelectedSlotTitle(title, isVertical) {
+  const normalizedTitle = String(title || '');
+  if (isVertical || normalizedTitle.length <= 25) return normalizedTitle;
+  return `${normalizedTitle.substring(0, 25)}...`;
+}
+
 function renderInpageProductLoadingRows(rowCount = 3) {
   const rows = Array.from({ length: rowCount }, (_, index) => `
     <div class="bw-ppb-inpage-loading-row" aria-hidden="true" data-loading-row="${index + 1}">
@@ -42,6 +48,94 @@ export function shouldDisplayVariantsAsIndividualForInpageCategory(step, stepInd
 
   return step?.displayVariantsAsIndividualProducts === true
     || step?.displayVariantsAsIndividual === true;
+}
+
+export function getCascadeSoleVariantDisplayProduct(product = {}) {
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  const soleVariantTitle = typeof variants[0]?.title === 'string' ? variants[0].title.trim() : '';
+  const hadMultipleSourceVariants = Number(product.sourceVariantCount || 0) > 1;
+
+  if (product.parentProductId || !hadMultipleSourceVariants || variants.length !== 1) return product;
+  if (!soleVariantTitle || soleVariantTitle === 'Default Title') return product;
+
+  return { ...product, variantTitle: soleVariantTitle };
+}
+
+export function resolveInpageProductSelection(
+  product = {},
+  stepSelections = {},
+  normalizeSelectionKey = (value) => String(value || ''),
+  selectedProductCategoryIndexes = {},
+  activeCategoryIndex = null,
+) {
+  const defaultSelectionKey = product.variantId || product.id || '';
+  const candidateIds = [defaultSelectionKey, product.id, product.productId];
+  if (Array.isArray(product.variants)) {
+    candidateIds.push(...product.variants.map((variant) => variant.id));
+  }
+
+  const normalizedCandidates = new Set(
+    candidateIds.map(normalizeSelectionKey).filter(Boolean),
+  );
+  const restoredEntry = Object.entries(stepSelections || {}).find(
+    ([selectionKey, rawQuantity]) => (
+      Number(rawQuantity) > 0
+      && normalizedCandidates.has(normalizeSelectionKey(selectionKey))
+    ),
+  );
+
+  if (restoredEntry) {
+    const normalizedSelectionKey = normalizeSelectionKey(restoredEntry[0]);
+    const categoryOwnerEntry = Object.entries(selectedProductCategoryIndexes || {}).find(
+      ([selectionKey]) => normalizeSelectionKey(selectionKey) === normalizedSelectionKey,
+    );
+    const categoryOwner = categoryOwnerEntry ? Number(categoryOwnerEntry[1]) : null;
+    const belongsToActiveCategory = (
+      activeCategoryIndex === null
+      || categoryOwner === null
+      || categoryOwner === activeCategoryIndex
+    );
+    return {
+      selectionKey: restoredEntry[0],
+      quantity: belongsToActiveCategory ? Number(restoredEntry[1]) || 0 : 0,
+    };
+  }
+
+  return {
+    selectionKey: defaultSelectionKey,
+    quantity: 0,
+  };
+}
+
+const INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
+
+function resolveProductCardDescription(product = {}) {
+  const candidate =
+    (typeof product.description === 'string' && product.description.trim())
+    || (typeof product.descriptionHtml === 'string' && product.descriptionHtml.trim())
+    || '';
+
+  return String(candidate).trim();
+}
+
+function renderInpageProductCardDescription(product = {}, showSeeMore) {
+  if (!showSeeMore) return '';
+
+  const description = resolveProductCardDescription(product);
+  if (!description) return '';
+
+  const showToggle = description.length > INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
+  const shortDescription = showToggle
+    ? `${description.slice(0, INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
+    : description;
+
+  return `
+    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
+      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
+      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
+      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
+    </div>
+  `;
 }
 
 export const ProductPageInpageRenderMethods = {
@@ -86,6 +180,11 @@ _renderInpageStepProducts(stepIndex, target) {
 
   const usesCascadeCards = this._isProductPageCascadeTemplate();
   const usesGridCards = this._isProductPageGridTemplate();
+  const widgetConfig = this.config || {};
+  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
+  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
+  const cardHoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
+  const cardSeeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
 
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
     this.selectedBundle?.validateQuantityPerProduct
@@ -93,8 +192,19 @@ _renderInpageStepProducts(stepIndex, target) {
   const currencyInfo = CurrencyManager.getCurrencyInfo();
 
   target.innerHTML = products.map(product => {
-    const selectionKey = product.variantId || product.id;
-    const currentQuantity = this.getSelectedQuantity(stepIndex, selectionKey);
+    const directSelectionKey = product.variantId || product.id;
+    const restoredGridSelection = usesGridCards
+      ? resolveInpageProductSelection(
+        product,
+        this.selectedProducts?.[stepIndex],
+        (value) => this.normalizeSelectionKey(value),
+        this.selectedProductCategoryIndexes?.[stepIndex],
+        this.activeInpageCategoryIndexes?.[stepIndex] ?? 0,
+      )
+      : null;
+    const selectionKey = restoredGridSelection?.selectionKey || directSelectionKey;
+    const currentQuantity = restoredGridSelection?.quantity
+      ?? this.getSelectedQuantity(stepIndex, selectionKey);
     const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
     const atMaxStock = available !== null && currentQuantity >= available;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
@@ -102,21 +212,30 @@ _renderInpageStepProducts(stepIndex, target) {
     const stockBadge = outOfStock
       ? '<div class="product-stock-badge product-stock-badge--out">Out of stock</div>'
       : '';
+    const variantSelectorHtml = this.renderInlineCardVariantSelector(product, currentStep);
 
     if (usesCascadeCards) {
+      const cascadeProduct = getCascadeSoleVariantDisplayProduct(product);
       return renderSharedProductCard(
-        product,
+        cascadeProduct,
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'row',
           className: [
             'bw-ppb-cascade-product-row',
+            cardHoverClass,
+            cardSeeMoreClass,
             'wpbMixCascadeProductWrapper',
+            variantSelectorHtml ? 'bw-ppb-cascade-product-row--has-variant-selector' : '',
             currentQuantity > 0 ? 'selected' : '',
             outOfStock ? 'is-out-of-stock' : '',
           ].filter(Boolean).join(' '),
+          description: resolveProductCardDescription(product),
+          displaySeeMoreLink: showSeeMoreLink,
+          descriptionMaxLength: INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH,
+          expandProductCardOnHover: expandOnHover,
+          variantSelectorHtml,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled: outOfStock,
           increaseDisabled,
@@ -127,14 +246,19 @@ _renderInpageStepProducts(stepIndex, target) {
 
     if (usesGridCards) {
       return renderSharedProductCard(
-        product,
+        selectionKey === directSelectionKey ? product : { ...product, variantId: selectionKey },
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
+          variantSelectorHtml,
+          description: '',
+          displaySeeMoreLink: false,
+          expandProductCardOnHover: false,
           mode: 'grid',
-          className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
+          className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`.trim(),
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          selectedAction: 'button',
+          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -144,7 +268,8 @@ _renderInpageStepProducts(stepIndex, target) {
 
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const showQuantitySelector = !this._usesCompactInpageProductCards()
-      && this.config.showQuantitySelectorOnCard;
+      && widgetConfig.showQuantitySelectorOnCard;
+    const showSeeMoreLinkOnRow = widgetConfig.displaySeeMoreLink === true;
     const productContent = `
       <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
       ${product.price ? `
@@ -154,6 +279,7 @@ _renderInpageStepProducts(stepIndex, target) {
         </div>
       ` : ''}
       ${this.renderInlineCardVariantSelector(product, currentStep)}
+      ${renderInpageProductCardDescription(product, showSeeMoreLinkOnRow)}
       ${showQuantitySelector ? `
         <div class="product-quantity-wrapper">
           <div class="product-quantity-selector">
@@ -171,7 +297,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
 
     return `
-      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${cardHoverClass} ${cardSeeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
@@ -290,29 +416,17 @@ createSelectedProductCard(item, cardIndex) {
   // Product title at bottom
   const productTitle = document.createElement('p');
   productTitle.className = 'step-name step-name-completed product-title-state';
-  // Truncate long titles
-  const displayTitle = product.title.length > 25
-    ? product.title.substring(0, 25) + '...'
-    : product.title;
+  const displayTitle = resolveSelectedSlotTitle(
+    product.title,
+    this._usesVerticalModalSlotLayout?.() === true,
+  );
   productTitle.textContent = displayTitle;
   productTitle.title = product.title; // Full title on hover
   stepBox.appendChild(productTitle);
 
-  // Add click handler - check if step limit is reached before opening modal
-  stepBox.addEventListener('click', () => {
-    // If step has a limit of 1 and is already fulfilled, show toast instead of opening modal
-    const stepData = this.selectedBundle.steps[stepIndex];
-    if (stepData && stepData.conditionValue && stepData.conditionOperator) {
-      const isLimitOne = stepData.conditionValue === 1 &&
-        (stepData.conditionOperator === BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO ||
-         stepData.conditionOperator === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO);
-      if (isLimitOne && this.validateStep(stepIndex)) {
-        ToastManager.show('Product limit reached for this step.');
-        return;
-      }
-    }
-    this.openModal(stepIndex);
-  });
+  // Filled slots stay editable. Selection validation still runs inside the
+  // picker, while reopening lets shoppers replace an exact-one choice.
+  stepBox.addEventListener('click', () => this.openModal(stepIndex));
 
   return stepBox;
 },
@@ -425,7 +539,10 @@ createFreeGiftSlotCard(step, stepIndex) {
 
       const productTitle = document.createElement('p');
       productTitle.className = 'step-name step-name-completed product-title-state';
-      const displayTitle = product.title.length > 25 ? product.title.substring(0, 25) + '...' : product.title;
+      const displayTitle = resolveSelectedSlotTitle(
+        product.title,
+        this._usesVerticalModalSlotLayout?.() === true,
+      );
       productTitle.textContent = displayTitle;
       stepBox.appendChild(productTitle);
 

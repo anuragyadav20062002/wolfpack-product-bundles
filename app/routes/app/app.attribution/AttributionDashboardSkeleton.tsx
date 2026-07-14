@@ -1,5 +1,4 @@
 import styles from "./AttributionRouteShell.module.css";
-import attributionStyles from "../../../styles/routes/app-attribution.module.css";
 
 type SkeletonSize = "funnel" | "chart" | "matrix" | "activity";
 
@@ -17,15 +16,15 @@ export function AttributionAnalyticsSkeletonCard({ size }: { size: SkeletonSize 
 
 export function AttributionDashboardSkeleton() {
   return (
-    <div aria-hidden="true" className={attributionStyles.dashboardShell}>
-      <div className={attributionStyles.dashboardStack}>
+    <div aria-hidden="true" className={styles.dashboardShell}>
+      <div className={styles.dashboardStack}>
         <AttributionAnalyticsSkeletonCard size="funnel" />
-        <div className={attributionStyles.dashboardChartGrid}>
+        <div className={styles.dashboardChartGrid}>
           <AttributionAnalyticsSkeletonCard size="chart" />
           <AttributionAnalyticsSkeletonCard size="chart" />
         </div>
         <AttributionAnalyticsSkeletonCard size="matrix" />
-        <div className={attributionStyles.dashboardActivityGrid}>
+        <div className={styles.dashboardActivityGrid}>
           <AttributionAnalyticsSkeletonCard size="activity" />
           <AttributionAnalyticsSkeletonCard size="activity" />
         </div>

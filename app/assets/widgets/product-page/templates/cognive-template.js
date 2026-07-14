@@ -21,6 +21,5 @@ export const cogniveTemplateMethods = {
 
   _renderCogniveFooter(el) {
     this._renderCascadeFooter(el);
-    el.classList.add('bw-ppb-cognive-footer');
   },
 };

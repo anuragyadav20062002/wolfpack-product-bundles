@@ -33,6 +33,50 @@ export function getNextCascadeSelectedDrawerExpandedState({
   return !isExpanded;
 }
 
+export function getCascadeSelectedDrawerHeight({
+  list = null,
+  drawer = null,
+  viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0,
+} = {}) {
+  if (!list) return 0;
+
+  const borderTopWidth = drawer && typeof getComputedStyle === 'function'
+    ? Number.parseFloat(getComputedStyle(drawer).borderTopWidth || '0')
+    : 0;
+  const borderOffset = Number.isFinite(borderTopWidth) ? borderTopWidth : 0;
+  const listStyle = typeof getComputedStyle === 'function' ? getComputedStyle(list) : {};
+  const selectedRows = typeof list.querySelectorAll === 'function'
+    ? Array.from(list.querySelectorAll('.bw-ppb-cascade-selected-item, .gbbMixCascadeBundleCartItem'))
+    : [];
+  const title = typeof list.querySelector === 'function'
+    ? list.querySelector('.bw-ppb-cascade-selected-list-title, .gbbMixCascadeCartSectionHeading')
+    : null;
+  const rowGap = Number.parseFloat(listStyle.rowGap || listStyle.gap || '0');
+  const paddingTop = Number.parseFloat(listStyle.paddingTop || '0');
+  const visibleRowsLimit = 3;
+  let visibleRowsHeight = Number.POSITIVE_INFINITY;
+
+  if (selectedRows.length >= visibleRowsLimit && title) {
+    const visibleRows = selectedRows.slice(0, visibleRowsLimit);
+    const titleHeight = title.getBoundingClientRect?.().height || 0;
+    const rowHeights = visibleRows.reduce((sum, row) => (
+      sum + (row.getBoundingClientRect?.().height || 0)
+    ), 0);
+    const gap = Number.isFinite(rowGap) ? rowGap : 0;
+    const top = Number.isFinite(paddingTop) ? paddingTop : 0;
+    visibleRowsHeight = top
+      + titleHeight
+      + gap
+      + rowHeights
+      + (gap * Math.max(0, visibleRows.length - 1))
+      + borderOffset;
+  }
+
+  const viewportLimit = Math.round(Number(viewportHeight || 0) * 0.6) || Number.POSITIVE_INFINITY;
+
+  return Math.min(list.scrollHeight + borderOffset, visibleRowsHeight, viewportLimit, 420);
+}
+
 export function prepareCascadeSelectedProductDisplay({
   product = {},
   variantId = '',
@@ -41,6 +85,7 @@ export function prepareCascadeSelectedProductDisplay({
 } = {}) {
   const normalizedQuantity = Math.max(1, Number(quantity || 1));
   const title = product.title || product.parentTitle || '';
+  const variantTitle = normalizeSelectedRowVariantTitle(product, title);
   const amount = Number(product.price);
   const priceText = product.priceText || (
     Number.isFinite(amount) && typeof formatPrice === 'function'
@@ -53,13 +98,64 @@ export function prepareCascadeSelectedProductDisplay({
     variantId,
     quantity: normalizedQuantity,
     title: `${title} x ${normalizedQuantity}`,
+    variantTitle,
     priceText,
     quantityLabel: `x ${normalizedQuantity}`,
   };
 }
 
+function normalizeSelectedRowVariantTitle(product, title) {
+  const variantTitle = product.variantTitle && product.variantTitle !== 'Default Title'
+    ? String(product.variantTitle).trim()
+    : '';
+  if (!variantTitle) return '';
+
+  const normalizedTitle = String(title || '').trim();
+  if (normalizedTitle.endsWith(` - ${variantTitle}`)) return '';
+
+  return variantTitle;
+}
+
 export function shouldMountCascadeAddToCartInFooter(addToCartButton, footerElement) {
   return Boolean(addToCartButton && footerElement && addToCartButton.parentElement !== footerElement);
+}
+
+function formatCascadeDiscountPercentage(value) {
+  const percentage = Number(value || 0);
+  if (!Number.isFinite(percentage) || percentage <= 0) return '';
+
+  return Number.isInteger(percentage)
+    ? String(percentage)
+    : String(Number(percentage.toFixed(2)));
+}
+
+export function getCascadeAddToCartButtonContent({
+  label = '',
+  finalPriceText = '',
+  totalPriceText = '',
+  discountAmountText = '',
+  discountInfo = null,
+} = {}) {
+  const hasDiscount = Boolean(discountInfo?.hasDiscount);
+  const discountMethod = discountInfo?.discountMethod || '';
+  const appliedRuleValue = Number(discountInfo?.applicableRule?.discountValue || 0);
+  const discountPercentage = appliedRuleValue || Number(discountInfo?.discountPercentage || 0);
+  let discountPillText = '';
+
+  if (hasDiscount && discountMethod === 'percentage_off') {
+    const percentText = formatCascadeDiscountPercentage(discountPercentage);
+    discountPillText = percentText ? `${percentText}% off` : '';
+  } else if (hasDiscount && discountAmountText) {
+    discountPillText = `${discountAmountText} off`;
+  }
+
+  return {
+    label,
+    separator: '\u2022',
+    finalPriceText,
+    compareAtPriceText: hasDiscount ? totalPriceText : '',
+    discountPillText,
+  };
 }
 
 export const cascadeTemplateMethods = {
@@ -71,6 +167,34 @@ export const cascadeTemplateMethods = {
     });
 
     return config?.id === 'LIST';
+  },
+
+  _getCascadeAddToCartButtonContent(options = {}) {
+    return getCascadeAddToCartButtonContent(options);
+  },
+
+  _renderCascadeAddToCartButtonContent(button, content = {}) {
+    if (!button) return;
+    button.textContent = '';
+
+    const appendPart = (tagName, className, text, { hidden = false } = {}) => {
+      if (!text) return null;
+      const part = document.createElement(tagName);
+      part.className = className;
+      part.textContent = text;
+      if (hidden) {
+        part.hidden = true;
+        part.setAttribute('aria-hidden', 'true');
+      }
+      button.appendChild(part);
+      return part;
+    };
+
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-label', content.label);
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-separator', content.separator);
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-price', content.finalPriceText);
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-compare', content.compareAtPriceText, { hidden: true });
+    appendPart('span', 'bw-ppb-cascade-add-to-cart-discount-pill', content.discountPillText);
   },
 
   _getSelectedProductEntries() {
@@ -130,6 +254,11 @@ export const cascadeTemplateMethods = {
     el.style.cssText = '';
 
     const selectedEntries = this._getSelectedProductEntries();
+    const { totalQuantity, totalPrice, unitPrices } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
     if (!this.cascadeSelectedDrawerState) {
       this.cascadeSelectedDrawerState = { isOpen: false };
     }
@@ -187,12 +316,12 @@ export const cascadeTemplateMethods = {
     const setDrawerExpanded = (isExpanded) => {
       const nextExpanded = Boolean(isExpanded && drawerState.hasSelectedProducts);
       let maxDrawerHeight = 0;
-      if (list) {
-        maxDrawerHeight = Math.min(list.scrollHeight + 20, Math.round(window.innerHeight * 0.6), 420);
-        drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${maxDrawerHeight}px`);
-      }
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open', nextExpanded);
       drawer.classList.toggle('gbbMixCascadeCartDrawerContainer--open', nextExpanded);
+      if (list && nextExpanded) {
+        maxDrawerHeight = getCascadeSelectedDrawerHeight({ list, drawer });
+        drawer.style.setProperty('--bw-ppb-cascade-selected-drawer-height', `${maxDrawerHeight}px`);
+      }
       toggle.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
       this.cascadeSelectedDrawerState.isOpen = nextExpanded;
       this.cascadeSelectedDrawerState.height = nextExpanded ? maxDrawerHeight : 0;
@@ -226,7 +355,23 @@ export const cascadeTemplateMethods = {
     }
 
     const addToCartButton = this.elements?.addToCartButton;
-    if (shouldMountCascadeAddToCartInFooter(addToCartButton, el)) {
+    if (this._usesCascadeStepFlow?.()) {
+      const actions = document.createElement('div');
+      actions.className = 'bw-ppb-cascade-footer-actions';
+
+      if (this.currentStepIndex > 0) {
+        const backButton = document.createElement('button');
+        backButton.type = 'button';
+        backButton.className = 'bw-ppb-cascade-step-back';
+        backButton.setAttribute('aria-label', 'Previous step');
+        backButton.innerHTML = '<span aria-hidden="true"></span>';
+        backButton.addEventListener('click', () => this.navigateCascadeStep(-1));
+        actions.appendChild(backButton);
+      }
+
+      if (addToCartButton) actions.appendChild(addToCartButton);
+      el.appendChild(actions);
+    } else if (shouldMountCascadeAddToCartInFooter(addToCartButton, el)) {
       el.appendChild(addToCartButton);
     }
   },

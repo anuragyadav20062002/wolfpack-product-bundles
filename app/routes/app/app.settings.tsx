@@ -6,6 +6,7 @@ import { requireAdminSession } from "../../lib/auth-guards.server";
 import { SETTINGS_CONTROLS_BUNDLE_TYPES, buildSettingsControlsRuntime } from "../../lib/settings-controls-runtime";
 import { SETTINGS_DESIGN_BUNDLE_TYPES, buildSettingsDesignRuntime } from "../../lib/settings-design-runtime";
 import { SETTINGS_LANGUAGE_BUNDLE_TYPES, buildSettingsLanguageRuntime } from "../../lib/settings-language-runtime";
+import { CartTransformService } from "../../services/cart-transform-service.server";
 import { SettingsRoute } from "./app.settings/SettingsRoute";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -59,7 +60,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const { session } = await requireAdminSession(request);
+  const { admin, session } = await requireAdminSession(request);
   const formData = await request.formData();
   const intent = String(formData.get("intent") ?? "");
   const payloadValue = String(formData.get("payload") ?? "{}");
@@ -207,6 +208,20 @@ export async function action({ request }: ActionFunctionArgs) {
         update: updateData,
       });
     }));
+
+    const syncResult = await CartTransformService.syncCartLineMessagingSettings(
+      admin,
+      session.shop,
+      controlsRuntime.bundleCartLineMessaging,
+    );
+    if (!syncResult.success) {
+      return json({
+        success: false,
+        message: syncResult.error
+          ? `Settings saved, but cart transform messaging sync failed: ${syncResult.error}`
+          : "Settings saved, but cart transform messaging sync failed",
+      }, { status: 500 });
+    }
   }
 
   return json({ success: true, message: "Settings saved successfully" });

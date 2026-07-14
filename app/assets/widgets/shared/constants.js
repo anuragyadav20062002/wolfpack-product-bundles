@@ -8,6 +8,9 @@
 
 'use strict';
 
+const INLINE_PLACEHOLDER_IMAGE =
+  'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22 viewBox=%220 0 400 400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23f3f4f6%22/%3E%3C/svg%3E';
+
 export const BUNDLE_WIDGET = {
   VERSION: '4.0.0',
   LOG_PREFIX: '[BUNDLE_WIDGET]',
@@ -50,9 +53,8 @@ export const BUNDLE_WIDGET = {
     BUY_X_GET_Y: 'buy_x_get_y'
   },
 
-  // Shared asset URLs
-  // AVIF is default for lower bytes and better decoding efficiency; PNG remains as a guaranteed fallback via
-  // component-level onerror handling.
-  PLACEHOLDER_IMAGE: '/bundle-product-placeholder.avif',
-  PLACEHOLDER_IMAGE_FALLBACK: '/bundle-product-placeholder.png'
+  // Self-contained so storefront widgets never resolve an app-owned asset
+  // against the merchant's theme origin.
+  PLACEHOLDER_IMAGE: INLINE_PLACEHOLDER_IMAGE,
+  PLACEHOLDER_IMAGE_FALLBACK: INLINE_PLACEHOLDER_IMAGE
 };

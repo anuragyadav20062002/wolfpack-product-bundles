@@ -11,7 +11,10 @@ import {
   showPolarisModal,
   useModalHideListener,
 } from "../_shared/bundle-configure/modal-utils";
-import { PPB_DESIGN_CONTROL_PANEL_URL } from "./ConfigureBundleFlow.helpers";
+import {
+  PPB_DESIGN_CONTROL_PANEL_URL,
+  resolveProductPageTemplateSelection,
+} from "./ConfigureBundleFlow.helpers";
 
 export function usePpbModalAndTemplateController({
   base,
@@ -168,8 +171,12 @@ export function usePpbModalAndTemplateController({
     [closeSelectTemplateDialog],
   );
   const openSelectTemplateModal = useCallback(() => {
-    templateState.setPendingDesignTemplate(templateState.bundleDesignTemplate);
-    templateState.setPendingDesignPresetId(templateState.bundleDesignPresetId);
+    const selectedTemplate = resolveProductPageTemplateSelection({
+      bundleDesignTemplate: templateState.bundleDesignTemplate,
+      bundleDesignPresetId: templateState.bundleDesignPresetId,
+    });
+    templateState.setPendingDesignTemplate(selectedTemplate.layoutTemplate);
+    templateState.setPendingDesignPresetId(selectedTemplate.presetId);
     templateState.setTemplateModalStep("templates");
     templateState.setTemplateSaveError(null);
     templateState.lastTemplateRequestRef.current = null;

@@ -6,7 +6,7 @@ import {
   getUtmPixelStatusBannerModel,
   UTM_PIXEL_PRIVACY_MESSAGE,
 } from "../../../lib/utm-pixel-status-banner";
-import styles from "../../../styles/routes/app-attribution.module.css";
+import styles from "./AttributionRouteShell.module.css";
 
 // ─── Pixel Status Card ────────────────────────────────────────
 

@@ -126,4 +126,62 @@ describe('PPB List shared product cards', () => {
     expect(loadStepProducts).toHaveBeenCalledWith(0);
     expect(target.innerHTML).not.toContain('Loading products...');
   });
+
+  it('updates the Product List row identity and price after a variant selector change', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { applyProductPageVariantSelection } = require('../../../app/assets/widgets/product-page/methods/modal-methods.js');
+    const product = {
+      id: 'product-1',
+      variantId: 'variant-old',
+      title: '18k Pedal Ring',
+      price: 39900,
+      imageUrl: 'https://cdn.shopify.com/old.jpg',
+    };
+    const priceEl = { textContent: '$399.00' };
+    const imageEl = { src: 'https://cdn.shopify.com/old.jpg' };
+    const childWithProductId = { dataset: { productId: 'variant-old' } };
+    const productCard = {
+      dataset: {
+        productId: 'variant-old',
+        currentSelectedVariantId: 'variant-old',
+      },
+      querySelectorAll: jest.fn(() => [childWithProductId]),
+      querySelector: jest.fn((selector: string) => {
+        if (selector === '.product-price') return priceEl;
+        if (selector === '.product-price-strike') return null;
+        if (selector === '.bw-product-card__image, .product-image img') return imageEl;
+        return null;
+      }),
+    };
+
+    applyProductPageVariantSelection({
+      product,
+      variantData: {
+        id: 'variant-new',
+        title: '8',
+        price: 45900,
+        compareAtPrice: null,
+        image: 'https://cdn.shopify.com/new.jpg',
+        quantityAvailable: 3,
+        currentlyNotInStock: false,
+      },
+      productCard,
+      formatPrice: (amount: number) => `$${(amount / 100).toFixed(2)}`,
+      showCompareAtPrice: false,
+    });
+
+    expect(product).toMatchObject({
+      variantId: 'variant-new',
+      variantTitle: '8',
+      price: 45900,
+      imageUrl: 'https://cdn.shopify.com/new.jpg',
+      quantityAvailable: 3,
+      currentlyNotInStock: false,
+    });
+    expect(productCard.dataset.productId).toBe('variant-new');
+    expect(productCard.dataset.currentSelectedVariantId).toBe('variant-new');
+    expect(childWithProductId.dataset.productId).toBe('variant-new');
+    expect(priceEl.textContent).toBe('$459.00');
+    expect(imageEl.src).toBe('https://cdn.shopify.com/new.jpg');
+  });
 });

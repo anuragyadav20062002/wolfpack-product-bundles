@@ -20,11 +20,6 @@ const components: Record<string, string[]> = {
     "billing.cards.growDescription", "billing.cards.growIncludes", "billing.cards.upgradeToGrow",
     "billing.cards.cancelAnytimeBilled",
   ],
-  "app/components/billing/UpgradeCTACard.tsx": [
-    "billing.cta.heading", "billing.cta.body", "billing.cta.highlights.bundles",
-    "billing.cta.highlights.design", "billing.cta.highlights.support", "billing.cta.upgrade",
-    "billing.cta.cancelAnytime",
-  ],
 };
 
 describe("billing plan-card copy extraction", () => {

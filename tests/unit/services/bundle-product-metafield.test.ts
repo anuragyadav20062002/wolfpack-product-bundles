@@ -273,6 +273,23 @@ describe("updateBundleProductMetafields", () => {
     expect(parsed.fullPagePageHandle).toBeNull();
   });
 
+  it("maps the persisted compare-at display setting into bundle_ui_config", async () => {
+    const admin = makeAdmin();
+
+    await updateBundleProductMetafields(
+      admin,
+      "gid://shopify/Product/999",
+      makeBundleConfig(BundleType.PRODUCT_PAGE, { showCompareAtPrices: true }),
+    );
+
+    const metafields = getMetafieldsSetPayload(admin);
+    const parsed = JSON.parse(
+      metafields.find((field: any) => field.key === "bundle_ui_config").value,
+    );
+
+    expect(parsed.showProductComparedAtPrice).toBe(true);
+  });
+
   it("keeps StepCategory products under categories in product-page bundle_ui_config steps", async () => {
     const admin = makeAdmin();
     const condition = { type: "quantity", condition: "greaterThanOrEqualTo", value: "01" };

@@ -82,6 +82,29 @@ Stress rows:
 - `PLS6`: smoke Product Grid, Horizontal Slots, Vertical Slots after shared PPB edits.
 - `PLS7-placement-responsive`: Product List mounted in narrow product-info column, full-width product section, and constrained card/sidebar contexts. Capture EB and WPB at desktop and mobile widths, then fix only Product List-owned responsive CSS gaps.
 
+## Current Row Status
+
+Last updated: 2026-07-13.
+
+| Row | Status | Evidence | Remaining requirement |
+|---|---|---|---|
+| `PL00-baseline` | Accepted | `PL00-product-row-quantity-delta.md`, `PL00-add-button-centering-delta.md`, `PL-quantity-behavior-evidence.md`, `PL-loading-placement-evidence.md` | Widget `5.0.146` desktop/mobile proof confirms the served Cascade CSS contains the action-radius token and all Add/selected quantity controls compute to `5px`. |
+| `PL01-category-list` | Accepted for populated category tabs and switching | `PL01-category-list-fixture-evidence.md` | Empty manual category remains EB-absent in the captured fixture; do not invent WPB-only behavior. |
+| `PL02-step-conditions` | Accepted | `PL02-step-rules-eb-fixture-evidence.md`, `PL02-step-conditions-fixture-evidence.md` | Desktop and mobile match for active-step rendering, Next/Back, gating, exact-one blocking, toast copy, cross-step selection persistence, and measured step-indicator geometry/styles. |
+| `PL03-variants` | Accepted for grouped variant selector, selected identity, price typography, and responsive select width | `PL03-variant-row-evidence.md` | Unavailable variant state is still covered under `PL04`; swatches only apply if EB exposes them for Product List. |
+| `PL04-product-source-inventory` | Accepted | `PL04-inventory-fixture-evidence.md` | Desktop/mobile proof confirms both apps omit fully unavailable products and unavailable variants while retaining the sole sellable grouped-variant identity without a selector or sold-out copy. |
+| `PL05-discounts-footer` | Accepted for percentage-tier discount footer | `PL05-discounts-footer-fixture-evidence.md` | Fixed-amount and fixed-price discount permutations remain optional fixture expansion, not a known WPB gap. |
+| `PL06-quantity-options-validation` | Accepted as EB-absent for PPB Product List | `PL06-quantity-validation-fixture-evidence.md` | EB's Product List Admin exposes inert controls, but repeated interaction/save/runtime proof keeps both `boxSelection` flags false. Box Selection is confirmed FPB-only; do not invent PPB UI. Applicable quantity controls and validation are covered by `PL00` and `PL02`. |
+| `PL07-selected-drawer-footer` | Accepted for current selected-count, drawer, overflow, remove, add-while-open, and geometry states | `PL07-selected-drawer-footer-delta.md`, `PL07-one-item-drawer-overflow-delta.md`, `PL07-three-row-drawer-overflow-delta.md`, `PL07-selected-drawer-heading-gap-delta.md`, `PL-drawer-add-open-evidence.md`, `PL07-remove-expanded-evidence.md`, `PL-empty-drawer-toast-evidence.md`, `PL-drawer-top-geometry-delta.md` | Recheck after future source changes that touch shared selected-row or footer behavior. |
+| `PL08-cart-lines` | Accepted for tested variant and two-product step-rule cart lines | `PL08-cart-lines-evidence.md` | `Retail Price` remains a SIT settings difference, not a Product List parity gap. |
+| `PLS7-placement-responsive` | Accepted | `PLS7-placement-responsive-evidence.md`, `PL-product-list-overflow-evidence.md` | Widget `5.0.148` passed repeated desktop/mobile narrow, default, and wide probes after the row-grid change. |
+| `PLS1-combined` | Accepted | `PLS1-combined-stress-evidence.md` | Desktop/mobile combined proof covers multi-step rules, grouped variants, mixed inventory, discount progression, cross-step drawer persistence, and final CTA state. |
+| `PLS2-card-stress` | Accepted | `PLF-six-product-fixture-permutation-delta.md`, `PL03-variant-row-evidence.md`, `PLS3-collection-card-density-delta.md` | Widget `5.0.148` desktop/mobile proof covers long titles, prices, static variant identity, selectors, and content-driven row growth without overlap or clipping. |
+| `PLS3-collection-reload` | Accepted | `PLS3-collection-reload-evidence.md`, `PLS3-collection-card-density-delta.md` | Live collection hydration, inventory filtering, reload, vertical overflow, and post-fix placement/card checks pass. EB does not preserve an empty manual category, so that substate remains EB-absent. |
+| `PLS4-drawer-stress` | Accepted | `PL07-selected-drawer-footer-delta.md`, `PL07-three-row-drawer-overflow-delta.md`, `PL-drawer-add-open-evidence.md`, `PL07-remove-expanded-evidence.md`, `PL-drawer-top-geometry-delta.md` | Empty, one, two, overflow, add-while-open, remove-while-open, animation, scroll, and mobile containment states are covered. Widget `5.0.148` changed product-row CSS only. |
+| `PLS5-loading` | Accepted | `PL-loading-placement-evidence.md`, `PLS1-combined-stress-evidence.md` | Live Step 2 transition re-proves loading in the Product List target with stable drawer/footer content. |
+| `PLS6-other-template-smoke` | Accepted | `PLS6-other-template-smoke-evidence.md` | Product Grid, Horizontal Slots, and Vertical Slots pass desktop/mobile runtime, isolation, overflow, and interaction smoke; fixture restored to Product List. |
+
 ## Test And Verification Plan
 
 Behavior/data tests only:

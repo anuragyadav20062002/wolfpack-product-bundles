@@ -1,7 +1,7 @@
 ---
 title: Cart Transform Function
 type: architecture
-audited: 2026-07-10
+audited: 2026-07-12
 source: extensions/bundle-cart-transform-rs/shopify.extension.toml; extensions/bundle-cart-transform-rs/src/merge.rs; app/services/cart-transform-runtime-token.server.ts
 ---
 
@@ -85,6 +85,20 @@ The token payload contains:
 The HMAC covers the base64url payload string, so Rust verifies the signature before decoding JSON. If `runtime_token_secret` is configured on the CartTransform owner and a line token is missing, tampered, or mismatched against actual cart line variants/quantities, the function emits no merge or add-on discount.
 
 Parent bundle metafields are still written for EXPAND/display paths: `component_reference`, `component_quantities`, `price_adjustment`, and `component_pricing`. Component-variant `$app:component_parents` is no longer the configured MERGE source.
+
+### FPB add-on and free-gift pricing scenarios
+
+FPB Add-Ons with Bundles mirror EB checkout behavior: selected add-ons are separate cart lines, and any add-on discount is a native product discount on that selected add-on line. The parent bundle line must not absorb selected add-on savings.
+
+| Scenario | Storefront line contract | Cart Transform / Discount behavior | Summary sidebar behavior |
+|---|---|---|---|
+| Base bundle components only | Component lines carry `_wolfpackProductBundle:OfferId` and `_wolfpack_bundle_runtime`; no `_bundle_step_type=addon...` | Rust Cart Transform verifies runtime token and MERGEs components into the parent bundle variant. Bundle pricing applies to parent merge only. | Total and savings come from base component subtotal and bundle pricing rules. |
+| Add-on tier with `0%` discount | Selected add-on line carries `_bundle_step_type=addon` and is listed in runtime token `addons` without a discount. | Add-on line is excluded from parent MERGE and receives no native product discount. | Add-on original price remains in the subtotal and final total. |
+| Add-on tier with partial percentage discount | Selected add-on line carries `_bundle_step_type=addon:PERCENTAGE:n`, `_addon_product=true`, `_addonTierId`, and runtime token `addons[].discount={type:"PERCENTAGE",value:n}`. | Discount Function verifies the runtime token and emits native line discount message `Add On` for that add-on line. Parent MERGE excludes the add-on. | Original subtotal includes the add-on at full price; add-on savings are subtracted from the final total. |
+| Add-on tier with `100%` discount (free gift case) | Same as partial add-on, with `_bundle_step_type=addon:PERCENTAGE:100`. Do not emit legacy `_bundle_step_type=free_gift` for EB-style add-on tiers. | Discount Function emits a native 100% add-on line discount, so the selected gift line final price is `0` and checkout savings are visible. Parent MERGE excludes the add-on. | Original subtotal includes the gift at full price; add-on savings subtract the gift price so the final total equals the paid bundle items. |
+| Legacy free-gift step without add-on tier discount | Line may carry `_bundle_step_type=free_gift` when the step is a true free gift and has no add-on tier/discount contract. | It participates in the legacy free-gift merge/discount path, not the EB add-on line-discount path. | The true free gift is skipped from the original subtotal because there is no native add-on savings row to show. |
+
+Current widget code must treat both current tier shapes as the same discount contract: nested EB shape `discount: { type, value }` and Admin draft shape `discountType` / `discountValue`. Dropping the latter causes the runtime token to omit add-on discount metadata, so checkout cannot reduce a `100%` selected gift line to zero.
 
 ---
 
