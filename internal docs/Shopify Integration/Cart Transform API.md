@@ -1,8 +1,30 @@
 ---
+schema_version: 1
+id: cart-transform-api
 title: Cart Transform API
 type: shopify-integration
-audited: 2026-04-16
-sources: extensions/bundle-cart-transform-rs/shopify.extension.toml, extensions/bundle-cart-transform-rs/src/run.graphql, Shopify Dev MCP
+status: authoritative
+summary: Shopify Cart Transform API target, activation, failure policy, inputs, and checkout-pricing boundaries.
+last_audited: 2026-07-14
+owners:
+  - engineering
+domains:
+  - checkout
+systems:
+  - bundle-cart-transform-rs
+  - cart-transform-service
+source_paths:
+  - extensions/bundle-cart-transform-rs/shopify.extension.toml
+  - extensions/bundle-cart-transform-rs/src/run.graphql
+  - app/services/cart-transform-service.server.ts
+related_docs:
+  - Architecture/Cart Transform Function.md
+tags:
+  - shopify-api
+  - cart-transform
+keywords:
+  - blockOnFailure
+  - cart.transform.run
 ---
 
 # Cart Transform API
@@ -11,17 +33,21 @@ sources: extensions/bundle-cart-transform-rs/shopify.extension.toml, extensions/
 
 ```toml
 api_version = "2025-10"
-target = "purchase.cart-transform.run"   # ⚠️ deprecated — see below
+target = "cart.transform.run"
 ```
 
-## Target Migration
+## Failure policy
+
+`CartTransformService` creates the active transform with `blockOnFailure: true`. This is a checkout-pricing safety requirement: when Shopify cannot execute the Function within its runtime or resource limits, cart and checkout operations must return an error instead of continuing with unmodified component prices. Omitting the argument uses Shopify's `false` default and is unsafe for a bundle app whose Function owns the payable price.
+
+The setup flow queries `blockOnFailure` together with the active Function ID. A matching Rust transform is reusable only when the value is `true`; an older transform with `false` is deleted and recreated fail-closed. `completeSetup()` runs during install, explicit storefront sync, and the separately approved Cart Transform repair operation.
+
+## Target status
 
 | Target | Status |
 |---|---|
-| `purchase.cart-transform.run` | **Deprecated** since 2025-07 API release |
-| `cart.transform.run` | **Current** — migrate to this |
-
-The current `shopify.extension.toml` still uses the deprecated target. It works on `2025-10` but should be migrated before Shopify removes support.
+| `purchase.cart-transform.run` | Deprecated since 2025-07 |
+| `cart.transform.run` | Current and configured |
 
 ## Operation Names (2025-07+)
 

@@ -98,7 +98,7 @@ export class CartTransformService {
    */
   private static async checkExistingCartTransform(
     admin: AdminApiContext
-  ): Promise<{ exists: boolean; id?: string; functionId?: string }> {
+  ): Promise<{ exists: boolean; id?: string; functionId?: string; blockOnFailure?: boolean }> {
     const CHECK_EXISTING_QUERY = `
       query CheckExistingCartTransform {
         cartTransforms(first: 5) {
@@ -106,6 +106,7 @@ export class CartTransformService {
             node {
               id
               functionId
+              blockOnFailure
             }
           }
         }
@@ -128,7 +129,8 @@ export class CartTransformService {
       return {
         exists: !!existingTransform,
         id: existingTransform?.node?.id,
-        functionId: existingTransform?.node?.functionId
+        functionId: existingTransform?.node?.functionId,
+        blockOnFailure: existingTransform?.node?.blockOnFailure,
       };
     } catch (error) {
       AppLogger.warn('Error checking existing cart transforms', {
@@ -183,11 +185,15 @@ export class CartTransformService {
     functionHandle: string
   ): Promise<CartTransformActivationResult> {
     const CREATE_CART_TRANSFORM_MUTATION = `
-      mutation CreateCartTransform($functionHandle: String!) {
-        cartTransformCreate(functionHandle: $functionHandle) {
+      mutation CreateCartTransform($functionHandle: String!, $blockOnFailure: Boolean!) {
+        cartTransformCreate(
+          functionHandle: $functionHandle
+          blockOnFailure: $blockOnFailure
+        ) {
           cartTransform {
             id
             functionId
+            blockOnFailure
           }
           userErrors {
             field
@@ -199,7 +205,7 @@ export class CartTransformService {
 
     try {
       const response = await admin.graphql(CREATE_CART_TRANSFORM_MUTATION, {
-        variables: { functionHandle }
+        variables: { functionHandle, blockOnFailure: true }
       });
       const data = await response.json() as any;
 
@@ -236,8 +242,9 @@ export class CartTransformService {
    *
    * Handles three cases:
    * 1. No CartTransform exists → create new with Rust handle
-   * 2. CartTransform exists and points to Rust function → skip (already correct)
-   * 3. CartTransform exists but points to old TS function → delete stale → create new
+   * 2. CartTransform uses Rust with failure blocking → skip (already correct)
+   * 3. CartTransform uses Rust without failure blocking → delete and recreate safely
+   * 4. CartTransform points to another function → delete stale and recreate safely
    *
    * This replaces the old "exists → skip" logic which silently left merchants
    * on the dead TS function after the Rust migration.
@@ -264,22 +271,35 @@ export class CartTransformService {
       const existingCheck = await this.checkExistingCartTransform(admin);
 
       if (existingCheck.exists) {
-        if (existingCheck.functionId === rustFunctionId) {
-          // Already on Rust function — nothing to do
-          AppLogger.info('Cart transform already uses Rust function', {
+        if (
+          existingCheck.functionId === rustFunctionId &&
+          existingCheck.blockOnFailure === true
+        ) {
+          AppLogger.info('Cart transform already uses fail-closed Rust function', {
             component: 'cart-transform',
             operation: 'activate'
           }, { shopDomain, cartTransformId: existingCheck.id });
           return { success: true, cartTransformId: existingCheck.id, alreadyExists: true };
         }
 
-        // Stale transform (old TS function or unknown) — delete before recreating
-        AppLogger.info('Stale CartTransform found — deleting and replacing with Rust version', {
+        AppLogger.info('Unsafe or stale CartTransform found — replacing with fail-closed Rust version', {
           component: 'cart-transform',
           operation: 'activate'
-        }, { shopDomain, staleId: existingCheck.id, staleFunctionId: existingCheck.functionId });
+        }, {
+          shopDomain,
+          staleId: existingCheck.id,
+          staleFunctionId: existingCheck.functionId,
+          staleBlockOnFailure: existingCheck.blockOnFailure,
+        });
 
-        await this.deleteCartTransform(admin, existingCheck.id!);
+        const deleted = await this.deleteCartTransform(admin, existingCheck.id!);
+        if (!deleted) {
+          return {
+            success: false,
+            cartTransformId: existingCheck.id,
+            error: 'Could not replace unsafe CartTransform',
+          };
+        }
       }
 
       // Create fresh CartTransform for the Rust function

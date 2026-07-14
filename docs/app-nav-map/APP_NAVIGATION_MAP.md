@@ -471,6 +471,16 @@ Billing Page
                   └── confirm charge → /app/billing?upgraded=true
 ```
 
+### Flow E: Bundle Checkout Pricing Safety
+```
+Storefront bundle add
+  └── signed runtime token + component lines → Shopify cart pipeline
+      └── Cart Transform MERGE applies verified bundle pricing
+          ├── success → transformed parent line proceeds to cart / checkout
+          └── timeout, resource limit, or execution failure
+              └── CartTransform blockOnFailure=true → cart / checkout error; unmodified pricing is not accepted
+```
+
 ---
 
 ## 4. API Routes Reference
