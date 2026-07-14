@@ -19,6 +19,8 @@ A newly created parent product has:
 - Wolfpack placeholder media and neutral Wolfpack bundle-parent tags.
 - Creation-only title, handle, vendor, and troubleshooting description.
 
+Online Store publication discovery uses the non-deprecated `Catalog.title`. Shopify returns a generated catalog title such as `Channel Catalog 193382154499 for Online Store`, so matching the literal `Online Store` is incorrect; identify the Online Store catalog by its ` for Online Store` suffix.
+
 The service queries a stored `shopifyProductId` first. If Shopify returns no product, the service creates a replacement in the same operation. After creation it persists Shopify's returned product ID and actual handle before configuring the variant or publication. A later failure therefore remains retryable without deleting the created product or creating another product on the next explicit sync.
 
 ## Merchant ownership boundary

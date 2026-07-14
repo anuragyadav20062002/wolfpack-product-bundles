@@ -73,8 +73,20 @@ function makeCreateAdmin(options: { publicationErrors?: unknown[]; variantErrors
           data: {
             publications: {
               nodes: [
-                { id: "gid://shopify/Publication/1", catalog: { title: "Online Store" } },
-                { id: "gid://shopify/Publication/2", catalog: { title: "Point of Sale" } },
+                {
+                  id: "gid://shopify/Publication/1",
+                  catalog: {
+                    title: "Channel Catalog 1 for Online Store",
+                    apps: { nodes: [{ title: "Online Store" }] },
+                  },
+                },
+                {
+                  id: "gid://shopify/Publication/2",
+                  catalog: {
+                    title: "Channel Catalog 2 for Point of Sale",
+                    apps: { nodes: [{ title: "Point of Sale" }] },
+                  },
+                },
               ],
             },
           },
@@ -249,7 +261,18 @@ describe("ensureBundleParentProduct", () => {
         return response({ data: { productVariantsBulkUpdate: { productVariants: [], userErrors: [] } } });
       }
       if (query.includes("GetOnlineStorePublication")) {
-        return response({ data: { publications: { nodes: [{ id: "gid://shopify/Publication/1", catalog: { title: "Online Store" } }] } } });
+        return response({
+          data: {
+            publications: {
+              nodes: [
+                {
+                  id: "gid://shopify/Publication/1",
+                  catalog: { title: "Channel Catalog 1 for Online Store" },
+                },
+              ],
+            },
+          },
+        });
       }
       if (query.includes("PublishBundleParentProduct")) {
         return response({ data: { publishablePublish: { userErrors: [] } } });
@@ -351,7 +374,18 @@ describe("ensureBundleParentProduct", () => {
         return response({ data: { productVariantsBulkUpdate: { productVariants: [], userErrors: [] } } });
       }
       if (query.includes("GetOnlineStorePublication")) {
-        return response({ data: { publications: { nodes: [{ id: "gid://shopify/Publication/1", catalog: { title: "Online Store" } }] } } });
+        return response({
+          data: {
+            publications: {
+              nodes: [
+                {
+                  id: "gid://shopify/Publication/1",
+                  catalog: { title: "Channel Catalog 1 for Online Store" },
+                },
+              ],
+            },
+          },
+        });
       }
       if (query.includes("PublishBundleParentProduct")) {
         return response({ data: { publishablePublish: { userErrors: [] } } });

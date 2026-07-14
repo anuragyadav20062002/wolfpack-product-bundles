@@ -239,14 +239,18 @@ async function publishParentToOnlineStore(
   const publicationsData = (await publicationsResponse.json()) as {
     data?: {
       publications?: {
-        nodes?: Array<{ id: string; catalog?: { title?: string | null } | null }>;
+        nodes?: Array<{
+          id: string;
+          catalog?: { title?: string | null } | null;
+        }>;
       };
     };
     errors?: unknown[];
   };
   throwTransportErrors("load Online Store publication", publicationsData.errors);
   const onlineStore = publicationsData.data?.publications?.nodes?.find(
-    (publication) => publication.catalog?.title === "Online Store",
+    (publication) =>
+      publication.catalog?.title?.endsWith(" for Online Store") === true,
   );
   if (!onlineStore) {
     throw new BundleParentProductError("load Online Store publication", [
