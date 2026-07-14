@@ -1,6 +1,7 @@
 import { PpbBundleStatusCard } from "./PpbBundleStatusCard";
 import { PpbCompareAtPriceSettings } from "./PpbBundleSettingsControls.compareAt";
 import { PpbBundleBannerSettings } from "./PpbBundleSettingsControls.banner";
+import { PpbCategoryStepSettings } from "./PpbBundleSettingsControls.categorySteps";
 import { PpbBundleLevelCssSettings } from "./PpbBundleSettingsControls.css";
 import { PpbCartDiscountDisplaySettings } from "./PpbBundleSettingsControls.discount";
 import { PpbDefaultProductsSettings } from "./PpbBundleSettingsControls.defaultProducts";
@@ -13,6 +14,7 @@ export function PpbBundleSettingsControls() {
         <PpbDefaultProductsSettings />
         <PpbCompareAtPriceSettings />
         <PpbQuantityAndSellingPlanSettings />
+        <PpbCategoryStepSettings />
         <PpbCartDiscountDisplaySettings />
         <PpbBundleBannerSettings />
         <PpbBundleLevelCssSettings />

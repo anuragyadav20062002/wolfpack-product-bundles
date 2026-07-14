@@ -72,6 +72,10 @@ export function usePpbBundleSettingsState({ bundle }: { bundle: any }) {
         ? "OOS_PRODUCTS"
         : "ALL_PRODUCTS",
     );
+  const [useSingleStepCategoriesAsBundleSteps, setUseSingleStepCategoriesAsBundleSteps] =
+    useState<boolean>(
+      (bundle as any).useSingleStepCategoriesAsBundleSteps === true,
+    );
 
   return {
     preSelectedProductVariantId,
@@ -105,5 +109,7 @@ export function usePpbBundleSettingsState({ bundle }: { bundle: any }) {
     setIndividualSellingPlanEnabled,
     individualSellingPlanShowFor,
     setIndividualSellingPlanShowFor,
+    useSingleStepCategoriesAsBundleSteps,
+    setUseSingleStepCategoriesAsBundleSteps,
   };
 }

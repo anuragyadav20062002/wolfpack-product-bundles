@@ -98,6 +98,46 @@ describe('PPB single-step categories-as-steps storefront contract', () => {
     expect(ppbExpandSingleStepCategoriesAsSteps(bundle)).toBe(bundle);
   });
 
+  it('ignores disabled steps before expanding the only enabled step', () => {
+    const bundle = {
+      useSingleStepCategoriesAsBundleSteps: true,
+      steps: [
+        {
+          id: 'enabled-step',
+          enabled: true,
+          categories: [{ id: 'cat-a' }, { id: 'cat-b' }],
+        },
+        {
+          id: 'disabled-step',
+          enabled: false,
+          categories: [{ id: 'cat-c' }],
+        },
+      ],
+    };
+
+    const expanded = ppbExpandSingleStepCategoriesAsSteps(bundle);
+
+    expect(expanded.steps).toHaveLength(2);
+    expect(expanded.steps.map((step) => step._sourceStepId)).toEqual([
+      'enabled-step',
+      'enabled-step',
+    ]);
+  });
+
+  it('removes disabled steps when category expansion is off', () => {
+    const bundle = {
+      useSingleStepCategoriesAsBundleSteps: false,
+      steps: [
+        { id: 'enabled-step', enabled: true, categories: [{ id: 'cat-a' }] },
+        { id: 'disabled-step', enabled: false, categories: [{ id: 'cat-b' }] },
+      ],
+    };
+
+    const normalized = ppbExpandSingleStepCategoriesAsSteps(bundle);
+
+    expect(normalized.steps).toEqual([bundle.steps[0]]);
+  });
+
   it('does not expand default or free-gift steps', () => {
     const defaultBundle = {
       useSingleStepCategoriesAsBundleSteps: true,
