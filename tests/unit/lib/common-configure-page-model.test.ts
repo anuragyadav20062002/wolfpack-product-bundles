@@ -5,6 +5,7 @@ import {
   buildBundleVisibilityChildItems,
   buildConfigureSetupItems,
   buildStepSetupSectionModel,
+  updatePpbCategoryVariantFlag,
   buildEmbedStatusModel,
   isMultiLanguageActionDisabled,
 } from "../../../app/lib/bundle-config/common-configure-page-model";
@@ -176,6 +177,30 @@ describe("common configure page model", () => {
         collections: [{ id: "gid://shopify/Collection/1" }],
         displayVariantsAsIndividualProducts: true,
         displayVariantsAsSwatches: false,
+      },
+    ]);
+  });
+
+  it("updates the variant display flag for only the targeted PPB category", () => {
+    const categories = [
+      {
+        id: "cat-1",
+        displayVariantsAsIndividualProducts: false,
+      },
+      {
+        id: "cat-2",
+        displayVariantsAsIndividualProducts: false,
+      },
+    ];
+
+    expect(updatePpbCategoryVariantFlag(categories, 1, true)).toEqual([
+      {
+        id: "cat-1",
+        displayVariantsAsIndividualProducts: false,
+      },
+      {
+        id: "cat-2",
+        displayVariantsAsIndividualProducts: true,
       },
     ]);
   });

@@ -191,3 +191,16 @@ export function applyPpbCategoryVariantFlags<T extends Record<string, unknown>>(
       : {}),
   }));
 }
+
+export function updatePpbCategoryVariantFlag<
+  T extends Record<string, unknown>,
+>(categories: T[], categoryIndex: number, enabled: boolean): T[] {
+  return categories.map((category, index) =>
+    index === categoryIndex
+      ? {
+          ...category,
+          displayVariantsAsIndividualProducts: enabled,
+        }
+      : category,
+  );
+}
