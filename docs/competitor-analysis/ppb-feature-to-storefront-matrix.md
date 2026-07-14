@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10 replayed directly
+**Status:** Functional parity completion in progress; R06-R10 and R14 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -93,7 +93,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | R11 | Quantity step rule: minimum | Blocks progression below the threshold and permits overflow where EB does | **P** PL02 | **P** PG05/PG06 | **P** HSS3 | **P** VS03 |
 | R12 | Quantity step rule: exact / maximum | Prevents over-target selection and supports edit/replacement | **P** PL02 | **P** PG05 | **P** HSS3 | **P** VS03 |
 | R13 | Amount-based condition | Price threshold controls progression | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared amount-aware step-condition validation and unit coverage (`condition-validator.test.ts`) |
-| R14 | Weight-based condition | Weight threshold controls progression | **S** Shared weight-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared weight-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared weight-aware step-condition validation and unit coverage (`condition-validator.test.ts`) | **S** Shared weight-aware step-condition validation and unit coverage (`condition-validator.test.ts`) |
+| R14 | Weight-based condition | Current PPB Admin exposes no Weight metric despite stale help copy | **E** [R14 live Admin absence](ppb-deferred-functional-parity/R14-weight-condition-absence-evidence.md) | **E** [R14 live Admin absence](ppb-deferred-functional-parity/R14-weight-condition-absence-evidence.md) | **E** [R14 live Admin absence](ppb-deferred-functional-parity/R14-weight-condition-absence-evidence.md) | **E** [R14 live Admin absence](ppb-deferred-functional-parity/R14-weight-condition-absence-evidence.md) |
 | R15 | Auto-next behavior | Eligible selection advances only when the saved EB rule enables it | **T** | **P** `PG09-session-restoration-evidence` | **T** | **T** |
 
 ## 2. Product Cards, Variants, Media, and Inventory
@@ -271,18 +271,18 @@ Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 49 | 12 | 43 | 2 | 1 | 12 |
-| Product Grid | 46 | 13 | 47 | 0 | 1 | 12 |
-| Horizontal Slots | 59 | 10 | 45 | 0 | 4 | 1 |
-| Vertical Slots | 48 | 18 | 49 | 0 | 3 | 1 |
+| Product List | 49 | 11 | 43 | 3 | 1 | 12 |
+| Product Grid | 46 | 12 | 47 | 1 | 1 | 12 |
+| Horizontal Slots | 59 | 9 | 45 | 1 | 4 | 1 |
+| Vertical Slots | 48 | 17 | 49 | 1 | 3 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
 - Proven: **202**
-- Shared/partial: **53**
+- Shared/partial: **49**
 - Not tested: **184**
-- EB-absent: **2**
+- EB-absent: **6**
 - Accepted divergence: **9**
 - Not applicable: **26**
 

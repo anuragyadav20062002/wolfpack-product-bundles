@@ -1,8 +1,29 @@
 ---
+schema_version: 1
+id: eb-implementation-reference
 title: EB Implementation Reference
 type: reference
-last_updated: 2026-07-12
-source: docs/competitor-analysis/16-eb-full-data-flow-investigation.md; docs/competitor-analysis/17-eb-complete-configure-e2e-audit.md
+status: authoritative
+summary: Records directly verified reference-app contracts used for Wolfpack bundle implementation and parity decisions.
+last_audited: 2026-07-15
+owners:
+  - engineering
+domains:
+  - competitor-analysis
+systems:
+  - bundle-admin
+  - bundle-storefront
+source_paths:
+  - docs/competitor-analysis/16-eb-full-data-flow-investigation.md
+  - docs/competitor-analysis/17-eb-complete-configure-e2e-audit.md
+related_docs:
+  - internal docs/index.md
+tags:
+  - reference
+  - parity
+keywords:
+  - bundle configuration
+  - storefront contract
 ---
 
 # EB Implementation Reference
@@ -72,10 +93,16 @@ Prerequisite:
 
 Use Category Rules when the merchant needs a specific mix across categories, such as 2 products from Women's and 2 products from Men's.
 
-Supported metrics:
+Supported metrics in the current PPB Admin:
 - Quantity: number of selected items.
 - Amount: total selected item value.
-- Weight: total selected item weight.
+
+The Rules help article still describes Weight as total selected item weight, but
+the live PPB Category Rules selector reverified on 2026-07-15 exposes only
+Quantity and Amount. Its inline description also says category rules are based
+on amount or quantity. Treat PPB Weight as currently unavailable unless a later
+live Admin capture proves that the control has returned. This correction does
+not invalidate earlier FPB-specific Weight evidence.
 
 Supported conditions:
 - Equal to.
