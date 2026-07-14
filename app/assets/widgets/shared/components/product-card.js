@@ -17,7 +17,11 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
   const quantity = Math.max(0, Number(currentQuantity || 0));
   const isSelected = quantity > 0;
   const mode = options.mode || 'grid';
-  const descriptionText = resolveProductDescriptionText(product.description);
+  const descriptionText = resolveProductDescriptionText(
+    Object.prototype.hasOwnProperty.call(options, 'description')
+      ? options.description
+      : product.description,
+  );
   const variantText = getVariantDisplayText(product);
   const isIndividualVariantCard = Boolean(product.parentProductId && product.variantId && variantText);
   const title = getDisplayTitle(product, variantText);

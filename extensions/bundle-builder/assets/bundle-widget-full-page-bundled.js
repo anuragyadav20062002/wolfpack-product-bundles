@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 5.0.172
- * Built   : 2026-07-13
+ * Built   : 2026-07-14
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -2818,7 +2818,11 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const quantity = Math.max(0, Number(currentQuantity || 0));
   const isSelected = quantity > 0;
   const mode = options.mode || 'grid';
-  const descriptionText = resolveProductDescriptionText(product.description);
+  const descriptionText = resolveProductDescriptionText(
+    Object.prototype.hasOwnProperty.call(options, 'description')
+      ? options.description
+      : product.description,
+  );
   const variantText = getVariantDisplayText(product);
   const isIndividualVariantCard = Boolean(product.parentProductId && product.variantId && variantText);
   const title = getDisplayTitle(product, variantText);

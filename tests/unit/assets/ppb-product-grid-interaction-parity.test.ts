@@ -21,6 +21,23 @@ describe("PPB Product Grid interaction parity", () => {
     expect(view).not.toContain("Increase quantity");
   });
 
+  it("omits the product description when Grid disables description rendering", () => {
+    const view = renderSharedProductCard(
+      {
+        id: "variant-1",
+        title: "Grid product",
+        description: "Description that must not render",
+        price: 1299,
+      },
+      0,
+      { display: { format: ["$", "{{amount}}"].join("") } },
+      { mode: "grid", description: "" },
+    );
+
+    expect(view).not.toContain("Description that must not render");
+    expect(view).not.toContain("bw-product-card__description");
+  });
+
   it("places the active Grid body directly after its step header", () => {
     expect(getCogniveStepRenderSequence({ stepCount: 3, currentStepIndex: 1 })).toEqual([
       { type: "header", stepIndex: 0 },
