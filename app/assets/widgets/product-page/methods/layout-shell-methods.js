@@ -484,7 +484,9 @@ _categoryHasCollections(category) {
 },
 
 _filterProductsForInpageCategory(step, products, stepIndex) {
-  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  const categories = Array.isArray(step?.categories)
+    ? step.categories
+    : Object.values(step?.categories || {});
   if (categories.length === 0) return products;
 
   const activeIndex = this.activeInpageCategoryIndexes[stepIndex] || 0;
