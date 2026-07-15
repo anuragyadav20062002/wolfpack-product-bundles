@@ -213,7 +213,7 @@ toggle or alternate-value behavior.
 | G29 | Loading image/GIF | Merchant-selected loading media remains contained at the final widget root | **T** | **T** | **T** | **T** |
 | G30 | Brand colors | Base PPB colors propagate to every applicable template surface | **T** | **P** [G30 Product Grid brand color evidence](ppb-deferred-functional-parity/G30-product-grid-brand-colors-evidence.md) | **T** | **T** |
 | G31 | Typography | Font family, weight, and scale propagate without theme leakage | **T** | **P** [G31 Product Grid typography evidence](ppb-deferred-functional-parity/G31-product-grid-typography-evidence.md) | **T** | **T** |
-| G32 | Corners | Card, control, modal, slot, and CTA radii follow the saved design tokens | **T** | **P** [G32 Product Grid corners evidence](ppb-deferred-functional-parity/G32-product-grid-corners-evidence.md) | **P** [G32 Horizontal Slots corners evidence](ppb-deferred-functional-parity/G32-horizontal-slots-corners-evidence.md) | **P** [G32 Vertical Slots corners evidence](ppb-deferred-functional-parity/G32-vertical-slots-corners-evidence.md) |
+| G32 | Corners | Card, control, modal, slot, and CTA radii follow the saved design tokens | **P** [G32 Product List corners evidence](ppb-deferred-functional-parity/G32-product-list-corners-evidence.md) | **P** [G32 Product Grid corners evidence](ppb-deferred-functional-parity/G32-product-grid-corners-evidence.md) | **P** [G32 Horizontal Slots corners evidence](ppb-deferred-functional-parity/G32-horizontal-slots-corners-evidence.md) | **P** [G32 Vertical Slots corners evidence](ppb-deferred-functional-parity/G32-vertical-slots-corners-evidence.md) |
 | G33 | Images and GIF settings | Saved design media appears in its intended PPB surface | **T** | **T** | **T** | **T** |
 | G34 | Expert color controls | General, Product Card, Bundle Cart, and Upsell scopes override only their owner surfaces | **T** | **T** | **T** | **T** |
 | G35 | Product Page custom CSS scope | Store-level PPB CSS remains scoped and distinct from Landing Page CSS | **T** | **T** | **T** | **T** |
@@ -526,7 +526,7 @@ the remaining risk is documented in this matrix.
 
 ### Not-tested fixture order
 
-The current parser shows 102 `T` cells, not 106. The best path is to batch them
+The current parser shows 101 `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Shared product fixture first:** finish the shared/partial cells that do not
@@ -541,12 +541,15 @@ by persisted/runtime owner instead of row order:
    Keep the large collection active and add valid plus invalid/unavailable
    default products, so the same product-source fixture proves default
    initialization and pagination boundaries.
-3. **Baseline global/config sweep:** R15, C16, G18-G21, G23, G26-G37. This is
+3. **Baseline global/config sweep:** R15, C16, G18-G21, G23, G26-G31, and
+   G33-G37. This is
    the highest-throughput store-settings group: one template selector cycle
    covers auto-next, banner media, text, summary, pricing display,
    locale/language, completed-step visibility, discount display format, loading
-   media, brand colors, typography, corners, design media, expert colors, scoped
-   CSS, and language-field rows.
+   media, brand colors, typography, design media, expert colors, scoped CSS, and
+   language-field rows. G32 corners is now closed across all four templates and
+   should not be repeated unless a design-token regression changes the owner
+   surfaces.
 4. **External-entry sweep:** G02 and G24 together through browsed-product and
    collection quick-add entry points.
 5. **Subscriptions/preorder sweep:** G04 across all templates with one
