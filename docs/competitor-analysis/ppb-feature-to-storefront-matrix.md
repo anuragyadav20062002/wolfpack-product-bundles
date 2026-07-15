@@ -143,7 +143,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | D03 | Fixed amount off | Quantity- and amount-based rules | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) |
 | D04 | Fixed bundle price | Display, totals, and cart behavior | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) |
 | D05 | Buy X, Get Y | Buy/get threshold, discounted item selection, copy, and cart result | **P** [D05 Buy X Get Y evidence](ppb-deferred-functional-parity/D05-buy-x-get-y-evidence.md) | **P** [D05 Buy X Get Y evidence](ppb-deferred-functional-parity/D05-buy-x-get-y-evidence.md) | **P** [D05 Buy X Get Y evidence](ppb-deferred-functional-parity/D05-buy-x-get-y-evidence.md) | **P** [D05 Buy X Get Y evidence](ppb-deferred-functional-parity/D05-buy-x-get-y-evidence.md) |
-| D06 | Amount-based discount threshold | Currency threshold and remaining amount text | **S** Shared-path evidence in `tests/unit/assets/pricing-calculator.test.ts` and PPB footer-shape coverage in `ppb-product-page-footer-discount-messaging-toggle.test.ts` (`formats amount-based remaining text`, `cent-scale condition math`); visual parity replay pending. | **S** Shared-path evidence in `tests/unit/assets/pricing-calculator.test.ts` and PPB footer-shape coverage in `ppb-product-page-footer-discount-messaging-toggle.test.ts` (`formats amount-based remaining text`, `cent-scale condition math`); visual parity replay pending. | **S** Shared-path evidence in `tests/unit/assets/pricing-calculator.test.ts` and PPB footer-shape coverage in `ppb-product-page-footer-discount-messaging-toggle.test.ts` (`formats amount-based remaining text`, `cent-scale condition math`); visual parity replay pending. | **S** Shared-path evidence in `tests/unit/assets/pricing-calculator.test.ts` and PPB footer-shape coverage in `ppb-product-page-footer-discount-messaging-toggle.test.ts` (`formats amount-based remaining text`, `cent-scale condition math`); visual parity replay pending. |
+| D06 | Amount-based discount threshold | Currency threshold and remaining amount text | **P** [D06 Product List amount discount evidence](ppb-deferred-functional-parity/D06-product-list-amount-discount-evidence.md) | **S** Shared-path evidence in `tests/unit/assets/pricing-calculator.test.ts` and PPB footer-shape coverage in `ppb-product-page-footer-discount-messaging-toggle.test.ts` (`formats amount-based remaining text`, `cent-scale condition math`); visual parity replay pending. | **S** Shared-path evidence in `tests/unit/assets/pricing-calculator.test.ts` and PPB footer-shape coverage in `ppb-product-page-footer-discount-messaging-toggle.test.ts` (`formats amount-based remaining text`, `cent-scale condition math`); visual parity replay pending. | **S** Shared-path evidence in `tests/unit/assets/pricing-calculator.test.ts` and PPB footer-shape coverage in `ppb-product-page-footer-discount-messaging-toggle.test.ts` (`formats amount-based remaining text`, `cent-scale condition math`); visual parity replay pending. |
 | D07 | Highest eligible tier | Only the correct qualified tier drives totals/messages | **P** PLS1 | **P** PG06 | **P** HS06 | **P** VS03 |
 | D08 | Discount messaging disabled/enabled | Message visibility follows its own toggle | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show |
 | D09 | Discount message variables and custom copy | Remaining quantity/amount, value/unit, discounted items | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` |
@@ -359,12 +359,14 @@ not promoted from another template's proof:
    Vertical Slots category pagination boundaries with enough collection products
    to force an additional fetch.
 
-The 2026-07-16 Chrome DevTools MCP retry confirmed the EB UI-only fixture
-blocker for D06: EB's third-party Admin owns the saved fixture, and the custom
-money spinbutton appends through the accessibility fill path unless the field is
-reliably focused and replaced. The unsafe unsaved amount-rule attempt was
-discarded; the EB fixture reloaded to the saved percentage baseline
-(`Quantity >= 2 => 5%`, `Quantity >= 3 => 10%`).
+The 2026-07-16 Chrome DevTools MCP retry narrowed the EB UI-only fixture
+blocker for D06. EB's third-party Admin owns the saved fixture, and the custom
+money spinbutton still appends through `fill_form` and `Control+A` replacement
+paths (`2` became `21000`). The safe path is keyboard clearing after focus:
+switch the rule to `Fixed Amount Off` + `Amount`, click the amount spinbutton,
+press `Backspace` until empty, then type the target amount. The unsafe unsaved
+amount-rule attempts were discarded; the EB fixture reloaded to the saved
+percentage baseline (`Quantity >= 2 => 5%`, `Quantity >= 3 => 10%`).
 
 High-risk missing evidence is concentrated in:
 
@@ -386,24 +388,58 @@ inspect EB help content first, configure EB through Admin, capture EB
 desktop/mobile truth, mirror WPB, record persisted/runtime values, exercise the
 behavior, and only then decide whether implementation is required.
 
-1. **Baseline template selector sweep:** restore percentage discounts, then use
-   one template cycle to close R15, C16, S06, G18-G21, G23, G26-G37 where the
-   same saved bundle text/design/global settings can be observed across all four
-   templates.
-2. **Inventory/OOS fixture:** configure missing media, fully unavailable
-   product, sale/compare-at, hide-OOS true/false, and cart-time inventory
-   tracking together; close C03, C05, C10, G09, G11, G22, and the applicable
-   S16 cells before restoring products.
-3. **Pagination/default fixture:** use a category with enough products and
-   saved defaults to close S06 and S17 across templates with one collection
-   product-set pass.
-4. **Amount-discount fixture:** close D06 across PL, PG, HS, and VS in one
-   amount-threshold pass. Use keyboard/direct focused replacement for EB money
-   controls; do not rely on accessibility fill for those spinbuttons.
-5. **Subscriptions/preorder fixture:** close G04 across all templates with one
-   selling-plan product set.
-6. **External-entry fixture:** close G02 and G24 together with browsed-product
-   and collection quick-add entry paths.
+### Shared/partial closeout batch
+
+Take the 15 shared/partial cells in one controlled fixture window. Do not
+commit a partial shared/partial result unless the fixture has been restored or
+the remaining risk is documented in this matrix.
+
+1. **Prepare shared product set once:** include one sale/compare-at product, one
+   mixed-aspect product, one missing-media product, one fully unavailable
+   product, one OOS product that can be hidden/shown, and one large collection
+   category that crosses the pagination boundary. Preserve the starting EB and
+   WPB payloads before saving.
+2. **EB pass, template cycle:** configure the shared product set in EB, then
+   hard-reload with cache bypass and capture desktop/mobile in this order:
+   Vertical Slots first for C03/C04/C05/C10/D01/G09, Product List for C03/C05,
+   Product Grid for G09/S17, Horizontal Slots for G09/S17, then Product List for
+   G09. This avoids switching out of the modal fixture before the VS-only card
+   evidence is complete.
+3. **D06 in the same EB session:** switch to the amount-discount fixture after
+   the inventory/media evidence is complete. Use the verified safe input path:
+   `Fixed Amount Off` + `Amount`, click the money spinbutton, press `Backspace`
+   until empty, type the amount. Never use `fill_form` or `Control+A` for EB
+   money spinbuttons. Capture PL, PG, HS, and VS, then restore
+   `Percentage Off`, `Quantity >= 2 => 5%`, `Quantity >= 3 => 10%`.
+4. **WPB mirror pass:** mirror the same fixture through the local DB +
+   storefront sync path, not one-off browser edits. Cycle the same template
+   order and capture desktop/mobile after clearing Cache Storage and hard
+   reloading with `ignoreCache: true`.
+5. **Restore and commit:** restore EB and WPB to the saved percentage/baseline
+   fixture, re-open both storefronts once, confirm baseline runtime values, then
+   update the matrix and commit the shared/partial closeout.
+
+### Not-tested fixture order
+
+The current parser shows 102 `T` cells, not 106. The best path is to batch them
+by persisted/runtime owner instead of row order:
+
+1. **Baseline global/config sweep:** R15, C16, S06, G18-G21, G23, G26-G37. One
+   template selector cycle should cover text, summary, pricing display,
+   locale/language, completed-step visibility, redirect/script/loading media,
+   brand colors, typography, corners, design media, expert colors, scoped CSS,
+   and language-field rows.
+2. **Inventory and validation sweep:** S16, G11, G22, plus any leftovers from
+   C03/C05/C10/G09 after the shared closeout. Use the same product inventory
+   fixture before restoring product availability.
+3. **Pagination/default sweep:** S06 and S17 together when the large collection
+   and default/preselected product fixture is active.
+4. **External-entry sweep:** G02 and G24 together through browsed-product and
+   collection quick-add entry points.
+5. **Subscriptions/preorder sweep:** G04 across all templates with one
+   selling-plan/preorder product set.
+6. **Cart/redirect/script sweep:** G27 and G28 after the product-set sweeps, so
+   checkout/cart side effects do not contaminate product-card evidence.
 7. **Final restore and quality sweep:** restore Product Grid/Percentage Off on
    EB and Vertical Slots/Percentage Off on WPB, hard reload desktop/mobile, and
    rerun any rows affected by fixture restoration.
