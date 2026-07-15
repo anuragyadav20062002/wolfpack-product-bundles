@@ -651,6 +651,11 @@
   transform: none;
 }
 
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"]
+  .add-bundle-to-cart {
+  border-radius: 5px;
+}
+
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"]
   .add-bundle-to-cart:disabled,
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"]
