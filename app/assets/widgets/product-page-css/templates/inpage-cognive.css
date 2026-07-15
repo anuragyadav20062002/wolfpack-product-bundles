@@ -486,4 +486,9 @@
     overflow: visible;
   }
 
+  #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
+    .bw-ppb-cognive-product-grid
+    .product-add-btn {
+    font-size: 12px;
+  }
 }
