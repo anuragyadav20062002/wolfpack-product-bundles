@@ -5,7 +5,7 @@ title: Product Page Bundle Feature-to-Storefront Verification Matrix
 type: verification-matrix
 status: active
 summary: Maps Product Page Bundle feature states to direct storefront evidence across all four PPB designs.
-last_audited: 2026-07-15
+last_audited: 2026-07-16
 owners:
   - Wolfpack Product Bundles
 domains:
@@ -320,21 +320,21 @@ The remaining **S** and **T** cells are active functional-verification work.
 They are not silently promoted from source coverage or another template's
 evidence.
 
-Final evidence counts across the 119 feature rows:
+Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 60 | 5 | 28 | 12 | 2 | 12 |
-| Product Grid | 66 | 4 | 24 | 11 | 2 | 12 |
-| Horizontal Slots | 71 | 5 | 26 | 12 | 4 | 1 |
-| Vertical Slots | 65 | 9 | 28 | 12 | 4 | 1 |
+| Product List | 63 | 3 | 27 | 12 | 2 | 12 |
+| Product Grid | 69 | 2 | 23 | 11 | 2 | 12 |
+| Horizontal Slots | 74 | 3 | 25 | 12 | 4 | 1 |
+| Vertical Slots | 68 | 7 | 27 | 12 | 4 | 1 |
 
 Overall cells across all templates:
 
-- Total cells: **476** (119 × 4 template columns)
-- Proven: **262**
-- Shared/partial: **23**
-- Not tested: **106**
+- Total cells: **476**
+- Proven: **274**
+- Shared/partial: **15**
+- Not tested: **102**
 - EB-absent: **47**
 - Accepted divergence: **12**
 - Not applicable: **26**
@@ -342,16 +342,38 @@ Overall cells across all templates:
 These totals are an evidence inventory, not a product-quality score. One
 feature row can require several value permutations before it becomes Proven.
 
+The remaining shared/partial cells must be resolved as grouped fixture passes,
+not promoted from another template's proof:
+
+1. **VS modal product-card fixture:** C03, C04, C05, and C10 share the Vertical
+   Slots modal renderer but need direct VS sale, mixed-media, missing-media, and
+   fully-unavailable product replay.
+2. **VS disabled-discount fixture:** D01 needs the same Vertical Slots baseline
+   with discounts disabled.
+3. **Amount-discount fixture:** D06 should be tested once with amount thresholds
+   persisted, then replayed across PL, PG, HS, and VS before restoring the
+   baseline percentage fixture.
+4. **Hide-OOS fixture:** G09 should be tested once with OOS products present,
+   then replayed across PL, PG, HS, and VS for true/false visibility states.
+5. **Pagination fixture:** S17 needs Product Grid, Horizontal Slots, and
+   Vertical Slots category pagination boundaries with enough collection products
+   to force an additional fetch.
+
+The 2026-07-16 Chrome DevTools MCP retry confirmed the EB UI-only fixture
+blocker for D06: EB's third-party Admin owns the saved fixture, and the custom
+money spinbutton appends through the accessibility fill path unless the field is
+reliably focused and replaced. The unsafe unsaved amount-rule attempt was
+discarded; the EB fixture reloaded to the saved percentage baseline
+(`Quantity >= 2 => 5%`, `Quantity >= 3 => 10%`).
+
 High-risk missing evidence is concentrated in:
 
-1. fixed amount, fixed bundle price, BOGO, amount thresholds, and independent
-   discount display controls;
+1. amount thresholds and independent discount display controls;
 2. default/preselected products and disabled-validation behavior;
-3. template-specific cart/metadata proof for Product Grid and Vertical Slots;
-4. Bundle Visibility, browsed-product preselection, subscriptions/selling plans,
+3. Bundle Visibility, browsed-product preselection, subscriptions/selling plans,
    and cart-line discount display;
-5. alternate global PPB control values and localized/custom text;
-6. direct Vertical Slots inventory, variant, and delayed-load proof.
+4. alternate global PPB control values and localized/custom text;
+5. direct Vertical Slots inventory, variant, delayed-load, and media-edge proof.
 
 Those rows are being completed through the active functional-parity goal. The
 earlier storefront visual replay remains valid, but it is not the completion
@@ -359,17 +381,32 @@ boundary for this matrix.
 
 ## Active Functional Completion
 
-Work through the remaining rows in deterministic slices. For each row, inspect EB help content first,
-configure EB through Admin, capture EB desktop/mobile truth, mirror WPB, record
-the persisted/runtime values, exercise the behavior, and only then decide
-whether implementation is required.
+Work through the remaining rows in fixture-minimizing slices. For each slice,
+inspect EB help content first, configure EB through Admin, capture EB
+desktop/mobile truth, mirror WPB, record persisted/runtime values, exercise the
+behavior, and only then decide whether implementation is required.
 
-1. **Data and selection:** R08-R15, C06-C12, S05-S08.
-2. **Discount modes:** D03-D12.
-3. **Cart contracts:** S09-S15 for PG and VS first, then any changed template.
-4. **Bundle-level features:** G01-G08.
-5. **Global controls/design/language:** G09-G21.
-6. **Final quality sweep:** Q05-Q07 are complete; rerun all four templates after the remaining functional rows close.
+1. **Baseline template selector sweep:** restore percentage discounts, then use
+   one template cycle to close R15, C16, S06, G18-G21, G23, G26-G37 where the
+   same saved bundle text/design/global settings can be observed across all four
+   templates.
+2. **Inventory/OOS fixture:** configure missing media, fully unavailable
+   product, sale/compare-at, hide-OOS true/false, and cart-time inventory
+   tracking together; close C03, C05, C10, G09, G11, G22, and the applicable
+   S16 cells before restoring products.
+3. **Pagination/default fixture:** use a category with enough products and
+   saved defaults to close S06 and S17 across templates with one collection
+   product-set pass.
+4. **Amount-discount fixture:** close D06 across PL, PG, HS, and VS in one
+   amount-threshold pass. Use keyboard/direct focused replacement for EB money
+   controls; do not rely on accessibility fill for those spinbuttons.
+5. **Subscriptions/preorder fixture:** close G04 across all templates with one
+   selling-plan product set.
+6. **External-entry fixture:** close G02 and G24 together with browsed-product
+   and collection quick-add entry paths.
+7. **Final restore and quality sweep:** restore Product Grid/Percentage Off on
+   EB and Vertical Slots/Percentage Off on WPB, hard reload desktop/mobile, and
+   rerun any rows affected by fixture restoration.
 
 Every completed row must link its durable evidence note from this matrix. If a
 row is proven inapplicable or EB-absent, record the EB Admin/runtime evidence
