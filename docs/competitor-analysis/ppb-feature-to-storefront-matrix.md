@@ -103,7 +103,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | C01 | Complete card hierarchy | Image, title, price, variant identity, and action remain reachable | **P** PL00/PLF | **P** PG08 | **P** HS02/HS19 | **P** VS04 |
 | C02 | Long titles and content-driven height | Text wraps without clipping or overlapping actions | **P** PLS2/PLS3 | **P** PG08 | **P** HS02/HSS2 | **P** VS02/VS04 |
 | C03 | Sale + compare-at presentation | Compare-at belongs to the price cluster and follows the saved visibility setting | **S** Price hierarchy covered; toggle/state not isolated | **P** PG08 | **P** HS02 | **S** Shared modal cards only; no VS sale fixture |
-| C04 | Square/tall/wide media | Mixed aspect ratios remain contained | **P** PLS2 | **S** Responsive cards proven; mixed ratios not isolated | **P** HS02 | **S** Shared modal card renderer; no direct VS mixed-ratio replay |
+| C04 | Square/tall/wide media | Mixed aspect ratios remain contained | **P** PLS2 | **P** [C04 Product Grid mixed aspect evidence](ppb-deferred-functional-parity/C04-product-grid-mixed-aspect-evidence.md) | **P** HS02 | **S** Shared modal card renderer; no direct VS mixed-ratio replay |
 | C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **T** | **P** PG07 | **P** HS18 | **S** Shared modal fallback only |
 | C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **P** PG09 | **P** HS03 | **P** VS07 |
 | C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** HS03 | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) |
@@ -324,18 +324,18 @@ Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 56 | 7 | 36 | 6 | 2 | 12 |
-| Product Grid | 57 | 5 | 38 | 5 | 2 | 12 |
-| Horizontal Slots | 66 | 6 | 37 | 5 | 4 | 1 |
-| Vertical Slots | 60 | 10 | 39 | 5 | 4 | 1 |
+| Product List | 58 | 6 | 29 | 12 | 2 | 12 |
+| Product Grid | 64 | 4 | 26 | 11 | 2 | 12 |
+| Horizontal Slots | 69 | 5 | 28 | 12 | 4 | 1 |
+| Vertical Slots | 63 | 9 | 30 | 12 | 4 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **239**
-- Shared/partial: **28**
-- Not tested: **150**
-- EB-absent: **21**
+- Proven: **254**
+- Shared/partial: **24**
+- Not tested: **113**
+- EB-absent: **47**
 - Accepted divergence: **12**
 - Not applicable: **26**
 
