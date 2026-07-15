@@ -348,12 +348,9 @@ not promoted from another template's proof:
 1. **VS modal product-card fixture:** C05 and C10 still need direct VS
    missing-media and fully-unavailable product replay. C03 and C04 are now
    proven by the 2026-07-16 direct EB/WPB desktop+mobile shared-card replay.
-2. **Amount-discount fixture:** D06 should be tested once with amount thresholds
-   persisted, then replayed across PL, PG, HS, and VS before restoring the
-   baseline percentage fixture.
-3. **Hide-OOS fixture:** G09 should be tested once with OOS products present,
+2. **Hide-OOS fixture:** G09 should be tested once with OOS products present,
    then replayed across PL, PG, HS, and VS for true/false visibility states.
-4. **Pagination fixture:** S17 needs Product Grid, Horizontal Slots, and
+3. **Pagination fixture:** S17 needs Product Grid, Horizontal Slots, and
    Vertical Slots category pagination boundaries with enough collection products
    to force an additional fetch.
 
@@ -364,7 +361,9 @@ paths (`2` became `21000`). The safe path is keyboard clearing after focus:
 switch the rule to `Fixed Amount Off` + `Amount`, click the amount spinbutton,
 press `Backspace` until empty, then type the target amount. The unsafe unsaved
 amount-rule attempts were discarded; the EB fixture reloaded to the saved
-percentage baseline (`Quantity >= 2 => 5%`, `Quantity >= 3 => 10%`).
+percentage baseline (`Quantity >= 2 => 5%`, `Quantity >= 3 => 10%`). D06 is
+now terminal **P** across all four templates, so this is a historical input
+warning only, not part of the remaining shared/partial work.
 
 The 2026-07-16 shared/partial closeout retry narrowed the EB template-selector
 blocker. Direct `click(uid)` and Tab traversal still do not activate the
@@ -508,17 +507,11 @@ the remaining risk is documented in this matrix.
    transport; after every template change, verify the saved
    `mixAndMatch/update` payload and the storefront runtime before recording
    evidence. A visible selected template card alone is not sufficient.
-3. **D06 in the same EB session:** switch to the amount-discount fixture after
-   the inventory/media evidence is complete. Use the verified safe input path:
-   `Fixed Amount Off` + `Amount`, click the money spinbutton, press `Backspace`
-   until empty, type the amount. Never use `fill_form` or `Control+A` for EB
-   money spinbuttons. Capture PL, PG, HS, and VS, then restore
-   `Percentage Off`, `Quantity >= 2 => 5%`, `Quantity >= 3 => 10%`.
-4. **WPB mirror pass:** mirror the same fixture through the local DB +
+3. **WPB mirror pass:** mirror the same fixture through the local DB +
    storefront sync path, not one-off browser edits. Cycle the same template
    order and capture desktop/mobile after clearing Cache Storage and hard
    reloading with `ignoreCache: true`.
-5. **Restore and commit:** restore EB and WPB to the saved percentage/baseline
+4. **Restore and commit:** restore EB and WPB to the saved percentage/baseline
    fixture, re-open both storefronts once, confirm baseline runtime values, then
    update the matrix and commit the shared/partial closeout.
 
