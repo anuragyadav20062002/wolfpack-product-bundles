@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07, C08, D11, G10, G12-G17, M10, and M12 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07-C09, D11, G10, G12-G17, M10, and M12 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -108,7 +108,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **P** PG09 | **P** HS03 | **P** VS07 |
 | C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** HS03 | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) |
 | C08 | Variant swatches | Current EB PPB admin/runtime does not expose or execute swatch presentation | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) |
-| C09 | Sole sellable variant | Omit selector but retain the surviving variant identity | **P** PL04 | **T** | **P** HS04 | **P** VS08 |
+| C09 | Sole sellable variant | Omit selector but retain the surviving variant identity | **P** PL04 | **P** [C09 Product Grid sole variant evidence](ppb-deferred-functional-parity/C09-product-grid-sole-variant-evidence.md) | **P** HS04 | **P** VS08 |
 | C10 | Fully unavailable product | Hide or block exactly as the saved EB inventory setting requires | **P** PL04 | **P** PG05 | **P** HS04 | **S** Shared modal path only |
 | C11 | Quantity/add/selected action | Default Add and selected quantity/action states match EB | **P** PL00 | **P** PG04/PG08 | **P** HS19 | **P** VS04 |
 | C12 | Add on product-card click setting | Toggle between card-click selection and explicit action | **P** Unit coverage + runtime path resolution for controls | **P** Unit coverage + runtime path resolution for controls | **P** Unit coverage + runtime path resolution for controls | **P** Unit coverage + runtime path resolution for controls |
