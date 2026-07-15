@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.183
- * Built   : 2026-07-14
+ * Version : 5.0.184
+ * Built   : 2026-07-15
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.183';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.184';
 (function() {
   'use strict';
 
@@ -4352,6 +4352,43 @@ const cogniveTemplateMethods = {
     this._renderCascadeFooter(el);
   },
 };
+
+function isProductPageStepRequiredForValidation(step = {}) {
+  if (!step || step.enabled === false || step.isFreeGift || step.isDefault) {
+    return false;
+  }
+
+  const products = Array.isArray(step.products) ? step.products : [];
+  const collections = Array.isArray(step.collections) ? step.collections : [];
+  if (products.length > 0 || collections.length > 0) {
+    return true;
+  }
+
+  const categories = Array.isArray(step.categories) ? step.categories : [];
+  return categories.some((category) => {
+    const categoryProducts = Array.isArray(category?.products) ? category.products : [];
+    const categoryCollections = Array.isArray(category?.collections) ? category.collections : [];
+    return categoryProducts.length > 0 || categoryCollections.length > 0;
+  });
+}
+
+function areRequiredProductPageStepsValid(steps = [], validateStep = () => false) {
+  if (!Array.isArray(steps)) return true;
+  return steps.every((step, index) => {
+    if (!isProductPageStepRequiredForValidation(step)) return true;
+    return validateStep(index);
+  });
+}
+
+function getLastRequiredProductPageStepIndex(steps = []) {
+  if (!Array.isArray(steps)) return -1;
+  for (let index = steps.length - 1; index >= 0; index -= 1) {
+    if (isProductPageStepRequiredForValidation(steps[index])) {
+      return index;
+    }
+  }
+  return -1;
+}
 
 function getWindow() {
   return typeof window === 'undefined' ? null : window;
