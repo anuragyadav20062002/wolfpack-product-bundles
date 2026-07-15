@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.185
+ * Version : 5.0.186
  * Built   : 2026-07-15
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.185';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.186';
 (function() {
   'use strict';
 
@@ -9620,6 +9620,17 @@ function getProductPageActiveBoxSelectionRule(boxSelection) {
     || null;
 }
 
+function resolveRuntimeTokenProductId(product = {}) {
+  return product.parentProductId
+    || product.productId
+    || product.productGraphqlId
+    || product.graphqlId
+    || product.admin_graphql_api_id
+    || product.gid
+    || product.id
+    || null;
+}
+
 const ProductPageCartMethods = {
   async addToCart() {
     try {
@@ -9812,7 +9823,8 @@ const ProductPageCartMethods = {
         const cartItem = {
           id: parseInt(this.extractId(variantId)),
           quantity,
-          properties
+          properties,
+          _wpbProductId: resolveRuntimeTokenProductId(product)
         };
         const sellingPlanAllocationId = this.getSelectedSellingPlanAllocationId(product, variantId);
         if (sellingPlanAllocationId) {
@@ -9874,6 +9886,7 @@ const ProductPageCartMethods = {
       const isAddon = stepType === 'addon' || (typeof stepType === 'string' && stepType.startsWith('addon:'));
       const line = {
         variantId: item.id,
+        productId: item._wpbProductId,
         quantity: item.quantity,
       };
       if (isAddon) {
