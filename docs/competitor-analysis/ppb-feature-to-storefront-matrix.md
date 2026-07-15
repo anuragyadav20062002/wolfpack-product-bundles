@@ -143,7 +143,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | D03 | Fixed amount off | Quantity- and amount-based rules | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) |
 | D04 | Fixed bundle price | Display, totals, and cart behavior | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) |
 | D05 | Buy X, Get Y | Buy/get threshold, discounted item selection, copy, and cart result | **P** [D05 Buy X Get Y evidence](ppb-deferred-functional-parity/D05-buy-x-get-y-evidence.md) | **P** [D05 Buy X Get Y evidence](ppb-deferred-functional-parity/D05-buy-x-get-y-evidence.md) | **P** [D05 Buy X Get Y evidence](ppb-deferred-functional-parity/D05-buy-x-get-y-evidence.md) | **P** [D05 Buy X Get Y evidence](ppb-deferred-functional-parity/D05-buy-x-get-y-evidence.md) |
-| D06 | Amount-based discount threshold | Currency threshold and remaining amount text | **P** [D06 Product List amount discount evidence](ppb-deferred-functional-parity/D06-product-list-amount-discount-evidence.md) | **S** Shared-path evidence in `tests/unit/assets/pricing-calculator.test.ts` and PPB footer-shape coverage in `ppb-product-page-footer-discount-messaging-toggle.test.ts` (`formats amount-based remaining text`, `cent-scale condition math`); visual parity replay pending. | **S** Shared-path evidence in `tests/unit/assets/pricing-calculator.test.ts` and PPB footer-shape coverage in `ppb-product-page-footer-discount-messaging-toggle.test.ts` (`formats amount-based remaining text`, `cent-scale condition math`); visual parity replay pending. | **S** Shared-path evidence in `tests/unit/assets/pricing-calculator.test.ts` and PPB footer-shape coverage in `ppb-product-page-footer-discount-messaging-toggle.test.ts` (`formats amount-based remaining text`, `cent-scale condition math`); visual parity replay pending. |
+| D06 | Amount-based discount threshold | Currency threshold and remaining amount text | **P** [D06 Product List amount discount evidence](ppb-deferred-functional-parity/D06-product-list-amount-discount-evidence.md) | **P** [D06 Product Grid, Horizontal Slots, and Vertical Slots amount discount evidence](ppb-deferred-functional-parity/D06-product-grid-horizontal-vertical-amount-discount-evidence.md) | **P** [D06 Product Grid, Horizontal Slots, and Vertical Slots amount discount evidence](ppb-deferred-functional-parity/D06-product-grid-horizontal-vertical-amount-discount-evidence.md) | **P** [D06 Product Grid, Horizontal Slots, and Vertical Slots amount discount evidence](ppb-deferred-functional-parity/D06-product-grid-horizontal-vertical-amount-discount-evidence.md) |
 | D07 | Highest eligible tier | Only the correct qualified tier drives totals/messages | **P** PLS1 | **P** PG06 | **P** HS06 | **P** VS03 |
 | D08 | Discount messaging disabled/enabled | Message visibility follows its own toggle | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show | **P** Shared unit + lifecycle coverage and fixture replay evidence for footer hide/show |
 | D09 | Discount message variables and custom copy | Remaining quantity/amount, value/unit, discounted items | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` | **P** `ppb-product-page-footer-discount-messaging-toggle.test.ts` + `ppb-product-page-modal-accessibility.test.ts` |
@@ -324,16 +324,16 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 63 | 3 | 27 | 12 | 2 | 12 |
-| Product Grid | 69 | 2 | 23 | 11 | 2 | 12 |
-| Horizontal Slots | 74 | 3 | 25 | 12 | 4 | 1 |
-| Vertical Slots | 68 | 7 | 27 | 12 | 4 | 1 |
+| Product List | 64 | 2 | 27 | 12 | 2 | 12 |
+| Product Grid | 70 | 1 | 23 | 11 | 2 | 12 |
+| Horizontal Slots | 75 | 2 | 25 | 12 | 4 | 1 |
+| Vertical Slots | 69 | 6 | 27 | 12 | 4 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **274**
-- Shared/partial: **15**
+- Proven: **278**
+- Shared/partial: **11**
 - Not tested: **102**
 - EB-absent: **47**
 - Accepted divergence: **12**
