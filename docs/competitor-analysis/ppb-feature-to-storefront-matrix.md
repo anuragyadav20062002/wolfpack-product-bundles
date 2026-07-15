@@ -182,7 +182,7 @@ toggle or alternate-value behavior.
 
 | ID | Feature / setting | EB storefront contract | PL | PG | HS | VS |
 | --- | --- | --- | --- | --- | --- | --- |
-| G01 | Bundle Visibility product/collection targeting | Widget appears only on configured product contexts | **T** | **T** | **T** | **T** |
+| G01 | Bundle Visibility product/collection targeting | Widget appears only on configured product contexts | **P** [G01 bundle visibility targeting evidence](ppb-deferred-functional-parity/G01-bundle-visibility-targeting-evidence.md) | **P** [G01 bundle visibility targeting evidence](ppb-deferred-functional-parity/G01-bundle-visibility-targeting-evidence.md) | **P** [G01 bundle visibility targeting evidence](ppb-deferred-functional-parity/G01-bundle-visibility-targeting-evidence.md) | **P** [G01 bundle visibility targeting evidence](ppb-deferred-functional-parity/G01-bundle-visibility-targeting-evidence.md) |
 | G02 | Add Browsed Product / preselection | Browsed product is preselected when eligible | **T** | **T** | **T** | **T** |
 | G03 | Upsell block/button handoff | Builder/upsell entry preserves offer and selection context | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) |
 | G04 | Pre-order and Subscription Integration | Selling-plan selection reaches product cards and cart payload | **T** | **T** | **T** | **T** |
