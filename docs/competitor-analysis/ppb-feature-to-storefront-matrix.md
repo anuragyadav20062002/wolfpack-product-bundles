@@ -102,8 +102,8 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | --- | --- | --- | --- | --- | --- | --- |
 | C01 | Complete card hierarchy | Image, title, price, variant identity, and action remain reachable | **P** PL00/PLF | **P** PG08 | **P** HS02/HS19 | **P** VS04 |
 | C02 | Long titles and content-driven height | Text wraps without clipping or overlapping actions | **P** PLS2/PLS3 | **P** PG08 | **P** HS02/HSS2 | **P** VS02/VS04 |
-| C03 | Sale + compare-at presentation | Compare-at belongs to the price cluster and follows the saved visibility setting | **S** Price hierarchy covered; toggle/state not isolated | **P** PG08 | **P** HS02 | **S** Shared modal cards only; no VS sale fixture |
-| C04 | Square/tall/wide media | Mixed aspect ratios remain contained | **P** PLS2 | **P** [C04 Product Grid mixed aspect evidence](ppb-deferred-functional-parity/C04-product-grid-mixed-aspect-evidence.md) | **P** HS02 | **S** Shared modal card renderer; no direct VS mixed-ratio replay |
+| C03 | Sale + compare-at presentation | Compare-at belongs to the price cluster and follows the saved visibility setting | **S** Price hierarchy covered; toggle/state not isolated | **P** PG08 | **P** HS02 | **P** [C03/C04 Vertical Slots shared card evidence](ppb-deferred-functional-parity/C03-C04-vertical-slots-shared-card-evidence.md) |
+| C04 | Square/tall/wide media | Mixed aspect ratios remain contained | **P** PLS2 | **P** [C04 Product Grid mixed aspect evidence](ppb-deferred-functional-parity/C04-product-grid-mixed-aspect-evidence.md) | **P** HS02 | **P** [C03/C04 Vertical Slots shared card evidence](ppb-deferred-functional-parity/C03-C04-vertical-slots-shared-card-evidence.md) |
 | C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **T** | **P** PG07 | **P** HS18 | **S** Shared modal fallback only |
 | C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **P** PG09 | **P** HS03 | **P** VS07 |
 | C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** HS03 | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) |
@@ -327,13 +327,13 @@ Current parsed evidence counts across the 119 feature rows:
 | Product List | 64 | 2 | 27 | 12 | 2 | 12 |
 | Product Grid | 70 | 1 | 23 | 11 | 2 | 12 |
 | Horizontal Slots | 75 | 2 | 25 | 12 | 4 | 1 |
-| Vertical Slots | 69 | 6 | 27 | 12 | 4 | 1 |
+| Vertical Slots | 71 | 4 | 27 | 12 | 4 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **278**
-- Shared/partial: **11**
+- Proven: **280**
+- Shared/partial: **9**
 - Not tested: **102**
 - EB-absent: **47**
 - Accepted divergence: **12**
@@ -345,9 +345,9 @@ feature row can require several value permutations before it becomes Proven.
 The remaining shared/partial cells must be resolved as grouped fixture passes,
 not promoted from another template's proof:
 
-1. **VS modal product-card fixture:** C03, C04, C05, and C10 share the Vertical
-   Slots modal renderer but need direct VS sale, mixed-media, missing-media, and
-   fully-unavailable product replay.
+1. **VS modal product-card fixture:** C05 and C10 still need direct VS
+   missing-media and fully-unavailable product replay. C03 and C04 are now
+   proven by the 2026-07-16 direct EB/WPB desktop+mobile shared-card replay.
 2. **VS disabled-discount fixture:** D01 needs the same Vertical Slots baseline
    with discounts disabled.
 3. **Amount-discount fixture:** D06 should be tested once with amount thresholds
@@ -367,6 +367,93 @@ switch the rule to `Fixed Amount Off` + `Amount`, click the amount spinbutton,
 press `Backspace` until empty, then type the target amount. The unsafe unsaved
 amount-rule attempts were discarded; the EB fixture reloaded to the saved
 percentage baseline (`Quantity >= 2 => 5%`, `Quantity >= 3 => 10%`).
+
+The 2026-07-16 shared/partial closeout retry narrowed the EB template-selector
+blocker. Direct `click(uid)` and Tab traversal still do not activate the
+third-party Shopify Admin OOPIF controls, but `evaluate_script` with the
+template-card UID can click the iframe button. That reaches EB's "Your bundle
+is ready" overlay state and does save when the subsequent `mixAndMatch/update`
+payload is verified. Direct evidence from the same pass showed saved Horizontal
+Slots as `PDP_MODAL` + `MODAL`, saved Vertical Slots as `PDP_MODAL` +
+`SIMPLIFIED`, and restored Product Grid as `PDP_INPAGE` + `COGNIVE`. Do not
+promote template cells from the visible selected card alone: every replay must
+verify both the saved update payload and the cache-cleared storefront runtime.
+In the retry, the storefront accessibility tree still exposed Product List-like
+text even when `gbbMix.settings.mixAndMatchBundleData` reported
+`PDP_MODAL` + `SIMPLIFIED`, so DOM text alone is not sufficient template proof.
+
+The follow-up 2026-07-16 direct Chrome DevTools MCP pass removed the Step Setup
+UI-only blocker. The blocker was not the category editor itself: EB's in-app
+help/chat overlay persisted over one Admin tab and ignored normal Close/Escape
+paths. Switching to a clean EB Admin tab exposed Step Setup, expanding Category
+1 showed `Products 6`, `6 Selected`, and `Add Products`, and the Shopify
+resource picker opened with search/filter controls. No product mutation was
+saved in that pass. The remaining shared-fixture blocker is product
+identification, not UI access: the picker does not expose compare-at, missing
+media, or full inventory metadata, so the sale/missing-media/OOS products should
+be identified from Shopify product/admin data before using the picker once.
+
+The same pass also hard-reloaded the EB storefront after clearing Cache Storage
+and session/local selection state. Runtime still reported Product Grid
+`PDP_INPAGE` + `COGNIVE`, offer `MIX-156854`, and
+`mixAndMatchBundleSettings.hideOutOfStockProducts: true`; however, the
+storefront visibly rendered multiple configured products whose hydrated variants
+had `inventoryQuantity: 0` and `inventoryPolicy: "DENY"`. Treat this as active
+G09 investigation evidence, not a terminal result: the false-state replay and
+WPB mirror are still required before promoting the row.
+
+The later 2026-07-16 direct Chrome DevTools MCP pass proved that the current EB
+fixture can supply part of the shared/partial product-card set without product
+mutation. After clearing Cache Storage and hard reloading, EB Product List Step
+2 rendered sale/compare-at cards (`14k Solid Bloom Earrings`, `Yellow Sofa`,
+and `14k Dangling Pendant Earrings`), mixed-aspect media (`14k Intertwined
+Earrings` square, `Massage Oil` tall, `Yellow Sofa` wide), and a 24-product
+category. The same pass verified the WPB storefront app-proxy payload for
+`cmrf19c8d0000v0xpj8rz2wgh`: the active saved template is Vertical Slots
+(`PDP_MODAL` + `SIMPLIFIED`), Step 1 has the six jewelry slot products plus an
+empty category, and Step 2 has four shared-fixture products
+(`14k Intertwined Earrings`, `14k Solid Bloom Earrings`,
+`Selling Plans Ski Wax`, and `The Out of Stock Snowboard`). The WPB modal did
+not advance to Step 2 until the three Step 1 slots were filled, so this pass is
+fixture-routing evidence only. It does not promote shared/partial cells because
+the complete terminal batch still needs direct VS Step 2 rendering,
+missing-media replay, disabled-discount replay, hide-OOS true/false replay, and
+the corresponding EB/WPB template cycle.
+
+The next WPB-only 2026-07-16 probe isolated the Vertical Slots Step 2 fixture
+gate. A scoped DB mutation changed only Step 2 on
+`cmrf19c8d0000v0xpj8rz2wgh` from `enabled: false` to `enabled: true`, and the
+app-proxy bundle JSON immediately returned both steps enabled. A normal
+cache-cleared hard reload still rendered only Step 1; a reload with a direct
+Chrome DevTools MCP `initScript` that appended a cache-busting query parameter
+to `/apps/product-bundles/api/bundle/{id}.json` proved the widget had consumed a
+cached bundle response. With that cache-busted config response, WPB widget
+`5.0.187` rendered Vertical Slots `PDP_MODAL` + `SIMPLIFIED` with Step 1 filled
+and Step 2 visible. Opening Step 2 showed sale/compare-at cards
+(`14k Solid Bloom Earrings`, `Purely Almonds Original`,
+`18k Dangling Pendant Earrings`, `Yellow Sofa`), mixed media aspect ratios,
+mixed-inventory `Selling Plans Ski Wax` with `Only 1 left`, and omitted the
+configured fully unavailable `The Out of Stock Snowboard`. This is strong WPB
+desktop fixture evidence for the shared product-card batch, but it is not
+terminal because EB Vertical Slots and WPB mobile evidence are still missing.
+The scoped mutation was restored afterward and the app-proxy again returned
+Step 2 as `enabled: false`.
+
+The follow-up 2026-07-16 direct Chrome DevTools MCP pass closed the Vertical
+Slots shared-card subset for C03 and C04. EB was switched to Vertical Slots,
+Cache Storage was cleared, and desktop/mobile Step 2 replays showed sale
+compare-at pairs (`14k Solid Bloom Earrings`, `Yellow Sofa`,
+`14k Dangling Pendant Earrings`, `18k Solid Bloom Earrings`) plus mixed
+card/media heights without horizontal overflow. WPB mirrored the same pass with
+the scoped Step 2 enable and cache-busted app-proxy bundle JSON; desktop/mobile
+Step 2 showed sale compare-at pairs (`14k Solid Bloom Earrings`,
+`Purely Almonds Original`, `18k Dangling Pendant Earrings`, `Yellow Sofa`),
+mixed image/card sizes, `Selling Plans Ski Wax` with `Only 1 left`, and no
+horizontal overflow. EB was restored to Product Grid and verified after
+cache-cleared hard reload as `PDP_INPAGE` + `COGNIVE`; WPB Step 2 was restored
+to `enabled: false`. This does not close C05, C10, D01, or G09 because those
+still require missing-media, fully-unavailable, disabled-discount, and
+hide-OOS true/false fixtures.
 
 High-risk missing evidence is concentrated in:
 
@@ -390,21 +477,39 @@ behavior, and only then decide whether implementation is required.
 
 ### Shared/partial closeout batch
 
-Take the 15 shared/partial cells in one controlled fixture window. Do not
+Take the current 9 shared/partial cells in one controlled fixture window. Do not
 commit a partial shared/partial result unless the fixture has been restored or
 the remaining risk is documented in this matrix.
 
-1. **Prepare shared product set once:** include one sale/compare-at product, one
-   mixed-aspect product, one missing-media product, one fully unavailable
-   product, one OOS product that can be hidden/shown, and one large collection
-   category that crosses the pagination boundary. Preserve the starting EB and
-   WPB payloads before saving.
+1. **Identify the shared product set before opening the picker:** from Shopify
+   product/admin data, find one sale/compare-at product, one mixed-aspect
+   product, one missing-media product, one fully unavailable product, one OOS
+   product that can be hidden/shown, and one large collection category that
+   crosses the pagination boundary. Do not use picker search heuristics for this
+   step because the picker only exposes title/image/basic availability and does
+   not prove compare-at, missing-media, or inventory policy metadata. Preserve
+   the starting EB and WPB payload/runtime values before saving. Current
+   low-change candidates are: EB sale/mixed/pagination from existing Step 2
+   (`14k Solid Bloom Earrings`, `Massage Oil`, `Yellow Sofa`, and the 24-product
+   category); WPB sale/OOS/mixed-inventory from saved Step 2
+   (`14k Solid Bloom Earrings`, `Selling Plans Ski Wax`,
+   `The Out of Stock Snowboard`). Missing-media is still the expensive edge:
+   both shops have `Message` with no images, but prior evidence shows its zero
+   price excludes it from the PPB catalog, so close C05 in a separate
+   restore-required micro-fixture unless a non-zero no-media product is found.
 2. **EB pass, template cycle:** configure the shared product set in EB, then
    hard-reload with cache bypass and capture desktop/mobile in this order:
-   Vertical Slots first for C03/C04/C05/C10/D01/G09, Product List for C03/C05,
-   Product Grid for G09/S17, Horizontal Slots for G09/S17, then Product List for
-   G09. This avoids switching out of the modal fixture before the VS-only card
-   evidence is complete.
+   Vertical Slots first for C05/C10/D01/G09, Product List for C03/C05, Product
+   Grid for G09/S17, Horizontal Slots for G09/S17, then Product List for G09.
+   C03/C04 Vertical Slots are already closed by
+   `C03-C04-vertical-slots-shared-card-evidence.md`; do not repeat that fixture
+   unless it is needed for regression confirmation. Use a clean EB Admin tab if
+   the help/chat overlay is open; it can mask Step Setup controls. For EB
+   template selection, use direct
+   Chrome DevTools MCP `evaluate_script` on the OOPIF UID only as a click
+   transport; after every template change, verify the saved
+   `mixAndMatch/update` payload and the storefront runtime before recording
+   evidence. A visible selected template card alone is not sufficient.
 3. **D06 in the same EB session:** switch to the amount-discount fixture after
    the inventory/media evidence is complete. Use the verified safe input path:
    `Fixed Amount Off` + `Amount`, click the money spinbutton, press `Backspace`
@@ -424,16 +529,24 @@ the remaining risk is documented in this matrix.
 The current parser shows 102 `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
-1. **Baseline global/config sweep:** R15, C16, S06, G18-G21, G23, G26-G37. One
-   template selector cycle should cover text, summary, pricing display,
-   locale/language, completed-step visibility, redirect/script/loading media,
-   brand colors, typography, corners, design media, expert colors, scoped CSS,
-   and language-field rows.
-2. **Inventory and validation sweep:** S16, G11, G22, plus any leftovers from
-   C03/C05/C10/G09 after the shared closeout. Use the same product inventory
-   fixture before restoring product availability.
-3. **Pagination/default sweep:** S06 and S17 together when the large collection
-   and default/preselected product fixture is active.
+1. **Shared product fixture first:** finish the shared/partial cells that do not
+   require store-wide text/design settings: C05, C10, G09, S16, S17, G11, and
+   G22. C03/C04 Vertical Slots are already proven; Product List C03 still needs
+   the compare-at visibility state isolated. Reuse the current EB Step 2 and WPB
+   Step 2 candidates, then add only the minimum OOS/fully-unavailable/
+   per-product-max products needed for the row. Defer C05 unless a non-zero
+   no-media product exists; otherwise isolate the `Message` price mutation and
+   restore it immediately.
+2. **Default and pagination sweep:** S06 and the remaining S17 cells together.
+   Keep the large collection active and add valid plus invalid/unavailable
+   default products, so the same product-source fixture proves default
+   initialization and pagination boundaries.
+3. **Baseline global/config sweep:** R15, C16, G18-G21, G23, G26-G37. This is
+   the highest-throughput store-settings group: one template selector cycle
+   covers auto-next, banner media, text, summary, pricing display,
+   locale/language, completed-step visibility, discount display format, loading
+   media, brand colors, typography, corners, design media, expert colors, scoped
+   CSS, and language-field rows.
 4. **External-entry sweep:** G02 and G24 together through browsed-product and
    collection quick-add entry points.
 5. **Subscriptions/preorder sweep:** G04 across all templates with one
