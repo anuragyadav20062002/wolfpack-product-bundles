@@ -211,7 +211,7 @@ toggle or alternate-value behavior.
 | G27 | Redirect settings | Default side-cart update, checkout redirect, and cart redirect follow the saved mode | **T** | **T** | **T** | **T** |
 | G28 | Execute script | Saved Product Page script executes at the EB-defined lifecycle without duplicate execution | **T** | **T** | **T** | **T** |
 | G29 | Loading image/GIF | Merchant-selected loading media remains contained at the final widget root | **T** | **T** | **T** | **T** |
-| G30 | Brand colors | Base PPB colors propagate to every applicable template surface | **T** | **T** | **T** | **T** |
+| G30 | Brand colors | Base PPB colors propagate to every applicable template surface | **T** | **P** [G30 Product Grid brand color evidence](ppb-deferred-functional-parity/G30-product-grid-brand-colors-evidence.md) | **T** | **T** |
 | G31 | Typography | Font family, weight, and scale propagate without theme leakage | **T** | **T** | **T** | **T** |
 | G32 | Corners | Card, control, modal, slot, and CTA radii follow the saved design tokens | **T** | **T** | **T** | **T** |
 | G33 | Images and GIF settings | Saved design media appears in its intended PPB surface | **T** | **T** | **T** | **T** |
