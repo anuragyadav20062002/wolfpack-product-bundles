@@ -1158,6 +1158,8 @@ This is the store-level global PPB config object. Captured from `gbbMix.settings
 
 Admin location: Settings → Controls → Product Page Layout section.
 
+> 2026-07-15 current-state note: the live EB Product Page Layout admin and storefront runtime on `yash-wolfpack.myshopify.com` no longer expose `maxSlotsPerRow`. The field is retained above as archived schema evidence, but parity matrix row M10 is resolved as EB-absent for current Horizontal Slots and Vertical Slots behavior.
+
 `useSingleStepCategoriesAsBundleSteps` when `true`: each category within a single PPB step renders as a discrete navigable step (Next/Prev navigation), rather than showing all categories simultaneously as tabs.
 
 ---

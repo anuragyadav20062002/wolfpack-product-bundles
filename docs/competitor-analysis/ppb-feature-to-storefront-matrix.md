@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07, C08, D11, G12, and M12 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07, C08, D11, G12, M10, and M12 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -130,7 +130,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | M07 | Modal validation toast ownership | Dismissible toast is mounted under the document body, fixed relative to the viewport, and not positioned by the modal sheet/footer | **N/A** | **N/A** | **P** HS19 | **P** VS04 |
 | M08 | Backdrop, body lock, internal scroll, focus, and Escape | EB locks body scroll and uses an internal modal scroller, but does not trap focus or close on Escape | **N/A** | **N/A** | **X** HS17 WPB retains dialog semantics and Escape-to-close; focus containment remains absent | **X** VS09 WPB retains Escape-to-close as an accessibility/safety improvement; focus containment remains absent |
 | M09 | Horizontal/vertical orientation isolation | Only the selected orientation styles and child order apply | **N/A** | **N/A** | **P** HS09/final regression | **P** VS04/final regression |
-| M10 | `maxSlotsPerRow` variations | Saved global value changes responsive slot tracks | **N/A** | **N/A** | **T** | **T** |
+| M10 | `maxSlotsPerRow` variations | Current EB PPB admin/runtime does not expose `maxSlotsPerRow` | **N/A** | **N/A** | **E** [M10 max-slots absence evidence](ppb-deferred-functional-parity/M10-max-slots-absence-evidence.md) | **E** [M10 max-slots absence evidence](ppb-deferred-functional-parity/M10-max-slots-absence-evidence.md) |
 | M11 | Filled-slot stacking control | `renderFilledSlotsAsHorizontalStacked` changes filled presentation | **N/A** | **N/A** | **P** [M11 filled-slot stacking evidence](ppb-deferred-functional-parity/M11-filled-slot-stacking-evidence.md) | **P** [M11 filled-slot stacking evidence](ppb-deferred-functional-parity/M11-filled-slot-stacking-evidence.md) |
 | M12 | Slot rendering based on condition toggle | `renderSlotsBasedOnCondition` false/true permutations | **N/A** | **N/A** | **P** [M12 slot rendering condition toggle evidence](ppb-deferred-functional-parity/M12-slot-rendering-condition-toggle-evidence.md) | **P** [M12 slot rendering condition toggle evidence](ppb-deferred-functional-parity/M12-slot-rendering-condition-toggle-evidence.md) |
 
