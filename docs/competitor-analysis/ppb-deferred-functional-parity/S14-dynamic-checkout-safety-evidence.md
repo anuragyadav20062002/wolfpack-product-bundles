@@ -4,7 +4,7 @@ id: ppb-s14-dynamic-checkout-safety-evidence
 title: PPB S14 Dynamic Checkout Safety Evidence
 type: evidence
 status: active
-summary: Documents current Product Grid EB accelerated-checkout bypass behavior and verified Vertical Slots WPB safety prevention.
+summary: Documents current Product Grid EB accelerated-checkout bypass behavior and verified Product Grid plus Vertical Slots WPB safety prevention.
 last_audited: 2026-07-15
 owners:
   - Wolfpack Product Bundles
@@ -32,7 +32,7 @@ Date: 2026-07-15
 
 ## Scope
 
-This note records the current direct evidence for the remaining S14 dynamic-checkout cells. It does not promote Product List or Product Grid WPB until those template-specific WPB states are replayed.
+This note records the current direct evidence for the remaining S14 dynamic-checkout cells. It does not promote Product List until that template-specific EB/WPB state is replayed.
 
 ## EB Product Grid baseline
 
@@ -54,6 +54,32 @@ https://yash-wolfpack.myshopify.com/checkouts/...
 ```
 
 The EB cart was cleared after the probe and confirmed empty.
+
+## WPB Product Grid safety proof
+
+Chrome DevTools MCP, desktop `1280x800`, Cache Storage cleared, hard reload with `ignoreCache: true`, session selection key `wpbPpb-cart-cmrf19c8d0000v0xpj8rz2wgh` cleared before reload.
+
+Runtime state:
+
+- widget version `5.0.185`
+- `data-ppb-template-type="PDP_INPAGE"`
+- `data-ppb-design-preset="COGNIVE"`
+- zero selected products
+- cart before probe: `item_count: 0`, `total_price: 0`
+- bundle CTA rendered disabled
+- native Shopify accelerated-checkout elements were hidden and marked with `data-wpb-native-dynamic-checkout-hidden="true"`
+- WPB visual `Buy it now` surface rendered inside `#bundle-builder-app` with `role="button"` and `aria-disabled="true"`
+
+Activating the WPB visual surface did not navigate and did not mutate cart:
+
+```json
+{
+  "beforeUrl": "https://agent-5sfidg3m.myshopify.com/products/ppb-modal-shared-card-test",
+  "afterUrl": "https://agent-5sfidg3m.myshopify.com/products/ppb-modal-shared-card-test",
+  "beforeCart": { "item_count": 0, "total_price": 0 },
+  "afterCart": { "item_count": 0, "total_price": 0 }
+}
+```
 
 ## WPB Vertical Slots safety proof
 
@@ -84,6 +110,6 @@ Activating the WPB visual surface did not navigate and did not mutate cart:
 
 ## Decision
 
-Vertical Slots S14 is accepted as an intentional safety divergence: WPB keeps the visual affordance but prevents native accelerated checkout from bypassing bundle validation and Cart Transform contract requirements.
+Product Grid and Vertical Slots S14 are accepted as intentional safety divergences: WPB keeps the visual affordance but prevents native accelerated checkout from bypassing bundle validation and Cart Transform contract requirements.
 
-Product List and Product Grid WPB remain unpromoted until their own current template-specific replay confirms the same safety behavior.
+Product List remains unpromoted until its own current template-specific replay confirms the same safety behavior.
