@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07, C08, D11, and G12 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07, C08, D11, G12, and M12 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -132,7 +132,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | M09 | Horizontal/vertical orientation isolation | Only the selected orientation styles and child order apply | **N/A** | **N/A** | **P** HS09/final regression | **P** VS04/final regression |
 | M10 | `maxSlotsPerRow` variations | Saved global value changes responsive slot tracks | **N/A** | **N/A** | **T** | **T** |
 | M11 | Filled-slot stacking control | `renderFilledSlotsAsHorizontalStacked` changes filled presentation | **N/A** | **N/A** | **P** [M11 filled-slot stacking evidence](ppb-deferred-functional-parity/M11-filled-slot-stacking-evidence.md) | **P** [M11 filled-slot stacking evidence](ppb-deferred-functional-parity/M11-filled-slot-stacking-evidence.md) |
-| M12 | Slot rendering based on condition toggle | `renderSlotsBasedOnCondition` false/true permutations | **N/A** | **N/A** | **T** | **T** |
+| M12 | Slot rendering based on condition toggle | `renderSlotsBasedOnCondition` false/true permutations | **N/A** | **N/A** | **P** [M12 slot rendering condition toggle evidence](ppb-deferred-functional-parity/M12-slot-rendering-condition-toggle-evidence.md) | **P** [M12 slot rendering condition toggle evidence](ppb-deferred-functional-parity/M12-slot-rendering-condition-toggle-evidence.md) |
 
 ## 4. Discounts, Progress, Messaging, and Totals
 

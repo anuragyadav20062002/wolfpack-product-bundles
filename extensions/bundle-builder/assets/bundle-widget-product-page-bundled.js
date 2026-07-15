@@ -3816,6 +3816,15 @@ function resolveProductPageTemplateConfig({
   return null;
 }
 
+function parseBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (['true', 'checked', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', 'unchecked', '0', 'off', 'no'].includes(normalized)) return false;
+  return undefined;
+}
+
 const modalSlotTemplateMethods = {
   _isProductPageModalSlotTemplate() {
     const config = resolveProductPageTemplateConfig({
@@ -3918,6 +3927,28 @@ const modalSlotTemplateMethods = {
   },
 
   _appendModalSlotEmptyCards(target, step, stepIndex, selectedCount = 0) {
+    const controls = typeof this._getProductPageControls === 'function'
+      ? this._getProductPageControls()
+      : this.config?.controlsSettings?.activeControls
+        || this.config?.controlsSettings?.settingsControls?.productPage
+        || null;
+    const renderSlotsBasedOnCondition = parseBoolean(
+      controls?.displayEmptyStateBoxesBasedOnBundleCondition
+        ?? controls?.renderSlotsBasedOnCondition
+        ?? this.selectedBundle?.renderSlotsBasedOnCondition
+    );
+    if (renderSlotsBasedOnCondition === false) {
+      const emptyCount = selectedCount > 0 ? 0 : 1;
+      for (let offset = 0; offset < emptyCount; offset += 1) {
+        target.appendChild(this.createEmptyStateCard(
+          step,
+          stepIndex,
+          selectedCount + offset
+        ));
+      }
+      return;
+    }
+
     const rawRequired = Number(step?.conditionValue) || 1;
     const operator = String(step?.conditionOperator || '').toLowerCase();
     const requiredCount = ['greater_than', 'gt', '>'].includes(operator)
