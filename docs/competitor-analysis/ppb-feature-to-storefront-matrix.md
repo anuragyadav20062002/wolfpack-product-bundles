@@ -213,7 +213,7 @@ toggle or alternate-value behavior.
 | G29 | Loading image/GIF | Merchant-selected loading media remains contained at the final widget root | **T** | **T** | **T** | **T** |
 | G30 | Brand colors | Base PPB colors propagate to every applicable template surface | **T** | **P** [G30 Product Grid brand color evidence](ppb-deferred-functional-parity/G30-product-grid-brand-colors-evidence.md) | **T** | **T** |
 | G31 | Typography | Font family, weight, and scale propagate without theme leakage | **T** | **P** [G31 Product Grid typography evidence](ppb-deferred-functional-parity/G31-product-grid-typography-evidence.md) | **T** | **T** |
-| G32 | Corners | Card, control, modal, slot, and CTA radii follow the saved design tokens | **T** | **P** [G32 Product Grid corners evidence](ppb-deferred-functional-parity/G32-product-grid-corners-evidence.md) | **T** | **T** |
+| G32 | Corners | Card, control, modal, slot, and CTA radii follow the saved design tokens | **T** | **P** [G32 Product Grid corners evidence](ppb-deferred-functional-parity/G32-product-grid-corners-evidence.md) | **T** | **P** [G32 Vertical Slots corners evidence](ppb-deferred-functional-parity/G32-vertical-slots-corners-evidence.md) |
 | G33 | Images and GIF settings | Saved design media appears in its intended PPB surface | **T** | **T** | **T** | **T** |
 | G34 | Expert color controls | General, Product Card, Bundle Cart, and Upsell scopes override only their owner surfaces | **T** | **T** | **T** | **T** |
 | G35 | Product Page custom CSS scope | Store-level PPB CSS remains scoped and distinct from Landing Page CSS | **T** | **T** | **T** | **T** |
