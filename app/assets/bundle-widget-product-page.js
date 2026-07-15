@@ -226,6 +226,7 @@ class BundleWidgetProductPage {
 
       this._relocateContainerToProductForm();
       this._hideNativeProductPrice();
+      this._hideNativeDynamicCheckoutControls();
 
       // Setup DOM elements
       this.setupDOMElements();

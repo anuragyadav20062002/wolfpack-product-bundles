@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.184
+ * Version : 5.0.185
  * Built   : 2026-07-15
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.184';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.185';
 (function() {
   'use strict';
 
@@ -5151,6 +5151,39 @@ _hideNativeProductPrice() {
   }
 },
 
+_hideNativeDynamicCheckoutControls() {
+  try {
+    if (!this.container || typeof document === 'undefined') return;
+
+    const productForm = this._findNativeProductForm();
+    if (!productForm) return;
+
+    const root = this._getNativeProductInfoRoot(productForm);
+    if (!root) return;
+
+    const selectors = [
+      '.shopify-payment-button',
+      '.shopify-payment-button__button',
+      'shopify-accelerated-checkout',
+      'shopify-buy-it-now-button',
+    ];
+
+    const controls = selectors.flatMap(selector => Array.from(root.querySelectorAll(selector)));
+    const uniqueControls = Array.from(new Set(controls));
+
+    uniqueControls
+      .filter(element => !this.container.contains(element))
+      .filter(element => !element.closest('#bundle-builder-modal'))
+      .forEach(element => {
+        element.classList.add('wpb-native-dynamic-checkout--hidden');
+        element.setAttribute('data-wpb-native-dynamic-checkout-hidden', 'true');
+        element.style.setProperty('display', 'none', 'important');
+      });
+  } catch (_error) {
+
+  }
+},
+
 setupDOMElements() {
   const modalEl = this.ensureBottomSheet();
 
@@ -10140,6 +10173,7 @@ class BundleWidgetProductPage {
 
       this._relocateContainerToProductForm();
       this._hideNativeProductPrice();
+      this._hideNativeDynamicCheckoutControls();
 
       this.setupDOMElements();
       this._markProductPageTemplate();
