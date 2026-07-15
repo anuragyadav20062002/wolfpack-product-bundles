@@ -189,7 +189,7 @@ toggle or alternate-value behavior.
 | G05 | PPB Subscriptions | Current EB PPB fixture validates subscriptions but has no common selling plan, so no selected plan reaches storefront/cart | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) |
 | G06 | Cart line-item discount display | Saved retail/savings display option reaches cart lines | **S** PL08 records a settings difference | **T** | **T** | **T** |
 | G07 | Bundle-level custom CSS | Scoped merchant CSS applies without cross-template leakage | **T** | **T** | **T** | **T** |
-| G08 | Bundle active/inactive status | Inactive bundle does not mount or mutate cart | **T** | **T** | **T** | **T** |
+| G08 | Bundle active/inactive status | Inactive bundle blocks visible bundle UI before template dispatch; active restore remounts the saved fixture | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) |
 | G09 | `hideOutOfStockProducts` | Alternate true/false states match EB | **S** True/default behavior proven | **S** True/default behavior proven | **S** True/default behavior proven | **S** Shared modal behavior only |
 | G10 | `displayPrices` | Prices hide/show without breaking card geometry | **T** | **T** | **T** | **T** |
 | G11 | `displayCompareAtPrices` | Compare-at visibility follows the saved global setting | **T** | **T** | **P** HS02 | **T** |
@@ -324,19 +324,19 @@ Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 54 | 8 | 39 | 5 | 1 | 12 |
-| Product Grid | 51 | 10 | 41 | 4 | 1 | 12 |
-| Horizontal Slots | 64 | 7 | 39 | 4 | 4 | 1 |
-| Vertical Slots | 54 | 15 | 42 | 4 | 3 | 1 |
+| Product List | 56 | 7 | 36 | 6 | 2 | 12 |
+| Product Grid | 57 | 5 | 38 | 5 | 2 | 12 |
+| Horizontal Slots | 66 | 6 | 37 | 5 | 4 | 1 |
+| Vertical Slots | 60 | 10 | 39 | 5 | 4 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476** (119 × 4 template columns)
-- Proven: **223**
-- Shared/partial: **40**
-- Not tested: **161**
-- EB-absent: **17**
-- Accepted divergence: **9**
+- Proven: **239**
+- Shared/partial: **28**
+- Not tested: **150**
+- EB-absent: **21**
+- Accepted divergence: **12**
 - Not applicable: **26**
 
 These totals are an evidence inventory, not a product-quality score. One
