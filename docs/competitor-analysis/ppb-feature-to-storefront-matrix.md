@@ -171,7 +171,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | S13 | Discount transform proof | Cart price/allocation agrees with displayed discount | **P** PL08 | **P** [S09-S13 Product Grid cart contract](ppb-deferred-functional-parity/S09-S13-product-grid-cart-contract-evidence.md) | **P** HS08 | **P** [S09-S13 Vertical Slots cart contract](ppb-deferred-functional-parity/S09-S13-vertical-slots-cart-contract-evidence.md) |
 | S14 | Dynamic checkout / accelerated checkout | Native bypass behavior explicitly accepted or prevented | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) | **X** HS10 safety divergence | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) |
 | S15 | `addBundleToCartOnDone` | Saved global setting controls final-step cart behavior | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow |
-| S16 | Per-product quantity validation | `validateQuantityPerProduct` and maximum quantity are enforced independently of step rules | **S** Default quantity behavior proven; enabled/disabled control not isolated | **T** | **T** | **T** VS06 current configuration mismatch recorded |
+| S16 | Per-product quantity validation | `validateQuantityPerProduct` and maximum quantity are enforced independently of step rules | **P** [S16 Product List quantity validation evidence](ppb-deferred-functional-parity/S16-product-list-quantity-validation-evidence.md) | **T** | **T** | **T** VS06 current configuration mismatch recorded |
 | S17 | Catalog pagination counts | Product and collection fetch counts load additional products without duplicates or lost selection | **P** PLS3 collection reload | **T** | **S** Collection hydration proven; pagination boundary not isolated | **T** |
 
 ## 6. Bundle Settings, Visibility, Subscriptions, and Global Controls
@@ -324,7 +324,7 @@ Final evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 58 | 6 | 29 | 12 | 2 | 12 |
+| Product List | 59 | 5 | 29 | 12 | 2 | 12 |
 | Product Grid | 64 | 4 | 26 | 11 | 2 | 12 |
 | Horizontal Slots | 69 | 5 | 28 | 12 | 4 | 1 |
 | Vertical Slots | 63 | 9 | 30 | 12 | 4 | 1 |
