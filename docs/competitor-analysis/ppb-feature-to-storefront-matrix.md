@@ -138,7 +138,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 
 | ID | Feature / state | EB storefront contract | PL | PG | HS | VS |
 | --- | --- | --- | --- | --- | --- | --- |
-| D01 | Discounts disabled | Original totals; no discount/progress leak | **P** PL00 | **P** PG00 | **P** HSS4 | **S** No dedicated disabled-discount replay |
+| D01 | Discounts disabled | Original totals; no discount/progress leak | **P** PL00 | **P** PG00 | **P** HSS4 | **P** [D01 Vertical Slots disabled discount evidence](ppb-deferred-functional-parity/D01-vertical-slots-disabled-discount-evidence.md) |
 | D02 | Percentage tiers | Threshold, savings, progress, success, and final total | **P** PL05/PLS1 | **P** PG06 | **P** HS06/HSS1 | **P** VS03 |
 | D03 | Fixed amount off | Quantity- and amount-based rules | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) | **P** [D03 fixed amount off evidence](ppb-deferred-functional-parity/D03-fixed-amount-off-evidence.md) |
 | D04 | Fixed bundle price | Display, totals, and cart behavior | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) | **P** [D04 fixed bundle price evidence](ppb-deferred-functional-parity/D04-fixed-bundle-price-evidence.md) |
@@ -324,17 +324,17 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 64 | 2 | 27 | 12 | 2 | 12 |
+| Product List | 65 | 2 | 26 | 12 | 2 | 12 |
 | Product Grid | 70 | 1 | 23 | 11 | 2 | 12 |
 | Horizontal Slots | 75 | 2 | 25 | 12 | 4 | 1 |
-| Vertical Slots | 71 | 4 | 27 | 12 | 4 | 1 |
+| Vertical Slots | 72 | 3 | 27 | 12 | 4 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **280**
-- Shared/partial: **9**
-- Not tested: **102**
+- Proven: **282**
+- Shared/partial: **8**
+- Not tested: **101**
 - EB-absent: **47**
 - Accepted divergence: **12**
 - Not applicable: **26**
@@ -348,14 +348,12 @@ not promoted from another template's proof:
 1. **VS modal product-card fixture:** C05 and C10 still need direct VS
    missing-media and fully-unavailable product replay. C03 and C04 are now
    proven by the 2026-07-16 direct EB/WPB desktop+mobile shared-card replay.
-2. **VS disabled-discount fixture:** D01 needs the same Vertical Slots baseline
-   with discounts disabled.
-3. **Amount-discount fixture:** D06 should be tested once with amount thresholds
+2. **Amount-discount fixture:** D06 should be tested once with amount thresholds
    persisted, then replayed across PL, PG, HS, and VS before restoring the
    baseline percentage fixture.
-4. **Hide-OOS fixture:** G09 should be tested once with OOS products present,
+3. **Hide-OOS fixture:** G09 should be tested once with OOS products present,
    then replayed across PL, PG, HS, and VS for true/false visibility states.
-5. **Pagination fixture:** S17 needs Product Grid, Horizontal Slots, and
+4. **Pagination fixture:** S17 needs Product Grid, Horizontal Slots, and
    Vertical Slots category pagination boundaries with enough collection products
    to force an additional fetch.
 
@@ -477,7 +475,7 @@ behavior, and only then decide whether implementation is required.
 
 ### Shared/partial closeout batch
 
-Take the current 9 shared/partial cells in one controlled fixture window. Do not
+Take the current 8 shared/partial cells in one controlled fixture window. Do not
 commit a partial shared/partial result unless the fixture has been restored or
 the remaining risk is documented in this matrix.
 
@@ -499,7 +497,7 @@ the remaining risk is documented in this matrix.
    restore-required micro-fixture unless a non-zero no-media product is found.
 2. **EB pass, template cycle:** configure the shared product set in EB, then
    hard-reload with cache bypass and capture desktop/mobile in this order:
-   Vertical Slots first for C05/C10/D01/G09, Product List for C03/C05, Product
+   Vertical Slots first for C05/C10/G09, Product List for C03/C05, Product
    Grid for G09/S17, Horizontal Slots for G09/S17, then Product List for G09.
    C03/C04 Vertical Slots are already closed by
    `C03-C04-vertical-slots-shared-card-evidence.md`; do not repeat that fixture
