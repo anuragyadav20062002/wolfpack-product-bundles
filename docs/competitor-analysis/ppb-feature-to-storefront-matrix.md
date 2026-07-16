@@ -102,7 +102,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | --- | --- | --- | --- | --- | --- | --- |
 | C01 | Complete card hierarchy | Image, title, price, variant identity, and action remain reachable | **P** PL00/PLF | **P** PG08 | **P** HS02/HS19 | **P** VS04 |
 | C02 | Long titles and content-driven height | Text wraps without clipping or overlapping actions | **P** PLS2/PLS3 | **P** PG08 | **P** HS02/HSS2 | **P** VS02/VS04 |
-| C03 | Sale + compare-at presentation | Compare-at belongs to the price cluster and follows the saved visibility setting | **T** | **P** PG08 | **P** HS02 | **P** [C03/C04 Vertical Slots shared card evidence](ppb-deferred-functional-parity/C03-C04-vertical-slots-shared-card-evidence.md) |
+| C03 | Sale + compare-at presentation | Compare-at belongs to the price cluster and follows the saved visibility setting | **P** [C03 Product List sale compare-at evidence](ppb-deferred-functional-parity/C03-product-list-sale-compare-at-evidence.md) | **P** PG08 | **P** HS02 | **P** [C03/C04 Vertical Slots shared card evidence](ppb-deferred-functional-parity/C03-C04-vertical-slots-shared-card-evidence.md) |
 | C04 | Square/tall/wide media | Mixed aspect ratios remain contained | **P** PLS2 | **P** [C04 Product Grid mixed aspect evidence](ppb-deferred-functional-parity/C04-product-grid-mixed-aspect-evidence.md) | **P** HS02 | **P** [C03/C04 Vertical Slots shared card evidence](ppb-deferred-functional-parity/C03-C04-vertical-slots-shared-card-evidence.md) |
 | C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **T** | **P** PG07 | **P** HS18 | **T** |
 | C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **P** PG09 | **P** HS03 | **P** VS07 |
@@ -324,7 +324,7 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 65 | 0 | 27 | 13 | 2 | 12 |
+| Product List | 66 | 0 | 26 | 13 | 2 | 12 |
 | Product Grid | 71 | 0 | 23 | 11 | 2 | 12 |
 | Horizontal Slots | 76 | 0 | 26 | 12 | 4 | 1 |
 | Vertical Slots | 74 | 0 | 28 | 12 | 4 | 1 |
@@ -332,9 +332,9 @@ Current parsed evidence counts across the 119 feature rows:
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **286**
+- Proven: **287**
 - Shared/partial: **0**
-- Not tested: **104**
+- Not tested: **103**
 - EB-absent: **48**
 - Accepted divergence: **12**
 - Not applicable: **26**
@@ -527,11 +527,11 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **104** `T` cells, not 106. The best path is to batch them
+The current parser shows **103** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
-1. **Product-source and card-edge sweep:** C03 Product List, C05 Product
-   List/Vertical Slots, S06 all templates, S16 Product Grid/Horizontal
+1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
+   all templates, S16 Product Grid/Horizontal
    Slots/Vertical Slots, S17 Product Grid/Horizontal Slots/Vertical Slots, G11
    Product List/Vertical Slots, and G22 all templates. Use one product-source
    fixture with sale/compare-at, missing-media, valid default, invalid or
