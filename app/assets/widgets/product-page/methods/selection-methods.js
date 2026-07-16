@@ -156,7 +156,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     return;
   }
 
-  const cascadeDrawerWasOpen = this._isProductPageCascadeTemplate?.()
+  const cascadeDrawerWasOpen = (this._isProductPageCascadeTemplate?.() || this._isProductPageGridTemplate?.())
     && this.elements?.footer?.querySelector('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
   if (cascadeDrawerWasOpen) {
     const drawerHeight = cascadeDrawerWasOpen.getBoundingClientRect?.().height || 0;
