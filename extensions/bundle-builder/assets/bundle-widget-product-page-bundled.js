@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.187
- * Built   : 2026-07-15
+ * Version : 5.0.188
+ * Built   : 2026-07-16
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.187';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.188';
 (function() {
   'use strict';
 
@@ -7889,6 +7889,10 @@ processProductsForStep(products, step) {
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : this._getProductPageControls?.()?.trackInventoryOnAddToCart === true;
+  const controls = typeof this._getProductPageControls === 'function'
+    ? this._getProductPageControls()
+    : null;
+  const hideOutOfStockProducts = controls?.hideOutOfStockProducts !== false;
   const isTrackedZeroStock = (variant) => (
     variant?.quantityAvailable === 0 && variant?.currentlyNotInStock !== true
   );
@@ -7917,21 +7921,23 @@ processProductsForStep(products, step) {
 
   return products.flatMap(product => {
     const sourceVariants = Array.isArray(product.variants) ? product.variants : [];
-    const customerSelectableVariants = sourceVariants.filter(variant => variant?.available !== false);
+    const customerVisibleVariants = hideOutOfStockProducts
+      ? sourceVariants.filter(variant => variant?.available !== false)
+      : sourceVariants;
 
     if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
-      if (customerSelectableVariants.length === 0) {
+      if (customerVisibleVariants.length === 0) {
         return [];
       }
 
-      const processedVariants = customerSelectableVariants.map(normalizeVariant);
+      const processedVariants = customerVisibleVariants.map(normalizeVariant);
 
       const processedOptions = (product.options || []).map(opt => {
         if (typeof opt === 'string') return opt;
         return opt.name || opt;
       });
 
-      return customerSelectableVariants
+      return customerVisibleVariants
         .map(variant => {
 
           const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
@@ -7958,17 +7964,17 @@ processProductsForStep(products, step) {
           };
         });
     } else {
-      if (sourceVariants.length > 0 && customerSelectableVariants.length === 0) {
+      if (sourceVariants.length > 0 && customerVisibleVariants.length === 0) {
         return [];
       }
 
-      const defaultVariant = customerSelectableVariants.find(isVariantSelectableForInventory)
-        || customerSelectableVariants[0]
+      const defaultVariant = customerVisibleVariants.find(isVariantSelectableForInventory)
+        || customerVisibleVariants[0]
         || null;
 
       const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
-      const processedVariants = customerSelectableVariants.map(normalizeVariant);
+      const processedVariants = customerVisibleVariants.map(normalizeVariant);
 
       const processedOptions = (product.options || []).map(opt => {
         if (typeof opt === 'string') return opt;
