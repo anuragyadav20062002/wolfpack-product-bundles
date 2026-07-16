@@ -578,27 +578,22 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **70** `T` cells, not 106. The best path is to batch them
+The current parser shows **66** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
-   all templates, G11 Product List/Vertical Slots, and G22 all templates. Use one product-source
-   fixture with sale/compare-at, missing-media, valid default, invalid or
-   unavailable default, per-product maximum, OOS/cart-time inventory, and a
-   collection large enough to cross the pagination boundary. Defer C05 only if
-   the only no-media candidate remains zero-priced and excluded from PPB
-   catalog hydration; if so, isolate that product mutation and restore it
-   immediately.
-2. **Step/navigation media sweep:** R15 Product List/Horizontal Slots/Vertical
-   Slots plus C16 all templates. This shares step/category settings:
-   auto-next-on-condition and banner media can be tested while cycling the four
-   templates once.
-3. **Global copy, locale, and pricing-display sweep:** G18-G21, G23, G26,
-   G36, and G37 across all templates. These are merchant-copy and display
-   controls, so one saved text/locale/pricing payload should cover CTA copy,
-   summary text, total/original/savings display, active locale, completed-step
-   title visibility, discount display format, product-card language, and
-   cart/toast language.
+   all templates, and G22 all templates. Use one product-source fixture with
+   missing-media, valid default, invalid or unavailable default, per-product
+   maximum, OOS/cart-time inventory, and a collection large enough to cross the
+   pagination boundary. Defer C05 only if the only no-media candidate remains
+   zero-priced and excluded from PPB catalog hydration; if so, isolate that
+   product mutation and restore it immediately.
+2. **Step/navigation media sweep:** C16 all templates. This shares one
+   step/category banner-media setting while cycling the four templates once.
+3. **Global copy, locale, and pricing-display sweep:** G18, G19, G21, G26, and
+   G37 across all templates. These are merchant-copy and display controls, so
+   one saved text/locale/pricing payload should cover CTA copy, summary text,
+   active locale, discount display format, and cart/toast language.
 4. **Global design/media/CSS sweep:** G07, G33-G35. Reuse one
    high-contrast design payload and one scoped CSS sentinel across all
    templates. G29 is terminal EB-absent, and G30/G31 are now proven across all
