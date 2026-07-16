@@ -380,10 +380,10 @@ passes, not isolated one-off template toggles:
    Product List and Vertical Slots were closed by the 2026-07-17 direct
    desktop/mobile replay; Product Grid and Horizontal Slots retain their prior
    PG07/HS18 evidence. EB rendered the no-media `Message` product as a broken
-   `undefined` image, while WPB used a stable neutral SVG placeholder. EB was
-   restored to Product Grid and verified after cache-clear hard reload, but the
-   temporary `Message` product still needs removal from EB Category 1 through
-   EB's product picker.
+   `undefined` image, while WPB used a stable neutral SVG placeholder. A later
+   cache-clear hard reload showed EB still on Vertical Slots, so Product Grid
+   restore remains pending; the temporary `Message` product also still needs
+   removal from EB Category 1 through EB's product picker.
 2. **Hide-OOS fixture:** Product Grid, Horizontal Slots, and Vertical Slots are
    now proven by direct true/false replay. Product List is terminal **E** for
    this matrix pass because WPB Product List kept Step 2 disabled under the
@@ -510,10 +510,11 @@ templates. Product List and Vertical Slots were replayed with the no-media
 `Message` product on EB and WPB after clearing Cache Storage and hard reloading
 desktop/mobile. EB renders a broken `undefined` image with no horizontal
 overflow; WPB renders its stable SVG placeholder with no horizontal overflow.
-EB was restored to Product Grid and verified on the storefront, and WPB was
-restored to its original Vertical Slots setup. EB's category product picker
-remained UI-blocked for product removal in this pass, so `Message` may still be
-present in EB Category 1 until removed through EB Admin.
+WPB was restored to its original Vertical Slots setup. A later cache-clear hard
+reload showed EB still on Vertical Slots, so EB Product Grid restore remains
+pending. EB's category product picker remained UI-blocked for product removal
+in this pass, so `Message` may still be present in EB Category 1 until removed
+through EB Admin.
 
 The later 2026-07-16 C16 pass closed Step/category banner image as terminal
 **P** for all four PPB templates. EB was fixture-cycled once with

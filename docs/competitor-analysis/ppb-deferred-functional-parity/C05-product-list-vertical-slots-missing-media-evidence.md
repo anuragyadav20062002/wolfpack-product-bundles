@@ -106,6 +106,6 @@ Mobile 390x844 at DPR 3:
 ## Restore notes
 
 - WPB fixture was restored to its original Vertical Slots setup after the replay.
-- EB template was restored to Product Grid and confirmed on storefront after cache-clear hard reload.
+- A later EB cache-clear hard reload returned `PDP_MODAL + SIMPLIFIED`; Product Grid restore remains pending.
 - EB product price for `Message` was restored to `0.00`.
 - EB category product-picker restore was UI-blocked in this pass; `Message` may still be present in EB Category 1 until removed through the EB product picker.
