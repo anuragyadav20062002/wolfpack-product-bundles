@@ -202,7 +202,7 @@ toggle or alternate-value behavior.
 | G18 | CTA text configuration | Saved merchant copy and long/localized text render correctly | **T** | **T** | **T** | **T** |
 | G19 | Bundle summary configuration | Title/subtitle/totals copy reaches the correct summary surface | **T** | **T** | **T** | **T** |
 | G20 | Pricing configuration | Displayed original/savings/total fields follow saved visibility/copy | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) |
-| G21 | Store-level language/locale | PPB controls, validation, and CTA use the active locale | **T** | **T** | **T** | **T** |
+| G21 | Store-level language/locale | PPB controls, validation, and CTA use the active locale | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) |
 | G22 | Track inventory on Add To Cart | Cart-time inventory validation follows the saved control | **T** | **T** | **T** | **T** |
 | G23 | Hide completed step titles | EB exposes the Admin control, but current PPB storefront scripts do not execute it | **E** [G23 UI-only evidence](ppb-deferred-functional-parity/G23-hide-completed-step-titles-ui-only-evidence.md) | **E** [G23 UI-only evidence](ppb-deferred-functional-parity/G23-hide-completed-step-titles-ui-only-evidence.md) | **E** [G23 UI-only evidence](ppb-deferred-functional-parity/G23-hide-completed-step-titles-ui-only-evidence.md) | **E** [G23 UI-only evidence](ppb-deferred-functional-parity/G23-hide-completed-step-titles-ui-only-evidence.md) |
 | G24 | Redirect Collection Quick Add to Bundle | Theme quick-add enters the correct PPB offer/context | **T** | **T** | **T** | **T** |
@@ -338,17 +338,17 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 72 | 0 | 15 | 17 | 3 | 12 |
-| Product Grid | 76 | 0 | 14 | 15 | 2 | 12 |
-| Horizontal Slots | 84 | 0 | 14 | 16 | 4 | 1 |
-| Vertical Slots | 82 | 0 | 15 | 16 | 5 | 1 |
+| Product List | 73 | 0 | 14 | 17 | 3 | 12 |
+| Product Grid | 77 | 0 | 13 | 15 | 2 | 12 |
+| Horizontal Slots | 85 | 0 | 13 | 16 | 4 | 1 |
+| Vertical Slots | 83 | 0 | 14 | 16 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **314**
+- Proven: **318**
 - Shared/partial: **0**
-- Not tested: **58**
+- Not tested: **54**
 - EB-absent: **64**
 - Accepted divergence: **14**
 - Not applicable: **26**
@@ -511,6 +511,16 @@ format mismatch is accepted as shared runtime evidence rather than four
 template-specific fixture mutations. EB was restored to app defaults; WPB was
 restored to `amount_percentage` and its cart was cleared.
 
+The 2026-07-16 G21 pass resolved Store-level language/locale as terminal **P**
+for all PPB templates without another fixture mutation. The already accepted
+G37 Chrome DevTools MCP replay captured EB and WPB desktop/mobile active-locale
+runtime directly: EB served one active `customTextSettings` object with
+CTA/navigation/drawer/validation strings, while WPB returned language endpoint
+`activeLocale: "en"` and `selectedLanguage: "English"` with the matching
+textOverrides consumed by the shared in-page and modal runtime families. This
+is sufficient for G21 because the row contract is active-locale consumption, not
+alternate-locale translation authoring.
+
 The 2026-07-16 G37 shared-runtime pass closed Bundle Cart / Bundle / Toast
 language fields across all PPB templates. Fresh Chrome DevTools MCP
 cache-cleared hard reloads proved EB Product Grid desktop/mobile runtime still
@@ -604,7 +614,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **58** `T` cells, not 106. The best path is to batch them
+The current parser shows **54** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
@@ -616,11 +626,12 @@ by persisted/runtime owner instead of row order:
    product mutation and restore it immediately.
 2. **Step/navigation media sweep:** C16 all templates. This shares one
    step/category banner-media setting while cycling the four templates once.
-3. **Global copy, locale, and pricing-display sweep:** G18, G19, and G21
+3. **Global copy and pricing-display sweep:** G18 and G19
    across all templates. These are merchant-copy and display controls, so one
-   saved text/locale/pricing payload should cover CTA copy, summary text, and
-   active locale. G26 is now terminal **E** from the 2026-07-16 shared
-   cart-line format replay, and G37 is already closed by the
+   saved text/pricing payload should cover CTA copy and summary text. G21 is
+   now terminal **P** from the 2026-07-16 active-locale replay, G26 is terminal
+   **E** from the 2026-07-16 shared cart-line format replay, and G37 is already
+   closed by the
    2026-07-16 shared PPB language runtime proof.
 4. **Global design/media/CSS sweep:** G07, G33-G35. Reuse one
    high-contrast design payload and one scoped CSS sentinel across all
