@@ -15,6 +15,7 @@ Verify Settings -> Language creates an EB-shaped store-level language contract f
 | 4 | Product page labels | Custom PPB product and cart labels | `mixAndMatchTextData.en` and PPB `customTextSettings` map to independent widget keys | Product card add and bundle ATC stay separate |
 | 5 | Product page inline card labels | Custom `productCardAddBtnText_inPage`, `productVariantLabelText`, plus modal add text | PPB `textOverrides.productCardInlineAddButton` and `productVariantLabel` map separately from `productCardAddButton` | Product Grid and Cascade cards use EB inline add copy; selectors use active variant label |
 | 6 | Product page bundle cart labels | Custom inline drawer and selected-products labels | PPB `textOverrides.viewBundleItems` and `bundleCartSelectedProductsText` map from EB runtime keys | Cascade bundle cart copy uses active locale |
+| 7 | Product page validation labels | Custom quantity and amount validation messages | PPB `textOverrides` maps validation message aliases used by Product Page modal/in-page navigation | Validation toasts use active locale instead of hardcoded copy |
 
 ## Acceptance Criteria
 - [ ] All listed test cases pass

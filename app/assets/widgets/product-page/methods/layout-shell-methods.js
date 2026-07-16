@@ -306,7 +306,7 @@ _createCogniveStepHeader(step, stepIndex) {
     if (!this.isStepAccessible(stepIndex)) {
       const currentStep = this.selectedBundle.steps[this.currentStepIndex];
       ToastManager.show(
-        formatProductPageStepValidationToast(currentStep)
+        formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before proceeding.',
         4000,
         {

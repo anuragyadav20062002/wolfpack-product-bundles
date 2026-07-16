@@ -273,6 +273,30 @@ describe('PPB Product List step conditions', () => {
       conditionValue: 1,
     })).toBe('Add exactly 01 products on this step');
   });
+
+  it('uses active Product Page quantity validation language when provided', () => {
+    const resolveText = jest.fn((key, fallback) => ({
+      conditionQuantityGreaterThanOrEqualTo: 'Choose at least {{conditionQuantity}} items',
+    }[key] || fallback));
+
+    expect(formatProductPageStepValidationToast({
+      conditionType: 'quantity',
+      conditionOperator: 'greater_than_or_equal_to',
+      conditionValue: 2,
+    }, resolveText)).toBe('Choose at least 02 items');
+  });
+
+  it('uses active Product Page amount validation language when provided', () => {
+    const resolveText = jest.fn((key, fallback) => ({
+      conditionAmountGreaterThanOrEqualTo: 'Choose products worth {{conditionAmount}}',
+    }[key] || fallback));
+
+    expect(formatProductPageStepValidationToast({
+      conditionType: 'amount',
+      conditionOperator: 'greater_than_or_equal_to',
+      conditionValue: 300,
+    }, resolveText)).toBe('Choose products worth 300');
+  });
 });
 
 function createStepFlowDocument() {

@@ -87,7 +87,7 @@ attachEventListeners() {
       if (!navigated && this._isProductPageGridTemplate?.() === true) {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
         ToastManager.show(
-          formatProductPageStepValidationToast(currentStep)
+          formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
             || 'Please meet the quantity conditions for the current step before proceeding.',
           4000,
           {
@@ -215,7 +215,7 @@ async navigateModal(direction) {
         this.preloadNextStep();
       } else {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-        const message = formatProductPageStepValidationToast(currentStep)
+        const message = formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before proceeding.';
         ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
@@ -225,7 +225,7 @@ async navigateModal(direction) {
         this.closeModal();
       } else {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-        const message = formatProductPageStepValidationToast(currentStep)
+        const message = formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before finishing.';
         ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }

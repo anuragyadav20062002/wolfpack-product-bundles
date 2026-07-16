@@ -23,6 +23,9 @@ describe("settings language runtime", () => {
       "ppb.general.bundleCartSelectedProductsText_inPage": "Picked Products",
       "ppb.general.addBundleToCartBtnText": "Add Pack",
       "ppb.general.addToCartBundleBtnLoadingText": "Adding Pack...",
+      "ppb.conditions.quantity.greaterThanOrEqualTo": "Choose at least {{conditionQuantity}} items",
+      "ppb.conditions.quantity.equalTo": "Choose exactly {{conditionQuantity}} items",
+      "ppb.conditions.amount.greaterThanOrEqualTo": "Choose products worth {{conditionAmount}}",
       "ppb.footer.footerNextBtnText": "Next Slot",
       "ppb.footer.footerFinishBtnText": "Finish Pack",
     },
@@ -71,6 +74,15 @@ describe("settings language runtime", () => {
       productCardAddBtnText_inPage: "Quick Pick +",
       bundleCartDrawerBtnText_inPage: "Open Picks",
       bundleCartSelectedProductsText_inPage: "Picked Products",
+      conditions: {
+        quantity: {
+          greaterThanOrEqualTo: expect.objectContaining({ value: "Choose at least {{conditionQuantity}} items" }),
+          equalTo: expect.objectContaining({ value: "Choose exactly {{conditionQuantity}} items" }),
+        },
+        amount: {
+          greaterThanOrEqualTo: expect.objectContaining({ value: "Choose products worth {{conditionAmount}}" }),
+        },
+      },
       addToCartBundleBtnText: "Add Pack",
       addToCartBundleBtnLoadingText: "Adding Pack...",
       footerNextBtnText: "Next Slot",
@@ -87,6 +99,9 @@ describe("settings language runtime", () => {
       includedBadge: "Picked x{{allowedQuantity}}",
       viewBundleItems: "Open Picks",
       bundleCartSelectedProductsText: "Picked Products",
+      conditionQuantityGreaterThanOrEqualTo: "Choose at least {{conditionQuantity}} items",
+      conditionQuantityEqualTo: "Choose exactly {{conditionQuantity}} items",
+      conditionAmountGreaterThanOrEqualTo: "Choose products worth {{conditionAmount}}",
     });
   });
 });

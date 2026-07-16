@@ -386,6 +386,10 @@ function buildFpbTextOverrides(fpbLanguage: JsonObject) {
 }
 
 function buildPpbTextOverrides(customTextSettings: Record<string, unknown>) {
+  const conditions = customTextSettings.conditions as JsonObject | undefined;
+  const quantityConditions = conditions?.quantity as Record<string, LanguageField> | undefined;
+  const amountConditions = conditions?.amount as Record<string, LanguageField> | undefined;
+
   return {
     productCardAddButton: String(customTextSettings.productCardAddBtnText),
     productCardInlineAddButton: String(customTextSettings.productCardAddBtnText_inPage),
@@ -399,6 +403,12 @@ function buildPpbTextOverrides(customTextSettings: Record<string, unknown>) {
     viewBundleItems: String(customTextSettings.bundleCartDrawerBtnText_inPage),
     bundleCartSelectedProductsText: String(customTextSettings.bundleCartSelectedProductsText_inPage),
     boxSelectionEligibilityToast_inPage: String(customTextSettings.boxSelectionEligibilityToast_inPage),
+    conditionQuantityGreaterThanOrEqualTo: String(quantityConditions?.greaterThanOrEqualTo?.value),
+    conditionQuantityLessThanOrEqualTo: String(quantityConditions?.lessThanOrEqualTo?.value),
+    conditionQuantityEqualTo: String(quantityConditions?.equalTo?.value),
+    conditionAmountGreaterThanOrEqualTo: String(amountConditions?.greaterThanOrEqualTo?.value),
+    conditionAmountLessThanOrEqualTo: String(amountConditions?.lessThanOrEqualTo?.value),
+    conditionAmountEqualTo: String(amountConditions?.equalTo?.value),
   };
 }
 

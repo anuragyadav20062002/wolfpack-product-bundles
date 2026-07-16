@@ -5916,9 +5916,7 @@ function formatCascadeStepLimitToast(limitText, required) {
   return `Add ${qualifier} ${formattedRequired} products on this step`;
 }
 
-function formatProductPageStepValidationToast(step = {}) {
-  if (step.conditionType !== 'quantity') return '';
-
+function formatProductPageStepValidationToast(step = {}, resolveText = null) {
   const required = Number(step.conditionValue);
   if (!Number.isFinite(required) || required <= 0) return '';
 
@@ -5930,7 +5928,36 @@ function formatProductPageStepValidationToast(step = {}) {
   const qualifier = qualifierByOperator[step.conditionOperator];
   if (!qualifier) return '';
 
-  return `Add ${qualifier} ${String(required).padStart(2, '0')} products on this step`;
+  const operatorKeyByOperator = {
+    equal_to: 'EqualTo',
+    greater_than_or_equal_to: 'GreaterThanOrEqualTo',
+    less_than_or_equal_to: 'LessThanOrEqualTo',
+  };
+  const operatorKey = operatorKeyByOperator[step.conditionOperator];
+
+  if (step.conditionType === 'quantity') {
+    const formattedRequired = String(required).padStart(2, '0');
+    const fallback = `Add ${qualifier} ${formattedRequired} products on this step`;
+    const template = typeof resolveText === 'function'
+      ? resolveText(`conditionQuantity${operatorKey}`, fallback)
+      : fallback;
+    return String(template)
+      .replace(/\{\{\s*conditionQuantity\s*\}\}/g, formattedRequired)
+      .replace(/\{conditionQuantity\}/g, formattedRequired);
+  }
+
+  if (step.conditionType === 'amount') {
+    const formattedRequired = String(required);
+    const fallback = `Add products worth ${qualifier === 'at least' ? 'at least ' : qualifier === 'at most' ? 'maximum of ' : ''}${formattedRequired} on this step`;
+    const template = typeof resolveText === 'function'
+      ? resolveText(`conditionAmount${operatorKey}`, fallback)
+      : fallback;
+    return String(template)
+      .replace(/\{\{\s*conditionAmount\s*\}\}/g, formattedRequired)
+      .replace(/\{conditionAmount\}/g, formattedRequired);
+  }
+
+  return '';
 }
 
 function getProductPageModalValidationToastOptions() {
@@ -6410,7 +6437,7 @@ attachEventListeners() {
       if (!navigated && this._isProductPageGridTemplate?.() === true) {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
         ToastManager.show(
-          formatProductPageStepValidationToast(currentStep)
+          formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
             || 'Please meet the quantity conditions for the current step before proceeding.',
           4000,
           {
@@ -6528,7 +6555,7 @@ async navigateModal(direction) {
         this.preloadNextStep();
       } else {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-        const message = formatProductPageStepValidationToast(currentStep)
+        const message = formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before proceeding.';
         ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
@@ -6538,7 +6565,7 @@ async navigateModal(direction) {
         this.closeModal();
       } else {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-        const message = formatProductPageStepValidationToast(currentStep)
+        const message = formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before finishing.';
         ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
@@ -6902,7 +6929,7 @@ _createCogniveStepHeader(step, stepIndex) {
     if (!this.isStepAccessible(stepIndex)) {
       const currentStep = this.selectedBundle.steps[this.currentStepIndex];
       ToastManager.show(
-        formatProductPageStepValidationToast(currentStep)
+        formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before proceeding.',
         4000,
         {
