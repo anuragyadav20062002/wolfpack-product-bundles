@@ -43,6 +43,12 @@ G37 remains **T** across all templates. This pass fixed and verified a real WPB
 runtime consumption gap, but it does not yet provide the full desktop/mobile
 template-cycle proof required to promote the row.
 
+## Chrome DevTools MCP viewport note
+
+Use `mcp__chrome_devtools.emulate({ viewport: "390x844x1,mobile,touch" })` for
+mobile passes. `resize_page` alone only changed the outer Chrome window during
+this investigation and did not change `window.innerWidth`.
+
 ## EB hard-reload runtime proof
 
 Chrome DevTools MCP selected the EB storefront tab
@@ -89,6 +95,31 @@ fields:
 ```
 
 Visible EB text included `View Bundle Items` and `Next`.
+
+After applying DevTools mobile emulation and hard reloading again, the same EB
+Product Grid storefront reported:
+
+```json
+{
+  "viewport": { "width": 390, "height": 844, "dpr": 1, "touch": true },
+  "template": "PDP_INPAGE",
+  "templateData": { "templateId": "COGNIVE" },
+  "customTextSubset": {
+    "addToCartBundleBtnText": "Add Bundle to Cart",
+    "addToCartBundleBtnLoadingText": "Adding Bundle...",
+    "footerNextBtnText": "Next",
+    "footerFinishBtnText": "Done",
+    "noProductsAvailable": "No Products Available",
+    "boxSelectionEligibilityToast_inPage": "Remove {{boxSelectionDifference}} item(s) to select this box",
+    "bundleCartDrawerBtnText_inPage": "View Bundle Items",
+    "bundleCartSelectedProductsText_inPage": "Selected Products",
+    "conditionQuantityGreaterThanOrEqualTo": "Add at least {{conditionQuantity}} products on this step",
+    "conditionAmountGreaterThanOrEqualTo": "Add products worth at least {{conditionAmount}} on this step"
+  }
+}
+```
+
+Visible EB mobile text again included `View Bundle Items` and `Next`.
 
 ## WPB source correction
 
@@ -149,6 +180,33 @@ Relevant response subset:
 The hard-reloaded storefront remained on widget version `5.0.189` and visible
 widget text included `Step 1`, `Add Bundle to Cart`, `Prev`, and `Next`.
 
+After applying DevTools mobile emulation and hard reloading again, the WPB
+Vertical Slots storefront reported:
+
+```json
+{
+  "viewport": { "width": 390, "height": 844, "dpr": 1, "touch": true },
+  "version": "5.0.189",
+  "activeLocale": "en",
+  "selectedLanguage": "English",
+  "textOverrides": {
+    "addToCartButton": "Add Bundle to Cart",
+    "addingToCart": "Adding Bundle...",
+    "nextButton": "Next",
+    "doneButton": "Done",
+    "noProductsAvailable": "No Products Available",
+    "viewBundleItems": "View Bundle Items",
+    "bundleCartSelectedProductsText": "Selected Products",
+    "boxSelectionEligibilityToast_inPage": "Remove {{boxSelectionDifference}} item(s) to select this box",
+    "conditionQuantityGreaterThanOrEqualTo": "Add at least {{conditionQuantity}} products on this step",
+    "conditionAmountGreaterThanOrEqualTo": "Add products worth at least {{conditionAmount}} on this step"
+  }
+}
+```
+
+Visible WPB mobile text included `Step 1`, `Add Bundle to Cart`, `Prev`, and
+`Next`.
+
 ## Tests and build
 
 Focused checks:
@@ -172,12 +230,7 @@ Results:
 
 Do not promote G37 yet. Remaining requirements:
 
-- capture the same G37 runtime/visible proof at a real mobile viewport;
 - cycle all four PPB templates after a saved language payload, or document why
   the shared runtime path is accepted for every template;
 - prove summary, CTA, validation, and toast copy on EB first and equivalent WPB
   behavior after the full template pass.
-
-During this pass, `resize_page({ width: 390, height: 844 })` changed the outer
-Chrome window, but the selected tab continued reporting
-`innerWidth=1280` / `innerHeight=800`. That is why the matrix row remains open.
