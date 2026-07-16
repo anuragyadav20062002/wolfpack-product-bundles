@@ -210,7 +210,7 @@ toggle or alternate-value behavior.
 | G26 | Discount display format | Amount + percentage, amount-only, and percentage-only formats match EB | **T** | **T** | **T** | **T** |
 | G27 | Redirect settings | Default side-cart update, checkout redirect, and cart redirect follow the saved mode | **T** | **T** | **T** | **T** |
 | G28 | Execute script | Saved Product Page script executes at the EB-defined lifecycle without duplicate execution | **T** | **T** | **T** | **T** |
-| G29 | Loading image/GIF | Merchant-selected loading media remains contained at the final widget root | **T** | **T** | **T** | **T** |
+| G29 | Loading image/GIF | Current EB PPB admin/runtime does not expose loading image or GIF controls | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) |
 | G30 | Brand colors | Base PPB colors propagate to every applicable template surface | **T** | **P** [G30 Product Grid brand color evidence](ppb-deferred-functional-parity/G30-product-grid-brand-colors-evidence.md) | **T** | **T** |
 | G31 | Typography | Font family, weight, and scale propagate without theme leakage | **T** | **P** [G31 Product Grid typography evidence](ppb-deferred-functional-parity/G31-product-grid-typography-evidence.md) | **T** | **T** |
 | G32 | Corners | Card, control, modal, slot, and CTA radii follow the saved design tokens | **P** [G32 Product List corners evidence](ppb-deferred-functional-parity/G32-product-list-corners-evidence.md) | **P** [G32 Product Grid corners evidence](ppb-deferred-functional-parity/G32-product-grid-corners-evidence.md) | **P** [G32 Horizontal Slots corners evidence](ppb-deferred-functional-parity/G32-horizontal-slots-corners-evidence.md) | **P** [G32 Vertical Slots corners evidence](ppb-deferred-functional-parity/G32-vertical-slots-corners-evidence.md) |
@@ -299,6 +299,12 @@ PPB upsell block/button handoff. The complete configure audit already records
 desktop/mobile storefront proof for the enabled all-products upsell widget state,
 and current focused persistence/runtime tests passed 43/43.
 
+The 2026-07-16 G29 review resolves loading image/GIF as EB-absent for current
+PPB. EB Product Page Layout Controls exposed configuration, redirect,
+execute-script, cart messaging, discount format, inventory, and custom CSS
+fields, but no loading image/GIF field; the current PPB storefront runtime
+exposed no loading media keys under the Product Page controls object.
+
 The 2026-07-15 C07 replay grouped Product List, Product Grid, and Vertical Slots
 under one shared category fixture. EB and Wolfpack both persisted
 `displayVariantsAsIndividualProducts: true` with swatches disabled and rendered
@@ -332,18 +338,18 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 68 | 0 | 22 | 14 | 3 | 12 |
-| Product Grid | 73 | 0 | 20 | 12 | 2 | 12 |
-| Horizontal Slots | 79 | 0 | 22 | 13 | 4 | 1 |
-| Vertical Slots | 77 | 0 | 23 | 13 | 5 | 1 |
+| Product List | 68 | 0 | 21 | 15 | 3 | 12 |
+| Product Grid | 73 | 0 | 19 | 13 | 2 | 12 |
+| Horizontal Slots | 79 | 0 | 21 | 14 | 4 | 1 |
+| Vertical Slots | 77 | 0 | 22 | 14 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
 - Proven: **297**
 - Shared/partial: **0**
-- Not tested: **87**
-- EB-absent: **52**
+- Not tested: **83**
+- EB-absent: **56**
 - Accepted divergence: **14**
 - Not applicable: **26**
 
