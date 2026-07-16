@@ -12,7 +12,8 @@ jest.mock("../../../app/services/bundles/bundle-preview-event.server", () => ({
   recordFirstBundlePreviewEvent: jest.fn().mockResolvedValue(true),
 }));
 
-import { handleRecordBundlePreview } from "../../../app/routes/app/shared/bundle-preview-action.server";
+import { handleCreateFpbPreview, handleRecordBundlePreview } from "../../../app/routes/app/shared/bundle-preview-action.server";
+import { verifyFpbPreviewToken } from "../../../app/lib/fpb-preview-token.server";
 import { recordFirstBundlePreviewEvent } from "../../../app/services/bundles/bundle-preview-event.server";
 
 const getDb = () => require("../../../app/db.server").default;
@@ -84,6 +85,46 @@ describe("handleRecordBundlePreview", () => {
 
     expect(response.status).toBe(404);
     expect(mockRecordFirstBundlePreviewEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("handleCreateFpbPreview", () => {
+  const originalSecret = process.env.SHOPIFY_API_SECRET;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.SHOPIFY_API_SECRET = "preview-secret";
+    getDb().bundle.findUnique.mockResolvedValue({
+      id: "bundle-1",
+      bundleType: "full_page",
+      status: "draft",
+    });
+  });
+
+  afterAll(() => {
+    process.env.SHOPIFY_API_SECRET = originalSecret;
+  });
+
+  it("returns a fresh valid stateless preview URL on every click", async () => {
+    const now = jest.spyOn(Date, "now")
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(2_000);
+
+    const first = await handleCreateFpbPreview(mockAdmin, mockSession, "bundle-1");
+    const second = await handleCreateFpbPreview(mockAdmin, mockSession, "bundle-1");
+    const firstUrl = new URL((await first.json()).shareablePreviewUrl);
+    const secondUrl = new URL((await second.json()).shareablePreviewUrl);
+
+    expect(firstUrl.pathname).toBe("/apps/product-bundles/wpb/bundle-1");
+    expect(firstUrl.searchParams.get("wpb_preview")).not.toBe(secondUrl.searchParams.get("wpb_preview"));
+    expect(verifyFpbPreviewToken({
+      token: firstUrl.searchParams.get("wpb_preview"),
+      shop: mockSession.shop,
+      bundleId: "bundle-1",
+      apiSecret: "preview-secret",
+      now: 1_000,
+    })).toBe(true);
+    now.mockRestore();
   });
 });
 

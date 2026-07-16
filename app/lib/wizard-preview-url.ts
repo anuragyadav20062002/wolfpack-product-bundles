@@ -8,17 +8,13 @@ export type WizardPreviewInput = {
 
 export type WizardPreviewResult =
   | { kind: "url"; url: string }
-  | { kind: "error"; reason: "missing_product_handle" | "missing_page_handle" };
+  | { kind: "error"; reason: "missing_product_handle" };
 
 export function buildWizardPreviewUrl(input: WizardPreviewInput): WizardPreviewResult {
   const shop = normalizeShop(input.shop);
 
   if (input.bundleType === "full_page") {
-    if (!input.pageHandle) {
-      return { kind: "error", reason: "missing_page_handle" };
-    }
-
-    return { kind: "url", url: `https://${shop}/pages/${input.pageHandle}` };
+    return { kind: "url", url: `https://${shop}/apps/product-bundles/wpb/${encodeURIComponent(input.bundleId)}` };
   }
 
   if (!input.productHandle) {

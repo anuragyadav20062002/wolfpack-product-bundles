@@ -1,6 +1,7 @@
 import { handleCreateBundle } from "../../../app/routes/app/app.dashboard/handlers/handlers.server";
 import db from "../../../app/db.server";
 import { WidgetInstallationService } from "../../../app/services/widget-installation.server";
+import { ensureBundleParentProduct } from "../../../app/services/bundles/bundle-parent-product.server";
 
 jest.mock("../../../app/db.server", () => ({
   __esModule: true,
@@ -20,6 +21,10 @@ jest.mock("../../../app/services/widget-installation.server", () => ({
   WidgetInstallationService: {
     validateProductBundleWidgetSetup: jest.fn(),
   },
+}));
+
+jest.mock("../../../app/services/bundles/bundle-parent-product.server", () => ({
+  ensureBundleParentProduct: jest.fn(),
 }));
 
 jest.mock("../../../app/lib/logger", () => ({
@@ -77,6 +82,16 @@ describe("handleCreateBundle", () => {
     (mockDb.bundle.count as jest.Mock).mockResolvedValue(1);
     (mockDb.bundle.create as jest.Mock).mockResolvedValue({
       id: "bundle-1",
+      name: "Standard Bundle",
+      shopifyProductId: null,
+      shopifyProductHandle: null,
+    });
+    (ensureBundleParentProduct as jest.Mock).mockResolvedValue({
+      productId: "gid://shopify/Product/1",
+      variantId: "gid://shopify/ProductVariant/1",
+      handle: "standard-bundle",
+      status: "UNLISTED",
+      created: true,
     });
     (WidgetInstallationService.validateProductBundleWidgetSetup as jest.Mock).mockResolvedValue({
       widgetInstalled: false,

@@ -5,13 +5,14 @@ const { fullPageAnalyticsConfigMethods } = require('../../../app/assets/widgets/
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageTierFloatingRuntimeMethods } = require('../../../app/assets/widgets/full-page/methods/tier-floating-runtime-methods.js');
 
-function makeWidgetContext(bundleConfig: unknown) {
+function makeWidgetContext(bundleConfig: unknown, bundleConfigSource?: string) {
   const context: any = {
     container: {
       dataset: {
         bundleType: 'full_page',
         bundleId: 'bundle-1',
         bundleConfig: JSON.stringify(bundleConfig),
+        bundleConfigSource,
       },
     },
     bundleData: null,
@@ -25,6 +26,25 @@ function makeWidgetContext(bundleConfig: unknown) {
 describe('FPB full-page metafield cache', () => {
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  it('uses a complete app-proxy document payload without fetching bundle JSON', async () => {
+    const proxyBundle = {
+      id: 'bundle-1',
+      bundleType: 'full_page',
+      bundleDesignPresetId: 'CLASSIC',
+      name: 'Daily Essentials',
+      steps: [{ id: 'step-1', name: 'Choose Products', products: [] }],
+      pricing: { discountType: 'percentage', discountValue: 10 },
+    };
+    const fetchSpy = jest.spyOn(global, 'fetch' as any);
+    const widget = makeWidgetContext(proxyBundle, 'app_proxy');
+
+    await widget.loadBundleData();
+
+    expect(widget.bundleData).toEqual({ 'bundle-1': proxyBundle });
+    expect(widget._bundleConfigCacheMode).toBe('app-proxy-inline');
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('hydrates through the app proxy when a legacy full cached payload is present', async () => {

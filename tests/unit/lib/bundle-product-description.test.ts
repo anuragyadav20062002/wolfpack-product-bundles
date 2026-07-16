@@ -14,7 +14,7 @@ describe("bundle product description", () => {
 
     expect(html).toContain("<strong>Category:</strong> Visibility");
     expect(html).toContain("Your Bundle is Unlisted");
-    expect(html).toContain("Wolfpack Product Bundles");
+    expect(html).toContain("Shopify Admin");
     expect(html).not.toContain("Merchant description");
   });
 

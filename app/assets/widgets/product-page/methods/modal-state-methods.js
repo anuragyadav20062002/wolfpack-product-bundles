@@ -12,9 +12,7 @@ export function formatCascadeStepLimitToast(limitText, required) {
   return `Add ${qualifier} ${formattedRequired} products on this step`;
 }
 
-export function formatProductPageStepValidationToast(step = {}) {
-  if (step.conditionType !== 'quantity') return '';
-
+export function formatProductPageStepValidationToast(step = {}, resolveText = null) {
   const required = Number(step.conditionValue);
   if (!Number.isFinite(required) || required <= 0) return '';
 
@@ -26,7 +24,36 @@ export function formatProductPageStepValidationToast(step = {}) {
   const qualifier = qualifierByOperator[step.conditionOperator];
   if (!qualifier) return '';
 
-  return `Add ${qualifier} ${String(required).padStart(2, '0')} products on this step`;
+  const operatorKeyByOperator = {
+    equal_to: 'EqualTo',
+    greater_than_or_equal_to: 'GreaterThanOrEqualTo',
+    less_than_or_equal_to: 'LessThanOrEqualTo',
+  };
+  const operatorKey = operatorKeyByOperator[step.conditionOperator];
+
+  if (step.conditionType === 'quantity') {
+    const formattedRequired = String(required).padStart(2, '0');
+    const fallback = `Add ${qualifier} ${formattedRequired} products on this step`;
+    const template = typeof resolveText === 'function'
+      ? resolveText(`conditionQuantity${operatorKey}`, fallback)
+      : fallback;
+    return String(template)
+      .replace(/\{\{\s*conditionQuantity\s*\}\}/g, formattedRequired)
+      .replace(/\{conditionQuantity\}/g, formattedRequired);
+  }
+
+  if (step.conditionType === 'amount') {
+    const formattedRequired = String(required);
+    const fallback = `Add products worth ${qualifier === 'at least' ? 'at least ' : qualifier === 'at most' ? 'maximum of ' : ''}${formattedRequired} on this step`;
+    const template = typeof resolveText === 'function'
+      ? resolveText(`conditionAmount${operatorKey}`, fallback)
+      : fallback;
+    return String(template)
+      .replace(/\{\{\s*conditionAmount\s*\}\}/g, formattedRequired)
+      .replace(/\{conditionAmount\}/g, formattedRequired);
+  }
+
+  return '';
 }
 
 export function getProductPageModalValidationToastOptions() {
@@ -53,6 +80,7 @@ _isElementVisibleForFocus(element) {
   if (!element || typeof element !== 'object') return false;
   if (element.disabled === true) return false;
   if (element.getAttribute && element.getAttribute('aria-hidden') === 'true') return false;
+  if (typeof element.getClientRects === 'function' && element.getClientRects().length === 0) return false;
 
   const modal = this.elements?.modal;
   if (modal && typeof modal.contains === 'function' && !modal.contains(element)) return false;
@@ -88,16 +116,35 @@ _captureActiveElementBeforeModalOpen() {
   const activeElement = globalThis.document?.activeElement;
   if (activeElement && typeof activeElement.focus === 'function') {
     this._modalOriginFocusElement = activeElement;
+    this._modalOriginFocusKey = {
+      stepIndex: activeElement.dataset?.stepIndex,
+      cardIndex: activeElement.dataset?.cardIndex,
+      variantId: activeElement.dataset?.variantId,
+    };
   } else {
     this._modalOriginFocusElement = null;
+    this._modalOriginFocusKey = null;
   }
 },
 
 _restoreActiveElementAfterModalClose() {
   const previousFocus = this._modalOriginFocusElement;
+  const previousFocusKey = this._modalOriginFocusKey;
   this._modalOriginFocusElement = null;
-  if (previousFocus && typeof previousFocus.focus === 'function') {
-    previousFocus.focus();
+  this._modalOriginFocusKey = null;
+
+  let nextFocus = previousFocus;
+  if (previousFocus?.isConnected === false && previousFocusKey?.stepIndex !== undefined) {
+    const candidates = this.elements?.stepsContainer?.querySelectorAll?.('[data-step-index]') || [];
+    nextFocus = [...candidates].find((candidate) => (
+      candidate.dataset?.stepIndex === previousFocusKey.stepIndex
+      && (previousFocusKey.cardIndex === undefined || candidate.dataset?.cardIndex === previousFocusKey.cardIndex)
+      && (previousFocusKey.variantId === undefined || candidate.dataset?.variantId === previousFocusKey.variantId)
+    ));
+  }
+
+  if (nextFocus && typeof nextFocus.focus === 'function') {
+    nextFocus.focus();
   }
 },
 
@@ -179,12 +226,12 @@ closeModal() {
   if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
   document.body.style.overflow = '';
   this.setBottomSheetVisibility(false);
-  this._restoreActiveElementAfterModalClose();
 
   // Update main UI
   this.renderSteps();
   this.updateAddToCartButton();
   this.updateFooterMessaging();
+  this._restoreActiveElementAfterModalClose();
 },
 
 validateStepCondition(stepIndex, productId, newQuantity) {

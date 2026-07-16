@@ -72,15 +72,22 @@ function cloneConditionFields(conditions, fallbackCondition, fallbackStep) {
 }
 
 export function ppbExpandSingleStepCategoriesAsSteps(bundle) {
-  if (!bundle?.useSingleStepCategoriesAsBundleSteps) return bundle;
-  if (!Array.isArray(bundle.steps) || bundle.steps.length !== 1) return bundle;
+  if (!Array.isArray(bundle?.steps)) return bundle;
 
-  const [step] = bundle.steps;
+  const enabledSteps = bundle.steps.filter((step) => step?.enabled !== false);
+  const normalizedBundle = enabledSteps.length === bundle.steps.length
+    ? bundle
+    : { ...bundle, steps: enabledSteps };
+
+  if (!bundle.useSingleStepCategoriesAsBundleSteps) return normalizedBundle;
+  if (enabledSteps.length !== 1) return normalizedBundle;
+
+  const [step] = enabledSteps;
   const categories = Array.isArray(step?.categories) ? step.categories : [];
-  if (categories.length <= 1 || step?.isDefault || step?.isFreeGift) return bundle;
+  if (categories.length <= 1 || step?.isDefault || step?.isFreeGift) return normalizedBundle;
 
   return {
-    ...bundle,
+    ...normalizedBundle,
     steps: categories.map((category, categoryIndex) => {
       const categoryLabel = category?.pageTitle
         || category?.title

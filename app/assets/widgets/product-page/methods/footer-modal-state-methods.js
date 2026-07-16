@@ -1,6 +1,10 @@
 import { CurrencyManager, PricingCalculator, TemplateManager, ToastManager } from '../../../bundle-widget-components.js';
 import { getDiscountProgressData } from '../../shared/engine/bundle-selectors.js';
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
+import {
+  areRequiredProductPageStepsValid,
+  getLastRequiredProductPageStepIndex,
+} from './step-validation.js';
 
 function resolveDiscountProgressMode(displayOptions = {}) {
   const type = String(displayOptions?.type || '').toLowerCase().trim();
@@ -194,6 +198,7 @@ renderFooter() {
     targetValue: conditionTarget,
     message,
   });
+  progressData.milestones = milestones;
   const progressMarkup = renderDiscountProgress(progressData, {
     className: `bundle-footer-messaging bw-ppb-discount-progress${met ? ' bw-ppb-discount-progress--met' : ''}`,
     messageClassName: 'bw-ppb-discount-progress__message',
@@ -206,7 +211,6 @@ renderFooter() {
     milestoneSubtitleClassName: 'bw-discount-progress__milestone-subtitle',
     renderInlineSubtitles: false,
     renderSubtitleList: false,
-    milestones,
     mode: progressMode === 'simple' ? 'bar' : 'stepped',
   });
   const modeClassName = progressMode === 'simple'
@@ -341,15 +345,15 @@ updateAddToCartButton() {
 
   const button = this.elements.addToCartButton;
   const usesCascadeStepFlow = this._usesCascadeStepFlow?.() === true;
+  const lastRequiredStepIndex = getLastRequiredProductPageStepIndex(this.selectedBundle?.steps);
   const isIntermediateCascadeStep = usesCascadeStepFlow
-    && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+    && this.currentStepIndex < lastRequiredStepIndex;
   const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
 
   // Check if all required steps are complete (free gift and default steps are not required)
-  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
-    if (step.isFreeGift || step.isDefault) return true;
-    return this.validateStep(index);
-  }) : true;
+  const allStepsValid = isConditionValidationEnabled
+    ? areRequiredProductPageStepsValid(this.selectedBundle.steps, this.validateStep.bind(this))
+    : true;
 
   const boxSelectionState = this.validateProductPageBoxSelectionCheckout
     ? this.validateProductPageBoxSelectionCheckout.call(this)

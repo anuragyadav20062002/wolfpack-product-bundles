@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
-const WIDGET_VERSION = '5.0.172';
+const WIDGET_VERSION = '5.0.189';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
@@ -72,6 +72,7 @@ const PRODUCT_PAGE_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/cascade-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/cognive-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/methods/step-validation.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/methods/config-lifecycle-methods.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/methods/default-product-methods.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/methods/dom-methods.js'),

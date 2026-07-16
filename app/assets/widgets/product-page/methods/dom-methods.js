@@ -158,6 +158,39 @@ _hideNativeProductPrice() {
   }
 },
 
+_hideNativeDynamicCheckoutControls() {
+  try {
+    if (!this.container || typeof document === 'undefined') return;
+
+    const productForm = this._findNativeProductForm();
+    if (!productForm) return;
+
+    const root = this._getNativeProductInfoRoot(productForm);
+    if (!root) return;
+
+    const selectors = [
+      '.shopify-payment-button',
+      '.shopify-payment-button__button',
+      'shopify-accelerated-checkout',
+      'shopify-buy-it-now-button',
+    ];
+
+    const controls = selectors.flatMap(selector => Array.from(root.querySelectorAll(selector)));
+    const uniqueControls = Array.from(new Set(controls));
+
+    uniqueControls
+      .filter(element => !this.container.contains(element))
+      .filter(element => !element.closest('#bundle-builder-modal'))
+      .forEach(element => {
+        element.classList.add('wpb-native-dynamic-checkout--hidden');
+        element.setAttribute('data-wpb-native-dynamic-checkout-hidden', 'true');
+        element.style.setProperty('display', 'none', 'important');
+      });
+  } catch (_error) {
+    // Native dynamic-checkout hiding is best-effort; PPB renders its own non-mutating visual surface.
+  }
+},
+
 setupDOMElements() {
   const modalEl = this.ensureBottomSheet();
 

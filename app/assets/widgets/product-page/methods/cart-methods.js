@@ -1,6 +1,7 @@
 import { buildCartLineSourceProperties } from '../../shared/engine/cart-lines.js';
 import { buildProductPageCartFormData } from '../../shared/engine/cart-submit.js';
 import { ToastManager, CurrencyManager, PricingCalculator } from '../../../bundle-widget-components.js';
+import { areRequiredProductPageStepsValid } from './step-validation.js';
 
 function getProductPageSelectedQuantityTotal(selectedProducts = []) {
   return selectedProducts.reduce((sum, stepSelections) => {
@@ -20,6 +21,17 @@ function getProductPageActiveBoxSelectionRule(boxSelection) {
     || null;
 }
 
+function resolveRuntimeTokenProductId(product = {}) {
+  return product.parentProductId
+    || product.productId
+    || product.productGraphqlId
+    || product.graphqlId
+    || product.admin_graphql_api_id
+    || product.gid
+    || product.id
+    || null;
+}
+
 export const ProductPageCartMethods = {
   async addToCart() {
     try {
@@ -35,10 +47,9 @@ export const ProductPageCartMethods = {
       }
 
       const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
-      const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
-        if (step.isFreeGift || step.isDefault) return true;
-        return this.validateStep(index);
-      }) : true;
+      const allStepsValid = isConditionValidationEnabled
+        ? areRequiredProductPageStepsValid(this.selectedBundle.steps, this.validateStep.bind(this))
+        : true;
 
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
@@ -213,7 +224,8 @@ export const ProductPageCartMethods = {
         const cartItem = {
           id: parseInt(this.extractId(variantId)),
           quantity,
-          properties
+          properties,
+          _wpbProductId: resolveRuntimeTokenProductId(product)
         };
         const sellingPlanAllocationId = this.getSelectedSellingPlanAllocationId(product, variantId);
         if (sellingPlanAllocationId) {
@@ -275,6 +287,7 @@ export const ProductPageCartMethods = {
       const isAddon = stepType === 'addon' || (typeof stepType === 'string' && stepType.startsWith('addon:'));
       const line = {
         variantId: item.id,
+        productId: item._wpbProductId,
         quantity: item.quantity,
       };
       if (isAddon) {

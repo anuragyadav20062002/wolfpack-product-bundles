@@ -39,7 +39,12 @@ function createFooterContext(overrides: Record<string, unknown> = {}) {
     selectedProducts: [{ v1: 1 }],
     stepProductData: [[{ variantId: 'v1', price: 1200 }]],
     selectedBundle: {
-      steps: [{ conditionType: 'quantity', conditionOperator: 'greater_than_or_equal_to', conditionValue: 2 }],
+      steps: [{
+        conditionType: 'quantity',
+        conditionOperator: 'greater_than_or_equal_to',
+        conditionValue: 2,
+        products: [{ id: 'p1' }],
+      }],
     },
     elements: {
       addToCartButton: createButton(),
@@ -104,7 +109,7 @@ describe('PPB validation control disables cart gating when disabled', () => {
         _getProductPageControls: () => ({}),
         selectedBundle: {
           id: 'bundle-1',
-          steps: [{}],
+          steps: [{ products: [{ id: 'p1' }] }],
           pricing: { enabled: false },
         },
         config: {},
@@ -167,7 +172,7 @@ describe('PPB validation control disables cart gating when disabled', () => {
         _getProductPageControls: () => ({}),
         selectedBundle: {
           id: 'bundle-1',
-          steps: [{}],
+          steps: [{ products: [{ id: 'p1' }] }],
           pricing: { enabled: false },
         },
         config: {},
@@ -187,6 +192,69 @@ describe('PPB validation control disables cart gating when disabled', () => {
 
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(toastSpy).toHaveBeenCalledWith('Please complete all bundle steps before adding to cart.');
+    } finally {
+      toastSpy.mockRestore();
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('continues to /cart/add when a later enabled step has no configured products', async () => {
+    const toastSpy = jest.spyOn(ToastManager, 'show').mockImplementation(() => {});
+    const fetchSpy = jest.spyOn(global, 'fetch' as any).mockResolvedValue({
+      ok: true,
+      text: async () => '{}',
+    } as any);
+
+    try {
+      const context = {
+        ...ProductPageCartMethods,
+        selectedProducts: [{ v1: 1 }, {}],
+        stepProductData: [
+          [{ variantId: 'v1', price: 1200, available: true }],
+          [],
+        ],
+        selectedBundle: {
+          id: 'bundle-1',
+          steps: [
+            { products: [{ id: 'p1' }] },
+            { id: 'empty-step', enabled: true, products: [], categories: [] },
+          ],
+          pricing: { enabled: false },
+        },
+        config: {},
+        validateStep: (index: number) => index === 0,
+        _isConditionValidationEnabled: () => true,
+        validateProductPageBoxSelectionCheckout: () => ({ valid: true, totalQuantity: 1, targetQuantity: 1, difference: 0 }),
+        buildCartItems: () => [{ id: 101, quantity: 1, properties: {} }],
+        getDiscountInfoWithSelectedAddonDiscount(value: Record<string, unknown>) {
+          return value;
+        },
+        requestCartTransformRuntimeToken: jest.fn().mockResolvedValue('runtime-token'),
+        buildProductPageCartFormData() {
+          return {
+            formData: new FormData(),
+            bundleDetailsKey: 'MIX-1_K1K',
+            sourceProperties: {},
+          };
+        },
+        syncBundleDetailsCartMetafield: jest.fn(),
+        resolveProductPageOfferId: () => 'MIX-1',
+        generateBundleSessionKey: () => 'K1K',
+        hideLoadingOverlay: jest.fn(),
+        showLoadingOverlay: jest.fn(),
+        updateAddToCartButton: jest.fn(),
+        _handlePostAddToCartAction: jest.fn(),
+        _getProductPageControls: () => ({}),
+        elements: {
+          addToCartButton: { disabled: false, textContent: '' },
+        },
+        _resolveText: (_key: string, fallback: string) => fallback,
+      } as any;
+
+      await ProductPageCartMethods.addToCart.call(context);
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(toastSpy).not.toHaveBeenCalledWith('Please complete all bundle steps before adding to cart.');
     } finally {
       toastSpy.mockRestore();
       fetchSpy.mockRestore();
@@ -283,7 +351,13 @@ describe('PPB validation control affects auto-add-after-last-step behavior', () 
       ...ProductPageSelectionMethods,
       ...ProductPageWidgetMiscMethods,
       selectedBundle: {
-        steps: [{ conditionType: 'quantity', isDefault: false, isFreeGift: false, conditionValue: 1 }],
+        steps: [{
+          conditionType: 'quantity',
+          isDefault: false,
+          isFreeGift: false,
+          conditionValue: 1,
+          products: [{ id: 'p1' }],
+        }],
       },
       selectedProducts: [{ v1: 0 }],
       _autoAddingFromControls: false,
@@ -308,7 +382,13 @@ describe('PPB validation control affects auto-add-after-last-step behavior', () 
       ...ProductPageSelectionMethods,
       ...ProductPageWidgetMiscMethods,
       selectedBundle: {
-        steps: [{ conditionType: 'quantity', isDefault: false, isFreeGift: false, conditionValue: 1 }],
+        steps: [{
+          conditionType: 'quantity',
+          isDefault: false,
+          isFreeGift: false,
+          conditionValue: 1,
+          products: [{ id: 'p1' }],
+        }],
       },
       selectedProducts: [{ v1: 0 }],
       _autoAddingFromControls: false,

@@ -285,7 +285,7 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     });
   });
 
-  it("auto-activates when a step has StepProduct", async () => {
+  it("preserves draft status when a step has StepProduct", async () => {
     const stepsData = [
       makeStep({
         StepProduct: [
@@ -301,12 +301,12 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
     expect(getDb().bundle.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ status: "active" }),
+        data: expect.objectContaining({ status: "draft" }),
       })
     );
   });
 
-  it("auto-activates when a StepCategory contains products", async () => {
+  it("preserves draft status when a StepCategory contains products", async () => {
     const stepsData = [
       makeStep({
         StepCategory: [
@@ -327,12 +327,26 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
     expect(getDb().bundle.update).toHaveBeenCalledWith(
       expect.objectContaining({
+        data: expect.objectContaining({ status: "draft" }),
+      })
+    );
+  });
+
+  it("preserves active status on save", async () => {
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ bundleStatus: "active" })
+    );
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
         data: expect.objectContaining({ status: "active" }),
       })
     );
   });
 
-  it("does NOT auto-activate when StepCategory exists but is empty", async () => {
+  it("preserves draft status when StepCategory exists but is empty", async () => {
     const stepsData = [
       makeStep({
         StepCategory: [{ name: "Empty", sortOrder: 0, products: [], collections: [] }],

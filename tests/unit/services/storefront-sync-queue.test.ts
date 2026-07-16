@@ -56,13 +56,6 @@ jest.mock("../../../app/services/theme-colors.server", () => ({
 }));
 
 jest.mock(
-  "../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/product-status.server",
-  () => ({
-    syncFpbProductStatus: jest.fn().mockResolvedValue(undefined),
-  }),
-);
-
-jest.mock(
   "../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/shared.server",
   () => ({
     buildFullPageBundleMetafieldConfig: jest.fn().mockReturnValue({}),
@@ -73,15 +66,6 @@ jest.mock(
   "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/runtime-config.server",
   () => ({
     buildSyncBundleConfiguration: jest.fn().mockReturnValue({}),
-  }),
-);
-
-jest.mock(
-  "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/product-sync.server",
-  () => ({
-    syncBundleProductToShopify: jest.fn().mockResolvedValue({
-      handle: "daily-essentials",
-    }),
   }),
 );
 

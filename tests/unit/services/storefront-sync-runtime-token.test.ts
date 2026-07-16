@@ -57,10 +57,6 @@ jest.mock("../../../app/services/theme-colors.server", () => ({
   syncThemeColors: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/product-status.server", () => ({
-  syncFpbProductStatus: jest.fn(),
-}));
-
 jest.mock("../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/shared.server", () => ({
   buildFullPageBundleMetafieldConfig: jest.fn(),
 }));
@@ -70,10 +66,6 @@ jest.mock("../../../app/routes/app/app.bundles.product-page-bundle.configure.$bu
     steps: [],
     pricing: null,
   }),
-}));
-
-jest.mock("../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/product-sync.server", () => ({
-  syncBundleProductToShopify: jest.fn().mockResolvedValue({ handle: "bundle-handle" }),
 }));
 
 const mockDb = db as any;

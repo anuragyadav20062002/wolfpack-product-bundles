@@ -56,7 +56,6 @@ export interface BundleUiConfig {
   status: string;
   bundleType: string;
   shopifyProductId: string | null;
-  fullPagePageHandle?: string | null;
   bundleDesignTemplate?: string | null;
   bundleDesignPresetId?: string | null;
   bundleDesignTemplateData?: { templateId: string } | null;

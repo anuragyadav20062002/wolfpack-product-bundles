@@ -2,21 +2,15 @@ export type DashboardPreviewInput = {
   bundleType: "full_page" | "product_page";
   bundleId: string;
   shopifyProductHandle: string | null;
-  shopifyPageHandle: string | null;
   shop: string;
-  /**
-   * Optional. When true AND bundleStatus is "active" | "unlisted" AND a
-   * shopifyPageHandle is set, FPB Preview opens the Shopify Page URL
-   * instead of the app-proxy URL. Defaults to false (preserves the
-   * helper's original behavior).
-   */
+  /** Optional app-embed state retained for the preview gate caller. */
   appEmbedEnabled?: boolean;
   bundleStatus?: "active" | "draft" | "unlisted" | "archived" | string;
 };
 
 export type DashboardPreviewAction =
   | { kind: "open_url"; url: string }
-  | { kind: "create_preview_page" }
+  | { kind: "create_fpb_preview" }
   | { kind: "error"; toast: string };
 
 const PPB_MISSING_HANDLE_TOAST =
@@ -25,22 +19,17 @@ const PPB_MISSING_HANDLE_TOAST =
 export function decideDashboardPreviewAction(
   input: DashboardPreviewInput,
 ): DashboardPreviewAction {
-  const shop = normalizeShop(input.shop);
   if (input.bundleType === "full_page") {
-    if (input.shopifyPageHandle) {
-      return {
-        kind: "open_url",
-        url: `https://${shop}/pages/${input.shopifyPageHandle}`,
-      };
+    if (input.bundleId) {
+      return { kind: "create_fpb_preview" };
     }
-
-    return { kind: "create_preview_page" };
   }
 
   if (!input.shopifyProductHandle) {
     return { kind: "error", toast: PPB_MISSING_HANDLE_TOAST };
   }
 
+  const shop = normalizeShop(input.shop);
   return {
     kind: "open_url",
     url: `https://${shop}/products/${input.shopifyProductHandle}`,

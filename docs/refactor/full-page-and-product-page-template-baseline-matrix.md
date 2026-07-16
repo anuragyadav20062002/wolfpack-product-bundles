@@ -1,4 +1,31 @@
-# Bundle Widget Refactor Baseline Template Matrix
+---
+schema_version: 1
+id: baseline-template-matrix
+title: Full Page and Product Page Bundle Template Baseline Matrix
+type: verification-matrix
+status: historical
+summary: Records the pre-refactor desktop and mobile baseline for all FPB and PPB storefront designs.
+last_audited: 2026-07-14
+owners:
+  - Wolfpack Product Bundles
+domains:
+  - storefront
+systems:
+  - bundle-widgets
+source_paths:
+  - app/assets/bundle-widget-full-page.js
+  - app/assets/bundle-widget-product-page.js
+related_docs:
+  - docs/refactor/full-page-and-product-page-template-verification-matrix.md
+tags:
+  - baseline
+  - templates
+keywords:
+  - Full Page Bundle
+  - Product Page Bundle
+---
+
+# Full Page and Product Page Bundle Template Baseline Matrix
 
 Captured: 2026-06-11
 

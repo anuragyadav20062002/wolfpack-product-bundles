@@ -18,6 +18,12 @@ export function resolveProductPageCardButtonText({
     .replace(/\{\{\s*quantity\s*\}\}/g, String(currentQuantity));
 }
 
+export function resolveProductPageInlineAddText(resolveText) {
+  if (typeof resolveText !== 'function') return 'Add +';
+  const modalFallback = resolveText('productCardAddButton', 'Add +');
+  return resolveText('productCardInlineAddButton', modalFallback || 'Add +') || 'Add +';
+}
+
 export function shouldDisableProductPageVariantOption(variant, trackInventoryOnAddToCart = false) {
   if (variant?.available !== true) {
     return true;
@@ -45,37 +51,6 @@ export function shouldDisplayVariantsAsIndividualForModalCategory(
 
   return step?.displayVariantsAsIndividualProducts === true
     || step?.displayVariantsAsIndividual === true;
-}
-
-const MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
-
-function resolveProductCardDescription(product = {}) {
-  const candidate =
-    (typeof product.description === 'string' && product.description)
-    || (typeof product.descriptionHtml === 'string' && product.descriptionHtml)
-    || '';
-
-  return String(candidate);
-}
-
-function renderModalProductCardDescription(product, showSeeMore) {
-  if (!showSeeMore) return '';
-
-  const description = resolveProductCardDescription(product);
-  if (!description) return '';
-
-  const showToggle = description.length > MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
-  const shortDescription = showToggle
-    ? `${description.slice(0, MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
-    : description;
-
-  return `
-    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
-      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
-      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
-      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
-    </div>
-  `;
 }
 
 export function getModalSoleVariantDisplayTitle(product = {}) {
@@ -349,11 +324,6 @@ renderModalProducts(stepIndex, productsToRender = null) {
   }
 
   const showQuantitySelector = widgetConfig.showQuantitySelectorOnCard;
-  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
-  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
-  const hoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
-  const seeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
-
   // Free gift product cards use a different border (gray instead of gold)
   const freeGiftCardClass = isFreeGiftStep ? ' bw-product-card--free-gift' : '';
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
@@ -380,14 +350,8 @@ renderModalProducts(stepIndex, productsToRender = null) {
         : lowStock
           ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
           : '';
-      const descriptionMarkup = renderModalProductCardDescription(product, showSeeMoreLink);
-
       return `
-      <div class="product-card${freeGiftCardClass} ${hoverClass} ${seeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 ? `
-          <div class="selected-overlay">✓</div>
-        ` : ''}
-
+      <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}
@@ -421,8 +385,6 @@ renderModalProducts(stepIndex, productsToRender = null) {
             </div>
           ` : ''}
 
-          ${descriptionMarkup}
-
           <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
             ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add to Cart' })}
           </button>
@@ -448,10 +410,12 @@ renderVariantSelector(product) {
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : false;
+  const variantLabel = this._resolveText?.('productVariantLabel', 'Select variant') || 'Select variant';
 
   return `
     <div class="variant-selector-wrapper">
-      <select class="variant-selector" data-base-product-id="${product.id}">
+      <label class="visually-hidden" for="variant-selector-${product.id}">${ComponentGenerator.escapeHtml(variantLabel)}</label>
+      <select id="variant-selector-${product.id}" class="variant-selector" data-base-product-id="${product.id}" aria-label="${ComponentGenerator.escapeHtml(variantLabel)}">
         ${product.variants.map(v => {
           const isHardOOS = shouldDisableProductPageVariantOption(v, trackInventoryOnAddToCart);
           const label = isHardOOS ? `${v.title} — out of stock` : v.title;
@@ -509,8 +473,6 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
   // Get step data for modal
   const step = this.selectedBundle.steps[stepIndex];
-  const widgetConfig = this.config || {};
-
   // Helper to find product by ID
   const findProduct = (productId) => {
     return this.findProductBySelectionKey(this.stepProductData[stepIndex] || [], productId);
@@ -557,58 +519,6 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
     return null;
   };
-
-  const setProductCardDescriptionExpanded = (productCard, expandedValue) => {
-    if (!productCard) return;
-
-    const root = productCard.querySelector('[data-bw-card-description="true"]');
-    if (!root) return;
-
-    const shortDescription = root.querySelector('.bw-product-card__description-short');
-    const fullDescription = root.querySelector('.bw-product-card__description-full');
-    const button = root.querySelector('.bw-product-card__see-more');
-    if (!shortDescription || !fullDescription || !button) return;
-
-    const isExpanded = typeof expandedValue === 'boolean'
-      ? expandedValue
-      : root.dataset.bwCardDescriptionExpanded === 'false';
-
-    root.dataset.bwCardDescriptionExpanded = isExpanded ? 'true' : 'false';
-    shortDescription.classList.toggle('hidden', isExpanded);
-    fullDescription.classList.toggle('hidden', !isExpanded);
-    button.textContent = isExpanded ? 'See less' : 'See more';
-    button.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
-  };
-
-  if (widgetConfig.displaySeeMoreLink === true) {
-    // Description toggle (See more / See less)
-    newProductGrid.addEventListener('click', (e) => {
-      const eventTarget = getEventTarget(e.target);
-      if (!eventTarget) return;
-
-      const seeMoreButton = findClosest(eventTarget, '.bw-product-card__see-more');
-      if (!seeMoreButton) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      const productCard = findClosest(seeMoreButton, '.product-card');
-      setProductCardDescriptionExpanded(productCard);
-    });
-  }
-
-  // Hover expansion for controls that enable description-on-hover behavior.
-  if (widgetConfig.expandProductCardOnHover === true) {
-    newProductGrid.querySelectorAll('.product-card.bw-product-card--hover-expand').forEach(card => {
-      card.classList.remove('bw-product-card--hover-expanded');
-      card.addEventListener('mouseenter', () => {
-        card.classList.add('bw-product-card--hover-expanded');
-      });
-      card.addEventListener('mouseleave', () => {
-        card.classList.remove('bw-product-card--hover-expanded');
-      });
-    });
-  }
 
   // Quantity button handlers
   newProductGrid.addEventListener('click', (e) => {

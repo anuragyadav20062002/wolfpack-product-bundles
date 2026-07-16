@@ -1,8 +1,29 @@
 ---
+schema_version: 1
+id: widget-architecture
 title: Widget Architecture
 type: architecture
-audited: 2026-06-13
-sources: app/assets/bundle-widget-full-page.js, app/assets/bundle-widget-product-page.js, CLAUDE.md
+status: authoritative
+summary: FPB and PPB bootstrap, hydration, extension-asset, and widget runtime architecture.
+last_audited: 2026-07-14
+owners:
+  - engineering
+domains:
+  - storefront
+systems:
+  - widget-runtime
+source_paths:
+  - app/assets/bundle-widget-full-page.js
+  - app/assets/bundle-widget-product-page.js
+  - app/routes/root/wpb.$bundleId.tsx
+related_docs:
+  - Architecture/FPB Host Evaluation.md
+tags:
+  - architecture
+  - widgets
+keywords:
+  - data-bundle-config
+  - asset_url
 ---
 
 # Widget Architecture
@@ -30,6 +51,8 @@ The shared Bundle Product Modal is intentionally a single-image product details 
 
 PPB Product List (`PDP_INPAGE + CASCADE`) owns its multi-step navigation in the Product Page layout, footer, and validation method modules. A multi-step Product List renders only `currentStepIndex`; intermediate primary actions navigate Next after current-step validation, the final step uses Add Bundle to Cart, and Back preserves selections across steps. Single-step Product List and the other PPB templates keep their existing rendering paths. Product List exact-rule over-selection is blocked before state mutation so the current step and selected-items drawer remain stable.
 
+Before PPB category-as-step expansion, the runtime removes steps whose persisted `enabled` value is `false`. This visibility normalization also applies when category expansion is off, so a disabled Admin step can never render or prevent a single enabled multi-category step from expanding into navigable category steps.
+
 Product Page inventory normalization preserves `sourceVariantCount` after unavailable variants are filtered. Product List uses that metadata only when a grouped product originally had multiple variants but now has one sellable variant: the shared row shows the surviving variant title as static identity while keeping the selector absent. Fully unavailable products and unavailable options remain filtered.
 
 ---
@@ -38,10 +61,10 @@ Product Page inventory normalization preserves `sourceVariantCount` after unavai
 
 - Theme Editor now exposes one body app embed: `bundle-app-embed` (`Wolfpack Bundle`). It is the activation/status surface and hydrates app-created full-page bundle page markers only when a dedicated full-page app block has not already rendered a widget container. Those hidden page-body markers must also carry only the compact bootstrap pointer, never a formatted full bundle payload.
 - Shopify stores enabled app embed blocks in `config/settings_data.json` under `current.blocks`. Per Shopify's Theme app extension configuration docs, an app embed appears there only after first enable; if the merchant disables it later, the block remains and has `disabled: true`. App embed status detection must therefore read the active theme settings file, support `OnlineStoreThemeFileBodyText.content`, `OnlineStoreThemeFileBodyBase64.contentBase64`, and `OnlineStoreThemeFileBodyUrl.url`, tolerate Shopify's generated comment header before parsing the settings JSON, match the block `type` shape `shopify://apps/{app-or-extension-handle}/blocks/{block-handle}/{unique-id}`, and treat `disabled: true` as inactive. The configured theme extension handle is `bundle-builder`; also include the known deployed app handles (`wolfpack-product-bundles-4`, `wolfpack-product-bundles-sit`), `SHOPIFY_APP_HANDLE` when set, and Shopify Admin `currentAppInstallation.app.handle` so the checker remains aligned with the installed app identity. Do not use client/API keys for status detection. If `settings_data.json` is missing, malformed after comment normalization, or truncated, fail closed so merchants see the enable banner instead of a false Active state.
-- The embedded Admin enable flow opens Theme Editor in a new tab and hides the configure warning plus updates Bundle Visibility status optimistically after the merchant clicks `Enable here`. Configure page-load status comes from the server loader's parallel Shopify theme settings read; do not add a client-side status request on render. Preview actions must run a live app embed status check against the active theme settings only when the configure state currently believes the app embed is enabled. That client revalidation posts to `/app/app-embed-status`, not the configure document action, so HTML document responses are not interpreted as a disabled embed. If the configure state is already disabled, preview blocks immediately and shows/shakes the warning without revalidating; if the optimistic enabled state later fails the live check, the warning banner and Bundle Visibility status are shown as disabled again.
+- The embedded Admin enable flow opens Theme Editor in a new tab and hides the configure warning plus updates Bundle Visibility status optimistically after the merchant clicks `Enable here`. Configure page-load status comes from the server loader's parallel Shopify theme settings read. Every FPB preview action requests a new stateless signed URL; the token is required for drafts and harmless for public statuses.
 - Product-page builder placement uses the `bundle-product-page` app block.
 - Product-page upsell placement uses `bundle-upsell-block` or `bundle-upsell-button`.
-- Full-page bundle public links use Shopify page URLs (`/pages/{handle}`) so the store theme and theme-extension assets own rendering. Legacy signed app-proxy links redirect to the linked Shopify page when possible.
+- Full-page bundle public links use the signed app-proxy document URL (`/apps/product-bundles/wpb/{bundleId}`). Shopify wraps `application/liquid` in the active theme layout and the app embed loads extension assets through `asset_url`.
 - Storefront JS/CSS must be loaded from Shopify theme-extension assets with Liquid `asset_url`. App proxy routes are only for API/data responses, not widget asset hosting.
 
 ## FPB Load Strategy
@@ -59,11 +82,11 @@ Widget currently loads in API-first mode for full-page bundles:
 
 `data-bundle-config` is not used to transport full bundle payload for first paint in this path. A legacy full payload marker is not required and is not relied upon for initialization. This applies to both the section app block and the hidden `data-wpb-full-page-bundle` marker written by `app/services/widget-installation/widget-full-page-bundle.server.ts`.
 
-### Legacy App Proxy Redirect — Public FPB Route
+### App Proxy Document — Public FPB Route
 
-The legacy public FPB route is `GET /apps/product-bundles/wpb/{bundleId}`. Shopify forwards it to Remix as `/wpb/{bundleId}` and app-proxy HMAC verification is required before lookup.
+The public FPB route is `GET /apps/product-bundles/wpb/{bundleId}`. Shopify forwards it to Remix as `/wpb/{bundleId}` and app-proxy HMAC verification is required before lookup.
 
-This route must not render a standalone storefront shell or load `/apps/product-bundles/assets/...` JS/CSS. When the bundle has a linked `shopifyPageHandle`, it redirects to the Shopify page URL so the theme app block loads JS/CSS through Shopify `asset_url`. If no page is linked, it returns a setup response instead of a proxy asset shell.
+The route returns an escaped full `formatBundleForWidget()` payload in the existing marker, marks it with `data-bundle-config-source="app_proxy"`, and responds with `Content-Type: application/liquid` and `Cache-Control: no-store`. The widget treats only this source-marked, bundle-ID-matched full payload as authoritative and renders it without requesting bundle JSON. Unmarked legacy Page payloads and compact theme markers continue through API hydration. Active and unlisted bundles render publicly; drafts require a 15-minute shop-and-bundle-bound `wpb_preview` token. The route never emits `/apps/product-bundles/assets/...` URLs.
 
 ### API Fallback
 If metafield cache is absent/malformed → `GET /apps/product-bundles/api/bundle/{id}.json`
