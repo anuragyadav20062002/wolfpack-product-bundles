@@ -7,6 +7,7 @@ import { SETTINGS_CONTROLS_BUNDLE_TYPES, buildSettingsControlsRuntime } from "..
 import { SETTINGS_DESIGN_BUNDLE_TYPES, buildSettingsDesignRuntime } from "../../lib/settings-design-runtime";
 import { SETTINGS_LANGUAGE_BUNDLE_TYPES, buildSettingsLanguageRuntime } from "../../lib/settings-language-runtime";
 import { CartTransformService } from "../../services/cart-transform-service.server";
+import { buildFpbStorefrontUrl } from "../../lib/fpb-storefront-url";
 import { SettingsRoute } from "./app.settings/SettingsRoute";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -22,8 +23,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       where: {
         shopId: session.shop,
         OR: [
+          { bundleType: BundleType.FULL_PAGE },
           { shopifyProductHandle: { not: null } },
-          { shopifyPageHandle: { not: null } },
         ],
       },
       orderBy: { updatedAt: "desc" },
@@ -33,7 +34,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
         name: true,
         bundleType: true,
         shopifyProductHandle: true,
-        shopifyPageHandle: true,
       },
     }),
   ]);
@@ -49,9 +49,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       name: bundle.name,
       type: bundle.bundleType === "full_page" ? "Landing Page" : "Product Page",
       viewUrl: bundle.bundleType === "full_page"
-        ? bundle.shopifyPageHandle
-          ? `https://${session.shop}/pages/${bundle.shopifyPageHandle}`
-          : null
+        ? buildFpbStorefrontUrl(session.shop, bundle.id)
         : bundle.shopifyProductHandle
           ? `https://${session.shop}/products/${bundle.shopifyProductHandle}`
           : null,

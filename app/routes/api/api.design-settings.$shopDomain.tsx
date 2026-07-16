@@ -127,7 +127,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       buttonTextColor: "#FFFFFF",
       buttonFontSize: 16,
       buttonFontWeight: 600,
-      buttonBorderRadius: 8,
+      buttonBorderRadius: 5,
       buttonHoverBgColor: "#333333",
       buttonAddToCartText: "Add to cart",
       quantitySelectorBgColor: "#000000",
@@ -138,7 +138,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       productCardWidth: 280,
       productCardHeight: 420,
       productCardSpacing: 20,
-      productCardBorderRadius: 8,
+      productCardBorderRadius: 10,
       productCardPadding: 12,
       productCardBorderWidth: 1,
       productCardBorderColor: "rgba(0,0,0,0.08)",
@@ -146,7 +146,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       productCardHoverShadow: "0 8px 24px rgba(0,0,0,0.12)",
       // Product Image (Phase 6)
       productImageHeight: 280,
-      productImageBorderRadius: 6,
+      productImageBorderRadius: 8,
       productImageBgColor: "#F8F8F8",
       // Product Modal Styling (Phase 6)
       modalBgColor: "#FFFFFF",

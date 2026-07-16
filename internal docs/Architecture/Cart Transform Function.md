@@ -1,8 +1,33 @@
 ---
+schema_version: 1
+id: cart-transform-function
 title: Cart Transform Function
 type: architecture
-audited: 2026-07-12
-source: extensions/bundle-cart-transform-rs/shopify.extension.toml; extensions/bundle-cart-transform-rs/src/merge.rs; app/services/cart-transform-runtime-token.server.ts
+status: authoritative
+summary: Runtime-token-verified Shopify Cart Transform architecture and fail-closed bundle pricing contract.
+last_audited: 2026-07-16
+owners:
+  - engineering
+domains:
+  - checkout
+systems:
+  - bundle-cart-transform-rs
+  - cart-transform-service
+source_paths:
+  - extensions/bundle-cart-transform-rs/shopify.extension.toml
+  - extensions/bundle-cart-transform-rs/src/merge.rs
+  - app/services/cart-transform-service.server.ts
+  - app/services/cart-transform-runtime-token.server.ts
+related_docs:
+  - Shopify Integration/Cart Transform API.md
+  - Features/Pricing Pipeline.md
+tags:
+  - architecture
+  - shopify-function
+keywords:
+  - blockOnFailure
+  - runtime token
+  - bundle pricing
 ---
 
 # Cart Transform Function
@@ -12,6 +37,10 @@ source: extensions/bundle-cart-transform-rs/shopify.extension.toml; extensions/b
 The cart transform function intercepts Shopify's checkout flow to merge individual product variants into logical bundle line items and apply bundle pricing. The active implementation is the Rust Shopify Function in `extensions/bundle-cart-transform-rs`, compiled to WASM.
 
 As of 2026-07-08, MERGE validation is runtime-token based. Storefront widgets POST the selected component/add-on variants to the signed app-proxy route `/apps/product-bundles/api/cart-transform-runtime-token` immediately before `/cart/add`. The route validates the selected variants against the current DB bundle config, signs a base64url payload with HMAC-SHA256, and returns `_wolfpack_bundle_runtime`. The Cart Transform and Discount Function verify that token with the same CartTransform owner metafield secret before trusting component, quantity, parent, pricing, or add-on discount data.
+
+CartTransform activation is fail-closed. `CartTransformService` creates the Shopify CartTransform with `blockOnFailure: true`, so a Function timeout, resource-limit breach, trap, or other execution failure blocks cart and checkout operations instead of accepting Shopify's unmodified component prices. The earlier activation mutation omitted this argument; Shopify therefore applied its `false` default and could fall through to ordinary pricing. Existing Rust transforms with `blockOnFailure: false` are deleted and recreated by `completeSetup()`, while already-compliant transforms are reused.
+
+The guarded deployment backfill is intentionally stronger than normal setup: apply mode deletes and recreates the CartTransform once for every selected shop, even when the existing transform is already compliant. It restores the runtime-token secret before allowing that shop's bundle synchronization to proceed. Dry-run reports the selected shop count and performs no Admin API calls.
 
 > ⚠️ The original `docs/CART_TRANSFORM_FUNCTION.md` contained multiple critical errors. This note is the authoritative reference.
 
@@ -31,13 +60,13 @@ type = "function"
 target = "cart.transform.run"
 ```
 
-### Migration Note — Target Deprecation
+### Target status
 
-`purchase.cart-transform.run` was **deprecated in the 2025-07 API release**. The current Rust extension uses:
+`purchase.cart-transform.run` was deprecated in the 2025-07 API release. The current Rust extension already uses:
 ```
 cart.transform.run
 ```
-Migrate before the deprecation sunset. The function still works on `2025-10` with the old target but will break when Shopify removes it.
+No target migration remains for the active extension.
 
 ---
 
@@ -192,3 +221,25 @@ Shopify `linesMerge` can apply only one parent `percentageDecrease`, so mixed-pr
 - Cart Transform groups component lines by the `{offerId}_{sessionKey}` base and uses `_bundleName` for the parent title
 - Shopify's cart line properties still differ per component line because the trailing item index differs
 - See [[Features/Bundle Instance Tracking]]
+
+## Cart Line Messaging Format Gotcha
+
+On 2026-07-16, the SIT PPB G26 parity replay proved that saving
+`bundleCartLineMessaging.discountDisplay.format` and syncing the CartTransform
+owner metafield is not sufficient evidence that the deployed Function applies
+alternate cart-line display formats.
+
+Verified state:
+
+- DB `DesignSettings.bundleCartLineMessaging.discountDisplay.format` was set to
+  `amount_only`, then `percentage_only`.
+- `CartTransformService.syncCartLineMessagingSettings()` returned success for
+  CartTransform `gid://shopify/CartTransform/111771907`.
+- Direct Admin GraphQL read of `$app.bundle_cart_line_messaging` on that
+  CartTransform returned `discountDisplay.format: "percentage_only"`.
+- A fresh cache-cleared storefront add still produced public cart-line
+  `You Save: "$72.40 (5%)"` instead of `"$72.40"` or `"5%"`.
+
+For future debugging, verify the rendered `/cart.js` parent line after
+metafield sync. Do not treat the owner metafield value alone as proof that the
+live deployed Cart Transform honors cart-line format selection.

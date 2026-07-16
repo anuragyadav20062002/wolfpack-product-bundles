@@ -58,4 +58,23 @@ describe('widget build shared module list', () => {
     expect(selectedRowIndex).toBeGreaterThan(productCardIndex);
     expect(selectedSlotsIndex).toBeGreaterThan(selectedRowIndex);
   });
+
+  it('inlines product-page step-validation helpers before dependent method modules', () => {
+    const script = fs.readFileSync(path.join(process.cwd(), 'scripts/build-widget-bundles.js'), 'utf8');
+    const modulesStart = script.indexOf('const PRODUCT_PAGE_MODULES = [');
+    const modulesEnd = script.indexOf('];', modulesStart);
+    const modules = script.slice(modulesStart, modulesEnd);
+
+    const validationIndex = modules.indexOf('app/assets/widgets/product-page/methods/step-validation.js');
+    const footerIndex = modules.indexOf('app/assets/widgets/product-page/methods/footer-modal-state-methods.js');
+    const widgetMiscIndex = modules.indexOf('app/assets/widgets/product-page/methods/widget-misc-methods.js');
+    const selectionIndex = modules.indexOf('app/assets/widgets/product-page/methods/selection-methods.js');
+    const cartIndex = modules.indexOf('app/assets/widgets/product-page/methods/cart-methods.js');
+
+    expect(validationIndex).toBeGreaterThanOrEqual(0);
+    expect(footerIndex).toBeGreaterThan(validationIndex);
+    expect(widgetMiscIndex).toBeGreaterThan(validationIndex);
+    expect(selectionIndex).toBeGreaterThan(validationIndex);
+    expect(cartIndex).toBeGreaterThan(validationIndex);
+  });
 });

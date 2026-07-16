@@ -1,3 +1,5 @@
+import { isFpbInternalParentHandle } from "./bundles/fpb-page-host-migration.server";
+
 export const DEPLOYMENT_BACKFILL_CONFIRMATION =
   "I_UNDERSTAND_THIS_CAN_MUTATE_PRODUCTION";
 
@@ -18,7 +20,17 @@ export interface DeploymentBackfillSummary {
   scannedBundles: number;
   syncedBundles: number;
   failedBundles: number;
+  failedShops: number;
   failures: Array<{ shopDomain: string; bundleId: string; error: string }>;
+  shopFailures: Array<{ shopDomain: string; error: string }>;
+  cartTransformsToReplace: number;
+  cartTransformsReplaced: number;
+  fpbProxyMigrations: number;
+  publicPagesToDelete: number;
+  previewPagesToDelete: number;
+  pageRedirectsToCreate: number;
+  productRedirectsToUpdate: number;
+  productHandlesToInternalize: number;
 }
 
 interface BackfillShop {
@@ -29,6 +41,12 @@ interface BackfillBundle {
   id: string;
   shopId: string;
   bundleType: BundleType | string;
+  shopifyProductId: string | null;
+  shopifyPageId: string | null;
+  shopifyPageHandle: string | null;
+  shopifyPreviewPageId: string | null;
+  shopifyPreviewPageHandle: string | null;
+  shopifyProductHandle: string | null;
 }
 
 interface PrismaBackfillClient {
@@ -37,18 +55,28 @@ interface PrismaBackfillClient {
   };
   bundle: {
     findMany: (args: unknown) => Promise<BackfillBundle[]>;
+    update: (args: unknown) => Promise<unknown>;
   };
 }
 
 export interface DeploymentBackfillDependencies {
   prisma: PrismaBackfillClient;
   getAdmin: (shopDomain: string) => Promise<unknown>;
+  replaceCartTransform: (
+    admin: unknown,
+    shopDomain: string,
+  ) => Promise<{ success: boolean; cartTransformId?: string; error?: string }>;
   syncBundle: (input: {
     admin: unknown;
     shopDomain: string;
     bundleId: string;
     bundleType: BundleType;
     reason: "sync_bundle";
+  }) => Promise<unknown>;
+  migrateFpbPageHost: (input: {
+    admin: unknown;
+    prisma: PrismaBackfillClient;
+    bundle: BackfillBundle;
   }) => Promise<unknown>;
   logger?: Pick<Console, "info" | "warn" | "error">;
 }
@@ -123,6 +151,12 @@ async function listTargetBundles(
       id: true,
       shopId: true,
       bundleType: true,
+      shopifyProductId: true,
+      shopifyPageId: true,
+      shopifyPageHandle: true,
+      shopifyPreviewPageId: true,
+      shopifyPreviewPageHandle: true,
+      shopifyProductHandle: true,
     },
     orderBy: [
       { shopId: "asc" },
@@ -152,7 +186,17 @@ export async function runDeploymentBackfill(
       scannedBundles: 0,
       syncedBundles: 0,
       failedBundles: 0,
+      failedShops: 0,
       failures: [],
+      shopFailures: [],
+      cartTransformsToReplace: 0,
+      cartTransformsReplaced: 0,
+      fpbProxyMigrations: 0,
+      publicPagesToDelete: 0,
+      previewPagesToDelete: 0,
+      pageRedirectsToCreate: 0,
+      productRedirectsToUpdate: 0,
+      productHandlesToInternalize: 0,
     };
   }
 
@@ -167,7 +211,20 @@ export async function runDeploymentBackfill(
     scannedBundles: bundles.length,
     syncedBundles: 0,
     failedBundles: 0,
+    failedShops: 0,
     failures: [],
+    shopFailures: [],
+    cartTransformsToReplace: shopDomains.length,
+    cartTransformsReplaced: 0,
+    fpbProxyMigrations: bundles.filter((bundle) => bundle.bundleType === "full_page").length,
+    publicPagesToDelete: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyPageId).length,
+    previewPagesToDelete: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyPreviewPageId).length,
+    pageRedirectsToCreate: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyPageHandle).length,
+    productRedirectsToUpdate: bundles.filter((bundle) => bundle.bundleType === "full_page" && bundle.shopifyProductHandle).length,
+    productHandlesToInternalize: bundles.filter((bundle) =>
+      bundle.bundleType === "full_page"
+      && bundle.shopifyProductHandle
+      && !isFpbInternalParentHandle(bundle.id, bundle.shopifyProductHandle)).length,
   };
 
   deps.logger?.info?.("[DEPLOYMENT_BACKFILL] Target scan complete.", {
@@ -181,7 +238,34 @@ export async function runDeploymentBackfill(
   }
 
   const adminByShop = new Map<string, unknown>();
+  const failedShopDomains = new Set<string>();
+
+  for (const shopDomain of shopDomains) {
+    try {
+      const admin = await deps.getAdmin(shopDomain);
+      adminByShop.set(shopDomain, admin);
+      const replacement = await deps.replaceCartTransform(admin, shopDomain);
+      if (!replacement.success) {
+        throw new Error(replacement.error ?? "CartTransform replacement failed");
+      }
+      summary.cartTransformsReplaced += 1;
+    } catch (error) {
+      const message = toErrorMessage(error);
+      failedShopDomains.add(shopDomain);
+      summary.failedShops += 1;
+      summary.shopFailures.push({ shopDomain, error: message });
+      deps.logger?.error?.("[DEPLOYMENT_BACKFILL] CartTransform replacement failed.", {
+        shopDomain,
+        error: message,
+      });
+    }
+  }
+
   for (const bundle of bundles) {
+    if (failedShopDomains.has(bundle.shopId)) {
+      continue;
+    }
+
     if (!isBundleType(bundle.bundleType)) {
       summary.failedBundles += 1;
       summary.failures.push({
@@ -193,10 +277,14 @@ export async function runDeploymentBackfill(
     }
 
     try {
-      let admin = adminByShop.get(bundle.shopId);
-      if (!admin) {
-        admin = await deps.getAdmin(bundle.shopId);
-        adminByShop.set(bundle.shopId, admin);
+      const admin = adminByShop.get(bundle.shopId)!;
+
+      if (bundle.bundleType === "full_page") {
+        await deps.migrateFpbPageHost({
+          admin,
+          prisma: deps.prisma,
+          bundle,
+        });
       }
 
       await deps.syncBundle({

@@ -31,6 +31,8 @@ beforeEach(() => {
 function createFocusableButton(name: string) {
   return {
     name,
+    dataset: {} as Record<string, string>,
+    isConnected: true,
     focus: jest.fn(),
     click: jest.fn(),
     addEventListener: jest.fn(),
@@ -45,19 +47,21 @@ function createFocusableButton(name: string) {
 
 function createModal({
   closeButton,
+  closeButtons = [closeButton],
   prevButton,
   nextButton,
   footerDiscountText,
   discountSection,
 }: {
   closeButton: any;
+  closeButtons?: any[];
   prevButton: any;
   nextButton: any;
   footerDiscountText: any;
   discountSection: any;
 }) {
   const classes = new Set<string>();
-  const contains = (node: any) => node === closeButton || node === prevButton || node === nextButton;
+  const contains = (node: any) => closeButtons.includes(node) || node === prevButton || node === nextButton;
   const modal = {
     classList: {
       add: (value: string) => { classes.add(value); },
@@ -97,7 +101,7 @@ function createModal({
       return null;
     },
     querySelectorAll: (selector: string) => {
-      if (selector === '.close-button') return [closeButton];
+      if (selector === '.close-button') return closeButtons;
       if (selector === '.prev-button') return [prevButton];
       if (selector === '.next-button') return [nextButton];
       if (selector === 'button:not([disabled])') return [closeButton, prevButton, nextButton];
@@ -111,6 +115,7 @@ function createModal({
 
 function createContext({
   closeButton = createFocusableButton('close'),
+  closeButtons = [closeButton],
   prevButton = createFocusableButton('prev'),
   nextButton = createFocusableButton('next'),
   footerDiscountText = { textContent: '' },
@@ -124,6 +129,7 @@ function createContext({
 } = {}) {
   const modal = createModal({
     closeButton,
+    closeButtons,
     prevButton,
     nextButton,
     footerDiscountText,
@@ -211,10 +217,19 @@ function createContext({
 }
 
 describe('PPB modal accessibility keyboard and focus management', () => {
-  it('restores focus to the opener and focuses the modal close control on open', async () => {
+  it('restores focus to the rerendered opener and focuses the modal close control on open', async () => {
     jest.spyOn(ToastManager, 'show').mockImplementation(() => {});
 
     const { context, opener, closeButton, fakeDocument } = createContext();
+    const rerenderedOpener = createFocusableButton('rerendered-opener');
+    opener.dataset = { stepIndex: '0', cardIndex: '0', variantId: 'variant-1' };
+    rerenderedOpener.dataset = { ...opener.dataset };
+    context.elements.stepsContainer = {
+      querySelectorAll: jest.fn(() => [rerenderedOpener]),
+    };
+    context.renderSteps.mockImplementation(() => {
+      opener.isConnected = false;
+    });
     (globalThis as any).document = fakeDocument;
     (globalThis as any).requestAnimationFrame = (callback: () => void) => {
       callback();
@@ -228,7 +243,37 @@ describe('PPB modal accessibility keyboard and focus management', () => {
 
     context.closeModal();
 
-    expect(opener.focus).toHaveBeenCalledTimes(1);
+    expect(opener.focus).not.toHaveBeenCalled();
+    expect(rerenderedOpener.focus).toHaveBeenCalledTimes(1);
+    expect(context.renderSteps.mock.invocationCallOrder[0])
+      .toBeLessThan(rerenderedOpener.focus.mock.invocationCallOrder[0]);
+  });
+
+  it('skips a breakpoint-hidden close control and focuses the visible modal close control', async () => {
+    jest.spyOn(ToastManager, 'show').mockImplementation(() => {});
+
+    const hiddenDesktopClose = {
+      ...createFocusableButton('desktop-close'),
+      getClientRects: () => [],
+    };
+    const visibleMobileClose = {
+      ...createFocusableButton('mobile-close'),
+      getClientRects: () => [{ width: 44, height: 44 }],
+    };
+    const { context, fakeDocument } = createContext({
+      closeButton: hiddenDesktopClose,
+      closeButtons: [hiddenDesktopClose, visibleMobileClose],
+    });
+    (globalThis as any).document = fakeDocument;
+    (globalThis as any).requestAnimationFrame = (callback: () => void) => {
+      callback();
+    };
+
+    context.openModal(0);
+    await Promise.resolve();
+
+    expect(hiddenDesktopClose.focus).not.toHaveBeenCalled();
+    expect(visibleMobileClose.focus).toHaveBeenCalledTimes(1);
   });
 
   it('supports Escape, ArrowLeft, and ArrowRight keyboard shortcuts while modal is open', () => {

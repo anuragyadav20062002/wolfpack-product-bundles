@@ -1,6 +1,35 @@
-# Test Spec: PPB Template Layout Parity
+---
+schema_version: 1
+id: ppb-template-layout-parity
+title: Product Page Bundle Template Layout Parity
+type: test-spec
+status: completed
+summary: Verifies responsive layout behavior for all four Product Page Bundle storefront designs.
+last_audited: 2026-07-14
+owners:
+  - Wolfpack Product Bundles
+domains:
+  - storefront
+systems:
+  - product-page-bundle-widget
+source_paths:
+  - app/assets/widgets/product-page
+related_docs:
+  - docs/issues-prod/product-page-bundle-template-fixture-spec.md
+tags:
+  - ppb
+  - templates
+keywords:
+  - Product Page Bundle
+  - layout parity
+---
+
+# Test Spec: Product Page Bundle Template Layout Parity
+
 **Spec ID:** ppb-template-layout-parity
-**Issue:** [ppb-fresh-template-parity-1]
+
+**Fixture:** [Product Page Bundle Template Fixture Specification](../docs/issues-prod/product-page-bundle-template-fixture-spec.md)
+
 **Created:** 2026-06-04
 
 ## Purpose

@@ -32,11 +32,8 @@ export function useConfigureContentState(flow: ConfigureBundleFlowDraft) {
     [normalizedPageSlug],
   );
   const bundlePageUrl = useMemo(
-    () =>
-      bundle.shopifyPageHandle
-        ? `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`
-        : "",
-    [shopDomain, bundle.shopifyPageHandle],
+    () => `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${encodeURIComponent(bundle.id)}`,
+    [shopDomain, bundle.id],
   );
 
   useEffect(() => {

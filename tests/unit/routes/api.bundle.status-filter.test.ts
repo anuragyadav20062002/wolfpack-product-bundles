@@ -1,10 +1,10 @@
 /**
- * Unit Tests: api.bundle.$bundleId.json + wpb.$bundleId — DRAFT bundle exclusion
+ * Unit Tests: api.bundle.$bundleId.json + wpb.$bundleId — DRAFT access control
  *
  * Triage: docs/superpowers/specs/2026-06-13-june-2026-feedback-triage.md item #8
  * Intent: DRAFT bundles must be hidden from public storefront surfaces. The
- *   widget API and the FPB proxy route both serve public-facing requests, so
- *   their bundle.findFirst() where-clauses must include only ACTIVE + UNLISTED.
+ *   widget API remains public-only. The FPB document route loads by verified
+ *   shop and bundle ID, then permits DRAFT only with a bound preview token.
  */
 /* eslint-disable import/first */
 
@@ -124,7 +124,7 @@ describe('api.bundle.$bundleId.json — status filtering', () => {
   });
 });
 
-describe('wpb.$bundleId (FPB proxy page) — status filtering', () => {
+describe('wpb.$bundleId (FPB proxy page) — draft access control', () => {
   const originalSecret = process.env.SHOPIFY_API_SECRET;
 
   beforeEach(() => {
@@ -136,25 +136,7 @@ describe('wpb.$bundleId (FPB proxy page) — status filtering', () => {
     process.env.SHOPIFY_API_SECRET = originalSecret;
   });
 
-  it('excludes DRAFT bundles from the findFirst where-clause', async () => {
-    mockFindFirst().mockResolvedValue(null);
-
-    await wpbProxyLoader({
-      request: makeProxyRequest('bundle-1'),
-      params: { bundleId: 'bundle-1' },
-      context: {},
-    } as any);
-
-    expect(mockFindFirst()).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: { in: [BundleStatus.ACTIVE, BundleStatus.UNLISTED] },
-        }),
-      }),
-    );
-  });
-
-  it('does not allow DRAFT in the status filter set', async () => {
+  it('queries by verified shop and bundle identity before preview-token authorization', async () => {
     mockFindFirst().mockResolvedValue(null);
 
     await wpbProxyLoader({
@@ -164,11 +146,27 @@ describe('wpb.$bundleId (FPB proxy page) — status filtering', () => {
     } as any);
 
     const call = mockFindFirst().mock.calls[0]?.[0];
-    expect(call?.where?.status?.in).not.toContain(BundleStatus.DRAFT);
+    expect(call?.where).toEqual({
+      id: 'bundle-1',
+      shopId: 'test-shop.myshopify.com',
+      bundleType: 'full_page',
+    });
+  });
 
-    expect(call?.where?.status?.in).toHaveLength(2);
-    expect(call?.where?.status?.in).toEqual(
-      expect.arrayContaining([BundleStatus.ACTIVE, BundleStatus.UNLISTED]),
-    );
+  it('returns 404 for an unsigned DRAFT bundle', async () => {
+    mockFindFirst().mockResolvedValue({
+      id: 'bundle-1',
+      shopId: 'test-shop.myshopify.com',
+      bundleType: 'full_page',
+      status: BundleStatus.DRAFT,
+    });
+
+    const response = await wpbProxyLoader({
+      request: makeProxyRequest('bundle-1'),
+      params: { bundleId: 'bundle-1' },
+      context: {},
+    } as any);
+
+    expect(response.status).toBe(404);
   });
 });

@@ -85,11 +85,57 @@ describe('PPB Horizontal Slots empty placeholders', () => {
 
     expect(target.children).toEqual([]);
   });
+
+  it('renders one empty slot when the global condition-based slot setting is disabled', () => {
+    const target = createFakeElement('div');
+    const widget = createWidget({
+      controlsSettings: {
+        activeControls: {
+          displayEmptyStateBoxesBasedOnBundleCondition: false,
+        },
+      },
+    });
+
+    widget._appendModalSlotEmptyCards(
+      target,
+      { name: 'Step 1', conditionOperator: 'greater_than_or_equal_to', conditionValue: 2 },
+      0,
+      0
+    );
+
+    expect(target.children.map((card: any) => card.children.at(-1)?.textContent)).toEqual([
+      'Product 1',
+    ]);
+  });
+
+  it('keeps condition-sized slots when the global condition-based slot setting is enabled', () => {
+    const target = createFakeElement('div');
+    const widget = createWidget({
+      controlsSettings: {
+        activeControls: {
+          displayEmptyStateBoxesBasedOnBundleCondition: true,
+        },
+      },
+    });
+
+    widget._appendModalSlotEmptyCards(
+      target,
+      { name: 'Step 1', conditionOperator: 'greater_than_or_equal_to', conditionValue: 2 },
+      0,
+      0
+    );
+
+    expect(target.children.map((card: any) => card.children.at(-1)?.textContent)).toEqual([
+      'Product 1',
+      'Product 2',
+    ]);
+  });
 });
 
-function createWidget() {
+function createWidget(config = {}) {
   const widget = {
     selectedBundle: { renderFilledSlotsAsHorizontalStacked: true },
+    config,
     _getProductPageTemplateType: () => 'PDP_MODAL',
     _getProductPageDesignPreset: () => 'MODAL',
     openModal: jest.fn(),

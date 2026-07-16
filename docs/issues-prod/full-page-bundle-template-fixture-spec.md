@@ -1,11 +1,39 @@
-# Issue: FPB Fresh Template Storefront Parity
-**Issue ID:** fpb-fresh-template-parity-1
+---
+schema_version: 1
+id: fpb-fresh-template-parity-1
+title: Full Page Bundle Template Fixture Specification
+type: fixture-spec
+status: completed
+summary: Defines the multi-step Full Page Bundle storefront fixture used to verify Standard, Classic, Compact, and Horizontal designs.
+last_audited: 2026-07-14
+owners:
+  - Wolfpack Product Bundles
+domains:
+  - storefront
+systems:
+  - full-page-bundle-widget
+source_paths:
+  - app/assets/bundle-widget-full-page.js
+related_docs:
+  - docs/refactor/full-page-and-product-page-template-baseline-matrix.md
+tags:
+  - fpb
+  - fixture
+keywords:
+  - Full Page Bundle
+  - template fixture
+---
+
+# Full Page Bundle Template Fixture Specification
+
+**Fixture ID:** fpb-fresh-template-parity-1
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-06-04
 **Last Updated:** 2026-06-04 22:25
 
 ## Overview
+
 Create a fresh Full Page Bundle with multiple steps and discount rules, then perform a live EB-vs-WPB storefront parity pass for every supported landing page template: Standard, Classic, Compact, and Horizontal. The goal is pixel-level storefront UI parity for the configured bundle across desktop and mobile, including layout, spacing, sizing, banners, product cards, step/category navigation, cart/summary behavior, and discount UI.
 
 ## Progress Log

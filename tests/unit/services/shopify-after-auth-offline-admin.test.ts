@@ -131,6 +131,7 @@ describe("shopify afterAuth offline Admin setup", () => {
       mockOfflineAdmin,
       "https://app.example.com",
       "test-shop.myshopify.com",
+      [],
     );
     expect(mockCartTransformCompleteSetup).toHaveBeenCalledWith(
       mockOfflineAdmin,

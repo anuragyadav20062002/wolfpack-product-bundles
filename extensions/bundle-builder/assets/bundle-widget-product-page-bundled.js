@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.172
- * Built   : 2026-07-14
+ * Version : 5.0.189
+ * Built   : 2026-07-16
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.172';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.189';
 (function() {
   'use strict';
 
@@ -2852,7 +2852,9 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const imageUrl = imageUrls[0] || DEFAULT_PLACEHOLDER_IMAGE;
   const hasMultipleImages = imageUrls.length > 1;
   const price = formatPrice(product.price, currencyInfo);
-  const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
+  const compareAtPrice = options.showCompareAtPrice === true
+    ? formatPrice(product.compareAtPrice, currencyInfo)
+    : '';
   const variantSelectorBeforePrice = options.variantSelectorPlacement === 'beforePrice';
   const rootClasses = [
     'bw-product-card',
@@ -3674,15 +3676,22 @@ function cloneConditionFields(conditions, fallbackCondition, fallbackStep) {
 }
 
 function ppbExpandSingleStepCategoriesAsSteps(bundle) {
-  if (!bundle?.useSingleStepCategoriesAsBundleSteps) return bundle;
-  if (!Array.isArray(bundle.steps) || bundle.steps.length !== 1) return bundle;
+  if (!Array.isArray(bundle?.steps)) return bundle;
 
-  const [step] = bundle.steps;
+  const enabledSteps = bundle.steps.filter((step) => step?.enabled !== false);
+  const normalizedBundle = enabledSteps.length === bundle.steps.length
+    ? bundle
+    : { ...bundle, steps: enabledSteps };
+
+  if (!bundle.useSingleStepCategoriesAsBundleSteps) return normalizedBundle;
+  if (enabledSteps.length !== 1) return normalizedBundle;
+
+  const [step] = enabledSteps;
   const categories = Array.isArray(step?.categories) ? step.categories : [];
-  if (categories.length <= 1 || step?.isDefault || step?.isFreeGift) return bundle;
+  if (categories.length <= 1 || step?.isDefault || step?.isFreeGift) return normalizedBundle;
 
   return {
-    ...bundle,
+    ...normalizedBundle,
     steps: categories.map((category, categoryIndex) => {
       const categoryLabel = category?.pageTitle
         || category?.title
@@ -3809,6 +3818,15 @@ function resolveProductPageTemplateConfig({
   return null;
 }
 
+function parseBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (['true', 'checked', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', 'unchecked', '0', 'off', 'no'].includes(normalized)) return false;
+  return undefined;
+}
+
 const modalSlotTemplateMethods = {
   _isProductPageModalSlotTemplate() {
     const config = resolveProductPageTemplateConfig({
@@ -3865,8 +3883,10 @@ const modalSlotTemplateMethods = {
   },
 
   createEmptyStateCard(step, stepIndex, instanceIndex = 0) {
-    const stepBox = document.createElement('div');
+    const stepBox = document.createElement('button');
+    stepBox.type = 'button';
     stepBox.dataset.stepIndex = stepIndex;
+    stepBox.dataset.cardIndex = instanceIndex;
 
     stepBox.className = 'step-box bw-slot-card bw-slot-card--empty';
 
@@ -3909,6 +3929,28 @@ const modalSlotTemplateMethods = {
   },
 
   _appendModalSlotEmptyCards(target, step, stepIndex, selectedCount = 0) {
+    const controls = typeof this._getProductPageControls === 'function'
+      ? this._getProductPageControls()
+      : this.config?.controlsSettings?.activeControls
+        || this.config?.controlsSettings?.settingsControls?.productPage
+        || null;
+    const renderSlotsBasedOnCondition = parseBoolean(
+      controls?.displayEmptyStateBoxesBasedOnBundleCondition
+        ?? controls?.renderSlotsBasedOnCondition
+        ?? this.selectedBundle?.renderSlotsBasedOnCondition
+    );
+    if (renderSlotsBasedOnCondition === false) {
+      const emptyCount = selectedCount > 0 ? 0 : 1;
+      for (let offset = 0; offset < emptyCount; offset += 1) {
+        target.appendChild(this.createEmptyStateCard(
+          step,
+          stepIndex,
+          selectedCount + offset
+        ));
+      }
+      return;
+    }
+
     const rawRequired = Number(step?.conditionValue) || 1;
     const operator = String(step?.conditionOperator || '').toLowerCase();
     const requiredCount = ['greater_than', 'gt', '>'].includes(operator)
@@ -4343,6 +4385,43 @@ const cogniveTemplateMethods = {
     this._renderCascadeFooter(el);
   },
 };
+
+function isProductPageStepRequiredForValidation(step = {}) {
+  if (!step || step.enabled === false || step.isFreeGift || step.isDefault) {
+    return false;
+  }
+
+  const products = Array.isArray(step.products) ? step.products : [];
+  const collections = Array.isArray(step.collections) ? step.collections : [];
+  if (products.length > 0 || collections.length > 0) {
+    return true;
+  }
+
+  const categories = Array.isArray(step.categories) ? step.categories : [];
+  return categories.some((category) => {
+    const categoryProducts = Array.isArray(category?.products) ? category.products : [];
+    const categoryCollections = Array.isArray(category?.collections) ? category.collections : [];
+    return categoryProducts.length > 0 || categoryCollections.length > 0;
+  });
+}
+
+function areRequiredProductPageStepsValid(steps = [], validateStep = () => false) {
+  if (!Array.isArray(steps)) return true;
+  return steps.every((step, index) => {
+    if (!isProductPageStepRequiredForValidation(step)) return true;
+    return validateStep(index);
+  });
+}
+
+function getLastRequiredProductPageStepIndex(steps = []) {
+  if (!Array.isArray(steps)) return -1;
+  for (let index = steps.length - 1; index >= 0; index -= 1) {
+    if (isProductPageStepRequiredForValidation(steps[index])) {
+      return index;
+    }
+  }
+  return -1;
+}
 
 function getWindow() {
   return typeof window === 'undefined' ? null : window;
@@ -5105,6 +5184,39 @@ _hideNativeProductPrice() {
   }
 },
 
+_hideNativeDynamicCheckoutControls() {
+  try {
+    if (!this.container || typeof document === 'undefined') return;
+
+    const productForm = this._findNativeProductForm();
+    if (!productForm) return;
+
+    const root = this._getNativeProductInfoRoot(productForm);
+    if (!root) return;
+
+    const selectors = [
+      '.shopify-payment-button',
+      '.shopify-payment-button__button',
+      'shopify-accelerated-checkout',
+      'shopify-buy-it-now-button',
+    ];
+
+    const controls = selectors.flatMap(selector => Array.from(root.querySelectorAll(selector)));
+    const uniqueControls = Array.from(new Set(controls));
+
+    uniqueControls
+      .filter(element => !this.container.contains(element))
+      .filter(element => !element.closest('#bundle-builder-modal'))
+      .forEach(element => {
+        element.classList.add('wpb-native-dynamic-checkout--hidden');
+        element.setAttribute('data-wpb-native-dynamic-checkout-hidden', 'true');
+        element.style.setProperty('display', 'none', 'important');
+      });
+  } catch (_error) {
+
+  }
+},
+
 setupDOMElements() {
   const modalEl = this.ensureBottomSheet();
 
@@ -5527,6 +5639,7 @@ renderFooter() {
     targetValue: conditionTarget,
     message,
   });
+  progressData.milestones = milestones;
   const progressMarkup = renderDiscountProgress(progressData, {
     className: `bundle-footer-messaging bw-ppb-discount-progress${met ? ' bw-ppb-discount-progress--met' : ''}`,
     messageClassName: 'bw-ppb-discount-progress__message',
@@ -5539,7 +5652,6 @@ renderFooter() {
     milestoneSubtitleClassName: 'bw-discount-progress__milestone-subtitle',
     renderInlineSubtitles: false,
     renderSubtitleList: false,
-    milestones,
     mode: progressMode === 'simple' ? 'bar' : 'stepped',
   });
   const modeClassName = progressMode === 'simple'
@@ -5674,14 +5786,14 @@ updateAddToCartButton() {
 
   const button = this.elements.addToCartButton;
   const usesCascadeStepFlow = this._usesCascadeStepFlow?.() === true;
+  const lastRequiredStepIndex = getLastRequiredProductPageStepIndex(this.selectedBundle?.steps);
   const isIntermediateCascadeStep = usesCascadeStepFlow
-    && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+    && this.currentStepIndex < lastRequiredStepIndex;
   const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
 
-  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
-    if (step.isFreeGift || step.isDefault) return true;
-    return this.validateStep(index);
-  }) : true;
+  const allStepsValid = isConditionValidationEnabled
+    ? areRequiredProductPageStepsValid(this.selectedBundle.steps, this.validateStep.bind(this))
+    : true;
 
   const boxSelectionState = this.validateProductPageBoxSelectionCheckout
     ? this.validateProductPageBoxSelectionCheckout.call(this)
@@ -5804,9 +5916,7 @@ function formatCascadeStepLimitToast(limitText, required) {
   return `Add ${qualifier} ${formattedRequired} products on this step`;
 }
 
-function formatProductPageStepValidationToast(step = {}) {
-  if (step.conditionType !== 'quantity') return '';
-
+function formatProductPageStepValidationToast(step = {}, resolveText = null) {
   const required = Number(step.conditionValue);
   if (!Number.isFinite(required) || required <= 0) return '';
 
@@ -5818,7 +5928,36 @@ function formatProductPageStepValidationToast(step = {}) {
   const qualifier = qualifierByOperator[step.conditionOperator];
   if (!qualifier) return '';
 
-  return `Add ${qualifier} ${String(required).padStart(2, '0')} products on this step`;
+  const operatorKeyByOperator = {
+    equal_to: 'EqualTo',
+    greater_than_or_equal_to: 'GreaterThanOrEqualTo',
+    less_than_or_equal_to: 'LessThanOrEqualTo',
+  };
+  const operatorKey = operatorKeyByOperator[step.conditionOperator];
+
+  if (step.conditionType === 'quantity') {
+    const formattedRequired = String(required).padStart(2, '0');
+    const fallback = `Add ${qualifier} ${formattedRequired} products on this step`;
+    const template = typeof resolveText === 'function'
+      ? resolveText(`conditionQuantity${operatorKey}`, fallback)
+      : fallback;
+    return String(template)
+      .replace(/\{\{\s*conditionQuantity\s*\}\}/g, formattedRequired)
+      .replace(/\{conditionQuantity\}/g, formattedRequired);
+  }
+
+  if (step.conditionType === 'amount') {
+    const formattedRequired = String(required);
+    const fallback = `Add products worth ${qualifier === 'at least' ? 'at least ' : qualifier === 'at most' ? 'maximum of ' : ''}${formattedRequired} on this step`;
+    const template = typeof resolveText === 'function'
+      ? resolveText(`conditionAmount${operatorKey}`, fallback)
+      : fallback;
+    return String(template)
+      .replace(/\{\{\s*conditionAmount\s*\}\}/g, formattedRequired)
+      .replace(/\{conditionAmount\}/g, formattedRequired);
+  }
+
+  return '';
 }
 
 function getProductPageModalValidationToastOptions() {
@@ -5845,6 +5984,7 @@ _isElementVisibleForFocus(element) {
   if (!element || typeof element !== 'object') return false;
   if (element.disabled === true) return false;
   if (element.getAttribute && element.getAttribute('aria-hidden') === 'true') return false;
+  if (typeof element.getClientRects === 'function' && element.getClientRects().length === 0) return false;
 
   const modal = this.elements?.modal;
   if (modal && typeof modal.contains === 'function' && !modal.contains(element)) return false;
@@ -5880,16 +6020,35 @@ _captureActiveElementBeforeModalOpen() {
   const activeElement = globalThis.document?.activeElement;
   if (activeElement && typeof activeElement.focus === 'function') {
     this._modalOriginFocusElement = activeElement;
+    this._modalOriginFocusKey = {
+      stepIndex: activeElement.dataset?.stepIndex,
+      cardIndex: activeElement.dataset?.cardIndex,
+      variantId: activeElement.dataset?.variantId,
+    };
   } else {
     this._modalOriginFocusElement = null;
+    this._modalOriginFocusKey = null;
   }
 },
 
 _restoreActiveElementAfterModalClose() {
   const previousFocus = this._modalOriginFocusElement;
+  const previousFocusKey = this._modalOriginFocusKey;
   this._modalOriginFocusElement = null;
-  if (previousFocus && typeof previousFocus.focus === 'function') {
-    previousFocus.focus();
+  this._modalOriginFocusKey = null;
+
+  let nextFocus = previousFocus;
+  if (previousFocus?.isConnected === false && previousFocusKey?.stepIndex !== undefined) {
+    const candidates = this.elements?.stepsContainer?.querySelectorAll?.('[data-step-index]') || [];
+    nextFocus = [...candidates].find((candidate) => (
+      candidate.dataset?.stepIndex === previousFocusKey.stepIndex
+      && (previousFocusKey.cardIndex === undefined || candidate.dataset?.cardIndex === previousFocusKey.cardIndex)
+      && (previousFocusKey.variantId === undefined || candidate.dataset?.variantId === previousFocusKey.variantId)
+    ));
+  }
+
+  if (nextFocus && typeof nextFocus.focus === 'function') {
+    nextFocus.focus();
   }
 },
 
@@ -5965,11 +6124,11 @@ closeModal() {
   if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
   document.body.style.overflow = '';
   this.setBottomSheetVisibility(false);
-  this._restoreActiveElementAfterModalClose();
 
   this.renderSteps();
   this.updateAddToCartButton();
   this.updateFooterMessaging();
+  this._restoreActiveElementAfterModalClose();
 },
 
 validateStepCondition(stepIndex, productId, newQuantity) {
@@ -6270,14 +6429,15 @@ hideLoadingOverlay() {
 attachEventListeners() {
 
   this.elements.addToCartButton.addEventListener('click', () => {
+    const lastRequiredStepIndex = getLastRequiredProductPageStepIndex(this.selectedBundle?.steps);
     const isIntermediateCascadeStep = this._usesCascadeStepFlow?.()
-      && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+      && this.currentStepIndex < lastRequiredStepIndex;
     if (isIntermediateCascadeStep) {
       const navigated = this.navigateCascadeStep(1);
       if (!navigated && this._isProductPageGridTemplate?.() === true) {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
         ToastManager.show(
-          formatProductPageStepValidationToast(currentStep)
+          formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
             || 'Please meet the quantity conditions for the current step before proceeding.',
           4000,
           {
@@ -6395,7 +6555,7 @@ async navigateModal(direction) {
         this.preloadNextStep();
       } else {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-        const message = formatProductPageStepValidationToast(currentStep)
+        const message = formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before proceeding.';
         ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
@@ -6405,7 +6565,7 @@ async navigateModal(direction) {
         this.closeModal();
       } else {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-        const message = formatProductPageStepValidationToast(currentStep)
+        const message = formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before finishing.';
         ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
@@ -6619,11 +6779,12 @@ _renderDirectDefaultProducts() {
 },
 
 _createStepBannerImage(step) {
-  if (!step?.bannerImageUrl) return null;
+  const imageUrl = step?.stepImage || step?.bannerImageUrl || null;
+  if (!imageUrl) return null;
   const wrapper = document.createElement('div');
   wrapper.className = 'step-banner-image';
   const img = document.createElement('img');
-  img.src = step.bannerImageUrl;
+  img.src = imageUrl;
   img.alt = step.name || '';
   img.style.width = '100%';
   img.style.display = 'block';
@@ -6655,9 +6816,6 @@ renderProductPageLayout() {
       const target = section.querySelector('.bw-ppb-inpage-step-grid');
       this.elements.stepsContainer.appendChild(section);
 
-      const banner = this._createStepBannerImage(step);
-      if (banner) target.appendChild(banner);
-
       this._renderInpageStepProducts(stepIndex, target);
       return;
     }
@@ -6675,9 +6833,6 @@ renderProductPageLayout() {
     if (section) {
       this.elements.stepsContainer.appendChild(section);
     }
-
-    const banner = this._createStepBannerImage(step);
-    if (banner) target.appendChild(banner);
 
     if (step.isDefault) {
 
@@ -6727,6 +6882,9 @@ renderProductPageLayout() {
         }
       }
     }
+
+    const banner = this._createStepBannerImage(step);
+    if (banner) target.prepend(banner);
   });
 },
 
@@ -6747,8 +6905,6 @@ _renderCogniveStepFlowLayout() {
     const target = section.querySelector('.bw-ppb-inpage-step-grid');
     this.elements.stepsContainer.appendChild(section);
 
-    const banner = this._createStepBannerImage(step);
-    if (banner) target.appendChild(banner);
     this._renderInpageStepProducts(stepIndex, target);
   });
 },
@@ -6768,7 +6924,7 @@ _createCogniveStepHeader(step, stepIndex) {
     if (!this.isStepAccessible(stepIndex)) {
       const currentStep = this.selectedBundle.steps[this.currentStepIndex];
       ToastManager.show(
-        formatProductPageStepValidationToast(currentStep)
+        formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before proceeding.',
         4000,
         {
@@ -6817,11 +6973,21 @@ _createCascadeStepFlowHeader() {
       this.renderSteps();
       this.renderFooter();
       this.updateAddToCartButton();
+      this._focusCascadeStepFlowButton(stepIndex);
     });
     header.appendChild(button);
   });
 
   return header;
+},
+
+_focusCascadeStepFlowButton(stepIndex) {
+  const buttons = this.elements?.stepsContainer
+    ?.querySelectorAll?.('.bw-ppb-cascade-step-flow__step') || [];
+  const target = buttons[stepIndex];
+  if (target && typeof target.focus === 'function') {
+    target.focus();
+  }
 },
 
 navigateCascadeStep(direction) {
@@ -6842,6 +7008,7 @@ navigateCascadeStep(direction) {
   this.renderSteps();
   this.renderFooter();
   this.updateAddToCartButton();
+  this._focusCascadeStepFlowButton(this.currentStepIndex);
   return true;
 },
 
@@ -6936,7 +7103,9 @@ _categoryHasCollections(category) {
 },
 
 _filterProductsForInpageCategory(step, products, stepIndex) {
-  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  const categories = Array.isArray(step?.categories)
+    ? step.categories
+    : Object.values(step?.categories || {});
   if (categories.length === 0) return products;
 
   const activeIndex = this.activeInpageCategoryIndexes[stepIndex] || 0;
@@ -7007,6 +7176,18 @@ _filterProductsForInpageCategory(step, products, stepIndex) {
 function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
+
+function makeSlotCardKeyboardAccessible(card, activate) {
+  card.setAttribute('role', 'button');
+  card.tabIndex = 0;
+  card.addEventListener('click', activate);
+  card.addEventListener('keydown', (event) => {
+    if (event.target && event.target !== card) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    activate();
+  });
+}
 
 function resolveSelectedSlotTitle(title, isVertical) {
   const normalizedTitle = String(title || '');
@@ -7105,47 +7286,25 @@ function resolveInpageProductSelection(
   };
 }
 
-const INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
-
-function resolveProductCardDescription(product = {}) {
-  const candidate =
-    (typeof product.description === 'string' && product.description.trim())
-    || (typeof product.descriptionHtml === 'string' && product.descriptionHtml.trim())
-    || '';
-
-  return String(candidate).trim();
-}
-
-function renderInpageProductCardDescription(product = {}, showSeeMore) {
-  if (!showSeeMore) return '';
-
-  const description = resolveProductCardDescription(product);
-  if (!description) return '';
-
-  const showToggle = description.length > INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
-  const shortDescription = showToggle
-    ? `${description.slice(0, INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
-    : description;
-
-  return `
-    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
-      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
-      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
-      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
-    </div>
-  `;
-}
-
 const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
+  if (!this._inpageStepProductsLoaded) this._inpageStepProductsLoaded = {};
   target.classList.toggle('bw-ppb-cascade-product-list', this._isProductPageCascadeTemplate());
   target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
+  const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  const prependStepBanner = () => {
+    const banner = this._createStepBannerImage?.(currentStep);
+    if (banner) target.prepend(banner);
+  };
 
-  if (rawProducts.length === 0 && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
+  const stepProductsLoaded = this._inpageStepProductsLoaded[stepIndex] === true;
+  if (rawProducts.length === 0 && !stepProductsLoaded && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
     target.setAttribute?.('aria-busy', 'true');
     target.innerHTML = renderInpageProductLoadingRows();
+    prependStepBanner();
     this.loadStepProducts(stepIndex).then(() => {
+      this._inpageStepProductsLoaded[stepIndex] = true;
       if (target.isConnected) this._renderInpageStepProducts(stepIndex, target);
     }).catch(() => {
       if (!this._stepFetchFailed) this._stepFetchFailed = {};
@@ -7155,7 +7314,6 @@ _renderInpageStepProducts(stepIndex, target) {
     return;
   }
 
-  const currentStep = this.selectedBundle?.steps?.[stepIndex];
   const categoryDisplaysVariantsAsIndividual = shouldDisplayVariantsAsIndividualForInpageCategory(
     currentStep,
     stepIndex,
@@ -7173,21 +7331,18 @@ _renderInpageStepProducts(stepIndex, target) {
     target.innerHTML = this._stepFetchFailed?.[stepIndex]
       ? '<p class="modal-fetch-error">Could not load products. Please check your connection and try again.</p>'
       : '<p class="no-products-message">No products are configured for this step.</p>';
+    prependStepBanner();
     return;
   }
 
   const usesCascadeCards = this._isProductPageCascadeTemplate();
   const usesGridCards = this._isProductPageGridTemplate();
   const widgetConfig = this.config || {};
-  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
-  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
-  const cardHoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
-  const cardSeeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
-
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
     this.selectedBundle?.validateQuantityPerProduct
   );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const inlineAddText = resolveProductPageInlineAddText(this._resolveText?.bind(this));
 
   target.innerHTML = products.map(product => {
     const directSelectionKey = product.variantId || product.id;
@@ -7222,19 +7377,17 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'row',
           className: [
             'bw-ppb-cascade-product-row',
-            cardHoverClass,
-            cardSeeMoreClass,
             'wpbMixCascadeProductWrapper',
             variantSelectorHtml ? 'bw-ppb-cascade-product-row--has-variant-selector' : '',
             currentQuantity > 0 ? 'selected' : '',
             outOfStock ? 'is-out-of-stock' : '',
           ].filter(Boolean).join(' '),
-          description: resolveProductCardDescription(product),
-          displaySeeMoreLink: showSeeMoreLink,
-          descriptionMaxLength: INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH,
-          expandProductCardOnHover: expandOnHover,
+          description: '',
+          displaySeeMoreLink: false,
+          expandProductCardOnHover: false,
+          showCompareAtPrice: this._shouldShowProductComparedAtPrice(),
           variantSelectorHtml,
-          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           addDisabled: outOfStock,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -7252,11 +7405,12 @@ _renderInpageStepProducts(stepIndex, target) {
           description: '',
           displaySeeMoreLink: false,
           expandProductCardOnHover: false,
+          showCompareAtPrice: this._shouldShowProductComparedAtPrice(),
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`.trim(),
-          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           selectedAction: 'button',
-          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -7267,7 +7421,6 @@ _renderInpageStepProducts(stepIndex, target) {
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const showQuantitySelector = !this._usesCompactInpageProductCards()
       && widgetConfig.showQuantitySelectorOnCard;
-    const showSeeMoreLinkOnRow = widgetConfig.displaySeeMoreLink === true;
     const productContent = `
       <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
       ${product.price ? `
@@ -7277,7 +7430,6 @@ _renderInpageStepProducts(stepIndex, target) {
         </div>
       ` : ''}
       ${this.renderInlineCardVariantSelector(product, currentStep)}
-      ${renderInpageProductCardDescription(product, showSeeMoreLinkOnRow)}
       ${showQuantitySelector ? `
         <div class="product-quantity-wrapper">
           <div class="product-quantity-selector">
@@ -7290,13 +7442,12 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
     const addButton = `
       <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
-        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
+        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText })}
       </button>
     `;
 
     return `
-      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${cardHoverClass} ${cardSeeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
+      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}
@@ -7309,6 +7460,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
   }).join('');
 
+  prependStepBanner();
   this.attachProductEventHandlers(target, stepIndex);
 },
 
@@ -7370,7 +7522,8 @@ createSelectedProductCard(item, cardIndex) {
   stepBox.dataset.cardIndex = cardIndex;
 
   if (!isDefault) {
-    const clearBadge = document.createElement('div');
+    const clearBadge = document.createElement('button');
+    clearBadge.type = 'button';
     clearBadge.className = 'step-clear-badge';
     clearBadge.innerHTML = `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -7379,6 +7532,7 @@ createSelectedProductCard(item, cardIndex) {
       </svg>
     `;
     clearBadge.title = 'Remove this product';
+    clearBadge.setAttribute('aria-label', clearBadge.title);
     clearBadge.addEventListener('click', (e) => {
       e.stopPropagation();
       this.removeProductFromSelection(stepIndex, variantId);
@@ -7412,7 +7566,7 @@ createSelectedProductCard(item, cardIndex) {
   productTitle.title = product.title;
   stepBox.appendChild(productTitle);
 
-  stepBox.addEventListener('click', () => this.openModal(stepIndex));
+  makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
 
   return stepBox;
 },
@@ -7509,9 +7663,12 @@ createFreeGiftSlotCard(step, stepIndex) {
       imageWrapper.appendChild(img);
       stepBox.appendChild(imageWrapper);
 
-      const clearBadge = document.createElement('div');
+      const clearBadge = document.createElement('button');
+      clearBadge.type = 'button';
       clearBadge.className = 'step-clear-badge';
       clearBadge.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#f3f4f6"/><path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      clearBadge.title = 'Remove this product';
+      clearBadge.setAttribute('aria-label', clearBadge.title);
       clearBadge.addEventListener('click', (e) => {
         e.stopPropagation();
         this.removeProductFromSelection(stepIndex, variantId);
@@ -7528,7 +7685,7 @@ createFreeGiftSlotCard(step, stepIndex) {
       stepBox.appendChild(productTitle);
 
       stepBox.appendChild(this._createRibbonSvg());
-      stepBox.addEventListener('click', () => this.openModal(stepIndex));
+      makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
       return stepBox;
     }
   }
@@ -7561,7 +7718,7 @@ createFreeGiftSlotCard(step, stepIndex) {
   stepBox.appendChild(this._createRibbonSvg());
 
   if (unlocked) {
-    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+    makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
   }
 
   return stepBox;
@@ -7767,6 +7924,10 @@ processProductsForStep(products, step) {
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : this._getProductPageControls?.()?.trackInventoryOnAddToCart === true;
+  const controls = typeof this._getProductPageControls === 'function'
+    ? this._getProductPageControls()
+    : null;
+  const hideOutOfStockProducts = controls?.hideOutOfStockProducts !== false;
   const isTrackedZeroStock = (variant) => (
     variant?.quantityAvailable === 0 && variant?.currentlyNotInStock !== true
   );
@@ -7795,21 +7956,23 @@ processProductsForStep(products, step) {
 
   return products.flatMap(product => {
     const sourceVariants = Array.isArray(product.variants) ? product.variants : [];
-    const customerSelectableVariants = sourceVariants.filter(variant => variant?.available !== false);
+    const customerVisibleVariants = hideOutOfStockProducts
+      ? sourceVariants.filter(variant => variant?.available !== false)
+      : sourceVariants;
 
     if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
-      if (customerSelectableVariants.length === 0) {
+      if (customerVisibleVariants.length === 0) {
         return [];
       }
 
-      const processedVariants = customerSelectableVariants.map(normalizeVariant);
+      const processedVariants = customerVisibleVariants.map(normalizeVariant);
 
       const processedOptions = (product.options || []).map(opt => {
         if (typeof opt === 'string') return opt;
         return opt.name || opt;
       });
 
-      return customerSelectableVariants
+      return customerVisibleVariants
         .map(variant => {
 
           const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
@@ -7836,17 +7999,17 @@ processProductsForStep(products, step) {
           };
         });
     } else {
-      if (sourceVariants.length > 0 && customerSelectableVariants.length === 0) {
+      if (sourceVariants.length > 0 && customerVisibleVariants.length === 0) {
         return [];
       }
 
-      const defaultVariant = customerSelectableVariants.find(isVariantSelectableForInventory)
-        || customerSelectableVariants[0]
+      const defaultVariant = customerVisibleVariants.find(isVariantSelectableForInventory)
+        || customerVisibleVariants[0]
         || null;
 
       const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
-      const processedVariants = customerSelectableVariants.map(normalizeVariant);
+      const processedVariants = customerVisibleVariants.map(normalizeVariant);
 
       const processedOptions = (product.options || []).map(opt => {
         if (typeof opt === 'string') return opt;
@@ -8514,6 +8677,12 @@ function resolveProductPageCardButtonText({
     .replace(/\{\{\s*quantity\s*\}\}/g, String(currentQuantity));
 }
 
+function resolveProductPageInlineAddText(resolveText) {
+  if (typeof resolveText !== 'function') return 'Add +';
+  const modalFallback = resolveText('productCardAddButton', 'Add +');
+  return resolveText('productCardInlineAddButton', modalFallback || 'Add +') || 'Add +';
+}
+
 function shouldDisableProductPageVariantOption(variant, trackInventoryOnAddToCart = false) {
   if (variant?.available !== true) {
     return true;
@@ -8541,37 +8710,6 @@ function shouldDisplayVariantsAsIndividualForModalCategory(
 
   return step?.displayVariantsAsIndividualProducts === true
     || step?.displayVariantsAsIndividual === true;
-}
-
-const MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
-
-function resolveProductCardDescription(product = {}) {
-  const candidate =
-    (typeof product.description === 'string' && product.description)
-    || (typeof product.descriptionHtml === 'string' && product.descriptionHtml)
-    || '';
-
-  return String(candidate);
-}
-
-function renderModalProductCardDescription(product, showSeeMore) {
-  if (!showSeeMore) return '';
-
-  const description = resolveProductCardDescription(product);
-  if (!description) return '';
-
-  const showToggle = description.length > MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
-  const shortDescription = showToggle
-    ? `${description.slice(0, MODAL_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
-    : description;
-
-  return `
-    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
-      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
-      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
-      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
-    </div>
-  `;
 }
 
 function getModalSoleVariantDisplayTitle(product = {}) {
@@ -8837,10 +8975,6 @@ renderModalProducts(stepIndex, productsToRender = null) {
   }
 
   const showQuantitySelector = widgetConfig.showQuantitySelectorOnCard;
-  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
-  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
-  const hoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
-  const seeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
 
   const freeGiftCardClass = isFreeGiftStep ? ' bw-product-card--free-gift' : '';
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
@@ -8865,14 +8999,8 @@ renderModalProducts(stepIndex, productsToRender = null) {
         : lowStock
           ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
           : '';
-      const descriptionMarkup = renderModalProductCardDescription(product, showSeeMoreLink);
-
       return `
-      <div class="product-card${freeGiftCardClass} ${hoverClass} ${seeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 ? `
-          <div class="selected-overlay">✓</div>
-        ` : ''}
-
+      <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}
@@ -8906,8 +9034,6 @@ renderModalProducts(stepIndex, productsToRender = null) {
             </div>
           ` : ''}
 
-          ${descriptionMarkup}
-
           <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
             ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add to Cart' })}
           </button>
@@ -8931,10 +9057,12 @@ renderVariantSelector(product) {
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : false;
+  const variantLabel = this._resolveText?.('productVariantLabel', 'Select variant') || 'Select variant';
 
   return `
     <div class="variant-selector-wrapper">
-      <select class="variant-selector" data-base-product-id="${product.id}">
+      <label class="visually-hidden" for="variant-selector-${product.id}">${ComponentGenerator.escapeHtml(variantLabel)}</label>
+      <select id="variant-selector-${product.id}" class="variant-selector" data-base-product-id="${product.id}" aria-label="${ComponentGenerator.escapeHtml(variantLabel)}">
         ${product.variants.map(v => {
           const isHardOOS = shouldDisableProductPageVariantOption(v, trackInventoryOnAddToCart);
           const label = isHardOOS ? `${v.title} — out of stock` : v.title;
@@ -8984,7 +9112,6 @@ attachProductEventHandlers(productGrid, stepIndex) {
   productGrid.parentNode.replaceChild(newProductGrid, productGrid);
 
   const step = this.selectedBundle.steps[stepIndex];
-  const widgetConfig = this.config || {};
 
   const findProduct = (productId) => {
     return this.findProductBySelectionKey(this.stepProductData[stepIndex] || [], productId);
@@ -9031,57 +9158,6 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
     return null;
   };
-
-  const setProductCardDescriptionExpanded = (productCard, expandedValue) => {
-    if (!productCard) return;
-
-    const root = productCard.querySelector('[data-bw-card-description="true"]');
-    if (!root) return;
-
-    const shortDescription = root.querySelector('.bw-product-card__description-short');
-    const fullDescription = root.querySelector('.bw-product-card__description-full');
-    const button = root.querySelector('.bw-product-card__see-more');
-    if (!shortDescription || !fullDescription || !button) return;
-
-    const isExpanded = typeof expandedValue === 'boolean'
-      ? expandedValue
-      : root.dataset.bwCardDescriptionExpanded === 'false';
-
-    root.dataset.bwCardDescriptionExpanded = isExpanded ? 'true' : 'false';
-    shortDescription.classList.toggle('hidden', isExpanded);
-    fullDescription.classList.toggle('hidden', !isExpanded);
-    button.textContent = isExpanded ? 'See less' : 'See more';
-    button.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
-  };
-
-  if (widgetConfig.displaySeeMoreLink === true) {
-
-    newProductGrid.addEventListener('click', (e) => {
-      const eventTarget = getEventTarget(e.target);
-      if (!eventTarget) return;
-
-      const seeMoreButton = findClosest(eventTarget, '.bw-product-card__see-more');
-      if (!seeMoreButton) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      const productCard = findClosest(seeMoreButton, '.product-card');
-      setProductCardDescriptionExpanded(productCard);
-    });
-  }
-
-  if (widgetConfig.expandProductCardOnHover === true) {
-    newProductGrid.querySelectorAll('.product-card.bw-product-card--hover-expand').forEach(card => {
-      card.classList.remove('bw-product-card--hover-expanded');
-      card.addEventListener('mouseenter', () => {
-        card.classList.add('bw-product-card--hover-expanded');
-      });
-      card.addEventListener('mouseleave', () => {
-        card.classList.remove('bw-product-card--hover-expanded');
-      });
-    });
-  }
 
   newProductGrid.addEventListener('click', (e) => {
     const eventTarget = getEventTarget(e.target);
@@ -9326,25 +9402,6 @@ function shouldAutoAdvanceProductPageStep({ quantity = 0, productId = '', step =
   });
 }
 
-function syncProductPageSelectedOverlay(productCard, quantity) {
-  if (!productCard) return null;
-
-  let selectedOverlay = productCard.querySelector('.selected-overlay');
-  if (!selectedOverlay && quantity > 0) {
-    selectedOverlay = productCard.ownerDocument?.createElement('div');
-    if (!selectedOverlay) return null;
-    selectedOverlay.className = 'selected-overlay';
-    selectedOverlay.textContent = '✓';
-    productCard.prepend(selectedOverlay);
-  }
-
-  if (selectedOverlay) {
-    selectedOverlay.style.display = quantity > 0 ? 'flex' : 'none';
-  }
-
-  return selectedOverlay;
-}
-
 const ProductPageSelectionMethods = {
 updateProductSelection(stepIndex, productId, newQuantity) {
   const selectionKey = this.normalizeSelectionKey(productId);
@@ -9410,7 +9467,12 @@ updateProductSelection(stepIndex, productId, newQuantity) {
   const selectedProductId = selectedProduct?.parentProductId || selectedProduct?.productId || selectedProduct?.id || selectionKey;
   if (!this._autoAdvancePending && shouldAutoAdvanceProductPageStep({ quantity, productId: selectedProductId, step: currentStep })) {
     this._autoAdvancePending = true;
-    this._autoProgressBottomSheet(stepIndex);
+    if (this._usesCascadeStepFlow?.() === true) {
+      this.navigateCascadeStep?.(1);
+      this._autoAdvancePending = false;
+    } else {
+      this._autoProgressBottomSheet(stepIndex);
+    }
   }
   this._maybeAutoAddAfterLastStep();
 },
@@ -9425,10 +9487,9 @@ _maybeAutoAddAfterLastStep() {
   if (!this.selectedBundle?.steps?.length) return;
 
   const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
-  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
-    if (step.isFreeGift || step.isDefault) return true;
-    return this.validateStep(index);
-  }) : true;
+  const allStepsValid = isConditionValidationEnabled
+    ? areRequiredProductPageStepsValid(this.selectedBundle.steps, this.validateStep.bind(this))
+    : true;
   if (!allStepsValid) return;
 
   this._autoAddingFromControls = true;
@@ -9524,18 +9585,16 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     const quantityDisplay = productCard.querySelector('.qty-display')
       || productCard.querySelector('.inline-qty-display');
     const addBtn = productCard.querySelector('.product-add-btn');
-    if (cogniveCard) {
-      productCard.querySelector('.selected-overlay')?.remove();
-    } else {
-      syncProductPageSelectedOverlay(productCard, quantity);
-    }
+    productCard.querySelector('.selected-overlay')?.remove();
     const increaseBtn = productCard.querySelector('.qty-increase');
     const actionWrapper = productCard.querySelector('.product-card-action')
       || productCard.querySelector('.bw-product-card__action');
     const existingInlineControls = productCard.querySelector('.inline-quantity-controls');
     const cascadeRow = productCard.classList.contains('bw-ppb-cascade-product-row');
     const step = this.selectedBundle?.steps?.[stepIndex];
-    const defaultAddText = cascadeRow ? 'Add +' : this._resolveText('productCardAddButton', 'Add to Cart');
+    const defaultAddText = cascadeRow
+      ? resolveProductPageInlineAddText(this._resolveText?.bind(this))
+      : this._resolveText('productCardAddButton', 'Add to Cart');
 
     if (quantityDisplay) {
       quantityDisplay.textContent = quantity;
@@ -9650,6 +9709,17 @@ function getProductPageActiveBoxSelectionRule(boxSelection) {
     || null;
 }
 
+function resolveRuntimeTokenProductId(product = {}) {
+  return product.parentProductId
+    || product.productId
+    || product.productGraphqlId
+    || product.graphqlId
+    || product.admin_graphql_api_id
+    || product.gid
+    || product.id
+    || null;
+}
+
 const ProductPageCartMethods = {
   async addToCart() {
     try {
@@ -9665,10 +9735,9 @@ const ProductPageCartMethods = {
       }
 
       const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
-      const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
-        if (step.isFreeGift || step.isDefault) return true;
-        return this.validateStep(index);
-      }) : true;
+      const allStepsValid = isConditionValidationEnabled
+        ? areRequiredProductPageStepsValid(this.selectedBundle.steps, this.validateStep.bind(this))
+        : true;
 
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
@@ -9843,7 +9912,8 @@ const ProductPageCartMethods = {
         const cartItem = {
           id: parseInt(this.extractId(variantId)),
           quantity,
-          properties
+          properties,
+          _wpbProductId: resolveRuntimeTokenProductId(product)
         };
         const sellingPlanAllocationId = this.getSelectedSellingPlanAllocationId(product, variantId);
         if (sellingPlanAllocationId) {
@@ -9905,6 +9975,7 @@ const ProductPageCartMethods = {
       const isAddon = stepType === 'addon' || (typeof stepType === 'string' && stepType.startsWith('addon:'));
       const line = {
         variantId: item.id,
+        productId: item._wpbProductId,
         quantity: item.quantity,
       };
       if (isAddon) {
@@ -10204,6 +10275,7 @@ class BundleWidgetProductPage {
 
       this._relocateContainerToProductForm();
       this._hideNativeProductPrice();
+      this._hideNativeDynamicCheckoutControls();
 
       this.setupDOMElements();
       this._markProductPageTemplate();

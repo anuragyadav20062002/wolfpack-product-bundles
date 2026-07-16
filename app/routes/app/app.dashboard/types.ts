@@ -28,7 +28,6 @@ export interface BundleWithPreview {
   bundleType: BundleType;
   status: BundleStatus;
   shopifyProductId: string | null;
-  shopifyPageHandle: string | null;
   previewHandle: string | null;
   createdAt: Date;
   updatedAt: Date;

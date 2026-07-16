@@ -43,11 +43,13 @@ export function CommonStepCategoryAccordion({
   step,
   cat,
   catIndex,
+  categoryControls,
 }: {
   adapter: CommonStepCategoryAccordionAdapter;
   step: any;
   cat: any;
   catIndex: number;
+  categoryControls?: React.ReactNode;
 }) {
   const {
     categoryActiveTabs,
@@ -399,6 +401,7 @@ export function CommonStepCategoryAccordion({
               styles={styles}
             />
           )}
+          {categoryControls}
         </div>
       )}
     </div>

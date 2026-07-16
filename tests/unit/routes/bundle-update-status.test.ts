@@ -78,7 +78,7 @@ describe("handleUpdateBundleStatus", () => {
     expect(admin.graphql).not.toHaveBeenCalled();
   });
 
-  it("calls admin.graphql with ACTIVE when status is 'active'", async () => {
+  it("does not mutate Shopify product status when bundle status becomes active", async () => {
     getDb().bundle.update.mockResolvedValue({
       id: "b1",
       shopifyProductId: "gid://shopify/Product/42",
@@ -87,15 +87,10 @@ describe("handleUpdateBundleStatus", () => {
     });
     const admin = makeAdmin();
     await handleUpdateBundleStatus(admin, MOCK_SESSION, "b1", makeForm("active"));
-    expect(admin.graphql).toHaveBeenCalledWith(
-      expect.stringContaining("ProductUpdateInput"),
-      expect.objectContaining({
-        variables: expect.objectContaining({ product: expect.objectContaining({ status: "ACTIVE" }) }),
-      })
-    );
+    expect(admin.graphql).not.toHaveBeenCalled();
   });
 
-  it("maps 'unlisted' through ACTIVE then UNLISTED with visibility troubleshooting copy", async () => {
+  it("does not mutate Shopify metadata when bundle status becomes unlisted", async () => {
     getDb().bundle.update.mockResolvedValue({
       id: "b1",
       name: "Test Bundle",
@@ -106,31 +101,10 @@ describe("handleUpdateBundleStatus", () => {
     });
     const admin = makeAdmin();
     await handleUpdateBundleStatus(admin, MOCK_SESSION, "b1", makeForm("unlisted"));
-    expect(admin.graphql).toHaveBeenCalledWith(
-      expect.stringContaining("ProductUpdateInput"),
-      expect.objectContaining({
-        variables: expect.objectContaining({
-          product: expect.objectContaining({
-            status: "ACTIVE",
-            descriptionHtml: expect.stringContaining("Category:</strong> Visibility"),
-          }),
-        }),
-      })
-    );
-    expect(admin.graphql).toHaveBeenCalledWith(
-      expect.stringContaining("ProductUpdateInput"),
-      expect.objectContaining({
-        variables: expect.objectContaining({
-          product: expect.objectContaining({
-            status: "UNLISTED",
-            descriptionHtml: expect.not.stringContaining("Merchant copy"),
-          }),
-        }),
-      })
-    );
+    expect(admin.graphql).not.toHaveBeenCalled();
   });
 
-  it("maps 'archived' to ARCHIVED Shopify status", async () => {
+  it("does not mutate Shopify product status when bundle status becomes archived", async () => {
     getDb().bundle.update.mockResolvedValue({
       id: "b1",
       shopifyProductId: "gid://shopify/Product/42",
@@ -139,12 +113,7 @@ describe("handleUpdateBundleStatus", () => {
     });
     const admin = makeAdmin();
     await handleUpdateBundleStatus(admin, MOCK_SESSION, "b1", makeForm("archived"));
-    expect(admin.graphql).toHaveBeenCalledWith(
-      expect.stringContaining("ProductUpdateInput"),
-      expect.objectContaining({
-        variables: expect.objectContaining({ product: expect.objectContaining({ status: "ARCHIVED" }) }),
-      })
-    );
+    expect(admin.graphql).not.toHaveBeenCalled();
   });
 
   it("returns success JSON with the updated bundle", async () => {
@@ -157,7 +126,7 @@ describe("handleUpdateBundleStatus", () => {
     expect(body.bundle).toMatchObject({ id: "b1" });
   });
 
-  it("does not throw when admin.graphql returns user errors (non-fatal status sync)", async () => {
+  it("returns success without consulting Shopify for bundles with parent products", async () => {
     getDb().bundle.update.mockResolvedValue({
       id: "b1",
       shopifyProductId: "gid://shopify/Product/42",
@@ -176,5 +145,6 @@ describe("handleUpdateBundleStatus", () => {
     const res = await handleUpdateBundleStatus(admin, MOCK_SESSION, "b1", makeForm("active"));
     const body = await res.json();
     expect(body.success).toBe(true);
+    expect(admin.graphql).not.toHaveBeenCalled();
   });
 });

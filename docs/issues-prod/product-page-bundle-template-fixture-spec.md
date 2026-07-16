@@ -1,11 +1,40 @@
-# Issue: PPB Fresh Template Storefront Parity
-**Issue ID:** ppb-fresh-template-parity-1
-**Status:** In Progress
+---
+schema_version: 1
+id: ppb-fresh-template-parity-1
+title: Product Page Bundle Template Fixture Specification
+type: fixture-spec
+status: completed
+summary: Defines the multi-step Product Page Bundle storefront fixture used to verify all four PPB designs.
+last_audited: 2026-07-14
+owners:
+  - Wolfpack Product Bundles
+domains:
+  - storefront
+systems:
+  - product-page-bundle-widget
+source_paths:
+  - app/assets/bundle-widget-product-page.js
+related_docs:
+  - docs/competitor-analysis/ppb-feature-to-storefront-matrix.md
+  - docs/refactor/full-page-and-product-page-template-verification-matrix.md
+tags:
+  - ppb
+  - fixture
+keywords:
+  - Product Page Bundle
+  - template fixture
+---
+
+# Product Page Bundle Template Fixture Specification
+
+**Fixture ID:** ppb-fresh-template-parity-1
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-06-04
 **Last Updated:** 2026-06-04 23:03
 
 ## Overview
+
 Create a fresh Product Page Bundle with multiple categories/steps and discount rules, then perform a live EB-vs-WPB storefront parity pass for every supported Product Page Bundle template:
 
 - Product List: `bundleDesignTemplate=PDP_INPAGE`, `templateId=CASCADE`

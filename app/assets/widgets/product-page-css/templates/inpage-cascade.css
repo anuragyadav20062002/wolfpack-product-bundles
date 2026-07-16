@@ -89,7 +89,7 @@
   padding: 0;
   border: 0;
   border-radius: 0;
-  background: transparent;
+  background: var(--bundle-product-card-bg, transparent);
   box-shadow: none;
 }
 
@@ -110,7 +110,7 @@
   img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: var(--bundle-product-card-image-fit, cover);
   display: block;
 }
 
@@ -124,7 +124,7 @@
   .bw-ppb-inpage-step-grid
   .product-title {
   grid-column: 2;
-  color: #111111;
+  color: var(--bundle-product-card-font-color, #111111);
   font-size: 13px;
   font-weight: 700;
   line-height: 16px;
@@ -408,6 +408,7 @@
   height: auto;
   min-height: 70px;
   border-radius: 7px;
+  background: var(--bundle-product-card-bg, transparent);
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"]:not([data-ppb-design-preset="PDP_MODAL"])
@@ -476,9 +477,6 @@
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"]:not([data-ppb-design-preset="PDP_MODAL"])
   .bw-ppb-cascade-product-row
-  .selected-overlay,
-#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"]:not([data-ppb-design-preset="PDP_MODAL"])
-  .bw-ppb-cascade-product-row
   .product-stock-badge {
   display: none;
 }
@@ -503,7 +501,7 @@
   line-height: normal;
   font-weight: 700;
   align-self: start;
-  color: #1e1e1e;
+  color: var(--bundle-product-card-font-color, #1e1e1e);
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"]:not([data-ppb-design-preset="PDP_MODAL"])
@@ -599,7 +597,7 @@
   font-size: 14px;
   font-weight: 700;
   line-height: normal;
-  color: #000000;
+  color: var(--bundle-product-final-price-color, #000000);
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"]:not([data-ppb-design-preset="PDP_MODAL"])
@@ -644,8 +642,8 @@
   height: 32px;
   padding: 4px 14px;
   border-radius: var(--bw-ppb-cascade-action-radius, 5px);
-  background: #111111;
-  color: #ffffff;
+  background: var(--bundle-button-bg, #111111);
+  color: var(--bundle-button-text-color, #ffffff);
   font-size: 14px;
   font-weight: 700;
   line-height: normal;
@@ -654,8 +652,8 @@
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"]:not([data-ppb-design-preset="PDP_MODAL"])
   .bw-ppb-cascade-product-row
   .product-add-btn.added {
-  background: #111111;
-  color: #ffffff;
+  background: var(--bundle-button-added-bg, var(--bundle-button-bg, #111111));
+  color: var(--bundle-button-added-text, var(--bundle-button-text-color, #ffffff));
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"]:not([data-ppb-design-preset="PDP_MODAL"])
@@ -681,8 +679,8 @@
   height: 32px;
   border: 0;
   border-radius: var(--bw-ppb-cascade-action-radius, 5px);
-  background: #111111;
-  color: #ffffff;
+  background: var(--bundle-button-bg, #111111);
+  color: var(--bundle-button-text-color, #ffffff);
   font-size: 14px;
   font-weight: 700;
   line-height: 25.2px;

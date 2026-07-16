@@ -103,9 +103,9 @@ export function buildBundleLinkModel(input: {
   if (input.bundleType === "full_page") {
     return {
       kind: "page",
-      isLinked: Boolean(input.pageHandle && input.fullPageUrl),
+      isLinked: Boolean(input.fullPageUrl),
       url: input.fullPageUrl ?? "",
-      emptyMessage: "Bundle page not yet linked.",
+      emptyMessage: "Bundle link is unavailable.",
     };
   }
 
@@ -190,4 +190,17 @@ export function applyPpbCategoryVariantFlags<T extends Record<string, unknown>>(
       ? { displayVariantsAsSwatches: flags.displayVariantsAsSwatches }
       : {}),
   }));
+}
+
+export function updatePpbCategoryVariantFlag<
+  T extends Record<string, unknown>,
+>(categories: T[], categoryIndex: number, enabled: boolean): T[] {
+  return categories.map((category, index) =>
+    index === categoryIndex
+      ? {
+          ...category,
+          displayVariantsAsIndividualProducts: enabled,
+        }
+      : category,
+  );
 }

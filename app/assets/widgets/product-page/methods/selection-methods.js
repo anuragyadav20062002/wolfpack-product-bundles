@@ -1,6 +1,7 @@
 import { ConditionValidator } from '../../shared/condition-validator.js';
 import { ToastManager } from '../../../bundle-widget-components.js';
-import { resolveProductPageCardButtonText } from './modal-methods.js';
+import { resolveProductPageCardButtonText, resolveProductPageInlineAddText } from './modal-methods.js';
+import { areRequiredProductPageStepsValid } from './step-validation.js';
 
 function createInlineQuantityControl(productId, quantity, increaseDisabled) {
   const wrapper = document.createElement('div');
@@ -115,25 +116,6 @@ export function shouldAutoAdvanceProductPageStep({ quantity = 0, productId = '',
   });
 }
 
-export function syncProductPageSelectedOverlay(productCard, quantity) {
-  if (!productCard) return null;
-
-  let selectedOverlay = productCard.querySelector('.selected-overlay');
-  if (!selectedOverlay && quantity > 0) {
-    selectedOverlay = productCard.ownerDocument?.createElement('div');
-    if (!selectedOverlay) return null;
-    selectedOverlay.className = 'selected-overlay';
-    selectedOverlay.textContent = '✓';
-    productCard.prepend(selectedOverlay);
-  }
-
-  if (selectedOverlay) {
-    selectedOverlay.style.display = quantity > 0 ? 'flex' : 'none';
-  }
-
-  return selectedOverlay;
-}
-
 export const ProductPageSelectionMethods = {
 updateProductSelection(stepIndex, productId, newQuantity) {
   const selectionKey = this.normalizeSelectionKey(productId);
@@ -207,7 +189,12 @@ updateProductSelection(stepIndex, productId, newQuantity) {
   const selectedProductId = selectedProduct?.parentProductId || selectedProduct?.productId || selectedProduct?.id || selectionKey;
   if (!this._autoAdvancePending && shouldAutoAdvanceProductPageStep({ quantity, productId: selectedProductId, step: currentStep })) {
     this._autoAdvancePending = true;
-    this._autoProgressBottomSheet(stepIndex);
+    if (this._usesCascadeStepFlow?.() === true) {
+      this.navigateCascadeStep?.(1);
+      this._autoAdvancePending = false;
+    } else {
+      this._autoProgressBottomSheet(stepIndex);
+    }
   }
   this._maybeAutoAddAfterLastStep();
 },
@@ -222,10 +209,9 @@ _maybeAutoAddAfterLastStep() {
   if (!this.selectedBundle?.steps?.length) return;
 
   const isConditionValidationEnabled = this._isConditionValidationEnabled?.() !== false;
-  const allStepsValid = isConditionValidationEnabled ? this.selectedBundle.steps.every((step, index) => {
-    if (step.isFreeGift || step.isDefault) return true;
-    return this.validateStep(index);
-  }) : true;
+  const allStepsValid = isConditionValidationEnabled
+    ? areRequiredProductPageStepsValid(this.selectedBundle.steps, this.validateStep.bind(this))
+    : true;
   if (!allStepsValid) return;
 
   this._autoAddingFromControls = true;
@@ -321,18 +307,16 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     const quantityDisplay = productCard.querySelector('.qty-display')
       || productCard.querySelector('.inline-qty-display');
     const addBtn = productCard.querySelector('.product-add-btn');
-    if (cogniveCard) {
-      productCard.querySelector('.selected-overlay')?.remove();
-    } else {
-      syncProductPageSelectedOverlay(productCard, quantity);
-    }
+    productCard.querySelector('.selected-overlay')?.remove();
     const increaseBtn = productCard.querySelector('.qty-increase');
     const actionWrapper = productCard.querySelector('.product-card-action')
       || productCard.querySelector('.bw-product-card__action');
     const existingInlineControls = productCard.querySelector('.inline-quantity-controls');
     const cascadeRow = productCard.classList.contains('bw-ppb-cascade-product-row');
     const step = this.selectedBundle?.steps?.[stepIndex];
-    const defaultAddText = cascadeRow ? 'Add +' : this._resolveText('productCardAddButton', 'Add to Cart');
+    const defaultAddText = cascadeRow
+      ? resolveProductPageInlineAddText(this._resolveText?.bind(this))
+      : this._resolveText('productCardAddButton', 'Add to Cart');
 
     if (quantityDisplay) {
       quantityDisplay.textContent = quantity;

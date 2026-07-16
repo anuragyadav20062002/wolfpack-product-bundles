@@ -42,6 +42,7 @@ describe("parsePPBBundleSettings", () => {
     expect(result.validateQuantityPerProduct).toEqual({ isEnabled: false, allowedQuantity: 1 });
     expect(result.individualSellingPlanSelection).toEqual({ isEnabled: false, showFor: "ALL_PRODUCTS" });
     expect(result.bundleTextConfig).toBeNull();
+    expect(result.useSingleStepCategoriesAsBundleSteps).toBe(false);
   });
 
   it("parses variantSelectorEnabled defaults to true when missing", () => {
@@ -217,5 +218,13 @@ describe("parsePPBBundleSettings", () => {
     }));
 
     expect(result.bundleTextConfig).toEqual(bundleTextConfig);
+  });
+
+  it("parses categories-as-bundle-steps when enabled", () => {
+    const result = parsePPBBundleSettings(makeForm({
+      useSingleStepCategoriesAsBundleSteps: "true",
+    }));
+
+    expect(result.useSingleStepCategoriesAsBundleSteps).toBe(true);
   });
 });

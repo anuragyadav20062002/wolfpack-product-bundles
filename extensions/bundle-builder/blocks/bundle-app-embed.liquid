@@ -7,6 +7,28 @@
   has not already rendered the widget container.
 {% endcomment %}
 
+{% assign app_namespace = '$app' %}
+{% assign fpb_parent_bundle_id = nil %}
+{% if product and product.variants.first %}
+  {% assign variant_metafields = product.variants.first.metafields[app_namespace] %}
+  {% if variant_metafields %}
+    {% assign bundle_ui_config_field = variant_metafields['bundle_ui_config'] %}
+    {% if bundle_ui_config_field and bundle_ui_config_field.value %}
+      {% assign bundle_ui_config = bundle_ui_config_field.value %}
+      {% if bundle_ui_config.bundleType == 'full_page' %}
+        {% assign fpb_parent_bundle_id = bundle_ui_config.bundleId | default: bundle_ui_config.id %}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+{% endif %}
+
+{% if fpb_parent_bundle_id != blank and request.design_mode == false %}
+  {% assign fpb_proxy_path = '/apps/product-bundles/wpb/' | append: fpb_parent_bundle_id %}
+  <script>
+    window.location.replace({{ fpb_proxy_path | json }});
+  </script>
+{% endif %}
+
 <script>
   window.__WOLFPACK_BUNDLE_EMBED_ACTIVE__ = true;
 
@@ -101,6 +123,7 @@
       container.dataset.fpbDesignPreset = initialPreset;
       container.dataset.fpbTabStyle = initialTabStyle;
       container.dataset.bundleConfig = marker.dataset.bundleConfig || 'null';
+      container.dataset.bundleConfigSource = marker.dataset.bundleConfigSource || '';
       container.dataset.bundleSettings = marker.dataset.bundleSettings || 'null';
       container.dataset.shop = marker.dataset.shop || '';
       container.innerHTML = '<div class="bundle-loading"><div class="loading-spinner"></div></div>';

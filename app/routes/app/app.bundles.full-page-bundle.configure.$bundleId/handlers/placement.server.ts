@@ -18,7 +18,6 @@ import {
   buildFullPageBundleMetafieldConfig,
   createProductPageRedirect,
 } from "./shared.server";
-import { syncFpbProductStatus } from "./product-status.server";
 
 /**
  * Handle widget placement validation with automated page creation
@@ -284,14 +283,6 @@ export async function handleValidateWidgetPlacement(
 
     if (bundle.shopifyProductId) {
       try {
-        await syncFpbProductStatus(
-          admin,
-          bundle.shopifyProductId,
-          bundleId,
-          BundleStatus.ACTIVE,
-          bundle.name,
-          bundle.description || null,
-        );
         await updateBundleProductMetafields(
           admin,
           bundle.shopifyProductId,

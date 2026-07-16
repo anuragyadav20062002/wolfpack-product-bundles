@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 import { loader } from "../../../app/routes/root/wpb.$bundleId";
+import { createFpbPreviewToken } from "../../../app/lib/fpb-preview-token.server";
 
 jest.mock("../../../app/lib/logger", () => ({
   AppLogger: {
@@ -48,7 +49,7 @@ describe("FPB app proxy page", () => {
     process.env.SHOPIFY_API_SECRET = originalSecret;
   });
 
-  it("redirects legacy signed full-page proxy links to the Shopify page URL", async () => {
+  it("renders active bundles as a theme-wrapped Liquid marker", async () => {
     getDb().bundle.findFirst.mockResolvedValue({
       id: "bundle-1",
       name: "Build a Box",
@@ -65,11 +66,16 @@ describe("FPB app proxy page", () => {
       params: { bundleId: "bundle-1" },
       context: {},
     } as any)) as Response;
-    expect(response.status).toBe(302);
-    expect(response.headers.get("Location")).toBe("https://test-shop.myshopify.com/pages/build-a-box");
+    const text = await response.text();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toContain("application/liquid");
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(text).toContain("data-wpb-full-page-bundle");
+    expect(text).toContain("data-bundle-id=\"bundle-1\"");
+    expect(text).not.toContain("/apps/product-bundles/assets/");
   });
 
-  it("does not render an app-proxy asset shell when no Shopify page is linked", async () => {
+  it("does not require a linked Shopify page", async () => {
     getDb().bundle.findFirst.mockResolvedValue({
       id: "bundle-1",
       name: "Build a Box",
@@ -88,7 +94,7 @@ describe("FPB app proxy page", () => {
     } as any)) as Response;
     const text = await response.text();
 
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(200);
     expect(text).not.toContain("/apps/product-bundles/assets/");
   });
 
@@ -130,14 +136,95 @@ describe("FPB app proxy page", () => {
         include: expect.objectContaining({
           steps: expect.objectContaining({
             include: expect.objectContaining({
-              StepProduct: true,
+              StepProduct: { orderBy: { position: "asc" } },
               StepCategory: { orderBy: { sortOrder: "asc" } },
             }),
           }),
         }),
       }),
     );
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(404);
+  });
+
+  it("renders ordered categories and escaped full configuration", async () => {
+    getDb().bundle.findFirst.mockResolvedValue({
+      id: "bundle-1",
+      name: "Build 'n <Box>",
+      description: null,
+      shopId: "test-shop.myshopify.com",
+      bundleType: "full_page",
+      status: "unlisted",
+      bundleDesignTemplate: "FBP_SIDE_FOOTER",
+      bundleDesignPresetId: "CLASSIC",
+      shopifyProductId: null,
+      steps: [{
+        id: "step-1",
+        name: "Choose",
+        position: 1,
+        enabled: true,
+        StepProduct: [],
+        StepCategory: [
+          { id: "cat-2", name: "Second", sortOrder: 2, products: [], collections: [] },
+          { id: "cat-1", name: "First", sortOrder: 1, products: [], collections: [] },
+        ],
+      }],
+      pricing: null,
+    });
+
+    const response = await loader({
+      request: makeSignedRequest(),
+      params: { bundleId: "bundle-1" },
+      context: {},
+    } as any) as Response;
+    const text = await response.text();
+
+    expect(text).toContain('data-bundle-config-source="app_proxy"');
+    expect(text).toContain("data-fpb-design-preset=\"CLASSIC\"");
+    expect(text).toContain("Build &#39;n &lt;Box&gt;");
+    expect(text).not.toContain("Build 'n <Box>");
+  });
+
+  it("requires a valid bound preview token for drafts", async () => {
+    getDb().bundle.findFirst.mockResolvedValue({
+      id: "bundle-1",
+      name: "Draft",
+      description: null,
+      shopId: "test-shop.myshopify.com",
+      bundleType: "full_page",
+      status: "draft",
+      shopifyProductId: null,
+      steps: [],
+      pricing: null,
+    });
+
+    const unsigned = await loader({
+      request: makeSignedRequest(),
+      params: { bundleId: "bundle-1" },
+      context: {},
+    } as any) as Response;
+    expect(unsigned.status).toBe(404);
+
+    const request = makeSignedRequest();
+    const url = new URL(request.url);
+    url.searchParams.set("wpb_preview", createFpbPreviewToken({
+      shop: "test-shop.myshopify.com",
+      bundleId: "bundle-1",
+      apiSecret: "test_api_secret",
+    }));
+    const paramsWithoutSignature = new URLSearchParams(url.searchParams);
+    paramsWithoutSignature.delete("signature");
+    const message = [...paramsWithoutSignature.entries()]
+      .map(([key, value]) => `${key}=${value}`)
+      .sort()
+      .join("");
+    url.searchParams.set("signature", createHmac("sha256", "test_api_secret").update(message).digest("hex"));
+
+    const signed = await loader({
+      request: new Request(url),
+      params: { bundleId: "bundle-1" },
+      context: {},
+    } as any) as Response;
+    expect(signed.status).toBe(200);
   });
 
   it("rejects invalid signatures before querying the bundle", async () => {

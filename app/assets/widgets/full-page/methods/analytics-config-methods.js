@@ -551,7 +551,16 @@ async loadBundleData() {
     const cachedConfig = this.container.dataset.bundleConfig;
     const cachedPayload = this._parseBundleConfigPayload(cachedConfig);
     if (cachedPayload) {
-      if (this._isBundleConfigBootstrapPayload(cachedPayload)) {
+      const isCurrentAppProxyDocumentPayload =
+        this.container.dataset.bundleConfigSource === 'app_proxy' &&
+        cachedPayload.id === bundleId &&
+        cachedPayload.bundleType === 'full_page' &&
+        Array.isArray(cachedPayload.steps);
+
+      if (isCurrentAppProxyDocumentPayload) {
+        bundleData = { [cachedPayload.id]: cachedPayload };
+        this._bundleConfigCacheMode = 'app-proxy-inline';
+      } else if (this._isBundleConfigBootstrapPayload(cachedPayload)) {
         this._bundleConfigCacheMode = 'bootstrap';
       } else if (typeof cachedPayload.id === 'string' && cachedPayload.id.trim() !== '') {
         this._bundleConfigCacheMode = 'legacy-full';

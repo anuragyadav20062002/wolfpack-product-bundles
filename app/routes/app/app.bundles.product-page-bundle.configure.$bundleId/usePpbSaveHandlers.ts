@@ -266,9 +266,7 @@ export function usePpbSaveHandlers({
       );
       formData.append(
         "useSingleStepCategoriesAsBundleSteps",
-        String(
-          (base.bundle as any).useSingleStepCategoriesAsBundleSteps ?? false,
-        ),
+        String(settings.useSingleStepCategoriesAsBundleSteps),
       );
       base.fetcher.submit(formData, { method: "post" });
       return;
