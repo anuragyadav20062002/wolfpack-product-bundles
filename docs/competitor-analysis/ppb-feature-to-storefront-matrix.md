@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07-C09, D11, G10, G12-G17, G19, G28, G30-G31, M10, and M12 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07-C09, D11, G10, G12-G19, G28, G30-G31, M10, and M12 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -199,7 +199,7 @@ toggle or alternate-value behavior.
 | G15 | Product/slot card style presets | Current EB PPB admin/runtime does not expose product-card or slot-card style preset controls | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) |
 | G16 | Checkout button style | Current EB PPB admin/runtime does not expose checkout-button style controls | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) |
 | G17 | Bundle-adding animation | Current EB PPB admin/runtime does not expose alternate bundle-adding animation controls | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) |
-| G18 | CTA text configuration | Saved merchant copy and long/localized text render correctly | **T** | **T** | **T** | **T** |
+| G18 | CTA text configuration | Saved merchant copy and long/localized text render correctly | **P** [G18 CTA text runtime evidence](ppb-deferred-functional-parity/G18-cta-text-runtime-evidence.md) | **P** [G18 CTA text runtime evidence](ppb-deferred-functional-parity/G18-cta-text-runtime-evidence.md) | **P** [G18 CTA text runtime evidence](ppb-deferred-functional-parity/G18-cta-text-runtime-evidence.md) | **P** [G18 CTA text runtime evidence](ppb-deferred-functional-parity/G18-cta-text-runtime-evidence.md) |
 | G19 | Bundle summary configuration | Current EB PPB admin/runtime does not expose bundle summary title/subtitle configuration | **E** [G19 bundle-summary absence](ppb-deferred-functional-parity/G19-bundle-summary-configuration-absence-evidence.md) | **E** [G19 bundle-summary absence](ppb-deferred-functional-parity/G19-bundle-summary-configuration-absence-evidence.md) | **E** [G19 bundle-summary absence](ppb-deferred-functional-parity/G19-bundle-summary-configuration-absence-evidence.md) | **E** [G19 bundle-summary absence](ppb-deferred-functional-parity/G19-bundle-summary-configuration-absence-evidence.md) |
 | G20 | Pricing configuration | Displayed original/savings/total fields follow saved visibility/copy | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) |
 | G21 | Store-level language/locale | PPB controls, validation, and CTA use the active locale | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) |
@@ -354,17 +354,17 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 74 | 0 | 12 | 18 | 3 | 12 |
-| Product Grid | 78 | 0 | 11 | 16 | 2 | 12 |
-| Horizontal Slots | 86 | 0 | 11 | 17 | 4 | 1 |
-| Vertical Slots | 84 | 0 | 12 | 17 | 5 | 1 |
+| Product List | 75 | 0 | 11 | 18 | 3 | 12 |
+| Product Grid | 79 | 0 | 10 | 16 | 2 | 12 |
+| Horizontal Slots | 87 | 0 | 10 | 17 | 4 | 1 |
+| Vertical Slots | 85 | 0 | 11 | 17 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **322**
+- Proven: **326**
 - Shared/partial: **0**
-- Not tested: **46**
+- Not tested: **42**
 - EB-absent: **68**
 - Accepted divergence: **14**
 - Not applicable: **26**
@@ -537,6 +537,18 @@ textOverrides consumed by the shared in-page and modal runtime families. This
 is sufficient for G21 because the row contract is active-locale consumption, not
 alternate-locale translation authoring.
 
+The 2026-07-16 G18 pass resolved CTA text configuration as terminal **P** for
+all PPB templates. EB Product Page Layout language fields were temporarily set
+to a `G18` long-copy sentinel for Add Bundle Cart, Previous, Next, and Done.
+Chrome DevTools MCP hard reloads with Cache Storage cleared proved EB Product
+Grid desktop/mobile runtime served the sentinel through
+`pageCustomizationSettings.customTextSettings` and rendered the long Next CTA.
+WPB mirrored the same Product Page language payload through
+`buildSettingsLanguageRuntime`; desktop/mobile hard reloads on widget `5.0.189`
+returned the sentinel from the language endpoint and rendered the long Add
+Bundle CTA. Both EB and WPB were restored to default copy and reverified with
+no remaining `G18` text.
+
 The 2026-07-16 G37 shared-runtime pass closed Bundle Cart / Bundle / Toast
 language fields across all PPB templates. Fresh Chrome DevTools MCP
 cache-cleared hard reloads proved EB Product Grid desktop/mobile runtime still
@@ -630,7 +642,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **46** `T` cells, not 106. The best path is to batch them
+The current parser shows **42** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
@@ -642,13 +654,12 @@ by persisted/runtime owner instead of row order:
    product mutation and restore it immediately.
 2. **Step/navigation media sweep:** C16 all templates. This shares one
    step/category banner-media setting while cycling the four templates once.
-3. **Global copy and pricing-display sweep:** G18 across all templates. This is
-   a merchant-copy control, so one saved Product Page Layout text payload should
-   cover CTA copy. G19 is terminal **E** from the 2026-07-16 Product Page
-   summary-title absence review, G21 is terminal **P** from the 2026-07-16
-   active-locale replay, G26 is terminal **E** from the 2026-07-16 shared
-   cart-line format replay, and G37 is already closed by the
-   2026-07-16 shared PPB language runtime proof.
+3. **Global copy and pricing-display sweep is closed:** G18 is terminal **P**
+   from the 2026-07-16 Product Page Layout CTA replay, G19 is terminal **E**
+   from the 2026-07-16 Product Page summary-title absence review, G21 is
+   terminal **P** from the 2026-07-16 active-locale replay, G26 is terminal
+   **E** from the 2026-07-16 shared cart-line format replay, and G37 is closed
+   by the 2026-07-16 shared PPB language runtime proof.
 4. **Global design/media/CSS sweep:** G07, G33-G35. Reuse one
    high-contrast design payload and one scoped CSS sentinel across all
    templates. G29 is terminal EB-absent, and G30/G31 are now proven across all
