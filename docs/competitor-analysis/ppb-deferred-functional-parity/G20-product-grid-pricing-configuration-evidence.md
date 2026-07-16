@@ -4,7 +4,7 @@ id: ppb-g20-pricing-configuration-evidence
 title: PPB G20 Pricing Configuration Evidence
 type: parity-evidence
 status: active
-summary: Documents Product List, Product Grid, and Horizontal Slots proof that saved quantity-tier pricing displays original, discounted, progress, and CTA pricing states.
+summary: Documents Product List, Product Grid, Horizontal Slots, and Vertical Slots proof that saved quantity-tier pricing displays original, discounted, progress, and CTA pricing states.
 last_audited: 2026-07-16
 owners:
   - Wolfpack Product Bundles
@@ -25,9 +25,11 @@ keywords:
   - Product List
   - Product Grid
   - Horizontal Slots
+  - Vertical Slots
   - COGNIVE
   - CASCADE
   - MODAL
+  - SIMPLIFIED
   - pricing configuration
 ---
 
@@ -35,9 +37,9 @@ keywords:
 
 ## Result
 
-G20 is terminal **P** for Product List, Product Grid, and Horizontal Slots.
+G20 is terminal **P** for Product List, Product Grid, Horizontal Slots, and Vertical Slots.
 
-This evidence verifies the default active quantity-tier pricing configuration on the Product List, Product Grid, and Horizontal Slots fixtures. It does not close Vertical Slots, and it does not close G26's alternate cart-line discount-display formats.
+This evidence verifies the default active quantity-tier pricing configuration on the Product List, Product Grid, Horizontal Slots, and Vertical Slots fixtures. It does not close G26's alternate cart-line discount-display formats.
 
 ## Product List evidence
 
@@ -168,8 +170,29 @@ Desktop HSS1 stress pass at `1280 x 800`:
 
 This proves G20 Horizontal Slots.
 
+## Vertical Slots evidence
+
+`docs/competitor-analysis/ppb-vertical-slots-agentic-parity/VS02-filled-row-delta.md`, `docs/competitor-analysis/ppb-vertical-slots-agentic-parity/VS03-selection-progression-evidence.md`, and `docs/competitor-analysis/ppb-vertical-slots-agentic-parity/COMPLETION-AUDIT.md` provide the required Vertical Slots pricing proof.
+
+Mobile Vertical Slots progression:
+
+- Two Step 1 selected products produced subtotal `₹1448`, discounted total `₹1375.60`, count `2`, and the 5% tier.
+- Exact-one Step 2 selection produced subtotal `₹1977`, discounted total `₹1779.30`, count `3`, and the 10% tier.
+- WPB matched the same selection order, discount totals, dynamic capacity, removal reindexing, body lock, and zero overflow.
+
+Desktop Vertical Slots replay:
+
+- The `1280 x 800` replay in `VS02-filled-row-delta.md` proved the same filled-row contract in real desktop product columns.
+- That same replay followed the already-documented progression from `₹1448 / ₹1375.60 / 2` after Step 1 to `₹1977 / ₹1779.30 / 3` after Step 2.
+- EB and WPB both retained the dynamic `Product 3` slot, used 50px media, had zero overflow, and restored to the intended empty-slot state after cache-bypassed reload.
+
+Completion audit:
+
+- The Vertical Slots audit marks `CTA, discounts, totals, validation` as proven: VS03 proves 5%/10% totals and exact-one validation.
+- It also records restoration to `SIMPLIFIED`, zero filled rows, original empty rows, and default theme width.
+
+This proves G20 Vertical Slots.
+
 ## Matrix update
 
-Promote G20 Product List, Product Grid, and Horizontal Slots to **P**.
-
-Keep G20 Vertical Slots at **T** until desktop plus mobile pricing-visibility proof is captured or a stronger existing evidence note is located.
+Promote G20 Product List, Product Grid, Horizontal Slots, and Vertical Slots to **P**.
