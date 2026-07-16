@@ -332,6 +332,10 @@
   z-index: 100;
   transition: all 0.2s ease;
   line-height: 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
 }
 
 .step-clear-badge svg {
@@ -408,6 +412,7 @@
   border: none;
   border-radius: var(--bundle-add-to-cart-button-radius, 40px);
   font-size: var(--bundle-add-to-cart-button-font-size, 16px);
+  font-family: var(--bundle-font-family, inherit);
   font-weight: var(--bundle-add-to-cart-button-font-weight, 600);
   cursor: pointer;
   width: 100%;

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.172
- * Built   : 2026-07-14
+ * Version : 5.0.189
+ * Built   : 2026-07-16
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.172';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.189';
 (function() {
   'use strict';
 
@@ -2830,7 +2830,9 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const imageUrl = imageUrls[0] || DEFAULT_PLACEHOLDER_IMAGE;
   const hasMultipleImages = imageUrls.length > 1;
   const price = formatPrice(product.price, currencyInfo);
-  const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
+  const compareAtPrice = options.showCompareAtPrice === true
+    ? formatPrice(product.compareAtPrice, currencyInfo)
+    : '';
   const variantSelectorBeforePrice = options.variantSelectorPlacement === 'beforePrice';
   const rootClasses = [
     'bw-product-card',
@@ -4996,7 +4998,16 @@ async loadBundleData() {
     const cachedConfig = this.container.dataset.bundleConfig;
     const cachedPayload = this._parseBundleConfigPayload(cachedConfig);
     if (cachedPayload) {
-      if (this._isBundleConfigBootstrapPayload(cachedPayload)) {
+      const isCurrentAppProxyDocumentPayload =
+        this.container.dataset.bundleConfigSource === 'app_proxy' &&
+        cachedPayload.id === bundleId &&
+        cachedPayload.bundleType === 'full_page' &&
+        Array.isArray(cachedPayload.steps);
+
+      if (isCurrentAppProxyDocumentPayload) {
+        bundleData = { [cachedPayload.id]: cachedPayload };
+        this._bundleConfigCacheMode = 'app-proxy-inline';
+      } else if (this._isBundleConfigBootstrapPayload(cachedPayload)) {
         this._bundleConfigCacheMode = 'bootstrap';
       } else if (typeof cachedPayload.id === 'string' && cachedPayload.id.trim() !== '') {
         this._bundleConfigCacheMode = 'legacy-full';
@@ -8923,9 +8934,11 @@ createProductCard(product, stepIndex, options = {}) {
       currentQuantity,
       currencyInfo,
       {
+        description: '',
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         className: outOfStock ? 'is-out-of-stock' : '',
+        showCompareAtPrice: true,
         addButtonText: this.getProductCardAddButtonText(step),
         cardBadgeHtml: stockBadgeHtml,
         variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,
@@ -12595,6 +12608,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
       {
         variantSelectorHtml,
         stockBadgeHtml: stockBadge,
+        showCompareAtPrice: true,
         addButtonText: outOfStock ? 'Out of stock' : this.getProductAddButtonText(),
         addDisabled,
         decreaseDisabled: currentQuantity <= 0,

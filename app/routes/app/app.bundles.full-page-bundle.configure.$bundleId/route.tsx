@@ -17,20 +17,12 @@ import {
   handleUpdateBundleStatus,
   handleSyncProduct,
   handleUpdateBundleProduct,
-  handleGetPages,
-  handleGetThemeTemplates,
-  handleGetCurrentTheme,
-  handleEnsureBundleTemplates,
-  handleCheckFullPageTemplate,
-  handleValidateWidgetPlacement,
-  handleCreatePreviewPage,
-  handleRenamePageSlug,
   handleUpdateBundleDesignTemplate,
+  handleSyncBundle,
 } from "./handlers";
-import { handleRecordBundlePreview } from "../shared/bundle-preview-action.server";
+import { handleCreateFpbPreview, handleRecordBundlePreview } from "../shared/bundle-preview-action.server";
 import {
   handlePrepareStorefrontPreview,
-  handleSyncStorefrontNow,
 } from "../shared/storefront-sync-action.server";
 import ConfigureBundleFlow from "./ConfigureBundleFlow";
 
@@ -151,36 +143,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           bundleId,
           formData,
         );
-      case "getPages":
-        return await handleGetPages(admin, session);
-      case "getThemeTemplates":
-        return await handleGetThemeTemplates(admin, session);
-      case "getCurrentTheme":
-        return await handleGetCurrentTheme(admin, session);
-      case "ensureBundleTemplates":
-        return await handleEnsureBundleTemplates(admin, session);
-      case "checkFullPageTemplate":
-        return await handleCheckFullPageTemplate(admin, session);
-      case "validateWidgetPlacement":
-        return await handleValidateWidgetPlacement(
-          admin,
-          session,
-          bundleId,
-          String(formData.get("desiredSlug") || ""),
-        );
-      case "renamePageSlug":
-        return await handleRenamePageSlug(
-          admin,
-          session,
-          bundleId,
-          String(formData.get("newSlug") || ""),
-        );
-      case "createPreviewPage":
-        return await handleCreatePreviewPage(admin, session, bundleId);
+      case "createFpbPreview":
+        return await handleCreateFpbPreview(admin, session, bundleId);
       case "recordBundlePreview":
         return await handleRecordBundlePreview(admin, session, bundleId, formData);
       case "syncBundle":
-        return await handleSyncStorefrontNow(admin, session, bundleId, "full_page", "sync_bundle");
+        return await handleSyncBundle(admin, session, bundleId);
       case "preparePreviewBundle":
         return await handlePrepareStorefrontPreview(admin, session, bundleId, "full_page");
       case "updateBundleDesignTemplate":

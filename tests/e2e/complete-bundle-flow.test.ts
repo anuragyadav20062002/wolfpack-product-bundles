@@ -2,12 +2,12 @@
  * E2E scaffold:
  * - Create a new FPB bundle from create handler
  * - Save that bundle with EB parity Free Gift & Add Ons contract
- * - Verify persisted contract and metafield-sync payload
+ * - Verify persisted contract and proxy-hosted storefront sync dispatch
  */
 
 import { handleCreateBundle } from "../../app/routes/app/app.dashboard/handlers/handlers.server";
 import { handleSaveBundle } from "../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
-import { updateBundleProductMetafields } from "../../app/services/bundles/metafield-sync.server";
+import { syncBundleStorefrontNow } from "../../app/services/bundles/storefront-sync.server";
 
 jest.mock("../../app/db.server", () => ({
   __esModule: true,
@@ -50,6 +50,19 @@ jest.mock("../../app/services/widget-installation.server", () => ({
 jest.mock("../../app/services/bundles/metafield-sync.server", () => ({
   updateBundleProductMetafields: jest.fn().mockResolvedValue(undefined),
   updateComponentProductMetafields: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock("../../app/services/bundles/storefront-sync.server", () => ({
+  syncBundleStorefrontNow: jest.fn().mockResolvedValue({ success: true }),
+  compactBundleForConfigureResponse: jest.fn((bundle) => bundle),
+}));
+
+jest.mock("../../app/services/bundles/bundle-parent-product.server", () => ({
+  ensureBundleParentProduct: jest.fn().mockResolvedValue({
+    productId: "gid://shopify/Product/1001",
+    handle: "fpb-fresh-bundle",
+    created: true,
+  }),
 }));
 
 jest.mock("../../app/services/bundles/standard-metafields.server", () => ({
@@ -398,8 +411,10 @@ describe("FPB create + configure parity flow (scaffolded E2E path)", () => {
     );
     const saveBody = await saveResponse.json();
 
-    expect(saveResponse.status).toBe(200);
-    expect(saveBody.success).toBe(true);
+    expect({ status: saveResponse.status, body: saveBody }).toMatchObject({
+      status: 200,
+      body: { success: true },
+    });
 
     const updateCall = db.bundle.update.mock.calls[0][0];
     expect(updateCall.data.personalizationData).toMatchObject({
@@ -420,18 +435,12 @@ describe("FPB create + configure parity flow (scaffolded E2E path)", () => {
     });
     expect(updateCall.data.steps.create[1].minQuantity).toBe(1);
 
-    const metafieldPayload = (updateBundleProductMetafields as jest.Mock).mock.calls[0][2];
-    expect(metafieldPayload.personalizationData.addonProducts.tiers).toHaveLength(2);
-    expect(metafieldPayload.personalizationData.addonProducts.tiers[1]).toMatchObject({
-      tierId: "tier-2",
-      discount: {
-        type: "PERCENTAGE",
-        value: 100,
-      },
-      eligibilityCondition: expect.objectContaining({
-        type: "QUANTITY",
-        value: 6,
-      }),
+    expect(syncBundleStorefrontNow).toHaveBeenCalledWith({
+      admin: saveAdmin,
+      shopDomain: mockSession.shop,
+      bundleId: "bundle-1",
+      bundleType: "full_page",
+      reason: "save",
     });
   });
 
@@ -480,15 +489,22 @@ describe("FPB create + configure parity flow (scaffolded E2E path)", () => {
     );
     const saveBody = await saveResponse.json();
 
-    expect(saveResponse.status).toBe(200);
-    expect(saveBody.success).toBe(true);
+    expect({ status: saveResponse.status, body: saveBody }).toMatchObject({
+      status: 200,
+      body: { success: true },
+    });
 
-    const metafieldPayload = (updateBundleProductMetafields as jest.Mock).mock.calls[0][2];
-    expect(metafieldPayload.personalizationData.addonProducts.tiers[0]).toMatchObject({
+    const updateCall = db.bundle.update.mock.calls[0][0];
+    expect(updateCall.data.personalizationData.addonProducts.tiers[0]).toMatchObject({
       eligibilityCondition: {
         type: "QUANTITY",
         value: 1,
       },
     });
+    expect(syncBundleStorefrontNow).toHaveBeenCalledWith(expect.objectContaining({
+      bundleId: "bundle-1",
+      bundleType: "full_page",
+      reason: "save",
+    }));
   });
 });

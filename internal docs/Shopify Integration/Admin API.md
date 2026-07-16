@@ -94,6 +94,12 @@ mutation UpdateProduct($product: ProductUpdateInput!, $media: [CreateMediaInput!
 
 The older `input: ProductInput` argument remains documented only as deprecated for `productCreate` and should not be used for generated bundle product creation or update flows. `ProductUpdateInput` includes `id`, `title`, `descriptionHtml`, `status`, `vendor`, `productType`, `tags`, and related fields.
 
+### Bundle Parent Product Contract
+
+FPB and PPB share the parent-product lifecycle documented in [[Architecture/Bundle Parent Product]]. New parents are created with `ProductCreateInput` as `UNLISTED`, published to Online Store, and given one neutral default variant (`0.00`, continue selling, non-taxable, and `requiresComponents: true`). The returned product ID and actual Shopify handle are persisted before variant configuration or publication so a partial post-create failure can be retried without creating a duplicate.
+
+After creation, title, description, handle, media, and product status are merchant-owned. Explicit bundle sync enforces only the neutral variant, publication, required metafields, and the locally stored live handle. Wolfpack bundle availability changes do not call `productUpdate` and therefore do not change Shopify discoverability.
+
 ### Product Media Cleanup
 
 For existing product media, Shopify Admin GraphQL latest (`2026-04` as of 2026-05-27) marks `productDeleteMedia` as deprecated and points to `fileUpdate` instead. To remove an existing media file from a product gallery without using deprecated product media deletion, call:

@@ -1,7 +1,25 @@
 ---
-title: Wolfpack Product Bundles — Internal Docs
+schema_version: 1
+id: internal-docs-index
+title: Wolfpack Product Bundles Internal Docs
 type: index
-last_audited: 2026-04-16
+status: authoritative
+summary: Index of durable Wolfpack Product Bundles architecture, integration, feature, and operations documentation.
+last_audited: 2026-07-14
+owners:
+  - engineering
+domains:
+  - documentation
+systems:
+  - internal-docs
+source_paths:
+  - internal docs/
+related_docs: []
+tags:
+  - index
+keywords:
+  - architecture
+  - operations
 ---
 
 # Wolfpack Product Bundles — Internal Docs
@@ -36,7 +54,10 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Architecture/Widget Architecture]] — FPB + PDP widgets, load strategy, versioning
 - [[Architecture/Product Card Layout Contract]] — Hard rule for row-level card size behavior across all templates and interaction states
 - [[Architecture/Admin Configure Page]] — shared FPB/PPB Admin configure-page adapter boundary, section rhythm, route-owned save semantics
+- [[Architecture/Bundle Parent Product]] — shared neutral FPB/PPB Shopify parent contract, merchant metadata ownership, sync invariants, and host separation
+- [[Architecture/FPB Host Evaluation]] — accepted signed app-proxy FPB document host, preview-token contract, and Page retirement sequence
 - [[Architecture/State Management]] — Redux Toolkit slices, RTK Query endpoint boundaries, and AppStateService migration rules
+- [[Architecture/Diagrams/index|Architecture Diagram Catalog]] — indexed Mermaid diagrams for Cart Transform, metafield ownership/consumption, storefront runtime, backend layers, and embedded Admin UI
 - [[Shopify Integration/Admin API]] — Rate limits, GraphQL patterns, session handling
 - [[Shopify Integration/Storefront API]] — Storefront GraphQL field gotchas, including product description HTML handling
 - [[Shopify Integration/Cart Transform API]] — Operations, targets, API versions (2025-10)

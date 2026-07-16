@@ -5,6 +5,7 @@ import {
   formatProductPageStepValidationToast,
   getProductPageModalValidationToastOptions,
 } from './modal-state-methods.js';
+import { getLastRequiredProductPageStepIndex } from './step-validation.js';
 
 const MIN_LOADING_OVERLAY_VISIBLE_MS = 180;
 
@@ -78,14 +79,15 @@ hideLoadingOverlay() {
 attachEventListeners() {
   // Add to cart button
   this.elements.addToCartButton.addEventListener('click', () => {
+    const lastRequiredStepIndex = getLastRequiredProductPageStepIndex(this.selectedBundle?.steps);
     const isIntermediateCascadeStep = this._usesCascadeStepFlow?.()
-      && this.currentStepIndex < this.selectedBundle.steps.length - 1;
+      && this.currentStepIndex < lastRequiredStepIndex;
     if (isIntermediateCascadeStep) {
       const navigated = this.navigateCascadeStep(1);
       if (!navigated && this._isProductPageGridTemplate?.() === true) {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
         ToastManager.show(
-          formatProductPageStepValidationToast(currentStep)
+          formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
             || 'Please meet the quantity conditions for the current step before proceeding.',
           4000,
           {
@@ -213,7 +215,7 @@ async navigateModal(direction) {
         this.preloadNextStep();
       } else {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-        const message = formatProductPageStepValidationToast(currentStep)
+        const message = formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before proceeding.';
         ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }
@@ -223,7 +225,7 @@ async navigateModal(direction) {
         this.closeModal();
       } else {
         const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-        const message = formatProductPageStepValidationToast(currentStep)
+        const message = formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before finishing.';
         ToastManager.show(message, 4000, getProductPageModalValidationToastOptions());
       }

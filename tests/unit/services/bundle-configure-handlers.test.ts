@@ -10,7 +10,6 @@ import {
   handleUpdateBundleProduct,
   normaliseShopifyProductId,
   safeJsonParse,
-  getShopifyStatusFromBundleStatus,
 } from "../../../app/services/bundles/bundle-configure-handlers.server";
 import { BundleStatus } from "../../../app/constants/bundle";
 
@@ -204,7 +203,7 @@ describe("handleUpdateBundleStatus", () => {
     expect(admin.graphql).not.toHaveBeenCalled();
   });
 
-  it("syncs archived status via direct Shopify ARCHIVED status and description text", async () => {
+  it("updates archived availability without mutating Shopify", async () => {
     const admin = {
       graphql: jest.fn().mockResolvedValue({
         json: async () => ({
@@ -227,21 +226,10 @@ describe("handleUpdateBundleStatus", () => {
     const body = await res.json();
 
     expect(body.success).toBe(true);
-    expect(admin.graphql).toHaveBeenCalledWith(
-      expect.stringContaining("ProductUpdateInput"),
-      expect.objectContaining({
-        variables: {
-          product: {
-            id: PRODUCT_ID,
-            status: "ARCHIVED",
-            descriptionHtml: "Status managed by WPB",
-          },
-        },
-      }),
-    );
+    expect(admin.graphql).not.toHaveBeenCalled();
   });
 
-  it("syncs unlisted via ACTIVE then UNLISTED and keeps unlisted-facing description", async () => {
+  it("updates unlisted availability without mutating Shopify metadata", async () => {
     const admin = {
       graphql: jest
         .fn()
@@ -276,39 +264,7 @@ describe("handleUpdateBundleStatus", () => {
     const body = await res.json();
 
     expect(body.success).toBe(true);
-    expect(admin.graphql).toHaveBeenCalledTimes(2);
-    expect(admin.graphql).toHaveBeenNthCalledWith(
-      1,
-      expect.stringContaining("ProductUpdateInput"),
-      expect.objectContaining({
-        variables: {
-          product: expect.objectContaining({
-            id: PRODUCT_ID,
-            status: "ACTIVE",
-            descriptionHtml: expect.stringContaining("Your Bundle is Unlisted"),
-          }),
-        },
-      }),
-    );
-    expect(admin.graphql).toHaveBeenNthCalledWith(
-      2,
-      expect.stringContaining("ProductUpdateInput"),
-      expect.objectContaining({
-        variables: {
-          product: expect.objectContaining({
-            id: PRODUCT_ID,
-            status: "UNLISTED",
-            descriptionHtml: expect.stringContaining("Your Bundle is Unlisted"),
-          }),
-        },
-      }),
-    );
+    expect(admin.graphql).not.toHaveBeenCalled();
   });
 
-  it("maps bundle status constants to expected Shopify product statuses", () => {
-    expect(getShopifyStatusFromBundleStatus(BundleStatus.ACTIVE)).toBe("ACTIVE");
-    expect(getShopifyStatusFromBundleStatus(BundleStatus.DRAFT)).toBe("DRAFT");
-    expect(getShopifyStatusFromBundleStatus(BundleStatus.ARCHIVED)).toBe("ARCHIVED");
-    expect(getShopifyStatusFromBundleStatus(BundleStatus.UNLISTED)).toBe("ACTIVE");
-  });
 });

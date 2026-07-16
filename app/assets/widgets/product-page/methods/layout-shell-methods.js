@@ -154,11 +154,12 @@ _renderDirectDefaultProducts() {
 
 // Returns a full-width banner image element for a step, or null if not configured
 _createStepBannerImage(step) {
-  if (!step?.bannerImageUrl) return null;
+  const imageUrl = step?.stepImage || step?.bannerImageUrl || null;
+  if (!imageUrl) return null;
   const wrapper = document.createElement('div');
   wrapper.className = 'step-banner-image';
   const img = document.createElement('img');
-  img.src = step.bannerImageUrl;
+  img.src = imageUrl;
   img.alt = step.name || '';
   img.style.width = '100%';
   img.style.display = 'block';
@@ -191,9 +192,6 @@ renderProductPageLayout() {
       const target = section.querySelector('.bw-ppb-inpage-step-grid');
       this.elements.stepsContainer.appendChild(section);
 
-      const banner = this._createStepBannerImage(step);
-      if (banner) target.appendChild(banner);
-
       this._renderInpageStepProducts(stepIndex, target);
       return;
     }
@@ -211,10 +209,6 @@ renderProductPageLayout() {
     if (section) {
       this.elements.stepsContainer.appendChild(section);
     }
-
-    // Inject per-step banner image above this step's card(s)
-    const banner = this._createStepBannerImage(step);
-    if (banner) target.appendChild(banner);
 
     if (step.isDefault) {
       // Default/compulsory slot — always pre-filled, not removable
@@ -264,6 +258,10 @@ renderProductPageLayout() {
         }
       }
     }
+
+    // Inject per-step banner image above this step's card(s) after card rendering.
+    const banner = this._createStepBannerImage(step);
+    if (banner) target.prepend(banner);
   });
 },
 
@@ -284,8 +282,6 @@ _renderCogniveStepFlowLayout() {
     const target = section.querySelector('.bw-ppb-inpage-step-grid');
     this.elements.stepsContainer.appendChild(section);
 
-    const banner = this._createStepBannerImage(step);
-    if (banner) target.appendChild(banner);
     this._renderInpageStepProducts(stepIndex, target);
   });
 },
@@ -305,7 +301,7 @@ _createCogniveStepHeader(step, stepIndex) {
     if (!this.isStepAccessible(stepIndex)) {
       const currentStep = this.selectedBundle.steps[this.currentStepIndex];
       ToastManager.show(
-        formatProductPageStepValidationToast(currentStep)
+        formatProductPageStepValidationToast(currentStep, this._resolveText?.bind(this))
           || 'Please meet the quantity conditions for the current step before proceeding.',
         4000,
         {
@@ -354,11 +350,21 @@ _createCascadeStepFlowHeader() {
       this.renderSteps();
       this.renderFooter();
       this.updateAddToCartButton();
+      this._focusCascadeStepFlowButton(stepIndex);
     });
     header.appendChild(button);
   });
 
   return header;
+},
+
+_focusCascadeStepFlowButton(stepIndex) {
+  const buttons = this.elements?.stepsContainer
+    ?.querySelectorAll?.('.bw-ppb-cascade-step-flow__step') || [];
+  const target = buttons[stepIndex];
+  if (target && typeof target.focus === 'function') {
+    target.focus();
+  }
 },
 
 navigateCascadeStep(direction) {
@@ -379,6 +385,7 @@ navigateCascadeStep(direction) {
   this.renderSteps();
   this.renderFooter();
   this.updateAddToCartButton();
+  this._focusCascadeStepFlowButton(this.currentStepIndex);
   return true;
 },
 
@@ -473,7 +480,9 @@ _categoryHasCollections(category) {
 },
 
 _filterProductsForInpageCategory(step, products, stepIndex) {
-  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  const categories = Array.isArray(step?.categories)
+    ? step.categories
+    : Object.values(step?.categories || {});
   if (categories.length === 0) return products;
 
   const activeIndex = this.activeInpageCategoryIndexes[stepIndex] || 0;

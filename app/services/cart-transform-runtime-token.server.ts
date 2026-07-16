@@ -33,7 +33,7 @@ export type RuntimeTokenPayload = {
 };
 
 type SelectionInput = {
-  components?: Array<{ variantId?: unknown; quantity?: unknown }>;
+  components?: Array<{ variantId?: unknown; productId?: unknown; quantity?: unknown }>;
   addons?: Array<{ variantId?: unknown; quantity?: unknown; discount?: unknown }>;
 };
 
@@ -43,6 +43,15 @@ export function normalizeProductVariantGid(value: unknown): string | null {
   if (!raw) return null;
   if (raw.startsWith("gid://shopify/ProductVariant/")) return raw;
   if (/^\d+$/.test(raw)) return `gid://shopify/ProductVariant/${raw}`;
+  return null;
+}
+
+function normalizeProductGid(value: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  if (raw.startsWith("gid://shopify/Product/")) return raw;
+  if (/^\d+$/.test(raw)) return `gid://shopify/Product/${raw}`;
   return null;
 }
 
@@ -57,19 +66,33 @@ function getCachedVariantGid(variant: any): string | null {
   );
 }
 
-function collectAllowedVariantIds(bundle: any): Set<string> {
-  const allowed = new Set<string>();
+function getCachedProductGid(product: any): string | null {
+  return normalizeProductGid(
+    product?.productId
+      ?? product?.id
+      ?? product?.gid
+      ?? product?.productGraphqlId
+      ?? product?.graphqlId
+      ?? product?.admin_graphql_api_id,
+  );
+}
+
+function collectAllowedSelectionIds(bundle: any): { variantIds: Set<string>; productIds: Set<string> } {
+  const variantIds = new Set<string>();
+  const productIds = new Set<string>();
 
   const addVariant = (variant: unknown) => {
     const variantId = getCachedVariantGid(variant);
-    if (variantId) allowed.add(variantId);
+    if (variantId) variantIds.add(variantId);
   };
 
   const addProduct = (product: any) => {
+    const productId = getCachedProductGid(product);
+    if (productId) productIds.add(productId);
     const variants = Array.isArray(product?.variants) ? product.variants : [];
     variants.forEach(addVariant);
     const directVariantId = normalizeProductVariantGid(product?.variantId ?? product?.selectedVariantId);
-    if (directVariantId) allowed.add(directVariantId);
+    if (directVariantId) variantIds.add(directVariantId);
   };
 
   for (const step of Array.isArray(bundle?.steps) ? bundle.steps : []) {
@@ -95,10 +118,10 @@ function collectAllowedVariantIds(bundle: any): Set<string> {
   }
 
   for (const addonVariant of collectAddonComponentVariants(bundle?.personalizationData)) {
-    if (addonVariant.variantId) allowed.add(addonVariant.variantId);
+    if (addonVariant.variantId) variantIds.add(addonVariant.variantId);
   }
 
-  return allowed;
+  return { variantIds, productIds };
 }
 
 function normalizeQuantity(value: unknown): number {
@@ -122,7 +145,7 @@ function normalizeDiscount(value: unknown): RuntimeTokenDiscount | null {
 
 function normalizeLines(
   lines: SelectionInput["components"],
-  allowedVariantIds: Set<string>,
+  allowedIds: { variantIds: Set<string>; productIds: Set<string> },
 ): RuntimeTokenLine[] {
   if (!Array.isArray(lines) || lines.length === 0) {
     throw new Error("Runtime token payload must include selected components");
@@ -130,7 +153,10 @@ function normalizeLines(
 
   return lines.map((line) => {
     const variantId = normalizeProductVariantGid(line?.variantId);
-    if (!variantId || !allowedVariantIds.has(variantId)) {
+    const productId = normalizeProductGid(line?.productId);
+    const isAllowedVariant = Boolean(variantId && allowedIds.variantIds.has(variantId));
+    const isAllowedHydratedProduct = Boolean(productId && allowedIds.productIds.has(productId));
+    if (!variantId || (!isAllowedVariant && !isAllowedHydratedProduct)) {
       throw new Error(`Selected variant is not part of bundle: ${String(line?.variantId ?? "")}`);
     }
     return {
@@ -160,14 +186,14 @@ function normalizeAddonLines(
 }
 
 export function validateRuntimeTokenSelection(bundle: any, selection: SelectionInput) {
-  const allowedVariantIds = collectAllowedVariantIds(bundle);
-  if (allowedVariantIds.size === 0) {
+  const allowedIds = collectAllowedSelectionIds(bundle);
+  if (allowedIds.variantIds.size === 0 && allowedIds.productIds.size === 0) {
     throw new Error("Bundle has no cached selectable variants for runtime validation");
   }
 
   return {
-    components: normalizeLines(selection.components, allowedVariantIds),
-    addons: normalizeAddonLines(selection.addons, allowedVariantIds),
+    components: normalizeLines(selection.components, allowedIds),
+    addons: normalizeAddonLines(selection.addons, allowedIds.variantIds),
   };
 }
 

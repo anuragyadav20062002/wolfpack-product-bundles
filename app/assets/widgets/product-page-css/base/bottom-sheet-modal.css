@@ -165,6 +165,7 @@
 }
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card {
+  background: var(--bundle-product-card-bg, #ffffff);
   border: 1px solid rgb(227, 227, 227);
   border-radius: 10px;
   box-shadow:
@@ -183,21 +184,6 @@
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card.selected,
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card.bw-product-card--selected {
   border: 2px solid #000000;
-}
-
-#bundle-builder-modal.bw-bs-panel .modal-body .product-card .selected-overlay {
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  background: #000000;
-  color: #ffffff;
-  font-size: 14px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: none;
 }
 
 .bw-bs-panel .modal-body .product-card.bw-product-card--free-gift {
@@ -247,7 +233,7 @@
 .bw-bs-panel .modal-body .product-card .product-image img {
   width: 100%;
   height: 170px;
-  object-fit: cover;
+  object-fit: var(--bundle-product-card-image-fit, cover);
   display: block;
   border-radius: 0;
 }
@@ -255,7 +241,7 @@
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-image img {
   height: 100%;
   width: 100%;
-  object-fit: cover;
+  object-fit: var(--bundle-product-card-image-fit, cover);
 }
 
 .bw-bs-panel .modal-body .product-card .product-title {
@@ -272,7 +258,8 @@
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-title {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 400;
+  color: var(--bundle-product-card-font-color, rgba(18, 18, 18, 0.75));
   line-height: 20px;
   margin: 0;
   min-height: 20px;
@@ -339,7 +326,8 @@
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-price {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 400;
+  color: var(--bundle-product-final-price-color, rgba(18, 18, 18, 0.75));
   line-height: 18px;
 }
 
@@ -385,7 +373,9 @@
 }
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-add-btn {
+  background: var(--bundle-button-bg, transparent);
   border-radius: 5px;
+  color: var(--bundle-button-text-color, rgba(18, 18, 18, 0.75));
   font-size: 16px;
   font-weight: 400;
   height: 33px;
@@ -395,6 +385,14 @@
   margin-top: 8px;
   padding: 6px 10px;
   text-transform: none;
+}
+
+@media (max-width: 767px) {
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-title,
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-price,
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-add-btn {
+    font-size: 15px;
+  }
 }
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-add-btn.added {
@@ -662,6 +660,7 @@
 }
 
 .bw-slot-card {
+  appearance: none;
   border-radius: var(--bundle-state-card-border-radius, 12px);
   overflow: hidden;
   cursor: pointer;
@@ -670,4 +669,7 @@
     box-shadow 0.2s ease;
   position: relative;
   background: var(--bundle-empty-state-card-bg, #ffffff);
+  color: inherit;
+  font: inherit;
+  padding: 0;
 }

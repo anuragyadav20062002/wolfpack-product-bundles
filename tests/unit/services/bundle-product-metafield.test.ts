@@ -239,7 +239,7 @@ describe("updateBundleProductMetafields", () => {
     expect(parsed.steps[0].bannerImageUrl).toBeNull();
   });
 
-  it("includes fullPagePageHandle for full-page bundles", async () => {
+  it("does not publish a Shopify Page handle for full-page bundles", async () => {
     const admin = makeAdmin();
 
     await updateBundleProductMetafields(
@@ -253,10 +253,10 @@ describe("updateBundleProductMetafields", () => {
     const parsed = JSON.parse(bundleUiConfigField.value);
 
     expect(parsed.bundleType).toBe(BundleType.FULL_PAGE);
-    expect(parsed.fullPagePageHandle).toBe("build-your-bundle");
+    expect(parsed).not.toHaveProperty("fullPagePageHandle");
   });
 
-  it("stores a null fullPagePageHandle for product-page bundles", async () => {
+  it("does not publish a Shopify Page handle for product-page bundles", async () => {
     const admin = makeAdmin();
 
     await updateBundleProductMetafields(
@@ -270,7 +270,7 @@ describe("updateBundleProductMetafields", () => {
     const parsed = JSON.parse(bundleUiConfigField.value);
 
     expect(parsed.bundleType).toBe(BundleType.PRODUCT_PAGE);
-    expect(parsed.fullPagePageHandle).toBeNull();
+    expect(parsed).not.toHaveProperty("fullPagePageHandle");
   });
 
   it("maps the persisted compare-at display setting into bundle_ui_config", async () => {

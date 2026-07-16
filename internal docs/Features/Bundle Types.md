@@ -32,10 +32,12 @@ Embeds the bundle selector directly on a Shopify product page.
 
 | Status | Meaning |
 |---|---|
-| `active` | Live, visible on storefront |
-| `inactive` | Disabled, not visible |
+| `active` | Bundle configuration is available to the Wolfpack storefront runtime |
+| `inactive` | Bundle configuration is disabled in Wolfpack |
 | `draft` | In progress, not yet published |
 | `unlisted` | Exists but hidden from merchant list (archive/template use) |
+
+Bundle status does not mutate the Shopify parent product status. Parent-product discoverability is merchant-owned after creation and is changed through **Edit Product** in Shopify Admin. See [[Architecture/Bundle Parent Product]].
 
 ## Inventory Sync
 

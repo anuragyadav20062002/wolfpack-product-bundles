@@ -1,7 +1,28 @@
 ---
+schema_version: 1
+id: product-card-layout-contract
 title: Product Card Layout Contract
 type: architecture
-audited: 2026-07-13
+status: authoritative
+summary: Defines stable and display-safe storefront product-card layout and content boundaries.
+last_audited: 2026-07-14
+owners:
+  - engineering
+domains:
+  - storefront
+systems:
+  - bundle-widgets
+source_paths:
+  - app/assets/widgets/full-page
+  - app/assets/widgets/product-page
+related_docs:
+  - Architecture/Bundle Parent Product.md
+tags:
+  - architecture
+  - product-card
+keywords:
+  - layout stability
+  - merchant descriptions
 ---
 
 # Product Card Layout Contract
@@ -40,7 +61,8 @@ This is a hard requirement:
 - Keep selection/hover feedback on the existing card frame via overlays, borders, iconography, text color, opacity, and icon badges.
 - Prefer fixed row contracts (`min-height`, `height`, flex stretch, consistent padding/line-clamp) so selected/unselected variants stay layout-stable.
 - Keep PPB/inpage and PPB/modal states non-expanding on `selected` and hover-expanded transitions.
-- Keep description rendering display-safe: pass only escaped merchant text, do not inject merchant description/title fields as raw HTML, and avoid trimming/normalizing merchant copy during render.
+- Keep merchant product descriptions out of compact FPB and PPB product cards. Preserve `description` and `descriptionHtml` in runtime product data for the product-details modal only.
+- In the product-details modal, render descriptions display-safe: sanitize Shopify HTML through the modal contract, escape plain-text fallbacks, and avoid trimming or normalizing merchant copy.
 - Product title/description are merchant-owned values; do not normalize case/spacing/punctuation in runtime.
 - Render those values with text APIs (`textContent`/`innerText`) rather than HTML assignment to avoid XSS and avoid forcing normalization.
 - If new content must appear on selection, render it outside the row-level card height envelope (popover, drawer, footer/action panel, details panel, etc.).

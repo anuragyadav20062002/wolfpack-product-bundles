@@ -5,6 +5,7 @@ import { requireAdminSession } from "../../app/lib/auth-guards.server";
 import * as fpbHandlers from "../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers";
 import * as ppbHandlers from "../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers";
 import * as storefrontSyncAction from "../../app/routes/app/shared/storefront-sync-action.server";
+import * as bundlePreviewAction from "../../app/routes/app/shared/bundle-preview-action.server";
 
 jest.mock("../../app/lib/auth-guards.server", () => ({
   requireAdminSession: jest.fn(),
@@ -20,15 +21,8 @@ jest.mock("../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId
   handleUpdateBundleStatus: jest.fn(),
   handleSyncProduct: jest.fn(),
   handleUpdateBundleProduct: jest.fn(),
-  handleGetPages: jest.fn(),
-  handleGetThemeTemplates: jest.fn(),
-  handleGetCurrentTheme: jest.fn(),
-  handleEnsureBundleTemplates: jest.fn(),
-  handleCheckFullPageTemplate: jest.fn(),
-  handleValidateWidgetPlacement: jest.fn(),
-  handleCreatePreviewPage: jest.fn(),
-  handleRenamePageSlug: jest.fn(),
   handleUpdateBundleDesignTemplate: jest.fn(),
+  handleSyncBundle: jest.fn(),
 }));
 
 jest.mock("../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers", () => ({
@@ -48,6 +42,11 @@ jest.mock("../../app/routes/app/app.bundles.product-page-bundle.configure.$bundl
 jest.mock("../../app/routes/app/shared/storefront-sync-action.server", () => ({
   handlePrepareStorefrontPreview: jest.fn(),
   handleSyncStorefrontNow: jest.fn(),
+}));
+
+jest.mock("../../app/routes/app/shared/bundle-preview-action.server", () => ({
+  handleCreateFpbPreview: jest.fn(),
+  handleRecordBundlePreview: jest.fn(),
 }));
 
 jest.mock("../../app/components/shared/FilePicker", () => ({
@@ -101,13 +100,6 @@ describe("FPB configure action dispatch", () => {
     ["updateBundleStatus", "handleUpdateBundleStatus"],
     ["syncProduct", "handleSyncProduct"],
     ["updateBundleProduct", "handleUpdateBundleProduct"],
-    ["getPages", "handleGetPages"],
-    ["getThemeTemplates", "handleGetThemeTemplates"],
-    ["getCurrentTheme", "handleGetCurrentTheme"],
-    ["ensureBundleTemplates", "handleEnsureBundleTemplates"],
-    ["checkFullPageTemplate", "handleCheckFullPageTemplate"],
-    ["validateWidgetPlacement", "handleValidateWidgetPlacement"],
-    ["createPreviewPage", "handleCreatePreviewPage"],
     ["updateBundleDesignTemplate", "handleUpdateBundleDesignTemplate"],
   ] as const)("routes %s to %s", async (intent, handlerName) => {
     const handler = fpbHandlers[handlerName] as jest.Mock;
@@ -123,8 +115,8 @@ describe("FPB configure action dispatch", () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  it("routes syncBundle to shared storefront sync with full_page type", async () => {
-    const handler = storefrontSyncAction.handleSyncStorefrontNow as jest.Mock;
+  it("routes syncBundle to the proxy-hosted FPB sync", async () => {
+    const handler = fpbHandlers.handleSyncBundle as jest.Mock;
     handler.mockResolvedValue(responseFor("syncBundle"));
 
     const response = await fpbAction(makeActionArgs("syncBundle"));
@@ -135,9 +127,16 @@ describe("FPB configure action dispatch", () => {
       mockAdmin,
       mockSession,
       "bundle-1",
-      "full_page",
-      "sync_bundle",
     );
+  });
+
+  it("routes createFpbPreview to stateless preview signing", async () => {
+    const handler = bundlePreviewAction.handleCreateFpbPreview as jest.Mock;
+    handler.mockResolvedValue(responseFor("createFpbPreview"));
+
+    const response = await fpbAction(makeActionArgs("createFpbPreview"));
+    expect(await response.json()).toEqual({ success: true, intent: "createFpbPreview" });
+    expect(handler).toHaveBeenCalledWith(mockAdmin, mockSession, "bundle-1");
   });
 
   it("returns a 400 response for unknown FPB intents", async () => {

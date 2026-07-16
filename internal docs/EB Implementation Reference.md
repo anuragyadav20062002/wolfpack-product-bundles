@@ -1,8 +1,29 @@
 ---
+schema_version: 1
+id: eb-implementation-reference
 title: EB Implementation Reference
 type: reference
-last_updated: 2026-07-12
-source: docs/competitor-analysis/16-eb-full-data-flow-investigation.md; docs/competitor-analysis/17-eb-complete-configure-e2e-audit.md
+status: authoritative
+summary: Records directly verified reference-app contracts used for Wolfpack bundle implementation and parity decisions.
+last_audited: 2026-07-15
+owners:
+  - engineering
+domains:
+  - competitor-analysis
+systems:
+  - bundle-admin
+  - bundle-storefront
+source_paths:
+  - docs/competitor-analysis/16-eb-full-data-flow-investigation.md
+  - docs/competitor-analysis/17-eb-complete-configure-e2e-audit.md
+related_docs:
+  - internal docs/index.md
+tags:
+  - reference
+  - parity
+keywords:
+  - bundle configuration
+  - storefront contract
 ---
 
 # EB Implementation Reference
@@ -72,10 +93,16 @@ Prerequisite:
 
 Use Category Rules when the merchant needs a specific mix across categories, such as 2 products from Women's and 2 products from Men's.
 
-Supported metrics:
+Supported metrics in the current PPB Admin:
 - Quantity: number of selected items.
 - Amount: total selected item value.
-- Weight: total selected item weight.
+
+The Rules help article still describes Weight as total selected item weight, but
+the live PPB Category Rules selector reverified on 2026-07-15 exposes only
+Quantity and Amount. Its inline description also says category rules are based
+on amount or quantity. Treat PPB Weight as currently unavailable unless a later
+live Admin capture proves that the control has returned. This correction does
+not invalidate earlier FPB-specific Weight evidence.
 
 Supported conditions:
 - Equal to.
@@ -495,11 +522,15 @@ The parent product `body_html` is the same contract for PPB and FPB. It starts w
 - `To show this bundle on your storefront (like in collections or search), you must manually change its Status to "Active" from the easy bundles app.`
 - `Do Not Delete: Deleting this product will break the bundle's functionality.`
 
-Implications for Wolfpack:
-- PPB first-time parent product creation should default the Shopify product to `UNLISTED`, not `DRAFT`.
+Implications for Wolfpack (implemented 2026-07-14):
+- FPB and PPB first-time parent product creation both default the Shopify product to `UNLISTED`, not `DRAFT`.
+- Both bundle types use the same neutral default variant: `0.00`, continue selling, non-taxable, and `requiresComponents: true`.
+- The parent is published to Online Store without publishing it to incompatible sales channels.
+- Shopify title, description, handle, media, and status become merchant-owned after creation. Explicit sync refreshes only the stored live handle and does not rewrite merchant metadata.
+- Wolfpack bundle activation and Shopify product discoverability are separate. Merchants change discoverability through **Edit Product** in Shopify Admin.
 - PPB preview must still work for `active`, `unlisted`, `draft`, and locally untracked/unknown states by choosing Shopify preview URLs first when needed and falling back to a direct handle URL when possible.
-- Making the parent product discoverable in storefront search or collections requires changing the Shopify parent product status to `ACTIVE`.
-- FPB uses the same unlisted parent-product status/copy for its generated Shopify parent product, even though the customer-facing FPB builder can render through an app-proxy/full-page bundle URL instead of the native Shopify product page. The app-proxy URL alone is therefore not sufficient proof of parent product status.
+- Making the parent product discoverable in storefront search or collections requires changing the Shopify parent product status to `ACTIVE` in Shopify Admin.
+- FPB retains its Shopify Page host at `/pages/{handle}` while PPB retains its product host at `/products/{handle}`. The FPB host decision is documented separately and remains deferred.
 
 ### PPB Step/Category Admin Payload
 
@@ -1126,6 +1157,8 @@ This is the store-level global PPB config object. Captured from `gbbMix.settings
 ```
 
 Admin location: Settings → Controls → Product Page Layout section.
+
+> 2026-07-15 current-state note: the live EB Product Page Layout admin and storefront runtime on `yash-wolfpack.myshopify.com` no longer expose `maxSlotsPerRow`. The field is retained above as archived schema evidence, but parity matrix row M10 is resolved as EB-absent for current Horizontal Slots and Vertical Slots behavior.
 
 `useSingleStepCategoriesAsBundleSteps` when `true`: each category within a single PPB step renders as a discrete navigable step (Next/Prev navigation), rather than showing all categories simultaneously as tabs.
 

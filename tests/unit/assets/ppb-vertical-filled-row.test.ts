@@ -57,6 +57,7 @@ function createFakeDocument() {
 
 function createFakeElement(tagName: string) {
   const listeners: Record<string, (event: { stopPropagation: () => void }) => void> = {};
+  const attributes = new Map<string, string>();
   return {
     tagName: tagName.toUpperCase(),
     className: '',
@@ -68,6 +69,9 @@ function createFakeElement(tagName: string) {
     },
     addEventListener(name: string, handler: typeof listeners[string]) {
       listeners[name] = handler;
+    },
+    setAttribute(name: string, value: string) {
+      attributes.set(name, value);
     },
     dispatch(name: string) {
       listeners[name]?.({ stopPropagation: () => {} });

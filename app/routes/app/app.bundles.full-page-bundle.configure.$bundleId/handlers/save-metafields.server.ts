@@ -2,10 +2,6 @@ import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { AppLogger } from "../../../../lib/logger";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import {
-  refreshFullPageBundlePageBody,
-  writeBundleConfigPageMetafield,
-} from "../../../../services/widget-installation/widget-full-page-bundle.server";
-import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
 } from "../../../../services/bundles/metafield-sync.server";
@@ -13,16 +9,13 @@ import {
   convertBundleToStandardMetafields,
   updateProductStandardMetafields,
 } from "../../../../services/bundles/standard-metafields.server";
-import { BundleStatus } from "../../../../constants/bundle";
 import { buildFpbBaseConfig } from "./shared.server";
-import { syncFpbProductStatus } from "./product-status.server";
 
 export async function syncSavedFpbBundleStorefrontState({
   admin,
   bundleId,
   directBoxSelection,
   discountData,
-  finalStatus,
   shopDomain,
   stepConditionsData,
   stepsData,
@@ -32,7 +25,6 @@ export async function syncSavedFpbBundleStorefrontState({
   bundleId: string;
   directBoxSelection: any;
   discountData: any;
-  finalStatus: BundleStatus;
   shopDomain: string;
   stepConditionsData: Record<string, any[]>;
   stepsData: any[];
@@ -44,36 +36,12 @@ export async function syncSavedFpbBundleStorefrontState({
       bundleId,
       directBoxSelection,
       discountData,
-      finalStatus,
       stepConditionsData,
       stepsData,
       updatedBundle,
     });
   }
 
-  if (updatedBundle.shopifyPageId) {
-    const bodyRefresh = await refreshFullPageBundlePageBody(
-      admin,
-      updatedBundle.shopifyPageId,
-      updatedBundle.id ?? bundleId,
-      shopDomain,
-      updatedBundle,
-    );
-    if (!bodyRefresh.success) {
-      AppLogger.warn("Failed to refresh full-page bundle page body on save (non-fatal)", {
-        component: "FullPageBundleSave",
-        bundleId,
-        pageId: updatedBundle.shopifyPageId,
-        error: bodyRefresh.error,
-      });
-    }
-
-    await writeBundleConfigPageMetafield(
-      admin,
-      updatedBundle.shopifyPageId,
-      updatedBundle,
-    );
-  }
 }
 
 async function syncSavedFpbBundleProductState({
@@ -81,7 +49,6 @@ async function syncSavedFpbBundleProductState({
   bundleId,
   directBoxSelection,
   discountData,
-  finalStatus,
   stepConditionsData,
   stepsData,
   updatedBundle,
@@ -90,23 +57,10 @@ async function syncSavedFpbBundleProductState({
   bundleId: string;
   directBoxSelection: any;
   discountData: any;
-  finalStatus: BundleStatus;
   stepConditionsData: Record<string, any[]>;
   stepsData: any[];
   updatedBundle: any;
 }) {
-  AppLogger.debug(
-    `[PRODUCT_SYNC] Syncing status '${finalStatus}' to product ${updatedBundle.shopifyProductId}`,
-  );
-  await syncFpbProductStatus(
-    admin,
-    updatedBundle.shopifyProductId,
-    bundleId,
-    finalStatus,
-    updatedBundle.name,
-    updatedBundle.description || "",
-  );
-
   const bundleParentVariantId = await getBundleProductVariantId(
     admin,
     updatedBundle.shopifyProductId,

@@ -1,4 +1,5 @@
 import { CommonStepCategoryAccordion } from "../_shared/bundle-configure/CommonStepCategoryAccordion";
+import { updatePpbCategoryVariantFlag } from "../../../lib/bundle-config/common-configure-page-model";
 import { usePpbConfigureContext } from "./PpbConfigureContext";
 
 export function PpbCategoryAccordion({
@@ -11,6 +12,7 @@ export function PpbCategoryAccordion({
   catIndex: number;
 }) {
   const flow = usePpbConfigureContext();
+  const categories = ((step.StepCategory as any[]) ?? []);
 
   return (
     <CommonStepCategoryAccordion
@@ -37,6 +39,23 @@ export function PpbCategoryAccordion({
       step={step}
       cat={cat}
       catIndex={catIndex}
+      categoryControls={
+        <div className={flow.productPageBundleStyles.categoryVariantControl}>
+          <s-checkbox
+            label="Display variants as individual products"
+            checked={cat.displayVariantsAsIndividualProducts || undefined}
+            onChange={(event) => {
+              const checked = (event.target as HTMLInputElement).checked;
+              flow.stepsState.updateStepField(
+                step.id,
+                "StepCategory",
+                updatePpbCategoryVariantFlag(categories, catIndex, checked),
+              );
+              flow.markAsDirty();
+            }}
+          />
+        </div>
+      }
     />
   );
 }
