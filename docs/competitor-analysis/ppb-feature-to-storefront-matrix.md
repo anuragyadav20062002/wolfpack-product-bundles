@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, C05, C07-C09, D11, G10, G12-G19, G28, G30-G31, M10, and M12 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C05, C07-C09, D11, G10, G12-G19, G28, G30-G31, M10, M12, and S06 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -161,7 +161,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | S03 | Selected drawer/footer | Open/close/remove/overflow and CTA state | **P** PL07 | **P** PG04/PG08 | **N/A** Slot rows are the summary | **N/A** Slot rows are the summary |
 | S04 | Validation enabled | Invalid Next/Done/cart action is blocked with EB feedback | **P** PL02 | **P** PG05/PG08 | **P** HS05/HS19 | **P** VS03/VS04 |
 | S05 | Validation disabled | Saved control permits otherwise invalid progression/cart | **P** Shared unit and runtime coverage for modal/tab/cart/auto-add paths | **P** Shared unit and runtime coverage for modal/tab/cart/auto-add paths | **P** Shared unit and runtime coverage for modal/tab/cart/auto-add paths | **P** Shared unit and runtime coverage for modal/tab/cart/auto-add paths |
-| S06 | Default/preselected products | Valid defaults initialize; invalid/unavailable defaults resolve safely | **T** | **T** | **T** | **T** |
+| S06 | Default/preselected products | Valid defaults initialize; invalid/unavailable defaults resolve safely | **P** [S06 default products](ppb-deferred-functional-parity/S06-default-preselected-products-evidence.md) | **P** [S06 default products](ppb-deferred-functional-parity/S06-default-preselected-products-evidence.md) | **P** [S06 default products](ppb-deferred-functional-parity/S06-default-preselected-products-evidence.md) | **P** [S06 default products](ppb-deferred-functional-parity/S06-default-preselected-products-evidence.md) |
 | S07 | First load / final-root loading | EB can expose the native product form until its widget asset initializes under constrained network; WPB keeps native controls hidden and loads inside the final widget target | **P** PLS5 | **P** PG05 | **X** HS07 accepted final-root loader architecture | **X** VS10 accepted native-flash prevention |
 | S08 | Hard reload after selection | EB/WPB state-reset or persistence behavior matches | **P** [S08 PL/HS reload evidence](ppb-deferred-functional-parity/S08-product-list-horizontal-slots-reload-evidence.md) | **P** PG09 | **P** [S08 PL/HS reload evidence](ppb-deferred-functional-parity/S08-product-list-horizontal-slots-reload-evidence.md) | **P** VS12 |
 | S09 | Successful cart add | Valid child selection reaches the expected cart result | **P** PL08 | **P** [S09-S13 Product Grid cart contract](ppb-deferred-functional-parity/S09-S13-product-grid-cart-contract-evidence.md) | **P** HS08 | **P** [S09-S13 Vertical Slots cart contract](ppb-deferred-functional-parity/S09-S13-vertical-slots-cart-contract-evidence.md) |
@@ -658,13 +658,15 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **20** `T` cells, not 106. The best path is to batch them
+After the S06 shared-fixture pass, the parser shows **16** `T` cells, not 106.
+The best path is to batch them
 by persisted/runtime owner instead of row order:
 
-1. **Product-source and cart-time inventory sweep:** S06 all templates and G22
-   all templates. Use one product-source fixture with valid default, invalid or
-   unavailable default, per-product maximum, OOS/cart-time inventory, and a
-   collection large enough to cross the pagination boundary.
+1. **Product-source and cart-time inventory sweep:** G22 all templates. Use one
+   product-source fixture with per-product maximum, OOS/cart-time inventory, and
+   a collection large enough to cross the pagination boundary. S06 is now closed
+   by the shared default-products fixture and should stay as a regression
+   control only.
 2. **Global copy and pricing-display sweep is closed:** G18 is terminal **P**
    from the 2026-07-16 Product Page Layout CTA replay, G19 is terminal **E**
    from the 2026-07-16 Product Page summary-title absence review, G21 is
