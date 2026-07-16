@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07-C09, D11, G10, G12-G17, G30-G31, M10, and M12 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07-C09, D11, G10, G12-G17, G28, G30-G31, M10, and M12 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -209,7 +209,7 @@ toggle or alternate-value behavior.
 | G25 | Cart messaging | Saved bundle-cart line message and language reach the cart | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) |
 | G26 | Discount display format | Amount + percentage, amount-only, and percentage-only formats match EB | **E** [G26 discount format evidence](ppb-deferred-functional-parity/G26-discount-display-format-evidence.md) | **E** [G26 discount format evidence](ppb-deferred-functional-parity/G26-discount-display-format-evidence.md) | **E** [G26 discount format evidence](ppb-deferred-functional-parity/G26-discount-display-format-evidence.md) | **E** [G26 discount format evidence](ppb-deferred-functional-parity/G26-discount-display-format-evidence.md) |
 | G27 | Redirect settings | Default side-cart update, checkout redirect, and cart redirect follow the saved mode | **T** | **T** | **T** | **T** |
-| G28 | Execute script | Saved Product Page script executes at the EB-defined lifecycle without duplicate execution | **T** | **T** | **T** | **T** |
+| G28 | Execute script | Saved Product Page script executes at the EB-defined lifecycle without duplicate execution | **P** [G28 execute-script runtime](ppb-deferred-functional-parity/G28-execute-script-runtime-evidence.md) | **P** [G28 execute-script runtime](ppb-deferred-functional-parity/G28-execute-script-runtime-evidence.md) | **P** [G28 execute-script runtime](ppb-deferred-functional-parity/G28-execute-script-runtime-evidence.md) | **P** [G28 execute-script runtime](ppb-deferred-functional-parity/G28-execute-script-runtime-evidence.md) |
 | G29 | Loading image/GIF | Current EB PPB admin/runtime does not expose loading image or GIF controls | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) |
 | G30 | Brand colors | Base PPB colors propagate to every applicable template surface | **P** [G30/G31 Product List and Modal Slots design evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G30 Product Grid brand color evidence](ppb-deferred-functional-parity/G30-product-grid-brand-colors-evidence.md) | **P** [G30/G31 Product List and Modal Slots design evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G30/G31 Product List and Modal Slots design evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) |
 | G31 | Typography | Font family, weight, and scale propagate without theme leakage | **P** [G30/G31 Product List and Modal Slots typography evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G31 Product Grid typography evidence](ppb-deferred-functional-parity/G31-product-grid-typography-evidence.md) | **P** [G30/G31 Product List and Modal Slots typography evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G30/G31 Product List and Modal Slots typography evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) |
@@ -305,6 +305,15 @@ execute-script, cart messaging, discount format, inventory, and custom CSS
 fields, but no loading image/GIF field; the current PPB storefront runtime
 exposed no loading media keys under the Product Page controls object.
 
+The 2026-07-16 G28 replay classifies Execute Script as a shared Product Page
+post-add lifecycle control. EB Product Page Layout persisted a sentinel script
+and executed it exactly once after a valid Product Grid bundle add
+(`MIX-156854`) while add/update cart requests returned 200. WPB SIT persisted
+the same control into `settingsControls.productPage.redirect.executeScript`;
+after a valid modal/shared-card bundle add, the script incremented both page and
+session counters exactly once. EB and WPB fixtures were restored and
+hard-reload verified clean.
+
 The 2026-07-15 C07 replay grouped Product List, Product Grid, and Vertical Slots
 under one shared category fixture. EB and Wolfpack both persisted
 `displayVariantsAsIndividualProducts: true` with swatches disabled and rendered
@@ -338,17 +347,17 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 73 | 0 | 14 | 17 | 3 | 12 |
-| Product Grid | 77 | 0 | 13 | 15 | 2 | 12 |
-| Horizontal Slots | 85 | 0 | 13 | 16 | 4 | 1 |
-| Vertical Slots | 83 | 0 | 14 | 16 | 5 | 1 |
+| Product List | 74 | 0 | 13 | 17 | 3 | 12 |
+| Product Grid | 78 | 0 | 12 | 15 | 2 | 12 |
+| Horizontal Slots | 86 | 0 | 12 | 16 | 4 | 1 |
+| Vertical Slots | 84 | 0 | 13 | 16 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **318**
+- Proven: **322**
 - Shared/partial: **0**
-- Not tested: **54**
+- Not tested: **50**
 - EB-absent: **64**
 - Accepted divergence: **14**
 - Not applicable: **26**
@@ -614,7 +623,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **54** `T` cells, not 106. The best path is to batch them
+The current parser shows **50** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
@@ -644,9 +653,9 @@ by persisted/runtime owner instead of row order:
 6. **Subscriptions/preorder sweep:** G04 is terminal EB-absent for the current
    fixture. Reopen only if EB supplies a product set with Stoq preorder data or
    Shopify selling-plan allocations.
-7. **Redirect/script sweep:** G27 and G28 after the product-source and
-   cart-sensitive rows, so checkout/cart redirects and script execution do not
-   contaminate product-card evidence.
+7. **Redirect sweep:** G27 after the product-source and cart-sensitive rows, so
+   checkout/cart redirects do not contaminate product-card evidence. G28 is now
+   closed by the 2026-07-16 shared Product Page post-add replay.
 8. **Final restore and quality sweep:** restore Product Grid/Percentage Off on
    EB and Vertical Slots/Percentage Off on WPB, hard reload desktop/mobile, and
    rerun any rows affected by fixture restoration.
