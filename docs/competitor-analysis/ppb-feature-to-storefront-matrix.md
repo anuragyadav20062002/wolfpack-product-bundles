@@ -188,7 +188,7 @@ toggle or alternate-value behavior.
 | G04 | Pre-order and Subscription Integration | Selling-plan selection reaches product cards and cart payload | **E** [G04 preorder/subscription absence evidence](ppb-deferred-functional-parity/G04-preorder-subscription-integration-absence-evidence.md) | **E** [G04 preorder/subscription absence evidence](ppb-deferred-functional-parity/G04-preorder-subscription-integration-absence-evidence.md) | **E** [G04 preorder/subscription absence evidence](ppb-deferred-functional-parity/G04-preorder-subscription-integration-absence-evidence.md) | **E** [G04 preorder/subscription absence evidence](ppb-deferred-functional-parity/G04-preorder-subscription-integration-absence-evidence.md) |
 | G05 | PPB Subscriptions | Current EB PPB fixture validates subscriptions but has no common selling plan, so no selected plan reaches storefront/cart | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) |
 | G06 | Cart line-item discount display | Saved retail/savings display option reaches cart lines | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) |
-| G07 | Bundle-level custom CSS | Scoped merchant CSS applies without cross-template leakage | **T** | **T** | **T** | **T** |
+| G07 | Bundle-level custom CSS | Scoped merchant CSS applies without cross-template leakage | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) |
 | G08 | Bundle active/inactive status | Inactive bundle blocks visible bundle UI before template dispatch; active restore remounts the saved fixture | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) |
 | G09 | `hideOutOfStockProducts` | Alternate true/false states match EB | **E** [G09 Product List blocker evidence](ppb-deferred-functional-parity/G09-product-list-horizontal-vertical-hide-out-of-stock-evidence.md) | **P** [G09 Product Grid hide out-of-stock evidence](ppb-deferred-functional-parity/G09-product-grid-hide-out-of-stock-evidence.md) | **P** [G09 Horizontal Slots evidence](ppb-deferred-functional-parity/G09-product-list-horizontal-vertical-hide-out-of-stock-evidence.md) | **P** [G09 Vertical Slots evidence](ppb-deferred-functional-parity/G09-product-list-horizontal-vertical-hide-out-of-stock-evidence.md) |
 | G10 | `displayPrices` | Current EB PPB admin/runtime does not expose price-visibility controls | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) |
@@ -216,7 +216,7 @@ toggle or alternate-value behavior.
 | G32 | Corners | Card, control, modal, slot, and CTA radii follow the saved design tokens | **P** [G32 Product List corners evidence](ppb-deferred-functional-parity/G32-product-list-corners-evidence.md) | **P** [G32 Product Grid corners evidence](ppb-deferred-functional-parity/G32-product-grid-corners-evidence.md) | **P** [G32 Horizontal Slots corners evidence](ppb-deferred-functional-parity/G32-horizontal-slots-corners-evidence.md) | **P** [G32 Vertical Slots corners evidence](ppb-deferred-functional-parity/G32-vertical-slots-corners-evidence.md) |
 | G33 | Images and GIF settings | Saved design media appears in its intended PPB surface | **T** | **T** | **T** | **T** |
 | G34 | Expert color controls | General, Product Card, Bundle Cart, and Upsell scopes override only their owner surfaces | **T** | **T** | **T** | **T** |
-| G35 | Product Page custom CSS scope | Store-level PPB CSS remains scoped and distinct from Landing Page CSS | **T** | **T** | **T** | **T** |
+| G35 | Product Page custom CSS scope | Store-level PPB CSS remains scoped and distinct from Landing Page CSS | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) |
 | G36 | Product Card language fields | Add, variant, added, and inline-add labels use the active Product Page locale | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) |
 | G37 | Bundle Cart / Bundle / Toast language fields | Shared PPB language runtime supplies summary, CTA, validation, and toast copy across template families | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) |
 | G38 | Bundle Embed | Saved embed configuration mounts and hands off the correct offer context | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) |
@@ -354,17 +354,17 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 75 | 0 | 11 | 18 | 3 | 12 |
-| Product Grid | 79 | 0 | 10 | 16 | 2 | 12 |
-| Horizontal Slots | 87 | 0 | 10 | 17 | 4 | 1 |
-| Vertical Slots | 85 | 0 | 11 | 17 | 5 | 1 |
+| Product List | 77 | 0 | 9 | 18 | 3 | 12 |
+| Product Grid | 81 | 0 | 8 | 16 | 2 | 12 |
+| Horizontal Slots | 89 | 0 | 8 | 17 | 4 | 1 |
+| Vertical Slots | 87 | 0 | 9 | 17 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **326**
+- Proven: **334**
 - Shared/partial: **0**
-- Not tested: **42**
+- Not tested: **34**
 - EB-absent: **68**
 - Accepted divergence: **14**
 - Not applicable: **26**
@@ -660,11 +660,10 @@ by persisted/runtime owner instead of row order:
    terminal **P** from the 2026-07-16 active-locale replay, G26 is terminal
    **E** from the 2026-07-16 shared cart-line format replay, and G37 is closed
    by the 2026-07-16 shared PPB language runtime proof.
-4. **Global design/media/CSS sweep:** G07, G33-G35. Reuse one
-   high-contrast design payload and one scoped CSS sentinel across all
-   templates. G29 is terminal EB-absent, and G30/G31 are now proven across all
-   templates; use them only as regression controls if later CSS changes touch
-   the same surfaces.
+4. **Global design/media/CSS sweep:** G33 and G34 remain. G07/G35 are terminal
+   **P** from the 2026-07-16 shared Product Page custom-CSS replay. G29 is
+   terminal EB-absent, and G30/G31 are now proven across all templates; use them
+   only as regression controls if later CSS changes touch the same surfaces.
 5. **External-entry sweep:** G02 and G24 together through browsed-product and
    collection quick-add entry points. Keep this separate because it starts
    outside the bundle widget and can pollute selection/session state.
