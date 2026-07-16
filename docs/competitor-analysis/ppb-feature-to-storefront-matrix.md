@@ -172,7 +172,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | S14 | Dynamic checkout / accelerated checkout | Native bypass behavior explicitly accepted or prevented | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) | **X** HS10 safety divergence | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) |
 | S15 | `addBundleToCartOnDone` | Saved global setting controls final-step cart behavior | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow |
 | S16 | Per-product quantity validation | `validateQuantityPerProduct` and maximum quantity are enforced independently of step rules | **P** [S16 Product List quantity validation evidence](ppb-deferred-functional-parity/S16-product-list-quantity-validation-evidence.md) | **T** | **T** | **T** VS06 current configuration mismatch recorded |
-| S17 | Catalog pagination counts | Product and collection fetch counts load additional products without duplicates or lost selection | **P** PLS3 collection reload | **P** [S17 Product Grid/Vertical Slots pagination evidence](ppb-deferred-functional-parity/S17-product-grid-vertical-slots-pagination-evidence.md) | **T** | **P** [S17 Product Grid/Vertical Slots pagination evidence](ppb-deferred-functional-parity/S17-product-grid-vertical-slots-pagination-evidence.md) |
+| S17 | Catalog pagination counts | Product and collection fetch counts load additional products without duplicates or lost selection | **P** PLS3 collection reload | **P** [S17 Product Grid/Vertical Slots pagination evidence](ppb-deferred-functional-parity/S17-product-grid-vertical-slots-pagination-evidence.md) | **P** [S17 Horizontal Slots pagination evidence](ppb-deferred-functional-parity/S17-horizontal-slots-pagination-evidence.md) | **P** [S17 Product Grid/Vertical Slots pagination evidence](ppb-deferred-functional-parity/S17-product-grid-vertical-slots-pagination-evidence.md) |
 
 ## 6. Bundle Settings, Visibility, Subscriptions, and Global Controls
 
@@ -258,6 +258,14 @@ The 2026-07-15 R09-R10 collection-source replay served Wolfpack widget
 mixed manual-plus-collection de-duplication, inventory filtering, and selected
 state retention for Product Grid and Vertical Slots at 1280x800 and 390x844.
 
+The 2026-07-16 S17 Horizontal Slots replay temporarily switched the current EB
+fixture to `PDP_MODAL + MODAL` and the WPB SIT fixture to
+`PDP_MODAL + MODAL` with Step 2 enabled. After Cache Storage clear and
+`ignoreCache: true` hard reloads, EB rendered Step 2's 28-product collection
+source as 24 cards at desktop and mobile, and WPB rendered its equivalent
+collection-backed Step 2 source as 22 cards at desktop and mobile. Both fixtures
+were restored and verified after the pass.
+
 The 2026-07-15 R13 amount-condition replay persisted an amount threshold of at
 least 300 and proved below-threshold blocking plus above-threshold progression
 in all four reference templates and all four Wolfpack templates at desktop and
@@ -324,19 +332,19 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 66 | 0 | 26 | 13 | 2 | 12 |
-| Product Grid | 71 | 0 | 23 | 11 | 2 | 12 |
-| Horizontal Slots | 76 | 0 | 26 | 12 | 4 | 1 |
-| Vertical Slots | 74 | 0 | 28 | 12 | 4 | 1 |
+| Product List | 68 | 0 | 22 | 14 | 3 | 12 |
+| Product Grid | 73 | 0 | 20 | 12 | 2 | 12 |
+| Horizontal Slots | 79 | 0 | 22 | 13 | 4 | 1 |
+| Vertical Slots | 77 | 0 | 23 | 13 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **287**
+- Proven: **297**
 - Shared/partial: **0**
-- Not tested: **103**
-- EB-absent: **48**
-- Accepted divergence: **12**
+- Not tested: **87**
+- EB-absent: **52**
+- Accepted divergence: **14**
 - Not applicable: **26**
 
 These totals are an evidence inventory, not a product-quality score. One
@@ -355,9 +363,9 @@ passes, not isolated one-off template toggles:
    now proven by direct true/false replay. Product List is terminal **E** for
    this matrix pass because WPB Product List kept Step 2 disabled under the
    synced two-step fixture, while EB exposed the Step 2 true/false behavior.
-3. **Pagination fixture:** S17 needs Product Grid, Horizontal Slots, and
-   Vertical Slots category pagination boundaries with enough collection products
-   to force an additional fetch.
+3. **Pagination fixture:** S17 is now closed across all four templates. Reuse
+   the current collection-count replay only as regression control if later
+   product-source code changes can affect pagination.
 
 The 2026-07-16 Chrome DevTools MCP retry narrowed the EB UI-only fixture
 blocker for D06. EB's third-party Admin owns the saved fixture, and the custom
@@ -507,7 +515,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 2. **EB pass, template cycle:** configure the shared product set in EB, then
    hard-reload with cache bypass and capture desktop/mobile in this order:
    Vertical Slots first for C05, Product List for C03/C05, Product
-   Grid for S17, then Horizontal Slots for S17.
+   Grid for any remaining product-source rows that share the same fixture.
    C03/C04 Vertical Slots are already closed by
    `C03-C04-vertical-slots-shared-card-evidence.md`; do not repeat that fixture
    unless it is needed for regression confirmation. Use a clean EB Admin tab if
@@ -527,12 +535,12 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **103** `T` cells, not 106. The best path is to batch them
+The current parser shows **87** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
    all templates, S16 Product Grid/Horizontal
-   Slots/Vertical Slots, S17 Product Grid/Horizontal Slots/Vertical Slots, G11
+   Slots/Vertical Slots, G11
    Product List/Vertical Slots, and G22 all templates. Use one product-source
    fixture with sale/compare-at, missing-media, valid default, invalid or
    unavailable default, per-product maximum, OOS/cart-time inventory, and a
