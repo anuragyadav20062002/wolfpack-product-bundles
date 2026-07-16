@@ -5,7 +5,7 @@ title: Product Page Bundle Feature-to-Storefront Verification Matrix
 type: verification-matrix
 status: active
 summary: Maps Product Page Bundle feature states to direct storefront evidence across all four PPB designs.
-last_audited: 2026-07-16
+last_audited: 2026-07-17
 owners:
   - Wolfpack Product Bundles
 domains:
@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07-C09, D11, G10, G12-G19, G28, G30-G31, M10, and M12 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C05, C07-C09, D11, G10, G12-G19, G28, G30-G31, M10, and M12 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -104,7 +104,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | C02 | Long titles and content-driven height | Text wraps without clipping or overlapping actions | **P** PLS2/PLS3 | **P** PG08 | **P** HS02/HSS2 | **P** VS02/VS04 |
 | C03 | Sale + compare-at presentation | Compare-at belongs to the price cluster and follows the saved visibility setting | **P** [C03 Product List sale compare-at evidence](ppb-deferred-functional-parity/C03-product-list-sale-compare-at-evidence.md) | **P** PG08 | **P** HS02 | **P** [C03/C04 Vertical Slots shared card evidence](ppb-deferred-functional-parity/C03-C04-vertical-slots-shared-card-evidence.md) |
 | C04 | Square/tall/wide media | Mixed aspect ratios remain contained | **P** PLS2 | **P** [C04 Product Grid mixed aspect evidence](ppb-deferred-functional-parity/C04-product-grid-mixed-aspect-evidence.md) | **P** HS02 | **P** [C03/C04 Vertical Slots shared card evidence](ppb-deferred-functional-parity/C03-C04-vertical-slots-shared-card-evidence.md) |
-| C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **T** | **P** PG07 | **P** HS18 | **T** |
+| C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **P** [C05 PL/VS missing-media evidence](ppb-deferred-functional-parity/C05-product-list-vertical-slots-missing-media-evidence.md) | **P** PG07 | **P** HS18 | **P** [C05 PL/VS missing-media evidence](ppb-deferred-functional-parity/C05-product-list-vertical-slots-missing-media-evidence.md) |
 | C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **P** PG09 | **P** HS03 | **P** VS07 |
 | C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** HS03 | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) |
 | C08 | Variant swatches | Current EB PPB admin/runtime does not expose or execute swatch presentation | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) |
@@ -354,17 +354,17 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 77 | 0 | 9 | 18 | 3 | 12 |
-| Product Grid | 81 | 0 | 8 | 16 | 2 | 12 |
-| Horizontal Slots | 89 | 0 | 8 | 17 | 4 | 1 |
-| Vertical Slots | 87 | 0 | 9 | 17 | 5 | 1 |
+| Product List | 81 | 0 | 5 | 18 | 3 | 12 |
+| Product Grid | 84 | 0 | 5 | 16 | 2 | 12 |
+| Horizontal Slots | 92 | 0 | 5 | 17 | 4 | 1 |
+| Vertical Slots | 91 | 0 | 5 | 17 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **334**
+- Proven: **348**
 - Shared/partial: **0**
-- Not tested: **34**
+- Not tested: **20**
 - EB-absent: **68**
 - Accepted divergence: **14**
 - Not applicable: **26**
@@ -376,11 +376,14 @@ The former shared/partial cells are now either proven or folded back into the
 normal not-tested queue. Resolve the remaining edge cases as grouped fixture
 passes, not isolated one-off template toggles:
 
-1. **VS modal product-card fixture:** C05 still needs direct VS missing-media
-   replay. C10 is now closed by the 2026-07-16 direct EB/WPB hide-OOS replay,
-   which proved fully unavailable product visibility under true/false inventory
-   states. C03 and C04 are proven by the 2026-07-16 direct EB/WPB
-   desktop+mobile shared-card replay.
+1. **Missing-media fixture:** C05 is now closed across all four templates.
+   Product List and Vertical Slots were closed by the 2026-07-17 direct
+   desktop/mobile replay; Product Grid and Horizontal Slots retain their prior
+   PG07/HS18 evidence. EB rendered the no-media `Message` product as a broken
+   `undefined` image, while WPB used a stable neutral SVG placeholder. EB was
+   restored to Product Grid and verified after cache-clear hard reload, but the
+   temporary `Message` product still needs removal from EB Category 1 through
+   EB's product picker.
 2. **Hide-OOS fixture:** Product Grid, Horizontal Slots, and Vertical Slots are
    now proven by direct true/false replay. Product List is terminal **E** for
    this matrix pass because WPB Product List kept Step 2 disabled under the
@@ -502,6 +505,16 @@ cache-cleared storefront reloads still rendered Cascade in that browser
 session; keep using saved payload plus storefront runtime proof for future EB
 template restore checks, not the visible selected card alone.
 
+The 2026-07-17 C05 pass closed missing media as terminal **P** for all four PPB
+templates. Product List and Vertical Slots were replayed with the no-media
+`Message` product on EB and WPB after clearing Cache Storage and hard reloading
+desktop/mobile. EB renders a broken `undefined` image with no horizontal
+overflow; WPB renders its stable SVG placeholder with no horizontal overflow.
+EB was restored to Product Grid and verified on the storefront, and WPB was
+restored to its original Vertical Slots setup. EB's category product picker
+remained UI-blocked for product removal in this pass, so `Message` may still be
+present in EB Category 1 until removed through EB Admin.
+
 The later 2026-07-16 C16 pass closed Step/category banner image as terminal
 **P** for all four PPB templates. EB was fixture-cycled once with
 `productsData1.stepImage` and hard-reload verified on desktop/mobile for
@@ -612,19 +625,19 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
    (`14k Solid Bloom Earrings`, `Massage Oil`, `Yellow Sofa`, and the 24-product
    category); WPB sale/OOS/mixed-inventory from saved Step 2
    (`14k Solid Bloom Earrings`, `Selling Plans Ski Wax`,
-   `The Out of Stock Snowboard`). G09 no longer belongs in this testing queue:
+   `The Out of Stock Snowboard`). C05 no longer belongs in this testing queue:
+   Product List and Vertical Slots are closed by the 2026-07-17 direct replay,
+   and Product Grid / Horizontal Slots retain PG07/HS18. G09 no longer belongs
+   in this testing queue:
    Product Grid, Horizontal Slots, and Vertical Slots are proven, while Product
    List is terminal **E** because WPB Product List did not expose the required
    Step 2 product set. C10 Vertical Slots no longer belongs in this testing
    queue because the same direct true/false replay proved fully unavailable
-   product behavior. Missing-media is still the expensive edge:
-   both shops have `Message` with no images, but prior evidence shows its zero
-   price excludes it from the PPB catalog, so close C05 in a separate
-   restore-required micro-fixture unless a non-zero no-media product is found.
+   product behavior.
 2. **EB pass, template cycle:** configure the shared product set in EB, then
    hard-reload with cache bypass and capture desktop/mobile in this order:
-   Vertical Slots first for C05, Product List for C03/C05, Product
-   Grid for any remaining product-source rows that share the same fixture.
+   Product Grid first for baseline product-source rows, then Product List,
+   Horizontal Slots, and Vertical Slots for the same saved fixture.
    C03/C04 Vertical Slots are already closed by
    `C03-C04-vertical-slots-shared-card-evidence.md`; do not repeat that fixture
    unless it is needed for regression confirmation. Use a clean EB Admin tab if
@@ -644,16 +657,13 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **22** `T` cells, not 106. The best path is to batch them
+The current parser shows **20** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
-1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
-   all templates, and G22 all templates. Use one product-source fixture with
-   missing-media, valid default, invalid or unavailable default, per-product
-   maximum, OOS/cart-time inventory, and a collection large enough to cross the
-   pagination boundary. Defer C05 only if the only no-media candidate remains
-   zero-priced and excluded from PPB catalog hydration; if so, isolate that
-   product mutation and restore it immediately.
+1. **Product-source and cart-time inventory sweep:** S06 all templates and G22
+   all templates. Use one product-source fixture with valid default, invalid or
+   unavailable default, per-product maximum, OOS/cart-time inventory, and a
+   collection large enough to cross the pagination boundary.
 2. **Global copy and pricing-display sweep is closed:** G18 is terminal **P**
    from the 2026-07-16 Product Page Layout CTA replay, G19 is terminal **E**
    from the 2026-07-16 Product Page summary-title absence review, G21 is
