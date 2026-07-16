@@ -214,8 +214,8 @@ toggle or alternate-value behavior.
 | G30 | Brand colors | Base PPB colors propagate to every applicable template surface | **P** [G30/G31 Product List and Modal Slots design evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G30 Product Grid brand color evidence](ppb-deferred-functional-parity/G30-product-grid-brand-colors-evidence.md) | **P** [G30/G31 Product List and Modal Slots design evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G30/G31 Product List and Modal Slots design evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) |
 | G31 | Typography | Font family, weight, and scale propagate without theme leakage | **P** [G30/G31 Product List and Modal Slots typography evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G31 Product Grid typography evidence](ppb-deferred-functional-parity/G31-product-grid-typography-evidence.md) | **P** [G30/G31 Product List and Modal Slots typography evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G30/G31 Product List and Modal Slots typography evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) |
 | G32 | Corners | Card, control, modal, slot, and CTA radii follow the saved design tokens | **P** [G32 Product List corners evidence](ppb-deferred-functional-parity/G32-product-list-corners-evidence.md) | **P** [G32 Product Grid corners evidence](ppb-deferred-functional-parity/G32-product-grid-corners-evidence.md) | **P** [G32 Horizontal Slots corners evidence](ppb-deferred-functional-parity/G32-horizontal-slots-corners-evidence.md) | **P** [G32 Vertical Slots corners evidence](ppb-deferred-functional-parity/G32-vertical-slots-corners-evidence.md) |
-| G33 | Images and GIF settings | Saved design media appears in its intended PPB surface | **T** | **T** | **T** | **T** |
-| G34 | Expert color controls | General, Product Card, Bundle Cart, and Upsell scopes override only their owner surfaces | **T** | **T** | **T** | **T** |
+| G33 | Images and GIF settings | Saved design media appears in its intended PPB surface | **P** [G33/G34 design media and expert colors](ppb-deferred-functional-parity/G33-G34-design-media-expert-colors-evidence.md) | **P** [G33/G34 design media and expert colors](ppb-deferred-functional-parity/G33-G34-design-media-expert-colors-evidence.md) | **P** [G33/G34 design media and expert colors](ppb-deferred-functional-parity/G33-G34-design-media-expert-colors-evidence.md) | **P** [G33/G34 design media and expert colors](ppb-deferred-functional-parity/G33-G34-design-media-expert-colors-evidence.md) |
+| G34 | Expert color controls | General, Product Card, Bundle Cart, and Upsell scopes override only their owner surfaces | **P** [G33/G34 design media and expert colors](ppb-deferred-functional-parity/G33-G34-design-media-expert-colors-evidence.md) | **P** [G33/G34 design media and expert colors](ppb-deferred-functional-parity/G33-G34-design-media-expert-colors-evidence.md) | **P** [G33/G34 design media and expert colors](ppb-deferred-functional-parity/G33-G34-design-media-expert-colors-evidence.md) | **P** [G33/G34 design media and expert colors](ppb-deferred-functional-parity/G33-G34-design-media-expert-colors-evidence.md) |
 | G35 | Product Page custom CSS scope | Store-level PPB CSS remains scoped and distinct from Landing Page CSS | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) | **P** [G07/G35 Product Page custom CSS scope evidence](ppb-deferred-functional-parity/G07-G35-product-page-custom-css-scope-evidence.md) |
 | G36 | Product Card language fields | Add, variant, added, and inline-add labels use the active Product Page locale | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) |
 | G37 | Bundle Cart / Bundle / Toast language fields | Shared PPB language runtime supplies summary, CTA, validation, and toast copy across template families | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) |
@@ -642,7 +642,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **42** `T` cells, not 106. The best path is to batch them
+The current parser shows **26** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
@@ -660,10 +660,12 @@ by persisted/runtime owner instead of row order:
    terminal **P** from the 2026-07-16 active-locale replay, G26 is terminal
    **E** from the 2026-07-16 shared cart-line format replay, and G37 is closed
    by the 2026-07-16 shared PPB language runtime proof.
-4. **Global design/media/CSS sweep:** G33 and G34 remain. G07/G35 are terminal
-   **P** from the 2026-07-16 shared Product Page custom-CSS replay. G29 is
-   terminal EB-absent, and G30/G31 are now proven across all templates; use them
-   only as regression controls if later CSS changes touch the same surfaces.
+4. **Global design/media/CSS sweep is closed:** G33/G34 are terminal **P** from
+   the 2026-07-16 shared design-media and expert-color replay. G07/G35 are
+   terminal **P** from the 2026-07-16 shared Product Page custom-CSS replay.
+   G29 is terminal EB-absent, and G30/G31 are now proven across all templates;
+   use them only as regression controls if later CSS changes touch the same
+   surfaces.
 5. **External-entry sweep:** G02 and G24 together through browsed-product and
    collection quick-add entry points. Keep this separate because it starts
    outside the bundle widget and can pollute selection/session state.
