@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07-C09, D11, G10, G12-G17, G28, G30-G31, M10, and M12 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07-C09, D11, G10, G12-G17, G19, G28, G30-G31, M10, and M12 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -200,7 +200,7 @@ toggle or alternate-value behavior.
 | G16 | Checkout button style | Current EB PPB admin/runtime does not expose checkout-button style controls | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) |
 | G17 | Bundle-adding animation | Current EB PPB admin/runtime does not expose alternate bundle-adding animation controls | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) |
 | G18 | CTA text configuration | Saved merchant copy and long/localized text render correctly | **T** | **T** | **T** | **T** |
-| G19 | Bundle summary configuration | Title/subtitle/totals copy reaches the correct summary surface | **T** | **T** | **T** | **T** |
+| G19 | Bundle summary configuration | Current EB PPB admin/runtime does not expose bundle summary title/subtitle configuration | **E** [G19 bundle-summary absence](ppb-deferred-functional-parity/G19-bundle-summary-configuration-absence-evidence.md) | **E** [G19 bundle-summary absence](ppb-deferred-functional-parity/G19-bundle-summary-configuration-absence-evidence.md) | **E** [G19 bundle-summary absence](ppb-deferred-functional-parity/G19-bundle-summary-configuration-absence-evidence.md) | **E** [G19 bundle-summary absence](ppb-deferred-functional-parity/G19-bundle-summary-configuration-absence-evidence.md) |
 | G20 | Pricing configuration | Displayed original/savings/total fields follow saved visibility/copy | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) | **P** [G20 pricing evidence](ppb-deferred-functional-parity/G20-product-grid-pricing-configuration-evidence.md) |
 | G21 | Store-level language/locale | PPB controls, validation, and CTA use the active locale | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) | **P** [G21 active locale runtime evidence](ppb-deferred-functional-parity/G21-active-locale-runtime-evidence.md) |
 | G22 | Track inventory on Add To Cart | Cart-time inventory validation follows the saved control | **T** | **T** | **T** | **T** |
@@ -314,6 +314,13 @@ after a valid modal/shared-card bundle add, the script incremented both page and
 session counters exactly once. EB and WPB fixtures were restored and
 hard-reload verified clean.
 
+The 2026-07-16 G19 review resolves Bundle summary configuration as EB-absent
+for current PPB. EB Product Page Layout Language exposed Product Card, Bundle
+Cart, Bundle, and Toasts groups, including CTA/navigation/subtotal labels, but
+no bundle summary title/subtitle controls. The cache-cleared EB storefront
+runtime reported `bundleTextConfig: null`, and no summary title/subtitle DOM was
+present.
+
 The 2026-07-15 C07 replay grouped Product List, Product Grid, and Vertical Slots
 under one shared category fixture. EB and Wolfpack both persisted
 `displayVariantsAsIndividualProducts: true` with swatches disabled and rendered
@@ -347,18 +354,18 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 74 | 0 | 13 | 17 | 3 | 12 |
-| Product Grid | 78 | 0 | 12 | 15 | 2 | 12 |
-| Horizontal Slots | 86 | 0 | 12 | 16 | 4 | 1 |
-| Vertical Slots | 84 | 0 | 13 | 16 | 5 | 1 |
+| Product List | 74 | 0 | 12 | 18 | 3 | 12 |
+| Product Grid | 78 | 0 | 11 | 16 | 2 | 12 |
+| Horizontal Slots | 86 | 0 | 11 | 17 | 4 | 1 |
+| Vertical Slots | 84 | 0 | 12 | 17 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
 - Proven: **322**
 - Shared/partial: **0**
-- Not tested: **50**
-- EB-absent: **64**
+- Not tested: **46**
+- EB-absent: **68**
 - Accepted divergence: **14**
 - Not applicable: **26**
 
@@ -623,7 +630,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **50** `T` cells, not 106. The best path is to batch them
+The current parser shows **46** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
@@ -635,12 +642,12 @@ by persisted/runtime owner instead of row order:
    product mutation and restore it immediately.
 2. **Step/navigation media sweep:** C16 all templates. This shares one
    step/category banner-media setting while cycling the four templates once.
-3. **Global copy and pricing-display sweep:** G18 and G19
-   across all templates. These are merchant-copy and display controls, so one
-   saved text/pricing payload should cover CTA copy and summary text. G21 is
-   now terminal **P** from the 2026-07-16 active-locale replay, G26 is terminal
-   **E** from the 2026-07-16 shared cart-line format replay, and G37 is already
-   closed by the
+3. **Global copy and pricing-display sweep:** G18 across all templates. This is
+   a merchant-copy control, so one saved Product Page Layout text payload should
+   cover CTA copy. G19 is terminal **E** from the 2026-07-16 Product Page
+   summary-title absence review, G21 is terminal **P** from the 2026-07-16
+   active-locale replay, G26 is terminal **E** from the 2026-07-16 shared
+   cart-line format replay, and G37 is already closed by the
    2026-07-16 shared PPB language runtime proof.
 4. **Global design/media/CSS sweep:** G07, G33-G35. Reuse one
    high-contrast design payload and one scoped CSS sentinel across all
