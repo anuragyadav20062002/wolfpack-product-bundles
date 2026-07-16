@@ -257,7 +257,8 @@
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-title {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 400;
+  color: rgba(18, 18, 18, 0.75);
   line-height: 20px;
   margin: 0;
   min-height: 20px;
@@ -324,7 +325,8 @@
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-price {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 400;
+  color: rgba(18, 18, 18, 0.75);
   line-height: 18px;
 }
 
@@ -370,7 +372,9 @@
 }
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-add-btn {
+  background: transparent;
   border-radius: 5px;
+  color: rgba(18, 18, 18, 0.75);
   font-size: 16px;
   font-weight: 400;
   height: 33px;
@@ -380,6 +384,14 @@
   margin-top: 8px;
   padding: 6px 10px;
   text-transform: none;
+}
+
+@media (max-width: 767px) {
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-title,
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-price,
+  #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-add-btn {
+    font-size: 15px;
+  }
 }
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card .product-add-btn.added {

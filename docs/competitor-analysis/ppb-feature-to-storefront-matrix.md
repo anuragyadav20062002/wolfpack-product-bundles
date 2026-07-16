@@ -27,7 +27,7 @@ keywords:
 
 # Product Page Bundle Feature-to-Storefront Verification Matrix
 
-**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07-C09, D11, G10, G12-G17, M10, and M12 reconciled directly
+**Status:** Functional parity completion in progress; R06-R10, R13, R14, C07-C09, D11, G10, G12-G17, G30-G31, M10, and M12 reconciled directly
 **Created:** 2026-07-13
 **Scope:** All four Product Page Bundle storefront templates
 
@@ -211,8 +211,8 @@ toggle or alternate-value behavior.
 | G27 | Redirect settings | Default side-cart update, checkout redirect, and cart redirect follow the saved mode | **T** | **T** | **T** | **T** |
 | G28 | Execute script | Saved Product Page script executes at the EB-defined lifecycle without duplicate execution | **T** | **T** | **T** | **T** |
 | G29 | Loading image/GIF | Current EB PPB admin/runtime does not expose loading image or GIF controls | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) |
-| G30 | Brand colors | Base PPB colors propagate to every applicable template surface | **T** | **P** [G30 Product Grid brand color evidence](ppb-deferred-functional-parity/G30-product-grid-brand-colors-evidence.md) | **T** | **T** |
-| G31 | Typography | Font family, weight, and scale propagate without theme leakage | **T** | **P** [G31 Product Grid typography evidence](ppb-deferred-functional-parity/G31-product-grid-typography-evidence.md) | **T** | **T** |
+| G30 | Brand colors | Base PPB colors propagate to every applicable template surface | **P** [G30/G31 Product List and Modal Slots design evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G30 Product Grid brand color evidence](ppb-deferred-functional-parity/G30-product-grid-brand-colors-evidence.md) | **P** [G30/G31 Product List and Modal Slots design evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G30/G31 Product List and Modal Slots design evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) |
+| G31 | Typography | Font family, weight, and scale propagate without theme leakage | **P** [G30/G31 Product List and Modal Slots typography evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G31 Product Grid typography evidence](ppb-deferred-functional-parity/G31-product-grid-typography-evidence.md) | **P** [G30/G31 Product List and Modal Slots typography evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) | **P** [G30/G31 Product List and Modal Slots typography evidence](ppb-deferred-functional-parity/G30-G31-product-list-modal-slots-design-typography-evidence.md) |
 | G32 | Corners | Card, control, modal, slot, and CTA radii follow the saved design tokens | **P** [G32 Product List corners evidence](ppb-deferred-functional-parity/G32-product-list-corners-evidence.md) | **P** [G32 Product Grid corners evidence](ppb-deferred-functional-parity/G32-product-grid-corners-evidence.md) | **P** [G32 Horizontal Slots corners evidence](ppb-deferred-functional-parity/G32-horizontal-slots-corners-evidence.md) | **P** [G32 Vertical Slots corners evidence](ppb-deferred-functional-parity/G32-vertical-slots-corners-evidence.md) |
 | G33 | Images and GIF settings | Saved design media appears in its intended PPB surface | **T** | **T** | **T** | **T** |
 | G34 | Expert color controls | General, Product Card, Bundle Cart, and Upsell scopes override only their owner surfaces | **T** | **T** | **T** | **T** |
@@ -338,17 +338,17 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 68 | 0 | 21 | 15 | 3 | 12 |
+| Product List | 70 | 0 | 19 | 15 | 3 | 12 |
 | Product Grid | 74 | 0 | 18 | 13 | 2 | 12 |
-| Horizontal Slots | 80 | 0 | 20 | 14 | 4 | 1 |
-| Vertical Slots | 78 | 0 | 21 | 14 | 5 | 1 |
+| Horizontal Slots | 82 | 0 | 18 | 14 | 4 | 1 |
+| Vertical Slots | 80 | 0 | 19 | 14 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **300**
+- Proven: **306**
 - Shared/partial: **0**
-- Not tested: **80**
+- Not tested: **74**
 - EB-absent: **56**
 - Accepted divergence: **14**
 - Not applicable: **26**
@@ -471,6 +471,21 @@ to `enabled: false`. This does not close C05, C10, D01, or G09 because those
 still require missing-media, fully-unavailable, disabled-discount, and
 hide-OOS true/false fixtures.
 
+The later 2026-07-16 direct Chrome DevTools MCP G30/G31 pass closed Product
+List, Horizontal Slots, and Vertical Slots brand-color and typography cells.
+Product List matched EB under exact cascade row selectors on desktop/mobile.
+Horizontal and Vertical Slots initially exposed a WPB source mismatch in the
+bottom-sheet modal product card: title/price were black `700` and the card Add
+button was filled black, while EB used muted theme text at weight `400` with a
+transparent Add control. The fix is scoped to
+`app/assets/widgets/product-page-css/base/bottom-sheet-modal.css`, regenerated
+with `npm run minify:assets css`, and hard-reload verified on desktop/mobile
+for both modal slot templates. WPB was restored to `PDP_MODAL` +
+`SIMPLIFIED`. EB Admin reached the Product Grid post-save overlay, but repeated
+cache-cleared storefront reloads still rendered Cascade in that browser
+session; keep using saved payload plus storefront runtime proof for future EB
+template restore checks, not the visible selected card alone.
+
 High-risk missing evidence is concentrated in:
 
 1. amount thresholds and independent discount display controls;
@@ -541,7 +556,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **80** `T` cells, not 106. The best path is to batch them
+The current parser shows **74** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
@@ -562,10 +577,11 @@ by persisted/runtime owner instead of row order:
    summary text, total/original/savings display, active locale, completed-step
    title visibility, discount display format, product-card language, and
    cart/toast language.
-4. **Global design/media/CSS sweep:** G07, G29-G31, G33-G35. Reuse one
+4. **Global design/media/CSS sweep:** G07, G33-G35. Reuse one
    high-contrast design payload and one scoped CSS sentinel across all
-   templates. Product Grid G30/G31 are already proven; skip those two cells
-   unless the shared design payload reveals a regression.
+   templates. G29 is terminal EB-absent, and G30/G31 are now proven across all
+   templates; use them only as regression controls if later CSS changes touch
+   the same surfaces.
 5. **External-entry sweep:** G02 and G24 together through browsed-product and
    collection quick-add entry points. Keep this separate because it starts
    outside the bundle widget and can pollute selection/session state.
