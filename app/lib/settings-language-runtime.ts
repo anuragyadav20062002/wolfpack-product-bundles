@@ -388,12 +388,17 @@ function buildFpbTextOverrides(fpbLanguage: JsonObject) {
 function buildPpbTextOverrides(customTextSettings: Record<string, unknown>) {
   return {
     productCardAddButton: String(customTextSettings.productCardAddBtnText),
+    productCardInlineAddButton: String(customTextSettings.productCardAddBtnText_inPage),
+    productVariantLabel: String(customTextSettings.productVariantLabelText),
     addToCartButton: String(customTextSettings.addToCartBundleBtnText),
     addingToCart: String(customTextSettings.addToCartBundleBtnLoadingText),
     nextButton: String(customTextSettings.footerNextBtnText),
     doneButton: String(customTextSettings.footerFinishBtnText),
     includedBadge: String(customTextSettings.productAddedBtnText),
     noProductsAvailable: String(customTextSettings.noProductsAvailable),
+    viewBundleItems: String(customTextSettings.bundleCartDrawerBtnText_inPage),
+    bundleCartSelectedProductsText: String(customTextSettings.bundleCartSelectedProductsText_inPage),
+    boxSelectionEligibilityToast_inPage: String(customTextSettings.boxSelectionEligibilityToast_inPage),
   };
 }
 

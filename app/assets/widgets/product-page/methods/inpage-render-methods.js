@@ -4,7 +4,7 @@ import { getDiscountProgressData } from '../../shared/engine/bundle-selectors.js
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { renderSharedProductCard } from '../../shared/components/product-card.js';
 import { shouldRenderInlineVariantSelector } from '../../shared/variant-selector-policy.js';
-import { resolveProductPageCardButtonText } from './modal-methods.js';
+import { resolveProductPageCardButtonText, resolveProductPageInlineAddText } from './modal-methods.js';
 
 function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
@@ -169,6 +169,7 @@ _renderInpageStepProducts(stepIndex, target) {
     this.selectedBundle?.validateQuantityPerProduct
   );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const inlineAddText = resolveProductPageInlineAddText(this._resolveText?.bind(this));
 
   target.innerHTML = products.map(product => {
     const directSelectionKey = product.variantId || product.id;
@@ -213,7 +214,7 @@ _renderInpageStepProducts(stepIndex, target) {
           expandProductCardOnHover: false,
           showCompareAtPrice: this._shouldShowProductComparedAtPrice(),
           variantSelectorHtml,
-          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           addDisabled: outOfStock,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -234,9 +235,9 @@ _renderInpageStepProducts(stepIndex, target) {
           showCompareAtPrice: this._shouldShowProductComparedAtPrice(),
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`.trim(),
-          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           selectedAction: 'button',
-          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -268,7 +269,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
     const addButton = `
       <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
-        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
+        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText })}
       </button>
     `;
 

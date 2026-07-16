@@ -18,6 +18,12 @@ export function resolveProductPageCardButtonText({
     .replace(/\{\{\s*quantity\s*\}\}/g, String(currentQuantity));
 }
 
+export function resolveProductPageInlineAddText(resolveText) {
+  if (typeof resolveText !== 'function') return 'Add +';
+  const modalFallback = resolveText('productCardAddButton', 'Add +');
+  return resolveText('productCardInlineAddButton', modalFallback || 'Add +') || 'Add +';
+}
+
 export function shouldDisableProductPageVariantOption(variant, trackInventoryOnAddToCart = false) {
   if (variant?.available !== true) {
     return true;
@@ -404,10 +410,12 @@ renderVariantSelector(product) {
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : false;
+  const variantLabel = this._resolveText?.('productVariantLabel', 'Select variant') || 'Select variant';
 
   return `
     <div class="variant-selector-wrapper">
-      <select class="variant-selector" data-base-product-id="${product.id}">
+      <label class="visually-hidden" for="variant-selector-${product.id}">${ComponentGenerator.escapeHtml(variantLabel)}</label>
+      <select id="variant-selector-${product.id}" class="variant-selector" data-base-product-id="${product.id}" aria-label="${ComponentGenerator.escapeHtml(variantLabel)}">
         ${product.variants.map(v => {
           const isHardOOS = shouldDisableProductPageVariantOption(v, trackInventoryOnAddToCart);
           const label = isHardOOS ? `${v.title} — out of stock` : v.title;

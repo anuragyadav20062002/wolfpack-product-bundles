@@ -7314,6 +7314,7 @@ _renderInpageStepProducts(stepIndex, target) {
     this.selectedBundle?.validateQuantityPerProduct
   );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const inlineAddText = resolveProductPageInlineAddText(this._resolveText?.bind(this));
 
   target.innerHTML = products.map(product => {
     const directSelectionKey = product.variantId || product.id;
@@ -7358,7 +7359,7 @@ _renderInpageStepProducts(stepIndex, target) {
           expandProductCardOnHover: false,
           showCompareAtPrice: this._shouldShowProductComparedAtPrice(),
           variantSelectorHtml,
-          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           addDisabled: outOfStock,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -7379,9 +7380,9 @@ _renderInpageStepProducts(stepIndex, target) {
           showCompareAtPrice: this._shouldShowProductComparedAtPrice(),
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`.trim(),
-          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           selectedAction: 'button',
-          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -7413,7 +7414,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
     const addButton = `
       <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
-        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
+        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText })}
       </button>
     `;
 
@@ -8647,6 +8648,12 @@ function resolveProductPageCardButtonText({
     .replace(/\{\{\s*quantity\s*\}\}/g, String(currentQuantity));
 }
 
+function resolveProductPageInlineAddText(resolveText) {
+  if (typeof resolveText !== 'function') return 'Add +';
+  const modalFallback = resolveText('productCardAddButton', 'Add +');
+  return resolveText('productCardInlineAddButton', modalFallback || 'Add +') || 'Add +';
+}
+
 function shouldDisableProductPageVariantOption(variant, trackInventoryOnAddToCart = false) {
   if (variant?.available !== true) {
     return true;
@@ -9021,10 +9028,12 @@ renderVariantSelector(product) {
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : false;
+  const variantLabel = this._resolveText?.('productVariantLabel', 'Select variant') || 'Select variant';
 
   return `
     <div class="variant-selector-wrapper">
-      <select class="variant-selector" data-base-product-id="${product.id}">
+      <label class="visually-hidden" for="variant-selector-${product.id}">${ComponentGenerator.escapeHtml(variantLabel)}</label>
+      <select id="variant-selector-${product.id}" class="variant-selector" data-base-product-id="${product.id}" aria-label="${ComponentGenerator.escapeHtml(variantLabel)}">
         ${product.variants.map(v => {
           const isHardOOS = shouldDisableProductPageVariantOption(v, trackInventoryOnAddToCart);
           const label = isHardOOS ? `${v.title} — out of stock` : v.title;
@@ -9554,7 +9563,9 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     const existingInlineControls = productCard.querySelector('.inline-quantity-controls');
     const cascadeRow = productCard.classList.contains('bw-ppb-cascade-product-row');
     const step = this.selectedBundle?.steps?.[stepIndex];
-    const defaultAddText = cascadeRow ? 'Add +' : this._resolveText('productCardAddButton', 'Add to Cart');
+    const defaultAddText = cascadeRow
+      ? resolveProductPageInlineAddText(this._resolveText?.bind(this))
+      : this._resolveText('productCardAddButton', 'Add to Cart');
 
     if (quantityDisplay) {
       quantityDisplay.textContent = quantity;

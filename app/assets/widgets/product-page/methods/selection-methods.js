@@ -1,6 +1,6 @@
 import { ConditionValidator } from '../../shared/condition-validator.js';
 import { ToastManager } from '../../../bundle-widget-components.js';
-import { resolveProductPageCardButtonText } from './modal-methods.js';
+import { resolveProductPageCardButtonText, resolveProductPageInlineAddText } from './modal-methods.js';
 import { areRequiredProductPageStepsValid } from './step-validation.js';
 
 function createInlineQuantityControl(productId, quantity, increaseDisabled) {
@@ -314,7 +314,9 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     const existingInlineControls = productCard.querySelector('.inline-quantity-controls');
     const cascadeRow = productCard.classList.contains('bw-ppb-cascade-product-row');
     const step = this.selectedBundle?.steps?.[stepIndex];
-    const defaultAddText = cascadeRow ? 'Add +' : this._resolveText('productCardAddButton', 'Add to Cart');
+    const defaultAddText = cascadeRow
+      ? resolveProductPageInlineAddText(this._resolveText?.bind(this))
+      : this._resolveText('productCardAddButton', 'Add to Cart');
 
     if (quantityDisplay) {
       quantityDisplay.textContent = quantity;
