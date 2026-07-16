@@ -5542,7 +5542,7 @@ clearStepSelections(stepIndex) {
 renderFooter() {
   const el = this.elements.footer;
   if (!el) return;
-  if (this._isProductPageCascadeTemplate()) {
+  if (this._isProductPageCascadeTemplate() || this._isProductPageGridTemplate?.()) {
     const openDrawer = el.querySelector('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
     if (openDrawer) {
       const drawerHeight = openDrawer.getBoundingClientRect?.().height || 0;
@@ -9438,7 +9438,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     return;
   }
 
-  const cascadeDrawerWasOpen = this._isProductPageCascadeTemplate?.()
+  const cascadeDrawerWasOpen = (this._isProductPageCascadeTemplate?.() || this._isProductPageGridTemplate?.())
     && this.elements?.footer?.querySelector('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
   if (cascadeDrawerWasOpen) {
     const drawerHeight = cascadeDrawerWasOpen.getBoundingClientRect?.().height || 0;
