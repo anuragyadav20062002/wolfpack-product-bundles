@@ -192,9 +192,6 @@ renderProductPageLayout() {
       const target = section.querySelector('.bw-ppb-inpage-step-grid');
       this.elements.stepsContainer.appendChild(section);
 
-      const banner = this._createStepBannerImage(step);
-      if (banner) target.appendChild(banner);
-
       this._renderInpageStepProducts(stepIndex, target);
       return;
     }
@@ -212,10 +209,6 @@ renderProductPageLayout() {
     if (section) {
       this.elements.stepsContainer.appendChild(section);
     }
-
-    // Inject per-step banner image above this step's card(s)
-    const banner = this._createStepBannerImage(step);
-    if (banner) target.appendChild(banner);
 
     if (step.isDefault) {
       // Default/compulsory slot — always pre-filled, not removable
@@ -265,6 +258,10 @@ renderProductPageLayout() {
         }
       }
     }
+
+    // Inject per-step banner image above this step's card(s) after card rendering.
+    const banner = this._createStepBannerImage(step);
+    if (banner) target.prepend(banner);
   });
 },
 
@@ -285,8 +282,6 @@ _renderCogniveStepFlowLayout() {
     const target = section.querySelector('.bw-ppb-inpage-step-grid');
     this.elements.stepsContainer.appendChild(section);
 
-    const banner = this._createStepBannerImage(step);
-    if (banner) target.appendChild(banner);
     this._renderInpageStepProducts(stepIndex, target);
   });
 },

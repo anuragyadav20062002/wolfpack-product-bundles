@@ -115,7 +115,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | C13 | Display quantity input setting | Quantity input visibility follows the global PPB control | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` |
 | C14 | See-more / expanded card setting | Long content behavior follows `displaySeeMoreLink` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` |
 | C15 | Product-card hover expansion | `expandProductCardOnHover` behavior | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` |
-| C16 | Step/category banner image | Saved PPB banner media renders at the EB-owned step/category location | **T** | **T** | **T** | **T** |
+| C16 | Step/category banner image | Saved PPB banner media renders at the EB-owned step/category location | **P** [C16 step image runtime evidence](ppb-deferred-functional-parity/C16-wpb-step-config-image-source-fix-evidence.md) | **P** [C16 step image runtime evidence](ppb-deferred-functional-parity/C16-wpb-step-config-image-source-fix-evidence.md) | **P** [C16 step image runtime evidence](ppb-deferred-functional-parity/C16-wpb-step-config-image-source-fix-evidence.md) | **P** [C16 step image runtime evidence](ppb-deferred-functional-parity/C16-wpb-step-config-image-source-fix-evidence.md) |
 
 ## 3. Slot Templates and Modal Picker
 
@@ -502,17 +502,19 @@ cache-cleared storefront reloads still rendered Cascade in that browser
 session; keep using saved payload plus storefront runtime proof for future EB
 template restore checks, not the visible selected card alone.
 
-The 2026-07-16 C16 WPB source pass fixed a Product Page Bundle Step Config
-image routing defect without promoting matrix cells. EB audit evidence stores
-PPB Step Config uploads as `productsData1.stepImage`, and WPB runtime already
-emits `stepImage`, but the product-page layout renderer only read
-`bannerImageUrl`. The renderer now prefers `stepImage` and falls back to
-`bannerImageUrl`; a focused unit test covers both inputs and the no-image case.
-Chrome DevTools MCP hard reloads proved the temporary Vertical Slots fixture
-rendered `.step-banner-image img` on desktop/mobile, then the fixture was
-restored and verified with `stepImage: null` and no banner. C16 remains **T**
-until EB template cycling and equivalent WPB replay prove all four template
-cells.
+The later 2026-07-16 C16 pass closed Step/category banner image as terminal
+**P** for all four PPB templates. EB was fixture-cycled once with
+`productsData1.stepImage` and hard-reload verified on desktop/mobile for
+Product List, Product Grid, Horizontal Slots, and Vertical Slots. EB in-page
+templates rendered the target URL in `gbbMixStepImageWrapper`; EB modal
+templates rendered it in `gbbMixEmptyStateCardImageWrapper`. WPB replay exposed
+one real source defect: in-page product rendering rewrote the grid and deleted
+the banner after async product loading. The fix keeps `stepImage` preferred over
+`bannerImageUrl` and prepends the banner after every in-page renderer write.
+Focused unit coverage now includes element creation, fallback, no-image, and
+final/async in-page renderer state. WPB was hard-reload
+verified desktop/mobile across all four templates, then restored to
+`PDP_MODAL/SIMPLIFIED` with `stepImage: null` and no target image.
 
 The 2026-07-16 G26 pass resolved Discount display format as terminal **E** for
 all PPB templates. EB Product Grid was temporarily configured through Admin for
@@ -642,7 +644,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **26** `T` cells, not 106. The best path is to batch them
+The current parser shows **22** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
@@ -652,14 +654,14 @@ by persisted/runtime owner instead of row order:
    pagination boundary. Defer C05 only if the only no-media candidate remains
    zero-priced and excluded from PPB catalog hydration; if so, isolate that
    product mutation and restore it immediately.
-2. **Step/navigation media sweep:** C16 all templates. This shares one
-   step/category banner-media setting while cycling the four templates once.
-3. **Global copy and pricing-display sweep is closed:** G18 is terminal **P**
+2. **Global copy and pricing-display sweep is closed:** G18 is terminal **P**
    from the 2026-07-16 Product Page Layout CTA replay, G19 is terminal **E**
    from the 2026-07-16 Product Page summary-title absence review, G21 is
    terminal **P** from the 2026-07-16 active-locale replay, G26 is terminal
    **E** from the 2026-07-16 shared cart-line format replay, and G37 is closed
    by the 2026-07-16 shared PPB language runtime proof.
+3. **Step/navigation media sweep is closed:** C16 is terminal **P** from the
+   2026-07-16 shared step-image fixture replay across all four templates.
 4. **Global design/media/CSS sweep is closed:** G33/G34 are terminal **P** from
    the 2026-07-16 shared design-media and expert-color replay. G07/G35 are
    terminal **P** from the 2026-07-16 shared Product Page custom-CSS replay.

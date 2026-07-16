@@ -6816,9 +6816,6 @@ renderProductPageLayout() {
       const target = section.querySelector('.bw-ppb-inpage-step-grid');
       this.elements.stepsContainer.appendChild(section);
 
-      const banner = this._createStepBannerImage(step);
-      if (banner) target.appendChild(banner);
-
       this._renderInpageStepProducts(stepIndex, target);
       return;
     }
@@ -6836,9 +6833,6 @@ renderProductPageLayout() {
     if (section) {
       this.elements.stepsContainer.appendChild(section);
     }
-
-    const banner = this._createStepBannerImage(step);
-    if (banner) target.appendChild(banner);
 
     if (step.isDefault) {
 
@@ -6888,6 +6882,9 @@ renderProductPageLayout() {
         }
       }
     }
+
+    const banner = this._createStepBannerImage(step);
+    if (banner) target.prepend(banner);
   });
 },
 
@@ -6908,8 +6905,6 @@ _renderCogniveStepFlowLayout() {
     const target = section.querySelector('.bw-ppb-inpage-step-grid');
     this.elements.stepsContainer.appendChild(section);
 
-    const banner = this._createStepBannerImage(step);
-    if (banner) target.appendChild(banner);
     this._renderInpageStepProducts(stepIndex, target);
   });
 },
@@ -7297,11 +7292,17 @@ _renderInpageStepProducts(stepIndex, target) {
   if (!this._inpageStepProductsLoaded) this._inpageStepProductsLoaded = {};
   target.classList.toggle('bw-ppb-cascade-product-list', this._isProductPageCascadeTemplate());
   target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
+  const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  const prependStepBanner = () => {
+    const banner = this._createStepBannerImage?.(currentStep);
+    if (banner) target.prepend(banner);
+  };
 
   const stepProductsLoaded = this._inpageStepProductsLoaded[stepIndex] === true;
   if (rawProducts.length === 0 && !stepProductsLoaded && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
     target.setAttribute?.('aria-busy', 'true');
     target.innerHTML = renderInpageProductLoadingRows();
+    prependStepBanner();
     this.loadStepProducts(stepIndex).then(() => {
       this._inpageStepProductsLoaded[stepIndex] = true;
       if (target.isConnected) this._renderInpageStepProducts(stepIndex, target);
@@ -7313,7 +7314,6 @@ _renderInpageStepProducts(stepIndex, target) {
     return;
   }
 
-  const currentStep = this.selectedBundle?.steps?.[stepIndex];
   const categoryDisplaysVariantsAsIndividual = shouldDisplayVariantsAsIndividualForInpageCategory(
     currentStep,
     stepIndex,
@@ -7331,6 +7331,7 @@ _renderInpageStepProducts(stepIndex, target) {
     target.innerHTML = this._stepFetchFailed?.[stepIndex]
       ? '<p class="modal-fetch-error">Could not load products. Please check your connection and try again.</p>'
       : '<p class="no-products-message">No products are configured for this step.</p>';
+    prependStepBanner();
     return;
   }
 
@@ -7459,6 +7460,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
   }).join('');
 
+  prependStepBanner();
   this.attachProductEventHandlers(target, stepIndex);
 },
 
