@@ -190,7 +190,7 @@ toggle or alternate-value behavior.
 | G06 | Cart line-item discount display | Saved retail/savings display option reaches cart lines | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) |
 | G07 | Bundle-level custom CSS | Scoped merchant CSS applies without cross-template leakage | **T** | **T** | **T** | **T** |
 | G08 | Bundle active/inactive status | Inactive bundle blocks visible bundle UI before template dispatch; active restore remounts the saved fixture | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) |
-| G09 | `hideOutOfStockProducts` | Alternate true/false states match EB | **S** True/default behavior proven | **S** True/default behavior proven | **S** True/default behavior proven | **S** Shared modal behavior only |
+| G09 | `hideOutOfStockProducts` | Alternate true/false states match EB | **S** True/default behavior proven | **P** [G09 Product Grid hide out-of-stock evidence](ppb-deferred-functional-parity/G09-product-grid-hide-out-of-stock-evidence.md) | **S** True/default behavior proven | **S** Shared modal behavior only |
 | G10 | `displayPrices` | Current EB PPB admin/runtime does not expose price-visibility controls | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) |
 | G11 | `displayCompareAtPrices` | Compare-at visibility follows the saved global setting | **T** | **P** [G11 Product Grid compare-at visibility evidence](ppb-deferred-functional-parity/G11-product-grid-compare-at-visibility-evidence.md) | **P** HS02 | **T** |
 | G12 | `displaySwatchColours` / `displaySwatchImages` | Current EB PPB admin/runtime does not expose or execute global swatch controls | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) |
@@ -325,15 +325,15 @@ Current parsed evidence counts across the 119 feature rows:
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Product List | 65 | 2 | 26 | 12 | 2 | 12 |
-| Product Grid | 70 | 1 | 23 | 11 | 2 | 12 |
+| Product Grid | 71 | 0 | 23 | 11 | 2 | 12 |
 | Horizontal Slots | 75 | 2 | 25 | 12 | 4 | 1 |
 | Vertical Slots | 72 | 3 | 27 | 12 | 4 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **282**
-- Shared/partial: **8**
+- Proven: **283**
+- Shared/partial: **7**
 - Not tested: **101**
 - EB-absent: **47**
 - Accepted divergence: **12**
@@ -348,8 +348,8 @@ not promoted from another template's proof:
 1. **VS modal product-card fixture:** C05 and C10 still need direct VS
    missing-media and fully-unavailable product replay. C03 and C04 are now
    proven by the 2026-07-16 direct EB/WPB desktop+mobile shared-card replay.
-2. **Hide-OOS fixture:** G09 should be tested once with OOS products present,
-   then replayed across PL, PG, HS, and VS for true/false visibility states.
+2. **Hide-OOS fixture:** Product Grid is now proven by direct true/false
+   replay. G09 still needs OOS true/false replay across PL, HS, and VS.
 3. **Pagination fixture:** S17 needs Product Grid, Horizontal Slots, and
    Vertical Slots category pagination boundaries with enough collection products
    to force an additional fetch.
