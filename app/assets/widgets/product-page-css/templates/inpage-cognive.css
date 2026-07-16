@@ -145,7 +145,7 @@
   padding: 0;
   border: 0;
   border-radius: 7px;
-  background: transparent;
+  background: var(--bundle-product-card-bg, transparent);
   box-shadow: none;
   overflow: visible;
   box-sizing: border-box;
@@ -242,7 +242,7 @@
   img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: var(--bundle-product-card-image-fit, cover);
   display: block;
 }
 
@@ -310,7 +310,7 @@
   .bw-ppb-cognive-product-grid
   .product-title {
   display: -webkit-box;
-  color: #1e1e1e;
+  color: var(--bundle-product-card-font-color, #1e1e1e);
   font-size: 14px;
   font-weight: 700;
   line-height: 18px;
@@ -340,7 +340,7 @@
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"]
   .bw-ppb-cognive-product-grid
   .product-price-strike {
-  color: #000000;
+  color: var(--bundle-product-final-price-color, #000000);
   font-size: 14px;
   font-weight: 700;
   line-height: normal;
@@ -367,8 +367,8 @@
   padding: 4px 14px;
   border: 0;
   border-radius: 5px;
-  background: #000000;
-  color: #ffffff;
+  background: var(--bundle-button-bg, #000000);
+  color: var(--bundle-button-text-color, #ffffff);
   font-size: 14px;
   font-weight: 700;
   line-height: normal;
