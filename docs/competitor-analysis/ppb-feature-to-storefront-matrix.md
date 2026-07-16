@@ -486,6 +486,18 @@ cache-cleared storefront reloads still rendered Cascade in that browser
 session; keep using saved payload plus storefront runtime proof for future EB
 template restore checks, not the visible selected card alone.
 
+The 2026-07-16 C16 WPB source pass fixed a Product Page Bundle Step Config
+image routing defect without promoting matrix cells. EB audit evidence stores
+PPB Step Config uploads as `productsData1.stepImage`, and WPB runtime already
+emits `stepImage`, but the product-page layout renderer only read
+`bannerImageUrl`. The renderer now prefers `stepImage` and falls back to
+`bannerImageUrl`; a focused unit test covers both inputs and the no-image case.
+Chrome DevTools MCP hard reloads proved the temporary Vertical Slots fixture
+rendered `.step-banner-image img` on desktop/mobile, then the fixture was
+restored and verified with `stepImage: null` and no banner. C16 remains **T**
+until EB template cycling and equivalent WPB replay prove all four template
+cells.
+
 High-risk missing evidence is concentrated in:
 
 1. amount thresholds and independent discount display controls;

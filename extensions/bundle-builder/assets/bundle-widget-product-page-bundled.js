@@ -6752,11 +6752,12 @@ _renderDirectDefaultProducts() {
 },
 
 _createStepBannerImage(step) {
-  if (!step?.bannerImageUrl) return null;
+  const imageUrl = step?.stepImage || step?.bannerImageUrl || null;
+  if (!imageUrl) return null;
   const wrapper = document.createElement('div');
   wrapper.className = 'step-banner-image';
   const img = document.createElement('img');
-  img.src = step.bannerImageUrl;
+  img.src = imageUrl;
   img.alt = step.name || '';
   img.style.width = '100%';
   img.style.display = 'block';
