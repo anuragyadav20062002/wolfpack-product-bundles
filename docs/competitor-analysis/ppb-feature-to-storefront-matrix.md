@@ -171,7 +171,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | S13 | Discount transform proof | Cart price/allocation agrees with displayed discount | **P** PL08 | **P** [S09-S13 Product Grid cart contract](ppb-deferred-functional-parity/S09-S13-product-grid-cart-contract-evidence.md) | **P** HS08 | **P** [S09-S13 Vertical Slots cart contract](ppb-deferred-functional-parity/S09-S13-vertical-slots-cart-contract-evidence.md) |
 | S14 | Dynamic checkout / accelerated checkout | Native bypass behavior explicitly accepted or prevented | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) | **X** HS10 safety divergence | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) |
 | S15 | `addBundleToCartOnDone` | Saved global setting controls final-step cart behavior | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow |
-| S16 | Per-product quantity validation | `validateQuantityPerProduct` and maximum quantity are enforced independently of step rules | **P** [S16 Product List quantity validation evidence](ppb-deferred-functional-parity/S16-product-list-quantity-validation-evidence.md) | **T** | **T** | **T** VS06 current configuration mismatch recorded |
+| S16 | Per-product quantity validation | `validateQuantityPerProduct` and maximum quantity are enforced independently of step rules | **P** [S16 Product List quantity validation evidence](ppb-deferred-functional-parity/S16-product-list-quantity-validation-evidence.md) | **P** [S16 Product Grid quantity validation evidence](ppb-deferred-functional-parity/S16-product-grid-quantity-validation-evidence.md) | **T** | **T** VS06 current configuration mismatch recorded |
 | S17 | Catalog pagination counts | Product and collection fetch counts load additional products without duplicates or lost selection | **P** PLS3 collection reload | **P** [S17 Product Grid/Vertical Slots pagination evidence](ppb-deferred-functional-parity/S17-product-grid-vertical-slots-pagination-evidence.md) | **P** [S17 Horizontal Slots pagination evidence](ppb-deferred-functional-parity/S17-horizontal-slots-pagination-evidence.md) | **P** [S17 Product Grid/Vertical Slots pagination evidence](ppb-deferred-functional-parity/S17-product-grid-vertical-slots-pagination-evidence.md) |
 
 ## 6. Bundle Settings, Visibility, Subscriptions, and Global Controls
@@ -339,16 +339,16 @@ Current parsed evidence counts across the 119 feature rows:
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Product List | 68 | 0 | 21 | 15 | 3 | 12 |
-| Product Grid | 73 | 0 | 19 | 13 | 2 | 12 |
+| Product Grid | 74 | 0 | 18 | 13 | 2 | 12 |
 | Horizontal Slots | 79 | 0 | 21 | 14 | 4 | 1 |
 | Vertical Slots | 77 | 0 | 22 | 14 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **297**
+- Proven: **298**
 - Shared/partial: **0**
-- Not tested: **83**
+- Not tested: **82**
 - EB-absent: **56**
 - Accepted divergence: **14**
 - Not applicable: **26**
@@ -541,12 +541,11 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **87** `T` cells, not 106. The best path is to batch them
+The current parser shows **82** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
-   all templates, S16 Product Grid/Horizontal
-   Slots/Vertical Slots, G11
+   all templates, S16 Horizontal Slots/Vertical Slots, G11
    Product List/Vertical Slots, and G22 all templates. Use one product-source
    fixture with sale/compare-at, missing-media, valid default, invalid or
    unavailable default, per-product maximum, OOS/cart-time inventory, and a
