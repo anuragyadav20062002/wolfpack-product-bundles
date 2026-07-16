@@ -527,7 +527,7 @@ High-risk missing evidence is concentrated in:
 1. amount thresholds and independent discount display controls;
 2. default/preselected products and disabled-validation behavior;
 3. Bundle Visibility, browsed-product preselection, subscriptions/selling plans,
-   and cart-line discount display;
+   and cart-line discount format permutations;
 4. alternate global PPB control values and localized/custom text;
 5. direct Vertical Slots inventory, variant, delayed-load, and media-edge proof.
 
@@ -592,7 +592,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **66** `T` cells, not 106. The best path is to batch them
+The current parser shows **62** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
