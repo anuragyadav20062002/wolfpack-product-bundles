@@ -218,7 +218,7 @@ toggle or alternate-value behavior.
 | G34 | Expert color controls | General, Product Card, Bundle Cart, and Upsell scopes override only their owner surfaces | **T** | **T** | **T** | **T** |
 | G35 | Product Page custom CSS scope | Store-level PPB CSS remains scoped and distinct from Landing Page CSS | **T** | **T** | **T** | **T** |
 | G36 | Product Card language fields | Add, variant, added, and inline-add labels use the active Product Page locale | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) | **P** [G36 product-card language runtime](ppb-deferred-functional-parity/G36-product-card-language-runtime-evidence.md) |
-| G37 | Bundle Cart / Bundle / Toast language fields | Summary, CTA, validation, and toast copy use the active locale | **T** | **T** | **T** | **T** |
+| G37 | Bundle Cart / Bundle / Toast language fields | Shared PPB language runtime supplies summary, CTA, validation, and toast copy across template families | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) | **P** [G37 bundle-cart language runtime](ppb-deferred-functional-parity/G37-bundle-cart-language-runtime-evidence.md) |
 | G38 | Bundle Embed | Saved embed configuration mounts and hands off the correct offer context | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) | **P** [G38 Bundle Embed evidence](ppb-deferred-functional-parity/G38-bundle-embed-evidence.md) |
 | G39 | Place Widget | Theme placement workflow preserves parent-product context and active template | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) | **P** [G39 Place Widget evidence](ppb-deferred-functional-parity/G39-place-widget-evidence.md) |
 
@@ -338,17 +338,17 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 70 | 0 | 18 | 16 | 3 | 12 |
-| Product Grid | 74 | 0 | 17 | 14 | 2 | 12 |
-| Horizontal Slots | 82 | 0 | 17 | 15 | 4 | 1 |
-| Vertical Slots | 80 | 0 | 18 | 15 | 5 | 1 |
+| Product List | 72 | 0 | 16 | 16 | 3 | 12 |
+| Product Grid | 76 | 0 | 15 | 14 | 2 | 12 |
+| Horizontal Slots | 84 | 0 | 15 | 15 | 4 | 1 |
+| Vertical Slots | 82 | 0 | 16 | 15 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **306**
+- Proven: **314**
 - Shared/partial: **0**
-- Not tested: **70**
+- Not tested: **62**
 - EB-absent: **60**
 - Accepted divergence: **14**
 - Not applicable: **26**
@@ -498,6 +498,20 @@ restored and verified with `stepImage: null` and no banner. C16 remains **T**
 until EB template cycling and equivalent WPB replay prove all four template
 cells.
 
+The 2026-07-16 G37 shared-runtime pass closed Bundle Cart / Bundle / Toast
+language fields across all PPB templates. Fresh Chrome DevTools MCP
+cache-cleared hard reloads proved EB Product Grid desktop/mobile runtime still
+serves one `pageCustomizationSettings.customTextSettings` object with bundle
+CTA/loading, footer next/done, selected-products, drawer, toast, and condition
+message fields. WPB Vertical Slots desktop/mobile returned the same active
+locale values from the app-proxy language endpoint on widget `5.0.189` and
+rendered the modal CTA/navigation copy. Source proof maps the four templates to
+two template families: Product List/Product Grid consume the shared in-page
+footer/drawer/validation methods, and Horizontal Slots/Vertical Slots consume
+the shared modal footer/navigation/validation methods. This is accepted as a
+shared runtime closure instead of four separate fixture mutations because the
+text document and call sites are independent of template preset.
+
 The 2026-07-16 G04 pass resolved preorder/subscription integration as
 terminal **E** for the current PPB fixture. EB storefront runtime has
 `subscriptionBundlesData.lastValidationResponse.message:
@@ -590,10 +604,11 @@ by persisted/runtime owner instead of row order:
    product mutation and restore it immediately.
 2. **Step/navigation media sweep:** C16 all templates. This shares one
    step/category banner-media setting while cycling the four templates once.
-3. **Global copy, locale, and pricing-display sweep:** G18, G19, G21, G26, and
-   G37 across all templates. These are merchant-copy and display controls, so
-   one saved text/locale/pricing payload should cover CTA copy, summary text,
-   active locale, discount display format, and cart/toast language.
+3. **Global copy, locale, and pricing-display sweep:** G18, G19, G21, and G26
+   across all templates. These are merchant-copy and display controls, so one
+   saved text/locale/pricing payload should cover CTA copy, summary text, active
+   locale, and discount display format. G37 is already closed by the
+   2026-07-16 shared PPB language runtime proof.
 4. **Global design/media/CSS sweep:** G07, G33-G35. Reuse one
    high-contrast design payload and one scoped CSS sentinel across all
    templates. G29 is terminal EB-absent, and G30/G31 are now proven across all

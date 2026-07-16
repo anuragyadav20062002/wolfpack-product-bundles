@@ -150,5 +150,8 @@ Slots because the Product Card language fields are supplied by the shared PPB
 language endpoint and consumed by shared Product Page card/selector code used by
 the PPB template surfaces.
 
-G37 remains open. This pass mapped some Bundle Cart/toast aliases, but it did
-not fully prove every summary, validation, and toast copy surface.
+G37 remained open after this pass because this evidence mapped some Bundle
+Cart/toast aliases, but did not fully prove every summary, validation, and
+toast copy surface. The follow-up
+`G37-bundle-cart-language-runtime-evidence.md` closes that row through shared
+PPB language runtime proof.
