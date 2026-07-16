@@ -88,6 +88,7 @@ createProductCard(product, stepIndex, options = {}) {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         className: outOfStock ? 'is-out-of-stock' : '',
+        showCompareAtPrice: true,
         addButtonText: this.getProductCardAddButtonText(step),
         cardBadgeHtml: stockBadgeHtml,
         variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,

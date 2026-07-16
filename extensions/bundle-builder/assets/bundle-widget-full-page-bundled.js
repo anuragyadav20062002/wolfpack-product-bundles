@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.188
+ * Version : 5.0.189
  * Built   : 2026-07-16
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.188';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.189';
 (function() {
   'use strict';
 
@@ -2852,7 +2852,9 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const imageUrl = imageUrls[0] || DEFAULT_PLACEHOLDER_IMAGE;
   const hasMultipleImages = imageUrls.length > 1;
   const price = formatPrice(product.price, currencyInfo);
-  const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
+  const compareAtPrice = options.showCompareAtPrice === true
+    ? formatPrice(product.compareAtPrice, currencyInfo)
+    : '';
   const variantSelectorBeforePrice = options.variantSelectorPlacement === 'beforePrice';
   const rootClasses = [
     'bw-product-card',
@@ -8965,6 +8967,7 @@ createProductCard(product, stepIndex, options = {}) {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         className: outOfStock ? 'is-out-of-stock' : '',
+        showCompareAtPrice: true,
         addButtonText: this.getProductCardAddButtonText(step),
         cardBadgeHtml: stockBadgeHtml,
         variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,
@@ -12641,6 +12644,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
       {
         variantSelectorHtml,
         stockBadgeHtml: stockBadge,
+        showCompareAtPrice: true,
         addButtonText: outOfStock ? 'Out of stock' : this.getProductAddButtonText(),
         addDisabled,
         decreaseDisabled: currentQuantity <= 0,

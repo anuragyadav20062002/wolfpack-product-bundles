@@ -29,7 +29,9 @@ export function renderSharedProductCard(product = {}, currentQuantity = 0, curre
   const imageUrl = imageUrls[0] || DEFAULT_PLACEHOLDER_IMAGE;
   const hasMultipleImages = imageUrls.length > 1;
   const price = formatPrice(product.price, currencyInfo);
-  const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
+  const compareAtPrice = options.showCompareAtPrice === true
+    ? formatPrice(product.compareAtPrice, currencyInfo)
+    : '';
   const variantSelectorBeforePrice = options.variantSelectorPlacement === 'beforePrice';
   const rootClasses = [
     'bw-product-card',
