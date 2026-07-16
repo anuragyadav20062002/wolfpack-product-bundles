@@ -185,7 +185,7 @@ toggle or alternate-value behavior.
 | G01 | Bundle Visibility product/collection targeting | Widget appears only on configured product contexts | **P** [G01 bundle visibility targeting evidence](ppb-deferred-functional-parity/G01-bundle-visibility-targeting-evidence.md) | **P** [G01 bundle visibility targeting evidence](ppb-deferred-functional-parity/G01-bundle-visibility-targeting-evidence.md) | **P** [G01 bundle visibility targeting evidence](ppb-deferred-functional-parity/G01-bundle-visibility-targeting-evidence.md) | **P** [G01 bundle visibility targeting evidence](ppb-deferred-functional-parity/G01-bundle-visibility-targeting-evidence.md) |
 | G02 | Add Browsed Product / preselection | Browsed product is preselected when eligible | **T** | **T** | **T** | **T** |
 | G03 | Upsell block/button handoff | Builder/upsell entry preserves offer and selection context | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) | **P** [G03 upsell widget handoff evidence](ppb-deferred-functional-parity/G03-upsell-widget-handoff-evidence.md) |
-| G04 | Pre-order and Subscription Integration | Selling-plan selection reaches product cards and cart payload | **T** | **T** | **T** | **T** |
+| G04 | Pre-order and Subscription Integration | Selling-plan selection reaches product cards and cart payload | **E** [G04 preorder/subscription absence evidence](ppb-deferred-functional-parity/G04-preorder-subscription-integration-absence-evidence.md) | **E** [G04 preorder/subscription absence evidence](ppb-deferred-functional-parity/G04-preorder-subscription-integration-absence-evidence.md) | **E** [G04 preorder/subscription absence evidence](ppb-deferred-functional-parity/G04-preorder-subscription-integration-absence-evidence.md) | **E** [G04 preorder/subscription absence evidence](ppb-deferred-functional-parity/G04-preorder-subscription-integration-absence-evidence.md) |
 | G05 | PPB Subscriptions | Current EB PPB fixture validates subscriptions but has no common selling plan, so no selected plan reaches storefront/cart | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) | **E** [G05 no-common-plan evidence](ppb-deferred-functional-parity/G05-subscriptions-no-common-plan-evidence.md) |
 | G06 | Cart line-item discount display | Saved retail/savings display option reaches cart lines | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) |
 | G07 | Bundle-level custom CSS | Scoped merchant CSS applies without cross-template leakage | **T** | **T** | **T** | **T** |
@@ -338,18 +338,18 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 70 | 0 | 19 | 15 | 3 | 12 |
-| Product Grid | 74 | 0 | 18 | 13 | 2 | 12 |
-| Horizontal Slots | 82 | 0 | 18 | 14 | 4 | 1 |
-| Vertical Slots | 80 | 0 | 19 | 14 | 5 | 1 |
+| Product List | 70 | 0 | 18 | 16 | 3 | 12 |
+| Product Grid | 74 | 0 | 17 | 14 | 2 | 12 |
+| Horizontal Slots | 82 | 0 | 17 | 15 | 4 | 1 |
+| Vertical Slots | 80 | 0 | 18 | 15 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
 - Proven: **306**
 - Shared/partial: **0**
-- Not tested: **74**
-- EB-absent: **56**
+- Not tested: **70**
+- EB-absent: **60**
 - Accepted divergence: **14**
 - Not applicable: **26**
 
@@ -498,6 +498,16 @@ restored and verified with `stepImage: null` and no banner. C16 remains **T**
 until EB template cycling and equivalent WPB replay prove all four template
 cells.
 
+The 2026-07-16 G04 pass resolved preorder/subscription integration as
+terminal **E** for the current PPB fixture. EB storefront runtime has
+`subscriptionBundlesData.lastValidationResponse.message:
+"NO_SELLING_PLAN_GROUPS_FOUND"`, no `sellingPlanGroups`, no product or variant
+`sellingPlanAllocations`, no preorder flags, and no visible plan/preorder
+selector text. WPB baseline runtime was checked only to confirm no WPB-only
+integration state is active. This absence is template-independent, so no
+template cycle can create buyer-facing selling-plan/preorder behavior until EB
+has a fixture with Stoq preorder data or Shopify selling-plan allocations.
+
 High-risk missing evidence is concentrated in:
 
 1. amount thresholds and independent discount display controls;
@@ -568,7 +578,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **74** `T` cells, not 106. The best path is to batch them
+The current parser shows **70** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
@@ -597,8 +607,9 @@ by persisted/runtime owner instead of row order:
 5. **External-entry sweep:** G02 and G24 together through browsed-product and
    collection quick-add entry points. Keep this separate because it starts
    outside the bundle widget and can pollute selection/session state.
-6. **Subscriptions/preorder sweep:** G04 across all templates with one
-   selling-plan/preorder product set.
+6. **Subscriptions/preorder sweep:** G04 is terminal EB-absent for the current
+   fixture. Reopen only if EB supplies a product set with Stoq preorder data or
+   Shopify selling-plan allocations.
 7. **Redirect/script sweep:** G27 and G28 after the product-source and
    cart-sensitive rows, so checkout/cart redirects and script execution do not
    contaminate product-card evidence.
