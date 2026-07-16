@@ -190,7 +190,7 @@ toggle or alternate-value behavior.
 | G06 | Cart line-item discount display | Saved retail/savings display option reaches cart lines | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) |
 | G07 | Bundle-level custom CSS | Scoped merchant CSS applies without cross-template leakage | **T** | **T** | **T** | **T** |
 | G08 | Bundle active/inactive status | Inactive bundle blocks visible bundle UI before template dispatch; active restore remounts the saved fixture | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) | **P** [G08 active/draft evidence](ppb-deferred-functional-parity/G08-bundle-active-inactive-status-evidence.md) |
-| G09 | `hideOutOfStockProducts` | Alternate true/false states match EB | **S** True/default behavior proven | **P** [G09 Product Grid hide out-of-stock evidence](ppb-deferred-functional-parity/G09-product-grid-hide-out-of-stock-evidence.md) | **S** True/default behavior proven | **S** Shared modal behavior only |
+| G09 | `hideOutOfStockProducts` | Alternate true/false states match EB | **E** [G09 Product List blocker evidence](ppb-deferred-functional-parity/G09-product-list-horizontal-vertical-hide-out-of-stock-evidence.md) | **P** [G09 Product Grid hide out-of-stock evidence](ppb-deferred-functional-parity/G09-product-grid-hide-out-of-stock-evidence.md) | **P** [G09 Horizontal Slots evidence](ppb-deferred-functional-parity/G09-product-list-horizontal-vertical-hide-out-of-stock-evidence.md) | **P** [G09 Vertical Slots evidence](ppb-deferred-functional-parity/G09-product-list-horizontal-vertical-hide-out-of-stock-evidence.md) |
 | G10 | `displayPrices` | Current EB PPB admin/runtime does not expose price-visibility controls | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) | **E** [G10/G13-G17 global-control absence evidence](ppb-deferred-functional-parity/G10-G13-G17-global-control-absence-evidence.md) |
 | G11 | `displayCompareAtPrices` | Compare-at visibility follows the saved global setting | **T** | **P** [G11 Product Grid compare-at visibility evidence](ppb-deferred-functional-parity/G11-product-grid-compare-at-visibility-evidence.md) | **P** HS02 | **T** |
 | G12 | `displaySwatchColours` / `displaySwatchImages` | Current EB PPB admin/runtime does not expose or execute global swatch controls | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) |
@@ -324,18 +324,18 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 65 | 2 | 26 | 12 | 2 | 12 |
+| Product List | 65 | 1 | 26 | 13 | 2 | 12 |
 | Product Grid | 71 | 0 | 23 | 11 | 2 | 12 |
-| Horizontal Slots | 75 | 2 | 25 | 12 | 4 | 1 |
-| Vertical Slots | 72 | 3 | 27 | 12 | 4 | 1 |
+| Horizontal Slots | 76 | 1 | 25 | 12 | 4 | 1 |
+| Vertical Slots | 73 | 2 | 27 | 12 | 4 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **283**
-- Shared/partial: **7**
+- Proven: **285**
+- Shared/partial: **4**
 - Not tested: **101**
-- EB-absent: **47**
+- EB-absent: **48**
 - Accepted divergence: **12**
 - Not applicable: **26**
 
@@ -348,8 +348,10 @@ not promoted from another template's proof:
 1. **VS modal product-card fixture:** C05 and C10 still need direct VS
    missing-media and fully-unavailable product replay. C03 and C04 are now
    proven by the 2026-07-16 direct EB/WPB desktop+mobile shared-card replay.
-2. **Hide-OOS fixture:** Product Grid is now proven by direct true/false
-   replay. G09 still needs OOS true/false replay across PL, HS, and VS.
+2. **Hide-OOS fixture:** Product Grid, Horizontal Slots, and Vertical Slots are
+   now proven by direct true/false replay. Product List is terminal **E** for
+   this matrix pass because WPB Product List kept Step 2 disabled under the
+   synced two-step fixture, while EB exposed the Step 2 true/false behavior.
 3. **Pagination fixture:** S17 needs Product Grid, Horizontal Slots, and
    Vertical Slots category pagination boundaries with enough collection products
    to force an additional fetch.
@@ -490,14 +492,17 @@ the remaining risk is documented in this matrix.
    (`14k Solid Bloom Earrings`, `Massage Oil`, `Yellow Sofa`, and the 24-product
    category); WPB sale/OOS/mixed-inventory from saved Step 2
    (`14k Solid Bloom Earrings`, `Selling Plans Ski Wax`,
-   `The Out of Stock Snowboard`). Missing-media is still the expensive edge:
+   `The Out of Stock Snowboard`). G09 Product List no longer belongs in this
+   testing queue: the 2026-07-16 direct replay made it terminal **E** because
+   WPB Product List did not expose the required Step 2 product set. Missing-media
+   is still the expensive edge:
    both shops have `Message` with no images, but prior evidence shows its zero
    price excludes it from the PPB catalog, so close C05 in a separate
    restore-required micro-fixture unless a non-zero no-media product is found.
 2. **EB pass, template cycle:** configure the shared product set in EB, then
    hard-reload with cache bypass and capture desktop/mobile in this order:
-   Vertical Slots first for C05/C10/G09, Product List for C03/C05, Product
-   Grid for G09/S17, Horizontal Slots for G09/S17, then Product List for G09.
+   Vertical Slots first for C05/C10, Product List for C03/C05, Product
+   Grid for S17, then Horizontal Slots for S17.
    C03/C04 Vertical Slots are already closed by
    `C03-C04-vertical-slots-shared-card-evidence.md`; do not repeat that fixture
    unless it is needed for regression confirmation. Use a clean EB Admin tab if

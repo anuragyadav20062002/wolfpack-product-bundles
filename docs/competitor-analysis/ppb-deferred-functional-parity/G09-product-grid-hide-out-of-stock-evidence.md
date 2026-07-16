@@ -111,4 +111,4 @@ After the evidence pass, the Wolfpack fixture was restored:
 
 ## Matrix recommendation
 
-Promote G09 Product Grid to **P**. Product List, Horizontal Slots, and Vertical Slots still need direct true/false replay before their G09 cells can be promoted.
+Promote G09 Product Grid to **P**. The remaining Product List, Horizontal Slots, and Vertical Slots cells are covered by `G09-product-list-horizontal-vertical-hide-out-of-stock-evidence.md`.
