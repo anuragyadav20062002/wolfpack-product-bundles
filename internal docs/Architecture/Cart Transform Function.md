@@ -5,7 +5,7 @@ title: Cart Transform Function
 type: architecture
 status: authoritative
 summary: Runtime-token-verified Shopify Cart Transform architecture and fail-closed bundle pricing contract.
-last_audited: 2026-07-14
+last_audited: 2026-07-16
 owners:
   - engineering
 domains:
@@ -221,3 +221,25 @@ Shopify `linesMerge` can apply only one parent `percentageDecrease`, so mixed-pr
 - Cart Transform groups component lines by the `{offerId}_{sessionKey}` base and uses `_bundleName` for the parent title
 - Shopify's cart line properties still differ per component line because the trailing item index differs
 - See [[Features/Bundle Instance Tracking]]
+
+## Cart Line Messaging Format Gotcha
+
+On 2026-07-16, the SIT PPB G26 parity replay proved that saving
+`bundleCartLineMessaging.discountDisplay.format` and syncing the CartTransform
+owner metafield is not sufficient evidence that the deployed Function applies
+alternate cart-line display formats.
+
+Verified state:
+
+- DB `DesignSettings.bundleCartLineMessaging.discountDisplay.format` was set to
+  `amount_only`, then `percentage_only`.
+- `CartTransformService.syncCartLineMessagingSettings()` returned success for
+  CartTransform `gid://shopify/CartTransform/111771907`.
+- Direct Admin GraphQL read of `$app.bundle_cart_line_messaging` on that
+  CartTransform returned `discountDisplay.format: "percentage_only"`.
+- A fresh cache-cleared storefront add still produced public cart-line
+  `You Save: "$72.40 (5%)"` instead of `"$72.40"` or `"5%"`.
+
+For future debugging, verify the rendered `/cart.js` parent line after
+metafield sync. Do not treat the owner metafield value alone as proof that the
+live deployed Cart Transform honors cart-line format selection.

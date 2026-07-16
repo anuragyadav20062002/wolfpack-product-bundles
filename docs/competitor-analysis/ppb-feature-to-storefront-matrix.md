@@ -207,7 +207,7 @@ toggle or alternate-value behavior.
 | G23 | Hide completed step titles | EB exposes the Admin control, but current PPB storefront scripts do not execute it | **E** [G23 UI-only evidence](ppb-deferred-functional-parity/G23-hide-completed-step-titles-ui-only-evidence.md) | **E** [G23 UI-only evidence](ppb-deferred-functional-parity/G23-hide-completed-step-titles-ui-only-evidence.md) | **E** [G23 UI-only evidence](ppb-deferred-functional-parity/G23-hide-completed-step-titles-ui-only-evidence.md) | **E** [G23 UI-only evidence](ppb-deferred-functional-parity/G23-hide-completed-step-titles-ui-only-evidence.md) |
 | G24 | Redirect Collection Quick Add to Bundle | Theme quick-add enters the correct PPB offer/context | **T** | **T** | **T** | **T** |
 | G25 | Cart messaging | Saved bundle-cart line message and language reach the cart | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) | **P** [G06/G25 cart-line messaging evidence](ppb-deferred-functional-parity/G06-G25-cart-line-messaging-evidence.md) |
-| G26 | Discount display format | Amount + percentage, amount-only, and percentage-only formats match EB | **T** | **T** | **T** | **T** |
+| G26 | Discount display format | Amount + percentage, amount-only, and percentage-only formats match EB | **E** [G26 discount format evidence](ppb-deferred-functional-parity/G26-discount-display-format-evidence.md) | **E** [G26 discount format evidence](ppb-deferred-functional-parity/G26-discount-display-format-evidence.md) | **E** [G26 discount format evidence](ppb-deferred-functional-parity/G26-discount-display-format-evidence.md) | **E** [G26 discount format evidence](ppb-deferred-functional-parity/G26-discount-display-format-evidence.md) |
 | G27 | Redirect settings | Default side-cart update, checkout redirect, and cart redirect follow the saved mode | **T** | **T** | **T** | **T** |
 | G28 | Execute script | Saved Product Page script executes at the EB-defined lifecycle without duplicate execution | **T** | **T** | **T** | **T** |
 | G29 | Loading image/GIF | Current EB PPB admin/runtime does not expose loading image or GIF controls | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) | **E** [G29 loading media absence evidence](ppb-deferred-functional-parity/G29-loading-media-absence-evidence.md) |
@@ -338,18 +338,18 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 72 | 0 | 16 | 16 | 3 | 12 |
-| Product Grid | 76 | 0 | 15 | 14 | 2 | 12 |
-| Horizontal Slots | 84 | 0 | 15 | 15 | 4 | 1 |
-| Vertical Slots | 82 | 0 | 16 | 15 | 5 | 1 |
+| Product List | 72 | 0 | 15 | 17 | 3 | 12 |
+| Product Grid | 76 | 0 | 14 | 15 | 2 | 12 |
+| Horizontal Slots | 84 | 0 | 14 | 16 | 4 | 1 |
+| Vertical Slots | 82 | 0 | 15 | 16 | 5 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
 - Proven: **314**
 - Shared/partial: **0**
-- Not tested: **62**
-- EB-absent: **60**
+- Not tested: **58**
+- EB-absent: **64**
 - Accepted divergence: **14**
 - Not applicable: **26**
 
@@ -498,6 +498,19 @@ restored and verified with `stepImage: null` and no banner. C16 remains **T**
 until EB template cycling and equivalent WPB replay prove all four template
 cells.
 
+The 2026-07-16 G26 pass resolved Discount display format as terminal **E** for
+all PPB templates. EB Product Grid was temporarily configured through Admin for
+amount-plus-percentage, amount-only, and percentage-only cart-line display and
+passed each format on desktop and mobile. WPB Vertical Slots persisted and
+synced `amount_only` and `percentage_only` through
+`CartTransformService.syncCartLineMessagingSettings`; direct Admin GraphQL
+confirmed the live Cart Transform owner metafield contained `percentage_only`.
+The live cart line still rendered `$72.40 (5%)` instead of `$72.40` or `5%`.
+Because G06/G25 already prove all templates share this cart-line path, the
+format mismatch is accepted as shared runtime evidence rather than four
+template-specific fixture mutations. EB was restored to app defaults; WPB was
+restored to `amount_percentage` and its cart was cleared.
+
 The 2026-07-16 G37 shared-runtime pass closed Bundle Cart / Bundle / Toast
 language fields across all PPB templates. Fresh Chrome DevTools MCP
 cache-cleared hard reloads proved EB Product Grid desktop/mobile runtime still
@@ -526,8 +539,7 @@ High-risk missing evidence is concentrated in:
 
 1. amount thresholds and independent discount display controls;
 2. default/preselected products and disabled-validation behavior;
-3. Bundle Visibility, browsed-product preselection, subscriptions/selling plans,
-   and cart-line discount format permutations;
+3. Bundle Visibility, browsed-product preselection, and subscriptions/selling plans;
 4. alternate global PPB control values and localized/custom text;
 5. direct Vertical Slots inventory, variant, delayed-load, and media-edge proof.
 
@@ -592,7 +604,7 @@ promote the cell to **P**, **E**, **X**, or **N/A**.
 
 ### Not-tested fixture order
 
-The current parser shows **62** `T` cells, not 106. The best path is to batch them
+The current parser shows **58** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
 1. **Product-source and card-edge sweep:** C05 Product List/Vertical Slots, S06
@@ -604,10 +616,11 @@ by persisted/runtime owner instead of row order:
    product mutation and restore it immediately.
 2. **Step/navigation media sweep:** C16 all templates. This shares one
    step/category banner-media setting while cycling the four templates once.
-3. **Global copy, locale, and pricing-display sweep:** G18, G19, G21, and G26
+3. **Global copy, locale, and pricing-display sweep:** G18, G19, and G21
    across all templates. These are merchant-copy and display controls, so one
-   saved text/locale/pricing payload should cover CTA copy, summary text, active
-   locale, and discount display format. G37 is already closed by the
+   saved text/locale/pricing payload should cover CTA copy, summary text, and
+   active locale. G26 is now terminal **E** from the 2026-07-16 shared
+   cart-line format replay, and G37 is already closed by the
    2026-07-16 shared PPB language runtime proof.
 4. **Global design/media/CSS sweep:** G07, G33-G35. Reuse one
    high-contrast design payload and one scoped CSS sentinel across all
