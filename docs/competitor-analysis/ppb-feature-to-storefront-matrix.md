@@ -477,11 +477,11 @@ inspect EB help content first, configure EB through Admin, capture EB
 desktop/mobile truth, mirror WPB, record persisted/runtime values, exercise the
 behavior, and only then decide whether implementation is required.
 
-### Shared/partial closeout batch
+### Shared/partial closeout result
 
-Take the current 8 shared/partial cells in one controlled fixture window. Do not
-commit a partial shared/partial result unless the fixture has been restored or
-the remaining risk is documented in this matrix.
+The matrix now has **0** shared/partial cells. Do not re-open that category for
+rows that merely need fixture replay; use **T** until direct EB/WPB evidence can
+promote the cell to **P**, **E**, **X**, or **N/A**.
 
 1. **Identify the shared product set before opening the picker:** from Shopify
    product/admin data, find one sale/compare-at product, one mixed-aspect
@@ -495,12 +495,12 @@ the remaining risk is documented in this matrix.
    (`14k Solid Bloom Earrings`, `Massage Oil`, `Yellow Sofa`, and the 24-product
    category); WPB sale/OOS/mixed-inventory from saved Step 2
    (`14k Solid Bloom Earrings`, `Selling Plans Ski Wax`,
-   `The Out of Stock Snowboard`). G09 Product List no longer belongs in this
-   testing queue: the 2026-07-16 direct replay made it terminal **E** because
-   WPB Product List did not expose the required Step 2 product set. C10 Vertical
-   Slots no longer belongs in this testing queue because the same direct
-   true/false replay proved fully unavailable product behavior. Missing-media
-   is still the expensive edge:
+   `The Out of Stock Snowboard`). G09 no longer belongs in this testing queue:
+   Product Grid, Horizontal Slots, and Vertical Slots are proven, while Product
+   List is terminal **E** because WPB Product List did not expose the required
+   Step 2 product set. C10 Vertical Slots no longer belongs in this testing
+   queue because the same direct true/false replay proved fully unavailable
+   product behavior. Missing-media is still the expensive edge:
    both shops have `Message` with no images, but prior evidence shows its zero
    price excludes it from the PPB catalog, so close C05 in a separate
    restore-required micro-fixture unless a non-zero no-media product is found.
@@ -523,41 +523,46 @@ the remaining risk is documented in this matrix.
    reloading with `ignoreCache: true`.
 4. **Restore and commit:** restore EB and WPB to the saved percentage/baseline
    fixture, re-open both storefronts once, confirm baseline runtime values, then
-   update the matrix and commit the shared/partial closeout.
+   update the matrix and commit the relevant T-cell closeout.
 
 ### Not-tested fixture order
 
-The current parser shows 101 `T` cells, not 106. The best path is to batch them
+The current parser shows **104** `T` cells, not 106. The best path is to batch them
 by persisted/runtime owner instead of row order:
 
-1. **Shared product fixture first:** finish the shared/partial cells that do not
-   require store-wide text/design settings: C05, C10, G09, S16, S17, G11, and
-   G22. C03/C04 Vertical Slots are already proven; Product List C03 still needs
-   the compare-at visibility state isolated. Reuse the current EB Step 2 and WPB
-   Step 2 candidates, then add only the minimum OOS/fully-unavailable/
-   per-product-max products needed for the row. Defer C05 unless a non-zero
-   no-media product exists; otherwise isolate the `Message` price mutation and
-   restore it immediately.
-2. **Default and pagination sweep:** S06 and the remaining S17 cells together.
-   Keep the large collection active and add valid plus invalid/unavailable
-   default products, so the same product-source fixture proves default
-   initialization and pagination boundaries.
-3. **Baseline global/config sweep:** R15, C16, G18-G21, G23, G26-G31, and
-   G33-G37. This is
-   the highest-throughput store-settings group: one template selector cycle
-   covers auto-next, banner media, text, summary, pricing display,
-   locale/language, completed-step visibility, discount display format, loading
-   media, brand colors, typography, design media, expert colors, scoped CSS, and
-   language-field rows. G32 corners is now closed across all four templates and
-   should not be repeated unless a design-token regression changes the owner
-   surfaces.
-4. **External-entry sweep:** G02 and G24 together through browsed-product and
-   collection quick-add entry points.
-5. **Subscriptions/preorder sweep:** G04 across all templates with one
+1. **Product-source and card-edge sweep:** C03 Product List, C05 Product
+   List/Vertical Slots, S06 all templates, S16 Product Grid/Horizontal
+   Slots/Vertical Slots, S17 Product Grid/Horizontal Slots/Vertical Slots, G11
+   Product List/Vertical Slots, and G22 all templates. Use one product-source
+   fixture with sale/compare-at, missing-media, valid default, invalid or
+   unavailable default, per-product maximum, OOS/cart-time inventory, and a
+   collection large enough to cross the pagination boundary. Defer C05 only if
+   the only no-media candidate remains zero-priced and excluded from PPB
+   catalog hydration; if so, isolate that product mutation and restore it
+   immediately.
+2. **Step/navigation media sweep:** R15 Product List/Horizontal Slots/Vertical
+   Slots plus C16 all templates. This shares step/category settings:
+   auto-next-on-condition and banner media can be tested while cycling the four
+   templates once.
+3. **Global copy, locale, and pricing-display sweep:** G18-G21, G23, G26,
+   G36, and G37 across all templates. These are merchant-copy and display
+   controls, so one saved text/locale/pricing payload should cover CTA copy,
+   summary text, total/original/savings display, active locale, completed-step
+   title visibility, discount display format, product-card language, and
+   cart/toast language.
+4. **Global design/media/CSS sweep:** G07, G29-G31, G33-G35. Reuse one
+   high-contrast design payload and one scoped CSS sentinel across all
+   templates. Product Grid G30/G31 are already proven; skip those two cells
+   unless the shared design payload reveals a regression.
+5. **External-entry sweep:** G02 and G24 together through browsed-product and
+   collection quick-add entry points. Keep this separate because it starts
+   outside the bundle widget and can pollute selection/session state.
+6. **Subscriptions/preorder sweep:** G04 across all templates with one
    selling-plan/preorder product set.
-6. **Cart/redirect/script sweep:** G27 and G28 after the product-set sweeps, so
-   checkout/cart side effects do not contaminate product-card evidence.
-7. **Final restore and quality sweep:** restore Product Grid/Percentage Off on
+7. **Redirect/script sweep:** G27 and G28 after the product-source and
+   cart-sensitive rows, so checkout/cart redirects and script execution do not
+   contaminate product-card evidence.
+8. **Final restore and quality sweep:** restore Product Grid/Percentage Off on
    EB and Vertical Slots/Percentage Off on WPB, hard reload desktop/mobile, and
    rerun any rows affected by fixture restoration.
 
