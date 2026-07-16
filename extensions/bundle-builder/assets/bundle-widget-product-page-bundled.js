@@ -9428,7 +9428,12 @@ updateProductSelection(stepIndex, productId, newQuantity) {
   const selectedProductId = selectedProduct?.parentProductId || selectedProduct?.productId || selectedProduct?.id || selectionKey;
   if (!this._autoAdvancePending && shouldAutoAdvanceProductPageStep({ quantity, productId: selectedProductId, step: currentStep })) {
     this._autoAdvancePending = true;
-    this._autoProgressBottomSheet(stepIndex);
+    if (this._usesCascadeStepFlow?.() === true) {
+      this.navigateCascadeStep?.(1);
+      this._autoAdvancePending = false;
+    } else {
+      this._autoProgressBottomSheet(stepIndex);
+    }
   }
   this._maybeAutoAddAfterLastStep();
 },
