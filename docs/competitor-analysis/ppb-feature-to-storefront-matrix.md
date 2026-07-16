@@ -102,14 +102,14 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | --- | --- | --- | --- | --- | --- | --- |
 | C01 | Complete card hierarchy | Image, title, price, variant identity, and action remain reachable | **P** PL00/PLF | **P** PG08 | **P** HS02/HS19 | **P** VS04 |
 | C02 | Long titles and content-driven height | Text wraps without clipping or overlapping actions | **P** PLS2/PLS3 | **P** PG08 | **P** HS02/HSS2 | **P** VS02/VS04 |
-| C03 | Sale + compare-at presentation | Compare-at belongs to the price cluster and follows the saved visibility setting | **S** Price hierarchy covered; toggle/state not isolated | **P** PG08 | **P** HS02 | **P** [C03/C04 Vertical Slots shared card evidence](ppb-deferred-functional-parity/C03-C04-vertical-slots-shared-card-evidence.md) |
+| C03 | Sale + compare-at presentation | Compare-at belongs to the price cluster and follows the saved visibility setting | **T** | **P** PG08 | **P** HS02 | **P** [C03/C04 Vertical Slots shared card evidence](ppb-deferred-functional-parity/C03-C04-vertical-slots-shared-card-evidence.md) |
 | C04 | Square/tall/wide media | Mixed aspect ratios remain contained | **P** PLS2 | **P** [C04 Product Grid mixed aspect evidence](ppb-deferred-functional-parity/C04-product-grid-mixed-aspect-evidence.md) | **P** HS02 | **P** [C03/C04 Vertical Slots shared card evidence](ppb-deferred-functional-parity/C03-C04-vertical-slots-shared-card-evidence.md) |
-| C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **T** | **P** PG07 | **P** HS18 | **S** Shared modal fallback only |
+| C05 | Missing media | EB broken/missing behavior captured; WPB stable fallback accepted | **T** | **P** PG07 | **P** HS18 | **T** |
 | C06 | Grouped variant selector | Variant selection preserves product/variant identity | **P** PL03 | **P** PG09 | **P** HS03 | **P** VS07 |
 | C07 | Variants as individual products | `displayVariantsAsIndividualProducts` changes catalog representation | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) | **P** HS03 | **P** [C07 variant-individual replay](ppb-deferred-functional-parity/C07-variant-individual-products-evidence.md) |
 | C08 | Variant swatches | Current EB PPB admin/runtime does not expose or execute swatch presentation | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) | **E** [C08/G12 swatch absence](ppb-deferred-functional-parity/C08-G12-swatch-absence-evidence.md) |
 | C09 | Sole sellable variant | Omit selector but retain the surviving variant identity | **P** PL04 | **P** [C09 Product Grid sole variant evidence](ppb-deferred-functional-parity/C09-product-grid-sole-variant-evidence.md) | **P** HS04 | **P** VS08 |
-| C10 | Fully unavailable product | Hide or block exactly as the saved EB inventory setting requires | **P** PL04 | **P** PG05 | **P** HS04 | **S** Shared modal path only |
+| C10 | Fully unavailable product | Hide or block exactly as the saved EB inventory setting requires | **P** PL04 | **P** PG05 | **P** HS04 | **P** [G09 Vertical Slots hide out-of-stock evidence](ppb-deferred-functional-parity/G09-product-list-horizontal-vertical-hide-out-of-stock-evidence.md) |
 | C11 | Quantity/add/selected action | Default Add and selected quantity/action states match EB | **P** PL00 | **P** PG04/PG08 | **P** HS19 | **P** VS04 |
 | C12 | Add on product-card click setting | Toggle between card-click selection and explicit action | **P** Unit coverage + runtime path resolution for controls | **P** Unit coverage + runtime path resolution for controls | **P** Unit coverage + runtime path resolution for controls | **P** Unit coverage + runtime path resolution for controls |
 | C13 | Display quantity input setting | Quantity input visibility follows the global PPB control | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` | **P** `tests/unit/assets/ppb-product-page-card-controls.test.ts` |
@@ -172,7 +172,7 @@ Evidence IDs in the cells refer to the row/evidence filenames in those folders.
 | S14 | Dynamic checkout / accelerated checkout | Native bypass behavior explicitly accepted or prevented | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) | **X** HS10 safety divergence | **X** [S14 dynamic checkout safety](ppb-deferred-functional-parity/S14-dynamic-checkout-safety-evidence.md) |
 | S15 | `addBundleToCartOnDone` | Saved global setting controls final-step cart behavior | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow | **P** `addBundleToCartAfterLastStepCompleted` and `addBundleToCartOnDone` honored for auto-add final-step flow |
 | S16 | Per-product quantity validation | `validateQuantityPerProduct` and maximum quantity are enforced independently of step rules | **P** [S16 Product List quantity validation evidence](ppb-deferred-functional-parity/S16-product-list-quantity-validation-evidence.md) | **T** | **T** | **T** VS06 current configuration mismatch recorded |
-| S17 | Catalog pagination counts | Product and collection fetch counts load additional products without duplicates or lost selection | **P** PLS3 collection reload | **T** | **S** Collection hydration proven; pagination boundary not isolated | **T** |
+| S17 | Catalog pagination counts | Product and collection fetch counts load additional products without duplicates or lost selection | **P** PLS3 collection reload | **T** | **T** | **T** |
 
 ## 6. Bundle Settings, Visibility, Subscriptions, and Global Controls
 
@@ -324,17 +324,17 @@ Current parsed evidence counts across the 119 feature rows:
 
 | Template | Proven | Shared/partial | Not tested | EB-absent | Accepted divergence | Not applicable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Product List | 65 | 1 | 26 | 13 | 2 | 12 |
+| Product List | 65 | 0 | 27 | 13 | 2 | 12 |
 | Product Grid | 71 | 0 | 23 | 11 | 2 | 12 |
-| Horizontal Slots | 76 | 1 | 25 | 12 | 4 | 1 |
-| Vertical Slots | 73 | 2 | 27 | 12 | 4 | 1 |
+| Horizontal Slots | 76 | 0 | 26 | 12 | 4 | 1 |
+| Vertical Slots | 74 | 0 | 28 | 12 | 4 | 1 |
 
 Overall cells across all templates:
 
 - Total cells: **476**
-- Proven: **285**
-- Shared/partial: **4**
-- Not tested: **101**
+- Proven: **286**
+- Shared/partial: **0**
+- Not tested: **104**
 - EB-absent: **48**
 - Accepted divergence: **12**
 - Not applicable: **26**
@@ -342,12 +342,15 @@ Overall cells across all templates:
 These totals are an evidence inventory, not a product-quality score. One
 feature row can require several value permutations before it becomes Proven.
 
-The remaining shared/partial cells must be resolved as grouped fixture passes,
-not promoted from another template's proof:
+The former shared/partial cells are now either proven or folded back into the
+normal not-tested queue. Resolve the remaining edge cases as grouped fixture
+passes, not isolated one-off template toggles:
 
-1. **VS modal product-card fixture:** C05 and C10 still need direct VS
-   missing-media and fully-unavailable product replay. C03 and C04 are now
-   proven by the 2026-07-16 direct EB/WPB desktop+mobile shared-card replay.
+1. **VS modal product-card fixture:** C05 still needs direct VS missing-media
+   replay. C10 is now closed by the 2026-07-16 direct EB/WPB hide-OOS replay,
+   which proved fully unavailable product visibility under true/false inventory
+   states. C03 and C04 are proven by the 2026-07-16 direct EB/WPB
+   desktop+mobile shared-card replay.
 2. **Hide-OOS fixture:** Product Grid, Horizontal Slots, and Vertical Slots are
    now proven by direct true/false replay. Product List is terminal **E** for
    this matrix pass because WPB Product List kept Step 2 disabled under the
@@ -494,14 +497,16 @@ the remaining risk is documented in this matrix.
    (`14k Solid Bloom Earrings`, `Selling Plans Ski Wax`,
    `The Out of Stock Snowboard`). G09 Product List no longer belongs in this
    testing queue: the 2026-07-16 direct replay made it terminal **E** because
-   WPB Product List did not expose the required Step 2 product set. Missing-media
+   WPB Product List did not expose the required Step 2 product set. C10 Vertical
+   Slots no longer belongs in this testing queue because the same direct
+   true/false replay proved fully unavailable product behavior. Missing-media
    is still the expensive edge:
    both shops have `Message` with no images, but prior evidence shows its zero
    price excludes it from the PPB catalog, so close C05 in a separate
    restore-required micro-fixture unless a non-zero no-media product is found.
 2. **EB pass, template cycle:** configure the shared product set in EB, then
    hard-reload with cache bypass and capture desktop/mobile in this order:
-   Vertical Slots first for C05/C10, Product List for C03/C05, Product
+   Vertical Slots first for C05, Product List for C03/C05, Product
    Grid for S17, then Horizontal Slots for S17.
    C03/C04 Vertical Slots are already closed by
    `C03-C04-vertical-slots-shared-card-evidence.md`; do not repeat that fixture

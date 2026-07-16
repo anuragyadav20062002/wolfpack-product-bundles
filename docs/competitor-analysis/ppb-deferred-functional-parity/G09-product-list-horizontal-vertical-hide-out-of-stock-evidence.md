@@ -118,6 +118,11 @@ Temporary configuration:
 
 Matrix result: Vertical Slots G09 should be **P**.
 
+This same Vertical Slots true/false replay also closes C10 for Vertical Slots:
+the fully unavailable product appeared when the saved inventory control allowed
+out-of-stock products, and disappeared when the control hid out-of-stock
+products, while available products remained visible.
+
 ## Fixture restoration
 
 After the evidence pass, the Wolfpack fixture was restored and synced:
