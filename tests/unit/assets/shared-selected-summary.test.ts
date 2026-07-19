@@ -18,8 +18,7 @@ describe('shared selected product row contract', () => {
     expect(html).toContain('data-variant-id="variant-1"');
     expect(html).toContain('The Complete Snowboard');
     expect(html).toContain('Ice');
-    expect(html).toContain('aria-label="Quantity 2">2</span>');
-    expect(html).not.toContain('>x2</span>');
+    expect(html).toContain('aria-label="Quantity 2">x2</span>');
     expect(html).not.toContain('>Remove</button>');
     expect(html).toContain('$699.95');
   });

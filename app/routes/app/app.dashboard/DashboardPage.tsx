@@ -506,8 +506,21 @@ export function DashboardPage() {
                   ))}
                 </s-select>
               </div>
-              <s-button icon="refresh" onClick={handleSyncCollections}>{t("dashboard.header.syncCollections")}</s-button>
-              <s-button variant="primary" onClick={() => navigate('/app/bundles/create')}>{t("dashboard.header.createBundle")}</s-button>
+              <s-button
+                icon="refresh"
+                accessibilityLabel={t("dashboard.header.syncCollections")}
+                onClick={handleSyncCollections}
+              >
+                <span className={dashboardStyles.dashboardActionLabel}>{t("dashboard.header.syncCollections")}</span>
+              </s-button>
+              <s-button
+                icon="plus"
+                variant="primary"
+                accessibilityLabel={t("dashboard.header.createBundle")}
+                onClick={() => navigate('/app/bundles/create')}
+              >
+                <span className={dashboardStyles.dashboardActionLabel}>{t("dashboard.header.createBundle")}</span>
+              </s-button>
               <s-button icon="notification" onClick={handleBellClick} accessibilityLabel={t("dashboard.header.changelog")} />
             </div>
           </div>

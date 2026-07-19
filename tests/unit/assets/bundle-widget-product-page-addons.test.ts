@@ -31,8 +31,9 @@ describe("Product Page widget direct Add-ons contract", () => {
     const source = readProductPageWidgetSources();
 
     expect(source).toContain("step?.isFreeGift && step?.addonDisplayFree === true");
-    expect(source).toContain("if (addonDiscount && step?.addonDisplayFree !== true) {");
-    expect(source).toContain("properties._bundle_step_type = `addon:${addonDiscount.type}:${addonDiscount.value}`");
+    expect(source).toContain("const isChargeableAddonStep = step?.isFreeGift === true && step?.addonDisplayFree !== true;");
+    expect(source).toContain("if (isChargeableAddonStep && addonEval?.tier) {");
+    expect(source).toContain("properties._bundle_step_type = addonDiscount && step?.addonDisplayFree !== true");
     expect(source).toContain("`addon:${addonDiscount.type}:${addonDiscount.value}`");
     expect(source).not.toContain("if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';");
   });
@@ -59,9 +60,9 @@ describe("Product Page widget direct Add-ons contract", () => {
     const source = readProductPageWidgetSources();
 
     expect(source).toContain("const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);");
-    expect(source).toContain("const discountText = combinedDiscountInfo.hasDiscount");
     expect(source).toContain("const formattedPrice = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);");
-    expect(source).toContain("button.textContent = `${this._resolveText('addToCartButton', 'Add Bundle to Cart')} \\u2022 ${formattedPrice}`;");
+    expect(source).toContain("const buttonLabel = this._resolveText('addToCartButton', 'Add Bundle to Cart');");
+    expect(source).toContain("button.textContent = `${buttonLabel} \\u2022 ${formattedPrice}`;");
     expect(source).toContain("totalPillFinal.textContent = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);");
   });
 

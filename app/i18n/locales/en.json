@@ -239,13 +239,11 @@
   },
   "createBundle": {
     "title": "Create Bundle", "dashboard": "Dashboard", "heading": "Select bundle builder type", "help": "How do bundle builder types work?",
-    "steps": { "details": "Bundle name\n& Description", "configuration": "Configuration", "pricing": "Pricing", "assets": "Assets" },
     "validation": { "required": "Bundle name is required", "minLength": "Bundle name must be at least 3 characters" },
-    "fields": { "name": "Bundle name", "namePlaceholder": "Eg:- T-shirt bundle", "description": "Description", "descriptionPlaceholder": "Eg:- This is a T-shirt bundle" },
+    "fields": { "name": "Bundle name", "namePlaceholder": "Eg:- T-shirt bundle" },
     "bundleType": {
-      "heading": "Bundle Type",
-      "productPage": { "title": "Product page bundle builder", "description": "Display bundle builder on existing product pages (recommended for most stores)", "alt": "Product page bundle" },
-      "fullPage": { "title": "Full page bundle builder", "description": "Create a dedicated landing page for your bundle with tabs and full customization", "alt": "Full page bundle" }
+      "productPage": { "title": "Product page bundle builder", "description": "Display bundle builder on existing product pages (recommended for most stores)" },
+      "fullPage": { "title": "Full page bundle builder", "description": "Create a dedicated landing page for your bundle with tabs and full customization" }
     },
     "actions": { "selected": "Selected", "select": "Select", "next": "Next" }
   },
@@ -261,6 +259,6 @@
     "success": { "heading": "Welcome to the Grow Plan!", "body": "Your subscription has been activated. You now have access to all premium features.", "bundleLimit": "Bundle Limit", "bundleLimitValue": "20 bundles", "designControl": "Design Control", "fullAccess": "Full Access", "support": "Support", "priority": "Priority" },
     "cards": { "currentPlan": "Current Plan", "freePrice": "Free", "freeDescription": "For bundle sales up to $500/month - free until you grow", "includes": "Includes:", "freePlan": "Free Plan", "mostPopular": "Most Popular", "perMonth": "/ month", "growDescription": "For bundle sales above $500/month - no revenue cap", "growIncludes": "Everything in Free, plus:", "upgradeToGrow": "Upgrade to Grow", "cancelAnytimeBilled": "Cancel anytime. Billed through Shopify." },
     "cta": { "heading": "Ready to grow your bundle business?", "body": "Upgrade to the Grow plan for double the bundles, full design customization, and priority support.", "highlights": { "bundles": "20 bundles", "design": "Design Control Panel", "support": "Priority Support" }, "upgrade": "Upgrade to Grow - ${{price}}/month", "cancelAnytime": "Cancel anytime" },
-    "route": { "title": "Subscription & Billing", "dashboard": "Dashboard", "currentPlan": "Current Plan", "active": "Active", "inactive": "Inactive", "bundleUsage": "Bundle Usage", "bundleCount": "{{current}} / {{limit}} bundles", "limitReached": "You've reached your bundle limit.", "limitUpgrade": "Upgrade to Grow for more bundles.", "overview": "Bundle Overview", "activeBundles": "Active Bundles", "totalSteps": "Total Steps", "productPage": "Product Page", "fullPage": "Full Page", "cancelSubscription": "Cancel Subscription", "cancelHeading": "Cancel Subscription?", "downgradeBody": "You will be downgraded to the Free plan with a limit of {{limit}} bundles.", "archiveWarning": "Warning: You have {{current}} bundles. The excess {{excess}} bundles will be archived (not deleted).", "confirmCancellation": "Confirm Cancellation", "keepSubscription": "Keep Subscription", "features": "Your Plan Features", "wantMore": "Want more features?", "viewPlans": "View all plans", "needHelp": "Need Help?", "helpBody": "Have questions about billing or need a custom plan? Our team is here to help." }
+    "route": { "title": "Subscription & Billing", "dashboard": "Dashboard", "currentPlan": "Current Plan", "active": "Active", "inactive": "Inactive", "bundleUsage": "Bundle Usage", "bundleCount": "{{current}} / {{limit}} bundles", "limitReached": "You've reached your bundle limit.", "limitUpgrade": "Upgrade to Grow for more bundles.", "overview": "Bundle Overview", "activeBundles": "Active Bundles", "totalSteps": "Total Steps", "productPage": "Product Page", "fullPage": "Full Page", "cancelSubscription": "Cancel Subscription", "cancelHeading": "Cancel Subscription?", "downgradeBody": "You will be downgraded to the Free plan with a limit of {{limit}} bundles.", "archiveWarning": "Warning: You have {{current}} bundles. The excess {{excess}} bundles will be archived (not deleted).", "confirmCancellation": "Confirm Cancellation", "keepSubscription": "Keep Subscription", "features": "Your Plan Features", "needHelp": "Need Help?", "helpBody": "Have questions about billing or need a custom plan? Our team is here to help." }
   }
 }
