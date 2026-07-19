@@ -1,5 +1,6 @@
 import { useActionData, useLoaderData, useSubmit } from "@remix-run/react";
 import { useEffect, useState } from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import {
   CONTROL_LAYOUTS,
   DESIGN_CONFIGURATION,
@@ -30,11 +31,13 @@ import {
   SettingsHelpModal,
   SettingsToast,
 } from "./SettingsFeedback";
+import { runAfterSaveBarLeaveConfirmation } from "../../../lib/admin-savebar-navigation.client";
 
 export function SettingsRoute() {
   const { settingsPage, previewBundles } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
+  const shopify = useAppBridge();
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [settingsHelpArticle, setSettingsHelpArticle] = useState<"inventory" | null>(null);
   const [settingsVariablesModal, setSettingsVariablesModal] = useState<{ title: string; variables: string[] } | null>(null);
@@ -120,6 +123,9 @@ export function SettingsRoute() {
     (settingsView === "design" && isDesignDirty) ||
     (settingsView === "language" && isLanguageDirty) ||
     (settingsView === "controls" && isControlsDirty);
+  const returnToSettingsLanding = () => {
+    void runAfterSaveBarLeaveConfirmation(shopify, () => setSettingsView("landing"));
+  };
 
   const discardActiveSettingsChanges = () => {
     if (settingsView === "design") {
@@ -187,7 +193,7 @@ export function SettingsRoute() {
         isPreviewModalOpen={isPreviewModalOpen}
         previewBundles={previewBundles}
         saveMessage={saveMessage}
-        setSettingsView={setSettingsView}
+        setSettingsView={() => returnToSettingsLanding()}
         setIsPreviewModalOpen={setIsPreviewModalOpen}
         setActiveDesignTab={setActiveDesignTab}
         setIsExpertScopeActive={setIsExpertScopeActive}
@@ -227,7 +233,7 @@ export function SettingsRoute() {
               type="button"
               className={styles.settingsSubpageBackButton}
               aria-label="Back to Settings"
-              onClick={() => setSettingsView("landing")}
+              onClick={returnToSettingsLanding}
             >
               <s-icon type="arrow-left" size="small"></s-icon>
             </button>
@@ -361,7 +367,7 @@ export function SettingsRoute() {
                 type="button"
                 className={styles.settingsSubpageBackButton}
                 aria-label="Back to Settings"
-                onClick={() => setSettingsView("landing")}
+                onClick={returnToSettingsLanding}
               >
                 <s-icon type="arrow-left" size="small"></s-icon>
               </button>

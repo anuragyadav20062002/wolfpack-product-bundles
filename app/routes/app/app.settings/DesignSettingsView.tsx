@@ -1,7 +1,9 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useRef, type CSSProperties, type Dispatch, type SetStateAction } from "react";
+import { useTranslation } from "react-i18next";
 import { DESIGN_CONFIGURATION, EXPERT_COLOR_CONTROLS } from "../../../lib/admin-configuration-surfaces";
 import styles from "../../../styles/routes/admin-configuration-surfaces.module.css";
 import { BundlePreviewModal, DesignFields, getDesignIconKey } from "./SettingsDesignFields";
+import { buildDesignPreviewVariables } from "./settings-state";
 import { SettingsContextualSaveBar, SettingsToast } from "./SettingsFeedback";
 
 type PreviewBundle = { id: string; name: string; type: string; viewUrl: string | null };
@@ -53,10 +55,21 @@ export function DesignSettingsView({
   discardActiveSettingsChanges,
   saveActiveSettingsChanges,
 }: DesignSettingsViewProps) {
+const { t } = useTranslation();
 const selectedDesignFields = isExpertColorControls && selectedDesignTab.title === "Brand Colors" && isExpertScopeActive
   ? EXPERT_COLOR_CONTROLS[activeDesignScope] ?? EXPERT_COLOR_CONTROLS.General
   : selectedDesignTab.fields;
 const isBrandColorsPanelGated = isExpertColorControls && selectedDesignTab.title === "Brand Colors" && !isExpertScopeActive;
+const hasPreviewableBundle = previewBundles.some((bundle) => Boolean(bundle.viewUrl));
+const previewBundle = previewBundles.find((bundle) => Boolean(bundle.viewUrl));
+const previewVariables = buildDesignPreviewVariables(designFieldValues) as CSSProperties;
+const designSidebarRef = useRef<HTMLElement | null>(null);
+const designContentRef = useRef<HTMLElement | null>(null);
+useEffect(() => {
+  for (const element of [designSidebarRef.current, designContentRef.current]) {
+    element?.toggleAttribute("inert", !hasPreviewableBundle);
+  }
+}, [hasPreviewableBundle]);
 const resetSelectedDesignTab = () => {
   setDesignFieldValues((current) => ({
     ...current,
@@ -67,7 +80,7 @@ const resetSelectedDesignTab = () => {
 return (
   <>
     <ui-title-bar title="Design Control Panel" />
-    <main className={styles.page}>
+    <main className={`${styles.page} ${styles.designPage}`}>
       <header className={styles.hero}>
         <div className={styles.settingsSubpageHeaderLeft}>
           <button
@@ -87,7 +100,7 @@ return (
       </header>
 
       <section className={styles.designLayout} aria-label="Design">
-        <aside className={styles.designSidebar}>
+        <aside ref={designSidebarRef} className={`${styles.designSidebar}${hasPreviewableBundle ? "" : ` ${styles.designControlsDisabled}`}`}>
           <section className={styles.designSideCard}>
             <h2>Bundle Design</h2>
             <p>Customize your bundle in a few clicks</p>
@@ -166,7 +179,7 @@ return (
             Reset to default
           </button>
         </aside>
-        <section className={styles.designContentCard}>
+        <section ref={designContentRef} className={`${styles.designContentCard}${hasPreviewableBundle ? "" : ` ${styles.designControlsDisabled}`}`}>
           {isBrandColorsPanelGated || designGateMessage ? (
             <div className={styles.designGateAlert} role="alert" aria-live="polite">
               {designGateMessage ?? "Disable Expert Color Controls to access brand colors."}
@@ -185,6 +198,52 @@ return (
               }}
             />
           </div>
+        </section>
+        <section className={styles.designPreviewPanel} aria-label="Live bundle preview">
+          <div className={styles.designPreviewHeader}>
+            <div>
+              <h2>{t("settingsDcp.preview.heading")}</h2>
+              <p>{t("settingsDcp.preview.unsaved")}</p>
+            </div>
+          </div>
+          {previewBundle ? (
+            <div className={styles.designPreviewSurface} style={previewVariables}>
+              <header className={styles.designPreviewHero}>
+                <span>{previewBundle.type}</span>
+                <h3>{previewBundle.name}</h3>
+                <p>{t("settingsDcp.preview.surface.description")}</p>
+              </header>
+              <div className={styles.designPreviewTabs}>
+                <span data-active="true">{t("settingsDcp.preview.surface.stepOne")}</span>
+                <span>{t("settingsDcp.preview.surface.stepTwo")}</span>
+              </div>
+              <div className={styles.designPreviewProducts}>
+                {["first", "second"].map((productKey) => (
+                  <article key={productKey} className={styles.designPreviewProductCard}>
+                    <div className={styles.designPreviewProductImage} aria-hidden="true">
+                      <s-icon type="product" size="base" />
+                    </div>
+                    <strong>{t(`settingsDcp.preview.surface.products.${productKey}.name`)}</strong>
+                    <span>{t(`settingsDcp.preview.surface.products.${productKey}.price`)}</span>
+                    <button type="button" disabled aria-label="Preview only">{t("settingsDcp.preview.surface.add")}</button>
+                  </article>
+                ))}
+              </div>
+              <footer className={styles.designPreviewCart}>
+                <span>
+                  <strong>{t("settingsDcp.preview.surface.summary")}</strong>
+                  <small>{t("settingsDcp.preview.surface.total")}</small>
+                </span>
+                <button type="button" disabled aria-label="Preview only">{t("settingsDcp.preview.surface.next")}</button>
+              </footer>
+            </div>
+          ) : (
+            <div className={styles.designPreviewEmpty}>
+              <s-icon type="view" size="base" />
+              <s-heading>{t("settingsDcp.preview.emptyHeading")}</s-heading>
+              <s-text color="subdued">{t("settingsDcp.preview.emptyBody")}</s-text>
+            </div>
+          )}
         </section>
       </section>
       <SettingsContextualSaveBar isOpen={isActiveSubpageDirty} onDiscard={discardActiveSettingsChanges} onSave={saveActiveSettingsChanges} />

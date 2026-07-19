@@ -14,8 +14,6 @@ import {
   openPendingDashboardPreview,
 } from "../../../lib/dashboard-preview-window";
 import { openSupportChat } from "../../../lib/support-chat.client";
-import { openThemeEditorInNewTab } from "../../../lib/theme-editor-navigation.client";
-import { checkAppEmbedStatusFromCurrentRoute } from "../../../lib/app-embed-status-check.client";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import {
   changeAdminI18nLanguage,
@@ -440,22 +438,6 @@ export function DashboardPage() {
     navigate('/app/events');
   }, [navigate]);
 
-  const handleAppEmbedCardClick = useCallback(async () => {
-    if (resolvedAppEmbedStatus.themeEditorUrl) {
-      openThemeEditorInNewTab(resolvedAppEmbedStatus.themeEditorUrl);
-      return;
-    }
-
-    const checkedStatus = await checkAppEmbedStatusFromCurrentRoute();
-    setResolvedAppEmbedStatus(checkedStatus);
-    if (checkedStatus.themeEditorUrl) {
-      openThemeEditorInNewTab(checkedStatus.themeEditorUrl);
-      return;
-    }
-
-    shopify.toast.show(t("dashboard.actions.themeEditorUnavailable"), { isError: true });
-  }, [resolvedAppEmbedStatus.themeEditorUrl, shopify, t]);
-
   const filteredBundles = useMemo(() =>
     bundles
       .filter(b => typeFilter === "all" || b.bundleType === typeFilter)
@@ -543,7 +525,6 @@ export function DashboardPage() {
 
           <DashboardTopCards
             handleDirectChat={handleDirectChat}
-            handleAppEmbedCardClick={handleAppEmbedCardClick}
           />
 
           {/* Bundles panel */}

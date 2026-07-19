@@ -9,7 +9,7 @@
     "events": "Updates & FAQs"
   },
   "dashboard": {
-    "title": "Dashboard: Wolfpack Bundle Builder",
+    "title": "Dashboard: Wolfpack Bundles",
     "subtitle": "Access your bundles, Customer support and more.",
     "header": {
       "syncCollections": "Sync Collections",
@@ -27,10 +27,15 @@
       "imageAlt": "Parth, Founder",
       "imageLoading": "Loading Parth profile photo"
     },
-    "appEmbeds": {
-      "headingMain": "App Embeds",
-      "headingHint": "(Turn ON to make bundle visible on store)",
-      "instruction": "Click on Online store → Edit Theme → Enable the toggle and Save it"
+    "supportIssues": {
+      "title": "Stuck Somewhere?",
+      "featureNotWorking": "Feature not working?",
+      "bundleNotShowing": "Bundle not showing on store?",
+      "uninstallHelp": "Want to uninstall?",
+      "storeDesignHelp": "Want to get things designed as per your store?",
+      "analyticsNotWorking": "Analytics not working?",
+      "description": "Allow us to fix all your issues.",
+      "cta": "Talk to a support expert"
     },
     "filters": {
       "status": "Status",
@@ -108,6 +113,27 @@
       "save": "Save",
       "saveSuccess": "Admin language saved",
       "saveError": "Unable to save Admin language"
+    }
+  },
+  "settingsDcp": {
+    "preview": {
+      "heading": "Live preview",
+      "unsaved": "Unsaved changes appear here.",
+      "emptyHeading": "Create a bundle to preview",
+      "emptyBody": "A storefront-ready bundle is required before visual settings can be edited.",
+      "surface": {
+        "description": "Choose products to build your bundle.",
+        "stepOne": "1. Choose products",
+        "stepTwo": "2. Review bundle",
+        "products": {
+          "first": { "name": "Everyday essential", "price": "$24.00" },
+          "second": { "name": "Popular addition", "price": "$18.00" }
+        },
+        "add": "Add",
+        "summary": "Bundle summary",
+        "total": "2 products selected · $42.00",
+        "next": "Continue"
+      }
     }
   },
   "tooltips": {

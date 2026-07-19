@@ -20,7 +20,7 @@ import { AssetsStep } from "./AssetsStep";
 import { WizardOverlays } from "./WizardOverlays";
 import styles from "./wizard-configure.module.css";
 import { navigateBackOrFallback } from "../../../lib/navigation";
-declare const shopify: { resourcePicker: (opts: { type: string; multiple: boolean; selectionIds?: { id: string }[]; }) => Promise<{ selection: any[] } | null>; toast: { show: (msg: string, opts?: { isError?: boolean }) => void }; saveBar?: { leaveConfirmation?: () => Promise<void> | void }; };
+declare const shopify: { resourcePicker: (opts: { type: string; multiple: boolean; selectionIds?: { id: string }[]; }) => Promise<{ selection: any[] } | null>; toast: { show: (msg: string, opts?: { isError?: boolean }) => void }; saveBar: { leaveConfirmation: () => Promise<void> | void }; };
 export default function WizardConfigureStep() {
   const { bundle, readiness, shopLocales, shop, themeEditorUrl } =
     useLoaderData<typeof loader>();
@@ -258,7 +258,7 @@ export default function WizardConfigureStep() {
     shopify.toast.show("Save or discard your changes before moving to another step.", {
       isError: true,
     });
-    void shopify.saveBar?.leaveConfirmation?.();
+    void shopify.saveBar.leaveConfirmation();
   }, []);
   const handleSaveCurrentWizardPage = useCallback(() => {
     if (isAnyWizardSaveInFlight) return;

@@ -15,6 +15,7 @@ import {
   PPB_DESIGN_CONTROL_PANEL_URL,
   resolveProductPageTemplateSelection,
 } from "./ConfigureBundleFlow.helpers";
+import { runAfterSaveBarLeaveConfirmation } from "../../../lib/admin-savebar-navigation.client";
 
 export function usePpbModalAndTemplateController({
   base,
@@ -184,7 +185,7 @@ export function usePpbModalAndTemplateController({
     templateState.setIsSelectTemplateModalOpen(true);
   }, [templateState]);
   const openDesignControlPanel = useCallback(() => {
-    base.navigate(PPB_DESIGN_CONTROL_PANEL_URL);
+    void runAfterSaveBarLeaveConfirmation(base.shopify, () => base.navigate(PPB_DESIGN_CONTROL_PANEL_URL));
   }, [base]);
   useEffect(() => {
     if (templateState.isSelectTemplateModalOpen) {

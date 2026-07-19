@@ -27,10 +27,15 @@
       "imageAlt": "Parth、創業者",
       "imageLoading": "Parthのプロフィール写真を読み込み中"
     },
-    "appEmbeds": {
-      "headingMain": "アプリの埋め込み",
-      "headingHint": "（オンにするとストアにバンドルが表示されます）",
-      "instruction": "オンラインストア → テーマを編集 → トグルを有効にして保存"
+    "supportIssues": {
+      "title": "お困りですか？",
+      "featureNotWorking": "機能が動作しませんか？",
+      "bundleNotShowing": "ストアにバンドルが表示されませんか？",
+      "uninstallHelp": "アンインストールをご希望ですか？",
+      "storeDesignHelp": "ストアに合わせたデザインをご希望ですか？",
+      "analyticsNotWorking": "分析機能が動作しませんか？",
+      "description": "すべての問題を私たちが解決します。",
+      "cta": "サポート担当者に相談する"
     },
     "filters": {
       "status": "ステータス",
@@ -110,6 +115,27 @@
       "saveError": "管理画面の言語を保存できませんでした"
     }
   },
+  "settingsDcp": {
+    "preview": {
+      "heading": "ライブプレビュー",
+      "unsaved": "未保存の変更がここに表示されます。",
+      "emptyHeading": "プレビューするバンドルを作成",
+      "emptyBody": "ビジュアル設定を編集するには、ストアフロントで使用可能なバンドルが必要です。",
+      "surface": {
+        "description": "商品を選んでバンドルを作成します。",
+        "stepOne": "1. 商品を選択",
+        "stepTwo": "2. バンドルを確認",
+        "products": {
+          "first": { "name": "毎日の定番", "price": "$24.00" },
+          "second": { "name": "人気の追加商品", "price": "$18.00" }
+        },
+        "add": "追加",
+        "summary": "バンドル概要",
+        "total": "2商品を選択 · $42.00",
+        "next": "続ける"
+      }
+    }
+  },
   "tooltips": {
     "stepFlow": {
       "title": "Step Flow",
@@ -145,6 +171,18 @@
     "productSlots": {
       "title": "Product Slots",
       "description": "Display empty slots on the storefront and use the configured Slot Icon for those empty slots."
+    },
+    "variantSelector": {
+      "title": "Variant Selector",
+      "description": "Show a variant dropdown on each product card so shoppers can pick options without opening quick look."
+    },
+    "showTextOnAddButton": {
+      "title": "Show Text on + Button",
+      "description": "Replace the + icon with a text Add to Cart button placed below the product price."
+    },
+    "cartLineItemDiscountDisplay": {
+      "title": "Cart Line Item Discount Display",
+      "description": "Control how bundle savings appear on the cart line item, including retail price and You Save messaging."
     }
   },
   "common": {

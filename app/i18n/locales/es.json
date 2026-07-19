@@ -27,10 +27,15 @@
       "imageAlt": "Parth, fundador",
       "imageLoading": "Cargando foto de perfil de Parth"
     },
-    "appEmbeds": {
-      "headingMain": "Incrustaciones de aplicación",
-      "headingHint": "(Actívelas para que el bundle sea visible en la tienda)",
-      "instruction": "Haga clic en Tienda en línea → Editar tema → Active el interruptor y guárdelo"
+    "supportIssues": {
+      "title": "¿Necesitas ayuda?",
+      "featureNotWorking": "¿Alguna función no funciona?",
+      "bundleNotShowing": "¿El paquete no aparece en la tienda?",
+      "uninstallHelp": "¿Quieres desinstalar?",
+      "storeDesignHelp": "¿Quieres adaptar el diseño a tu tienda?",
+      "analyticsNotWorking": "¿Las analíticas no funcionan?",
+      "description": "Permítenos resolver todos tus problemas.",
+      "cta": "Hablar con un experto de soporte"
     },
     "filters": {
       "status": "Estado",
@@ -110,6 +115,27 @@
       "saveError": "No se pudo guardar el idioma de administración"
     }
   },
+  "settingsDcp": {
+    "preview": {
+      "heading": "Vista previa en directo",
+      "unsaved": "Los cambios sin guardar aparecen aquí.",
+      "emptyHeading": "Crea un paquete para previsualizar",
+      "emptyBody": "Se necesita un paquete listo para la tienda antes de editar los ajustes visuales.",
+      "surface": {
+        "description": "Elige productos para crear tu paquete.",
+        "stepOne": "1. Elegir productos",
+        "stepTwo": "2. Revisar paquete",
+        "products": {
+          "first": { "name": "Esencial diario", "price": "24,00 $" },
+          "second": { "name": "Complemento popular", "price": "18,00 $" }
+        },
+        "add": "Añadir",
+        "summary": "Resumen del paquete",
+        "total": "2 productos seleccionados · 42,00 $",
+        "next": "Continuar"
+      }
+    }
+  },
   "tooltips": {
     "stepFlow": {
       "title": "Step Flow",
@@ -145,6 +171,18 @@
     "productSlots": {
       "title": "Product Slots",
       "description": "Display empty slots on the storefront and use the configured Slot Icon for those empty slots."
+    },
+    "variantSelector": {
+      "title": "Variant Selector",
+      "description": "Show a variant dropdown on each product card so shoppers can pick options without opening quick look."
+    },
+    "showTextOnAddButton": {
+      "title": "Show Text on + Button",
+      "description": "Replace the + icon with a text Add to Cart button placed below the product price."
+    },
+    "cartLineItemDiscountDisplay": {
+      "title": "Cart Line Item Discount Display",
+      "description": "Control how bundle savings appear on the cart line item, including retail price and You Save messaging."
     }
   },
   "common": {

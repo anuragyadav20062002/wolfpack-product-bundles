@@ -1,5 +1,6 @@
 import { Await, useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
 import { useState, useMemo, useEffect, useRef, Suspense } from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import "../../../components/analytics/shared/tokens.css";
 import {
   FunnelHero,
@@ -225,7 +226,10 @@ export function CustomUtmTrackingCard({
   }>();
   const [input, setInput] = useState(customUtmParameters.join("\n"));
   const [savedParameters, setSavedParameters] = useState(customUtmParameters);
+  const shopify = useAppBridge();
   const inputAnalysis = useMemo(() => analyzeCustomUtmInput(input), [input]);
+  const savedInput = savedParameters.join("\n");
+  const isDirty = input !== savedInput;
 
   useEffect(() => {
     setInput(customUtmParameters.join("\n"));
@@ -233,11 +237,21 @@ export function CustomUtmTrackingCard({
   }, [customUtmParameters]);
 
   useEffect(() => {
-    if (Array.isArray(fetcher.data?.customUtmParameters)) {
+    if (fetcher.data?.success && Array.isArray(fetcher.data.customUtmParameters)) {
       setInput(fetcher.data.customUtmParameters.join("\n"));
       setSavedParameters(fetcher.data.customUtmParameters);
     }
   }, [fetcher.data]);
+
+  useEffect(() => {
+    void (isDirty
+      ? shopify.saveBar.show("analytics-custom-utm-save-bar")
+      : shopify.saveBar.hide("analytics-custom-utm-save-bar"));
+  }, [isDirty, shopify]);
+
+  useEffect(() => () => {
+    void shopify.saveBar.hide("analytics-custom-utm-save-bar");
+  }, [shopify]);
 
   const isSaving = fetcher.state !== "idle";
   const feedback = fetcher.data?.error ?? fetcher.data?.message;
@@ -248,9 +262,7 @@ export function CustomUtmTrackingCard({
     ? "Currently tracking"
     : "No custom attributes are configured yet.";
 
-  function submitCustomUtmParameters(nextInput: string, nextSavedParameters: string[]) {
-    setSavedParameters(nextSavedParameters);
-    setInput(nextInput);
+  function submitCustomUtmParameters(nextInput: string) {
     fetcher.submit(
       {
         intent: "saveCustomUtms",
@@ -262,14 +274,16 @@ export function CustomUtmTrackingCard({
 
   function handleSaveSubmit(event?: { preventDefault: () => void }) {
     event?.preventDefault();
-    submitCustomUtmParameters(input, inputAnalysis.accepted);
+    submitCustomUtmParameters(input);
   }
 
   function handleRemoveSavedParameter(parameterToRemove: string) {
     const nextParameters = removeCustomUtmParameter(savedParameters, parameterToRemove);
-    const nextInput = nextParameters.join("\n");
+    setInput(nextParameters.join("\n"));
+  }
 
-    submitCustomUtmParameters(nextInput, nextParameters);
+  function handleDiscard() {
+    setInput(savedInput);
   }
 
   return (
@@ -342,30 +356,17 @@ export function CustomUtmTrackingCard({
               </p>
             ) : null}
           </div>
-          <s-stack direction="inline" alignItems="center" gap="small-100">
-            <s-button
-              variant="primary"
-              onClick={() => handleSaveSubmit()}
-            >
-              <span className={styles.customUtmSaveButtonContent}>
-                <span
-                  className={styles.customUtmSaveButtonSpinner}
-                  aria-hidden={!isSaving}
-                  data-visible={isSaving ? "true" : "false"}
-                >
-                  <s-spinner size="base" />
-                </span>
-                <span>Save custom attributes</span>
-              </span>
-            </s-button>
-            {feedback ? (
-              <span className={fetcher.data?.error ? styles.errorText : styles.successText}>
-                {feedback}
-              </span>
-            ) : null}
-          </s-stack>
+          {feedback ? (
+            <span className={fetcher.data?.error ? styles.errorText : styles.successText}>
+              {feedback}
+            </span>
+          ) : null}
         </fetcher.Form>
       </div>
+      <ui-save-bar id="analytics-custom-utm-save-bar">
+        <button variant="primary" onClick={() => handleSaveSubmit()} disabled={isSaving}>Save</button>
+        <button onClick={handleDiscard} disabled={isSaving}>Discard</button>
+      </ui-save-bar>
       <s-modal
         id="custom-utm-attributes-help"
         heading="Custom UTM attributes"
@@ -430,6 +431,7 @@ function AttributionDashboardContent({
     customUtmParameters,
   } = data;
   const navigate = useNavigate();
+  const backfillFetcher = useFetcher<{ success?: boolean; message?: string; error?: string }>();
 
   const [compare, setCompare] = useState(true);
 
@@ -462,7 +464,7 @@ function AttributionDashboardContent({
               )}
             </div>
             <s-stack direction="inline" alignItems="center" gap="small-100">
-              <form
+              <backfillFetcher.Form
                 method="post"
                 className={styles.inlineForm}
                 onSubmit={(e) => {
@@ -480,8 +482,8 @@ function AttributionDashboardContent({
                 ) : (
                   <input type="hidden" name="days" value={String(days)} />
                 )}
-                <s-button variant="secondary">Backfill window</s-button>
-              </form>
+                <s-button type="submit" variant="secondary" loading={backfillFetcher.state !== "idle" || undefined}>Backfill window</s-button>
+              </backfillFetcher.Form>
               <form method="post" className={styles.inlineForm}>
                 <input type="hidden" name="intent" value="export" />
                 {from && to ? (
@@ -492,20 +494,24 @@ function AttributionDashboardContent({
                 ) : (
                   <input type="hidden" name="days" value={String(days)} />
                 )}
-                <s-button variant="secondary">Export CSV</s-button>
+                <s-button type="submit" variant="secondary">Export CSV</s-button>
               </form>
-              <button
-                className={`${styles.compareToggle}${compare ? ` ${styles.compareToggleActive}` : ""}`}
+              <s-button
+                variant={compare ? "primary" : "secondary"}
                 onClick={() => setCompare(v => !v)}
-                type="button"
               >
-                Compare
-              </button>
+                Compare {compare ? "on" : "off"}
+              </s-button>
               <div className={styles.datePickerWrap}>
                 <DateRangeSelector days={days} from={from} to={to} />
               </div>
             </s-stack>
           </div>
+          {backfillFetcher.data?.message ? (
+            <s-banner tone="success">{backfillFetcher.data.message}</s-banner>
+          ) : backfillFetcher.data?.error ? (
+            <s-banner tone="critical">{backfillFetcher.data.error}</s-banner>
+          ) : null}
 
           {/* ────────── Revamped analytics sections (wpb-analytics-revamp-1) ─────── */}
 

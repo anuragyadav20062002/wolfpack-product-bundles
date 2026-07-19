@@ -113,8 +113,8 @@
 }
 
 .readinessButtonLow {
-  background: #fff1f1;
-  border-color: #ffd6d6;
+  background: #fff8e6;
+  border-color: #e8c56d;
 }
 
 .readinessButtonMedium {
@@ -2281,6 +2281,25 @@
 }
 
 @media (max-width: 760px) {
+  .editCanvas {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 12px;
+    box-sizing: border-box;
+    overflow-x: clip;
+  }
+
+  .visibilityGuideGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ruleFields,
+  .categoryRuleFields {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .bxyRewardGrid {
     grid-template-columns: 1fr;
   }
