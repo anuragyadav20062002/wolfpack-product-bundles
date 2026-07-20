@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 5.0.198
+ * Version : 5.0.199
  * Built   : 2026-07-20
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.198';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.199';
 (function (window) {
   'use strict';
 
@@ -360,6 +360,15 @@ const ConditionValidator = (function () {
     };
   }
 
+  function isProductQuantityIncreaseDisabled(validateQuantityPerProduct, currentQuantity) {
+    const current = Number(currentQuantity) || 0;
+    return !canUpdateProductQuantity(
+      validateQuantityPerProduct,
+      current,
+      current + 1,
+    ).allowed;
+  }
+
   // ─── Private helpers ──────────────────────────────────────────────────────
 
   /**
@@ -427,6 +436,7 @@ const ConditionValidator = (function () {
     isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
+    isProductQuantityIncreaseDisabled,
     _formatStepLimitToast,
   };
 }());

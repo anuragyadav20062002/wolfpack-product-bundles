@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.198
+ * Version : 5.0.199
  * Built   : 2026-07-20
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.198';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.199';
 (function() {
   'use strict';
 
@@ -288,6 +288,15 @@ const ConditionValidator = (function () {
     };
   }
 
+  function isProductQuantityIncreaseDisabled(validateQuantityPerProduct, currentQuantity) {
+    const current = Number(currentQuantity) || 0;
+    return !canUpdateProductQuantity(
+      validateQuantityPerProduct,
+      current,
+      current + 1,
+    ).allowed;
+  }
+
   function _evaluateCanUpdate(operator, required, totalAfter) {
     let allowed;
     switch (operator) {
@@ -345,6 +354,7 @@ const ConditionValidator = (function () {
     isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
+    isProductQuantityIncreaseDisabled,
     _formatStepLimitToast,
   };
 }());

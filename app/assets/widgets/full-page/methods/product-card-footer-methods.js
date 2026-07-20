@@ -72,6 +72,10 @@ createProductCard(product, stepIndex, options = {}) {
   const outOfStock = typeof this.isVariantOutOfStock === 'function'
     ? this.isVariantOutOfStock(displayProduct)
     : displayProduct?.available === false;
+  const increaseDisabled = ConditionValidator.isProductQuantityIncreaseDisabled(
+    this.selectedBundle?.validateQuantityPerProduct,
+    currentQuantity,
+  );
   const supportsAddonDiscountBadge = ['STANDARD', 'CLASSIC'].includes(designPreset);
   const hasAddonDiscountBadge = supportsAddonDiscountBadge && displayProduct.addonDiscountBadgeText;
   const stockBadgeHtml = hasAddonDiscountBadge
@@ -90,6 +94,7 @@ createProductCard(product, stepIndex, options = {}) {
         className: outOfStock ? 'is-out-of-stock' : '',
         showCompareAtPrice: true,
         addButtonText: this.getProductCardAddButtonText(step),
+        increaseDisabled,
         cardBadgeHtml: stockBadgeHtml,
         variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,
       }
