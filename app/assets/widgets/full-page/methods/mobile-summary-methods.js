@@ -489,13 +489,18 @@ _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
     if (!item.isDefault) {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'fpb-mobile-summary-product-remove';
+      removeBtn.type = 'button';
+      removeBtn.setAttribute(
+        'aria-label',
+        this.getSummaryProductRemoveButtonLabel(summaryTitle)
+      );
       const removalState = this.getSummaryProductRemovalState(item);
       if (!removalState.canRemove) {
         removeBtn.classList.add('fpb-mobile-summary-product-remove--disabled');
         removeBtn.setAttribute('aria-disabled', 'true');
         removeBtn.title = removalState.blockedMessage;
       }
-      removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
+      removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" aria-hidden="true" focusable="false"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
       removeBtn.addEventListener('click', () => {
         this.removeSummarySelectedProduct(item, summaryTitle);
       });
@@ -648,11 +653,14 @@ _createMobileSummaryActionButton({
 
 getBundleSummaryText() {
   const summary = this.selectedBundle?.bundleTextConfig?.bundleSummary || {};
+  const summaryTitle = typeof summary.title === 'string'
+    ? summary.title.trim()
+    : '';
   const bundleName = typeof this.selectedBundle?.name === 'string'
     ? this.selectedBundle.name.trim()
     : '';
   return {
-    title: bundleName || (typeof summary.title === 'string' ? summary.title.trim() : ''),
+    title: summaryTitle || bundleName,
     subTitle: typeof summary.subTitle === 'string' && summary.subTitle.trim()
       ? summary.subTitle
       : 'Review your bundle'

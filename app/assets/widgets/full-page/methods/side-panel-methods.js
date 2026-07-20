@@ -301,7 +301,10 @@ renderSidePanel(panel) {
           const removeBtn = document.createElement('button');
           removeBtn.className = 'side-panel-product-remove';
           removeBtn.type = 'button';
-          removeBtn.setAttribute('aria-label', `Delete ${summaryTitle || 'product'}`);
+          removeBtn.setAttribute(
+            'aria-label',
+            this.getSummaryProductRemoveButtonLabel(summaryTitle)
+          );
           const removalState = this.getSummaryProductRemovalState(item);
           if (!removalState.canRemove) {
             removeBtn.classList.add('side-panel-product-remove--disabled');
@@ -592,6 +595,13 @@ getSummaryProductRemovalState(item = {}) {
     targetStepName,
     blockedMessage: canRemove ? '' : `Remove This Product From ${targetStepName}`,
   };
+},
+
+getSummaryProductRemoveButtonLabel(summaryTitle = '') {
+  const normalizedTitle = typeof summaryTitle === 'string'
+    ? summaryTitle.trim()
+    : '';
+  return `Delete ${normalizedTitle || 'product'}`;
 },
 
 removeSummarySelectedProduct(item = {}, summaryTitle = '') {
