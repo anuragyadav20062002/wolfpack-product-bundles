@@ -1,7 +1,7 @@
 import type { KeyboardEvent, MouseEvent } from "react";
 import { BlockStack, Button, InlineStack, Spinner, Text } from "@shopify/polaris";
 import { XCircleIcon } from "@shopify/polaris-icons";
-import { MonitorIcon } from "./FilePickerIcons";
+import { MobileIcon, MonitorIcon } from "./FilePickerIcons";
 import { truncateStoreFileText } from "./utils";
 
 type FilePickerTriggerProps = {
@@ -10,6 +10,9 @@ type FilePickerTriggerProps = {
   label: string;
   hint?: string;
   uploadLabel: string;
+  triggerIcon: "desktop" | "mobile";
+  uploadButtonAction: "upload" | "openPicker";
+  fitPreviewToTrigger: boolean;
   triggerIsUploading: boolean;
   uploadStatus: "idle" | "uploading" | "polling" | "success" | "timeout" | "error";
   handleOpen: () => void;
@@ -23,6 +26,9 @@ export function FilePickerTrigger({
   label,
   hint,
   uploadLabel,
+  triggerIcon,
+  uploadButtonAction,
+  fitPreviewToTrigger,
   triggerIsUploading,
   uploadStatus,
   handleOpen,
@@ -30,6 +36,54 @@ export function FilePickerTrigger({
   handleTriggerUpload,
 }: FilePickerTriggerProps) {
   if (value) {
+    if (fitPreviewToTrigger) {
+      return (
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "180px",
+            border: "1px solid #c9cccf",
+            borderRadius: "8px",
+            overflow: "hidden",
+            background: "#fafbfb",
+            boxSizing: "border-box",
+          }}
+        >
+          <img
+            src={value}
+            alt={currentFilename ?? "Background image"}
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "block",
+              objectFit: "contain",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+              padding: "4px 8px",
+              border: "1px solid #c9cccf",
+              borderRadius: "6px",
+              background: "#fff",
+            }}
+          >
+            <InlineStack gap="200">
+              <Button variant="plain" size="slim" onClick={handleOpen}>
+                Change
+              </Button>
+              <Button variant="plain" tone="critical" size="slim" icon={XCircleIcon} onClick={handleRemove}>
+                Remove
+              </Button>
+            </InlineStack>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         style={{
@@ -93,6 +147,7 @@ export function FilePickerTrigger({
         gap: "8px",
         textAlign: "center",
         boxSizing: "border-box",
+        height: fitPreviewToTrigger ? "180px" : undefined,
       }}
     >
       {triggerIsUploading ? (
@@ -104,7 +159,7 @@ export function FilePickerTrigger({
         </>
       ) : (
         <>
-          <MonitorIcon />
+          {triggerIcon === "mobile" ? <MobileIcon /> : <MonitorIcon />}
           <Text as="p" variant="bodySm" fontWeight="semibold">
             {label}
           </Text>
@@ -115,7 +170,14 @@ export function FilePickerTrigger({
           )}
           <button
             type="button"
-            onClick={handleTriggerUpload}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (uploadButtonAction === "openPicker") {
+                handleOpen();
+                return;
+              }
+              handleTriggerUpload(event);
+            }}
             style={{
               marginTop: "4px",
               padding: "6px 20px",

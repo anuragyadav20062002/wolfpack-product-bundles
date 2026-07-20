@@ -95,6 +95,22 @@ describe("formatBundleForWidget", () => {
     expect(result.variantSelectorEnabled).toBe(false);
   });
 
+  it("emits desktop and mobile bundle banner URLs for every full-page template", () => {
+    const presets = ["DEFAULT_FBP", "CLASSIC", "COMPACT", "HORIZONTAL"];
+
+    presets.forEach((bundleDesignPresetId) => {
+      const result = formatBundleForWidget(makeBundle({
+        bundleDesignTemplate: "FBP_SIDE_FOOTER",
+        bundleDesignPresetId,
+        bundleBannerDesktopUrl: "https://cdn.example.test/desktop-banner.jpg",
+        bundleBannerMobileUrl: "https://cdn.example.test/mobile-banner.jpg",
+      }) as any);
+
+      expect(result.bundleBannerDesktopUrl).toBe("https://cdn.example.test/desktop-banner.jpg");
+      expect(result.bundleBannerMobileUrl).toBe("https://cdn.example.test/mobile-banner.jpg");
+    });
+  });
+
   it("defaults the bundle-level variant selector setting to enabled", () => {
     const result = formatBundleForWidget(makeBundle({
       variantSelectorEnabled: undefined,

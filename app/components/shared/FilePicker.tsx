@@ -23,6 +23,9 @@ export function FilePicker({
   label = "Choose background image",
   hint,
   uploadLabel = "Upload image",
+  triggerIcon = "desktop",
+  uploadButtonAction = "upload",
+  fitPreviewToTrigger = false,
   maxUploadBytes = MAX_BYTES,
   maxUploadErrorMessage = "File must be under 20 MB.",
   autoOpen = false,
@@ -318,6 +321,9 @@ export function FilePicker({
           label={label}
           hint={hint}
           uploadLabel={uploadLabel}
+          triggerIcon={triggerIcon}
+          uploadButtonAction={uploadButtonAction}
+          fitPreviewToTrigger={fitPreviewToTrigger}
           triggerIsUploading={triggerIsUploading}
           uploadStatus={uploadStatus}
           handleOpen={handleOpen}
