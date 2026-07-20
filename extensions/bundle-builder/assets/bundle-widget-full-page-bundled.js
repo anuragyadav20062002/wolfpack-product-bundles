@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.197
+ * Version : 5.0.198
  * Built   : 2026-07-20
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.197';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.198';
 (function() {
   'use strict';
 
@@ -8813,13 +8813,23 @@ expandProductsByVariant(products, shouldExpand = true) {
       }
       return variant?.available !== false;
     };
+    const isExplicitlyUnavailable = (variant) => {
+      const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
+        ? context.getRuntimeVariantInventory(variant)
+        : null;
+      return runtimeInventory?.available === false
+        || variant?.availableForSale === false
+        || (!runtimeInventory && variant?.available === false);
+    };
 
     if (product.parentProductId && product.variantId) {
+      if (isExplicitlyUnavailable(product)) return [];
       return [{ ...product, available: isVariantSelectable(product) }];
     }
 
     if (product.variants && product.variants.length > 1) {
       return product.variants
+        .filter(variant => !isExplicitlyUnavailable(variant))
         .map(variant => {
           const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
             ? context.getRuntimeVariantInventory(variant)
@@ -12271,6 +12281,14 @@ processProductsForStep(products, step) {
       const processedOptions = deriveProductOptionNames(product);
 
       return product.variants
+        .filter(variant => {
+          const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+            ? this.getRuntimeVariantInventory(variant)
+            : null;
+          return variant?.available !== false
+            && variant?.availableForSale !== false
+            && runtimeInventory?.available !== false;
+        })
         .map(variant => {
 
           const imageUrl = variant?.image?.src

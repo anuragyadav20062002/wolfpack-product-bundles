@@ -799,6 +799,14 @@ processProductsForStep(products, step) {
       const processedOptions = deriveProductOptionNames(product);
 
       return product.variants
+        .filter(variant => {
+          const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
+            ? this.getRuntimeVariantInventory(variant)
+            : null;
+          return variant?.available !== false
+            && variant?.availableForSale !== false
+            && runtimeInventory?.available !== false;
+        })
         .map(variant => {
           // Storefront API: prioritize variant image, fallback to product featured image.
           // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.

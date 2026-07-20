@@ -167,6 +167,47 @@ describe('FPB Standard variant availability', () => {
     ]));
   });
 
+  it('omits explicitly unavailable variants from individual product expansion', () => {
+    const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
+      extractId: (id: string) => String(id || '').split('/').pop(),
+      shouldExpandStepProductsDuringLoad: () => true,
+      isVariantSelectableForInventory: fullPageProductProcessingMethods.isVariantSelectableForInventory,
+      isInventoryTrackingOnAddToCartEnabled: fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled,
+      getRuntimeVariantInventory: (variant: any) => String(variant.id).endsWith('/789')
+        ? { available: false, quantityAvailable: 0, currentlyNotInStock: false }
+        : null,
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+    }, [{
+      id: 'gid://shopify/Product/123',
+      title: 'Grouped product',
+      imageUrl: 'https://cdn.example.test/product.jpg',
+      variants: [
+        {
+          id: 'gid://shopify/ProductVariant/456',
+          title: 'Available',
+          price: '30.00',
+          available: true,
+        },
+        {
+          id: 'gid://shopify/ProductVariant/789',
+          title: 'Unavailable',
+          price: '35.00',
+          available: true,
+        },
+        {
+          id: 'gid://shopify/ProductVariant/101',
+          title: 'Tracked zero stock',
+          price: '40.00',
+          available: true,
+          quantityAvailable: 0,
+          currentlyNotInStock: false,
+        },
+      ],
+    }], { displayVariantsAsIndividual: true });
+
+    expect(normalized.map((product: any) => product.variantId)).toEqual(['456', '101']);
+  });
+
   it('preserves product descriptions for the product detail modal', () => {
     const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
       extractId: (id: string) => String(id || '').split('/').pop(),
@@ -501,6 +542,27 @@ describe('FPB Standard variant availability', () => {
       quantityAvailable: 0,
       currentlyNotInStock: true,
     }));
+  });
+
+  it('omits an already-expanded card when runtime inventory marks its variant unavailable', () => {
+    const expanded = fullPageProductGridMethods.expandProductsByVariant.call({
+      getRuntimeVariantInventory: () => ({
+        available: false,
+        quantityAvailable: 0,
+        currentlyNotInStock: false,
+      }),
+      isVariantSelectableForInventory: fullPageProductProcessingMethods.isVariantSelectableForInventory,
+      isInventoryTrackingOnAddToCartEnabled: fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled,
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+    }, [{
+      id: 'gid://shopify/ProductVariant/456',
+      variantId: 'gid://shopify/ProductVariant/456',
+      parentProductId: 'gid://shopify/Product/123',
+      title: 'Grouped product',
+      available: true,
+    }], true);
+
+    expect(expanded).toEqual([]);
   });
 
   it('uses runtime inventory by variant id when the card DTO has stale stock fields', () => {

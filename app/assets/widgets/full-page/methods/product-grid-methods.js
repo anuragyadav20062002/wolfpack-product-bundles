@@ -315,15 +315,25 @@ expandProductsByVariant(products, shouldExpand = true) {
       }
       return variant?.available !== false;
     };
+    const isExplicitlyUnavailable = (variant) => {
+      const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
+        ? context.getRuntimeVariantInventory(variant)
+        : null;
+      return runtimeInventory?.available === false
+        || variant?.availableForSale === false
+        || (!runtimeInventory && variant?.available === false);
+    };
 
     // If product already has a variantId and parentProductId, it was already expanded
     if (product.parentProductId && product.variantId) {
+      if (isExplicitlyUnavailable(product)) return [];
       return [{ ...product, available: isVariantSelectable(product) }];
     }
 
     // If product has multiple variants, expand into separate cards
     if (product.variants && product.variants.length > 1) {
       return product.variants
+        .filter(variant => !isExplicitlyUnavailable(variant))
         .map(variant => {
           const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
             ? context.getRuntimeVariantInventory(variant)
