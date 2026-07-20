@@ -50,60 +50,15 @@ export function FpbTimelineSettings({
               >
                 Banner Image: Desktop
               </p>
-              {bundleBannerDesktopUrl ? (
-                <div
-                  style={{
-                    position: "relative",
-                    borderRadius: 8,
-                    overflow: "hidden",
-                    border: "1px solid #c9cccf",
-                  }}
-                >
-                  <img
-                    src={bundleBannerDesktopUrl}
-                    alt="Banner Image: Desktop"
-                    style={{
-                      width: "100%",
-                      display: "block",
-                      maxHeight: 180,
-                      objectFit: "cover",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBundleBannerDesktopUrl("");
-                      markAsDirty();
-                    }}
-                    style={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      background: "#fff",
-                      border: "1px solid #c9cccf",
-                      borderRadius: 4,
-                      cursor: "pointer",
-                      padding: "4px 10px",
-                      fontSize: 12,
-                      fontWeight: 500,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      color: "#d72c0d",
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <FilePicker
-                  value={null}
-                  onChange={(url) => {
-                    setBundleBannerDesktopUrl(url ?? "");
-                    markAsDirty();
-                  }}
-                />
-              )}
+              <FilePicker
+                value={bundleBannerDesktopUrl || null}
+                uploadButtonAction="openPicker"
+                fitPreviewToTrigger
+                onChange={(url) => {
+                  setBundleBannerDesktopUrl(url ?? "");
+                  markAsDirty();
+                }}
+              />
               <p
                 style={{
                   margin: "6px 0 0",
@@ -125,60 +80,16 @@ export function FpbTimelineSettings({
               >
                 Banner Image: Mobile
               </p>
-              {bundleBannerMobileUrl ? (
-                <div
-                  style={{
-                    position: "relative",
-                    borderRadius: 8,
-                    overflow: "hidden",
-                    border: "1px solid #c9cccf",
-                  }}
-                >
-                  <img
-                    src={bundleBannerMobileUrl}
-                    alt="Banner Image: Mobile"
-                    style={{
-                      width: "100%",
-                      display: "block",
-                      maxHeight: 180,
-                      objectFit: "cover",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBundleBannerMobileUrl("");
-                      markAsDirty();
-                    }}
-                    style={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      background: "#fff",
-                      border: "1px solid #c9cccf",
-                      borderRadius: 4,
-                      cursor: "pointer",
-                      padding: "4px 10px",
-                      fontSize: 12,
-                      fontWeight: 500,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      color: "#d72c0d",
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <FilePicker
-                  value={null}
-                  onChange={(url) => {
-                    setBundleBannerMobileUrl(url ?? "");
-                    markAsDirty();
-                  }}
-                />
-              )}
+              <FilePicker
+                value={bundleBannerMobileUrl || null}
+                triggerIcon="mobile"
+                uploadButtonAction="openPicker"
+                fitPreviewToTrigger
+                onChange={(url) => {
+                  setBundleBannerMobileUrl(url ?? "");
+                  markAsDirty();
+                }}
+              />
               <p
                 style={{
                   margin: "6px 0 0",
