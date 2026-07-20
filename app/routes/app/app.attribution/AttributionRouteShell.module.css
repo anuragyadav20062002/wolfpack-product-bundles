@@ -1,8 +1,10 @@
 .dashboardPending {
-  max-width: 1320px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1384px;
   min-height: 360px;
   margin: 0 auto;
-  padding: 0 4px 88px;
+  padding: 0 clamp(16px, 3vw, 32px) 88px;
 }
 
 .statusPending {
@@ -10,9 +12,11 @@
 }
 
 .dashboardShell {
-  max-width: 1320px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1384px;
   margin: 0 auto;
-  padding: 0 4px 88px;
+  padding: 0 clamp(16px, 3vw, 32px) 88px;
 }
 
 .dashboardStack {
@@ -65,9 +69,11 @@
 
 .criticalHeroShell,
 .pixelStatusShell {
-  max-width: 1320px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1384px;
   margin: 0 auto;
-  padding: 0 4px;
+  padding-inline: clamp(16px, 3vw, 32px);
 }
 
 .criticalHeroShell {
@@ -123,19 +129,69 @@
 }
 
 .pixelStatusCard {
+  position: relative;
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  min-block-size: 3.625rem;
+  min-block-size: 5rem;
+  overflow: hidden;
   border: 1px solid #e1e3e5;
   border-radius: 0.75rem;
-  background: #ffffff;
-  padding: 0.875rem 1rem;
+  background: linear-gradient(90deg, #f7f8ff 0%, #ffffff 42%);
+  padding: 1rem 1.125rem;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
-.pixelStatusCard > s-stack {
+.pixelStatusCard::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #8c9196;
+  content: "";
+}
+
+.pixelStatusCard[data-status="online"]::before {
+  background: #00a47c;
+}
+
+.pixelStatusBody {
+  display: grid;
   width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.pixelStatusIcon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 8px;
+  background: #ebeefe;
+  color: #4f5fc7;
+}
+
+.pixelStatusCard[data-status="online"] .pixelStatusIcon {
+  background: #e4f6ef;
+  color: #008060;
+}
+
+.pixelStatusContent {
+  min-width: 0;
+}
+
+.pixelStatusAction {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.pixelStatusHeading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .pixelStatusCard[data-status="checking"] {
@@ -146,26 +202,19 @@
   border-color: #a8e6c1;
 }
 
-.pixelStatusCard[data-status="online"] .pixelStatusDot {
-  background: #00a47c;
-  box-shadow: 0 0 0 0.1875rem rgba(0, 164, 124, 0.18);
-}
-
-.pixelStatusDot {
-  display: inline-block;
-  width: 0.625rem;
-  height: 0.625rem;
-  flex: 0 0 0.625rem;
-  border-radius: 50%;
-  background: #8c9196;
-}
-
 .pixelStatusTitle {
   margin: 0;
   color: #202223;
   font-size: 1rem;
   font-weight: 650;
   line-height: 1.25;
+}
+
+.pixelStatusDescription {
+  margin: 4px 0 0;
+  color: #6d7175;
+  font-size: 0.8125rem;
+  line-height: 1.35;
 }
 
 .pixelDisclosureText {
@@ -179,5 +228,42 @@
   .dashboardChartGrid,
   .dashboardActivityGrid {
     grid-template-columns: 1fr;
+  }
+
+  .criticalHeroCard {
+    padding: 24px;
+  }
+
+  .pixelStatusBody {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .pixelStatusAction {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboardPending,
+  .dashboardShell {
+    padding-inline: 16px;
+  }
+
+  .criticalHeroShell,
+  .pixelStatusShell {
+    padding-inline: 16px;
+  }
+
+  .criticalHeroCard {
+    padding: 20px;
+  }
+
+  .pixelStatusCard {
+    padding: 14px;
+  }
+
+  .pixelStatusBody {
+    gap: 12px;
   }
 }

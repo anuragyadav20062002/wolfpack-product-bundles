@@ -31,6 +31,15 @@ jest.mock("../../../app/services/analytics/order-backfill.server", () => ({
 jest.mock("../../../app/db.server", () => ({
   __esModule: true,
   default: {
+    bundle: {
+      findMany: jest.fn(),
+    },
+    bundleAnalytics: {
+      findMany: jest.fn(),
+    },
+    orderAttribution: {
+      findMany: jest.fn(),
+    },
     shop: {
       findUnique: jest.fn(),
       upsert: jest.fn(),
@@ -62,6 +71,9 @@ beforeEach(() => {
   getDb().shop.findUnique.mockResolvedValue({
     customUtmParameters: [],
   });
+  getDb().orderAttribution.findMany.mockResolvedValue([]);
+  getDb().bundleAnalytics.findMany.mockResolvedValue([]);
+  getDb().bundle.findMany.mockResolvedValue([]);
   process.env.SHOPIFY_APP_URL = "https://app.example.com";
 });
 
@@ -98,6 +110,28 @@ describe("action — enable intent", () => {
 
     expect(data.success).toBe(false);
     expect(data.pixelActive).toBe(false);
+  });
+});
+
+// ── export intent ─────────────────────────────────────────────
+
+describe("action — export intent", () => {
+  it("returns named CSV data for the selected window", async () => {
+    const response = await action({
+      request: makeRequest("export", {
+        from: "2026-07-01",
+        to: "2026-07-20",
+      }),
+      params: {},
+      context: {},
+    });
+    const data: any = await response.json();
+
+    expect(data).toEqual({
+      success: true,
+      filename: "wolfpack-analytics-2026-07-01-to-2026-07-20.csv",
+      csv: "Date,Type,Bundle ID,Bundle Name,UTM Source,UTM Medium,UTM Campaign,Custom UTM Attributes,Revenue (USD),Order ID,Landing Page",
+    });
   });
 });
 

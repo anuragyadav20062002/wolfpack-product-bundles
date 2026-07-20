@@ -20,14 +20,21 @@ function AttributionStatusPending() {
       data-status="checking"
       aria-busy="true"
     >
-      <s-stack direction="inline" alignItems="center" justifyContent="space-between" gap="base">
-        <s-stack direction="inline" alignItems="center" gap="small">
-          <span className={styles.pixelStatusDot} aria-hidden="true" />
-          <h2 className={styles.pixelStatusTitle}>UTM Pixel Tracking</h2>
-          <s-badge tone="neutral">Checking</s-badge>
-        </s-stack>
-        <s-spinner size="base" />
-      </s-stack>
+      <div className={styles.pixelStatusBody}>
+        <div className={styles.pixelStatusIcon} aria-hidden="true">
+          <s-icon type="globe" />
+        </div>
+        <div className={styles.pixelStatusContent}>
+          <div className={styles.pixelStatusHeading}>
+            <h2 className={styles.pixelStatusTitle}>UTM Pixel Tracking</h2>
+            <s-badge tone="neutral">Checking</s-badge>
+          </div>
+          <p className={styles.pixelStatusDescription}>Checking your campaign attribution status.</p>
+        </div>
+        <div className={styles.pixelStatusAction}>
+          <s-spinner size="base" />
+        </div>
+      </div>
     </div>
   );
 }
