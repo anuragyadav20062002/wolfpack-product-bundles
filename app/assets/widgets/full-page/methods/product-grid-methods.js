@@ -23,12 +23,8 @@ import {
 } from '../../shared/engine/cart-lines.js';
 
 
-export function shouldCategoryTabActivateProducts({
-  designPreset,
-  viewportWidth,
-  hasCategoryEntries,
-}) {
-  return !(designPreset === 'STANDARD' && hasCategoryEntries && viewportWidth < 768);
+export function shouldCategoryTabActivateProducts() {
+  return true;
 }
 
 export const fullPageProductGridMethods = {
@@ -235,24 +231,7 @@ createFullPageProductGrid(stepIndex) {
   // Filter by active category/collection if selected
   if (activeCollectionId) {
     if (activeCategory) {
-      const allowedProductIds = new Set();
-      activeCategory.productIds.forEach(productId => {
-        allowedProductIds.add(this.extractId(productId) || productId);
-      });
-      activeCategory.handles.forEach(handle => {
-        const collectionProductIds = this.stepCollectionProductIds[`${stepIndex}:${handle}`] || [];
-        collectionProductIds.forEach(productId => {
-          allowedProductIds.add(this.extractId(productId) || productId);
-        });
-      });
-
-      if (allowedProductIds.size > 0) {
-        products = products.filter(p => {
-          const numericPid = p.parentProductId || p.id || '';
-          return allowedProductIds.has(numericPid);
-        });
-        products = this.orderProductsForActiveCategory(products, activeCategory, stepIndex);
-      }
+      products = this.orderProductsForActiveCategory(products, activeCategory, stepIndex);
     } else if (step.collections) {
       const activeCollection = step.collections.find(c => c.id === activeCollectionId);
     if (activeCollection && activeCollection.handle) {

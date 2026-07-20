@@ -157,9 +157,10 @@ describe('FPB Standard mobile summary action', () => {
     const context = {
       ...createContext(),
       selectedBundle: {
-        steps: [{ pageTitle: 'Choose your product' }],
+        steps: [{ pageTitle: 'Choose your product' }, { pageTitle: 'Next step' }],
       },
       getCurrentStepContentText: fullPageMobileSummaryMethods.getCurrentStepContentText,
+      shouldRenderFullPageStepChrome: () => true,
     };
 
     const header = fullPageMobileSummaryMethods.createStepContentHeader.call(context, 0);
@@ -171,9 +172,10 @@ describe('FPB Standard mobile summary action', () => {
     const context = {
       ...createContext(),
       selectedBundle: {
-        steps: [{ pageTitle: 'Chrome async text' }],
+        steps: [{ pageTitle: 'Chrome async text' }, { pageTitle: 'Next step' }],
       },
       getCurrentStepContentText: fullPageMobileSummaryMethods.getCurrentStepContentText,
+      shouldRenderFullPageStepChrome: () => true,
     };
 
     expect(fullPageMobileSummaryMethods.getCurrentStepContentText.call(context, 0)).toEqual({
@@ -186,9 +188,10 @@ describe('FPB Standard mobile summary action', () => {
     const context = {
       ...createContext(),
       selectedBundle: {
-        steps: [{ pageTitle: 'Chrome async 08:17:02' }],
+        steps: [{ pageTitle: 'Chrome async 08:17:02' }, { pageTitle: 'Next step' }],
       },
       getCurrentStepContentText: fullPageMobileSummaryMethods.getCurrentStepContentText,
+      shouldRenderFullPageStepChrome: () => true,
     };
 
     expect(fullPageMobileSummaryMethods.getCurrentStepContentText.call(context, 0)).toEqual({
@@ -611,12 +614,12 @@ describe('FPB Standard mobile summary action', () => {
     expect(container.getChildren()[0].getChildren()).toHaveLength(0);
   });
 
-  it('keeps Standard mobile category tabs from switching the expanded product body', () => {
+  it('uses the normal category-switching path for Standard mobile tabs', () => {
     expect(shouldCategoryTabActivateProducts({
       designPreset: 'STANDARD',
       viewportWidth: 390,
       hasCategoryEntries: true,
-    })).toBe(false);
+    })).toBe(true);
   });
 
   it('keeps desktop and non-Standard category tabs on the normal switching path', () => {

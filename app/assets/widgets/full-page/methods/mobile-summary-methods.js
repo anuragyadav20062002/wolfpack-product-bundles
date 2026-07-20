@@ -683,6 +683,8 @@ getCurrentStepContentText(stepIndex) {
 },
 
 createStepContentHeader(stepIndex) {
+  if (!this.shouldRenderFullPageStepChrome()) return null;
+
   const contentText = this.getCurrentStepContentText(stepIndex);
   if (!contentText.subtext) return null;
 

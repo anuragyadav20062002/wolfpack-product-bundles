@@ -5,7 +5,7 @@ title: Full Page Bundle Feature-to-Storefront Verification Matrix
 type: verification-matrix
 status: active
 summary: Groups FPB storefront parity features into fixture-efficient evidence sweeps across all four designs.
-last_audited: 2026-07-20
+last_audited: 2026-07-21
 owners:
   - Wolfpack Product Bundles
 domains:
@@ -132,18 +132,18 @@ not execute row-by-row Admin mutations.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | R01 | F0 | Template dispatch and dedicated shell | Persisted preset resolves one root and only the matching preset stylesheet | **P** F0-191 | **P** F0-191 | **P** F0-191 | **P** F0-191 |
 | R02 | F0 | Public FPB placement | Signed app-proxy page mounts the builder inside the active theme | **P** F0-191 | **P** F0-191 | **P** F0-191 | **P** F0-191 |
-| R03 | F0 | Single-step bundle | One shopper stage with the final cart action | **S** | **S** | **S** | **S** |
-| R04 | F0 | Multi-step bundle | One active step; Next/Back retain selections | **S** | **S** | **S** | **P** C04 |
-| R05 | F0 | Add-on/gifting step | Product steps hand off to the configured add-on stage | **S** | **S** | **S** | **P** C06 |
-| R06 | F0 | Multiple categories | Category navigation changes the visible catalog without losing state | **S** | **S** | **P** C01 | **P** C01 |
-| R07 | F0 | Long category labels | Labels wrap or scroll within their owner without page overflow | **S** | **S** | **P** C01 | **P** C01 |
-| R08 | F0 | True empty category | EB hide/empty-state behavior is mirrored; no fabricated products | **S** | **S** | **P** C01 | **P** C01 |
+| R03 | F0 | Single-step bundle | One shopper stage with the final cart action | **P** F0-SINGLE | **P** F0-SINGLE | **P** F0-SINGLE | **P** F0-SINGLE |
+| R04 | F0 | Multi-step bundle | One active step; Next/Back retain selections | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW |
+| R05 | F0 | Add-on/gifting step | Product steps hand off to the configured add-on stage | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW |
+| R06 | F0 | Multiple categories | Category navigation changes the visible catalog without losing state | **P** F0-EMPTY | **P** F0-EMPTY | **P** C01 | **P** C01 |
+| R07 | F0 | Long category labels | Labels wrap or scroll within their owner without page overflow | **P** F0-EMPTY | **P** F0-EMPTY | **P** F0-EMPTY | **P** C01 |
+| R08 | F0 | True empty category | EB hide/empty-state behavior is mirrored; no fabricated products | **P** F0-EMPTY | **P** F0-EMPTY | **P** F0-EMPTY | **P** F0-EMPTY |
 | R09 | F0 | Manual product source | Persisted manual products hydrate and render | **S** | **S** | **P** C01 | **P** C01 |
 | R10 | F0 | Collection-backed source | Collection products hydrate by batch, paginate, and filter correctly | **S** | **S** | **P** C01 | **P** C01 |
 | R11 | F0 | Mixed manual + collection | Both sources coexist without duplicates or state loss | **S** | **S** | **P** C01 | **P** C01 |
-| R12 | F0 | Cloned step | Cloned structure remains independent and ordered | **S** | **S** | **T** | **T** |
-| R13 | F0 | Disabled step | Disabled Admin steps never render or block progression | **T** | **T** | **T** | **T** |
-| R14 | F0 | Step timeline | Current, completed, and future states match EB | **S** | **S** | **S** | **S** |
+| R12 | F0 | Cloned step | Cloned structure remains independent and ordered | **P** F0-CLONE | **P** F0-CLONE | **P** F0-CLONE | **P** F0-CLONE |
+| R13 | F0 | Disabled step | Disabled Admin steps never render or block progression | **P** F0-SINGLE | **P** F0-SINGLE | **P** F0-DISABLED | **P** F0-DISABLED |
+| R14 | F0 | Step timeline | Current, completed, and future states match EB | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW |
 | R15 | F6 | Step/category banner media | Saved desktop/mobile media renders at the EB-owned stage | **S** | **S** | **T** | **T** |
 | R16 | F8 | First load and cache-bypassed reload | No wrong-preset flash; restored fixture renders identically | **S** | **S** | **P** C08 | **P** C08 |
 
@@ -151,8 +151,8 @@ not execute row-by-row Admin mutations.
 
 | ID | Group | Feature / state | EB storefront contract | ST | CL | CO | HO |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| C01 | F0 | Complete card hierarchy | Image, title, price, variant identity, and action remain reachable | **S** | **S** | **P** C02 | **P** C02 |
-| C02 | F0 | Long title and content-driven height | Content wraps without clipping or card/action overlap | **S** | **S** | **P** C02 | **P** C02 |
+| C01 | F0 | Complete card hierarchy | Image, title, price, variant identity, and action remain reachable | **P** F0-192 | **P** F0-192 | **P** C02 | **P** C02 |
+| C02 | F0 | Long title and content-driven height | Content wraps without clipping or card/action overlap | **P** F0-192 | **P** F0-192 | **P** C02 | **P** C02 |
 | C03 | F1 | Sale and compare-at price | Price cluster and visibility follow the saved setting | **S** | **S** | **P** C02 | **P** C02 |
 | C04 | F1 | Square, tall, and wide media | Mixed aspect ratios remain contained | **S** | **S** | **T** | **T** |
 | C05 | F1 | Missing media | EB behavior is recorded; WPB uses a stable accepted fallback if different | **S** | **S** | **T** | **T** |
@@ -193,13 +193,13 @@ time and restore the `F0` minimum/exact baseline after every permutation.
 | ID | Group | Feature / state | EB storefront contract | ST | CL | CO | HO |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | M01 | F0 | Desktop empty summary | Title, count, slots/rows, totals, and action render coherently | **S** | **S** | **S** | **P** C07 |
-| M02 | F0 | Desktop partial/full summary | Selected order, quantities, images/text, totals, and removal stay synchronized | **S** | **S** | **S** | **P** C07 |
+| M02 | F0 | Desktop partial/full summary | Selected order, quantities, images/text, totals, and removal stay synchronized | **P** F0-SUMMARY | **P** F0-SUMMARY | **P** F0-SUMMARY | **P** C07 |
 | M03 | F4 | Product Slots disabled | Summary uses the EB text/row branch | **P** P03 | **S** | **T** | **T** |
 | M04 | F4 | Product Slots enabled | Summary uses empty/filled image slots based on quantity rules | **P** P03 | **S** | **S** | **S** |
 | M05 | F4 | Custom slot icon | Merchant slot icon replaces the default plus only where applicable | **S** | **S** | **T** | **T** |
 | M06 | F4 | Empty/partial/complete slot states | Slot count and fill state follow the saved condition | **S** | **S** | **S** | **S** |
-| M07 | F0 | Mobile tray collapsed | Count, CTA, price, and qualification remain readable | **S** | **S** | **P** F0-CO-191 | **P** C07 |
-| M08 | F0 | Mobile tray expanded | Selected rows/slots, remove actions, messages, and totals remain reachable | **S** | **S** | **S** F0-CO-191 | **P** C07 |
+| M07 | F0 | Mobile tray collapsed | Count, CTA, price, and qualification remain readable | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** C07 |
+| M08 | F0 | Mobile tray expanded | Selected rows/slots, remove actions, messages, and totals remain reachable | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** C07 |
 | M09 | F8 | Tray scroll and background behavior | Sticky/expanded behavior matches EB without viewport overflow | **S** | **S** | **P** S02 | **P** S02 |
 | M10 | F4 | Bundle Quantity Options disabled/enabled | Box/tier selection appears only when saved and changes the active target | **S** | **S** | **T** | **T** |
 | M11 | F4 | Box underfill/exact/overfill | Add and cart actions enforce the selected box quantity | **S** | **S** | **T** | **T** |
@@ -248,7 +248,7 @@ time and restore the `F0` minimum/exact baseline after every permutation.
 | ID | Group | Feature / state | EB storefront contract | ST | CL | CO | HO |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | S01 | F0 | Empty/one/multiple/overflow selection | State remains usable and content-driven | **S** | **S** | **P** C03 | **P** C03 |
-| S02 | F0 | Selection across category/step changes | Catalog and summary retain identical item identity | **S** | **P** C02 | **S** | **P** C04 |
+| S02 | F0 | Selection across category/step changes | Catalog and summary retain identical item identity | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW |
 | S03 | F4 | Valid default product/variant | Valid defaults initialize once and synchronize summary/card state | **S** | **S** | **S** | **S** |
 | S04 | F4 | Invalid/unavailable default | Invalid defaults are ignored or recovered without blocking load | **S** | **S** | **T** | **T** |
 | S05 | F8 | Reload/session persistence | EB-defined selections persist/reset after hard reload exactly as captured | **S** | **S** | **P** C08 | **P** C08 |
@@ -296,7 +296,7 @@ time and restore the `F0` minimum/exact baseline after every permutation.
 | Q01 | F8 | Desktop `1440x900` and `1280x800` | Dense content remains aligned and reachable | **S** | **S** | **S** | **P** S01 |
 | Q02 | F8 | Tablet `768x1024` | Layout adapts without clipped cards, tabs, summary, or CTA | **T** | **T** | **S** | **P** S02 |
 | Q03 | F8 | Mobile `390x844` and `360x800` | Content and sticky tray fit the visual viewport | **S** | **S** | **S** | **P** S02 |
-| Q04 | F8 | No page/component overflow | Document overflow is zero; internal scrollers remain contained | **P** F0-191 | **P** F0-191 | **P** F0-191 | **P** F0-191 |
+| Q04 | F8 | No page/component overflow | Document overflow is zero; internal scrollers remain contained | **P** F0-191 | **P** F0-191 | **P** F0-EMPTY | **P** F0-191 |
 | Q05 | F8 | Preset CSS and DOM isolation | Only active base + preset ownership applies | **P** F0-191 | **P** F0-191 | **P** F0-191 | **P** F0-191 |
 | Q06 | F8 | Keyboard access | Category, card, variant, summary, navigation, and cart controls are operable | **S** | **S** | **P** S03 | **P** S03 |
 | Q07 | F8 | Accessible names and state | Controls expose usable names, disabled/pressed/expanded state, and focus | **S** | **S** | **P** S03 | **P** S03 |
@@ -330,11 +330,18 @@ group. Screenshots, HAR files, and raw captures remain under `/private/tmp`.
 
 | Batch | Scope | Raw evidence |
 | --- | --- | --- |
-| `F0-192` | Current EB/WPB ST → CL → CO → HO preset sweep; exact active preset assets; configured summary copy; desktop/mobile containment; EB Compact and WPB Horizontal restores. Compact collapsed tray is proven. Intrinsic, token-driven CSS corrected the expanded-state presentation, and `5.0.192` names the icon-only removal controls. A fresh EB Admin/runtime capture proves the current fixture still has two non-empty categories, exact-2 auto-next on Step 1, no Step 2 rule, disabled defaults, and disabled fixed-amount discounts. Structural fixture drift and the non-equivalent Bundle Quantity Options state keep the affected F0 cells non-terminal. | `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO,HO}/runtime-summary.md`, `/private/tmp/fpb-feature-parity/F0/eb/baseline/persisted-runtime-summary.md`, `/private/tmp/fpb-feature-parity/F0/CO-delta.md`, `/private/tmp/fpb-feature-parity/F0/delta.md` |
+| `F0-192` | EB/WPB ST → CL → CO → HO preset sweep; exact active preset assets; configured summary copy; desktop/mobile containment; intrinsic tray/card corrections; and accessible icon-only removal controls. Its original true-empty assumption was later disproved and is superseded by `F0-EMPTY`. | `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO,HO}/runtime-summary.md`, `/private/tmp/fpb-feature-parity/F0/eb/baseline/persisted-runtime-summary.md`, `/private/tmp/fpb-feature-parity/F0/CO-delta.md`, `/private/tmp/fpb-feature-parity/F0/delta.md` |
+| `F0-EMPTY` | Persisted EB/WPB true-empty category correction; behavior-first WPB category hydration/grid fix; EB and WPB Standard, Classic, Compact, and Horizontal desktop/mobile replays. Compact's generated CSS proves a contained internal category scroller at both viewports. The active dev CDN served widget `5.0.194`; the final Standard-mobile replay switched from 90 cards to zero plus the native empty state without document overflow. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO,HO}/runtime-summary.md`, `tests/unit/assets/bundle-widget-full-page-category-hydration.test.ts`, `tests/unit/assets/fpb-standard-mobile-summary-action.test.ts`, `test-spec/fpb-empty-category-navigation.spec.md`, `test-spec/fpb-standard-mobile-summary-action.spec.md` |
+| `F0-FLOW` | EB/WPB Standard, Classic, Compact, and Horizontal `390x844` pairwise flows: default exclusion from Step 1 minimum, invalid feedback, selection retention across Next, completed/current timeline states, exact-rule Step 2 auto-next, add-on handoff, and contained content-driven mobile summaries. WPB's synthetic `Multiple Categories` stage was removed at the shared timeline source under focused TDD; served widget `5.0.194` rendered only configured shopper stages with zero document overflow. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO,HO}/runtime-summary.md`, `tests/unit/assets/fpb-standard-step-timeline-entries.test.ts`, `test-spec/fpb-standard-step-timeline-entries.spec.md` |
+| `F0-DISABLED` | Temporary EB/WPB Compact and Horizontal fixture with Step 2 disabled: EB excluded the step while WPB initially rendered it despite persisted `enabled: false`. Shared pre-render filtering was added under focused TDD; served widget `5.0.195` removed the stage, kept the remaining product/add-on stages contiguous, and retained `390px / 390px` document containment. Both fixtures were restored with Step 2 enabled. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{CO,HO}/runtime-summary.md`, `tests/unit/assets/fpb-disabled-step-storefront.test.ts`, `test-spec/fpb-disabled-step-storefront.spec.md` |
+| `F0-SINGLE` | Temporary EB/WPB single-stage fixture with Step 2 and Add-Ons/Gifting disabled, replayed across all four presets at `390x844`. EB suppressed navigation-only timeline/step subtitle chrome. A shared behavior predicate brought WPB into parity on served widget `5.0.196` without preset branches or fixed layout geometry; products, the final cart action, and `390px / 390px` containment remained. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO,HO}/runtime-summary.md`, `tests/unit/assets/fpb-single-step-storefront.test.ts`, `tests/unit/assets/fpb-standard-mobile-summary-action.test.ts`, `test-spec/fpb-single-step-storefront.spec.md` |
+| `F0-CLONE` | Temporary EB/WPB clone of the first product step, replayed across all four presets at `390x844`. The original and clone remained ordered; the exercised source/target flows retained original-stage summary selections while clone product cards kept independent selection state. The clone was deleted and the rich Horizontal fixtures were fully restored afterward. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO,HO}/runtime-summary.md` |
+| `F0-SUMMARY` | EB/WPB Standard, Classic, and Compact `1280x800` default-baseline and six-plus-item summary stress. Clear now restores persisted defaults on served widget `5.0.197`; Standard delegates overflow to its existing selected-products scroller, Classic wraps from existing slot tokens, and Compact retains natural-height detail rows. Counts, totals, removals, and document containment stayed synchronized. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO}/runtime-summary.md`, `tests/unit/assets/fpb-clear-cart-confirmation.test.ts`, `test-spec/fpb-clear-cart-confirmation.spec.md` |
 
-`F0-192` does not claim structural fixture equivalence, empty/partial/stress
-summary coverage, tablet coverage, or cart coverage. Rows requiring those
-states remain **S** or **T**.
+`F0-192` does not claim true-empty equivalence. `F0-EMPTY` supersedes that
+assumption and keeps every design cell non-terminal unless both corrected EB
+and equivalent WPB behavior were replayed. Widget `5.0.194` is now served and
+the Standard mobile true-empty replay is terminal.
 
 ## Completion Boundary
 

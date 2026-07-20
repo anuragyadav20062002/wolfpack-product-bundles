@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.192
+ * Version : 5.0.197
  * Built   : 2026-07-20
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.192';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.197';
 (function() {
   'use strict';
 
@@ -5147,7 +5147,17 @@ selectBundle() {
 },
 };
 
+function getEnabledFullPageSteps(steps) {
+  if (!Array.isArray(steps)) return [];
+  return steps.filter(step => step?.enabled !== false);
+}
+
 const fullPageInitialRenderMethods = {
+shouldRenderFullPageStepChrome() {
+  return Array.isArray(this.selectedBundle?.steps)
+    && this.selectedBundle.steps.length > 1;
+},
+
 updateMessagesFromBundle() {
 
   const messaging = this.selectedBundle?.messaging;
@@ -5201,10 +5211,11 @@ updateMessagesFromBundle() {
 
 applyPersonalizationAddonProducts() {
   const addonStep = this.buildAddonStepFromPersonalization();
-  if (!addonStep) return;
-
-  this.selectedBundle.steps = (this.selectedBundle.steps || []).filter(step => !step.isFreeGift);
-  this.selectedBundle.steps = [...(this.selectedBundle.steps || []), addonStep];
+  this.selectedBundle.steps = getEnabledFullPageSteps(this.selectedBundle.steps)
+    .filter(step => !step.isFreeGift);
+  if (addonStep) {
+    this.selectedBundle.steps = [...this.selectedBundle.steps, addonStep];
+  }
 },
 
 buildAddonStepFromPersonalization() {
@@ -5616,7 +5627,7 @@ async renderFullPageLayout() {
     contentSection.appendChild(promoBanner);
   }
 
-  if (this.config.showStepTimeline) {
+  if (this.config.showStepTimeline && this.shouldRenderFullPageStepChrome()) {
     const stepTimeline = this.createStepTimeline();
     contentSection.appendChild(stepTimeline);
   }
@@ -5692,7 +5703,7 @@ async renderFullPageLayoutWithSidebar() {
     this.elements.stepsContainer.appendChild(bundleBanners);
   }
 
-  if (this.config.showStepTimeline) {
+  if (this.config.showStepTimeline && this.shouldRenderFullPageStepChrome()) {
     this.elements.stepsContainer.appendChild(this.createStepTimeline());
   }
 
@@ -6600,6 +6611,8 @@ getCurrentStepContentText(stepIndex) {
 },
 
 createStepContentHeader(stepIndex) {
+  if (!this.shouldRenderFullPageStepChrome()) return null;
+
   const contentText = this.getCurrentStepContentText(stepIndex);
   if (!contentText.subtext) return null;
 
@@ -7752,10 +7765,8 @@ ensureTimelinePagingStyles() {
   return true;
 },
 
-shouldRenderMultipleCategoryTimelineEntry(step) {
-  if (!step || step.isFreeGift === true) return false;
-  if (this.getFullPageDesignPreset?.() === 'STANDARD') return false;
-  return this.getStepCategoryTabEntries(step).length > 1;
+shouldRenderMultipleCategoryTimelineEntry() {
+  return false;
 },
 
 createStepTimeline() {
@@ -8472,7 +8483,7 @@ getStepCategoryTabEntries(step) {
         displayVariantsAsSwatches: category.displayVariantsAsSwatches === true,
       };
     })
-    .filter(entry => entry && (entry.handles.length > 0 || entry.productIds.length > 0));
+    .filter(Boolean);
 },
 
 getActiveStepCategoryId(step) {
@@ -8521,12 +8532,8 @@ createActiveCategoryTitle(stepIndex) {
 },
 };
 
-function shouldCategoryTabActivateProducts({
-  designPreset,
-  viewportWidth,
-  hasCategoryEntries,
-}) {
-  return !(designPreset === 'STANDARD' && hasCategoryEntries && viewportWidth < 768);
+function shouldCategoryTabActivateProducts() {
+  return true;
 }
 
 const fullPageProductGridMethods = {
@@ -8730,24 +8737,7 @@ createFullPageProductGrid(stepIndex) {
 
   if (activeCollectionId) {
     if (activeCategory) {
-      const allowedProductIds = new Set();
-      activeCategory.productIds.forEach(productId => {
-        allowedProductIds.add(this.extractId(productId) || productId);
-      });
-      activeCategory.handles.forEach(handle => {
-        const collectionProductIds = this.stepCollectionProductIds[`${stepIndex}:${handle}`] || [];
-        collectionProductIds.forEach(productId => {
-          allowedProductIds.add(this.extractId(productId) || productId);
-        });
-      });
-
-      if (allowedProductIds.size > 0) {
-        products = products.filter(p => {
-          const numericPid = p.parentProductId || p.id || '';
-          return allowedProductIds.has(numericPid);
-        });
-        products = this.orderProductsForActiveCategory(products, activeCategory, stepIndex);
-      }
+      products = this.orderProductsForActiveCategory(products, activeCategory, stepIndex);
     } else if (step.collections) {
       const activeCollection = step.collections.find(c => c.id === activeCollectionId);
     if (activeCollection && activeCollection.handle) {
@@ -11437,7 +11427,9 @@ confirmClearCartSelection() {
 
 clearFullPageSelections() {
   const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
-  this.selectedProducts = steps.map(() => ({}));
+  this.selectedProducts = steps.map((_, stepIndex) => ({
+    ...this._getDirectDefaultSelectionQuantities(stepIndex),
+  }));
   this.currentStepIndex = 0;
   this.searchQuery = '';
   this.activeCollectionId = null;

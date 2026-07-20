@@ -40,10 +40,21 @@
     gap: 8px;
     align-items: stretch;
     justify-content: start;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     height: auto;
     margin-top: 0;
     margin-bottom: 0;
     padding: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="COMPACT"]
+    > .category-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .layout-sidebar[data-fpb-design-preset="COMPACT"]
