@@ -138,9 +138,9 @@ not execute row-by-row Admin mutations.
 | R06 | F0 | Multiple categories | Category navigation changes the visible catalog without losing state | **P** F0-EMPTY | **P** F0-EMPTY | **P** C01 | **P** C01 |
 | R07 | F0 | Long category labels | Labels wrap or scroll within their owner without page overflow | **P** F0-EMPTY | **P** F0-EMPTY | **P** F0-EMPTY | **P** C01 |
 | R08 | F0 | True empty category | EB hide/empty-state behavior is mirrored; no fabricated products | **P** F0-EMPTY | **P** F0-EMPTY | **P** F0-EMPTY | **P** F0-EMPTY |
-| R09 | F0 | Manual product source | Persisted manual products hydrate and render | **S** | **S** | **P** C01 | **P** C01 |
-| R10 | F0 | Collection-backed source | Collection products hydrate by batch, paginate, and filter correctly | **S** | **S** | **P** C01 | **P** C01 |
-| R11 | F0 | Mixed manual + collection | Both sources coexist without duplicates or state loss | **S** | **S** | **P** C01 | **P** C01 |
+| R09 | F0 | Manual product source | Persisted manual products hydrate and render | **P** F0-CLOSEOUT | **P** F0-CLOSEOUT | **P** C01 | **P** C01 |
+| R10 | F0 | Collection-backed source | Collection products hydrate by batch, paginate, and filter correctly | **P** F0-CLOSEOUT | **P** F0-CLOSEOUT | **P** C01 | **P** C01 |
+| R11 | F0 | Mixed manual + collection | Both sources coexist without duplicates or state loss | **P** F0-CLOSEOUT | **P** F0-CLOSEOUT | **P** C01 | **P** C01 |
 | R12 | F0 | Cloned step | Cloned structure remains independent and ordered | **P** F0-CLONE | **P** F0-CLONE | **P** F0-CLONE | **P** F0-CLONE |
 | R13 | F0 | Disabled step | Disabled Admin steps never render or block progression | **P** F0-SINGLE | **P** F0-SINGLE | **P** F0-DISABLED | **P** F0-DISABLED |
 | R14 | F0 | Step timeline | Current, completed, and future states match EB | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW |
@@ -192,7 +192,7 @@ time and restore the `F0` minimum/exact baseline after every permutation.
 
 | ID | Group | Feature / state | EB storefront contract | ST | CL | CO | HO |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| M01 | F0 | Desktop empty summary | Title, count, slots/rows, totals, and action render coherently | **S** | **S** | **S** | **P** C07 |
+| M01 | F0 | Desktop empty summary | Title, count, slots/rows, totals, and action render coherently | **P** F0-CLOSEOUT | **P** F0-CLOSEOUT | **P** F0-CLOSEOUT | **P** C07 |
 | M02 | F0 | Desktop partial/full summary | Selected order, quantities, images/text, totals, and removal stay synchronized | **P** F0-SUMMARY | **P** F0-SUMMARY | **P** F0-SUMMARY | **P** C07 |
 | M03 | F4 | Product Slots disabled | Summary uses the EB text/row branch | **P** P03 | **S** | **T** | **T** |
 | M04 | F4 | Product Slots enabled | Summary uses empty/filled image slots based on quantity rules | **P** P03 | **S** | **S** | **S** |
@@ -247,7 +247,7 @@ time and restore the `F0` minimum/exact baseline after every permutation.
 
 | ID | Group | Feature / state | EB storefront contract | ST | CL | CO | HO |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| S01 | F0 | Empty/one/multiple/overflow selection | State remains usable and content-driven | **S** | **S** | **P** C03 | **P** C03 |
+| S01 | F0 | Empty/one/multiple/overflow selection | State remains usable and content-driven | **P** F0-CLOSEOUT | **P** F0-CLOSEOUT | **P** C03 | **P** C03 |
 | S02 | F0 | Selection across category/step changes | Catalog and summary retain identical item identity | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW |
 | S03 | F4 | Valid default product/variant | Valid defaults initialize once and synchronize summary/card state | **S** | **S** | **S** | **S** |
 | S04 | F4 | Invalid/unavailable default | Invalid defaults are ignored or recovered without blocking load | **S** | **S** | **T** | **T** |
@@ -337,6 +337,7 @@ group. Screenshots, HAR files, and raw captures remain under `/private/tmp`.
 | `F0-SINGLE` | Temporary EB/WPB single-stage fixture with Step 2 and Add-Ons/Gifting disabled, replayed across all four presets at `390x844`. EB suppressed navigation-only timeline/step subtitle chrome. A shared behavior predicate brought WPB into parity on served widget `5.0.196` without preset branches or fixed layout geometry; products, the final cart action, and `390px / 390px` containment remained. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO,HO}/runtime-summary.md`, `tests/unit/assets/fpb-single-step-storefront.test.ts`, `tests/unit/assets/fpb-standard-mobile-summary-action.test.ts`, `test-spec/fpb-single-step-storefront.spec.md` |
 | `F0-CLONE` | Temporary EB/WPB clone of the first product step, replayed across all four presets at `390x844`. The original and clone remained ordered; the exercised source/target flows retained original-stage summary selections while clone product cards kept independent selection state. The clone was deleted and the rich Horizontal fixtures were fully restored afterward. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO,HO}/runtime-summary.md` |
 | `F0-SUMMARY` | EB/WPB Standard, Classic, and Compact `1280x800` default-baseline and six-plus-item summary stress. Clear now restores persisted defaults on served widget `5.0.197`; Standard delegates overflow to its existing selected-products scroller, Classic wraps from existing slot tokens, and Compact retains natural-height detail rows. Counts, totals, removals, and document containment stayed synchronized. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO}/runtime-summary.md`, `tests/unit/assets/fpb-clear-cart-confirmation.test.ts`, `test-spec/fpb-clear-cart-confirmation.spec.md` |
+| `F0-CLOSEOUT` | EB/WPB Standard, Classic, and Compact `1280x800` zero-item summaries after normal Admin persistence and exact shopper-session reset; Standard/Classic manual-plus-collection source activation with unique rendered keys and no intentional-overlap duplicates; and restored rich Horizontal defaults on both fixtures. Combined with `F0-SUMMARY`, this proves empty, one, multiple, removal, and overflow state for Standard and Classic. WPB served widget `5.0.197`; every replay stayed document-contained. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL,CO,HO}/runtime-summary.md` |
 
 `F0-192` does not claim true-empty equivalence. `F0-EMPTY` supersedes that
 assumption and keeps every design cell non-terminal unless both corrected EB
