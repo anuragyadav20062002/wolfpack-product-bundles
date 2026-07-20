@@ -153,7 +153,7 @@ not execute row-by-row Admin mutations.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | C01 | F0 | Complete card hierarchy | Image, title, price, variant identity, and action remain reachable | **P** F0-192 | **P** F0-192 | **P** C02 | **P** C02 |
 | C02 | F0 | Long title and content-driven height | Content wraps without clipping or card/action overlap | **P** F0-192 | **P** F0-192 | **P** C02 | **P** C02 |
-| C03 | F1 | Sale and compare-at price | Price cluster and visibility follow the saved setting | **S** | **S** | **P** C02 | **P** C02 |
+| C03 | F1 | Sale and compare-at price | Price cluster and visibility follow the saved setting | **P** F1-INDIVIDUAL | **P** F1-INDIVIDUAL | **P** F1-INDIVIDUAL | **P** F1-INDIVIDUAL |
 | C04 | F1 | Square, tall, and wide media | Mixed aspect ratios remain contained | **S** | **S** | **T** | **T** |
 | C05 | F1 | Missing media | EB behavior is recorded; WPB uses a stable accepted fallback if different | **S** | **S** | **T** | **T** |
 | C06 | F1 | Grouped variant selector | Option selection preserves product and variant identity | **S** | **P** C03 | **T** | **T** |
