@@ -226,6 +226,7 @@ closeModal() {
   if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
   document.body.style.overflow = '';
   this.setBottomSheetVisibility(false);
+  this._modalSlotReplacementTarget = null;
 
   // Update main UI
   this.renderSteps();

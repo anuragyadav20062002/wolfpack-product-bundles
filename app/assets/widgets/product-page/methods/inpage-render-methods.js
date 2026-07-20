@@ -411,7 +411,13 @@ createSelectedProductCard(item, cardIndex) {
 
   // Filled slots stay editable. Selection validation still runs inside the
   // picker, while reopening lets shoppers replace an exact-one choice.
-  makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
+  makeSlotCardKeyboardAccessible(stepBox, () => {
+    this._modalSlotReplacementTarget = {
+      stepIndex,
+      selectionKey: this.normalizeSelectionKey?.(variantId) || variantId,
+    };
+    this.openModal(stepIndex);
+  });
 
   return stepBox;
 },

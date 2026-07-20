@@ -109,7 +109,10 @@ export const modalSlotTemplateMethods = {
     stepBox.appendChild(label);
 
     // Click handler to open modal
-    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+    stepBox.addEventListener('click', () => {
+      this._modalSlotReplacementTarget = null;
+      this.openModal(stepIndex);
+    });
 
     return stepBox;
   },

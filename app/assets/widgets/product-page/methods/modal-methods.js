@@ -63,6 +63,30 @@ export function getModalSoleVariantDisplayTitle(product = {}) {
   return title && title !== 'Default Title' ? title : '';
 }
 
+export function resolveProductPageModalStepPosition({
+  stepIndex,
+  currentStepIndex,
+  stepCount,
+} = {}) {
+  if (
+    !Number.isInteger(stepIndex)
+    || !Number.isInteger(currentStepIndex)
+    || !Number.isInteger(stepCount)
+    || stepCount < 1
+    || stepIndex < 0
+    || currentStepIndex < 0
+    || stepIndex >= stepCount
+    || currentStepIndex >= stepCount
+  ) {
+    return 'hidden';
+  }
+
+  if (stepIndex === currentStepIndex) return 'current';
+  if (stepIndex === currentStepIndex - 1) return 'previous';
+  if (stepIndex === currentStepIndex + 1) return 'next';
+  return 'hidden';
+}
+
 export function applyProductPageVariantSelection({
   product = {},
   variantData = {},
@@ -153,13 +177,19 @@ renderModalTabs() {
     const isFreeGift = !!step.isFreeGift;
     // Free gift tab is only accessible when all paid steps are complete
     const freeGiftAccessible = !isFreeGift || this.isFreeGiftUnlocked;
+    const railPosition = resolveProductPageModalStepPosition({
+      stepIndex: index,
+      currentStepIndex: this.currentStepIndex,
+      stepCount,
+    });
 
     // Create tab button
     const tabButton = document.createElement('button');
     const freeGiftClass = isFreeGift ? ' bw-free-gift-tab' : '';
-    tabButton.className = `bundle-header-tab${freeGiftClass} ${isActive ? 'active' : ''} ${(!isAccessible || !freeGiftAccessible) ? 'locked' : ''}`;
+    tabButton.className = `bundle-header-tab${freeGiftClass} bw-bs-step-${railPosition} ${isActive ? 'active' : ''} ${(!isAccessible || !freeGiftAccessible) ? 'locked' : ''}`;
     tabButton.textContent = (step.isFreeGift && step.addonLabel) ? step.addonLabel : (step.name || `Step ${index + 1}`);
     tabButton.dataset.stepIndex = index.toString();
+    if (isActive) tabButton.setAttribute('aria-current', 'step');
 
     // Click handler
     tabButton.addEventListener('click', async () => {

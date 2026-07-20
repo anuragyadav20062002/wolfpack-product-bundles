@@ -62,7 +62,7 @@
 
 #bundle-builder-modal.bw-bs-panel .bw-bs-product-grid {
   grid-template-columns: repeat(auto-fit, minmax(228px, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: auto;
   gap: 30px;
   padding: 16px 65px 150px;
 }
@@ -92,6 +92,10 @@
 
   #bundle-builder-modal.bw-bs-panel {
     overflow-y: auto;
+  }
+
+  #bundle-builder-modal.bw-bs-panel::before {
+    display: none;
   }
 
   #bundle-builder-modal.bw-bs-panel .bw-bs-body {
@@ -179,6 +183,10 @@
   height: 100%;
   max-height: none;
   text-align: center;
+}
+
+#bundle-builder-modal.bw-bs-panel .modal-body .product-card.skeleton-loading {
+  min-height: clamp(264px, 27.4vw, 351px);
 }
 
 #bundle-builder-modal.bw-bs-panel .modal-body .product-card.selected,
