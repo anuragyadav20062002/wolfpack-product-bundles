@@ -54,6 +54,7 @@ Uploaded banner previews must retain the empty dropzone dimensions and contain t
 |---|---|---|---|---|
 | 1 | Banner upload button | `uploadButtonAction: openPicker` | Clicking Upload image invokes the asset-picker open action | Direct file upload remains the default elsewhere |
 | 2 | Mobile banner drop zone | `triggerIcon: mobile` | Trigger renders the mobile device icon | Desktop remains the default icon |
+| 3 | Uploaded banner actions | Filled banner preview | Overflow menu exposes Change image and Remove image actions | Keeps the preview unobstructed |
 
 ## Acceptance Criteria
 
@@ -62,4 +63,5 @@ Uploaded banner previews must retain the empty dropzone dimensions and contain t
 - [x] Banner Upload image buttons open the existing asset picker.
 - [x] Mobile banner drop zones use a mobile icon.
 - [x] Uploaded banner previews retain the dropzone dimensions and contain the complete image.
+- [x] Uploaded banner actions use a compact overflow menu.
 - [x] Focused lint, app build, graph rebuild, and browser verification pass.

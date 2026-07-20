@@ -13,6 +13,7 @@ type FilePickerTriggerProps = {
   triggerIcon: "desktop" | "mobile";
   uploadButtonAction: "upload" | "openPicker";
   fitPreviewToTrigger: boolean;
+  previewActionsMenuId: string;
   triggerIsUploading: boolean;
   uploadStatus: "idle" | "uploading" | "polling" | "success" | "timeout" | "error";
   handleOpen: () => void;
@@ -29,6 +30,7 @@ export function FilePickerTrigger({
   triggerIcon,
   uploadButtonAction,
   fitPreviewToTrigger,
+  previewActionsMenuId,
   triggerIsUploading,
   uploadStatus,
   handleOpen,
@@ -65,20 +67,22 @@ export function FilePickerTrigger({
               position: "absolute",
               top: "8px",
               right: "8px",
-              padding: "4px 8px",
-              border: "1px solid #c9cccf",
-              borderRadius: "6px",
-              background: "#fff",
             }}
           >
-            <InlineStack gap="200">
-              <Button variant="plain" size="slim" onClick={handleOpen}>
-                Change
-              </Button>
-              <Button variant="plain" tone="critical" size="slim" icon={XCircleIcon} onClick={handleRemove}>
-                Remove
-              </Button>
-            </InlineStack>
+            <s-button
+              commandFor={previewActionsMenuId}
+              icon="menu-horizontal"
+              variant="secondary"
+              accessibilityLabel="Banner image actions"
+            />
+            <s-menu id={previewActionsMenuId} accessibilityLabel="Banner image actions">
+              <s-button icon="edit" onClick={handleOpen}>
+                Change image
+              </s-button>
+              <s-button icon="delete" tone="critical" onClick={handleRemove}>
+                Remove image
+              </s-button>
+            </s-menu>
           </div>
         </div>
       );
