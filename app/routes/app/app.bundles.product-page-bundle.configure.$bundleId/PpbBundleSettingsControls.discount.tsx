@@ -1,4 +1,5 @@
 import { usePpbConfigureContext } from "./PpbConfigureContext";
+import { runAfterSaveBarLeaveConfirmation } from "../../../lib/admin-savebar-navigation.client";
 
 const CART_DISCOUNT_DISPLAY_OPTIONS = [
   {
@@ -21,6 +22,7 @@ export function PpbCartDiscountDisplaySettings() {
     PRODUCT_PAGE_EDIT_DEFAULTS_HREF,
     QuestionHelpTooltip,
     setTextOverrides,
+    shopify,
     textOverrides,
   } = usePpbConfigureContext();
 
@@ -46,7 +48,7 @@ export function PpbCartDiscountDisplaySettings() {
               const targetHref = authSearch
                 ? `${PRODUCT_PAGE_EDIT_DEFAULTS_HREF}&${authSearch}`
                 : PRODUCT_PAGE_EDIT_DEFAULTS_HREF;
-              window.location.assign(targetHref);
+              void runAfterSaveBarLeaveConfirmation(shopify, () => window.location.assign(targetHref));
             }}
             style={{
               display: "inline-flex",

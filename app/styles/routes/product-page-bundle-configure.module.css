@@ -113,8 +113,8 @@
 }
 
 .readinessButtonLow {
-  background: #fff1f1;
-  border-color: #ffd6d6;
+  background: #fff8e6;
+  border-color: #e8c56d;
 }
 
 .readinessButtonMedium {
@@ -1320,31 +1320,35 @@
   inset: 0;
   z-index: 2147483000;
   display: flex;
-  align-items: flex-end;
-  justify-content: stretch;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: clamp(16px, 4vw, 40px);
   background: rgba(17, 24, 39, 0.42);
 }
 
 .templateDialog {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100dvh;
-  max-height: 100dvh;
+  width: min(1080px, 100%);
+  height: min(760px, 100%);
+  max-height: 100%;
   overflow: hidden;
-  border-radius: 16px 16px 0 0;
+  border-radius: 16px;
   background: #ffffff;
   outline: none;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.16);
-  animation: templateDrawerSlideUp 260ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24);
+  animation: templateModalEnter 180ms ease-out both;
 }
 
-@keyframes templateDrawerSlideUp {
+@keyframes templateModalEnter {
   from {
-    transform: translateY(100%);
+    opacity: 0;
+    transform: scale(0.98);
   }
   to {
-    transform: translateY(0);
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -1377,19 +1381,7 @@
 }
 
 .templateDialogHandle {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  padding: 10px 0 2px;
-}
-
-.templateDialogHandle::before {
-  content: "";
-  display: block;
-  width: 36px;
-  height: 4px;
-  border-radius: 2px;
-  background: #d0d0d0;
+  display: none;
 }
 
 .templateDialogClose {
@@ -2281,8 +2273,37 @@
 }
 
 @media (max-width: 760px) {
+  .editCanvas {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 12px;
+    box-sizing: border-box;
+    overflow-x: clip;
+  }
+
+  .visibilityGuideGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ruleFields,
+  .categoryRuleFields {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .bxyRewardGrid {
     grid-template-columns: 1fr;
+  }
+
+  .templateDialogBackdrop {
+    padding: 12px;
+  }
+
+  .templateDialog {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
   }
 
   .templateDialogIntro {

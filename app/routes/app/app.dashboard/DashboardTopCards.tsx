@@ -4,12 +4,10 @@ import dashboardStyles from "./dashboard.module.css";
 
 type DashboardTopCardsProps = {
   handleDirectChat: () => void;
-  handleAppEmbedCardClick: () => void;
 };
 
 export function DashboardTopCards({
   handleDirectChat,
-  handleAppEmbedCardClick,
 }: DashboardTopCardsProps) {
   const { t } = useTranslation();
   return (
@@ -50,27 +48,48 @@ export function DashboardTopCards({
       </div>
     </div>
 
-    <button
-      type="button"
-      className={dashboardStyles.appEmbedCard}
-      onClick={handleAppEmbedCardClick}
-    >
-      <s-stack direction="block" gap="base">
-        <div className={dashboardStyles.appEmbedCardHeader}>
-          <s-heading>{t("dashboard.appEmbeds.headingMain")} <span className={dashboardStyles.appEmbedHeadingHint}>{t("dashboard.appEmbeds.headingHint")}</span></s-heading>
-          <s-icon type="external" color="subdued" />
+    <div className={`${dashboardStyles.supportCard} ${dashboardStyles.supportIssuesCard}`}>
+      <div className={`${dashboardStyles.supportCardHero} ${dashboardStyles.supportIssuesHero}`}>
+        <p className={dashboardStyles.supportCardHeroTitle}>{t("dashboard.supportIssues.title")}</p>
+        <p className={dashboardStyles.supportCardHeroDesc}>{t("dashboard.supportIssues.description")}</p>
+      </div>
+      <div className={dashboardStyles.supportIssuesBody}>
+        <s-stack direction="block" gap="small-100">
+          <s-stack direction="inline" alignItems="center" gap="small-100">
+            <s-icon type="question-circle" color="subdued" />
+            <s-text>{t("dashboard.supportIssues.featureNotWorking")}</s-text>
+          </s-stack>
+          <s-stack direction="inline" alignItems="center" gap="small-100">
+            <s-icon type="question-circle" color="subdued" />
+            <s-text>{t("dashboard.supportIssues.bundleNotShowing")}</s-text>
+          </s-stack>
+          <s-stack direction="inline" alignItems="center" gap="small-100">
+            <s-icon type="question-circle" color="subdued" />
+            <s-text>{t("dashboard.supportIssues.uninstallHelp")}</s-text>
+          </s-stack>
+          <s-stack direction="inline" alignItems="center" gap="small-100">
+            <s-icon type="question-circle" color="subdued" />
+            <s-text>{t("dashboard.supportIssues.storeDesignHelp")}</s-text>
+          </s-stack>
+          <s-stack direction="inline" alignItems="center" gap="small-100">
+            <s-icon type="question-circle" color="subdued" />
+            <s-text>{t("dashboard.supportIssues.analyticsNotWorking")}</s-text>
+          </s-stack>
+        </s-stack>
+        <div className={dashboardStyles.supportIssuesCta}>
+          <s-button
+            icon="chat"
+            inlineSize="fill"
+            onClick={handleDirectChat}
+          >
+            {t("dashboard.supportIssues.cta")}
+          </s-button>
+          <span className={dashboardStyles.supportIssuesExternalIcon} aria-hidden="true">
+            <s-icon type="external" color="subdued" />
+          </span>
         </div>
-        <OptimisedImage
-          src="/appEmbed.avif"
-          alt=""
-          aria-hidden="true"
-          className={dashboardStyles.appEmbedImage}
-          width={1096}
-          height={304}
-        />
-        <s-text color="subdued">{t("dashboard.appEmbeds.instruction")}</s-text>
-      </s-stack>
-    </button>
+      </div>
+    </div>
   </div>
   );
 }

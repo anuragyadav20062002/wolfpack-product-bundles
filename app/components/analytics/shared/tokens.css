@@ -21,8 +21,8 @@
   --wpb-accent-engagement-soft: #cce5e3;
   --wpb-accent-revenue: #b08800;
   --wpb-accent-revenue-soft: #f3e9c8;
-  --wpb-accent-warning: #d4493e;
-  --wpb-accent-warning-soft: #fad7d2;
+  --wpb-accent-warning: #a36f00;
+  --wpb-accent-warning-soft: #f6e6b7;
   --wpb-accent-success: #2f8a52;
 
   /* ── Lines / shadows ───────────────────────────────────────────── */
@@ -56,6 +56,8 @@
 /* ── Shared atoms (used by multiple components) ─────────────────── */
 
 .wpb-card {
+  box-sizing: border-box;
+  min-width: 0;
   background: var(--wpb-ink-100);
   border: 1px solid var(--wpb-line);
   border-radius: var(--wpb-radius);
@@ -520,4 +522,55 @@
 .wpb-preset-chip[data-preset="CLASSIC"],
 .wpb-preset-chip[data-preset="COMPACT"] {
   background: #e0dacc;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --wpb-pad: 20px;
+  }
+
+  .wpb-card--hero {
+    padding: 24px;
+  }
+
+  .wpb-funnel-grid[data-step-count="4"],
+  .wpb-funnel-grid[data-step-count="5"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wpb-matrix-table {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 520px) {
+  :root {
+    --wpb-pad: 16px;
+  }
+
+  .wpb-card--hero {
+    padding: 20px;
+  }
+
+  .wpb-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .wpb-two-column-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wpb-display-num--funnel {
+    font-size: 32px;
+  }
+
+  .wpb-activity-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .wpb-activity-row > .wpb-nowrap {
+    grid-column: 2;
+  }
 }

@@ -111,7 +111,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 
   const bundles = await bundlesPromise;
-
   const bundlesNeedingBackfill = bundles.filter(
     b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId && !b.shopifyProductHandle
   );

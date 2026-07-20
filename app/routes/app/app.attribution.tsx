@@ -107,12 +107,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const fromLabel = since.toISOString().split("T")[0];
     const toLabel   = until.toISOString().split("T")[0];
 
-    return new Response(csv, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="wolfpack-analytics-${fromLabel}-to-${toLabel}.csv"`,
-      },
+    return json({
+      success: true,
+      csv,
+      filename: `wolfpack-analytics-${fromLabel}-to-${toLabel}.csv`,
     });
   }
 

@@ -9,7 +9,10 @@ jest.mock("../../../app/shopify.server", () => ({
 
 jest.mock("../../../app/db.server", () => ({
   __esModule: true,
-  default: { session: {} },
+  default: {
+    session: {},
+    shop: { findUnique: jest.fn() },
+  },
 }));
 
 jest.mock("../../../app/services/offline-token.server", () => ({
@@ -68,6 +71,7 @@ const { ensureShopHasExpiringOfflineSession } = require("../../../app/services/o
 const { loadShopAdminLocale } = require("../../../app/services/admin-locale.server");
 const { getPolarisLocale } = require("../../../app/i18n/polaris-locales.server");
 const { AppLogger } = require("../../../app/lib/logger");
+const prisma = require("../../../app/db.server").default;
 
 function makeDeferred<T = unknown>() {
   let resolve!: (value: T) => void;
@@ -90,6 +94,7 @@ describe("app layout loader bootstrap performance", () => {
     authenticate.admin.mockResolvedValue({ session: mockSession });
     loadShopAdminLocale.mockResolvedValue("en");
     getPolarisLocale.mockReturnValue({ locale: "en" });
+    prisma.shop.findUnique.mockResolvedValue(null);
     ensureShopHasExpiringOfflineSession.mockReset();
     AppLogger.error.mockReset();
   });

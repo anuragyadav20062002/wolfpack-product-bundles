@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
  * Version : 5.0.189
- * Built   : 2026-07-16
+ * Built   : 2026-07-20
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -3923,7 +3923,10 @@ const modalSlotTemplateMethods = {
     label.textContent = isModalSlotTemplate ? `Product ${slotNumber}` : step.name || `Step ${stepIndex + 1}`;
     stepBox.appendChild(label);
 
-    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+    stepBox.addEventListener('click', () => {
+      this._modalSlotReplacementTarget = null;
+      this.openModal(stepIndex);
+    });
 
     return stepBox;
   },
@@ -6124,6 +6127,7 @@ closeModal() {
   if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
   document.body.style.overflow = '';
   this.setBottomSheetVisibility(false);
+  this._modalSlotReplacementTarget = null;
 
   this.renderSteps();
   this.updateAddToCartButton();
@@ -7566,7 +7570,13 @@ createSelectedProductCard(item, cardIndex) {
   productTitle.title = product.title;
   stepBox.appendChild(productTitle);
 
-  makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
+  makeSlotCardKeyboardAccessible(stepBox, () => {
+    this._modalSlotReplacementTarget = {
+      stepIndex,
+      selectionKey: this.normalizeSelectionKey?.(variantId) || variantId,
+    };
+    this.openModal(stepIndex);
+  });
 
   return stepBox;
 },
@@ -8722,6 +8732,30 @@ function getModalSoleVariantDisplayTitle(product = {}) {
   return title && title !== 'Default Title' ? title : '';
 }
 
+function resolveProductPageModalStepPosition({
+  stepIndex,
+  currentStepIndex,
+  stepCount,
+} = {}) {
+  if (
+    !Number.isInteger(stepIndex)
+    || !Number.isInteger(currentStepIndex)
+    || !Number.isInteger(stepCount)
+    || stepCount < 1
+    || stepIndex < 0
+    || currentStepIndex < 0
+    || stepIndex >= stepCount
+    || currentStepIndex >= stepCount
+  ) {
+    return 'hidden';
+  }
+
+  if (stepIndex === currentStepIndex) return 'current';
+  if (stepIndex === currentStepIndex - 1) return 'previous';
+  if (stepIndex === currentStepIndex + 1) return 'next';
+  return 'hidden';
+}
+
 function applyProductPageVariantSelection({
   product = {},
   variantData = {},
@@ -8811,12 +8845,18 @@ renderModalTabs() {
     const isFreeGift = !!step.isFreeGift;
 
     const freeGiftAccessible = !isFreeGift || this.isFreeGiftUnlocked;
+    const railPosition = resolveProductPageModalStepPosition({
+      stepIndex: index,
+      currentStepIndex: this.currentStepIndex,
+      stepCount,
+    });
 
     const tabButton = document.createElement('button');
     const freeGiftClass = isFreeGift ? ' bw-free-gift-tab' : '';
-    tabButton.className = `bundle-header-tab${freeGiftClass} ${isActive ? 'active' : ''} ${(!isAccessible || !freeGiftAccessible) ? 'locked' : ''}`;
+    tabButton.className = `bundle-header-tab${freeGiftClass} bw-bs-step-${railPosition} ${isActive ? 'active' : ''} ${(!isAccessible || !freeGiftAccessible) ? 'locked' : ''}`;
     tabButton.textContent = (step.isFreeGift && step.addonLabel) ? step.addonLabel : (step.name || `Step ${index + 1}`);
     tabButton.dataset.stepIndex = index.toString();
+    if (isActive) tabButton.setAttribute('aria-current', 'step');
 
     tabButton.addEventListener('click', async () => {
 
@@ -8988,18 +9028,15 @@ renderModalProducts(stepIndex, productsToRender = null) {
 
     const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
     const atMaxStock = available !== null && currentQuantity >= available;
-    const lowStock = available !== null && available > 0 && available <= 3;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const soleVariantDisplayTitle = getModalSoleVariantDisplayTitle(product);
 
-      const stockBadge = outOfStock
-        ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
-        : lowStock
-          ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
-          : '';
-      return `
+    const stockBadge = outOfStock
+      ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
+      : '';
+    return `
       <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
@@ -9434,7 +9471,25 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     return;
   }
 
+  const replacementTarget = this._modalSlotReplacementTarget;
+  const replacementSelectionKey = replacementTarget?.stepIndex === stepIndex
+    ? this.normalizeSelectionKey(replacementTarget.selectionKey)
+    : '';
+  const replacementQuantity = replacementSelectionKey
+    ? this.getSelectedQuantity(stepIndex, replacementSelectionKey)
+    : 0;
+  const isReplacingFilledSlot = quantity > 0
+    && replacementQuantity > 0
+    && replacementSelectionKey !== selectionKey;
+
+  if (isReplacingFilledSlot) {
+    this.setSelectedQuantity(stepIndex, replacementSelectionKey, 0);
+  }
+
   if (!this.validateStepCondition(stepIndex, selectionKey, quantity)) {
+    if (isReplacingFilledSlot) {
+      this.setSelectedQuantity(stepIndex, replacementSelectionKey, replacementQuantity);
+    }
     return;
   }
 
@@ -9450,7 +9505,13 @@ updateProductSelection(stepIndex, productId, newQuantity) {
   }
 
   this.setSelectedQuantity(stepIndex, selectionKey, quantity);
+  if (replacementTarget?.stepIndex === stepIndex) {
+    this._modalSlotReplacementTarget = null;
+  }
 
+  if (isReplacingFilledSlot) {
+    this.updateProductQuantityDisplay(stepIndex, replacementSelectionKey, 0);
+  }
   this.updateProductQuantityDisplay(stepIndex, selectionKey, quantity);
   this._renderDirectDefaultProducts();
   this.renderModalTabs();
