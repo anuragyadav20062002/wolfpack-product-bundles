@@ -1,3 +1,30 @@
+---
+schema_version: 1
+id: widget-refactor-loop-ledger
+title: Widget Refactor Loop Ledger
+type: implementation-ledger
+status: active
+summary: Records bounded storefront widget refactor and verification loops.
+last_audited: 2026-07-20
+owners:
+  - Wolfpack Product Bundles
+domains:
+  - storefront
+systems:
+  - bundle-widgets
+source_paths:
+  - app/assets/bundle-widget-full-page.js
+  - app/assets/bundle-widget-product-page.js
+related_docs:
+  - docs/refactor/full-page-and-product-page-template-verification-matrix.md
+tags:
+  - refactor
+  - verification
+keywords:
+  - widget loop
+  - storefront parity
+---
+
 # Widget Refactor Loop Ledger
 
 ## Loop 1 - Baseline Inventory and Visual Capture
@@ -505,6 +532,43 @@ Visual URLs checked: None in this loop; Chrome DevTools page listing remained un
 Screenshots captured: None.
 
 Known follow-ups: Standard, Classic, and Horizontal still own runtime CSS through template JS style tags; all-8-template visual matrix and add-to-cart verification remain pending.
+
+## Loop 53 - FPB Compact and Horizontal Storefront Parity
+
+Pass/fail: Pass for the current persisted Compact and Horizontal design slice. Compact no longer inherits Horizontal row-card geometry. Horizontal retains row cards and now owns underline category tabs on mobile. Shared widget behavior was not changed.
+
+Tests and checks run:
+
+- `npm run build:widgets`
+- `npm run minify:assets css`
+- `node --check scripts/build-widget-bundles.js`
+- `node --check app/assets/bundle-widget-full-page.js`
+- `node --check extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js`
+- `node --check extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js`
+- `node --check extensions/bundle-builder/assets/wolfpack-bundles-sdk.js`
+- `npx eslint --max-warnings 9999 scripts/build-widget-bundles.js`
+- `npm run graphify:rebuild`
+- `git diff --check`
+- Direct Chrome DevTools MCP geometry and overflow checks at `1440x900`, `1280x800`, `768x1024`, `390x844`, and `360x800`
+
+Visual URLs checked:
+
+- Competitor FPB fixture: `https://yash-wolfpack.myshopify.com/apps/gbb/easybundle/1?page=addProductsPage1&currentFlow=byob`
+- Wolfpack FPB preview: bundle `cmr361mz50000v00yrdeyxpf7` on `agent-5sfidg3m.myshopify.com`
+
+Live evidence:
+
+- Widget version `5.0.190` loaded only the shared full-page stylesheet plus the matching Compact or Horizontal preset stylesheet.
+- Compact desktop rendered three stacked image-first card columns and a responsive right summary.
+- Compact mobile rendered a `370px` grid at `x=10`, two `177.5px` columns, a `15px` gap, stable selected-card height, and zero horizontal overflow at `390x844`.
+- Horizontal desktop rendered two row-card columns and a right summary. Mobile rendered one row-card column with underline category tabs and zero horizontal overflow at `390x844`.
+- Both designs passed add, quantity controls, maximum enforcement, remove, summary, and navigation checks.
+- Both persisted designs completed Add to Cart and reached checkout with the selected bundle line.
+- Compact and Horizontal passed all five required viewports with zero positive page overflow; long category labels remain inside contained horizontal scrollers.
+
+Screenshots captured: Raw evidence remains outside the repository under `/private/tmp/fpb-compact-horizontal-parity/`.
+
+Known follow-ups: Run a cache-bypassed post-deploy CDN smoke pass after the operator completes the manual SIT deploy. Standard and Classic remain pending current replay in the canonical verification matrix.
 
 ## Loop 50 - FPB Method Module Semantic Names
 
