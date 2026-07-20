@@ -674,7 +674,7 @@
   body[wpbmix-template-type="PDP_MODAL"]
     #bundle-builder-modal.bw-bs-panel
     .bw-bs-footer {
-    bottom: 22px;
+    bottom: max(44px, calc(24px + env(safe-area-inset-bottom, 0px)));
     width: min(270px, calc(100% - 48px));
     height: 76px;
   }
