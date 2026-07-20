@@ -249,6 +249,7 @@
     > .category-tabs
     .category-tab.active {
     border: 0;
+    border-bottom: 2px solid currentColor;
     background: transparent;
     color: #000;
   }
@@ -622,6 +623,78 @@
 
   .fpb-h .sidebar-content {
     padding: 20px 0 var(--fpb-horizontal-sidebar-content-padding-bottom, 120px);
+  }
+
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] > .category-tabs {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    grid-template-columns: repeat(2, max-content);
+    grid-template-rows: 49px;
+    gap: 20px;
+    align-items: stretch;
+    justify-content: start;
+    width: calc(100vw - 20px);
+    height: 49px;
+    margin: 20px 0 15px;
+    padding: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]
+    > .category-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]
+    > .category-tabs
+    .category-tab {
+    display: grid;
+    grid-template-columns: max-content 0;
+    grid-template-rows: 27px;
+    gap: 5px;
+    align-items: center;
+    justify-content: start;
+    height: 49px;
+    padding: 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: rgba(18, 18, 18, 0.75);
+    font-family: Assistant, sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 27px;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]
+    > .category-tabs
+    .category-tab.active {
+    border: 0;
+    border-bottom: 2px solid currentColor;
+    background: transparent;
+    color: #000;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]
+    > .category-tabs
+    .category-tab
+    .tab-label {
+    color: #000;
+    font-family: Assistant, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 27px;
+    letter-spacing: 0;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]
+    > .category-tabs
+    .category-tab
+    .tab-indicator {
+    display: none;
   }
 
   .fpb-h .full-page-product-grid {
