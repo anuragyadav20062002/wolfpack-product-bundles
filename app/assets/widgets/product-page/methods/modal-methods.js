@@ -368,19 +368,15 @@ renderModalProducts(stepIndex, productsToRender = null) {
     // Per-variant stock state derived from Storefront API quantityAvailable
     const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
     const atMaxStock = available !== null && currentQuantity >= available;
-    const lowStock = available !== null && available > 0 && available <= 3;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const soleVariantDisplayTitle = getModalSoleVariantDisplayTitle(product);
 
-    // Low-stock / out-of-stock badge — shown on the image, not in the CTA.
-      const stockBadge = outOfStock
-        ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
-        : lowStock
-          ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
-          : '';
-      return `
+    const stockBadge = outOfStock
+      ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
+      : '';
+    return `
       <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">

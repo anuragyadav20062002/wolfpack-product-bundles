@@ -456,12 +456,7 @@
   }
 
   .bw-bs-close-mobile {
-    display: block;
-    top: -7px;
-    width: 45px;
-    height: 45px;
-    border-radius: 0;
-    outline: 0;
+    display: none;
   }
 
   .bw-bs-close-mobile svg {
@@ -488,6 +483,7 @@
 .bw-bs-tabs {
   display: block;
   position: relative;
+  overflow: visible;
   padding: 0 1px;
 }
 
@@ -536,7 +532,7 @@
 #bundle-builder-modal.bw-bs-panel .bw-bs-tabs .bundle-header-tab.bw-bs-step-next {
   right: -20px;
   min-width: 104px;
-  padding-right: 36px;
+  padding-left: 36px;
   border-bottom: 4px solid var(--bundle-global-primary-button, #1e1e1e);
 }
 
@@ -545,7 +541,7 @@
   .bundle-header-tab.bw-bs-step-previous::before,
 #bundle-builder-modal.bw-bs-panel
   .bw-bs-tabs
-  .bundle-header-tab.bw-bs-step-next::after {
+  .bundle-header-tab.bw-bs-step-next::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -564,8 +560,8 @@
 
 #bundle-builder-modal.bw-bs-panel
   .bw-bs-tabs
-  .bundle-header-tab.bw-bs-step-next::after {
-  right: 20px;
+  .bundle-header-tab.bw-bs-step-next::before {
+  left: 20px;
   transform: translateY(-50%) rotate(45deg);
 }
 
