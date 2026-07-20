@@ -4,8 +4,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 jest.mock("@remix-run/react", () => ({
   Outlet: () => React.createElement("main", null, "outlet"),
   useLoaderData: jest.fn(),
+  useNavigate: () => jest.fn(),
   useRouteError: () => null,
   isRouteErrorResponse: jest.fn(),
+}));
+
+jest.mock("@shopify/app-bridge-react", () => ({
+  useAppBridge: () => ({ saveBar: { leaveConfirmation: jest.fn() } }),
 }));
 
 jest.mock("@shopify/shopify-app-remix/server", () => ({

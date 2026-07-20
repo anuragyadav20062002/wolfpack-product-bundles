@@ -50,7 +50,7 @@ export function useConfigureActionController(flow: ConfigureBundleFlowDraft) {
       "Save or discard your changes before moving to another section.",
       { isError: true, duration: 5000 },
     );
-    void (flow.shopify as any).saveBar?.leaveConfirmation?.();
+    void flow.shopify.saveBar.leaveConfirmation();
   }, [flow]);
   const handleBackClick = useCallback(() => {
     if (flow.isDirty && !flow.forceNavigation) {

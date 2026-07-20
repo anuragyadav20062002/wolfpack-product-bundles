@@ -5,7 +5,7 @@ title: Wolfpack Product Bundles App Navigation and UI Map
 type: navigation-map
 status: authoritative
 summary: Routes, screens, actions, modals, and storefront-preview flows for the embedded app.
-last_audited: 2026-07-14
+last_audited: 2026-07-20
 owners:
   - engineering
 domains:
@@ -29,7 +29,7 @@ keywords:
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-07-14
+**Last Updated:** 2026-07-20
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -43,7 +43,7 @@ provides a persistent left-nav with the app's registered nav items.
 ### Shopify Admin Left Nav (app section)
 
 ```
-Wolfpack: Product Bundles -SIT
+Wolfpack Bundles SIT
 ├── [root]              → /app/dashboard          (Dashboard)
 ├── Settings            → /app/settings
 ├── Integrations        → /app/integrations
@@ -65,12 +65,13 @@ Wolfpack: Product Bundles -SIT
 
 ```
 Dashboard
-├── Header: "Dashboard: Wolfpack Bundle Builder"
+├── Header: "Dashboard: Wolfpack Bundles"
 ├── Subheader: "Access your bundles, customer support & more."
 │
 ├── [Button] "Create Bundle"  → opens Create Bundle Modal
 ├── Language selector → persists one shop-wide embedded Admin UI language for all staff accounts on change
-│
+├── Existing founder support card → direct support chat
+├── Existing support issues card → purple hero, feature/storefront/uninstall help, and direct support chat
 ├── Section: "Your Bundles"
 │   └── DataTable of bundles (empty state if none exist)
 │       └── Per bundle row:
@@ -152,6 +153,10 @@ Settings
 
 Primary action:
 - Design card Configure opens the Settings -> Design subpage
+- The Design Control Panel keeps its controls and selected storefront preview visible together on desktop.
+- Unsaved design values are applied to an app-owned bundle preview through a validated CSS-variable contract; arbitrary CSS and cart mutations are rejected.
+- Design controls are unavailable until at least one storefront-ready bundle exists.
+- Settings back actions await App Bridge Save Bar leave confirmation while unsaved changes exist.
 
 ---
 
@@ -186,7 +191,9 @@ Analytics Page (revamped — issue wpb-analytics-revamp-1)
 ├── Header: "Analytics" (ui-title-bar) + breadcrumb to /app/dashboard
 ├── No-data banner (s-banner) — pixel-active vs not-enabled copy
 ├── Pixel toggle: Enable/disable UTM tracking pixel
-├── Toolbar: Compare-period chip · [Export CSV] · [Compare] · Date range selector
+├── Toolbar: Compare-period chip · [Export CSV] · [Compare on/off] · Date range selector
+├── Custom UTM card → App Bridge contextual Save Bar with Save and Discard
+├── Attribution backfill → persistent success/error banner
 │
 ├── ── Section 1 ── FUNNEL HERO ── (app/components/analytics/FunnelHero.tsx)
 │   └── Engaged → Added-to-Cart → Checked Out → Revenue bars
@@ -214,7 +221,7 @@ Analytics Page (revamped — issue wpb-analytics-revamp-1)
 ```
 
 **Visual tokens:** `app/components/analytics/shared/tokens.css`
-- engagement teal `#0E7C7B`, revenue gold `#B08800`, drop-off coral `#D4493E`
+- engagement teal `#0E7C7B`, revenue gold `#B08800`, warning amber `#A36F00`
 - 44 px hero numerics · 11 px uppercase labels · 12 px radius · warm `#F5F2EE` bg
 
 **Server helpers:** `app/lib/analytics/engagement-helpers.ts`
@@ -452,13 +459,20 @@ Billing Page
 ### Flow C: Design Customisation
 ```
 /app/settings
-  └── [Customize] (FPB or PDP)
-      └── Max modal opens
-          ├── Click Design card → Settings -> Design panel opens
-          ├── Change setting → Preview iframe updates via postMessage (no reload)
-          ├── [Mobile] viewport toggle → iframe resets to 375px
-          ├── [Floating Footer] layout toggle (FPB) → crossfade to other iframe
-          └── [Save] → Save Bar submits → toast confirmation
+  └── Click Design card → Settings -> Design panel opens
+      ├── Select storefront-ready bundle for the adjacent preview
+      ├── Change setting → app-owned live preview updates immediately (no persistence)
+      ├── Preview blocks add-to-cart and form submission
+      └── [Save] → Save Bar submits → toast confirmation
+```
+
+### Flow C2: Unsaved Navigation Protection
+```
+Dirty Admin form
+  └── App nav, Settings back, configure Design Control Panel, or PPB section change
+      └── App Bridge Save Bar leaveConfirmation()
+          ├── Discard/leave → requested navigation continues
+          └── Stay → current form and unsaved values remain
 ```
 
 ### Flow D: Billing Upgrade

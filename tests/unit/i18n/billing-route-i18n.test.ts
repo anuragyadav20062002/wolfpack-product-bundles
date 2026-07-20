@@ -20,7 +20,7 @@ const requiredKeys = [
   "billing.route.totalSteps", "billing.route.productPage", "billing.route.fullPage",
   "billing.route.cancelSubscription", "billing.route.cancelHeading", "billing.route.downgradeBody",
   "billing.route.archiveWarning", "billing.route.confirmCancellation", "billing.route.keepSubscription",
-  "billing.route.features", "billing.route.wantMore", "billing.route.viewPlans",
+  "billing.route.features",
   "billing.route.needHelp", "billing.route.helpBody", "billing.actions.contactSupport",
 ];
 

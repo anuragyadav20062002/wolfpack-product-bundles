@@ -171,6 +171,8 @@ Check availability: `mcp__shopify-dev-mcp__learn_shopify_api(api: "polaris-app-h
 
 ## 🔄 No Backwards Compatibility Rule
 
+Do not consider writing any fallbacks to support legacy code. Ignore any legacy code and strive to update/remove any legacy code when you encounter it.
+
 **NEVER add backwards-compatibility code.** The app has a "Sync Bundle" feature — merchants re-sync to pick up new defaults.
 
 **Banned patterns:**

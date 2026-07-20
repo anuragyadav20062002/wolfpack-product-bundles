@@ -151,8 +151,26 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     return;
   }
 
+  const replacementTarget = this._modalSlotReplacementTarget;
+  const replacementSelectionKey = replacementTarget?.stepIndex === stepIndex
+    ? this.normalizeSelectionKey(replacementTarget.selectionKey)
+    : '';
+  const replacementQuantity = replacementSelectionKey
+    ? this.getSelectedQuantity(stepIndex, replacementSelectionKey)
+    : 0;
+  const isReplacingFilledSlot = quantity > 0
+    && replacementQuantity > 0
+    && replacementSelectionKey !== selectionKey;
+
+  if (isReplacingFilledSlot) {
+    this.setSelectedQuantity(stepIndex, replacementSelectionKey, 0);
+  }
+
   // Validate step conditions
   if (!this.validateStepCondition(stepIndex, selectionKey, quantity)) {
+    if (isReplacingFilledSlot) {
+      this.setSelectedQuantity(stepIndex, replacementSelectionKey, replacementQuantity);
+    }
     return;
   }
 
@@ -168,8 +186,14 @@ updateProductSelection(stepIndex, productId, newQuantity) {
   }
 
   this.setSelectedQuantity(stepIndex, selectionKey, quantity);
+  if (replacementTarget?.stepIndex === stepIndex) {
+    this._modalSlotReplacementTarget = null;
+  }
 
   // Update UI without re-rendering the entire modal (prevents event listener duplication)
+  if (isReplacingFilledSlot) {
+    this.updateProductQuantityDisplay(stepIndex, replacementSelectionKey, 0);
+  }
   this.updateProductQuantityDisplay(stepIndex, selectionKey, quantity);
   this._renderDirectDefaultProducts();
   this.renderModalTabs();

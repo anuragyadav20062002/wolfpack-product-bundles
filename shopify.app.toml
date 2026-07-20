@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "a383172f42c2ab283901a663d485a03d"
-name = "Wolfpack: Product Bundles"
+name = "Wolfpack Bundles"
 application_url = "https://wolfpack-product-bundle-app.onrender.com"
 embedded = true
 handle = "wolfpack-product-bundles"

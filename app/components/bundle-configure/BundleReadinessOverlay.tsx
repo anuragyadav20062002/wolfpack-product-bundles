@@ -23,7 +23,7 @@ interface Props {
 function scoreColor(score: number) {
   if (score >= 80) return "#008060";
   if (score >= 40) return "#005bd3";
-  return "#d82c0d";
+  return "#b98900";
 }
 
 export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapsedTrigger = false, onItemClick, variant = "detailed" }: Props) {

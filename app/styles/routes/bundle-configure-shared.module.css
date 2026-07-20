@@ -734,6 +734,23 @@
   .discountFieldsRowPair {
     grid-template-columns: 1fr;
   }
+
+  .visibilityGuideGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ruleFields,
+  .categoryRuleFields {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ruleInlineSelect,
+  .ruleInlineNumber {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 .discountRuleHeader {

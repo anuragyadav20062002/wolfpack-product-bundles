@@ -230,6 +230,7 @@ export function usePpbPreviewReadinessHandlers({
           "Please save or discard your changes before switching sections",
           { isError: true, duration: 4000 },
         );
+        void base.shopify.saveBar.leaveConfirmation();
         return;
       }
       base.setActiveSection(section);
@@ -296,7 +297,7 @@ export function usePpbPreviewReadinessHandlers({
         "Save or discard your changes before moving to another section.",
         { isError: true, duration: 5000 },
       );
-      void (base.shopify as any).saveBar?.leaveConfirmation?.();
+      void base.shopify.saveBar.leaveConfirmation();
       return;
     }
     navigateBackOrFallback(base.navigate, "/app/dashboard", { replaceFallback: true });

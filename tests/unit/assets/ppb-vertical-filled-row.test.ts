@@ -2,6 +2,8 @@
 const { resolveSelectedSlotTitle } = require('../../../app/assets/widgets/product-page/methods/inpage-render-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ProductPageInpageRenderMethods } = require('../../../app/assets/widgets/product-page/methods/inpage-render-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ProductPageSelectionMethods } = require('../../../app/assets/widgets/product-page/methods/selection-methods.js');
 
 describe('SelectedSlotTitle', () => {
   const longTitle = '14k Dangling Obsidian Earrings';
@@ -46,6 +48,49 @@ describe('SelectedSlotTitle', () => {
     } finally {
       global.document = originalDocument;
     }
+  });
+
+  it('replaces the targeted filled-slot selection before exact-one validation', () => {
+    const selections: Record<string, number> = { 'variant-1': 1 };
+    const setSelectedQuantity = jest.fn((_stepIndex: number, key: string, quantity: number) => {
+      selections[key] = quantity;
+    });
+    const validateStepCondition = jest.fn((_stepIndex: number, key: string, quantity: number) => (
+      Object.entries(selections).reduce((total, [selectionKey, selectedQuantity]) => (
+        total + (selectionKey === key ? 0 : selectedQuantity)
+      ), quantity) <= 1
+    ));
+    const context = {
+      selectedProducts: [selections],
+      selectedBundle: { steps: [{}] },
+      stepProductData: [[{ id: 'variant-2' }]],
+      _modalSlotReplacementTarget: { stepIndex: 0, selectionKey: 'variant-1' },
+      normalizeSelectionKey: (value: string) => value,
+      _getDirectDefaultRequiredQuantity: () => null,
+      getVariantAvailable: () => ({ available: null, outOfStock: false }),
+      getSelectedQuantity: (_stepIndex: number, key: string) => selections[key] || 0,
+      validateStepCondition,
+      setSelectedQuantity,
+      updateProductQuantityDisplay: jest.fn(),
+      _renderDirectDefaultProducts: jest.fn(),
+      renderModalTabs: jest.fn(),
+      updateModalNavigation: jest.fn(),
+      updateModalFooterMessaging: jest.fn(),
+      updateAddToCartButton: jest.fn(),
+      updateFooterMessaging: jest.fn(),
+      _syncFreeGiftSlotCard: jest.fn(),
+      findProductBySelectionKey: () => ({ id: 'variant-2' }),
+      _usesCascadeStepFlow: () => false,
+      _maybeAutoAddAfterLastStep: jest.fn(),
+      elements: {},
+    } as any;
+
+    ProductPageSelectionMethods.updateProductSelection.call(context, 0, 'variant-2', 1);
+
+    expect(validateStepCondition).toHaveBeenCalledWith(0, 'variant-2', 1);
+    expect(selections).toEqual({ 'variant-1': 0, 'variant-2': 1 });
+    expect(context.updateProductQuantityDisplay).toHaveBeenCalledWith(0, 'variant-1', 0);
+    expect(context._modalSlotReplacementTarget).toBeNull();
   });
 });
 

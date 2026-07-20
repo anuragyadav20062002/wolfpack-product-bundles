@@ -189,9 +189,192 @@
 
 .designLayout {
   display: grid;
-  grid-template-columns: 224px minmax(0, 1fr);
+  grid-template-columns: 224px minmax(320px, 0.8fr) minmax(420px, 1.2fr);
   gap: 14px;
   margin-top: 18px;
+}
+
+.designPage {
+  width: min(1320px, calc(100vw - 32px));
+  max-width: 1320px;
+}
+
+.designPreviewPanel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.designPreviewHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid #e1e3e5;
+}
+
+.designPreviewHeader h2,
+.designPreviewHeader p {
+  margin: 0;
+}
+
+.designPreviewHeader h2 {
+  font-size: 14px;
+}
+
+.designPreviewHeader p {
+  margin-top: 4px;
+  color: #6d7175;
+  font-size: 12px;
+}
+
+.designPreviewSurface {
+  container-type: inline-size;
+  min-height: 620px;
+  padding: 20px;
+  background: #f6f6f7;
+  color: var(--bundle-global-primary-text, #202223);
+}
+
+.designPreviewHero span {
+  color: #6d7175;
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.designPreviewHero h3 {
+  margin: 6px 0 4px;
+  font-size: 24px;
+}
+
+.designPreviewHero p {
+  margin: 0;
+  color: #6d7175;
+  font-size: var(--bundle-variant-selector-font-size, 14px);
+}
+
+.designPreviewTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 20px 0 14px;
+}
+
+.designPreviewTabs span {
+  padding: 10px 12px;
+  border-radius: var(--bundle-button-border-radius, 6px);
+  background: var(--bundle-tabs-inactive-bg-color, #e3e3e3);
+  color: var(--bundle-tabs-inactive-text-color, #4a4a4a);
+  font-size: 12px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.designPreviewTabs span[data-active="true"] {
+  background: var(--bundle-tabs-active-bg-color, var(--bundle-global-primary-button, #303030));
+  color: var(--bundle-tabs-active-text-color, #ffffff);
+}
+
+.designPreviewProducts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.designPreviewProductCard {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: var(--bundle-product-card-border-radius, 8px);
+  background: var(--bundle-product-card-bg, #ffffff);
+  color: var(--bundle-product-card-font-color, #202223);
+  font-size: var(--bundle-product-card-font-size, 14px);
+}
+
+.designPreviewProductImage {
+  display: grid;
+  aspect-ratio: 4 / 3;
+  place-items: center;
+  border-radius: max(2px, calc(var(--bundle-product-card-border-radius, 8px) - 3px));
+  background: #edeeef;
+  color: #6d7175;
+}
+
+.designPreviewProductCard button,
+.designPreviewCart button {
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--bundle-button-border-radius, 6px);
+  background: var(--bundle-button-bg, var(--bundle-global-primary-button, #303030));
+  color: var(--bundle-button-text-color, var(--bundle-global-button-text, #ffffff));
+  font: inherit;
+  font-weight: 650;
+  opacity: 1;
+}
+
+.designPreviewCart {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: var(--bundle-footer-border-radius, 8px);
+  background: var(--bundle-footer-bg, #ffffff);
+}
+
+.designPreviewCart span {
+  display: grid;
+  gap: 4px;
+}
+
+.designPreviewCart small {
+  color: #6d7175;
+}
+
+.designPreviewCart button {
+  min-width: 112px;
+  border-radius: var(--bundle-footer-next-button-radius, var(--bundle-button-border-radius, 6px));
+  background: var(--bundle-footer-next-button-bg, var(--bundle-button-bg, #303030));
+  color: var(--bundle-footer-next-button-text, var(--bundle-button-text-color, #ffffff));
+}
+
+.designPreviewEmpty {
+  min-height: 420px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.designControlsDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+@media (max-width: 980px) {
+  .designLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (max-width: 420px) {
+  .designPreviewProducts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .designPreviewCart {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 .designSidebar {

@@ -163,7 +163,7 @@
   --s-button-background: linear-gradient(180deg, #4b4b4e 0%, #2f2f31 100%);
 }
 
-.appEmbedCard s-icon,
+.supportIssuesCard s-icon,
 .resourceThumbnailFooter s-icon {
   display: flex;
   align-items: center;
@@ -171,59 +171,35 @@
   flex-shrink: 0;
 }
 
-.appEmbedCard {
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  padding: 14px 18px;
-  border: 1px solid var(--p-color-border);
-  border-radius: var(--p-border-radius-300);
-  background: var(--p-color-bg-surface);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  box-shadow: var(--p-shadow-100);
-  transition:
-    border-color 0.16s ease,
-    box-shadow 0.16s ease,
-    transform 0.16s ease;
+.supportIssuesHero {
+  background: #5b3aa9;
 }
 
-.appEmbedCard:hover {
-  border-color: #8a8a8a;
-  box-shadow: var(--p-shadow-300);
-  transform: translateY(-1px);
+.supportIssuesHero .supportCardHeroDesc {
+  color: rgba(255, 255, 255, 0.78);
 }
 
-.appEmbedCard:focus-visible {
-  outline: 2px solid var(--p-color-border-focus);
-  outline-offset: 2px;
-}
-
-.appEmbedCardHeader {
+.supportIssuesBody {
+  flex: 1;
+  padding: 14px 18px 18px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.appEmbedHeadingHint {
-  background-color: #fef9c3;
-  font-weight: 400;
-  border-radius: 3px;
-  padding: 0 2px;
+.supportIssuesCta {
+  position: relative;
+  width: 100%;
+  margin-top: auto;
 }
 
-.appEmbedImage {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1096 / 304;
-  max-height: 100px;
-  height: auto;
-  object-fit: cover;
-  overflow: hidden;
-  border: 1px solid #e3e3e3;
-  border-radius: 6px;
+.supportIssuesExternalIcon {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: flex;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .bundlesPanel {
@@ -523,12 +499,19 @@
 }
 
 .resourceThumbnailImage {
-  display: block;
+  display: grid;
+  place-items: center;
   width: 100%;
   aspect-ratio: 842 / 494;
   height: auto;
-  object-fit: cover;
+  background: #f3f3f3;
+  color: #616161;
   overflow: hidden;
+}
+
+.resourceThumbnailImage s-icon {
+  width: 28px;
+  height: 28px;
 }
 
 .resourceThumbnailFooter {
@@ -655,14 +638,30 @@
     flex-direction: column;
   }
 
-  .languageSelect,
+  .dashboardActions {
+    width: 100%;
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
   .searchField {
     width: 100%;
   }
 
+  .languageSelect {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
   .languageSelect s-select {
-    min-width: unset;
+    min-width: 0;
     width: 100%;
+  }
+
+  .dashboardActionLabel {
+    display: none;
   }
 
   .supportCardBody {
@@ -688,4 +687,8 @@
     grid-template-columns: 1fr;
     padding: 18px;
   }
+}
+.homeOverviewStack {
+  display: grid;
+  gap: 16px;
 }

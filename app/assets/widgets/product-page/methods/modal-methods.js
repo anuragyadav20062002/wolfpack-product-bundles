@@ -63,6 +63,30 @@ export function getModalSoleVariantDisplayTitle(product = {}) {
   return title && title !== 'Default Title' ? title : '';
 }
 
+export function resolveProductPageModalStepPosition({
+  stepIndex,
+  currentStepIndex,
+  stepCount,
+} = {}) {
+  if (
+    !Number.isInteger(stepIndex)
+    || !Number.isInteger(currentStepIndex)
+    || !Number.isInteger(stepCount)
+    || stepCount < 1
+    || stepIndex < 0
+    || currentStepIndex < 0
+    || stepIndex >= stepCount
+    || currentStepIndex >= stepCount
+  ) {
+    return 'hidden';
+  }
+
+  if (stepIndex === currentStepIndex) return 'current';
+  if (stepIndex === currentStepIndex - 1) return 'previous';
+  if (stepIndex === currentStepIndex + 1) return 'next';
+  return 'hidden';
+}
+
 export function applyProductPageVariantSelection({
   product = {},
   variantData = {},
@@ -153,13 +177,19 @@ renderModalTabs() {
     const isFreeGift = !!step.isFreeGift;
     // Free gift tab is only accessible when all paid steps are complete
     const freeGiftAccessible = !isFreeGift || this.isFreeGiftUnlocked;
+    const railPosition = resolveProductPageModalStepPosition({
+      stepIndex: index,
+      currentStepIndex: this.currentStepIndex,
+      stepCount,
+    });
 
     // Create tab button
     const tabButton = document.createElement('button');
     const freeGiftClass = isFreeGift ? ' bw-free-gift-tab' : '';
-    tabButton.className = `bundle-header-tab${freeGiftClass} ${isActive ? 'active' : ''} ${(!isAccessible || !freeGiftAccessible) ? 'locked' : ''}`;
+    tabButton.className = `bundle-header-tab${freeGiftClass} bw-bs-step-${railPosition} ${isActive ? 'active' : ''} ${(!isAccessible || !freeGiftAccessible) ? 'locked' : ''}`;
     tabButton.textContent = (step.isFreeGift && step.addonLabel) ? step.addonLabel : (step.name || `Step ${index + 1}`);
     tabButton.dataset.stepIndex = index.toString();
+    if (isActive) tabButton.setAttribute('aria-current', 'step');
 
     // Click handler
     tabButton.addEventListener('click', async () => {
@@ -338,19 +368,15 @@ renderModalProducts(stepIndex, productsToRender = null) {
     // Per-variant stock state derived from Storefront API quantityAvailable
     const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
     const atMaxStock = available !== null && currentQuantity >= available;
-    const lowStock = available !== null && available > 0 && available <= 3;
     const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
     const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const soleVariantDisplayTitle = getModalSoleVariantDisplayTitle(product);
 
-    // Low-stock / out-of-stock badge — shown on the image, not in the CTA.
-      const stockBadge = outOfStock
-        ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
-        : lowStock
-          ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
-          : '';
-      return `
+    const stockBadge = outOfStock
+      ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
+      : '';
+    return `
       <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
