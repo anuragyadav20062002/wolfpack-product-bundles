@@ -11,7 +11,6 @@ const PixelStatusCard = lazy(() =>
     default: module.PixelStatusCard,
   }))
 );
-const DASHBOARD_IMPORT_DELAY_MS = 3000;
 
 function AttributionStatusPending() {
   return (
@@ -108,17 +107,6 @@ function AttributionCriticalStatus({
 export default function AttributionRouteShell() {
   const { pixelStatus } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
-  const [loadDashboard, setLoadDashboard] = useState(false);
-
-  useEffect(() => {
-    const handle = window.setTimeout(() => {
-      setLoadDashboard(true);
-    }, DASHBOARD_IMPORT_DELAY_MS);
-
-    return () => {
-      window.clearTimeout(handle);
-    };
-  }, []);
 
   return (
     <>
@@ -134,13 +122,9 @@ export default function AttributionRouteShell() {
       </ui-title-bar>
       <AttributionCriticalFunnelHeader />
       <AttributionCriticalStatus pixelStatus={pixelStatus} />
-      {loadDashboard ? (
-        <Suspense fallback={<AttributionDashboardSkeleton />}>
-          <AttributionDashboard />
-        </Suspense>
-      ) : (
-        <AttributionDashboardSkeleton />
-      )}
+      <Suspense fallback={<AttributionDashboardSkeleton />}>
+        <AttributionDashboard />
+      </Suspense>
     </>
   );
 }
