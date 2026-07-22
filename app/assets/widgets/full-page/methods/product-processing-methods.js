@@ -921,7 +921,10 @@ isVariantOutOfStock(product) {
 
 getVariantAvailable(stepIndex, variantId) {
   const products = this.stepProductData[stepIndex] || [];
-  const product = products.find(p => (p.variantId || p.id) === variantId);
+  const requestedVariantKey = variantLookupKey({ id: variantId });
+  const product = products.find(p => variantLookupKey(p) === requestedVariantKey)
+    || products.flatMap(p => Array.isArray(p?.variants) ? p.variants : [])
+      .find(variant => variantLookupKey(variant) === requestedVariantKey);
   if (!product) {
     return { available: null, outOfStock: false, acceptsBackorder: false };
   }

@@ -50,6 +50,7 @@ Verify that FPB category-tab storefront product hydration preserves collection-b
 | 8 | An already-expanded individual card becomes unavailable after runtime inventory hydration | Expanded card is saved as available; runtime inventory for its variant reports `available=false` | Card is omitted from the rendered product list | Covers the final live storefront expansion branch |
 | 9 | Tracked zero-stock individual or grouped product | Inventory tracking enabled; Shopify reports quantity zero without backorders | Product or variant is omitted | Matches the EB inventory help and live FPB fixture |
 | 10 | Missing product media | Product and variant have no usable media URL | Normalized card data uses the self-contained widget placeholder | Avoids external placeholder requests |
+| 11 | Numeric card ID with GID-backed live inventory | Card action passes a numeric variant ID while hydrated step data and Storefront inventory use the Shopify GID | Inventory lookup resolves the same canonical variant and returns the one-unit limit | Prevents the quantity clamp from silently treating tracked stock as unlimited |
 
 ## Acceptance Criteria
 - [x] All listed test cases pass.

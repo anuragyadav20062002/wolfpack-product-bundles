@@ -127,6 +127,35 @@ describe('FPB Standard variant availability', () => {
     expect(state).toEqual({ available: null, outOfStock: false, acceptsBackorder: false });
   });
 
+  it('resolves live inventory when the card uses a numeric variant ID and step data keeps the GID', () => {
+    const context: any = {
+      stepProductData: [[{
+        id: 'gid://shopify/Product/9506421735683',
+        variants: [{
+          id: 'gid://shopify/ProductVariant/48720397271299',
+          available: true,
+        }],
+      }]],
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: true }),
+      isVariantOutOfStock: fullPageProductProcessingMethods.isVariantOutOfStock,
+      getRuntimeVariantInventory: fullPageProductProcessingMethods.getRuntimeVariantInventory,
+    };
+    fullPageProductProcessingMethods.rememberRuntimeProductInventory.call(context, [{
+      variants: [{
+        id: 'gid://shopify/ProductVariant/48720397271299',
+        available: true,
+        quantityAvailable: 1,
+        currentlyNotInStock: false,
+      }],
+    }]);
+
+    expect(fullPageProductProcessingMethods.getVariantAvailable.call(
+      context,
+      0,
+      '48720397271299',
+    )).toEqual({ available: 1, outOfStock: false, acceptsBackorder: false });
+  });
+
   it('normalizes selectedOptions into variant option fields for grouped FPB products', () => {
     const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
       extractId: (id: string) => String(id || '').split('/').pop(),

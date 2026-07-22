@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.200
+ * Version : 5.0.201
  * Built   : 2026-07-22
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.200';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.201';
 (function() {
   'use strict';
 
@@ -12455,7 +12455,10 @@ isVariantOutOfStock(product) {
 
 getVariantAvailable(stepIndex, variantId) {
   const products = this.stepProductData[stepIndex] || [];
-  const product = products.find(p => (p.variantId || p.id) === variantId);
+  const requestedVariantKey = variantLookupKey({ id: variantId });
+  const product = products.find(p => variantLookupKey(p) === requestedVariantKey)
+    || products.flatMap(p => Array.isArray(p?.variants) ? p.variants : [])
+      .find(variant => variantLookupKey(variant) === requestedVariantKey);
   if (!product) {
     return { available: null, outOfStock: false, acceptsBackorder: false };
   }
