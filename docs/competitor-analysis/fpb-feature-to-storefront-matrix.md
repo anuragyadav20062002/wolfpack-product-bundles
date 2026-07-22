@@ -184,7 +184,7 @@ time and restore the `F0` minimum/exact baseline after every permutation.
 | N07 | F2 | Category quantity rule | Each category validates independently | **P** F2-CATEGORY-SWEEP | **P** F2-CATEGORY-SWEEP | **P** F2-CATEGORY-SWEEP | **P** F2-CATEGORY-HO |
 | N08 | F2 | Category amount rule | Category subtotal controls its own eligibility | **P** P04 | **P** F2-CATEGORY-SWEEP | **P** F2-CATEGORY-SWEEP | **P** F2-CATEGORY-HO |
 | N09 | F2 | Category weight rule | Category weight controls its own eligibility when exposed | **P** F2-WEIGHT-ALL | **P** F2-WEIGHT-ALL | **P** F2-WEIGHT-ALL | **P** F2-WEIGHT-ALL |
-| N10 | F2 | Auto-next enabled/disabled | Only the saved eligible exact rule advances automatically | **S** | **P** C02 | **S** | **P** C04 |
+| N10 | F2 | Auto-next enabled/disabled | Only the saved eligible exact rule advances automatically | **P** F0-FLOW | **P** C02 | **P** F0-FLOW | **P** C04 |
 | N11 | F2 | Invalid Next/Back/cart feedback | Action remains usable enough to explain the unmet rule | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW |
 | N12 | F2 | Validation disabled | Saved control permits otherwise invalid progression/cart without stale errors | **T** | **T** | **T** | **T** |
 
