@@ -119,10 +119,35 @@
     "preview": {
       "heading": "Live preview",
       "unsaved": "Unsaved changes appear here.",
+      "bundleType": {
+        "label": "Bundle type",
+        "landingPage": "Landing Page",
+        "productPage": "Product Page"
+      },
+      "templateLabel": "Template",
+      "templates": {
+        "standard": "Standard",
+        "classic": "Classic",
+        "compact": "Compact",
+        "horizontal": "Horizontal",
+        "productList": "Product List",
+        "productGrid": "Product Grid",
+        "horizontalSlots": "Horizontal Slots",
+        "verticalSlots": "Vertical Slots"
+      },
+      "viewport": {
+        "label": "Preview viewport",
+        "desktop": "Desktop preview",
+        "mobile": "Mobile preview"
+      },
+      "previewOnly": "Preview only",
+      "loading": "Loading preview",
       "emptyHeading": "Create a bundle to preview",
       "emptyBody": "A storefront-ready bundle is required before visual settings can be edited.",
       "surface": {
         "description": "Choose products to build your bundle.",
+        "navigationLabel": "Bundle steps",
+        "slotsLabel": "Bundle slots",
         "stepOne": "1. Choose products",
         "stepTwo": "2. Review bundle",
         "products": {
@@ -130,6 +155,8 @@
           "second": { "name": "Popular addition", "price": "$18.00" }
         },
         "add": "Add",
+        "upsellTitle": "Complete your bundle",
+        "upsellBody": "Add a popular extra.",
         "summary": "Bundle summary",
         "total": "2 products selected · $42.00",
         "next": "Continue"
