@@ -8995,7 +8995,7 @@ createProductCard(product, stepIndex, options = {}) {
           ? ''
           : this._resolveText('chooseOptionsButton', 'Choose Options'),
         mobileMode: variantSelectorPresentation.mobileMode,
-        hideUnavailable: designPreset === 'HORIZONTAL',
+        hideUnavailable: true,
       })
       : VariantSelectorComponent.renderHtml(product, primaryOptionName)
     : '';
@@ -9024,7 +9024,7 @@ createProductCard(product, stepIndex, options = {}) {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         className: outOfStock ? 'is-out-of-stock' : '',
-        showCompareAtPrice: true,
+        showCompareAtPrice: this.selectedBundle?.showProductComparedAtPrice === true,
         addButtonText: this.getProductCardAddButtonText(step),
         increaseDisabled,
         cardBadgeHtml: stockBadgeHtml,
@@ -9375,7 +9375,8 @@ updateProductCardVariantDisplay(cardElement, product, step) {
 
   const priceRow = cardElement.querySelector('.product-price-row');
   let compareEl = cardElement.querySelector('.product-price-strike');
-  if (displayProduct.compareAtPrice) {
+  const showCompareAtPrice = this.selectedBundle?.showProductComparedAtPrice === true;
+  if (showCompareAtPrice && displayProduct.compareAtPrice) {
     if (!compareEl && priceRow && priceEl) {
       compareEl = document.createElement('span');
       compareEl.className = 'bw-product-card__compare-price product-price-strike';
@@ -12712,7 +12713,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
       {
         variantSelectorHtml,
         stockBadgeHtml: stockBadge,
-        showCompareAtPrice: true,
+        showCompareAtPrice: this.selectedBundle?.showProductComparedAtPrice === true,
         addButtonText: outOfStock ? 'Out of stock' : this.getProductAddButtonText(),
         addDisabled,
         decreaseDisabled: currentQuantity <= 0,

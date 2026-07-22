@@ -18,10 +18,12 @@ export function FpbSummaryTextSettings({
     pricingState,
     setIndividualSellingPlanEnabled,
     setIndividualSellingPlanShowFor,
+    setShowCompareAtPrices,
     setShowTextOnPlusEnabled,
     setTextOverrides,
     SettingsRow,
     setVariantSelectorEnabled,
+    showCompareAtPrices,
     showTextOnPlusEnabled,
     stepsState,
     textOverrides,
@@ -35,6 +37,21 @@ export function FpbSummaryTextSettings({
     <>
       <s-section>
         <s-stack direction="block" gap="small">
+          <SettingsRow
+            title="Show Compare At Price"
+            description="Display the original price alongside the current price when product data provides both values."
+          >
+            <s-switch
+              accessibilityLabel="Show compare-at prices"
+              checked={showCompareAtPrices || undefined}
+              onChange={(e) => {
+                setShowCompareAtPrices(
+                  (e.target as HTMLInputElement).checked,
+                );
+                markAsDirty();
+              }}
+            />
+          </SettingsRow>
           <SettingsRow
             title="Variant Selector"
             description="Enable variant selection within the product cards instead of the quick look"
