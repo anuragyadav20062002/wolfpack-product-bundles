@@ -7,6 +7,7 @@ interface CommonConfigureShellProps {
   saveForm: ReactNode;
   header: ReactNode;
   sidebar: ReactNode;
+  supplementaryContent?: ReactNode;
   children: ReactNode;
   overlays: ReactNode;
 }
@@ -18,6 +19,7 @@ export function CommonConfigureShell({
   saveForm,
   header,
   sidebar,
+  supplementaryContent,
   children,
   overlays,
 }: CommonConfigureShellProps) {
@@ -40,7 +42,14 @@ export function CommonConfigureShell({
           {header}
           {overlays}
           <div className={styles.editGrid}>
-            {sidebar}
+            <div className={styles.leftRail}>
+              {sidebar}
+              {supplementaryContent && (
+                <div className={styles.configureSupplement}>
+                  {supplementaryContent}
+                </div>
+              )}
+            </div>
             <div className={styles.mainColumn}>{children}</div>
           </div>
         </div>

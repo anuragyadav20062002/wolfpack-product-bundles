@@ -40,14 +40,17 @@
 
 /* ── Edit App Canvas ─────────────────────────────────────────── */
 .configureQueryContainer {
-  display: block;
-  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  inline-size: 100%;
+  min-inline-size: 0;
   max-width: 100%;
 }
 
 .configureQueryContainer > s-query-container {
   display: block;
-  min-width: 0;
+  inline-size: 100%;
+  min-inline-size: 0;
   max-width: 100%;
 }
 
@@ -156,17 +159,29 @@
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  min-width: 0;
+  inline-size: 100%;
+  min-inline-size: 0;
 }
 
-.leftColumn {
+.leftRail {
   flex: 0 0 310px;
-  min-width: 310px;
+  min-inline-size: 0;
   position: sticky;
   top: 0;
   max-height: 100vh;
   overflow-y: auto;
   align-self: flex-start;
+}
+
+.leftColumn {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.configureSupplement {
+  inline-size: 100%;
+  min-inline-size: 0;
+  margin-top: 16px;
 }
 
 .mainColumn {
@@ -2313,12 +2328,20 @@
     flex-direction: column;
   }
 
+  .leftRail {
+    display: contents;
+  }
+
   .leftColumn {
-    position: static;
+    order: 0;
     flex: 0 1 auto;
     width: 100%;
     min-width: 0;
     max-height: none;
+  }
+  .configureSupplement {
+    order: 2;
+    margin-top: 0;
   }
   .mainColumn,
   .mainColumn > *,
@@ -2327,6 +2350,10 @@
   .mainColumn s-stack {
     min-width: 0;
     max-width: 100%;
+  }
+  .mainColumn {
+    order: 1;
+    width: 100%;
   }
   .canvasBackButton,
   .readinessButton,
@@ -2355,6 +2382,50 @@
     border-radius: 12px;
     background: #ffffff;
     overflow: hidden;
+  }
+
+  .mobileSetupSummary {
+    display: flex;
+  }
+}
+
+@media (max-width: 767px) {
+  .editGrid {
+    flex-direction: column;
+  }
+
+  .leftRail {
+    display: contents;
+  }
+
+  .leftColumn,
+  .mainColumn,
+  .configureSupplement {
+    width: 100%;
+    min-inline-size: 0;
+    max-width: 100%;
+  }
+
+  .leftColumn {
+    order: 0;
+  }
+
+  .mainColumn {
+    order: 1;
+  }
+
+  .configureSupplement {
+    order: 2;
+    margin-top: 0;
+  }
+
+  .desktopSetupSection {
+    display: none;
+  }
+
+  .mobileSetupSection,
+  .mobileSetupSummary {
+    display: block;
   }
 
   .mobileSetupSummary {
