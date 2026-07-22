@@ -26,12 +26,18 @@ const SETTINGS_SECTIONS: Array<{
   },
 ];
 
-export function SettingsLandingShell({ onSelect }: { onSelect: (view: SettingsWorkspaceView) => void }) {
+export function SettingsLandingShell({
+  onSelect,
+  onIntent,
+}: {
+  onSelect: (view: SettingsWorkspaceView) => void;
+  onIntent?: () => void;
+}) {
   return (
     <s-page heading="Settings" inlineSize="large">
       <s-query-container containerName="settings-landing">
         <s-grid
-          gridTemplateColumns="@container settings-landing (inline-size > 720px) repeat(3, minmax(0, 1fr)), 1fr"
+          gridTemplateColumns="@container settings-landing (inline-size > 720px) 1fr 1fr 1fr, 1fr"
           gap="base"
         >
           {SETTINGS_SECTIONS.map((section) => (
@@ -41,6 +47,7 @@ export function SettingsLandingShell({ onSelect }: { onSelect: (view: SettingsWo
               padding="base"
               border="base"
               borderRadius="base"
+              onFocus={onIntent}
               onClick={() => onSelect(section.id)}
             >
               <s-stack gap="base">
