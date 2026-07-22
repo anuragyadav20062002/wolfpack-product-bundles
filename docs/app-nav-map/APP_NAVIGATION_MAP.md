@@ -93,6 +93,7 @@ Dashboard preview behavior:
 - Product-page bundle preview opens `/products/{shopifyProductHandle}`.
 - Every full-page bundle preview requests a new 15-minute signed `wpb_preview` URL on each click; active and unlisted bundles remain publicly accessible at the canonical URL without the token.
 - First successful preview records the Admin `bundle_previewed` event with bundle id, type, status, and link.
+- The bundle table uses Polaris automatic table/list presentation: desktop keeps Name, Status, Type, and Actions columns, while phone containers expose the same record fields and row actions as a stacked list.
 
 #### "Create Bundle" Button
 Navigates to: `/app/bundles/create` (bundle type selection entry)
@@ -125,6 +126,7 @@ Configure page storefront sync status:
 - Save persists DB changes and publishes Shopify storefront data synchronously before returning a compact success response.
 - Existing Sync Bundle actions run the same direct storefront sync path.
 - Preview Bundle posts one compact `/prepare-preview` request before opening storefront preview; failed checks surface through the preview error toast while the button spinner is active.
+- The reachable create/clone wizard at `/app/bundles/create/configure/:bundleId` keeps its ordered step indicator horizontally navigable and collapses editor grids, rule fields, asset fields, and modal actions to one column on phones.
 
 #### Modal: Delete Bundle Confirmation
 Triggered by: "Delete" row action
@@ -159,6 +161,7 @@ Primary action:
 - Unsaved design values are applied to an app-owned bundle preview through a validated CSS-variable contract; arbitrary CSS and cart mutations are rejected.
 - Design controls are unavailable until at least one storefront-ready bundle exists.
 - Settings back actions await App Bridge Save Bar leave confirmation while unsaved changes exist.
+- At phone widths, Language and Controls section navigation becomes a native disclosure that closes after a section is selected while retaining the current unsaved form state.
 
 ---
 
@@ -253,6 +256,10 @@ Pricing Page
 └── Modal: Upgrade Confirmation (before billing redirect)
 ```
 
+At phone widths, the FPB Bundle Setup sidebar becomes a native disclosure whose
+summary shows the active section; selecting a parent or child section closes the
+disclosure and preserves the existing configure state.
+
 ---
 
 ### 2.5 Updates & FAQs — `/app/events`
@@ -318,6 +325,12 @@ FPB Configure Page
     ├── Bundle Quantity Options Multi Language Modal (Box Label / Box Subtext)
     └── Progress Bar Multi Language Modal (Tier Text / Tier Subtext)
 ```
+
+Responsive configure behavior:
+- FPB and PPB keep the full Bundle Product and Bundle Setup sidebar on wide screens.
+- Tablet and phone containers show Bundle Product first and replace the long setup sidebar with a compact native disclosure labelled with the active parent or nested section.
+- Selecting a section closes the mobile disclosure without changing save, dirty-state, or route adapter behavior.
+- Readiness feedback participates in page flow on phones and remains floating on desktop so it cannot cover mobile editor actions.
 
 ---
 
@@ -414,6 +427,10 @@ PPB Configure Page
     └── Click to expand/collapse
 ```
 
+At phone widths, the PPB Bundle Setup sidebar uses the same active-section
+disclosure behavior as FPB, including nested Step Setup and Bundle Visibility
+items.
+
 **Widget storefront features (as of v2.9.0):**
 - Step slot cards (empty/filled/locked states) with `addonLabel` for free gift tabs
 - Quantity option pills (from `displayOptions.bundleQuantityOptions`)
@@ -457,6 +474,8 @@ Billing Page
           ├── Set Pricing tab
           └── [Save] → [Sync Bundle tab → Sync Now]
 ```
+
+On tablet and phone containers, configure section changes use the compact current-section disclosure; the create/clone wizard retains its ordered step navigation with horizontally scrollable overflow.
 
 ### Flow C: Design Customisation
 ```

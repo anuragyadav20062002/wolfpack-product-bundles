@@ -1,4 +1,4 @@
-import type { Ref } from "react";
+import { useState, type Ref } from "react";
 import type { ConfigureChildItem } from "../../../../lib/bundle-config/common-configure-page-model";
 
 type StatusBadge = { label: string; tone?: string } | null;
@@ -77,6 +77,26 @@ function isItemActive(
   return false;
 }
 
+export function getActiveConfigureSectionLabel({
+  activeSection,
+  bundleSetupItems,
+  stepSetupChildItems,
+  bundleVisibilityChildItems,
+}: {
+  activeSection: string;
+  bundleSetupItems: ConfigureChildItem[];
+  stepSetupChildItems: ConfigureChildItem[];
+  bundleVisibilityChildItems: ConfigureChildItem[];
+}) {
+  const activeItem = [
+    ...bundleSetupItems,
+    ...stepSetupChildItems,
+    ...bundleVisibilityChildItems,
+  ].find((item) => item.id === activeSection);
+
+  return activeItem?.label || bundleSetupItems[0]?.label || "Bundle setup";
+}
+
 function getItemStatusBadge(
   item: CommonSetupItem,
   adapter: CommonConfigureSidebarAdapter,
@@ -130,6 +150,103 @@ export function CommonConfigureSidebar({
     styles,
     VisibilityBadge,
   } = adapter;
+
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const activeSectionLabel = getActiveConfigureSectionLabel({
+    activeSection,
+    bundleSetupItems,
+    stepSetupChildItems,
+    bundleVisibilityChildItems,
+  });
+
+  const renderSetupNavigation = ({
+    closeAfterSelection = false,
+    includeTemplateRef = false,
+  }: {
+    closeAfterSelection?: boolean;
+    includeTemplateRef?: boolean;
+  }) => (
+    <div className={styles.setupNavList}>
+      {bundleSetupItems.map((item) => {
+        const isActive = isItemActive(item, adapter);
+        const statusBadge = getItemStatusBadge(item, adapter);
+        const selectSection = (sectionId: string) => {
+          handleSectionChange(sectionId);
+          if (closeAfterSelection) setMobileNavigationOpen(false);
+        };
+
+        return (
+          <div key={item.id}>
+            {item.id === "select_template" && <s-divider />}
+            <button
+              type="button"
+              className={`${styles.setupNavItem} ${isActive ? styles.setupNavItemActive : ""}`}
+              onClick={() => {
+                if (item.id === "select_template") {
+                  openSelectTemplateModal();
+                  if (closeAfterSelection) setMobileNavigationOpen(false);
+                } else {
+                  selectSection(item.id);
+                }
+              }}
+              ref={
+                includeTemplateRef && item.id === "select_template"
+                  ? selectTemplateOpenButtonRef
+                  : undefined
+              }
+            >
+              <span className={styles.setupNavIcon} aria-hidden="true">
+                {item.iconType ? (
+                  <s-icon type={item.iconType as any} />
+                ) : isActive ? (
+                  "●"
+                ) : (
+                  "○"
+                )}
+              </span>
+              <span className={styles.setupNavLabel}>{item.label}</span>
+              <span className={styles.setupNavMeta}>
+                {renderStatusBadge(statusBadge, VisibilityBadge)}
+              </span>
+            </button>
+            {item.id === "step_setup" &&
+              stepSetupChildItems.length > 0 &&
+              (activeSection === "step_setup" ||
+                stepSetupChildItems.some((child) => child.id === activeSection)) && (
+                <div className={styles.subNav}>
+                  {stepSetupChildItems.map((child) => (
+                    <button
+                      key={child.id}
+                      type="button"
+                      className={`${styles.subNavItem} ${activeSection === child.id ? styles.subNavItemActive : ""}`}
+                      onClick={() => selectSection(child.id)}
+                    >
+                      {child.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            {item.id === "bundle_visibility" &&
+              (activeSection === "bundle_visibility" ||
+                bundleVisibilityChildItems.some((child) => child.id === activeSection)) && (
+                <div className={styles.subNav}>
+                  {bundleVisibilityChildItems.map((child) => (
+                    <button
+                      key={child.id}
+                      type="button"
+                      className={`${styles.subNavItem} ${activeSection === child.id ? styles.subNavItemActive : ""}`}
+                      onClick={() => selectSection(child.id)}
+                    >
+                      {child.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className={styles.leftColumn}>
@@ -225,98 +342,32 @@ export function CommonConfigureSidebar({
           </s-stack>
         </s-section>
 
-        <s-section>
-          <s-stack direction="block" gap="small">
-            <h3 className={styles.leftCardTitle}>Bundle Setup</h3>
-            <p className={styles.leftCardSubtitle}>Set-up your bundle builder</p>
-            <div className={styles.setupNavList}>
-              {bundleSetupItems.map((item) => {
-                const isActive = isItemActive(item, adapter);
-                const statusBadge = getItemStatusBadge(item, adapter);
-                return (
-                  <div key={item.id}>
-                    {item.id === "select_template" && (
-                      <hr
-                        style={{
-                          margin: "8px 0",
-                          border: "none",
-                          borderTop: "1px solid #e1e3e5",
-                        }}
-                      />
-                    )}
-                    <button
-                      type="button"
-                      className={`${styles.setupNavItem} ${isActive ? styles.setupNavItemActive : ""}`}
-                      onClick={() => {
-                        if (item.id === "select_template") {
-                          openSelectTemplateModal();
-                        } else {
-                          handleSectionChange(item.id);
-                        }
-                      }}
-                      ref={
-                        item.id === "select_template"
-                          ? selectTemplateOpenButtonRef
-                          : undefined
-                      }
-                    >
-                      <span className={styles.setupNavIcon} aria-hidden="true">
-                        {item.iconType ? (
-                          <s-icon type={item.iconType as any} />
-                        ) : isActive ? (
-                          "●"
-                        ) : (
-                          "○"
-                        )}
-                      </span>
-                      <span className={styles.setupNavLabel}>{item.label}</span>
-                      <span className={styles.setupNavMeta}>
-                        {renderStatusBadge(statusBadge, VisibilityBadge)}
-                      </span>
-                    </button>
-                    {item.id === "step_setup" &&
-                      stepSetupChildItems.length > 0 &&
-                      (activeSection === "step_setup" ||
-                        stepSetupChildItems.some(
-                          (child) => child.id === activeSection,
-                        )) && (
-                        <div className={styles.subNav}>
-                          {stepSetupChildItems.map((child) => (
-                            <button
-                              key={child.id}
-                              type="button"
-                              className={`${styles.subNavItem} ${activeSection === child.id ? styles.subNavItemActive : ""}`}
-                              onClick={() => handleSectionChange(child.id)}
-                            >
-                              {child.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    {item.id === "bundle_visibility" &&
-                      (activeSection === "bundle_visibility" ||
-                        bundleVisibilityChildItems.some(
-                          (child) => child.id === activeSection,
-                        )) && (
-                        <div className={styles.subNav}>
-                          {bundleVisibilityChildItems.map((child) => (
-                            <button
-                              key={child.id}
-                              type="button"
-                              className={`${styles.subNavItem} ${activeSection === child.id ? styles.subNavItemActive : ""}`}
-                              onClick={() => handleSectionChange(child.id)}
-                            >
-                              {child.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                  </div>
-                );
-              })}
-            </div>
-          </s-stack>
-        </s-section>
+        <div className={styles.desktopSetupSection}>
+          <s-section>
+            <s-stack direction="block" gap="small">
+              <h3 className={styles.leftCardTitle}>Bundle Setup</h3>
+              <p className={styles.leftCardSubtitle}>Set-up your bundle builder</p>
+              {renderSetupNavigation({ includeTemplateRef: true })}
+            </s-stack>
+          </s-section>
+        </div>
+
+        <details
+          className={styles.mobileSetupSection}
+          open={mobileNavigationOpen}
+          onToggle={(event) => setMobileNavigationOpen(event.currentTarget.open)}
+        >
+          <summary className={styles.mobileSetupSummary}>
+            <span>
+              <span className={styles.mobileSetupEyebrow}>Bundle Setup</span>
+              <strong>{activeSectionLabel}</strong>
+            </span>
+            <span aria-hidden="true">{mobileNavigationOpen ? "▴" : "▾"}</span>
+          </summary>
+          <div className={styles.mobileSetupContent}>
+            {renderSetupNavigation({ closeAfterSelection: true })}
+          </div>
+        </details>
 
         {liveCard && (
           <s-section>

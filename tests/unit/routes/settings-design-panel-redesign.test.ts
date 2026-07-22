@@ -11,6 +11,7 @@ import {
   setDesignPreviewViewport,
   type DesignPreviewState,
 } from "../../../app/routes/app/app.settings/DesignLivePreview";
+import { buildDesignPreviewVariables } from "../../../app/routes/app/app.settings/settings-state";
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -24,6 +25,16 @@ const previewBundle = {
 };
 
 describe("settings Design preview state", () => {
+  it("applies expert preview overrides only while expert controls are enabled", () => {
+    const fieldValues = {
+      "Primary Color": "#123456",
+      "expert.productCard.productCardButtonColor": "#abcdef",
+    };
+
+    expect(buildDesignPreviewVariables(fieldValues, false)["--bundle-button-bg"]).toBe("#123456");
+    expect(buildDesignPreviewVariables(fieldValues, true)["--bundle-button-bg"]).toBe("#abcdef");
+  });
+
   it("uses Landing Page Standard desktop defaults", () => {
     expect(createDesignPreviewState()).toEqual({
       bundleType: "full_page",

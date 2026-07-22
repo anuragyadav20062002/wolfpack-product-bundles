@@ -939,3 +939,13 @@
     min-width: 0;
   }
 }
+
+@media (max-width: 359px) {
+  .analyticsActions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .analyticsActionButton:first-child {
+    grid-column: auto;
+  }
+}

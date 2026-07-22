@@ -42,6 +42,7 @@ import {
   shouldApplyDashboardLocaleSave,
 } from "./dashboard-locale-state";
 import { BundleActionsButtons } from "./BundleActionsButtons";
+import { buildDashboardTableRows } from "./dashboard-table-model";
 import dashboardStyles from "./dashboard.module.css";
 
 const STATUS_TONE_MAP = { active: 'success', draft: 'info', unlisted: 'warning' } as const;
@@ -453,6 +454,11 @@ export function DashboardPage() {
     filteredBundles.slice((effectivePage - 1) * bundlesPerPage, effectivePage * bundlesPerPage),
     [filteredBundles, effectivePage, bundlesPerPage]
   );
+  const dashboardTableRows = buildDashboardTableRows(
+    pagedBundles,
+    getStatusDisplay,
+    getBundleTypeDisplay,
+  );
   const renderResourceCard = shouldRenderDashboardResourceCard({
     hasMainContentSettled,
   });
@@ -588,15 +594,6 @@ export function DashboardPage() {
               </div>
 
               <div className={dashboardStyles.bundlesTableShell}>
-                <div className={dashboardStyles.bundlesTableHeader}>
-                  <span>{t("dashboard.table.bundleName")}</span>
-                  <div className={dashboardStyles.bundleMetaGroup}>
-                    <span>{t("dashboard.table.status")}</span>
-                    <span>{t("dashboard.table.type")}</span>
-                    <span>{t("dashboard.table.actions")}</span>
-                  </div>
-                </div>
-
                 {bundles.length === 0 ? (
                   <div className={dashboardStyles.emptyBundlesState}>
                     <div className={dashboardStyles.emptyBundlesIcon}>
@@ -620,30 +617,38 @@ export function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    {pagedBundles.map((bundle) => (
-                      <div key={bundle.id} className={dashboardStyles.bundleTableRow}>
-                        <span className={dashboardStyles.bundleTableCell}>{bundle.name}</span>
-                        <div className={dashboardStyles.bundleMetaGroup}>
-                          <span className={dashboardStyles.bundleTableCell}>{getStatusDisplay(bundle.status)}</span>
-                          <span className={dashboardStyles.bundleTableCell}>{getBundleTypeDisplay(bundle.bundleType)}</span>
-                          <span className={dashboardStyles.bundleTableCell}>
-                            <BundleActionsButtons
-                              bundleId={bundle.id}
-                              bundleType={bundle.bundleType}
-                              bundle={bundle}
-                              isEditing={editingBundleId === bundle.id}
-                              onEdit={handleEditBundle}
-                              onClone={handleCloneBundle}
-                              onDelete={handleDeleteBundle}
-                              onPreview={handlePreviewBundle}
-                              activeActionMenuBundleId={activeActionMenuBundleId}
-                              onActionMenuRequest={setActiveActionMenuBundleId}
-                              isPreviewing={previewingBundleId === bundle.id}
-                            />
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                    <s-table variant="auto">
+                      <s-table-header-row>
+                        <s-table-header listSlot="primary">{t("dashboard.table.bundleName")}</s-table-header>
+                        <s-table-header listSlot="secondary">{t("dashboard.table.status")}</s-table-header>
+                        <s-table-header listSlot="labeled">{t("dashboard.table.type")}</s-table-header>
+                        <s-table-header listSlot="labeled">{t("dashboard.table.actions")}</s-table-header>
+                      </s-table-header-row>
+                      <s-table-body>
+                        {dashboardTableRows.map((row) => (
+                          <s-table-row key={row.id}>
+                            <s-table-cell>{row.name}</s-table-cell>
+                            <s-table-cell>{row.status}</s-table-cell>
+                            <s-table-cell>{row.type}</s-table-cell>
+                            <s-table-cell>
+                              <BundleActionsButtons
+                                bundleId={row.id}
+                                bundleType={row.bundle.bundleType}
+                                bundle={row.bundle}
+                                isEditing={editingBundleId === row.id}
+                                onEdit={handleEditBundle}
+                                onClone={handleCloneBundle}
+                                onDelete={handleDeleteBundle}
+                                onPreview={handlePreviewBundle}
+                                activeActionMenuBundleId={activeActionMenuBundleId}
+                                onActionMenuRequest={setActiveActionMenuBundleId}
+                                isPreviewing={previewingBundleId === row.id}
+                              />
+                            </s-table-cell>
+                          </s-table-row>
+                        ))}
+                      </s-table-body>
+                    </s-table>
 
                     {filteredBundles.length === 0 && (
                       <div className={dashboardStyles.noFilteredBundles}>
