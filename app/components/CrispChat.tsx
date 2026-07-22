@@ -1,5 +1,8 @@
 import {useEffect} from "react";
-import {installSupportChatLoader} from "../lib/support-chat.client";
+import {
+  installSupportChatLoader,
+  installSupportChatPresentation,
+} from "../lib/support-chat.client";
 
 const CRISP_WEBSITE_ID = "dc2e8832-e25f-4366-9c47-d1079b7ad11b";
 
@@ -15,10 +18,16 @@ function configureCrispChat() {
 
 const CrispChat = () => {
   useEffect(() => {
-    return installSupportChatLoader({
+    const uninstallLoader = installSupportChatLoader({
       win: window,
       configure: configureCrispChat,
     });
+    const uninstallPresentation = installSupportChatPresentation({win: window});
+
+    return () => {
+      uninstallPresentation();
+      uninstallLoader();
+    };
   }, []);
 
   return null;

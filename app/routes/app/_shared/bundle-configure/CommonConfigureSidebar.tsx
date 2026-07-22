@@ -7,6 +7,15 @@ type CommonSetupItem = ConfigureChildItem & {
   fullPageOnly?: boolean;
 };
 
+export interface CommonConfigureLiveCard {
+  title: string;
+  label: string;
+  actionLabel: string;
+  loading?: boolean;
+  disabled?: boolean;
+  onAction: () => void;
+}
+
 export interface CommonConfigureSidebarAdapter {
   activeSection: string;
   appEmbedEnabled: boolean;
@@ -37,14 +46,6 @@ export interface CommonConfigureSidebarAdapter {
   stepSetupChildItems?: ConfigureChildItem[];
   styles: Record<string, string>;
   VisibilityBadge: (props: { isOptimised: boolean }) => JSX.Element;
-  liveCard?: {
-    title: string;
-    label: string;
-    actionLabel: string;
-    loading?: boolean;
-    disabled?: boolean;
-    onAction: () => void;
-  };
 }
 
 function getProductId(adapter: CommonConfigureSidebarAdapter) {
@@ -152,7 +153,6 @@ export function CommonConfigureSidebar({
     handleBundleProductSelect,
     handleSectionChange,
     handleSyncProduct,
-    liveCard,
     openProductInAdmin,
     openSelectTemplateModal,
     parentProductStatusUi,
@@ -387,27 +387,34 @@ export function CommonConfigureSidebar({
           </div>
         </details>
 
-        {liveCard && (
-          <s-section>
-            <s-stack direction="block" gap="small">
-              <h3 className={styles.leftCardTitle}>{liveCard.title}</h3>
-              <div className={styles.bundleLivePanel}>
-                <span className={styles.bundleLivePlaceOnTheme}>
-                  {liveCard.label}
-                </span>
-                <s-button
-                  variant="secondary"
-                  loading={liveCard.loading || undefined}
-                  disabled={liveCard.disabled || undefined}
-                  onClick={liveCard.onAction}
-                >
-                  {liveCard.actionLabel}
-                </s-button>
-              </div>
-            </s-stack>
-          </s-section>
-        )}
       </s-stack>
     </div>
+  );
+}
+
+export function CommonConfigureSupplement({
+  liveCard,
+  styles,
+}: {
+  liveCard: CommonConfigureLiveCard;
+  styles: Record<string, string>;
+}) {
+  return (
+    <s-section>
+      <s-stack direction="block" gap="small">
+        <h3 className={styles.leftCardTitle}>{liveCard.title}</h3>
+        <div className={styles.bundleLivePanel}>
+          <span className={styles.bundleLivePlaceOnTheme}>{liveCard.label}</span>
+          <s-button
+            variant="secondary"
+            loading={liveCard.loading || undefined}
+            disabled={liveCard.disabled || undefined}
+            onClick={liveCard.onAction}
+          >
+            {liveCard.actionLabel}
+          </s-button>
+        </div>
+      </s-stack>
+    </s-section>
   );
 }

@@ -1,7 +1,28 @@
 ---
+schema_version: 1
+id: app-events-taxonomy
 title: Shopify App Events Taxonomy
 type: operations
-last_audited: 2026-06-21
+status: authoritative
+summary: Defines the canonical Shopify App Events vocabulary and merchant-flow tracing guidance.
+last_audited: 2026-07-23
+owners:
+  - engineering
+domains:
+  - analytics
+systems:
+  - app-events
+source_paths:
+  - app/services/app-events.server.ts
+  - app/routes/app/
+related_docs:
+  - internal docs/Architecture/Admin Configure Page.md
+tags:
+  - telemetry
+  - operations
+keywords:
+  - app-events
+  - business-events
 ---
 
 # Shopify App Events Taxonomy
@@ -110,16 +131,15 @@ Abandonment should generally be derived from the last completed step without a l
 | Event | Sink | Fires When | Key Attributes |
 | --- | --- | --- | --- |
 | `bundle_create_started` | App Events + internal | Merchant starts create flow. | `bundle_type`, `entry_point` |
-| `bundle_create_step_completed` | App Events + internal | Merchant completes a wizard step. | `step_key`, `step_index`, `bundle_type` |
 | `bundle_created` | App Events + internal | Bundle DB record and required Shopify resources are created. | `bundle_id`, `bundle_type`, `template_id` |
-| `bundle_create_failed` | App Events + internal | Create action fails before bundle is usable. | `step_key`, `error_code`, `error_message_safe` |
+| `bundle_create_failed` | App Events + internal | Create action fails before bundle is usable. | `error_code`, `error_message_safe` |
 | `bundle_configure_started` | App Events + internal | Merchant lands in configure after create. | `bundle_id`, `bundle_type` |
 
 Business funnel:
 
-`bundle_create_started` -> `bundle_create_step_completed` for each step -> `bundle_created` -> `bundle_configure_started`.
+`bundle_create_started` -> `bundle_created` -> `bundle_configure_started`.
 
-Drop-off reports should group merchants by the final `bundle_create_step_completed.step_key` that lacks a later `bundle_created`.
+Creation has no intermediate configuration-wizard steps. Drop-off reports should distinguish a started create without `bundle_created` from a created bundle without a later configure or save event.
 
 ### Configure, Save, and Feature Usage
 
@@ -235,19 +255,18 @@ Expected sequence:
 1. `app_installed`
 2. `onboarding_started`
 3. `bundle_create_started`
-4. `bundle_create_step_completed` for each wizard step
-5. `bundle_created`
-6. `bundle_configure_started`
-7. `bundle_saved`
-8. `widget_install_started`
-9. `widget_installed`
-10. Optional: `bundle_synced`
+4. `bundle_created`
+5. `bundle_configure_started`
+6. `bundle_saved`
+7. `widget_install_started`
+8. `widget_installed`
+9. Optional: `bundle_synced`
 
 Business interpretation:
 
 - Last event is `app_installed`: merchant installed but never engaged.
 - Last event is `onboarding_started`: onboarding copy/entry point is not converting.
-- Last event is a specific `bundle_create_step_completed`: create wizard drop-off at the next step.
+- `bundle_create_started` without `bundle_created`: creation failed or was abandoned before the bundle record was created.
 - `bundle_created` without `widget_installed`: merchant created a bundle but did not complete storefront setup.
 - `widget_install_failed` or `widget_setup_missing`: setup blocker, likely support opportunity.
 
@@ -370,7 +389,7 @@ Implemented v1 emitted events:
 | Auth lifecycle | `app_installed`, `app_reauthorized`, `pixel_activation_failed`, `cart_transform_enabled`, `cart_transform_setup_failed` |
 | Uninstall webhook | `app_uninstalled` |
 | Create bundle | `bundle_create_started`, `pricing_limit_hit`, `bundle_created`, `bundle_create_failed` |
-| Create configure | `bundle_create_step_completed`, `pricing_configured`, `bundle_saved` |
+| Configure | `pricing_configured`, `bundle_saved` |
 | Sync | `bundle_sync_started`, `bundle_synced`, `bundle_sync_failed` |
 | Storefront runtime | `widget_runtime_error_reported`, internal-only `bundle_engaged`, internal-only `engagement_failed` |
 | Billing APIs | `billing_upgrade_started`, `billing_upgraded`, `billing_upgrade_failed`, `billing_cancel_started`, `billing_cancelled`, `billing_cancel_failed` |
@@ -379,7 +398,7 @@ Implemented v1 emitted events:
 Dev Dashboard tracing recipes:
 
 - Install health: filter `app_installed`, `app_reauthorized`, `pixel_activation_failed`, and `cart_transform_enabled` by shop.
-- Create funnel: `bundle_create_started` -> `bundle_created` or `bundle_create_failed`, then inspect `bundle_create_step_completed.step_key`.
+- Create funnel: `bundle_create_started` -> `bundle_created` or `bundle_create_failed`, followed by configure and save events.
 - Monetization: `pricing_limit_hit` -> `billing_upgrade_started` -> `billing_upgraded` or `billing_upgrade_failed`.
 - Sync reliability: group `bundle_sync_failed` by `bundle_type`, `route_family`, and `error_code`.
 - Storefront breakage: filter `widget_runtime_error_reported` by `bundle_type` and `category`.

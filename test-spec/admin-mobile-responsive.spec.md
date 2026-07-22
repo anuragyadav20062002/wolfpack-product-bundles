@@ -4,7 +4,7 @@ id: admin-mobile-responsive
 title: Admin Mobile Responsive Behavior
 type: test-spec
 status: active
-summary: Behavior contracts for responsive Admin navigation, bundle tables, overlays, and supporting merchant routes.
+summary: Behavior contracts for responsive Admin navigation, bundle tables, support chat, overlays, and supporting merchant routes.
 last_audited: 2026-07-23
 owners:
   - engineering
@@ -59,12 +59,24 @@ Keep merchant actions and navigation behavior intact while Admin surfaces adapt 
 | 3 | Settings section changes on a phone | Existing language/control state | Active section changes without resetting dirty values | No layout assertions |
 | 4 | File picker dialog renders | Existing picker state and callbacks | Polaris modal exposes search, upload, cancel, and select actions | Shared image picker |
 | 5 | Configure disclosure section is selected | Section ID and existing selection callback | Original callback receives the section and the disclosure closes | FPB and PPB shared shell |
-| 6 | Wizard modal opens | Stable modal ID and open state | App Bridge modal API receives a show command | Language, filters, and custom fields |
-| 7 | Wizard modal closes | Cancel, built-in dismiss, Save, or Done | State closes, App Bridge receives hide, and the opener regains focus | Draft values remain owned by the wizard |
+| 6 | PPB live card is rendered through the shell supplement | Existing placement state and callback | Loading and disabled state are preserved and the original placement callback runs | A single model owns desktop and mobile behavior |
+| 7 | Wizard modal opens | Stable modal ID and open state | App Bridge modal API receives a show command | Language, filters, and custom fields |
+| 8 | Wizard modal closes | Cancel, built-in dismiss, Save, or Done | State closes, App Bridge receives hide, and the opener regains focus | Draft values remain owned by the wizard |
+
+### Responsive support chat
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Embedded app starts in a narrow viewport | Matching phone media query | Floating chat is hidden and the close listener is registered | Row actions remain reachable |
+| 2 | Embedded app starts in a desktop viewport | Non-matching phone media query | Floating chat remains visible | Desktop support behavior is unchanged |
+| 3 | Viewport crosses the phone boundary | Media query change | Chat visibility follows the current viewport | No reload required |
+| 4 | Merchant explicitly requests support | Existing `openSupportChat` caller | Chat is shown before it opens | Works even when the launcher is hidden |
+| 5 | Explicit chat closes on a phone | Crisp close event | Floating chat is hidden again | Prevents later action overlap |
+| 6 | App shell unmounts | Presentation cleanup | Media-query and Crisp event listeners are removed | No duplicate listeners after remount |
 
 ## Acceptance Criteria
 
 - [ ] All listed behavior tests pass.
 - [ ] No tests assert CSS properties, class names, source order, or visual placement.
 - [ ] Existing save, row-action, modal, and navigation contracts remain unchanged.
-- [ ] Live Chrome checks cover 320, 390, 430, 768, and desktop widths.
+- [ ] Live Chrome checks cover 320, 390, 430, 768, and desktop widths after the PR is merged.

@@ -17,7 +17,6 @@ interface Props {
   onOpenChange?: (open: boolean) => void;
   hideCollapsedTrigger?: boolean;
   onItemClick?: (key: string) => void;
-  variant?: "detailed" | "compact";
 }
 
 function scoreColor(score: number) {
@@ -26,10 +25,9 @@ function scoreColor(score: number) {
   return "#b98900";
 }
 
-export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapsedTrigger = false, onItemClick, variant = "detailed" }: Props) {
+export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapsedTrigger = false, onItemClick }: Props) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
-  const isCompact = variant === "compact";
 
   useEffect(() => {
     if (open !== undefined) setExpanded(open);
@@ -44,13 +42,11 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
   const progressLength = (score / 100) * arcLength;
 
   const toggle = useCallback(() => {
-    if (isCompact) return;
-
     setExpanded((e) => {
       onOpenChange?.(!e);
       return !e;
     });
-  }, [isCompact, onOpenChange]);
+  }, [onOpenChange]);
 
   const allDone = items.every((i) => i.done);
 
@@ -71,7 +67,7 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
     [activateItem],
   );
 
-  if (!isCompact && hideCollapsedTrigger && !expanded) return null;
+  if (hideCollapsedTrigger && !expanded) return null;
 
   const donut = (
     <svg width="56" height="56" viewBox="0 0 56 56" className={styles.arc}>
@@ -106,19 +102,18 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
 
   return (
     <>
-      {!isCompact && expanded && <div className={styles.dimOverlay} onClick={toggle} />}
+      {expanded && <div className={styles.dimOverlay} onClick={toggle} />}
       <div className={styles.container}>
-        {!isCompact && (
-          <div className={`${styles.panelWrapper} ${expanded ? styles.panelWrapperOpen : ""}`}>
-            <div className={styles.panelInner}>
-              <div className={styles.panel}>
-                <div className={styles.panelItems}>
-                  {items.map((item) => {
-                    const showActionHint = !item.done && Boolean(item.description);
-                    const showActionChevron = !item.done && Boolean(onItemClick);
+        <div className={`${styles.panelWrapper} ${expanded ? styles.panelWrapperOpen : ""}`}>
+          <div className={styles.panelInner}>
+            <div className={styles.panel}>
+              <div className={styles.panelItems}>
+                {items.map((item) => {
+                  const showActionHint = !item.done && Boolean(item.description);
+                  const showActionChevron = !item.done && Boolean(onItemClick);
 
-                    return (
-                      <button
+                  return (
+                    <button
                         key={item.key}
                         type="button"
                         className={`${styles.panelItem} ${item.done ? styles.panelItemDone : ""} ${showActionChevron ? styles.panelItemClickable : ""}`}
@@ -158,29 +153,27 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
                             </svg>
                           </div>
                         )}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className={allDone ? styles.statusReady : styles.statusNotReady}>
-                  {allDone ? t("common.readiness.ready") : t("common.readiness.notReady")}
-                </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className={allDone ? styles.statusReady : styles.statusNotReady}>
+                {allDone ? t("common.readiness.ready") : t("common.readiness.notReady")}
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {(!hideCollapsedTrigger || expanded) && (
           <button
             type="button"
             data-tour-target="fpb-readiness-score"
-            className={`${styles.collapsed} ${expanded && !isCompact ? styles.collapsedOpen : ""} ${isCompact ? styles.collapsedCompact : ""}`}
+            className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
             onClick={toggle}
             aria-label={t("common.readiness.toggleAccessibility")}
-            aria-disabled={isCompact}
           >
             {donut}
-            {expanded && !isCompact && (
+            {expanded && (
               <div className={styles.scoreLabel}>
                 <span className={styles.scoreLabelTitle}>{t("common.readiness.title")}</span>
                 <span className={styles.scoreLabelSub}>
@@ -188,7 +181,7 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
                 </span>
               </div>
             )}
-            {!isCompact && chevron}
+            {chevron}
           </button>
         )}
       </div>
