@@ -6,7 +6,7 @@ import { OptimisedImage } from "../../../components/OptimisedImage";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { DashboardBannerSkeleton } from "../../../components/skeletons/DashboardBannerSkeleton";
 import { useDashboardState } from "../../../hooks/useDashboardState";
-import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
+import { getBundleEditPath, resolveCloneConfigureRedirect } from "../../../lib/bundle-navigation";
 import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
 import {
   closePendingDashboardPreview,
@@ -123,6 +123,7 @@ export function DashboardPage() {
     const intent = fetcherIntentRef.current;
     if (!intent) return;
     const data = fetcher.data as Record<string, unknown>;
+    const cloneRedirect = resolveCloneConfigureRedirect(data);
     if (data.success) {
       if (intent === 'createFpbPreview') {
         const previewUrl = typeof data.shareablePreviewUrl === 'string' ? data.shareablePreviewUrl : '';
@@ -138,9 +139,9 @@ export function DashboardPage() {
           pendingPreviewWindowRef.current = null;
           shopify.toast.show("No preview URL was returned.", { isError: true, duration: 5000 });
         }
-      } else if (intent === 'cloneBundle' && data.bundleId) {
+      } else if (intent === 'cloneBundle' && cloneRedirect) {
         shopify.toast.show(t("dashboard.actions.cloneSuccess"));
-        navigate(getBundleWizardConfigurePath(String(data.bundleId)));
+        navigate(cloneRedirect);
       } else if (intent === 'deleteBundle') {
         shopify.toast.show(t("dashboard.actions.deleteSuccess"));
       }

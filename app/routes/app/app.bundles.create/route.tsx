@@ -135,7 +135,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return json(data, { status: result.status });
 };
 
-export default function CreateBundleWizard() {
+export default function CreateBundleEntry() {
   const navigate = useNavigate();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
