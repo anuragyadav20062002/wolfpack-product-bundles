@@ -41,7 +41,7 @@ describe("DesignSettingsView live preview", () => {
 
     expect(view).not.toContain("<iframe");
     expect(view).toContain('aria-label="Live bundle preview"');
-    expect(view).toContain('aria-label="Preview only"');
+    expect(view).toContain('aria-label="settingsDcp.preview.previewOnly"');
     expect(view).toContain("disabled");
   });
 });

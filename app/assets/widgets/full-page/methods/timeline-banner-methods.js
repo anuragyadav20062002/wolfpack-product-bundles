@@ -73,10 +73,8 @@ ensureTimelinePagingStyles() {
   return true;
 },
 
-shouldRenderMultipleCategoryTimelineEntry(step) {
-  if (!step || step.isFreeGift === true) return false;
-  if (this.getFullPageDesignPreset?.() === 'STANDARD') return false;
-  return this.getStepCategoryTabEntries(step).length > 1;
+shouldRenderMultipleCategoryTimelineEntry() {
+  return false;
 },
 
 // Create circular icon-based step timeline with connecting lines and three icon states

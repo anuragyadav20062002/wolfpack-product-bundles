@@ -5,7 +5,7 @@ title: EB Implementation Reference
 type: reference
 status: authoritative
 summary: Records directly verified reference-app contracts used for Wolfpack bundle implementation and parity decisions.
-last_audited: 2026-07-15
+last_audited: 2026-07-22
 owners:
   - engineering
 domains:
@@ -1073,6 +1073,23 @@ Observed desktop behavior:
 - The scrollbar is a narrow WebKit scrollbar: `3px` width, transparent scrollbar background, `#f1f1f1` track, and `#f6f6f6` thumb.
 
 Evidence: `/private/tmp/fpb-standard-agentic-parity/variant-selector-dropdown-clipping/eb-long-dropdown-reference.json` and `eb-scrollbar-pseudo-reference.json`.
+
+### FPB Horizontal Grouped Variant Selector UI
+
+2026-07-22 live evidence for `FBP_SIDE_FOOTER + HORIZONTAL` confirms that a
+multi-variant product with `displayVariantsAsIndividualProducts: false` renders
+as one grouped product card with a selected-value dropdown on desktop and
+mobile. With Fragrance Candle, the selector exposed Cherry, Vanilla, Lavendar,
+Orange, and Ocean while omitting unavailable Peach. Selecting Vanilla updated
+the selected identity and product image without changing its equal price. Both
+viewports remained document-contained.
+
+The same temporary fixture did not render the grouped product in Standard,
+Classic, or Compact. Treat that as a current fixture observation, not a
+replacement for the separately verified Standard dropdown contract above,
+until the fixture-specific cause is isolated.
+
+Evidence: `/private/tmp/fpb-feature-parity/F1/grouped-variants.md`.
 
 ### PPB Global Namespace
 

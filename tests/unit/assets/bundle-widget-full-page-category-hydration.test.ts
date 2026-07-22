@@ -71,6 +71,31 @@ describe('Full Page widget category hydration behavior', () => {
     ]);
   });
 
+  it('keeps a named empty category available for storefront navigation', () => {
+    const entries = getStepCategoryTabEntries({
+      categories: [
+        {
+          categoryId: 'cat-empty',
+          title: 'Empty Category',
+          products: [],
+          selectedProducts: [],
+          collectionsSelectedData: [],
+        },
+      ],
+    });
+
+    expect(entries).toEqual([
+      {
+        id: 'cat-empty',
+        title: 'Empty Category',
+        handles: [],
+        productIds: [],
+        displayVariantsAsIndividualProducts: false,
+        displayVariantsAsSwatches: false,
+      },
+    ]);
+  });
+
   it('uses the saved FPB step-level variant display flag for category tabs', () => {
     const step = {
       displayVariantsAsIndividual: true,
@@ -214,6 +239,52 @@ describe('Full Page widget category hydration behavior', () => {
       'Collection first',
       'Collection second',
     ]);
+  });
+
+  it('renders the empty state for an active category with no product sources', () => {
+    const previousDocument = (global as any).document;
+    const grid = {
+      className: '',
+      innerHTML: '',
+      children: [] as any[],
+      appendChild(child: any) {
+        this.children.push(child);
+      },
+    };
+    (global as any).document = {
+      createElement: () => grid,
+    };
+
+    const emptyCategory = {
+      id: 'cat-empty',
+      title: 'Empty Category',
+      handles: [],
+      productIds: [],
+    };
+    const context: any = {
+      selectedBundle: { steps: [{ categories: [{ categoryId: 'cat-empty', title: 'Empty Category' }] }] },
+      stepProductData: [[{ id: 'gid://shopify/Product/1', title: 'Other category product' }]],
+      selectedProducts: [{}],
+      stepCollectionProductIds: {},
+      activeCollectionId: 'cat-empty',
+      searchQuery: '',
+      extractId: (value: string) => value.match(/(\d+)$/)?.[1] ?? value,
+      getActiveStepCategoryEntry: () => emptyCategory,
+      shouldDisplayVariantsAsIndividualForProductGrid: () => false,
+      expandProductsByVariant: (products: any[]) => products,
+      orderProductsForActiveCategory,
+      getNoProductsAvailableMessage: () => 'No Products Available',
+      createProductCard: () => ({ classList: { add: jest.fn() } }),
+    };
+
+    try {
+      const result = fullPageProductGridMethods.createFullPageProductGrid.call(context, 0);
+
+      expect(result.innerHTML).toContain('No Products Available');
+      expect(result.children).toHaveLength(0);
+    } finally {
+      (global as any).document = previousDocument;
+    }
   });
 
   it('uses category product variant availability for duplicate grouped step products', () => {

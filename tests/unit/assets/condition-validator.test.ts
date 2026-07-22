@@ -26,6 +26,7 @@ const {
   isStepConditionSatisfied,
   getAllowedQuantityPerProduct,
   canUpdateProductQuantity,
+  isProductQuantityIncreaseDisabled,
   OPERATORS,
 } = ConditionValidator;
 
@@ -144,6 +145,12 @@ describe('canUpdateProductQuantity — per-product validation', () => {
   it('always allows decreases and removals', () => {
     expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 1 }, 2, 1).allowed).toBe(true);
     expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 1 }, 1, 0).allowed).toBe(true);
+  });
+
+  it('disables the next increment only when the configured per-product limit is reached', () => {
+    expect(isProductQuantityIncreaseDisabled({ isEnabled: true, allowedQuantity: 3 }, 2)).toBe(false);
+    expect(isProductQuantityIncreaseDisabled({ isEnabled: true, allowedQuantity: 3 }, 3)).toBe(true);
+    expect(isProductQuantityIncreaseDisabled({ isEnabled: false, allowedQuantity: 1 }, 99)).toBe(false);
   });
 });
 

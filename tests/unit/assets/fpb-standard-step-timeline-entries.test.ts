@@ -11,7 +11,7 @@ function makeContext(preset: string) {
   };
 }
 
-describe('FPB Standard step timeline entries', () => {
+describe('FPB step timeline entries', () => {
   it('does not promote Standard category tabs into timeline entries', () => {
     const result = fullPageTimelineBannerMethods.shouldRenderMultipleCategoryTimelineEntry.call(
       makeContext('STANDARD'),
@@ -21,14 +21,17 @@ describe('FPB Standard step timeline entries', () => {
     expect(result).toBe(false);
   });
 
-  it('keeps existing non-Standard category timeline eligibility unchanged', () => {
-    const result = fullPageTimelineBannerMethods.shouldRenderMultipleCategoryTimelineEntry.call(
-      makeContext('CLASSIC'),
-      { name: 'Step 1' }
-    );
+  it.each(['CLASSIC', 'COMPACT', 'HORIZONTAL'])(
+    'does not promote %s category tabs into timeline entries',
+    (preset) => {
+      const result = fullPageTimelineBannerMethods.shouldRenderMultipleCategoryTimelineEntry.call(
+        makeContext(preset),
+        { name: 'Step 1' }
+      );
 
-    expect(result).toBe(true);
-  });
+      expect(result).toBe(false);
+    }
+  );
 
   it('does not promote free gift steps into category timeline entries', () => {
     const result = fullPageTimelineBannerMethods.shouldRenderMultipleCategoryTimelineEntry.call(

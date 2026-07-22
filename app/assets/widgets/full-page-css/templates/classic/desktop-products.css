@@ -22,7 +22,7 @@
             var(--classic-desktop-layout-right)
         )
     );
-    max-width: var(--classic-shell-max-width, 1536px);
+    max-width: var(--classic-shell-max-width, none);
     margin-left: auto;
     margin-right: auto;
   }
@@ -303,44 +303,23 @@
     .sidebar-content
     .product-card {
     height: auto;
-    min-height: calc(
-      (100cqw - (var(--classic-grid-gap) * 3)) / 4 +
-        var(--classic-desktop-icon-card-extra)
-    );
-    grid-template-rows:
-      calc(
-        (100cqw - (var(--classic-grid-gap) * 3)) / 4 -
-          var(--classic-desktop-card-image-extra)
-      )
-      minmax(0, 1fr);
+    min-height: 0;
+    grid-template-rows: auto auto;
   }
   .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-card.bw-product-card.product-card--has-variant {
     height: auto;
-    min-height: calc(
-      (100cqw - (var(--classic-grid-gap) * 3)) / 4 +
-        var(--classic-desktop-icon-card-extra)
-    );
-    grid-template-rows:
-      calc(
-        (100cqw - (var(--classic-grid-gap) * 3)) / 4 -
-          var(--classic-desktop-card-image-extra)
-      )
-      minmax(0, 1fr);
+    min-height: 0;
+    grid-template-rows: auto auto;
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
     .sidebar-content
     .product-image {
-    height: calc(
-      (100cqw - (var(--classic-grid-gap) * 3)) / 4 -
-        var(--classic-desktop-card-image-extra)
-    );
-    min-height: calc(
-      (100cqw - (var(--classic-grid-gap) * 3)) / 4 -
-        var(--classic-desktop-card-image-extra)
-    );
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 1;
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="icon"]
@@ -350,7 +329,7 @@
     grid-template-columns: minmax(
       0,
       1fr
-    ) var(--classic-desktop-icon-action-width, clamp(56px, 20%, 74px));
+    ) var(--classic-desktop-icon-action-width, max-content);
     grid-template-rows: minmax(max-content, 1fr) var(--classic-icon-button-size);
     gap: 8px 5px;
     width: 100%;
@@ -474,7 +453,7 @@
     display: grid;
     grid-template-columns:
       minmax(0, 1fr)
-      var(--classic-desktop-icon-action-width, clamp(56px, 20%, 74px));
+      var(--classic-desktop-icon-action-width, max-content);
     grid-template-rows: auto var(--classic-icon-button-size);
     gap: 8px 5px;
     width: 100%;
@@ -522,7 +501,7 @@
     .product-card-action {
     grid-row: 2;
     grid-column: 2;
-    width: var(--classic-desktop-icon-action-width, clamp(56px, 20%, 74px));
+    width: var(--classic-desktop-icon-action-width, max-content);
     height: var(--classic-icon-button-size);
     min-height: var(--classic-icon-button-size);
     margin: 0;
@@ -617,29 +596,16 @@
     .sidebar-content
     .product-card {
     height: auto;
-    min-height: calc(
-      (100cqw - (var(--classic-grid-gap) * 3)) / 4 +
-        var(--classic-desktop-text-card-extra)
-    );
-    grid-template-rows:
-      calc(
-        (100cqw - (var(--classic-grid-gap) * 3)) / 4 -
-          var(--classic-desktop-card-image-extra)
-      )
-      minmax(0, 1fr);
+    min-height: 0;
+    grid-template-rows: auto auto;
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]
     .sidebar-content
     .product-image {
-    height: calc(
-      (100cqw - (var(--classic-grid-gap) * 3)) / 4 -
-        var(--classic-desktop-card-image-extra)
-    );
-    min-height: calc(
-      (100cqw - (var(--classic-grid-gap) * 3)) / 4 -
-        var(--classic-desktop-card-image-extra)
-    );
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 1;
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="text"]

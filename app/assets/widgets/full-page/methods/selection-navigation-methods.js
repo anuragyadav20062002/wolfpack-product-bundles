@@ -214,6 +214,21 @@ _shouldRenderProductSlots() {
   return this.selectedBundle?.productSlotsEnabled === true;
 },
 
+syncProductQuantityIncreaseState(increaseButton, quantity) {
+  if (!increaseButton) return;
+
+  const disabled = ConditionValidator.isProductQuantityIncreaseDisabled(
+    this.selectedBundle?.validateQuantityPerProduct,
+    quantity,
+  );
+  increaseButton.disabled = disabled;
+  if (disabled) {
+    increaseButton.setAttribute('aria-disabled', 'true');
+  } else {
+    increaseButton.removeAttribute('aria-disabled');
+  }
+},
+
 updateProductQuantityDisplay(stepIndex, productId, quantity) {
   if (this.usesSelectedQuantityBadge()) {
     this.refreshCurrentProductGrid(stepIndex);
@@ -252,6 +267,10 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       if (qtyDisplay) {
         qtyDisplay.textContent = quantity;
       }
+      this.syncProductQuantityIncreaseState(
+        existingQuantityControls.querySelector('.qty-increase'),
+        quantity,
+      );
     } else {
       if (existingAddBtn) {
         existingAddBtn.remove();
@@ -268,6 +287,8 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       // Attach event listeners to the new buttons
       const increaseBtn = quantityControls.querySelector('.qty-increase');
       const decreaseBtn = quantityControls.querySelector('.qty-decrease');
+
+      this.syncProductQuantityIncreaseState(increaseBtn, quantity);
 
       if (increaseBtn) {
         increaseBtn.addEventListener('click', (e) => {

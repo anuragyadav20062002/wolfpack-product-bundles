@@ -323,14 +323,14 @@ describe('FPB summary sidebar discount progress', () => {
   });
 });
 
-describe('FPB summary bundle name header', () => {
-  it('renders the bundle name instead of the configured summary label in the desktop sidebar', () => {
+describe('FPB configured summary header', () => {
+  it('renders the configured summary title in the desktop sidebar', () => {
     const panel = document.createElement('aside') as unknown as FakeElement;
     const context = makeContext('CLASSIC', 'simple');
     context.selectedBundle.name = 'Daily Essentials';
     context.selectedBundle.bundleTextConfig = {
       bundleSummary: {
-        title: 'Your Bundle',
+        title: 'Daily kit',
         subTitle: 'Review your bundle',
       },
     };
@@ -338,15 +338,15 @@ describe('FPB summary bundle name header', () => {
 
     fullPageSidePanelMethods.renderSidePanel.call(context, panel);
 
-    expect(panel.querySelector('.side-panel-title')?.textContent).toBe('Daily Essentials');
+    expect(panel.querySelector('.side-panel-title')?.textContent).toBe('Daily kit');
   });
 
-  it('renders the bundle name instead of the configured summary label in the mobile footer', () => {
+  it('renders the configured summary title in the mobile footer', () => {
     const context = makeContext('CLASSIC', 'simple');
     context.selectedBundle.name = 'Daily Essentials';
     context.selectedBundle.bundleTextConfig = {
       bundleSummary: {
-        title: 'Your Bundle',
+        title: 'Daily kit',
         subTitle: 'Review your bundle',
       },
     };
@@ -358,7 +358,32 @@ describe('FPB summary bundle name header', () => {
       0,
     );
 
-    expect(bundleItems.querySelector('.fpb-mobile-summary-bundle-title')?.textContent).toBe('Daily Essentials');
+    expect(bundleItems.querySelector('.fpb-mobile-summary-bundle-title')?.textContent).toBe('Daily kit');
+  });
+
+  it('falls back to the bundle name when the configured summary title is empty', () => {
+    const context = makeContext('CLASSIC', 'simple');
+    context.selectedBundle.name = 'Daily Essentials';
+    context.selectedBundle.bundleTextConfig = {
+      bundleSummary: {
+        title: '   ',
+        subTitle: 'Review your bundle',
+      },
+    };
+
+    expect(fullPageMobileSummaryMethods.getBundleSummaryText.call(context)).toEqual({
+      title: 'Daily Essentials',
+      subTitle: 'Review your bundle',
+    });
+  });
+});
+
+describe('FPB summary removal accessibility', () => {
+  it.each([
+    ['14k Dangling Pendant Earrings', 'Delete 14k Dangling Pendant Earrings'],
+    ['', 'Delete product'],
+  ])('builds an action-oriented removal label for %p', (title, expected) => {
+    expect(fullPageSidePanelMethods.getSummaryProductRemoveButtonLabel(title)).toBe(expected);
   });
 });
 
