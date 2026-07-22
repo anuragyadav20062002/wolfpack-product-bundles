@@ -18,7 +18,10 @@ import { renderSelectedProductRow } from '../../shared/components/selected-produ
 import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
 import { renderStepTimelineEntry } from '../../shared/components/step-timeline.js';
 import { VariantSelectorComponent } from '../../shared/variant-selector.js';
-import { shouldRenderInlineVariantSelector } from '../../shared/variant-selector-policy.js';
+import {
+  getInlineVariantSelectorPresentation,
+  shouldRenderInlineVariantSelector,
+} from '../../shared/variant-selector-policy.js';
 import {
   buildCartLineDisplayProperties,
   buildCartLineSourceProperties,
@@ -54,16 +57,21 @@ createProductCard(product, stepIndex, options = {}) {
       ? options.displayVariantsAsIndividualProducts
       : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
   const designPreset = this.getFullPageDesignPreset();
-  const usesStandardVariantSelector = designPreset === 'STANDARD' || designPreset === 'CLASSIC';
+  const variantSelectorPresentation = getInlineVariantSelectorPresentation(designPreset);
+  const usesDropdownVariantSelector = variantSelectorPresentation.type === 'dropdown';
   const shouldRenderVariantSelector = shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
     displayVariantsAsIndividualProducts,
   });
   const variantSelectorHtml = shouldRenderVariantSelector
-    ? usesStandardVariantSelector
+    ? usesDropdownVariantSelector
       ? VariantSelectorComponent.renderDropdownHtml(product, primaryOptionName, {
-        placeholder: this._resolveText('chooseOptionsButton', 'Choose Options'),
+        placeholder: designPreset === 'HORIZONTAL'
+          ? ''
+          : this._resolveText('chooseOptionsButton', 'Choose Options'),
+        mobileMode: variantSelectorPresentation.mobileMode,
+        hideUnavailable: designPreset === 'HORIZONTAL',
       })
       : VariantSelectorComponent.renderHtml(product, primaryOptionName)
     : '';
@@ -96,7 +104,7 @@ createProductCard(product, stepIndex, options = {}) {
         addButtonText: this.getProductCardAddButtonText(step),
         increaseDisabled,
         cardBadgeHtml: stockBadgeHtml,
-        variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,
+        variantSelectorPlacement: usesDropdownVariantSelector ? 'beforePrice' : undefined,
       }
     );
   } else {

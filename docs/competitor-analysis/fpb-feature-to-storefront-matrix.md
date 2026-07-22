@@ -5,7 +5,7 @@ title: Full Page Bundle Feature-to-Storefront Verification Matrix
 type: verification-matrix
 status: active
 summary: Groups FPB storefront parity features into fixture-efficient evidence sweeps across all four designs.
-last_audited: 2026-07-21
+last_audited: 2026-07-22
 owners:
   - Wolfpack Product Bundles
 domains:
@@ -156,7 +156,7 @@ not execute row-by-row Admin mutations.
 | C03 | F1 | Sale and compare-at price | Price cluster and visibility follow the saved setting | **P** F1-INDIVIDUAL | **P** F1-INDIVIDUAL | **P** F1-INDIVIDUAL | **P** F1-INDIVIDUAL |
 | C04 | F1 | Square, tall, and wide media | Mixed aspect ratios remain contained | **S** | **S** | **T** | **T** |
 | C05 | F1 | Missing media | EB behavior is recorded; WPB uses a stable accepted fallback if different | **S** | **S** | **T** | **T** |
-| C06 | F1 | Grouped variant selector | Option selection preserves product and variant identity | **S** | **P** C03 | **T** | **T** |
+| C06 | F1 | Grouped variant selector | Option selection preserves product and variant identity | **S** | **P** C03 | **T** | **P** F1-GROUPED |
 | C07 | F1 | Variants as individual products | The saved toggle changes catalog representation | **S** | **P** C03 | **P** C02 | **P** C02 |
 | C08 | F1 | Unavailable variant | Unavailable values are hidden or disabled exactly as EB | **P** F1-INDIVIDUAL | **P** F1-INDIVIDUAL | **P** F1-INDIVIDUAL | **P** F1-INDIVIDUAL |
 | C09 | F1 | Sole sellable variant | Selector is omitted while surviving identity remains visible | **T** | **T** | **T** | **T** |
@@ -342,6 +342,7 @@ group. Screenshots, HAR files, and raw captures remain under `/private/tmp`.
 | `F1-QUANTITY` | EB Horizontal established the disabled-plus source behavior at the configured per-product maximum. WPB widget `5.0.199` replayed add, selected quantity, disabled increment, and remove states in Standard, Classic, Compact, and Horizontal at `1280x800` and `390x844`. The disabled state derives from the saved quantity rule; no quantity or layout clamping was added. Daily Essentials was restored to Horizontal with the tested product removed. | `/private/tmp/fpb-feature-parity/F1/quantity-limit-controls.md`, `tests/unit/assets/condition-validator.test.ts`, `tests/unit/assets/fpb-product-quantity-limit-controls.test.ts`, `test-spec/fpb-product-quantity-limit-controls.spec.md` |
 | `F1-COLLECTION` | The unchanged rich fixture crossed its large-collection boundary without duplicating the intentional manual/collection overlap. Current-run Standard/Classic evidence is combined with a direct Compact/Horizontal replay: EB grew from 49 to 56 unique keys through Load More; WPB widget `5.0.199` completed hydration with 51 unique selection keys and zero duplicates. Both fixtures were restored to Horizontal and hard reloaded. | `/private/tmp/fpb-feature-parity/F0/delta.md`, `/private/tmp/fpb-feature-parity/F1/collection-pagination-dedupe.md`, `/private/tmp/fpb-feature-parity/F0/{eb,wpb}/{ST,CL}/runtime-summary.md` |
 | `F1-KEYBOARD` | Standard and Classic hover geometry remained stable in EB and WPB. EB exposed `Add To Box` as a non-focusable `DIV` with no role; WPB intentionally retains a native focusable button whose Enter activation and keyboard removal use the normal selection state path. Both fixtures were restored to Horizontal and hard reloaded. | `/private/tmp/fpb-feature-parity/F1/hover-keyboard.md` |
+| `F1-GROUPED` | A temporary grouped Fragrance Candle fixture established the Horizontal source contract at `1280x800` and `390x844`: one product card, a dropdown with five sellable variants, unavailable Peach omitted, and selected identity/image updates without document overflow. WPB now selects its existing dropdown presentation for Horizontal, keeps the mobile interaction inside the card, and leaves Standard/Classic drawer and Compact button behavior unchanged. Both fixtures were restored; WPB persisted its original single Step 2 product through the active dev tunnel. | `/private/tmp/fpb-feature-parity/F1/grouped-variants.md`, `tests/unit/assets/fpb-horizontal-grouped-variant-selector.test.ts`, `test-spec/fpb-horizontal-grouped-variant-selector.spec.md` |
 
 `F0-192` does not claim true-empty equivalence. `F0-EMPTY` supersedes that
 assumption and keeps every design cell non-terminal unless both corrected EB

@@ -77,10 +77,16 @@ class VariantSelectorComponent {
     if (variants.length <= 1 || optionNames.length === 0) return '';
 
     const primaryIdx = VariantSelectorComponent._primaryIdx(optionNames, primaryOptionName);
-    const selectedLabel = options.placeholder || '';
+    const selectedVariant = variants.find(variant => String(variant.id) === String(product.variantId)) || variants[0];
+    const selectedPrimaryValue = selectedVariant?.[`option${primaryIdx}`] || selectedVariant?.title || '';
+    const selectedLabel = options.placeholder || selectedPrimaryValue;
     const productId = product.id || product.variantId;
+    const mobileMode = options.mobileMode === 'inline' ? 'inline' : 'drawer';
 
-    const optionHtml = variants.map((variant) => {
+    const dropdownVariants = options.hideUnavailable === true
+      ? variants.filter(VariantSelectorComponent._isSelectableVariant)
+      : variants;
+    const optionHtml = dropdownVariants.map((variant) => {
       const primaryValue = variant[`option${primaryIdx}`] || variant.title || '';
       const value = optionNames.length > 1 && variant.title ? variant.title : primaryValue;
       const imageUrl = VariantSelectorComponent._variantImageUrl(variant);
@@ -94,7 +100,7 @@ class VariantSelectorComponent {
     }).join('');
 
     return `
-      <div class="vs-wrapper vs-wrapper--standard" data-vs-product-id="${VariantSelectorComponent._esc(productId)}" data-vs-primary-idx="${primaryIdx}" data-vs-placeholder="${VariantSelectorComponent._esc(selectedLabel)}">
+      <div class="vs-wrapper vs-wrapper--standard" data-vs-product-id="${VariantSelectorComponent._esc(productId)}" data-vs-primary-idx="${primaryIdx}" data-vs-placeholder="${VariantSelectorComponent._esc(selectedLabel)}" data-vs-mobile-mode="${mobileMode}">
         <button type="button" class="vs-selected" aria-expanded="false">
           <span class="vs-selected-label">${VariantSelectorComponent._esc(selectedLabel)}</span>
           <span class="vs-selected-icon" aria-hidden="true">
@@ -387,7 +393,9 @@ class VariantSelectorComponent {
   }
 
   static handleStandardSelectorClick(selected, cardEl, product, onVariantChange) {
-    if (VariantSelectorComponent.isMobileViewport()) {
+    const wrapper = selected.closest('.vs-wrapper--standard');
+    const opensInlineOnMobile = wrapper?.dataset.vsMobileMode === 'inline';
+    if (VariantSelectorComponent.isMobileViewport() && !opensInlineOnMobile) {
       VariantSelectorComponent.openStandardMobileDrawer(selected, cardEl, product, onVariantChange);
       return;
     }
