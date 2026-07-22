@@ -199,11 +199,11 @@ export const DESIGN_CONFIGURATION: SettingsTab[] = [
     description: "Text token defaults for primary, secondary, and body labels.",
     fields: [
       { label: "Primary Font Size", value: "16", kind: "number" },
-      { label: "Primary Font Weight", value: "Bold", kind: "select" },
+      { label: "Primary Font Weight", value: "Bold", kind: "select", options: ["Regular", "Bold"] },
       { label: "Secondary Font Size", value: "14", kind: "number" },
-      { label: "Secondary Font Weight", value: "Bold", kind: "select" },
+      { label: "Secondary Font Weight", value: "Bold", kind: "select", options: ["Regular", "Bold"] },
       { label: "Body Font Size", value: "14", kind: "number" },
-      { label: "Body Font Weight", value: "Regular", kind: "select" },
+      { label: "Body Font Weight", value: "Regular", kind: "select", options: ["Regular", "Bold"] },
     ],
   },
   {

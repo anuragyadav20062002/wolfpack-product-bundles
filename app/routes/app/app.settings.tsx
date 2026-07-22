@@ -1,14 +1,21 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { lazy, Suspense, useState } from "react";
 import type { Prisma } from "@prisma/client";
 import { BundleType } from "../../constants/bundle";
 import { prisma } from "../../db.server";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { SETTINGS_CONTROLS_BUNDLE_TYPES, buildSettingsControlsRuntime } from "../../lib/settings-controls-runtime";
 import { SETTINGS_DESIGN_BUNDLE_TYPES, buildSettingsDesignRuntime } from "../../lib/settings-design-runtime";
+import { parseSettingsDesignPayload } from "../../lib/settings-design-contract";
 import { SETTINGS_LANGUAGE_BUNDLE_TYPES, buildSettingsLanguageRuntime } from "../../lib/settings-language-runtime";
 import { CartTransformService } from "../../services/cart-transform-service.server";
 import { buildFpbStorefrontUrl } from "../../lib/fpb-storefront-url";
-import { SettingsRoute } from "./app.settings/SettingsRoute";
+import { SettingsLandingShell, type SettingsWorkspaceView } from "./app.settings/SettingsLandingShell";
+
+const SettingsWorkspace = lazy(async () => {
+  const module = await import("./app.settings/SettingsRoute");
+  return { default: module.SettingsRoute };
+});
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await requireAdminSession(request);
@@ -62,7 +69,12 @@ export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = String(formData.get("intent") ?? "");
   const payloadValue = String(formData.get("payload") ?? "{}");
-  const payload = JSON.parse(payloadValue) as Record<string, unknown>;
+  let payload: Record<string, unknown>;
+  try {
+    payload = JSON.parse(payloadValue) as Record<string, unknown>;
+  } catch {
+    return json({ success: false, message: "Invalid Settings payload" }, { status: 400 });
+  }
 
   if (
     intent !== "saveSettingsDesign"
@@ -72,44 +84,52 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ success: false, message: "Unsupported Settings action" }, { status: 400 });
   }
 
-  const current = await prisma.designSettings.findUnique({
-    where: { shopId_bundleType: { shopId: session.shop, bundleType: "product_page" } },
-  });
-  const currentGeneralSettings = current?.generalSettings && typeof current.generalSettings === "object"
-    ? current.generalSettings as Record<string, unknown>
-    : {};
-  const currentSettingsPage = currentGeneralSettings.settingsPage && typeof currentGeneralSettings.settingsPage === "object"
-    ? currentGeneralSettings.settingsPage as Record<string, unknown>
-    : {};
-  const nextSettingsPage = {
-    ...currentSettingsPage,
-    ...(intent === "saveSettingsDesign" ? { design: payload } : {}),
-    ...(intent === "saveSettingsLanguage" ? { language: payload } : {}),
-    ...(intent === "saveSettingsControls" ? { controls: payload } : {}),
-  };
   if (intent === "saveSettingsDesign") {
-    const designRuntime = buildSettingsDesignRuntime(payload);
+    let savedState;
+    try {
+      savedState = parseSettingsDesignPayload(payload);
+    } catch (error) {
+      return json({
+        success: false,
+        intent,
+        message: error instanceof Error ? error.message : "Invalid Settings Design payload",
+      }, { status: 400 });
+    }
 
-    await Promise.all(SETTINGS_DESIGN_BUNDLE_TYPES.map(async (bundleType) => {
-      const currentForBundleType = bundleType === BundleType.PRODUCT_PAGE
-        ? current
-        : await prisma.designSettings.findUnique({
-          where: { shopId_bundleType: { shopId: session.shop, bundleType } },
-        });
+    const currentRows = await prisma.designSettings.findMany({
+      where: {
+        shopId: session.shop,
+        bundleType: { in: [...SETTINGS_DESIGN_BUNDLE_TYPES] },
+      },
+    });
+    const currentByBundleType = new Map(currentRows.map((row) => [row.bundleType, row]));
+    const writes = SETTINGS_DESIGN_BUNDLE_TYPES.map((bundleType) => {
+      const currentForBundleType = currentByBundleType.get(bundleType);
       const currentBundleGeneralSettings = currentForBundleType?.generalSettings && typeof currentForBundleType.generalSettings === "object"
         ? currentForBundleType.generalSettings as Record<string, unknown>
         : {};
+      const currentPageCustomization = currentBundleGeneralSettings.pageCustomization
+        && typeof currentBundleGeneralSettings.pageCustomization === "object"
+        ? currentBundleGeneralSettings.pageCustomization as Record<string, unknown>
+        : {};
+      const designRuntime = buildSettingsDesignRuntime(savedState, currentPageCustomization);
+      const nextBundleSettingsPage = {
+        ...(currentBundleGeneralSettings.settingsPage && typeof currentBundleGeneralSettings.settingsPage === "object"
+          ? currentBundleGeneralSettings.settingsPage as Record<string, unknown>
+          : {}),
+        design: savedState,
+      };
       const nextBundleGeneralSettings = {
         ...currentBundleGeneralSettings,
         ...(designRuntime.designSettings.generalSettings as Record<string, unknown>),
-        settingsPage: nextSettingsPage,
+        settingsPage: nextBundleSettingsPage,
       };
       const updateData = {
         ...designRuntime.designSettings,
         generalSettings: nextBundleGeneralSettings as Prisma.InputJsonValue,
       } as Prisma.DesignSettingsUncheckedUpdateInput;
 
-      await prisma.designSettings.upsert({
+      return prisma.designSettings.upsert({
         where: { shopId_bundleType: { shopId: session.shop, bundleType } },
         create: {
           shopId: session.shop,
@@ -118,11 +138,20 @@ export async function action({ request }: ActionFunctionArgs) {
         } as Prisma.DesignSettingsUncheckedCreateInput,
         update: updateData,
       });
-    }));
+    });
 
-    return json({ success: true, message: "Settings saved successfully" });
+    await prisma.$transaction(writes);
+    return json({
+      success: true,
+      intent,
+      message: "Settings saved successfully",
+      savedState,
+    });
   }
 
+  const current = await prisma.designSettings.findUnique({
+    where: { shopId_bundleType: { shopId: session.shop, bundleType: "product_page" } },
+  });
   if (intent === "saveSettingsLanguage") {
     const languageRuntime = buildSettingsLanguageRuntime(payload);
 
@@ -226,5 +255,14 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function SettingsRouteDefault() {
-  return <SettingsRoute />;
+  const [workspaceView, setWorkspaceView] = useState<SettingsWorkspaceView | null>(null);
+  if (!workspaceView) {
+    return <SettingsLandingShell onSelect={setWorkspaceView} />;
+  }
+
+  return (
+    <Suspense fallback={<s-spinner accessibilityLabel="Loading Settings" />}>
+      <SettingsWorkspace initialView={workspaceView} />
+    </Suspense>
+  );
 }

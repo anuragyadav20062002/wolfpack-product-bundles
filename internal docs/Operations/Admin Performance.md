@@ -113,11 +113,19 @@ first-render JavaScript instead.
 
 ## Settings Design Control Panel
 
-The Settings landing route keeps the redesigned Design view behind a React lazy
-boundary. The Design chunk owns its two-pane inspector/preview layout and the
-eight-template representative preview. The preview uses local fixture markup,
-validated CSS variables, and Polaris controls; it does not fetch storefront
-assets or duplicate the storefront runtime.
+The Settings landing route renders a small Polaris card shell and keeps the
+workspace implementation behind a React lazy boundary. The 2026-07-22
+production build split the initial Settings route (`app.settings`, 1.89 kB /
+0.96 kB gzip) from `SettingsRoute` (29.84 kB / 8.15 kB gzip) and
+`DesignSettingsView` (11.70 kB / 3.54 kB gzip). Neither workspace chunk is
+required for the first Settings paint.
+
+The Design chunk owns its inspector/preview layout and the eight-template
+representative preview. Its responsive behavior is container-driven because
+the usable width of a Shopify Admin iframe is independent of the browser's
+top-level viewport. The preview uses local fixture markup, validated CSS
+variables, and Polaris controls; it does not fetch storefront assets or
+duplicate the storefront runtime.
 
 For local acceptance, collect at least ten cache-bypassed loads of
 `/app/settings?wpbWebVitalsDebug=1`, enter Design on each pass, and inspect the

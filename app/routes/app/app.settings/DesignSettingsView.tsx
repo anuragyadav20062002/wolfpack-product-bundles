@@ -63,7 +63,7 @@ export function DesignSettingsView({
   const isBrandColorsPanelGated = isExpertColorControls && selectedDesignTab.title === "Brand Colors" && !isExpertScopeActive;
   const hasPreviewableBundle = previewBundles.some((bundle) => Boolean(bundle.viewUrl));
   const previewBundle = previewBundles.find((bundle) => Boolean(bundle.viewUrl));
-  const previewVariables = buildDesignPreviewVariables(designFieldValues) as CSSProperties;
+  const previewVariables = buildDesignPreviewVariables(designFieldValues, isExpertColorControls) as CSSProperties;
   const designSidebarRef = useRef<HTMLElement | null>(null);
   const designContentRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
@@ -78,26 +78,21 @@ export function DesignSettingsView({
     }));
   };
 
-return (
-  <>
-    <ui-title-bar title="Design Control Panel" />
+  return (
     <main className={styles.page}>
       <header className={styles.hero}>
-        <div className={styles.headerLeft}>
-          <button
-            type="button"
-            className={styles.backButton}
-            aria-label="Back to Settings"
+        <s-stack direction="inline" gap="small" alignItems="center">
+          <s-button
+            variant="tertiary"
+            icon="arrow-left"
+            accessibilityLabel="Back to Settings"
             onClick={() => setSettingsView("landing")}
-          >
-            <s-icon type="arrow-left" size="small"></s-icon>
-          </button>
-          <h1 className={styles.title}>Design Control Panel</h1>
-        </div>
-        <button type="button" className={styles.previewBundleButton} onClick={() => setIsPreviewModalOpen(true)}>
-          <s-icon type="view" size="small"></s-icon>
+          />
+          <s-heading>Design Control Panel</s-heading>
+        </s-stack>
+        <s-button icon="view" onClick={() => setIsPreviewModalOpen(true)}>
           Preview Bundle
-        </button>
+        </s-button>
       </header>
 
       <section className={styles.layout} aria-label="Design">
@@ -168,15 +163,15 @@ return (
                 </div>
               ) : null}
             </section>
-            <button type="button" className={styles.resetButton} onClick={resetSelectedDesignTab}>
+            <s-button variant="tertiary" tone="critical" onClick={resetSelectedDesignTab}>
               Reset to default
-            </button>
+            </s-button>
           </aside>
           <section ref={designContentRef} className={styles.inspectorContent}>
             {isBrandColorsPanelGated || designGateMessage ? (
-              <div className={styles.gateAlert} role="alert" aria-live="polite">
+              <s-banner tone="warning">
                 {designGateMessage ?? "Disable Expert Color Controls to access brand colors."}
-              </div>
+              </s-banner>
             ) : null}
             <div className={isBrandColorsPanelGated ? styles.gatedPanel : undefined}>
               <DesignFields
@@ -219,6 +214,5 @@ return (
       />
       <SettingsToast message={saveMessage} onDismiss={() => setSaveMessage(null)} />
     </main>
-  </>
   );
 }

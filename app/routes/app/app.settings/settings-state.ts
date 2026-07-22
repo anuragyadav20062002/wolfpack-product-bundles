@@ -93,9 +93,10 @@ function normalizeDesignPreviewValue(field: string, value: string) {
   return /^(#[0-9a-f]{3,8}|rgba?\([\d\s,.%]+\)|transparent)$/i.test(trimmed) ? trimmed : null;
 }
 
-export function buildDesignPreviewVariables(fieldValues: Record<string, string>) {
+export function buildDesignPreviewVariables(fieldValues: Record<string, string>, isExpertControlsEnabled = false) {
   const variables: Record<string, string> = {};
   for (const [field, value] of Object.entries(fieldValues)) {
+    if (field.startsWith("expert.") && !isExpertControlsEnabled) continue;
     const variableNames = DESIGN_PREVIEW_VARIABLES[field];
     if (!variableNames) continue;
     const normalizedValue = normalizeDesignPreviewValue(field, value);

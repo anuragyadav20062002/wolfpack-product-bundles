@@ -159,6 +159,7 @@ Primary action:
 - Unsaved design values are applied to an app-owned bundle preview through a validated CSS-variable contract; arbitrary CSS and cart mutations are rejected.
 - Design controls are unavailable until at least one storefront-ready bundle exists.
 - Settings back actions await App Bridge Save Bar leave confirmation while unsaved changes exist.
+- At phone widths, Language and Controls section navigation becomes a native disclosure that closes after a section is selected while retaining the current unsaved form state.
 
 ---
 
@@ -252,6 +253,10 @@ Pricing Page
 │
 └── Modal: Upgrade Confirmation (before billing redirect)
 ```
+
+At phone widths, the FPB Bundle Setup sidebar becomes a native disclosure whose
+summary shows the active section; selecting a parent or child section closes the
+disclosure and preserves the existing configure state.
 
 ---
 
@@ -413,6 +418,10 @@ PPB Configure Page
     │   Discount set up, Widget enabled, App embed active
     └── Click to expand/collapse
 ```
+
+At phone widths, the PPB Bundle Setup sidebar uses the same active-section
+disclosure behavior as FPB, including nested Step Setup and Bundle Visibility
+items.
 
 **Widget storefront features (as of v2.9.0):**
 - Step slot cards (empty/filled/locked states) with `addonLabel` for free gift tabs

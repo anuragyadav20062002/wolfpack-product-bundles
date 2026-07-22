@@ -227,7 +227,6 @@
 }
 
 .bundlesTableShell {
-  border: 1px solid #d8dbe1;
   border-radius: 12px;
   overflow: hidden;
   background: #fff;
@@ -604,6 +603,10 @@
 }
 
 @media (max-width: 1100px) {
+  .dashboardPage {
+    padding-inline: 24px;
+  }
+
   .dashboardHeader {
     flex-direction: column;
   }
@@ -626,9 +629,9 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 767px) {
   .dashboardPage {
-    padding-inline: 40px;
+    padding-inline: 16px;
   }
 
   .dashboardActions,
@@ -670,13 +673,6 @@
 
   .supportAvatarWrap {
     margin-top: 0;
-  }
-
-  .bundlesTableHeader {
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding-inline: 14px;
-    font-size: 12px;
-    column-gap: 14px;
   }
 
   .resourcesList {

@@ -1,8 +1,11 @@
 .page {
-  width: min(1480px, calc(100vw - 32px));
+  width: 100%;
   max-width: 1480px;
+  box-sizing: border-box;
+  container-name: design-settings;
+  container-type: inline-size;
   margin: 0 auto;
-  padding: 20px 16px 40px;
+  padding: 20px clamp(10px, 2vw, 16px) 40px;
 }
 
 .hero {
@@ -508,7 +511,7 @@
   flex-direction: column;
 }
 
-@media (max-width: 1050px) {
+@container design-settings (max-width: 720px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -519,12 +522,7 @@
   }
 }
 
-@media (max-width: 760px) {
-  .page {
-    width: 100%;
-    padding-inline: 10px;
-  }
-
+@container design-settings (max-width: 760px) {
   .hero,
   .previewHeader {
     align-items: stretch;
@@ -549,7 +547,7 @@
   }
 }
 
-@media (max-width: 460px) {
+@container design-settings (max-width: 460px) {
   .previewControls {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import styles from "./LocalAppModal.module.css";
 
 interface LocalAppModalProps {
   title: string;
@@ -30,15 +31,7 @@ export function LocalAppModal({
   return (
     <div
       role="presentation"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 2147483000,
-        display: "grid",
-        placeItems: "center",
-        padding: 24,
-        background: "rgba(17, 24, 39, 0.34)",
-      }}
+      className={styles.backdrop}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -47,28 +40,10 @@ export function LocalAppModal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        style={{
-          width: "min(560px, calc(100vw - 48px))",
-          maxHeight: "calc(100vh - 48px)",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          borderRadius: 12,
-          background: "#ffffff",
-          boxShadow: "0 24px 64px rgba(0, 0, 0, 0.24)",
-        }}
+        className={styles.dialog}
       >
-        <header
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-            padding: "16px 20px",
-            borderBottom: "1px solid #e3e3e3",
-          }}
-        >
-          <h2 style={{ margin: 0, fontSize: 18, lineHeight: 1.35, fontWeight: 650 }}>
+        <header className={styles.header}>
+          <h2 className={styles.title}>
             {title}
           </h2>
           <s-button
@@ -78,19 +53,11 @@ export function LocalAppModal({
             onClick={onClose}
           />
         </header>
-        <div style={{ padding: 20, overflow: "auto" }}>
+        <div className={styles.body}>
           {children}
         </div>
         {(primaryAction || secondaryAction) && (
-          <footer
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: 8,
-              padding: "14px 20px",
-              borderTop: "1px solid #e3e3e3",
-            }}
-          >
+          <footer className={styles.footer}>
             {secondaryAction}
             {primaryAction}
           </footer>
