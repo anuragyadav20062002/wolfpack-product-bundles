@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.190
- * Built   : 2026-07-20
+ * Version : 5.0.201
+ * Built   : 2026-07-22
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.190';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.201';
 (function() {
   'use strict';
 
@@ -288,6 +288,15 @@ const ConditionValidator = (function () {
     };
   }
 
+  function isProductQuantityIncreaseDisabled(validateQuantityPerProduct, currentQuantity) {
+    const current = Number(currentQuantity) || 0;
+    return !canUpdateProductQuantity(
+      validateQuantityPerProduct,
+      current,
+      current + 1,
+    ).allowed;
+  }
+
   function _evaluateCanUpdate(operator, required, totalAfter) {
     let allowed;
     switch (operator) {
@@ -345,6 +354,7 @@ const ConditionValidator = (function () {
     isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
+    isProductQuantityIncreaseDisabled,
     _formatStepLimitToast,
   };
 }());
@@ -2094,10 +2104,16 @@ class VariantSelectorComponent {
     if (variants.length <= 1 || optionNames.length === 0) return '';
 
     const primaryIdx = VariantSelectorComponent._primaryIdx(optionNames, primaryOptionName);
-    const selectedLabel = options.placeholder || '';
+    const selectedVariant = variants.find(variant => String(variant.id) === String(product.variantId)) || variants[0];
+    const selectedPrimaryValue = selectedVariant?.[`option${primaryIdx}`] || selectedVariant?.title || '';
+    const selectedLabel = options.placeholder || selectedPrimaryValue;
     const productId = product.id || product.variantId;
+    const mobileMode = options.mobileMode === 'inline' ? 'inline' : 'drawer';
 
-    const optionHtml = variants.map((variant) => {
+    const dropdownVariants = options.hideUnavailable === true
+      ? variants.filter(VariantSelectorComponent._isSelectableVariant)
+      : variants;
+    const optionHtml = dropdownVariants.map((variant) => {
       const primaryValue = variant[`option${primaryIdx}`] || variant.title || '';
       const value = optionNames.length > 1 && variant.title ? variant.title : primaryValue;
       const imageUrl = VariantSelectorComponent._variantImageUrl(variant);
@@ -2111,7 +2127,7 @@ class VariantSelectorComponent {
     }).join('');
 
     return `
-      <div class="vs-wrapper vs-wrapper--standard" data-vs-product-id="${VariantSelectorComponent._esc(productId)}" data-vs-primary-idx="${primaryIdx}" data-vs-placeholder="${VariantSelectorComponent._esc(selectedLabel)}">
+      <div class="vs-wrapper vs-wrapper--standard" data-vs-product-id="${VariantSelectorComponent._esc(productId)}" data-vs-primary-idx="${primaryIdx}" data-vs-placeholder="${VariantSelectorComponent._esc(selectedLabel)}" data-vs-mobile-mode="${mobileMode}">
         <button type="button" class="vs-selected" aria-expanded="false">
           <span class="vs-selected-label">${VariantSelectorComponent._esc(selectedLabel)}</span>
           <span class="vs-selected-icon" aria-hidden="true">
@@ -2391,7 +2407,9 @@ class VariantSelectorComponent {
   }
 
   static handleStandardSelectorClick(selected, cardEl, product, onVariantChange) {
-    if (VariantSelectorComponent.isMobileViewport()) {
+    const wrapper = selected.closest('.vs-wrapper--standard');
+    const opensInlineOnMobile = wrapper?.dataset.vsMobileMode === 'inline';
+    if (VariantSelectorComponent.isMobileViewport() && !opensInlineOnMobile) {
       VariantSelectorComponent.openStandardMobileDrawer(selected, cardEl, product, onVariantChange);
       return;
     }
@@ -2646,6 +2664,18 @@ function shouldRenderInlineVariantSelector({
   if (displayVariantsAsIndividualProducts === true) return false;
   if (product.parentProductId && product.variants.length === 0) return false;
   return true;
+}
+
+function getInlineVariantSelectorPresentation(designPreset) {
+  switch (designPreset) {
+    case 'STANDARD':
+    case 'CLASSIC':
+      return { type: 'dropdown', mobileMode: 'drawer' };
+    case 'HORIZONTAL':
+      return { type: 'dropdown', mobileMode: 'inline' };
+    default:
+      return { type: 'buttons', mobileMode: null };
+  }
 }
 
 /**

@@ -15,33 +15,26 @@
 }
 
 .fpb-preset-classic {
-  --classic-shell-max-width: 1536px;
-  --classic-shell-padding: clamp(8px, 1vw, 12px);
-  --classic-grid-gap: 15px;
-  --classic-card-radius: 10px;
-  --classic-card-padding: 8px;
-  --classic-card-gap: 8px;
+  --classic-shell-max-width: none;
+  --classic-shell-padding: var(--bundle-product-card-spacing, 0.75rem);
+  --classic-grid-gap: var(--bundle-product-card-spacing, 0.75rem);
+  --classic-card-radius: var(--bundle-full-page-product-card-radius, 0.625rem);
+  --classic-card-padding: var(--bundle-product-card-padding, 0.5rem);
+  --classic-card-gap: var(--bundle-product-card-spacing, 0.5rem);
 
-  --classic-desktop-card-image-extra: clamp(10px, 1.2vw, 12px);
-  --classic-desktop-icon-card-extra: clamp(80px, 8vw, 104px);
-  --classic-desktop-text-card-extra: clamp(130px, 11.5vw, 152px);
-  --classic-desktop-layout-left: clamp(16px, 2vw, 36px);
-  --classic-desktop-layout-right: clamp(16px, 2vw, 36px);
+  --classic-desktop-layout-left: var(--bundle-sidebar-layout-gap, 1.5rem);
+  --classic-desktop-layout-right: var(--bundle-sidebar-layout-gap, 1.5rem);
   --classic-desktop-layout-inner-max: 100%;
   --classic-desktop-content-fr: 7fr;
   --classic-desktop-sidebar-fr: 3fr;
   --classic-desktop-sidebar-min-width: min(20rem, 100%);
 
-  --classic-mobile-card-width: clamp(140px, 40vw, 180px);
-  --classic-mobile-shell-gutter: 10px;
-  --classic-mobile-content-bottom-padding: clamp(80px, 18vh, 120px);
-  --classic-mobile-icon-card-height: clamp(220px, 52vw, 264px);
-  --classic-mobile-text-card-height: clamp(248px, 56vw, 300px);
-  --classic-mobile-image-height: clamp(120px, 37vw, 152px);
+  --classic-mobile-shell-gutter: var(--bundle-product-card-spacing, 0.75rem);
+  --classic-mobile-content-bottom-padding: 0;
 
-  --classic-icon-button-size: clamp(30px, 4.2vw, 38px);
+  --classic-icon-button-size: var(--fpb-card-action-size, 2.25rem);
   --classic-text-button-height: 35px;
-  --classic-desktop-icon-action-width: clamp(56px, 20%, 74px);
+  --classic-desktop-icon-action-width: max-content;
   --classic-category-pill-min-height: 40px;
   --classic-category-pill-padding: 7px 24px;
   --classic-category-pill-border: 2px solid #000;
@@ -54,9 +47,9 @@
 }
 
 .bundle-widget-full-page.fpb-preset-classic {
-  width: 100vw;
-  max-width: 100vw;
-  margin-inline: calc(50% - 50vw);
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
   padding: 0;
 }
 

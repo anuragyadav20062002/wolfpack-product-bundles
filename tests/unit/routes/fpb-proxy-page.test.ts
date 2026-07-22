@@ -184,6 +184,48 @@ describe("FPB app proxy page", () => {
     expect(text).not.toContain("Build 'n <Box>");
   });
 
+  it("protects storefront message placeholders from Shopify Liquid evaluation", async () => {
+    const discountText =
+      "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!";
+    getDb().bundle.findFirst.mockResolvedValue({
+      id: "bundle-1",
+      name: "Build a Box",
+      description: null,
+      shopId: "test-shop.myshopify.com",
+      bundleType: "full_page",
+      status: "active",
+      shopifyProductId: null,
+      steps: [],
+      pricing: {
+        enabled: true,
+        method: "percentage_off",
+        rules: [],
+        showFooter: true,
+        messages: {
+          ruleMessages: {
+            "rule-1": {
+              discountText,
+              successMessage:
+                "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied.",
+            },
+          },
+        },
+      },
+    });
+
+    const response = (await loader({
+      request: makeSignedRequest(),
+      params: { bundleId: "bundle-1" },
+      context: {},
+    } as any)) as Response;
+    const text = await response.text();
+
+    expect(text).not.toContain("{{discountConditionDiff}}");
+    expect(text).toContain("&#123;&#123;discountConditionDiff&#125;&#125;");
+    expect(text).toContain("&#123;&#123;discountValue&#125;&#125;");
+    expect(text).toContain("&#123;&#123;discountValueUnit&#125;&#125;");
+  });
+
   it("requires a valid bound preview token for drafts", async () => {
     getDb().bundle.findFirst.mockResolvedValue({
       id: "bundle-1",

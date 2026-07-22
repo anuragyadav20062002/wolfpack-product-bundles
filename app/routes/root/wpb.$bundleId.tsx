@@ -11,7 +11,9 @@ function escapeHtmlAttribute(value: string): string {
     .replace(/&/g, "&amp;")
     .replace(/'/g, "&#39;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/\{/g, "&#123;")
+    .replace(/\}/g, "&#125;");
 }
 
 export async function loader({ request, params }: LoaderFunctionArgs) {

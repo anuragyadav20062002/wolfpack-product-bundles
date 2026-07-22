@@ -15,8 +15,11 @@ function makeRuntime(selectedBundle: Record<string, unknown>) {
 }
 
 describe('FPB product card CTA mode', () => {
-  it('defaults Classic product cards to EB-style text CTA copy', () => {
-    const runtime = makeRuntime({ bundleDesignPresetId: 'CLASSIC' });
+  it('uses EB-style text CTA copy in Classic when the saved control is enabled', () => {
+    const runtime = makeRuntime({
+      bundleDesignPresetId: 'CLASSIC',
+      showTextOnAddButton: true,
+    });
 
     expect(runtime.resolveFullPageCardCtaMode()).toBe('text');
     expect(runtime.getProductAddButtonText()).toBe('Add To Box');
@@ -24,7 +27,10 @@ describe('FPB product card CTA mode', () => {
 
   it('keeps Classic product card text overrides merchant-controlled', () => {
     const runtime = {
-      ...makeRuntime({ bundleDesignPresetId: 'CLASSIC' }),
+      ...makeRuntime({
+        bundleDesignPresetId: 'CLASSIC',
+        showTextOnAddButton: true,
+      }),
       config: { textOverrides: { productAddButton: 'Add To Gift Box' } },
       _resolveText(key: string, fallback: string) {
         return this.config?.textOverrides?.[key] || fallback;
@@ -33,6 +39,16 @@ describe('FPB product card CTA mode', () => {
 
     expect(runtime.resolveFullPageCardCtaMode()).toBe('text');
     expect(runtime.getProductAddButtonText()).toBe('Add To Gift Box');
+  });
+
+  it('uses the icon CTA in Classic when the saved control is disabled', () => {
+    const runtime = makeRuntime({
+      bundleDesignPresetId: 'CLASSIC',
+      showTextOnAddButton: false,
+    });
+
+    expect(runtime.resolveFullPageCardCtaMode()).toBe('icon');
+    expect(runtime.getProductAddButtonText()).toBe('+');
   });
 
   it('uses persisted showTextOnPlusEnabled to render text button copy', () => {

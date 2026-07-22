@@ -18,7 +18,10 @@ import { renderSelectedProductRow } from '../../shared/components/selected-produ
 import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
 import { renderStepTimelineEntry } from '../../shared/components/step-timeline.js';
 import { VariantSelectorComponent } from '../../shared/variant-selector.js';
-import { shouldRenderInlineVariantSelector } from '../../shared/variant-selector-policy.js';
+import {
+  getInlineVariantSelectorPresentation,
+  shouldRenderInlineVariantSelector,
+} from '../../shared/variant-selector-policy.js';
 import {
   buildCartLineDisplayProperties,
   buildCartLineSourceProperties,
@@ -54,16 +57,31 @@ createProductCard(product, stepIndex, options = {}) {
       ? options.displayVariantsAsIndividualProducts
       : step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
   const designPreset = this.getFullPageDesignPreset();
-  const usesStandardVariantSelector = designPreset === 'STANDARD' || designPreset === 'CLASSIC';
+  const variantSelectorPresentation = getInlineVariantSelectorPresentation(designPreset);
+  const usesDropdownVariantSelector = variantSelectorPresentation.type === 'dropdown';
   const shouldRenderVariantSelector = shouldRenderInlineVariantSelector({
     bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
     product,
     displayVariantsAsIndividualProducts,
   });
+  const selectableVariantCount = Array.isArray(product?.variants)
+    ? product.variants.filter(variant => variant?.available !== false).length
+    : 0;
+  const openVariantModalOnAdd =
+    this.selectedBundle?.variantSelectorEnabled === false
+    && displayVariantsAsIndividualProducts === false
+    && selectableVariantCount > 1;
+  const addButtonText = openVariantModalOnAdd
+    ? this._resolveText('chooseOptionsButton', 'Choose Options')
+    : this.getProductCardAddButtonText(step);
   const variantSelectorHtml = shouldRenderVariantSelector
-    ? usesStandardVariantSelector
+    ? usesDropdownVariantSelector
       ? VariantSelectorComponent.renderDropdownHtml(product, primaryOptionName, {
-        placeholder: this._resolveText('chooseOptionsButton', 'Choose Options'),
+        placeholder: designPreset === 'HORIZONTAL'
+          ? ''
+          : this._resolveText('chooseOptionsButton', 'Choose Options'),
+        mobileMode: variantSelectorPresentation.mobileMode,
+        hideUnavailable: true,
       })
       : VariantSelectorComponent.renderHtml(product, primaryOptionName)
     : '';
@@ -72,6 +90,10 @@ createProductCard(product, stepIndex, options = {}) {
   const outOfStock = typeof this.isVariantOutOfStock === 'function'
     ? this.isVariantOutOfStock(displayProduct)
     : displayProduct?.available === false;
+  const increaseDisabled = ConditionValidator.isProductQuantityIncreaseDisabled(
+    this.selectedBundle?.validateQuantityPerProduct,
+    currentQuantity,
+  );
   const supportsAddonDiscountBadge = ['STANDARD', 'CLASSIC'].includes(designPreset);
   const hasAddonDiscountBadge = supportsAddonDiscountBadge && displayProduct.addonDiscountBadgeText;
   const stockBadgeHtml = hasAddonDiscountBadge
@@ -88,10 +110,11 @@ createProductCard(product, stepIndex, options = {}) {
         variantSelectorHtml,
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         className: outOfStock ? 'is-out-of-stock' : '',
-        showCompareAtPrice: true,
-        addButtonText: this.getProductCardAddButtonText(step),
+        showCompareAtPrice: this.selectedBundle?.showProductComparedAtPrice === true,
+        addButtonText,
+        increaseDisabled,
         cardBadgeHtml: stockBadgeHtml,
-        variantSelectorPlacement: usesStandardVariantSelector ? 'beforePrice' : undefined,
+        variantSelectorPlacement: usesDropdownVariantSelector ? 'beforePrice' : undefined,
       }
     );
   } else {
@@ -102,7 +125,7 @@ createProductCard(product, stepIndex, options = {}) {
       {
         variantSelectorHtml,
         actionMode: 'expandingQuantity',
-        addButtonText: this.getProductCardAddButtonText(step),
+        addButtonText,
       }
     );
   }
@@ -177,6 +200,7 @@ createProductCard(product, stepIndex, options = {}) {
   // Attach event listeners for full-page specific interactions
   this.attachProductCardListeners(cardElement, product, stepIndex, {
     displayVariantsAsIndividualProducts,
+    openVariantModalOnAdd,
   });
 
   return cardElement;
@@ -375,6 +399,18 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
     const addBtn = e.target.closest('.product-add-btn');
     if (!addBtn) return;
     e.stopPropagation();
+    if (options.openVariantModalOnAdd === true) {
+      if (!this.productModal && window.BundleProductModal) {
+        this.productModal = new window.BundleProductModal(this);
+      }
+      if (!this.productModal) return;
+      const initialImageIndex = Number(cardElement.dataset.bwCardImageIndex || 0);
+      this.productModal.open(product, step, {
+        initialImageIndex,
+        readOnly: false,
+      });
+      return;
+    }
     const productId = getClickedProductId(addBtn);
     const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
     if (currentQty === 0) {
@@ -449,7 +485,8 @@ updateProductCardVariantDisplay(cardElement, product, step) {
 
   const priceRow = cardElement.querySelector('.product-price-row');
   let compareEl = cardElement.querySelector('.product-price-strike');
-  if (displayProduct.compareAtPrice) {
+  const showCompareAtPrice = this.selectedBundle?.showProductComparedAtPrice === true;
+  if (showCompareAtPrice && displayProduct.compareAtPrice) {
     if (!compareEl && priceRow && priceEl) {
       compareEl = document.createElement('span');
       compareEl.className = 'bw-product-card__compare-price product-price-strike';

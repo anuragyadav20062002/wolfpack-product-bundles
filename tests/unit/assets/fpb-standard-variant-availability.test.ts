@@ -8,6 +8,8 @@ const { fullPageProductProcessingMethods } = require('../../../app/assets/widget
 const { fullPageSearchCategoryMethods } = require('../../../app/assets/widgets/full-page/methods/search-category-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { fullPageProductGridMethods } = require('../../../app/assets/widgets/full-page/methods/product-grid-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { BUNDLE_WIDGET } = require('../../../app/assets/widgets/shared/constants.js');
 
 class FakeWrapper {
   querySelectorAll() {
@@ -125,6 +127,35 @@ describe('FPB Standard variant availability', () => {
     expect(state).toEqual({ available: null, outOfStock: false, acceptsBackorder: false });
   });
 
+  it('resolves live inventory when the card uses a numeric variant ID and step data keeps the GID', () => {
+    const context: any = {
+      stepProductData: [[{
+        id: 'gid://shopify/Product/9506421735683',
+        variants: [{
+          id: 'gid://shopify/ProductVariant/48720397271299',
+          available: true,
+        }],
+      }]],
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: true }),
+      isVariantOutOfStock: fullPageProductProcessingMethods.isVariantOutOfStock,
+      getRuntimeVariantInventory: fullPageProductProcessingMethods.getRuntimeVariantInventory,
+    };
+    fullPageProductProcessingMethods.rememberRuntimeProductInventory.call(context, [{
+      variants: [{
+        id: 'gid://shopify/ProductVariant/48720397271299',
+        available: true,
+        quantityAvailable: 1,
+        currentlyNotInStock: false,
+      }],
+    }]);
+
+    expect(fullPageProductProcessingMethods.getVariantAvailable.call(
+      context,
+      0,
+      '48720397271299',
+    )).toEqual({ available: 1, outOfStock: false, acceptsBackorder: false });
+  });
+
   it('normalizes selectedOptions into variant option fields for grouped FPB products', () => {
     const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
       extractId: (id: string) => String(id || '').split('/').pop(),
@@ -165,6 +196,47 @@ describe('FPB Standard variant availability', () => {
       expect.objectContaining({ id: '456', option1: 'S', option2: 'Black' }),
       expect.objectContaining({ id: '789', option1: 'M', option2: 'Navy' }),
     ]));
+  });
+
+  it('omits explicitly unavailable variants from individual product expansion', () => {
+    const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
+      extractId: (id: string) => String(id || '').split('/').pop(),
+      shouldExpandStepProductsDuringLoad: () => true,
+      isVariantSelectableForInventory: fullPageProductProcessingMethods.isVariantSelectableForInventory,
+      isInventoryTrackingOnAddToCartEnabled: fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled,
+      getRuntimeVariantInventory: (variant: any) => String(variant.id).endsWith('/789')
+        ? { available: false, quantityAvailable: 0, currentlyNotInStock: false }
+        : null,
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+    }, [{
+      id: 'gid://shopify/Product/123',
+      title: 'Grouped product',
+      imageUrl: 'https://cdn.example.test/product.jpg',
+      variants: [
+        {
+          id: 'gid://shopify/ProductVariant/456',
+          title: 'Available',
+          price: '30.00',
+          available: true,
+        },
+        {
+          id: 'gid://shopify/ProductVariant/789',
+          title: 'Unavailable',
+          price: '35.00',
+          available: true,
+        },
+        {
+          id: 'gid://shopify/ProductVariant/101',
+          title: 'Tracked zero stock',
+          price: '40.00',
+          available: true,
+          quantityAvailable: 0,
+          currentlyNotInStock: false,
+        },
+      ],
+    }], { displayVariantsAsIndividual: true });
+
+    expect(normalized.map((product: any) => product.variantId)).toEqual(['456', '101']);
   });
 
   it('preserves product descriptions for the product detail modal', () => {
@@ -219,7 +291,7 @@ describe('FPB Standard variant availability', () => {
     expect(normalized[0].descriptionHtml).toBe('<p>Soft <strong>cotton</strong> product description.</p>');
   });
 
-  it('keeps unavailable grouped products priced from their first variant', () => {
+  it('omits grouped products with no sellable variants when inventory tracking is enabled', () => {
     const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
       extractId: (id: string) => String(id || '').split('/').pop(),
       shouldExpandStepProductsDuringLoad: () => false,
@@ -244,14 +316,7 @@ describe('FPB Standard variant availability', () => {
       ],
     }], { displayVariantsAsIndividual: false });
 
-    expect(normalized).toHaveLength(1);
-    expect(normalized[0]).toEqual(expect.objectContaining({
-      variantId: '456',
-      price: 3000,
-      available: false,
-      quantityAvailable: 0,
-      currentlyNotInStock: false,
-    }));
+    expect(normalized).toEqual([]);
   });
 
   it('enriches cached products missing descriptions before modal normalization', async () => {
@@ -360,15 +425,7 @@ describe('FPB Standard variant availability', () => {
       expect((global as any).fetch).toHaveBeenCalledWith(
         expect.stringContaining('/apps/product-bundles/api/storefront-products'),
       );
-      expect(context.stepProductData[0]).toEqual([
-        expect.objectContaining({
-          variantId: '456',
-          price: 3000,
-          available: false,
-          quantityAvailable: 0,
-          currentlyNotInStock: false,
-        }),
-      ]);
+      expect(context.stepProductData[0]).toEqual([]);
     } finally {
       (global as any).window = previousWindow;
       (global as any).fetch = previousFetch;
@@ -442,22 +499,14 @@ describe('FPB Standard variant availability', () => {
       expect((global as any).fetch).toHaveBeenCalledWith(
         expect.stringContaining('/apps/product-bundles/api/storefront-products'),
       );
-      expect(context.stepProductData[0]).toEqual([
-        expect.objectContaining({
-          variantId: '456',
-          price: 3000,
-          available: false,
-          quantityAvailable: 0,
-          currentlyNotInStock: false,
-        }),
-      ]);
+      expect(context.stepProductData[0]).toEqual([]);
     } finally {
       (global as any).window = previousWindow;
       (global as any).fetch = previousFetch;
     }
   });
 
-  it('keeps tracked zero-stock variants visible during product grid expansion', () => {
+  it('omits tracked zero-stock variants during product grid expansion', () => {
     const expanded = fullPageProductGridMethods.expandProductsByVariant.call({
       isVariantSelectableForInventory: fullPageProductProcessingMethods.isVariantSelectableForInventory,
       isInventoryTrackingOnAddToCartEnabled: fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled,
@@ -486,21 +535,55 @@ describe('FPB Standard variant availability', () => {
       ],
     }], true);
 
-    expect(expanded).toHaveLength(2);
+    expect(expanded).toHaveLength(1);
     expect(expanded[0]).toEqual(expect.objectContaining({
-      variantId: 'gid://shopify/ProductVariant/456',
-      price: 3000,
-      available: false,
-      quantityAvailable: 0,
-      currentlyNotInStock: false,
-    }));
-    expect(expanded[1]).toEqual(expect.objectContaining({
       variantId: 'gid://shopify/ProductVariant/789',
       price: 3500,
       available: true,
       quantityAvailable: 0,
       currentlyNotInStock: true,
     }));
+  });
+
+  it('uses the self-contained widget placeholder for missing product media', () => {
+    const normalized = fullPageProductProcessingMethods.processProductsForStep.call({
+      extractId: (id: string) => String(id || '').split('/').pop(),
+      shouldExpandStepProductsDuringLoad: () => true,
+      isVariantSelectableForInventory: () => true,
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+    }, [{
+      id: 'gid://shopify/Product/123',
+      title: 'Message',
+      variants: [{
+        id: 'gid://shopify/ProductVariant/456',
+        title: 'Message',
+        price: '0.00',
+        available: true,
+      }],
+    }], { displayVariantsAsIndividual: true });
+
+    expect(normalized[0].imageUrl).toBe(BUNDLE_WIDGET.PLACEHOLDER_IMAGE);
+  });
+
+  it('omits an already-expanded card when runtime inventory marks its variant unavailable', () => {
+    const expanded = fullPageProductGridMethods.expandProductsByVariant.call({
+      getRuntimeVariantInventory: () => ({
+        available: false,
+        quantityAvailable: 0,
+        currentlyNotInStock: false,
+      }),
+      isVariantSelectableForInventory: fullPageProductProcessingMethods.isVariantSelectableForInventory,
+      isInventoryTrackingOnAddToCartEnabled: fullPageProductProcessingMethods.isInventoryTrackingOnAddToCartEnabled,
+      _getLandingPageControls: () => ({ trackInventoryOnAddToCart: false }),
+    }, [{
+      id: 'gid://shopify/ProductVariant/456',
+      variantId: 'gid://shopify/ProductVariant/456',
+      parentProductId: 'gid://shopify/Product/123',
+      title: 'Grouped product',
+      available: true,
+    }], true);
+
+    expect(expanded).toEqual([]);
   });
 
   it('uses runtime inventory by variant id when the card DTO has stale stock fields', () => {

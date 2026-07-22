@@ -5,7 +5,7 @@ title: "Test Spec: FPB App Proxy Host Migration"
 type: test-spec
 status: active
 summary: Verifies the FPB storefront host migration from Shopify Pages to signed app-proxy Liquid documents.
-last_audited: 2026-07-14
+last_audited: 2026-07-20
 owners:
   - engineering
 domains:
@@ -63,6 +63,7 @@ Make the signed FPB app-proxy route the only runtime document host while keeping
 | 4 | Hidden statuses | Archived, missing, wrong type, cross-shop | 404 | No bundle disclosure |
 | 5 | Runtime payload | Ordered steps/categories and template/preset | Escaped full formatter payload in marker | No proxy asset URLs |
 | 6 | Proxy document bootstrap | Marker declares `data-bundle-config-source="app_proxy"` with full payload | Widget uses inline payload without bundle JSON request | Legacy Page payloads still hydrate through API |
+| 7 | Liquid-safe message placeholders | Runtime config contains merchant templates with `{{variable}}` placeholders | Liquid response entity-encodes braces; browser attribute decoding restores the exact JSON templates | Prevents Shopify Liquid from consuming widget variables |
 
 ### DashboardPreview
 

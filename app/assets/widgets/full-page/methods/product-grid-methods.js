@@ -23,12 +23,8 @@ import {
 } from '../../shared/engine/cart-lines.js';
 
 
-export function shouldCategoryTabActivateProducts({
-  designPreset,
-  viewportWidth,
-  hasCategoryEntries,
-}) {
-  return !(designPreset === 'STANDARD' && hasCategoryEntries && viewportWidth < 768);
+export function shouldCategoryTabActivateProducts() {
+  return true;
 }
 
 export const fullPageProductGridMethods = {
@@ -235,24 +231,7 @@ createFullPageProductGrid(stepIndex) {
   // Filter by active category/collection if selected
   if (activeCollectionId) {
     if (activeCategory) {
-      const allowedProductIds = new Set();
-      activeCategory.productIds.forEach(productId => {
-        allowedProductIds.add(this.extractId(productId) || productId);
-      });
-      activeCategory.handles.forEach(handle => {
-        const collectionProductIds = this.stepCollectionProductIds[`${stepIndex}:${handle}`] || [];
-        collectionProductIds.forEach(productId => {
-          allowedProductIds.add(this.extractId(productId) || productId);
-        });
-      });
-
-      if (allowedProductIds.size > 0) {
-        products = products.filter(p => {
-          const numericPid = p.parentProductId || p.id || '';
-          return allowedProductIds.has(numericPid);
-        });
-        products = this.orderProductsForActiveCategory(products, activeCategory, stepIndex);
-      }
+      products = this.orderProductsForActiveCategory(products, activeCategory, stepIndex);
     } else if (step.collections) {
       const activeCollection = step.collections.find(c => c.id === activeCollectionId);
     if (activeCollection && activeCollection.handle) {
@@ -336,15 +315,16 @@ expandProductsByVariant(products, shouldExpand = true) {
       }
       return variant?.available !== false;
     };
-
     // If product already has a variantId and parentProductId, it was already expanded
     if (product.parentProductId && product.variantId) {
+      if (!isVariantSelectable(product)) return [];
       return [{ ...product, available: isVariantSelectable(product) }];
     }
 
     // If product has multiple variants, expand into separate cards
     if (product.variants && product.variants.length > 1) {
       return product.variants
+        .filter(variant => isVariantSelectable(variant))
         .map(variant => {
           const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
             ? context.getRuntimeVariantInventory(variant)
@@ -385,8 +365,10 @@ expandProductsByVariant(products, shouldExpand = true) {
     // Single variant or no variants - return as-is
     if (Array.isArray(product.variants) && product.variants.length === 1) {
       const variant = product.variants[0];
+      if (!isVariantSelectable(variant)) return [];
       return [{ ...product, available: isVariantSelectable(variant) }];
     }
+    if (!isVariantSelectable(product)) return [];
     return [{ ...product, available: isVariantSelectable(product) }];
   });
 },

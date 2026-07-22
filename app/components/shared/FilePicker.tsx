@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
 import { Banner, BlockStack, Text } from "@shopify/polaris";
 import {
   useLazyGetUploadStoreFileStatusQuery,
@@ -32,6 +32,7 @@ export function FilePicker({
   onClose,
 }: FilePickerProps) {
   const [open, setOpen] = useState(false);
+  const previewActionsMenuId = `file-picker-preview-actions-${useId().replace(/:/g, "")}`;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [files, setFiles] = useState<StoreFile[]>([]);
   const [search, setSearch] = useState("");
@@ -324,6 +325,7 @@ export function FilePicker({
           triggerIcon={triggerIcon}
           uploadButtonAction={uploadButtonAction}
           fitPreviewToTrigger={fitPreviewToTrigger}
+          previewActionsMenuId={previewActionsMenuId}
           triggerIsUploading={triggerIsUploading}
           uploadStatus={uploadStatus}
           handleOpen={handleOpen}

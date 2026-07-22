@@ -22,8 +22,17 @@ import {
   buildCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
 
+export function getEnabledFullPageSteps(steps) {
+  if (!Array.isArray(steps)) return [];
+  return steps.filter(step => step?.enabled !== false);
+}
 
 export const fullPageInitialRenderMethods = {
+shouldRenderFullPageStepChrome() {
+  return Array.isArray(this.selectedBundle?.steps)
+    && this.selectedBundle.steps.length > 1;
+},
+
 updateMessagesFromBundle() {
   // Product-page bundles (metafield path) expose a top-level `messaging` object with
   // camelCase keys (progressTemplate / successTemplate).
@@ -81,10 +90,11 @@ updateMessagesFromBundle() {
 
 applyPersonalizationAddonProducts() {
   const addonStep = this.buildAddonStepFromPersonalization();
-  if (!addonStep) return;
-
-  this.selectedBundle.steps = (this.selectedBundle.steps || []).filter(step => !step.isFreeGift);
-  this.selectedBundle.steps = [...(this.selectedBundle.steps || []), addonStep];
+  this.selectedBundle.steps = getEnabledFullPageSteps(this.selectedBundle.steps)
+    .filter(step => !step.isFreeGift);
+  if (addonStep) {
+    this.selectedBundle.steps = [...this.selectedBundle.steps, addonStep];
+  }
 },
 
 buildAddonStepFromPersonalization() {

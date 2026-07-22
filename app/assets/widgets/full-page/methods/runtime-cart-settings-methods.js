@@ -425,10 +425,6 @@ resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
   bundle?.showTextOnAddButton === true
   || bundle?.showTextOnPlusEnabled === true;
 
-  if (this.resolveFullPageLayout(bundle) === 'footer_side' && this.getFullPageDesignPreset(bundle) === 'CLASSIC') {
-    return 'text';
-  }
-
   return showTextOnAddButton ? 'text' : 'icon';
 },
 

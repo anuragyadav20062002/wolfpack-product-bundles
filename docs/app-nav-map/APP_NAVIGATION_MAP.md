@@ -5,7 +5,7 @@ title: Wolfpack Product Bundles App Navigation and UI Map
 type: navigation-map
 status: authoritative
 summary: Routes, screens, actions, modals, and storefront-preview flows for the embedded app.
-last_audited: 2026-07-20
+last_audited: 2026-07-22
 owners:
   - engineering
 domains:
@@ -29,7 +29,7 @@ keywords:
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-07-20
+**Last Updated:** 2026-07-22
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -153,7 +153,9 @@ Settings
 
 Primary action:
 - Design card Configure opens the Settings -> Design subpage
-- The Design Control Panel keeps its controls and selected storefront preview visible together on desktop.
+- The Design Control Panel lazy-loads after entry and uses a responsive two-pane view: one inspector for the existing sections and fields, plus a sticky app-owned preview that stacks above the inspector at narrow widths.
+- Preview-only Bundle Type and Template selectors cover Landing Page Standard, Classic, Compact, and Horizontal plus Product Page Product List, Product Grid, Horizontal Slots, and Vertical Slots.
+- Adjacent desktop and mobile icon buttons switch the representative preview viewport without saving or clearing unsaved Design values. Images & GIFs uses the same preview surface in its loading state.
 - Unsaved design values are applied to an app-owned bundle preview through a validated CSS-variable contract; arbitrary CSS and cart mutations are rejected.
 - Design controls are unavailable until at least one storefront-ready bundle exists.
 - Settings back actions await App Bridge Save Bar leave confirmation while unsaved changes exist.
@@ -460,8 +462,10 @@ Billing Page
 ```
 /app/settings
   └── Click Design card → Settings -> Design panel opens
-      ├── Select storefront-ready bundle for the adjacent preview
+      ├── Existing Design sections and fields render in one inspector pane
+      ├── Select preview-only bundle type, template, and desktop/mobile viewport
       ├── Change setting → app-owned live preview updates immediately (no persistence)
+      ├── Images & GIFs section → same app-owned preview renders its loading state
       ├── Preview blocks add-to-cart and form submission
       └── [Save] → Save Bar submits → toast confirmation
 ```

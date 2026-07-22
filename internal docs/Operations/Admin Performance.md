@@ -1,7 +1,31 @@
 ---
+schema_version: 1
+id: admin-performance
 title: Admin Performance
 type: operations
-last_audited: 2026-07-10
+status: authoritative
+summary: Embedded Admin Web Vitals instrumentation, route-level LCP findings, and critical-path constraints.
+last_audited: 2026-07-22
+owners:
+  - engineering
+domains:
+  - admin
+  - performance
+systems:
+  - app-bridge
+  - remix
+source_paths:
+  - app/lib/admin-web-vitals-diagnostics.client.ts
+  - app/routes/app/app.settings/SettingsRoute.tsx
+  - app/routes/app/app.settings/DesignSettingsView.tsx
+related_docs:
+  - internal docs/Operations/LCP and CLS Playbook.md
+tags:
+  - web-vitals
+  - lcp
+keywords:
+  - wpbWebVitalsDebug
+  - settings
 ---
 
 # Admin Performance
@@ -78,7 +102,7 @@ Measured in the Shopify Admin chrome on `wolfpack-store-test-1` / SIT using
 | `/app/pricing` | Source audit: no first-viewport owned image | No image preload fix |
 | `/app/bundles/cart-transform` | Source audit: no first-viewport owned image | No image preload fix |
 | `/app/attribution` | Current local app candidate: critical funnel heading; historical candidates: inactive tracking body copy, deferred funnel hero title | Render the funnel heading in the route shell before analytics resolves; keep inactive/no-data copy out of the critical first-paint path; render the deferred funnel metrics without duplicating the late heading. |
-| `/app/settings` | Source audit: dynamic settings preview images are not route hero content | No speculative preload; measure a concrete settings subview before adding one |
+| `/app/settings` | Source audit: dynamic settings preview images are not route hero content | The Design subpage and its redesigned CSS are lazy-loaded only after the merchant enters Design. Its representative preview uses local markup and CSS with no remote media, storefront iframe, or widget runtime. Do not add speculative preloads; use repeated `?wpbWebVitalsDebug=1` samples for concrete settings-subview evidence. |
 | `/app/store-files` / `/app/upload-store-file` | Source audit: images are picker/file content, not initial route hero content | No route preload |
 | Configure routes | Source audit: dynamic product/template images depend on loaded bundle state and active section/modal | Do not globally preload; measure concrete FPB/PPB configure URLs and preload only confirmed above-fold candidates |
 
@@ -86,6 +110,20 @@ Pages without first-viewport owned media should be treated as text/bootstrap-bou
 unless a future debug run logs an owned image candidate. For text LCP pages, do
 not add image preloads speculatively; focus on loader critical path and reducing
 first-render JavaScript instead.
+
+## Settings Design Control Panel
+
+The Settings landing route keeps the redesigned Design view behind a React lazy
+boundary. The Design chunk owns its two-pane inspector/preview layout and the
+eight-template representative preview. The preview uses local fixture markup,
+validated CSS variables, and Polaris controls; it does not fetch storefront
+assets or duplicate the storefront runtime.
+
+For local acceptance, collect at least ten cache-bypassed loads of
+`/app/settings?wpbWebVitalsDebug=1`, enter Design on each pass, and inspect the
+app-owned sample set. The planned Design target is LCP p75 at or below `2000ms`,
+with a hard failure above `2500ms`, and CLS below `0.1`. Shopify/App Bridge field
+metrics after a manual SIT deployment remain the final p75 source of truth.
 
 ## Removed Custom Telemetry
 

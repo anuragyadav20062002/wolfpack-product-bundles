@@ -267,7 +267,8 @@
     width: calc(100% - (var(--classic-sidebar-summary-inset, 0.5rem) * 2));
     min-height: 0;
     margin-inline: var(--classic-sidebar-summary-inset, 0.5rem);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .bundle-widget-full-page
@@ -303,12 +304,18 @@
     > .classic-sidebar-slots,
   .fpb-preset-classic .side-panel-summary-content > .classic-sidebar-slots {
     order: 4;
-    display: inline-grid;
-    grid-auto-flow: column;
-    grid-auto-columns: var(--classic-sidebar-slot-size, 5rem);
-    grid-template-columns: none;
+    display: grid;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(
+        var(--classic-sidebar-slot-size, 5rem),
+        var(--classic-sidebar-slot-size, 5rem)
+      )
+    );
+    grid-auto-rows: var(--classic-sidebar-slot-size, 5rem);
     gap: var(--classic-sidebar-slot-gap, 10px);
-    width: max-content;
+    width: 100%;
     max-width: 100%;
     margin: 0 0 var(--classic-sidebar-slot-addon-gap, 15px);
     padding: 0;
