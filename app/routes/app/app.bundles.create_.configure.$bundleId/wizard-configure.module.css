@@ -1,13 +1,22 @@
 /* ── Page Shell ───────────────────────────────────────────────── */
-.wizardQueryContainer,
+.wizardQueryContainer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-width: 100%;
+}
+
 .wizardQueryContainer > s-query-container {
   display: block;
-  min-width: 0;
+  inline-size: 100%;
+  min-inline-size: 0;
   max-width: 100%;
 }
 
 .page {
-  min-width: 0;
+  inline-size: 100%;
+  min-inline-size: 0;
   max-width: 100%;
   box-sizing: border-box;
   min-height: 100vh;
@@ -145,10 +154,11 @@
 /* ── Two-column Layout ────────────────────────────────────────── */
 .layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   gap: 20px;
   align-items: start;
-  min-width: 0;
+  inline-size: 100%;
+  min-inline-size: 0;
 }
 
 .leftCol {
@@ -162,8 +172,18 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-inline-size: 0;
   position: sticky;
   top: 24px;
+}
+
+.layout > *,
+.leftCol > *,
+.rightCol > *,
+.card,
+.sideCard {
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
 /* ── Step Chip Navigation — custom pill pattern, no Polaris equivalent ── */
@@ -646,6 +666,31 @@
   .wizardFooter {
     padding-right: 0;
     padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 767px) {
+  .page {
+    padding: 16px;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rightCol {
+    position: static;
+  }
+
+  .pageHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .stepIndicator {
+    margin: 0 -16px;
+    padding: 12px 16px;
+    border-radius: 0;
   }
 }
 

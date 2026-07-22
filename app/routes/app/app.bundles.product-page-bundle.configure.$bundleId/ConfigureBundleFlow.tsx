@@ -6,7 +6,10 @@ import {
   usePpbConfigureContext,
 } from "./PpbConfigureContext";
 import { PpbCanvasHeader } from "./PpbCanvasHeader";
-import { PpbConfigureSidebar } from "./PpbConfigureSidebar";
+import {
+  PpbConfigureSidebar,
+  PpbConfigureSupplement,
+} from "./PpbConfigureSidebar";
 import { PpbDiscountLanguageModals } from "./PpbDiscountLanguageModals";
 import { PpbMainSections } from "./PpbMainSections";
 import { PpbOverlayModals } from "./PpbOverlayModals";
@@ -29,6 +32,7 @@ function ConfigureBundleCanvas() {
       saveForm={<PpbSaveForm />}
       header={<PpbCanvasHeader />}
       sidebar={<PpbConfigureSidebar />}
+      supplementaryContent={<PpbConfigureSupplement />}
       overlays={
         <>
           <PpbPageSelectionModal />

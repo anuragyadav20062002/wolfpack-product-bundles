@@ -112,7 +112,11 @@ export function PpbSelectedItemsModals() {
             );
           })()}
         </s-stack>
-        <s-button slot="primary-action" onClick={handleCloseProductsModal}>
+        <s-button
+          slot="primary-action"
+          variant="primary"
+          onClick={handleCloseProductsModal}
+        >
           Close
         </s-button>
       </s-modal>
@@ -168,7 +172,11 @@ export function PpbSelectedItemsModals() {
             );
           })()}
         </s-stack>
-        <s-button slot="primary-action" onClick={handleCloseCollectionsModal}>
+        <s-button
+          slot="primary-action"
+          variant="primary"
+          onClick={handleCloseCollectionsModal}
+        >
           Close
         </s-button>
       </s-modal>
