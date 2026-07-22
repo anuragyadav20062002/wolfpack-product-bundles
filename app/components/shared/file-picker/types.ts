@@ -19,7 +19,7 @@ export interface FilePickerProps {
 }
 
 export type FilePickerDialogProps = {
-  dialogRef: RefObject<HTMLDialogElement>;
+  dialogRef: RefObject<any>;
   label: string;
   search: string;
   setSearch: (value: string) => void;

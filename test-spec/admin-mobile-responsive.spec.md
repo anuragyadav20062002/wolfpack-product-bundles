@@ -14,6 +14,7 @@ systems:
   - remix-routes
 source_paths:
   - app/routes/app/
+  - app/components/shared/file-picker/
 related_docs:
   - docs/app-nav-map/APP_NAVIGATION_MAP.md
 tags:
@@ -54,6 +55,7 @@ Keep merchant actions and navigation behavior intact while Admin surfaces adapt 
 | 1 | Accordion header is activated | Click or keyboard activation | Expanded state toggles without changing caller props | Events page |
 | 2 | Readiness item is selected | Incomplete actionable item | Overlay closes and original section callback receives the key | Configure editors |
 | 3 | Settings section changes on a phone | Existing language/control state | Active section changes without resetting dirty values | No layout assertions |
+| 4 | File picker dialog renders | Existing picker state and callbacks | Polaris modal exposes search, upload, cancel, and select actions | Shared image picker |
 
 ## Acceptance Criteria
 

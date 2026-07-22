@@ -262,14 +262,14 @@ export function SettingsRoute({ initialView = "landing" }: { initialView?: "land
                 label="Enable Multilanguage"
                 details="Select the language mode for your app"
                 checked={isMultilanguageEnabled || undefined}
-                onChange={(event) => setIsMultilanguageEnabled(event.currentTarget.checked)}
+                onChange={(event) => setIsMultilanguageEnabled(Boolean(event.currentTarget.checked))}
               />
             </div>
             <div className={styles.languageSelectStack}>
               <s-select
                 label="Add preferred languages"
                 value={selectedLanguage}
-                onChange={(event) => setSelectedLanguage(event.currentTarget.value)}
+                onChange={(event) => setSelectedLanguage(event.currentTarget.value || selectedLanguage)}
               >
                 {SUPPORTED_LANGUAGE_LABELS.map((language) => (
                   <s-option key={language} value={language}>{language}</s-option>

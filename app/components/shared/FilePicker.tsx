@@ -33,7 +33,7 @@ export function FilePicker({
 }: FilePickerProps) {
   const [open, setOpen] = useState(false);
   const previewActionsMenuId = `file-picker-preview-actions-${useId().replace(/:/g, "")}`;
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dialogRef = useRef<any>(null);
   const [files, setFiles] = useState<StoreFile[]>([]);
   const [search, setSearch] = useState("");
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
@@ -61,8 +61,8 @@ export function FilePicker({
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
+    if (open) dialog.show?.();
+    if (!open) dialog.hide?.();
   }, [open]);
 
   useEffect(() => {

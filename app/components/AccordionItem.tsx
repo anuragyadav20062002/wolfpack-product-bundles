@@ -7,7 +7,7 @@ interface AccordionItemProps {
   badge?: string;
   badgeColor?: string;
   badgeTextColor?: string;
-  children: ReactNode;
+  children?: ReactNode;
   defaultOpen?: boolean;
 }
 
