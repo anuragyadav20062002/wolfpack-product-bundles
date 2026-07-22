@@ -248,3 +248,33 @@
   font-weight: 500;
   color: #008060;
 }
+
+@media (max-width: 767px) {
+  .dimOverlay {
+    display: none;
+  }
+
+  .container {
+    position: static;
+    z-index: auto;
+    width: 100%;
+    margin: 0 0 16px;
+    padding-inline: 0;
+  }
+
+  .panelWrapper,
+  .collapsedOpen,
+  .collapsed {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .panelItems {
+    max-height: min(46dvh, 380px);
+  }
+
+  .collapsed {
+    min-height: 44px;
+  }
+}

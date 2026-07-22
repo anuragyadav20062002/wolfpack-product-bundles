@@ -36,11 +36,11 @@ export function CommonConfigureShell({
     >
       {saveForm}
       {header}
+      {overlays}
       <div className={styles.editGrid}>
         {sidebar}
         <div className={styles.mainColumn}>{children}</div>
       </div>
-      {overlays}
     </div>
   );
 }

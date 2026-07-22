@@ -658,9 +658,10 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 767px) {
   .page {
     padding: 16px;
+    overflow-x: clip;
   }
   .pageHeader {
     align-items: flex-start;
@@ -683,6 +684,26 @@
   }
   .filterRow {
     grid-template-columns: 1fr;
+  }
+  .pricingCardHeader,
+  .assetRow,
+  .displayOptionRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .discountRuleFields,
+  .ruleRow,
+  .customFieldRowTop {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+  .modalFooter {
+    align-items: stretch;
+    flex-direction: column-reverse;
+    padding: 14px 16px max(14px, env(safe-area-inset-bottom));
+  }
+  .modalFooter > * {
+    width: 100%;
   }
 }
 

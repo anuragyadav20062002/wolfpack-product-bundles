@@ -726,6 +726,10 @@
   align-items: start;
 }
 
+.responsiveSectionSummary {
+  display: none;
+}
+
 .controlsSidebarCard,
 .controlsContentCard {
   border: 1px solid #d9d9d9;
@@ -1846,5 +1850,95 @@
   .integrationGrid,
   .detailGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsiveSectionDisclosure:not([open]) > .responsiveSectionContent {
+    display: block;
+  }
+}
+
+@media (max-width: 767px) {
+  .page {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 18px 16px 72px;
+    overflow-x: clip;
+  }
+
+  .languageTopCard,
+  .languageContentLayout,
+  .controlsLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .languageTopCard {
+    gap: 16px;
+  }
+
+  .languageTopCopy {
+    padding-right: 0;
+  }
+
+  .languageSelectStack {
+    border-top: 1px solid #e3e3e3;
+    border-left: 0;
+    padding-top: 16px;
+    padding-left: 0;
+  }
+
+  .responsiveSectionDisclosure {
+    min-width: 0;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .responsiveSectionSummary {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .responsiveSectionSummary::-webkit-details-marker {
+    display: none;
+  }
+
+  .responsiveSectionSummary > span:first-child {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .responsiveSectionEyebrow {
+    color: #6d7175;
+    font-size: 11px;
+    font-weight: 650;
+  }
+
+  .responsiveSectionContent {
+    border: 0;
+    border-top: 1px solid #e3e3e3;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .controlsContentColumn,
+  .languageFieldPanel {
+    min-width: 0;
+  }
+
+  .ebSectionHeader,
+  .languageHero,
+  .settingsSubpageHeaderLeft {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 }

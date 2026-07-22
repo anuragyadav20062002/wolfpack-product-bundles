@@ -1,7 +1,31 @@
 ---
+schema_version: 1
+id: eb-settings-design-reference
 title: EB Settings Design Reference
 type: reference
-last_audited: 2026-06-04
+status: authoritative
+summary: Live EB Settings Design request, state, and storefront-mapping contract used to implement Wolfpack Design settings.
+last_audited: 2026-07-22
+owners:
+  - engineering
+domains:
+  - admin
+  - settings
+systems:
+  - design-settings
+  - storefront-runtime
+source_paths:
+  - app/lib/settings-design-contract.ts
+  - app/lib/settings-design-runtime.ts
+  - app/routes/app/app.settings.tsx
+related_docs:
+  - internal docs/Operations/Admin Performance.md
+tags:
+  - design-settings
+  - runtime-contract
+keywords:
+  - pageCustomization
+  - stylePresets
 ---
 
 # EB Settings Design Reference
@@ -17,7 +41,14 @@ Evidence sources:
 
 ## Store-Level Contract
 
-EB Settings -> Design is store-level, not per bundle. A save from the Design Control Panel posts the full page-customization document to:
+EB Settings -> Design is store-level, not per bundle. The Admin reads the full
+page-customization document from:
+
+```text
+GET https://prod.backend.giftbox.giftkart.app/api/pageCustomization/read?shopName={shop}
+```
+
+A save from the Design Control Panel posts the full document to:
 
 ```text
 POST https://prod.backend.giftbox.giftkart.app/api/pageCustomization/update?shopName={shop}
@@ -40,6 +71,32 @@ banners
 stylePresets
 templateLevelConfig
 ```
+
+The read response also carries a `quickSettings` bridge and the feature flag
+used by the consolidated runtime:
+
+```json
+{
+  "quickSettings": {
+    "isQuickSettingsEnabled": true,
+    "colors": {
+      "primaryColor": "#000000",
+      "buttonBgColor": "#000000",
+      "buttonTextColor": "#ffffff"
+    }
+  },
+  "generalSettings": {
+    "applyNewPageCustomization": true
+  }
+}
+```
+
+Updates are full-document writes. A Design save must merge its owned fields
+into the current document and preserve every unrelated root, including bundle
+configuration, add-ons, banners, template configuration, and mix-and-match
+data. Wolfpack applies the same merged Design runtime atomically to its
+`product_page` and `full_page` DesignSettings rows so both storefront surfaces
+receive one store-level state.
 
 The same save also posts loading/control-related data to:
 
