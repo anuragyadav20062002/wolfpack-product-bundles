@@ -42,7 +42,10 @@ import {
   shouldApplyDashboardLocaleSave,
 } from "./dashboard-locale-state";
 import { BundleActionsButtons } from "./BundleActionsButtons";
-import { buildDashboardTableRows } from "./dashboard-table-model";
+import {
+  buildDashboardTablePage,
+  buildDashboardTableRows,
+} from "./dashboard-table-model";
 import dashboardStyles from "./dashboard.module.css";
 
 const STATUS_TONE_MAP = { active: 'success', draft: 'info', unlisted: 'warning' } as const;
@@ -439,20 +442,29 @@ export function DashboardPage() {
     navigate('/app/events');
   }, [navigate]);
 
-  const filteredBundles = useMemo(() =>
-    bundles
-      .filter(b => typeFilter === "all" || b.bundleType === typeFilter)
-      .filter(b => statusFilter === "all" || b.status === statusFilter)
-      .filter(b => !bundleFilter || b.name.toLowerCase().includes(bundleFilter.toLowerCase())),
-    [bundles, typeFilter, statusFilter, bundleFilter]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredBundles.length / bundlesPerPage));
-  const effectivePage = Math.min(currentPage, totalPages);
-
-  const pagedBundles = useMemo(() =>
-    filteredBundles.slice((effectivePage - 1) * bundlesPerPage, effectivePage * bundlesPerPage),
-    [filteredBundles, effectivePage, bundlesPerPage]
+  const {
+    effectivePage,
+    filteredBundles,
+    pagedBundles,
+    totalPages,
+  } = useMemo(
+    () =>
+      buildDashboardTablePage({
+        bundles,
+        bundleFilter,
+        typeFilter,
+        statusFilter,
+        currentPage,
+        bundlesPerPage,
+      }),
+    [
+      bundleFilter,
+      bundles,
+      bundlesPerPage,
+      currentPage,
+      statusFilter,
+      typeFilter,
+    ],
   );
   const dashboardTableRows = buildDashboardTableRows(
     pagedBundles,
@@ -547,8 +559,10 @@ export function DashboardPage() {
           />
 
           {/* Bundles panel */}
-          <s-section padding="none">
-            <div className={dashboardStyles.bundlesPanel}>
+          <div className={dashboardStyles.bundlesQueryContainer}>
+            <s-query-container containerName="dashboard-bundles">
+              <s-section padding="none">
+                <div className={dashboardStyles.bundlesPanel}>
               <div className={dashboardStyles.bundlesToolbar}>
                 <div className={dashboardStyles.filterGroup}>
                   {/* Status filter pill */}
@@ -704,8 +718,10 @@ export function DashboardPage() {
                   </>
                 )}
               </div>
-            </div>
-          </s-section>
+                </div>
+              </s-section>
+            </s-query-container>
+          </div>
 
           {/* Resources card */}
           {renderResourceCard && (

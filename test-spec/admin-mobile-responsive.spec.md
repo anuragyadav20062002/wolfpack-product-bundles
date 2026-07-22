@@ -5,7 +5,7 @@ title: Admin Mobile Responsive Behavior
 type: test-spec
 status: active
 summary: Behavior contracts for responsive Admin navigation, bundle tables, overlays, and supporting merchant routes.
-last_audited: 2026-07-22
+last_audited: 2026-07-23
 owners:
   - engineering
 domains:
@@ -47,6 +47,8 @@ Keep merchant actions and navigation behavior intact while Admin surfaces adapt 
 |---|---|---|---|---|
 | 1 | Bundle records are prepared for the table | Bundle list and display formatters | Rows preserve ID, source bundle, name, status, and type | Actions retain original record identity |
 | 2 | No bundle records exist | Empty bundle list | No table rows are produced | Existing empty state remains responsible for presentation |
+| 3 | Filters narrow the bundle list | Search, type, and status filters | Only matching records are paginated | Filter behavior is unchanged by responsive presentation |
+| 4 | Stored page exceeds the filtered page count | Current page above the last available page | Effective page clamps to the final page | Pagination state remains usable after filtering |
 
 ### Responsive interaction regressions
 
@@ -56,6 +58,9 @@ Keep merchant actions and navigation behavior intact while Admin surfaces adapt 
 | 2 | Readiness item is selected | Incomplete actionable item | Overlay closes and original section callback receives the key | Configure editors |
 | 3 | Settings section changes on a phone | Existing language/control state | Active section changes without resetting dirty values | No layout assertions |
 | 4 | File picker dialog renders | Existing picker state and callbacks | Polaris modal exposes search, upload, cancel, and select actions | Shared image picker |
+| 5 | Configure disclosure section is selected | Section ID and existing selection callback | Original callback receives the section and the disclosure closes | FPB and PPB shared shell |
+| 6 | Wizard modal opens | Stable modal ID and open state | App Bridge modal API receives a show command | Language, filters, and custom fields |
+| 7 | Wizard modal closes | Cancel, built-in dismiss, Save, or Done | State closes, App Bridge receives hide, and the opener regains focus | Draft values remain owned by the wizard |
 
 ## Acceptance Criteria
 

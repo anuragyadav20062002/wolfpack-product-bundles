@@ -185,6 +185,7 @@ export function ConfigurationStep({ ctx }: Props) {
                               variant="tertiary"
                               icon="delete"
                               tone="critical"
+                              accessibilityLabel={`Delete ${cat.name || "category"}`}
                               onClick={() => deleteCategory(cat.id)}
                             />
                           )}
@@ -224,7 +225,7 @@ export function ConfigurationStep({ ctx }: Props) {
                                   <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                                     {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "cover" }} />}
                                     <s-text>{p.title}</s-text>
-                                    <s-button variant="tertiary" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "products", cat.products.filter((x: any) => x.id !== p.id))} />
+                                    <s-button variant="tertiary" icon="delete" tone="critical" accessibilityLabel={`Remove ${p.title || "product"}`} onClick={() => updateStepCategory(cat.id, "products", cat.products.filter((x: any) => x.id !== p.id))} />
                                   </div>
                                 ))}
                               </div>
@@ -242,7 +243,7 @@ export function ConfigurationStep({ ctx }: Props) {
                                 {cat.collections.map((c: any) => (
                                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                                     <s-text>{c.title}</s-text>
-                                    <s-button variant="tertiary" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "collections", cat.collections.filter((x: any) => x.id !== c.id))} />
+                                    <s-button variant="tertiary" icon="delete" tone="critical" accessibilityLabel={`Remove ${c.title || "collection"}`} onClick={() => updateStepCategory(cat.id, "collections", cat.collections.filter((x: any) => x.id !== c.id))} />
                                   </div>
                                 ))}
                               </div>
