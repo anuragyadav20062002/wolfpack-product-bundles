@@ -125,6 +125,13 @@
         "productPage": "Product Page"
       },
       "templateLabel": "Template",
+      "mode": {
+        "label": "Preview state",
+        "builder": "Builder",
+        "loading": "Loading",
+        "validation": "Validation",
+        "upsell": "Upsell"
+      },
       "templates": {
         "standard": "Standard",
         "classic": "Classic",
@@ -142,24 +149,47 @@
       },
       "previewOnly": "Preview only",
       "loading": "Loading preview",
-      "emptyHeading": "Create a bundle to preview",
-      "emptyBody": "A storefront-ready bundle is required before visual settings can be edited.",
+      "notApplicable": "This setting is not used by the selected template.",
       "surface": {
+        "bundleName": "Build your perfect bundle",
         "description": "Choose products to build your bundle.",
         "navigationLabel": "Bundle steps",
         "slotsLabel": "Bundle slots",
         "stepOne": "1. Choose products",
         "stepTwo": "2. Review bundle",
+        "stepOneShort": "Products",
+        "stepTwoShort": "Extras",
+        "stepThreeShort": "Review",
+        "categoryOne": "Essentials",
+        "categoryTwo": "Favourites",
+        "categoryThree": "Extras",
+        "selectionRule": "Choose at least 2 products",
+        "progressCount": "1 of 2 selected",
+        "variant": "Standard",
         "products": {
-          "first": { "name": "Everyday essential", "price": "$24.00" },
-          "second": { "name": "Popular addition", "price": "$18.00" }
+          "first": { "name": "Everyday essential", "price": "$24.00", "compareAt": "$28.00" },
+          "second": { "name": "Popular addition", "price": "$18.00", "compareAt": "$22.00" },
+          "third": { "name": "Customer favourite", "price": "$16.00", "compareAt": "$20.00" },
+          "fourth": { "name": "Bundle extra", "price": "$12.00", "compareAt": "$15.00" }
         },
         "add": "Add",
+        "added": "Added ×1",
         "upsellTitle": "Complete your bundle",
         "upsellBody": "Add a popular extra.",
+        "upsellEyebrow": "Recommended for your bundle",
         "summary": "Bundle summary",
+        "selectedCount": "2 items",
+        "discount": "You are $8 away from 15% off",
+        "totalLabel": "Bundle total",
+        "totalPrice": "$42.00",
         "total": "2 products selected · $42.00",
-        "next": "Continue"
+        "back": "Back",
+        "next": "Continue",
+        "emptySlot": "Choose a product",
+        "slotNumber": "Product {{number}}",
+        "addBundle": "Add bundle to cart",
+        "loadingBody": "Preparing your bundle…",
+        "validationMessage": "Add at least 2 products on this step"
       }
     }
   },

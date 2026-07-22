@@ -119,8 +119,6 @@
     "preview": {
       "heading": "Live-Vorschau",
       "unsaved": "Nicht gespeicherte Änderungen werden hier angezeigt.",
-      "emptyHeading": "Erstellen Sie ein Bundle für die Vorschau",
-      "emptyBody": "Zum Bearbeiten der visuellen Einstellungen ist ein Storefront-fähiges Bundle erforderlich.",
       "surface": {
         "description": "Wählen Sie Produkte für Ihr Bundle aus.",
         "stepOne": "1. Produkte auswählen",

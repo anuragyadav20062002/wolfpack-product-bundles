@@ -19,6 +19,7 @@ source_paths:
   - app/lib/settings-design-runtime.ts
   - app/routes/app/app.settings.tsx
   - app/routes/app/app.settings/SettingsDesignFields.tsx
+  - app/routes/app/app.settings/design-preview-model.ts
   - public/design-color-guide-*.png
 related_docs:
   - internal docs/Operations/Admin Performance.md
@@ -169,9 +170,10 @@ The EB Design page exposes image guide links rather than text docs. All visible 
 | Bundle Cart | `https://d3ks0ngva6go34.cloudfront.net/public/BundleCartDcpPreview.webp` |
 | Upsell | `https://d3ks0ngva6go34.cloudfront.net/public/UpsellDcpPreview.webp` |
 
-Wolfpack does not load those competitor assets. The Design inspector links to
-Wolfpack-owned AVIF guides in a compact visual-reference callout after each
-scope's controls:
+Wolfpack does not load those competitor assets. The Design field column renders
+an exact `Show Colour Guide` hyperlink in a compact visual-reference callout
+after each applicable scope's controls. Each hyperlink opens its Wolfpack-owned
+AVIF guide in a new tab:
 
 | Scope | Wolfpack guide |
 | --- | --- |
@@ -184,6 +186,27 @@ scope's controls:
 The tracked PNG files in `public/` are the source assets. The existing
 `scripts/optimise-public-images.mjs` build step emits their ignored AVIF
 siblings, which are the paths rendered by the Admin UI.
+
+## Local Template Preview Contract
+
+The Design Control Panel preview is independent from storefront-ready bundle
+records. It uses deterministic local fixture data and eight descriptors aligned
+with the canonical template selection keys. FPB previews represent Standard,
+Classic, Compact, and Horizontal side-footer structures. PPB previews represent
+Product List, Product Grid, Horizontal Slots, and Vertical Slots product-page
+structures.
+
+The preview consumes the normalized output of `buildSettingsDesignRuntime`
+rather than maintaining a separate partial color mapper. A field-target registry
+associates every editable preview-relevant control with its semantic surface,
+applicable template set, and representative Builder, Loading, Validation, or
+Upsell state. Disabled loading-GIF placeholders are not treated as configurable
+preview fields.
+
+The local preview deliberately does not import the storefront widget runtime,
+fetch bundle data, embed an iframe, or reproduce cart mutations. The separate
+Preview Bundle action remains the path to a real storefront bundle and is
+disabled when no storefront URL exists.
 
 ## Style Presets
 

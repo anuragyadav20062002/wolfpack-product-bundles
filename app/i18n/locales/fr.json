@@ -119,8 +119,6 @@
     "preview": {
       "heading": "Aperçu en direct",
       "unsaved": "Les modifications non enregistrées apparaissent ici.",
-      "emptyHeading": "Créez un bundle à prévisualiser",
-      "emptyBody": "Un bundle prêt pour la boutique est requis pour modifier les paramètres visuels.",
       "surface": {
         "description": "Choisissez des produits pour créer votre bundle.",
         "stepOne": "1. Choisir les produits",

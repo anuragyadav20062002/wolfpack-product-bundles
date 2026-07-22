@@ -154,12 +154,15 @@ Settings
 ```
 
 Primary action:
-- Design card Configure opens the Settings -> Design subpage
-- The Design Control Panel lazy-loads after entry and uses a responsive two-pane view: one inspector for the existing sections and fields, plus a sticky app-owned preview that stacks above the inspector at narrow widths.
+- The complete Design, Language, and Controls cards are the actions; they do not render separate `Configure` affordances.
+- Selecting Design opens the Settings -> Design subpage.
+- While the lazy Settings workspace loads after any card selection, the route shows three skeleton cards instead of a spinner.
+- The Design Control Panel lazy-loads after entry and uses a responsive three-column workspace: section navigation on the left, the largest app-owned preview in the middle, and active fields on the right. At medium widths the preview spans the first row; at phone widths preview, navigation, and fields stack in that order.
 - Preview-only Bundle Type and Template selectors cover Landing Page Standard, Classic, Compact, and Horizontal plus Product Page Product List, Product Grid, Horizontal Slots, and Vertical Slots.
-- Adjacent desktop and mobile icon buttons switch the representative preview viewport without saving or clearing unsaved Design values. Images & GIFs uses the same preview surface in its loading state.
-- Unsaved design values are applied to an app-owned bundle preview through a validated CSS-variable contract; arbitrary CSS and cart mutations are rejected.
-- Design controls are unavailable until at least one storefront-ready bundle exists.
+- Preview state and desktop/mobile controls switch deterministic Builder, Loading, Validation, and Upsell fixtures without saving or clearing unsaved Design values.
+- Unsaved design values are applied through the normalized storefront Design runtime and a semantic field-target contract; arbitrary CSS, remote preview requests, and cart mutations are rejected.
+- Local Design controls and template previews remain available without a storefront-ready bundle. Only the separate Preview Bundle action requires a storefront URL.
+- Relevant Expert Colour Control groups expose `Show Colour Guide` links to the five app-owned AVIF guide paths generated from tracked public PNG sources by CI/CD.
 - Settings back actions await App Bridge Save Bar leave confirmation while unsaved changes exist.
 - At phone widths, Language and Controls section navigation becomes a native disclosure that closes after a section is selected while retaining the current unsaved form state.
 

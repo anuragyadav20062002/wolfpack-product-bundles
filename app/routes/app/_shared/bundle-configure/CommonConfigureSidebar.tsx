@@ -98,6 +98,12 @@ export function getActiveConfigureSectionLabel({
   return activeItem?.label || bundleSetupItems[0]?.label || "Bundle setup";
 }
 
+export function getMobileSetupChevronIcon(
+  open: boolean,
+): "chevron-up" | "chevron-down" {
+  return open ? "chevron-up" : "chevron-down";
+}
+
 export function selectConfigureSection({
   sectionId,
   closeAfterSelection,
@@ -376,11 +382,17 @@ export function CommonConfigureSidebar({
           onToggle={(event) => setMobileNavigationOpen(event.currentTarget.open)}
         >
           <summary className={styles.mobileSetupSummary}>
-            <span>
-              <span className={styles.mobileSetupEyebrow}>Bundle Setup</span>
-              <strong>{activeSectionLabel}</strong>
+            <span className={styles.mobileSetupSummaryText}>
+              <span className={styles.mobileSetupTitle}>Bundle Setup</span>
+              <span className={styles.mobileSetupActiveSection}>
+                {activeSectionLabel}
+              </span>
             </span>
-            <span aria-hidden="true">{mobileNavigationOpen ? "▴" : "▾"}</span>
+            <span className={styles.mobileSetupChevron} aria-hidden="true">
+              <s-icon
+                type={getMobileSetupChevronIcon(mobileNavigationOpen)}
+              />
+            </span>
           </summary>
           <div className={styles.mobileSetupContent}>
             {renderSetupNavigation({ closeAfterSelection: true })}

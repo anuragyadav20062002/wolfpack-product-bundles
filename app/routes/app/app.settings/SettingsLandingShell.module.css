@@ -1,0 +1,63 @@
+.skeletonRegion {
+  container-name: settings-loading;
+  container-type: inline-size;
+}
+
+.skeletonCard {
+  min-height: 112px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+}
+
+.skeletonIcon,
+.skeletonTitle,
+.skeletonLine,
+.skeletonLineShort {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ebebeb 25%, #f6f6f6 50%, #ebebeb 75%);
+  background-size: 200% 100%;
+  animation: settings-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.skeletonTitle {
+  width: min(110px, 48%);
+  height: 14px;
+}
+
+.skeletonLine {
+  width: min(210px, 88%);
+  height: 10px;
+}
+
+.skeletonLineShort {
+  width: min(160px, 68%);
+  height: 10px;
+}
+
+@keyframes settings-skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonIcon,
+  .skeletonTitle,
+  .skeletonLine,
+  .skeletonLineShort {
+    animation: none;
+  }
+}

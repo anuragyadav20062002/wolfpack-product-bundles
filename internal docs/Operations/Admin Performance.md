@@ -115,22 +115,34 @@ first-render JavaScript instead.
 ## Settings Design Control Panel
 
 The Settings landing route renders a small Polaris card shell and keeps the
-workspace implementation behind one React lazy boundary. The 2026-07-23
-production build split the initial Settings route (`app.settings`, 2.00 kB /
-1.00 kB gzip) from the complete `SettingsRoute` workspace (40.31 kB / 10.57 kB
+workspace implementation behind one React lazy boundary. The 2026-07-23 local
+production build split the initial Settings route (`app.settings`, 2.95 kB /
+1.25 kB gzip) from the complete `SettingsRoute` workspace (70.51 kB / 16.04 kB
 gzip). Design is statically part of that post-click workspace chunk, so entering
-Design no longer waits for a second sequential JavaScript request. The workspace
+Design does not wait for a second sequential JavaScript request. The workspace
 chunk is not required for the first Settings paint.
 
+The three landing cards are the complete interactive targets and do not render
+separate button-like `Configure` labels. After a card is selected, the Suspense
+boundary preserves the three-card footprint with lightweight local skeletons;
+do not replace this transition with a centered spinner because that collapses
+the established layout while the workspace chunk resolves.
+
 The Settings workspace owns the Design inspector/preview layout and the
-eight-template representative preview. Its responsive behavior is
-container-driven because
-the usable width of a Shopify Admin iframe is independent of the browser's
-top-level viewport. The preview uses local fixture markup, validated CSS
-variables, and Polaris controls; it does not fetch storefront assets or
-duplicate the storefront runtime. Images & GIFs uses the same immediately
-available local preview instead of displaying a loading status for work that
-does not exist.
+eight-template representative preview. Wide containers use three columns for
+section navigation, the larger preview surface, and the active fields. Medium
+containers place the preview across the first row with navigation and fields
+beneath it; phone containers stack preview, navigation, then fields. All
+breakpoints are container-driven because the usable width of a Shopify Admin
+iframe is independent of the browser's top-level viewport.
+
+The preview uses local fixture markup, a canonical template descriptor registry,
+and theme values derived from the normalized storefront Design runtime. Builder,
+Loading, Validation, and Upsell are deterministic representative states rather
+than storefront interactions. It does not fetch bundle data, load remote media,
+embed a storefront iframe, or duplicate the widget runtime. Local Design editing
+and preview rendering therefore remain available when the shop has no
+storefront-ready bundle; only the separate Preview Bundle action requires one.
 
 For interaction acceptance, measure at least ten cache-bypassed Design entries
 from card activation until the live preview controls and surface are usable.

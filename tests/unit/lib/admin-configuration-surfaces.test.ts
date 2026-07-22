@@ -17,7 +17,7 @@ describe("recovered admin surfaces contract", () => {
       "Configure all text, labels, and translations for your bundle here",
       "Change loading screen gif, add custom CSS, modify checkout settings and more",
     ]);
-    expect(SETTINGS_CARDS.map((card) => card.actionLabel)).toEqual(["Configure", "Configure", "Configure"]);
+    expect(SETTINGS_CARDS.every((card) => !("actionLabel" in card))).toBe(true);
     expect(Object.keys(SETTINGS_PANELS)).toEqual(["design", "language", "controls"]);
   });
 

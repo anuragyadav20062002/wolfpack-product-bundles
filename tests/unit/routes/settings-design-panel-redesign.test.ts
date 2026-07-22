@@ -8,21 +8,15 @@ import {
   isTemplateValidForBundleType,
   setDesignPreviewBundleType,
   setDesignPreviewTemplate,
+  setDesignPreviewMode,
   setDesignPreviewViewport,
   type DesignPreviewState,
 } from "../../../app/routes/app/app.settings/DesignLivePreview";
-import { buildDesignPreviewVariables } from "../../../app/routes/app/app.settings/settings-state";
+import { buildDesignPreviewTheme } from "../../../app/routes/app/app.settings/design-preview-model";
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-
-const previewBundle = {
-  id: "bundle-1",
-  name: "Summer Box",
-  type: "Landing Page",
-  viewUrl: "https://shop.test/pages/bundle",
-};
 
 describe("settings Design preview state", () => {
   it("applies expert preview overrides only while expert controls are enabled", () => {
@@ -31,8 +25,8 @@ describe("settings Design preview state", () => {
       "expert.productCard.productCardButtonColor": "#abcdef",
     };
 
-    expect(buildDesignPreviewVariables(fieldValues, false)["--bundle-button-bg"]).toBe("#123456");
-    expect(buildDesignPreviewVariables(fieldValues, true)["--bundle-button-bg"]).toBe("#abcdef");
+    expect(buildDesignPreviewTheme(fieldValues, false)["--preview-product-button-bg"]).toBe("#123456");
+    expect(buildDesignPreviewTheme(fieldValues, true)["--preview-product-button-bg"]).toBe("#abcdef");
   });
 
   it("uses Landing Page Standard desktop defaults", () => {
@@ -40,6 +34,7 @@ describe("settings Design preview state", () => {
       bundleType: "full_page",
       templateKey: "standard",
       viewport: "desktop",
+      mode: "builder",
     });
   });
 
@@ -69,12 +64,14 @@ describe("settings Design preview state", () => {
       bundleType: "full_page",
       templateKey: "compact",
       viewport: "mobile",
+      mode: "builder",
     };
 
     expect(setDesignPreviewBundleType(state, "product_page")).toEqual({
       bundleType: "product_page",
       templateKey: "product-list",
       viewport: "mobile",
+      mode: "builder",
     });
   });
 
@@ -83,6 +80,7 @@ describe("settings Design preview state", () => {
       bundleType: "product_page",
       templateKey: "vertical-slots",
       viewport: "desktop",
+      mode: "builder",
     };
 
     const unsavedFieldValues = { "Primary Color": "#123456" };
@@ -90,8 +88,18 @@ describe("settings Design preview state", () => {
       bundleType: "product_page",
       templateKey: "vertical-slots",
       viewport: "mobile",
+      mode: "builder",
     });
     expect(unsavedFieldValues).toEqual({ "Primary Color": "#123456" });
+  });
+
+  it("switches representative mode without changing the selected template", () => {
+    const state = createDesignPreviewState("product_page");
+
+    expect(setDesignPreviewMode(state, "validation")).toEqual({
+      ...state,
+      mode: "validation",
+    });
   });
 });
 
@@ -99,8 +107,7 @@ describe("DesignLivePreview", () => {
   it("renders direct desktop and mobile controls with labels, tooltips, and selected state", () => {
     const view = renderToStaticMarkup(
       React.createElement(DesignLivePreview, {
-        previewBundle,
-        previewVariables: {},
+        previewTheme: {},
       }),
     );
 
@@ -119,28 +126,49 @@ describe("DesignLivePreview", () => {
       for (const viewport of ["desktop", "mobile"] as const) {
         const view = renderToStaticMarkup(
           React.createElement(DesignLivePreview, {
-            previewBundle,
-            previewVariables: { "--bundle-global-primary-button": "#123456" } as unknown as React.CSSProperties,
+            previewTheme: { "--preview-primary": "#123456" } as unknown as React.CSSProperties,
             initialState: {
               bundleType: template.bundleType,
               templateKey: template.key,
               viewport,
+              mode: "builder",
             },
           }),
         );
 
         expect(view).toContain(`data-template-key="${template.key}"`);
         expect(view).toContain(`data-preview-viewport="${viewport}"`);
+        expect(view).toContain(
+          template.family === "full-page"
+            ? `data-full-page-template="${template.key}"`
+            : `data-product-page-template="${template.key}"`,
+        );
         expect(view).not.toContain("<iframe");
+        expect(view).not.toContain("http://");
+        expect(view).not.toContain("https://");
       }
+    },
+  );
+
+  it.each(["loading", "validation", "upsell"] as const)(
+    "renders the %s representative state without storefront interaction",
+    (mode) => {
+      const view = renderToStaticMarkup(
+        React.createElement(DesignLivePreview, {
+          previewTheme: {},
+          initialState: { ...createDesignPreviewState(), mode },
+        }),
+      );
+
+      expect(view).toContain(`data-preview-mode="${mode}"`);
+      expect(view).toContain(`settingsDcp.preview.mode.${mode}`);
     },
   );
 
   it("keeps the preview usable without a fake loading status", () => {
     const view = renderToStaticMarkup(
       React.createElement(DesignLivePreview, {
-        previewBundle,
-        previewVariables: {},
+        previewTheme: {},
       }),
     );
 

@@ -27,7 +27,7 @@ describe("Settings Design visual guide links", () => {
     });
     expect(view.match(/target="_blank"/g)).toHaveLength(EXPECTED_GUIDES.length);
     expect(view).toContain("Visual reference");
-    expect(view).toContain("Open visual guide");
+    expect(view.match(/Show Colour Guide/g)).toHaveLength(EXPECTED_GUIDES.length);
     expect(view).not.toContain("cloudfront.net");
   });
 });

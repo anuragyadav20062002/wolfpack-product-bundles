@@ -1,3 +1,5 @@
+import styles from "./SettingsLandingShell.module.css";
+
 export type SettingsWorkspaceView = "design" | "language" | "controls";
 
 const SETTINGS_SECTIONS: Array<{
@@ -43,7 +45,7 @@ export function SettingsLandingShell({
           {SETTINGS_SECTIONS.map((section) => (
             <s-clickable
               key={section.id}
-              accessibilityLabel={`Configure ${section.title}`}
+              accessibilityLabel={`Open ${section.title} settings`}
               padding="base"
               border="base"
               borderRadius="base"
@@ -54,12 +56,35 @@ export function SettingsLandingShell({
                 <s-icon type={section.icon} size="base" />
                 <s-heading>{section.title}</s-heading>
                 <s-paragraph color="subdued">{section.description}</s-paragraph>
-                <s-text type="strong">Configure</s-text>
               </s-stack>
             </s-clickable>
           ))}
         </s-grid>
       </s-query-container>
+    </s-page>
+  );
+}
+
+export function SettingsWorkspaceSkeleton() {
+  return (
+    <s-page heading="Settings" inlineSize="large">
+      <section aria-label="Loading Settings" aria-busy="true" className={styles.skeletonRegion}>
+        <s-grid
+          gridTemplateColumns="@container settings-loading (inline-size > 720px) 1fr 1fr 1fr, 1fr"
+          gap="base"
+        >
+          {["design", "language", "controls"].map((section) => (
+            <s-box key={section} padding="base" border="base" borderRadius="base">
+              <div data-settings-skeleton-card="true" aria-hidden="true" className={styles.skeletonCard}>
+                <span className={styles.skeletonIcon} />
+                <span className={styles.skeletonTitle} />
+                <span className={styles.skeletonLine} />
+                <span className={styles.skeletonLineShort} />
+              </div>
+            </s-box>
+          ))}
+        </s-grid>
+      </section>
     </s-page>
   );
 }
