@@ -7,7 +7,6 @@ import {
   LANGUAGE_CONFIGURATION,
   SETTINGS_CARDS,
   SUPPORTED_LANGUAGE_LABELS,
-  type SettingsCardId,
 } from "../../../lib/admin-configuration-surfaces";
 import styles from "../../../styles/routes/admin-configuration-surfaces.module.css";
 import type { action, loader } from "../app.settings";
@@ -57,7 +56,6 @@ export function SettingsRoute({ initialView = "landing" }: { initialView?: "land
     ? settingsPage.controls as Record<string, string>
     : null;
   const persistedDesignState = createSettingsDesignState(settingsPage?.design);
-  const [activeCard, setActiveCard] = useState<SettingsCardId>("design");
   const [settingsView, setSettingsView] = useState<"landing" | "design" | "language" | "controls">(initialView);
   const [isMultilanguageEnabled, setIsMultilanguageEnabled] = useState(persistedLanguageState?.isMultilanguageEnabled ?? LANGUAGE_CONFIGURATION.enabled);
   const [selectedLanguage, setSelectedLanguage] = useState(persistedLanguageState?.selectedLanguage ?? LANGUAGE_CONFIGURATION.selectedLanguage);
@@ -504,31 +502,14 @@ export function SettingsRoute({ initialView = "landing" }: { initialView?: "land
               key={card.id}
               type="button"
               className={styles.settingCard}
-              onClick={() => {
-                if (card.id === "design") {
-                  setActiveCard(card.id);
-                  setSettingsView("design");
-                  return;
-                }
-                if (card.id === "language") {
-                  setActiveCard(card.id);
-                  setSettingsView("language");
-                  return;
-                }
-                if (card.id === "controls") {
-                  setActiveCard(card.id);
-                  setSettingsView("controls");
-                  return;
-                }
-                setActiveCard(card.id);
-              }}
+              aria-label={`Open ${card.title} settings`}
+              onClick={() => setSettingsView(card.id)}
             >
               <span className={styles.settingsCardContent}>
                 <SettingsCardIcon icon={card.icon} />
                 <h2 className={styles.cardTitle}>{card.title}</h2>
                 <p className={styles.cardDescription}>{card.description}</p>
               </span>
-              <span className={styles.settingsConfigureButton}>{card.actionLabel}</span>
             </button>
           ))}
         </section>

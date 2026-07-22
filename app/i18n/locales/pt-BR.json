@@ -119,8 +119,6 @@
     "preview": {
       "heading": "Prévia ao vivo",
       "unsaved": "As alterações não salvas aparecem aqui.",
-      "emptyHeading": "Crie um pacote para visualizar",
-      "emptyBody": "É necessário um pacote pronto para a loja antes de editar as configurações visuais.",
       "surface": {
         "description": "Escolha produtos para montar seu pacote.",
         "stepOne": "1. Escolher produtos",

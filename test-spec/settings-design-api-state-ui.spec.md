@@ -18,6 +18,7 @@ source_paths:
   - app/lib/settings-design-contract.ts
   - app/lib/settings-design-runtime.ts
   - app/routes/app/app.settings.tsx
+  - app/routes/app/app.settings/SettingsLandingShell.tsx
   - app/routes/app/app.settings/DesignSettingsView.tsx
   - app/routes/app/app.settings/SettingsDesignFields.tsx
 related_docs:
@@ -72,6 +73,8 @@ Keep the Design subpage state and save DTO aligned with the store-level EB-shape
 | 1 | Modern field controls | Color, number, select, and status fields | Polaris web components render | Behavior only; no CSS assertions |
 | 2 | Lightweight landing shell | Initial Settings route render | Three actionable cards render without Design workspace | Protects landing LCP |
 | 3 | Expert visual guides | Expert scope sections | Five local AVIF links open in a new tab | Guides use Wolfpack-owned assets |
+| 4 | Card actions | Initial and return-to-Settings landing views | Entire cards remain actionable without visible `Configure` labels | Removes nested button-like affordances |
+| 5 | Workspace transition | Select any Settings card while the lazy workspace loads | Three skeleton cards replace the landing without a spinner | Preserves layout during chunk loading |
 
 ## Acceptance Criteria
 
@@ -82,4 +85,6 @@ Keep the Design subpage state and save DTO aligned with the store-level EB-shape
 - [x] Failed saves remain dirty; successful saves use confirmed state.
 - [x] Design form controls are Polaris-first.
 - [x] Expert color scopes link to Wolfpack AVIF guides in a new tab.
+- [x] Settings cards remain actionable without visible Configure affordances.
+- [x] Lazy workspace loading uses skeleton cards and no spinner.
 - [ ] Settings landing app-owned LCP p75 is at or below 2,000 ms with CLS below 0.1 across at least ten cache-bypassed loads.
