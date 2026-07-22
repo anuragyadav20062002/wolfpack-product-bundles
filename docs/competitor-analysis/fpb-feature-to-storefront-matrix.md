@@ -210,17 +210,17 @@ time and restore the `F0` minimum/exact baseline after every permutation.
 | ID | Group | Feature / state | EB storefront contract | ST | CL | CO | HO |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | D01 | F3 | Discounts disabled | Original totals render with no progress/message leak | **S** | **S** | **T** | **T** |
-| D02 | F3 | Percentage tiers | Threshold, savings, progress, success, and final total match EB | **S** | **S** | **S** | **S** |
+| D02 | F3 | Percentage tiers | Threshold, savings, progress, success, and final total match EB | **P** F3-PERCENTAGE-ALL | **P** F3-PERCENTAGE-ALL | **P** F3-PERCENTAGE-ALL | **P** F3-PERCENTAGE-ALL |
 | D03 | F3 | Fixed amount off | Quantity/amount threshold and totals match EB | **S** | **S** | **T** | **T** |
 | D04 | F3 | Fixed bundle price | Display, totals, and cart result match EB | **P** P04 | **S** | **T** | **T** |
 | D05 | F3 | Buy X, Get Y | Buy/get threshold, discounted-item choice, copy, and cart result match EB | **S** | **S** | **T** | **T** |
 | D06 | F3 | Amount-based discount threshold | Currency threshold and remaining amount text match EB | **S** | **S** | **T** | **T** |
-| D07 | F3 | Highest eligible tier | Only the highest qualified tier drives totals and messages | **S** | **S** | **S** | **S** |
+| D07 | F3 | Highest eligible tier | Only the highest qualified tier drives totals and messages | **P** F3-PERCENTAGE-ALL | **P** F3-PERCENTAGE-ALL | **P** F3-PERCENTAGE-ALL | **P** F3-PERCENTAGE-ALL |
 | D08 | F3 | Progress off/simple/step-based | Each saved presentation mode renders independently | **S** | **S** | **T** | **T** |
 | D09 | F3 | Discount messaging off/on | Message visibility follows its own saved control | **S** | **S** | **T** | **T** |
 | D10 | F3 | Variables and custom copy | Remaining quantity/amount, value/unit, and discounted-item variables resolve | **S** | **S** | **T** | **T** |
 | D11 | F3 | Inline/additional-offer badge | Qualification pill/banner appears and settles at the EB-owned surface | **S** | **S** | **T** | **T** |
-| D12 | F3 | Original/savings/total fields | Visibility, order, currency, and values follow saved pricing settings | **S** | **S** | **S** | **S** |
+| D12 | F3 | Original/savings/total fields | Visibility, order, currency, and values follow saved pricing settings | **P** F3-PERCENTAGE-ALL | **P** F3-PERCENTAGE-ALL | **P** F3-PERCENTAGE-ALL | **P** F3-PERCENTAGE-ALL |
 | D13 | F6 | Multi-language discount/progress labels | Active locale selects the correct saved labels without fallback copy | **S** | **S** | **T** | **T** |
 
 ## 6. Add-Ons, Free Gifts, and Personalization
@@ -357,6 +357,7 @@ group. Screenshots, HAR files, and raw captures remain under `/private/tmp`.
 | `F2-CATEGORY-SWEEP` | One first-category owner was mutated while the other categories remained unconditioned. Quantity `>= 2` blocked at one and advanced at two in Standard, Classic, and Compact. Amount blocked at `829`/`619` and advanced at `1158`/`948` in Classic and Compact, with WPB excluding its persisted default. Desktop and `390x844` mobile passed. Both fixtures were restored to Horizontal, their original step rules, and zero category conditions. | `/private/tmp/fpb-feature-parity/F2/category-rules/missing-presets-delta.md`, `/private/tmp/fpb-feature-parity/F2/category-rules/horizontal-delta.md` |
 | `F2-WEIGHT-ALL` | One calibrated weighted product closed both weight groups with a single fixture mutation. Step Weight blocked zero-weight selections and advanced at `10 lb` / `4536 g`; category Weight did the same with only the large collection category conditioned. EB used `>= 8 lb`; WPB used `>= 4000 g`. Standard, Classic, Compact, and Horizontal passed at `1280x800` and `390x844`. Both fixtures were restored to Horizontal, their original quantity rules, and zero category conditions; the temporary WPB continue-selling change was reverted. | `/private/tmp/fpb-feature-parity/F2/weight/all-presets-delta.md` |
 | `F2-VALIDATION-OFF` | EB and WPB each persisted a two-product Bundle Quantity Option while quantity validation was disabled. Every EB replay runtime-reported the intended preset (`DEFAULT_FBP`, `CLASSIC`, `COMPACT`, or `HORIZONTAL`) before promotion. In every preset at `1280x800` and `390x844`, a one-product bundle advanced through the remaining empty/no-rule step and was accepted by Add to Cart without stale validation feedback. EB reached checkout; WPB either reached checkout or exposed the accepted one-item cart before checkout navigation completed. Both fixtures were restored through Admin, hard reloaded, and verified as Horizontal with Bundle Quantity Options disabled, quantity validation enabled, original step rules, and original default-product state. | `/private/tmp/fpb-feature-parity/F2/validation-disabled/all-presets-delta.md` |
+| `F3-PERCENTAGE-ALL` | EB and WPB baseline percentage fixtures were cycled through all four runtime-verified presets at `1280x800` and `390x844`. At one item no discount applied; at threshold two the 10% tier drove messaging and final total; at threshold three the 20% tier superseded it and drove the success state. EB totals were `829.00`, `1158.00 -> 1042.20`, and `1687.00 -> 1349.60`; WPB totals included its persisted default and were `829.00`, `1448.00 -> 1303.20`, and `2277.00 -> 1821.60`. Both fixtures ended cache-bypassed on Horizontal with the original percentage rules. | `/private/tmp/fpb-feature-parity/F3/percentage/all-presets-delta.md` |
 
 `F0-192` does not claim true-empty equivalence. `F0-EMPTY` supersedes that
 assumption and keeps every design cell non-terminal unless both corrected EB
