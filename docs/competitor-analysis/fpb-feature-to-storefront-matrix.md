@@ -176,8 +176,8 @@ time and restore the `F0` minimum/exact baseline after every permutation.
 | ID | Group | Feature / state | EB storefront contract | ST | CL | CO | HO |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | N01 | F2 | No rule | Selection remains open-ended and progression follows EB | **S** | **S** | **T** | **T** |
-| N02 | F2 | Step quantity minimum | Below-min blocks; threshold permits progression and overflow where EB permits it | **S** | **S** | **S** | **P** C04 |
-| N03 | F2 | Step quantity exact | Over-target selection is prevented; edit/replacement remains possible | **S** | **S** | **S** | **P** C04 |
+| N02 | F2 | Step quantity minimum | Below-min blocks; threshold permits progression and overflow where EB permits it | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW |
+| N03 | F2 | Step quantity exact | Over-target selection is prevented; edit/replacement remains possible | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW |
 | N04 | F2 | Step quantity maximum | Maximum is enforced without corrupting selected state | **S** | **S** | **S** | **P** C04 |
 | N05 | F2 | Step amount rule | Selected price controls eligibility and remaining-amount feedback | **S** | **S** | **T** | **T** |
 | N06 | F2 | Step weight rule | Selected variant weight controls eligibility when current FPB Admin exposes it | **S** | **S** | **T** | **T** |
@@ -185,7 +185,7 @@ time and restore the `F0` minimum/exact baseline after every permutation.
 | N08 | F2 | Category amount rule | Category subtotal controls its own eligibility | **P** P04 | **S** | **T** | **T** |
 | N09 | F2 | Category weight rule | Category weight controls its own eligibility when exposed | **S** | **S** | **T** | **T** |
 | N10 | F2 | Auto-next enabled/disabled | Only the saved eligible exact rule advances automatically | **S** | **P** C02 | **S** | **P** C04 |
-| N11 | F2 | Invalid Next/Back/cart feedback | Action remains usable enough to explain the unmet rule | **S** | **S** | **S** | **P** C04 |
+| N11 | F2 | Invalid Next/Back/cart feedback | Action remains usable enough to explain the unmet rule | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW | **P** F0-FLOW |
 | N12 | F2 | Validation disabled | Saved control permits otherwise invalid progression/cart without stale errors | **T** | **T** | **T** | **T** |
 
 ## 4. Summary, Product Slots, Mobile Tray, and Box Selection
