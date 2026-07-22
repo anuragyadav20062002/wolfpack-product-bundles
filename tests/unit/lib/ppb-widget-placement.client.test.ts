@@ -12,15 +12,18 @@ describe("validatePpbWidgetPlacementBeforePreview", () => {
 
     await expect(
       validatePpbWidgetPlacementBeforePreview(
-        "https://admin.test/configure",
+        "https://admin.test/configure?embedded=1",
         fetcher
       )
     ).resolves.toEqual({ ready: true, installationLink: null, message: null });
 
-    const [, options] = fetcher.mock.calls[0];
+    const [url, options] = fetcher.mock.calls[0];
+    expect(url).toBe(
+      "https://admin.test/configure/validate-widget-placement?embedded=1"
+    );
     expect(options.method).toBe("POST");
-    expect(options.body).toBeInstanceOf(FormData);
-    expect(options.body.get("intent")).toBe("validateWidgetPlacement");
+    expect(options.headers).toEqual({ Accept: "application/json" });
+    expect(options.body).toBeUndefined();
   });
 
   it("blocks preview and preserves the placement link when setup is required", async () => {
