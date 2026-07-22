@@ -22,10 +22,11 @@ Prevent Product Page Bundle previews from opening a storefront product whose eff
 
 | #   | Scenario                         | Input                                                    | Expected Output                                       | Notes                                             |
 | --- | -------------------------------- | -------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------- |
-| 1   | Server confirms placement        | Successful validation response                           | Preview may continue                                  | Uses existing configure action                    |
+| 1   | Server confirms placement        | Successful validation response                           | Preview may continue                                  | Uses a dedicated authenticated JSON resource route |
 | 2   | Server reports missing placement | `requiresOneTimeSetup` response                          | Preview is blocked and installation link is preserved | Theme Editor can be opened                        |
 | 3   | Validation request fails         | Error or invalid response                                | Preview is blocked                                    | Fail closed                                       |
 | 4   | Parent product is not ready      | Validator reports `widgetInstalled: false` without setup | Preview action returns an error                       | Do not open a storefront without a target product |
+| 5   | Configure URL contains embed query parameters | Embedded configure URL | Placement request appends `/validate-widget-placement` and preserves the query string | Never POST fetch validation to the rendered configure document |
 
 ## Acceptance Criteria
 
@@ -33,4 +34,5 @@ Prevent Product Page Bundle previews from opening a storefront product whose eff
 - [x] Missing `bundle-product-page` placement is never reported as installed.
 - [x] The setup URL targets `bundle-product-page` on the product's effective template.
 - [x] A failed placement check blocks preview rather than opening a blank bundle product.
+- [x] PPB preview placement fetches a dedicated JSON resource route instead of the configure document route.
 - [x] All listed test cases pass.

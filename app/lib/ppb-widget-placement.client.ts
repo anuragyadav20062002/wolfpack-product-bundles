@@ -26,11 +26,11 @@ export async function validatePpbWidgetPlacementBeforePreview(
   fetcher: PpbPlacementFetcher = fetch
 ): Promise<PpbWidgetPlacementGate> {
   try {
-    const formData = new FormData();
-    formData.append("intent", "validateWidgetPlacement");
-    const response = await fetcher(configureUrl, {
+    const placementUrl = new URL(configureUrl);
+    placementUrl.pathname = `${placementUrl.pathname.replace(/\/$/, "")}/validate-widget-placement`;
+    const response = await fetcher(placementUrl.toString(), {
       method: "POST",
-      body: formData,
+      headers: { Accept: "application/json" },
     });
     const responseBody: unknown = await response.json().catch(() => null);
     const result = isPlacementResponse(responseBody) ? responseBody : null;
