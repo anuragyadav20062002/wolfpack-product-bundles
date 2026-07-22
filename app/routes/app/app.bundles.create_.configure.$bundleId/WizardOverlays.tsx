@@ -1,13 +1,14 @@
 import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { BundleReadinessOverlay } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { CUSTOM_FIELD_TYPE_OPTIONS } from "./wizard-constants";
+import { WIZARD_MODAL_IDS } from "./wizard-modal-controller";
 import type { CustomFieldDef, FilterDef, WizardStepState } from "./types";
 import styles from "./wizard-configure.module.css";
 
 type Props = { ctx: any };
 
 export function WizardOverlays({ ctx }: Props) {
-  const { enablePreviewGate, localeModalRef, currentIdx, currentStep, shopLocales, localeSelectRef, setSelectedLocale, selectedLocale, getTranslation, setTranslation, setLocaleModalOpen, filtersDrawerOpen, setFiltersDrawerOpen, steps, filtersDrawerStepIdx, setFiltersDrawerStepIdx, updateFilter, removeFilter, addFilter, customFieldsModalOpen, setCustomFieldsModalOpen, customFields, updateCustomField, removeCustomField, addCustomField, readinessItems, bundle, readinessOpen, setReadinessOpen } = ctx;
+  const { enablePreviewGate, localeModalRef, filtersModalRef, customFieldsModalRef, currentIdx, currentStep, shopLocales, localeSelectRef, setSelectedLocale, selectedLocale, getTranslation, setTranslation, setLocaleModalOpen, setFiltersDrawerOpen, steps, filtersDrawerStepIdx, setFiltersDrawerStepIdx, updateFilter, removeFilter, addFilter, setCustomFieldsModalOpen, customFields, updateCustomField, removeCustomField, addCustomField, readinessItems, bundle, readinessOpen, setReadinessOpen } = ctx;
   return (
     <>
       <EnablePreviewModal {...enablePreviewGate.modalProps} />
@@ -15,7 +16,9 @@ export function WizardOverlays({ ctx }: Props) {
       {/* Multi-Language Modal */}
       <s-modal
         ref={localeModalRef}
+        id={WIZARD_MODAL_IDS.language}
         heading="Multi Language"
+        accessibilityLabel="Multi Language"
       >
         <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>
           Translating: <strong>Step {currentIdx + 1}</strong> —{" "}
@@ -101,27 +104,19 @@ export function WizardOverlays({ ctx }: Props) {
         </s-button>
       </s-modal>
 
-      {/* Filters Drawer */}
-      {filtersDrawerOpen && (
-        <div
-          className={styles.modalBackdrop}
-          onClick={() => setFiltersDrawerOpen(false)}
-        >
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Filters</h2>
-              <button
-                className={styles.modalCloseBtn}
-                onClick={() => setFiltersDrawerOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className={styles.modalBody}>
+      {/* Filters Modal */}
+      <s-modal
+        ref={filtersModalRef}
+        id={WIZARD_MODAL_IDS.filters}
+        heading="Filters"
+        accessibilityLabel="Filters"
+      >
+        <div className={styles.wizardModalBody}>
               <p className={styles.modalSectionTitle}>Select Step</p>
               <div className={styles.stepNav} style={{ marginBottom: 16 }}>
                 {steps.map((s: WizardStepState, i: number) => (
                   <button
+                    type="button"
                     key={s.tempId}
                     className={
                       i === filtersDrawerStepIdx
@@ -228,46 +223,31 @@ export function WizardOverlays({ ctx }: Props) {
               >
                 Add Filter
               </s-button>
-            </div>
-            <div className={styles.modalFooter}>
-              <s-button
-                variant="secondary"
-                onClick={() => setFiltersDrawerOpen(false)}
-              >
-                Cancel
-              </s-button>
-              <s-button
-                variant="primary"
-                onClick={() => setFiltersDrawerOpen(false)}
-              >
-                Done
-              </s-button>
-            </div>
-          </div>
         </div>
-      )}
+        <s-button
+          slot="primary-action"
+          variant="primary"
+          onClick={() => setFiltersDrawerOpen(false)}
+        >
+          Done
+        </s-button>
+        <s-button
+          slot="secondary-actions"
+          variant="secondary"
+          onClick={() => setFiltersDrawerOpen(false)}
+        >
+          Cancel
+        </s-button>
+      </s-modal>
 
       {/* Custom Fields Modal */}
-      {customFieldsModalOpen && (
-        <div
-          className={styles.modalBackdrop}
-          onClick={() => setCustomFieldsModalOpen(false)}
-        >
-          <div
-            className={styles.modal}
-            style={{ width: "min(600px, 100%)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Custom Fields</h2>
-              <button
-                className={styles.modalCloseBtn}
-                onClick={() => setCustomFieldsModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className={styles.modalBody}>
+      <s-modal
+        ref={customFieldsModalRef}
+        id={WIZARD_MODAL_IDS.customFields}
+        heading="Custom Fields"
+        accessibilityLabel="Custom Fields"
+      >
+        <div className={styles.wizardModalBody}>
               <p style={{ margin: "0 0 4px", fontSize: 13, color: "#6b7280" }}>
                 Custom fields are shown to customers during bundle completion
                 and saved as Shopify order line item properties.
@@ -364,24 +344,22 @@ export function WizardOverlays({ ctx }: Props) {
               >
                 Add Field
               </s-button>
-            </div>
-            <div className={styles.modalFooter}>
-              <s-button
-                variant="secondary"
-                onClick={() => setCustomFieldsModalOpen(false)}
-              >
-                Cancel
-              </s-button>
-              <s-button
-                variant="primary"
-                onClick={() => setCustomFieldsModalOpen(false)}
-              >
-                Save
-              </s-button>
-            </div>
-          </div>
         </div>
-      )}
+        <s-button
+          slot="primary-action"
+          variant="primary"
+          onClick={() => setCustomFieldsModalOpen(false)}
+        >
+          Save
+        </s-button>
+        <s-button
+          slot="secondary-actions"
+          variant="secondary"
+          onClick={() => setCustomFieldsModalOpen(false)}
+        >
+          Cancel
+        </s-button>
+      </s-modal>
 
       {/* Readiness Score Widget */}
       <BundleReadinessOverlay

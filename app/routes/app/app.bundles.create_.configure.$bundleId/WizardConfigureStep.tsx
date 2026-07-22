@@ -18,6 +18,10 @@ import { ConfigurationStep } from "./ConfigurationStep";
 import { PricingStep } from "./PricingStep";
 import { AssetsStep } from "./AssetsStep";
 import { WizardOverlays } from "./WizardOverlays";
+import {
+  WIZARD_MODAL_IDS,
+  useWizardModalController,
+} from "./wizard-modal-controller";
 import styles from "./wizard-configure.module.css";
 import { navigateBackOrFallback } from "../../../lib/navigation";
 declare const shopify: { resourcePicker: (opts: { type: string; multiple: boolean; selectionIds?: { id: string }[]; }) => Promise<{ selection: any[] } | null>; toast: { show: (msg: string, opts?: { isError?: boolean }) => void }; saveBar: { leaveConfirmation: () => Promise<void> | void }; };
@@ -57,30 +61,6 @@ export default function WizardConfigureStep() {
   const [showIconPicker, setShowIconPicker] = useState(false);
   const statusSelectRef = useRef<any>(null);
   const localeSelectRef = useRef<any>(null);
-  const localeModalRef = useRef<any>(null);
-  useEffect(() => {
-    const modal = localeModalRef.current;
-    if (!modal) return;
-    const handler = () => setLocaleModalOpen(false);
-    modal.addEventListener("dismiss", handler);
-    modal.addEventListener("hide", handler);
-    return () => {
-      modal.removeEventListener("dismiss", handler);
-      modal.removeEventListener("hide", handler);
-    };
-  }, []);
-  useEffect(() => {
-    const modal = localeModalRef.current;
-    if (!modal) return;
-    if (localeModalOpen) {
-      modal.showOverlay?.();
-      modal.show?.();
-    } else {
-      modal.hideOverlay?.();
-      modal.hide?.();
-      modal.close?.();
-    }
-  }, [localeModalOpen]);
   const pricing = useBundlePricing({
     initialPricing: bundle.pricing
       ? {
@@ -126,6 +106,27 @@ export default function WizardConfigureStep() {
       options: (cf.options as string[]) ?? [],
     }))
   );
+  const closeLocaleModal = useCallback(() => setLocaleModalOpen(false), []);
+  const closeFiltersModal = useCallback(() => setFiltersDrawerOpen(false), []);
+  const closeCustomFieldsModal = useCallback(
+    () => setCustomFieldsModalOpen(false),
+    [],
+  );
+  const localeModalRef = useWizardModalController({
+    modalId: WIZARD_MODAL_IDS.language,
+    open: localeModalOpen,
+    onClose: closeLocaleModal,
+  });
+  const filtersModalRef = useWizardModalController({
+    modalId: WIZARD_MODAL_IDS.filters,
+    open: filtersDrawerOpen,
+    onClose: closeFiltersModal,
+  });
+  const customFieldsModalRef = useWizardModalController({
+    modalId: WIZARD_MODAL_IDS.customFields,
+    open: customFieldsModalOpen,
+    onClose: closeCustomFieldsModal,
+  });
   const editRoutePath = getBundleWizardConfigurePath(bundle.id);
   const currentConfigPayload = buildCreateWizardConfigPayload({
     steps,
@@ -475,7 +476,7 @@ export default function WizardConfigureStep() {
   const rulesCount = currentStep.conditions.length;
   const filtersCount = currentStep.filters.length;
   const customFieldsCount = customFields.length;
-  const ctx = { steps, currentIdx, navigateTo, handleRemoveStep, handleAddStep, slideKey, slideDir, currentStep, showIconPicker, updateCurrent, setShowIconPicker, setLocaleModalOpen, categoryActiveTabs, setCategoryActiveTabs, updateStepCategory, deleteCategory, pickCategoryProducts, pickCategoryCollections, addCategory, updateRule, removeRule, addRule, statusSelectRef, setBundleStatus, bundleStatus, selectedProductCount, selectedCollectionCount, rulesCount, filtersCount, searchBarEnabled, customFieldsCount, isAnyWizardSaveInFlight, handleBack, handleNext, pricing, showProgressBar, setShowProgressBar, discountMessagingEnabled, setDiscountMessagingEnabled, progressMessage, setProgressMessage, qualifiedMessage, setQualifiedMessage, promoBannerBgImage, setPromoBannerBgImage, loadingGif, setLoadingGif, setSearchBarEnabled, enablePreviewGate, localeModalRef, shopLocales, localeSelectRef, setSelectedLocale, selectedLocale, getTranslation, setTranslation, filtersDrawerOpen, setFiltersDrawerOpen, filtersDrawerStepIdx, setFiltersDrawerStepIdx, updateFilter, removeFilter, addFilter, customFieldsModalOpen, setCustomFieldsModalOpen, customFields, updateCustomField, removeCustomField, addCustomField, readinessItems, bundle, readinessOpen, setReadinessOpen };
+  const ctx = { steps, currentIdx, navigateTo, handleRemoveStep, handleAddStep, slideKey, slideDir, currentStep, showIconPicker, updateCurrent, setShowIconPicker, setLocaleModalOpen, categoryActiveTabs, setCategoryActiveTabs, updateStepCategory, deleteCategory, pickCategoryProducts, pickCategoryCollections, addCategory, updateRule, removeRule, addRule, statusSelectRef, setBundleStatus, bundleStatus, selectedProductCount, selectedCollectionCount, rulesCount, filtersCount, searchBarEnabled, customFieldsCount, isAnyWizardSaveInFlight, handleBack, handleNext, pricing, showProgressBar, setShowProgressBar, discountMessagingEnabled, setDiscountMessagingEnabled, progressMessage, setProgressMessage, qualifiedMessage, setQualifiedMessage, promoBannerBgImage, setPromoBannerBgImage, loadingGif, setLoadingGif, setSearchBarEnabled, enablePreviewGate, localeModalRef, filtersModalRef, customFieldsModalRef, shopLocales, localeSelectRef, setSelectedLocale, selectedLocale, getTranslation, setTranslation, filtersDrawerOpen, setFiltersDrawerOpen, filtersDrawerStepIdx, setFiltersDrawerStepIdx, updateFilter, removeFilter, addFilter, customFieldsModalOpen, setCustomFieldsModalOpen, customFields, updateCustomField, removeCustomField, addCustomField, readinessItems, bundle, readinessOpen, setReadinessOpen };
   return (
     <>
       <form onSubmit={(e) => { e.preventDefault(); handleSaveCurrentWizardPage(); }} onReset={(e) => { e.preventDefault(); handleDiscardCurrentWizardPage(); }}>
@@ -485,23 +486,27 @@ export default function WizardConfigureStep() {
         </SaveBar>
       </form>
       <ui-title-bar title={pageTitle}><button variant="breadcrumb" onClick={() => navigateBackOrFallback(navigate, "/app/dashboard", { replaceFallback: true })}>Create Bundle</button></ui-title-bar>
-      <div className={styles.page}>
-        <div className={styles.pageHeader}>
-          <div className={styles.pageHeaderLeft}><s-button variant="tertiary" icon="arrow-left" accessibilityLabel="Back" onClick={handleBack} /><h1 className={styles.pageTitle}>{pageTitle}</h1></div>
-          <s-stack direction="inline" gap="small"><s-button variant="secondary" icon="view" onClick={handleWizardPreview}>Preview</s-button><s-button variant="secondary" href="https://wolfpackapps.com/docs/bundle-configuration" target="_blank">How to configure?</s-button></s-stack>
-        </div>
-        <div className={styles.stepIndicator}>
-          {stepsMeta.map((step, idx) => {
-            const isDone = idx < wizardStep;
-            const isClickable = isDone && idx >= 1;
-            return <Fragment key={step.num}>{idx > 0 && <div className={styles.stepConnector} />}{isClickable ? <button className={styles.stepItemClickable} onClick={() => setWizardStep(idx)} type="button" aria-label={`Go to ${step.label}`}><div className={styles.stepCircleDone}>✓</div><span className={styles.stepLabelDone}>{step.label}</span></button> : <div className={styles.stepItem}>{isDone ? <><div className={styles.stepCircleDone}>✓</div><span className={styles.stepLabelDone}>{step.label}</span></> : idx === wizardStep ? <><div className={styles.stepCircleActive}>{step.num}</div><span className={styles.stepLabelActive}>{step.label}</span></> : <><span className={styles.stepNumFuture}>{step.num}</span><span className={styles.stepLabelFuture}>{step.label}</span></>}</div>}</Fragment>;
-          })}
-        </div>
-        {wizardStep === 1 && <ConfigurationStep ctx={ctx} />}
-        {wizardStep === 2 && <PricingStep ctx={ctx} />}
-        {wizardStep === 3 && <AssetsStep ctx={ctx} />}
+      <div className={styles.wizardQueryContainer}>
+        <s-query-container containerName="create-wizard">
+          <div className={styles.page}>
+            <div className={styles.pageHeader}>
+              <div className={styles.pageHeaderLeft}><s-button variant="tertiary" icon="arrow-left" accessibilityLabel="Back" onClick={handleBack} /><h1 className={styles.pageTitle}>{pageTitle}</h1></div>
+              <s-stack direction="inline" gap="small"><s-button variant="secondary" icon="view" onClick={handleWizardPreview}>Preview</s-button><s-button variant="secondary" href="https://wolfpackapps.com/docs/bundle-configuration" target="_blank">How to configure?</s-button></s-stack>
+            </div>
+            <div className={styles.stepIndicator}>
+              {stepsMeta.map((step, idx) => {
+                const isDone = idx < wizardStep;
+                const isClickable = isDone && idx >= 1;
+                return <Fragment key={step.num}>{idx > 0 && <div className={styles.stepConnector} />}{isClickable ? <button className={styles.stepItemClickable} onClick={() => setWizardStep(idx)} type="button" aria-label={`Go to ${step.label}`}><div className={styles.stepCircleDone}>✓</div><span className={styles.stepLabelDone}>{step.label}</span></button> : <div className={styles.stepItem}>{isDone ? <><div className={styles.stepCircleDone}>✓</div><span className={styles.stepLabelDone}>{step.label}</span></> : idx === wizardStep ? <><div className={styles.stepCircleActive}>{step.num}</div><span className={styles.stepLabelActive}>{step.label}</span></> : <><span className={styles.stepNumFuture}>{step.num}</span><span className={styles.stepLabelFuture}>{step.label}</span></>}</div>}</Fragment>;
+              })}
+            </div>
+            {wizardStep === 1 && <ConfigurationStep ctx={ctx} />}
+            {wizardStep === 2 && <PricingStep ctx={ctx} />}
+            {wizardStep === 3 && <AssetsStep ctx={ctx} />}
+          </div>
+          <WizardOverlays ctx={ctx} />
+        </s-query-container>
       </div>
-      <WizardOverlays ctx={ctx} />
     </>
   );
 }

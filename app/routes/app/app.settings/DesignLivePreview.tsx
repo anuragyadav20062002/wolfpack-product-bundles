@@ -93,12 +93,10 @@ export function setDesignPreviewViewport(
 export function DesignLivePreview({
   previewBundle,
   previewVariables,
-  isLoading,
   initialState,
 }: {
   previewBundle: PreviewBundle;
   previewVariables: CSSProperties;
-  isLoading: boolean;
   initialState?: DesignPreviewState;
 }) {
   const { t } = useTranslation();
@@ -231,12 +229,6 @@ export function DesignLivePreview({
               {t("settingsDcp.preview.surface.next")}
             </button>
           </footer>
-          {isLoading ? (
-            <div className={styles.previewLoading} role="status" aria-live="polite">
-              <s-spinner accessibilityLabel={t("settingsDcp.preview.loading")} />
-              <span>{t("settingsDcp.preview.loading")}</span>
-            </div>
-          ) : null}
         </div>
       </div>
     </section>

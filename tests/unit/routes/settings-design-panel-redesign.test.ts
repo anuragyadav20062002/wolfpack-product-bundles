@@ -101,7 +101,6 @@ describe("DesignLivePreview", () => {
       React.createElement(DesignLivePreview, {
         previewBundle,
         previewVariables: {},
-        isLoading: false,
       }),
     );
 
@@ -122,7 +121,6 @@ describe("DesignLivePreview", () => {
           React.createElement(DesignLivePreview, {
             previewBundle,
             previewVariables: { "--bundle-global-primary-button": "#123456" } as unknown as React.CSSProperties,
-            isLoading: false,
             initialState: {
               bundleType: template.bundleType,
               templateKey: template.key,
@@ -138,17 +136,16 @@ describe("DesignLivePreview", () => {
     },
   );
 
-  it("uses the same preview surface for the Images & GIFs loading state", () => {
+  it("keeps the preview usable without a fake loading status", () => {
     const view = renderToStaticMarkup(
       React.createElement(DesignLivePreview, {
         previewBundle,
         previewVariables: {},
-        isLoading: true,
       }),
     );
 
-    expect(view).toContain('role="status"');
-    expect(view).toContain("settingsDcp.preview.loading");
     expect(view).toContain('aria-label="Live bundle preview"');
+    expect(view).not.toContain('role="status"');
+    expect(view).not.toContain("settingsDcp.preview.loading");
   });
 });

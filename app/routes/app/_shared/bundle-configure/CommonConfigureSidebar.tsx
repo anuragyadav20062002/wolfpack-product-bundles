@@ -97,6 +97,21 @@ export function getActiveConfigureSectionLabel({
   return activeItem?.label || bundleSetupItems[0]?.label || "Bundle setup";
 }
 
+export function selectConfigureSection({
+  sectionId,
+  closeAfterSelection,
+  handleSectionChange,
+  closeMobileNavigation,
+}: {
+  sectionId: string;
+  closeAfterSelection: boolean;
+  handleSectionChange: (sectionId: string) => void;
+  closeMobileNavigation: () => void;
+}) {
+  handleSectionChange(sectionId);
+  if (closeAfterSelection) closeMobileNavigation();
+}
+
 function getItemStatusBadge(
   item: CommonSetupItem,
   adapter: CommonConfigureSidebarAdapter,
@@ -170,10 +185,13 @@ export function CommonConfigureSidebar({
       {bundleSetupItems.map((item) => {
         const isActive = isItemActive(item, adapter);
         const statusBadge = getItemStatusBadge(item, adapter);
-        const selectSection = (sectionId: string) => {
-          handleSectionChange(sectionId);
-          if (closeAfterSelection) setMobileNavigationOpen(false);
-        };
+        const selectSection = (sectionId: string) =>
+          selectConfigureSection({
+            sectionId,
+            closeAfterSelection,
+            handleSectionChange,
+            closeMobileNavigation: () => setMobileNavigationOpen(false),
+          });
 
         return (
           <div key={item.id}>

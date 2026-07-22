@@ -1,5 +1,6 @@
 import {
   getActiveConfigureSectionLabel,
+  selectConfigureSection,
 } from "../../../app/routes/app/_shared/bundle-configure/CommonConfigureSidebar";
 
 const bundleSetupItems = [
@@ -34,5 +35,35 @@ describe("Admin mobile configure navigation", () => {
       stepSetupChildItems: [],
       bundleVisibilityChildItems: [],
     })).toBe("Step setup");
+  });
+
+  it("preserves the selection callback and closes the mobile disclosure", () => {
+    const handleSectionChange = jest.fn();
+    const closeMobileNavigation = jest.fn();
+
+    selectConfigureSection({
+      sectionId: "bundle_visibility",
+      closeAfterSelection: true,
+      handleSectionChange,
+      closeMobileNavigation,
+    });
+
+    expect(handleSectionChange).toHaveBeenCalledWith("bundle_visibility");
+    expect(closeMobileNavigation).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not close the desktop navigation after selection", () => {
+    const handleSectionChange = jest.fn();
+    const closeMobileNavigation = jest.fn();
+
+    selectConfigureSection({
+      sectionId: "discount_pricing",
+      closeAfterSelection: false,
+      handleSectionChange,
+      closeMobileNavigation,
+    });
+
+    expect(handleSectionChange).toHaveBeenCalledWith("discount_pricing");
+    expect(closeMobileNavigation).not.toHaveBeenCalled();
   });
 });

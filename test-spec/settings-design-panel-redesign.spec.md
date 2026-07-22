@@ -4,8 +4,8 @@ id: settings-design-panel-redesign-spec
 title: Settings Design Panel Redesign Test Spec
 type: test-spec
 status: active
-summary: Behavior coverage for the responsive Settings Design inspector and eight-template live preview.
-last_audited: 2026-07-22
+summary: Behavior coverage for the responsive, promptly available Settings Design inspector and eight-template live preview.
+last_audited: 2026-07-23
 owners:
   - engineering
 domains:
@@ -53,7 +53,7 @@ Verify that the Design subpage keeps its existing settings behavior while the lo
 | 1 | Render selectors | Default state | Both bundle types and all valid templates are selectable | Preview-only controls |
 | 2 | Render viewport controls | Desktop state | Desktop and mobile buttons have labels and tooltips; desktop is active | One-click buttons |
 | 3 | Render each template | Eight valid initial states | Shared preview renders the selected template | No iframe or remote media |
-| 4 | Loading preview | Images & GIFs active | Shared preview renders a loading status | Same preview surface |
+| 4 | Images and GIFs preview | Images & GIFs active | Shared preview remains immediately usable without a loading status | No asynchronous preview work exists |
 | 5 | Reactive variables | Valid preview variable record | Variables are applied to preview markup | Mapping remains separately validated |
 
 ## Acceptance Criteria
@@ -62,5 +62,6 @@ Verify that the Design subpage keeps its existing settings behavior while the lo
 - [x] All eight template identifiers render in desktop and mobile preview modes.
 - [x] Viewport switching preserves bundle type, template, and unsaved field values.
 - [x] Desktop and mobile controls expose accessible labels, tooltips, and active state.
-- [x] Images & GIFs renders the preview loading state.
+- [x] Images & GIFs keeps the preview usable without a loading status.
+- [ ] Entering Design crosses one lazy workspace boundary and reaches a usable preview within 750ms p75 in SIT.
 - [x] Existing save, discard, reset, preview-bundle, and CSS-variable behavior remains unchanged.
