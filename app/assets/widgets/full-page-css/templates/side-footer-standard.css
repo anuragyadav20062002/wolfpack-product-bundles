@@ -936,11 +936,11 @@ body:has([data-fpb-design-preset]) {
   .layout-sidebar[data-fpb-design-preset="STANDARD"]:not([data-fpb-card-cta-mode="icon"])
     .sidebar-content
     .product-image {
-    aspect-ratio: auto;
+    aspect-ratio: 1;
     width: 100%;
     min-width: 0;
-    height: var(--ih, 15rem);
-    min-height: var(--ih, 15rem);
+    height: auto;
+    min-height: 0;
     margin: 0;
     border-bottom: none;
     border-radius: 0.5rem;

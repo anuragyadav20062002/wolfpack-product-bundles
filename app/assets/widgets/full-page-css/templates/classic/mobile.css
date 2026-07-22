@@ -163,6 +163,7 @@
     height: auto;
     min-height: 0;
     aspect-ratio: 1;
+    align-self: start;
     margin: 0;
     border-radius: var(
       --bundle-full-page-product-image-border-radius,
@@ -178,7 +179,7 @@
   .fpb-preset-classic .sidebar-content .product-image img {
     width: 100%;
     height: 100%;
-    object-fit: var(--bundle-product-card-image-fit, contain);
+    object-fit: var(--bundle-product-card-image-fit, cover);
   }
 
   .fpb-preset-classic .sidebar-content .product-content-wrapper {
