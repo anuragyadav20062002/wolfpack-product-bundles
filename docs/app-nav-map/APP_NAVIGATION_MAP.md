@@ -5,7 +5,7 @@ title: Wolfpack Product Bundles App Navigation and UI Map
 type: navigation-map
 status: authoritative
 summary: Routes, screens, actions, modals, and storefront-preview flows for the embedded app.
-last_audited: 2026-07-22
+last_audited: 2026-07-23
 owners:
   - engineering
 domains:
@@ -29,7 +29,7 @@ keywords:
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-07-22
+**Last Updated:** 2026-07-23
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -126,7 +126,7 @@ Configure page storefront sync status:
 - Save persists DB changes and publishes Shopify storefront data synchronously before returning a compact success response.
 - Existing Sync Bundle actions run the same direct storefront sync path.
 - Preview Bundle posts one compact `/prepare-preview` request before opening storefront preview; failed checks surface through the preview error toast while the button spinner is active.
-- The reachable create/clone wizard at `/app/bundles/create/configure/:bundleId` keeps its ordered step indicator horizontally navigable and collapses editor grids, rule fields, asset fields, and modal actions to one column on phones.
+- Bundle creation and cloning route directly to the bundle type's configure page; there is no intermediate configuration wizard route.
 
 #### Modal: Delete Bundle Confirmation
 Triggered by: "Delete" row action
@@ -467,15 +467,19 @@ Billing Page
 ### Flow B: Create & Configure Bundle
 ```
 /app/dashboard
-  └── [Create Bundle] → Create Bundle Modal → POST
-      └── redirect → /app/bundles/{type}/configure/{bundleId}
+  └── [Create Bundle] → /app/bundles/create → select type + enter name → POST
+      └── redirect → /app/bundles/{type}/configure/{bundleId}?mode=create
           ├── Fill Bundle Settings tab
           ├── Add Steps tab
           ├── Set Pricing tab
           └── [Save] → [Sync Bundle tab → Sync Now]
+
+/app/dashboard
+  └── [Clone] → POST
+      └── follow response redirectTo → /app/bundles/{type}/configure/{bundleId}?mode=create
 ```
 
-On tablet and phone containers, configure section changes use the compact current-section disclosure; the create/clone wizard retains its ordered step navigation with horizontally scrollable overflow.
+On tablet and phone containers, configure section changes use the compact current-section disclosure.
 
 ### Flow C: Design Customisation
 ```

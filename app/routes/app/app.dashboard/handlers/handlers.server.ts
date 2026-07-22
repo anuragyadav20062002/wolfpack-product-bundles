@@ -166,7 +166,8 @@ export async function handleCloneBundle(
     return json({
       success: true,
       message: 'Bundle cloned successfully',
-      bundleId: clonedBundle.id
+      bundleId: clonedBundle.id,
+      redirectTo: `${getBundleEditPath(clonedBundle.id, originalBundle.bundleType)}?mode=create`,
     });
 
   } catch (error) {

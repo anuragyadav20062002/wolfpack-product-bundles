@@ -52,16 +52,6 @@
   border-color: #ccc;
 }
 
-.collapsedCompact {
-  cursor: default;
-  padding: 6px;
-}
-
-.collapsedCompact:hover {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
-  border-color: #e0e0e0;
-}
-
 /* Expanded trigger — wide to accommodate score label text */
 .collapsedOpen {
   width: min(360px, calc(100vw - 40px));

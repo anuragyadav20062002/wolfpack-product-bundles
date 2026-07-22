@@ -1,6 +1,36 @@
+---
+schema_version: 1
+id: admin-configure-page
+title: Admin Configure Page
+type: architecture
+status: authoritative
+summary: Defines the shared FPB and PPB configure-page boundary and direct create, clone, edit, and save flows.
+last_audited: 2026-07-23
+owners:
+  - engineering
+domains:
+  - admin
+systems:
+  - bundle-configure
+source_paths:
+  - app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/
+  - app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/
+  - app/routes/app/_shared/bundle-configure/
+related_docs:
+  - docs/app-nav-map/APP_NAVIGATION_MAP.md
+tags:
+  - architecture
+  - configure
+keywords:
+  - fpb
+  - ppb
+---
+
 # Admin Configure Page
 
 The FPB configure page is the canonical Admin configure design. FPB and PPB keep separate route URLs, loaders, actions, save handlers, and storefront sync contracts, but shared visual primitives live under `app/routes/app/_shared/bundle-configure/`.
+
+The only bundle configuration routes are the type-specific FPB and PPB configure pages. Bundle creation, cloning, and editing navigate directly to the appropriate configure route. The retired `/app/bundles/create/configure/:bundleId` configuration wizard and its route-specific state, actions, preview helper, and modal controllers are not part of the supported architecture.
 
 Shared configure primitives should accept adapter props for route-owned state and actions. FPB continues to use `useConfigureBundleFlow()`, and PPB continues to use `usePpbConfigureFlow()`. Shared components must not read route loaders or submit forms directly.
 

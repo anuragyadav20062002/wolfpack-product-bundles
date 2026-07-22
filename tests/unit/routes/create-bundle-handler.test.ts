@@ -1,4 +1,7 @@
-import { handleCreateBundle } from "../../../app/routes/app/app.dashboard/handlers/handlers.server";
+import {
+  handleCloneBundle,
+  handleCreateBundle,
+} from "../../../app/routes/app/app.dashboard/handlers/handlers.server";
 import db from "../../../app/db.server";
 import { WidgetInstallationService } from "../../../app/services/widget-installation.server";
 import { ensureBundleParentProduct } from "../../../app/services/bundles/bundle-parent-product.server";
@@ -12,6 +15,16 @@ jest.mock("../../../app/db.server", () => ({
     },
     bundle: {
       count: jest.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    bundleStep: {
+      create: jest.fn(),
+    },
+    stepProduct: {
+      createMany: jest.fn(),
+    },
+    bundlePricing: {
       create: jest.fn(),
     },
   },
@@ -118,5 +131,49 @@ describe("handleCreateBundle", () => {
         bundleDesignPresetId: "STANDARD",
       }),
     }));
+  });
+});
+
+describe("handleCloneBundle", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (mockDb.bundle.create as jest.Mock).mockResolvedValue({
+      id: "cloned-bundle",
+      name: "Cloned Bundle",
+    });
+    (ensureBundleParentProduct as jest.Mock).mockResolvedValue({
+      productId: "gid://shopify/Product/2",
+      variantId: "gid://shopify/ProductVariant/2",
+      handle: "cloned-bundle",
+      status: "UNLISTED",
+      created: true,
+    });
+  });
+
+  it.each([
+    ["full_page", "/app/bundles/full-page-bundle/configure/cloned-bundle?mode=create"],
+    ["product_page", "/app/bundles/product-page-bundle/configure/cloned-bundle?mode=create"],
+  ])("returns the %s configure redirect", async (bundleType, expectedRedirect) => {
+    (mockDb.bundle.findUnique as jest.Mock).mockResolvedValue({
+      id: "source-bundle",
+      name: "Source Bundle",
+      description: null,
+      bundleType,
+      templateName: null,
+      steps: [],
+      pricing: null,
+    });
+
+    const response = await handleCloneBundle(
+      makeAdmin() as any,
+      { shop: "test-shop.myshopify.com" },
+      makeForm({ bundleId: "source-bundle" }),
+    );
+
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      bundleId: "cloned-bundle",
+      redirectTo: expectedRedirect,
+    });
   });
 });
