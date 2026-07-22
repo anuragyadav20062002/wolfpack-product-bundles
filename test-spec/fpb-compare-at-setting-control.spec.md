@@ -44,6 +44,8 @@ Expose the already-persisted FPB compare-at visibility state through the merchan
 | 3 | Storefront compare-at disabled | Sale product plus `showProductComparedAtPrice: false` | Card omits compare-at price | Product data and visibility are independent gates |
 | 4 | Storefront compare-at enabled | Sale product plus `showProductComparedAtPrice: true` | Card renders compare-at price | Uses canonical storefront DTO key |
 | 5 | Grouped unavailable variant | Grouped product with two sellable variants and one unavailable variant | Every FPB preset omits the unavailable option | Keeps the surviving variant identities |
+| 6 | Variant selector disabled | Grouped product with multiple sellable variants | Every FPB preset renders the configured quick-look action without an inline selector | Matches the source fixture control state |
+| 7 | Disabled-selector card action | Shopper activates the grouped product action | Variant selection opens and no default variant is added | Prevents silent default-variant selection |
 
 ## Acceptance Criteria
 
@@ -51,4 +53,5 @@ Expose the already-persisted FPB compare-at visibility state through the merchan
 - [x] Changing the control marks the configure flow dirty and uses the existing setter.
 - [x] Storefront cards honor the canonical compare-at visibility flag.
 - [x] Grouped selectors omit unavailable variants in all four presets.
+- [x] Disabled grouped selectors use variant selection instead of adding a default variant.
 - [x] Focused behavior tests pass.

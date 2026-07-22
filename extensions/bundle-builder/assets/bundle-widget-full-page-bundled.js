@@ -8988,6 +8988,16 @@ createProductCard(product, stepIndex, options = {}) {
     product,
     displayVariantsAsIndividualProducts,
   });
+  const selectableVariantCount = Array.isArray(product?.variants)
+    ? product.variants.filter(variant => variant?.available !== false).length
+    : 0;
+  const openVariantModalOnAdd =
+    this.selectedBundle?.variantSelectorEnabled === false
+    && displayVariantsAsIndividualProducts === false
+    && selectableVariantCount > 1;
+  const addButtonText = openVariantModalOnAdd
+    ? this._resolveText('chooseOptionsButton', 'Choose Options')
+    : this.getProductCardAddButtonText(step);
   const variantSelectorHtml = shouldRenderVariantSelector
     ? usesDropdownVariantSelector
       ? VariantSelectorComponent.renderDropdownHtml(product, primaryOptionName, {
@@ -9025,7 +9035,7 @@ createProductCard(product, stepIndex, options = {}) {
         mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
         className: outOfStock ? 'is-out-of-stock' : '',
         showCompareAtPrice: this.selectedBundle?.showProductComparedAtPrice === true,
-        addButtonText: this.getProductCardAddButtonText(step),
+        addButtonText,
         increaseDisabled,
         cardBadgeHtml: stockBadgeHtml,
         variantSelectorPlacement: usesDropdownVariantSelector ? 'beforePrice' : undefined,
@@ -9039,7 +9049,7 @@ createProductCard(product, stepIndex, options = {}) {
       {
         variantSelectorHtml,
         actionMode: 'expandingQuantity',
-        addButtonText: this.getProductCardAddButtonText(step),
+        addButtonText,
       }
     );
   }
@@ -9110,6 +9120,7 @@ createProductCard(product, stepIndex, options = {}) {
 
   this.attachProductCardListeners(cardElement, product, stepIndex, {
     displayVariantsAsIndividualProducts,
+    openVariantModalOnAdd,
   });
 
   return cardElement;
@@ -9303,6 +9314,18 @@ attachProductCardListeners(cardElement, product, stepIndex, options = {}) {
     const addBtn = e.target.closest('.product-add-btn');
     if (!addBtn) return;
     e.stopPropagation();
+    if (options.openVariantModalOnAdd === true) {
+      if (!this.productModal && window.BundleProductModal) {
+        this.productModal = new window.BundleProductModal(this);
+      }
+      if (!this.productModal) return;
+      const initialImageIndex = Number(cardElement.dataset.bwCardImageIndex || 0);
+      this.productModal.open(product, step, {
+        initialImageIndex,
+        readOnly: false,
+      });
+      return;
+    }
     const productId = getClickedProductId(addBtn);
     const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
     if (currentQty === 0) {
