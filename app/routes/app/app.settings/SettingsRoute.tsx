@@ -1,5 +1,5 @@
 import { useActionData, useLoaderData, useSubmit } from "@remix-run/react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import {
   CONTROL_LAYOUTS,
@@ -32,11 +32,7 @@ import {
 } from "./SettingsFeedback";
 import { runAfterSaveBarLeaveConfirmation } from "../../../lib/admin-savebar-navigation.client";
 import { createSettingsDesignState, type SettingsDesignPayload } from "../../../lib/settings-design-contract";
-
-const DesignSettingsView = lazy(async () => {
-  const module = await import("./DesignSettingsView");
-  return { default: module.DesignSettingsView };
-});
+import { DesignSettingsView } from "./DesignSettingsView";
 
 export function SettingsRoute({ initialView = "landing" }: { initialView?: "landing" | "design" | "language" | "controls" }) {
   const { settingsPage, previewBundles } = useLoaderData<typeof loader>();
@@ -196,31 +192,29 @@ export function SettingsRoute({ initialView = "landing" }: { initialView?: "land
 
   if (settingsView === "design") {
     return (
-      <Suspense fallback={<s-spinner accessibilityLabel="Loading Design Control Panel" />}>
-        <DesignSettingsView
-          selectedDesignTab={selectedDesignTab}
-          isExpertColorControls={isExpertColorControls}
-          isExpertScopeActive={isExpertScopeActive}
-          activeDesignScope={activeDesignScope}
-          designFieldValues={designFieldValues}
-          designGateMessage={designGateMessage}
-          isActiveSubpageDirty={isActiveSubpageDirty}
-          isPreviewModalOpen={isPreviewModalOpen}
-          previewBundles={previewBundles}
-          saveMessage={saveMessage}
-          setSettingsView={() => returnToSettingsLanding()}
-          setIsPreviewModalOpen={setIsPreviewModalOpen}
-          setActiveDesignTab={setActiveDesignTab}
-          setIsExpertScopeActive={setIsExpertScopeActive}
-          setDesignGateMessage={setDesignGateMessage}
-          setActiveDesignScope={setActiveDesignScope}
-          setDesignFieldValues={setDesignFieldValues}
-          setIsExpertColorControls={setIsExpertColorControls}
-          setSaveMessage={setSaveMessage}
-          discardActiveSettingsChanges={discardActiveSettingsChanges}
-          saveActiveSettingsChanges={saveActiveSettingsChanges}
-        />
-      </Suspense>
+      <DesignSettingsView
+        selectedDesignTab={selectedDesignTab}
+        isExpertColorControls={isExpertColorControls}
+        isExpertScopeActive={isExpertScopeActive}
+        activeDesignScope={activeDesignScope}
+        designFieldValues={designFieldValues}
+        designGateMessage={designGateMessage}
+        isActiveSubpageDirty={isActiveSubpageDirty}
+        isPreviewModalOpen={isPreviewModalOpen}
+        previewBundles={previewBundles}
+        saveMessage={saveMessage}
+        setSettingsView={() => returnToSettingsLanding()}
+        setIsPreviewModalOpen={setIsPreviewModalOpen}
+        setActiveDesignTab={setActiveDesignTab}
+        setIsExpertScopeActive={setIsExpertScopeActive}
+        setDesignGateMessage={setDesignGateMessage}
+        setActiveDesignScope={setActiveDesignScope}
+        setDesignFieldValues={setDesignFieldValues}
+        setIsExpertColorControls={setIsExpertColorControls}
+        setSaveMessage={setSaveMessage}
+        discardActiveSettingsChanges={discardActiveSettingsChanges}
+        saveActiveSettingsChanges={saveActiveSettingsChanges}
+      />
     );
   }
 

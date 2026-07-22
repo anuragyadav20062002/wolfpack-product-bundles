@@ -5,7 +5,7 @@ title: EB Settings Design Reference
 type: reference
 status: authoritative
 summary: Live EB Settings Design request, state, and storefront-mapping contract used to implement Wolfpack Design settings.
-last_audited: 2026-07-22
+last_audited: 2026-07-23
 owners:
   - engineering
 domains:
@@ -18,6 +18,8 @@ source_paths:
   - app/lib/settings-design-contract.ts
   - app/lib/settings-design-runtime.ts
   - app/routes/app/app.settings.tsx
+  - app/routes/app/app.settings/SettingsDesignFields.tsx
+  - public/design-color-guide-*.png
 related_docs:
   - internal docs/Operations/Admin Performance.md
 tags:
@@ -166,6 +168,22 @@ The EB Design page exposes image guide links rather than text docs. All visible 
 | Product Card | `https://d3ks0ngva6go34.cloudfront.net/public/ProductCardDcpPreview.webp` |
 | Bundle Cart | `https://d3ks0ngva6go34.cloudfront.net/public/BundleCartDcpPreview.webp` |
 | Upsell | `https://d3ks0ngva6go34.cloudfront.net/public/UpsellDcpPreview.webp` |
+
+Wolfpack does not load those competitor assets. The Design inspector links to
+Wolfpack-owned AVIF guides in a compact visual-reference callout after each
+scope's controls:
+
+| Scope | Wolfpack guide |
+| --- | --- |
+| Expert General | `/design-color-guide-general.avif` |
+| Categories | `/design-color-guide-categories.avif` |
+| Product Card | `/design-color-guide-product-card.avif` |
+| Bundle Cart | `/design-color-guide-bundle-cart.avif` |
+| Upsell | `/design-color-guide-upsell.avif` |
+
+The tracked PNG files in `public/` are the source assets. The existing
+`scripts/optimise-public-images.mjs` build step emits their ignored AVIF
+siblings, which are the paths rendered by the Admin UI.
 
 ## Style Presets
 
