@@ -5987,7 +5987,7 @@ function shouldUseMobileSummarySlotTiles({ designPreset, productSlotsEnabled } =
   if (productSlotsEnabled !== true) return false;
 
   const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
-  return preset === 'STANDARD' || preset === 'CLASSIC';
+  return ['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
 }
 
 function getMobileAdditionalOffersPulseState({
@@ -6735,6 +6735,16 @@ createStandardSidebarDiscountProgress({ discountMessage, combinedDiscountInfo, t
 
 };
 
+function shouldUseSharedDesktopSummarySlotTiles({
+  designPreset,
+  productSlotsEnabled,
+} = {}) {
+  if (productSlotsEnabled !== true) return false;
+
+  const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
+  return preset === 'STANDARD' || preset === 'COMPACT' || preset === 'HORIZONTAL';
+}
+
 const fullPageSidePanelMethods = {
 renderSidePanel(panel) {
   if (!panel) return;
@@ -6772,6 +6782,10 @@ renderSidePanel(panel) {
     !isMobileSheet;
   const summaryEmptyStateMode = this.getSummarySidebarEmptyStateMode();
   const useInlineSummarySlots = summaryEmptyStateMode === 'slots';
+  const useSharedDesktopSummarySlotTiles = shouldUseSharedDesktopSummarySlotTiles({
+    designPreset: this.getFullPageDesignPreset(),
+    productSlotsEnabled: useInlineSummarySlots,
+  });
 
   panel.classList.toggle('full-page-side-panel--inline-slots', useInlineSummarySlots);
   panel.classList.toggle('full-page-side-panel--skeleton-list', !useInlineSummarySlots);
@@ -6936,7 +6950,7 @@ renderSidePanel(panel) {
     productsContainer.classList.toggle('side-panel-products--inline-slots', useInlineSummarySlots);
     productsContainer.classList.toggle('side-panel-products--skeleton-list', !useInlineSummarySlots);
 
-    if (isStandardDesktopSidebar && useInlineSummarySlots) {
+    if (useSharedDesktopSummarySlotTiles) {
       this._renderStandardSidebarSlotTiles(productsContainer, allSelectedProducts);
     } else if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
@@ -7034,7 +7048,7 @@ renderSidePanel(panel) {
         mode: summaryEmptyStateMode,
       });
     }
-    if (isHorizontalPreset) {
+    if (isHorizontalPreset && !useSharedDesktopSummarySlotTiles) {
       const requiredSlots = Math.max(
         totalQuantity + 1,
         activeStep?.maxQuantity || activeStep?.minQuantity || 2,

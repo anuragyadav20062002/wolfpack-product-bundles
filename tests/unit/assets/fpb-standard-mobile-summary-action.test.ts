@@ -7,6 +7,8 @@ const { PricingCalculator, ToastManager } = require('../../../app/assets/bundle-
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldUseMobileSummarySlotTiles } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const { shouldUseSharedDesktopSummarySlotTiles } = require('../../../app/assets/widgets/full-page/methods/side-panel-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getMobileAdditionalOffersPulseState } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getMobileBottomBarActionState } = require('../../../app/assets/widgets/full-page/methods/responsive-layout-methods.js');
@@ -571,7 +573,7 @@ describe('FPB Standard mobile summary action', () => {
     }).shouldPulse).toBe(false);
   });
 
-  it('uses slot tiles for slot-enabled Classic and Standard compact summaries only', () => {
+  it('uses slot tiles for every slot-enabled FPB summary preset', () => {
     expect(shouldUseMobileSummarySlotTiles({
       designPreset: 'CLASSIC',
       productSlotsEnabled: true,
@@ -585,11 +587,31 @@ describe('FPB Standard mobile summary action', () => {
     expect(shouldUseMobileSummarySlotTiles({
       designPreset: 'COMPACT',
       productSlotsEnabled: true,
-    })).toBe(false);
+    })).toBe(true);
+
+    expect(shouldUseMobileSummarySlotTiles({
+      designPreset: 'HORIZONTAL',
+      productSlotsEnabled: true,
+    })).toBe(true);
 
     expect(shouldUseMobileSummarySlotTiles({
       designPreset: 'CLASSIC',
       productSlotsEnabled: false,
+    })).toBe(false);
+
+    expect(shouldUseSharedDesktopSummarySlotTiles({
+      designPreset: 'COMPACT',
+      productSlotsEnabled: true,
+    })).toBe(true);
+
+    expect(shouldUseSharedDesktopSummarySlotTiles({
+      designPreset: 'HORIZONTAL',
+      productSlotsEnabled: true,
+    })).toBe(true);
+
+    expect(shouldUseSharedDesktopSummarySlotTiles({
+      designPreset: 'CLASSIC',
+      productSlotsEnabled: true,
     })).toBe(false);
   });
 

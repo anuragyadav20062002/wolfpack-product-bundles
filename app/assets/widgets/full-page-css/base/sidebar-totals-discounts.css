@@ -849,3 +849,229 @@
     display: none !important;
   }
 }
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slots {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(var(--fpb-summary-slot-size), var(--fpb-summary-slot-size))
+  );
+  grid-auto-rows: var(--fpb-summary-slot-size);
+  gap: var(--fpb-summary-slot-gap);
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--fpb-summary-slot-size);
+  height: var(--fpb-summary-slot-size);
+  border-radius: var(--bundle-product-card-border-radius, 0.5rem);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot--filled {
+  border: 1px solid var(--bundle-side-panel-border-color, #e3e3e3);
+  background: var(--bundle-side-panel-bg, #fff);
+}
+
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot--empty {
+  border: 2px dashed var(--bundle-global-primary-text, #000);
+  background: transparent;
+}
+
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot-image,
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot-image-placeholder,
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot-icon {
+  width: var(--bundle-control-hit-target, 2.5rem);
+  height: var(--bundle-control-hit-target, 2.5rem);
+  object-fit: contain;
+}
+
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--bundle-global-primary-text, #000);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot-remove {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--bundle-side-panel-remove-icon-bg, #000);
+  color: var(--bundle-side-panel-remove-icon-color, #fff);
+  cursor: pointer;
+}
+
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot-remove::before,
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot-remove::after {
+  content: "";
+  position: absolute;
+  width: 50%;
+  height: 1px;
+  background: currentColor;
+}
+
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot-remove::before {
+  transform: rotate(45deg);
+}
+
+.layout-sidebar:is(
+    [data-fpb-design-preset="COMPACT"],
+    [data-fpb-design-preset="HORIZONTAL"]
+  )
+  .side-panel-inline-slot-remove::after {
+  transform: rotate(-45deg);
+}
+
+@media (max-width: 768px) {
+  .fpb-mobile-summary-tray:is(.fpb-preset-compact, .fpb-preset-horizontal) {
+    --fpb-mobile-summary-slot-size: calc(
+      var(--fpb-card-action-size, 2.1875rem) +
+        var(--fpb-card-action-size, 2.1875rem) +
+        var(--bundle-summary-control-gap, 0.5rem) +
+        var(--bundle-summary-control-gap, 0.5rem) +
+        var(--bundle-summary-copy-gap, 0.3125rem)
+    );
+  }
+
+  .fpb-mobile-summary-tray:is(.fpb-preset-compact, .fpb-preset-horizontal)
+    .fpb-mobile-summary-products-list--slots {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(
+        var(--fpb-mobile-summary-slot-size),
+        var(--fpb-mobile-summary-slot-size)
+      )
+    );
+    grid-auto-rows: var(--fpb-mobile-summary-slot-size);
+    justify-content: start;
+    gap: var(--bundle-summary-row-gap, 0.625rem);
+    width: 100%;
+    height: auto;
+    max-height: none;
+    padding-block: var(--bundle-summary-copy-gap, 0.3125rem);
+    overflow: visible;
+  }
+
+  .fpb-mobile-summary-tray:is(.fpb-preset-compact, .fpb-preset-horizontal)
+    .fpb-mobile-summary-slot-card {
+    display: grid;
+    place-items: center;
+    width: var(--fpb-mobile-summary-slot-size);
+    height: var(--fpb-mobile-summary-slot-size);
+    border-radius: var(--bundle-product-card-border-radius, 0.5rem);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .fpb-mobile-summary-tray:is(.fpb-preset-compact, .fpb-preset-horizontal)
+    .fpb-mobile-summary-slot-card--filled {
+    border: 1px solid var(--bundle-side-panel-border-color, #e3e3e3);
+    background: var(--bundle-side-panel-bg, #fff);
+  }
+
+  .fpb-mobile-summary-tray:is(.fpb-preset-compact, .fpb-preset-horizontal)
+    .fpb-mobile-summary-slot-card--empty {
+    border: 2px dashed var(--bundle-global-primary-text, #000);
+    background: transparent;
+  }
+
+  .fpb-mobile-summary-tray:is(.fpb-preset-compact, .fpb-preset-horizontal)
+    .fpb-mobile-summary-slot-image,
+  .fpb-mobile-summary-tray:is(.fpb-preset-compact, .fpb-preset-horizontal)
+    .fpb-mobile-summary-slot-image-placeholder {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fpb-mobile-summary-tray:is(.fpb-preset-compact, .fpb-preset-horizontal)
+    .fpb-mobile-summary-slot-icon-img {
+    width: var(--bundle-control-hit-target, 2.5rem);
+    height: var(--bundle-control-hit-target, 2.5rem);
+    object-fit: contain;
+  }
+
+  .fpb-mobile-summary-tray:is(.fpb-preset-compact, .fpb-preset-horizontal)
+    .fpb-mobile-summary-slot-plus {
+    color: var(--bundle-global-primary-text, #000);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+}
