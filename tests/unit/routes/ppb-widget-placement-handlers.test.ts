@@ -72,6 +72,26 @@ describe("PPB widget placement handlers", () => {
     );
   });
 
+  it("blocks preview when no parent product is ready", async () => {
+    (mockDb.bundle.findUnique as jest.Mock).mockResolvedValue({
+      id: "bundle-1",
+      shopifyProductId: null,
+    } as any);
+    mockValidateProductBundleWidgetSetup.mockResolvedValue({
+      widgetInstalled: false,
+      requiresOneTimeSetup: false,
+      message: "Create a bundle product before previewing",
+    });
+
+    const response = await handleValidateWidgetPlacement(admin, session, "bundle-1");
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      message: "Create a bundle product before previewing",
+    });
+  });
+
   it("assigns a selected product template suffix to the bundle parent product", async () => {
     admin.graphql.mockResolvedValue({
       json: async () => ({
