@@ -8843,23 +8843,15 @@ expandProductsByVariant(products, shouldExpand = true) {
       }
       return variant?.available !== false;
     };
-    const isExplicitlyUnavailable = (variant) => {
-      const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
-        ? context.getRuntimeVariantInventory(variant)
-        : null;
-      return runtimeInventory?.available === false
-        || variant?.availableForSale === false
-        || (!runtimeInventory && variant?.available === false);
-    };
 
     if (product.parentProductId && product.variantId) {
-      if (isExplicitlyUnavailable(product)) return [];
+      if (!isVariantSelectable(product)) return [];
       return [{ ...product, available: isVariantSelectable(product) }];
     }
 
     if (product.variants && product.variants.length > 1) {
       return product.variants
-        .filter(variant => !isExplicitlyUnavailable(variant))
+        .filter(variant => isVariantSelectable(variant))
         .map(variant => {
           const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
             ? context.getRuntimeVariantInventory(variant)
@@ -8899,8 +8891,10 @@ expandProductsByVariant(products, shouldExpand = true) {
 
     if (Array.isArray(product.variants) && product.variants.length === 1) {
       const variant = product.variants[0];
+      if (!isVariantSelectable(variant)) return [];
       return [{ ...product, available: isVariantSelectable(variant) }];
     }
+    if (!isVariantSelectable(product)) return [];
     return [{ ...product, available: isVariantSelectable(product) }];
   });
 },
@@ -12345,14 +12339,7 @@ processProductsForStep(products, step) {
       const processedOptions = deriveProductOptionNames(product);
 
       return product.variants
-        .filter(variant => {
-          const runtimeInventory = typeof this.getRuntimeVariantInventory === 'function'
-            ? this.getRuntimeVariantInventory(variant)
-            : null;
-          return variant?.available !== false
-            && variant?.availableForSale !== false
-            && runtimeInventory?.available !== false;
-        })
+        .filter(variant => this.isVariantSelectableForInventory(variant))
         .map(variant => {
 
           const imageUrl = variant?.image?.src
@@ -12364,7 +12351,7 @@ processProductsForStep(products, step) {
             || product.images?.[0]?.url
             || product.images?.[0]?.src
             || product.images?.[0]?.originalSrc
-            || 'https://via.placeholder.com/150';
+            || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
           return {
             id: this.extractId(variant.id),
@@ -12391,9 +12378,10 @@ processProductsForStep(products, step) {
         });
     } else {
 
-      const defaultVariant = this.getFirstAvailableVariant(product)
-        || product.variants?.[0]
-        || null;
+      const defaultVariant = this.getFirstAvailableVariant(product);
+      if (Array.isArray(product?.variants) && product.variants.length > 0 && !defaultVariant) {
+        return [];
+      }
 
       const imageUrl = defaultVariant?.image?.src
         || defaultVariant?.image?.url
@@ -12404,7 +12392,7 @@ processProductsForStep(products, step) {
         || product.images?.[0]?.url
         || product.images?.[0]?.src
         || product.images?.[0]?.originalSrc
-        || 'https://via.placeholder.com/150';
+        || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
       const processedVariants = (product.variants || []).map(normalizeVariant);
 

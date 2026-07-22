@@ -315,25 +315,16 @@ expandProductsByVariant(products, shouldExpand = true) {
       }
       return variant?.available !== false;
     };
-    const isExplicitlyUnavailable = (variant) => {
-      const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
-        ? context.getRuntimeVariantInventory(variant)
-        : null;
-      return runtimeInventory?.available === false
-        || variant?.availableForSale === false
-        || (!runtimeInventory && variant?.available === false);
-    };
-
     // If product already has a variantId and parentProductId, it was already expanded
     if (product.parentProductId && product.variantId) {
-      if (isExplicitlyUnavailable(product)) return [];
+      if (!isVariantSelectable(product)) return [];
       return [{ ...product, available: isVariantSelectable(product) }];
     }
 
     // If product has multiple variants, expand into separate cards
     if (product.variants && product.variants.length > 1) {
       return product.variants
-        .filter(variant => !isExplicitlyUnavailable(variant))
+        .filter(variant => isVariantSelectable(variant))
         .map(variant => {
           const runtimeInventory = typeof context.getRuntimeVariantInventory === 'function'
             ? context.getRuntimeVariantInventory(variant)
@@ -374,8 +365,10 @@ expandProductsByVariant(products, shouldExpand = true) {
     // Single variant or no variants - return as-is
     if (Array.isArray(product.variants) && product.variants.length === 1) {
       const variant = product.variants[0];
+      if (!isVariantSelectable(variant)) return [];
       return [{ ...product, available: isVariantSelectable(variant) }];
     }
+    if (!isVariantSelectable(product)) return [];
     return [{ ...product, available: isVariantSelectable(product) }];
   });
 },
