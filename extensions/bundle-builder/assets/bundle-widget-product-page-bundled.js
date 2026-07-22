@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 5.0.201
+ * Version : 5.0.202
  * Built   : 2026-07-22
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.201';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.202';
 (function() {
   'use strict';
 
@@ -243,7 +243,9 @@ const ConditionValidator = (function () {
     const normalizedConditionValue = _normalizeConditionRuleValue(conditionType, step.conditionValue);
     const normalizedConditionValue2 = _normalizeConditionRuleValue(conditionType, step.conditionValue2);
 
-    if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
+    if (!step.conditionType) return true;
+
+    if (!step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }

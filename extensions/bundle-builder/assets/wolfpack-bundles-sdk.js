@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 5.0.201
+ * Version : 5.0.202
  * Built   : 2026-07-22
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.201';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.202';
 (function (window) {
   'use strict';
 
@@ -312,8 +312,12 @@ const ConditionValidator = (function () {
     const normalizedConditionValue = _normalizeConditionRuleValue(conditionType, step.conditionValue);
     const normalizedConditionValue2 = _normalizeConditionRuleValue(conditionType, step.conditionValue2);
 
-    // No explicit condition configured → only enforce minQuantity; no upper bound
-    if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
+    // No rule configured means the step is optional. Persisted min/max fields
+    // describe the retired rule and must not recreate it at navigation time.
+    if (!step.conditionType) return true;
+
+    // An incomplete active condition keeps the existing minimum guard.
+    if (!step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
