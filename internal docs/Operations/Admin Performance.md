@@ -5,7 +5,7 @@ title: Admin Performance
 type: operations
 status: authoritative
 summary: Embedded Admin Web Vitals instrumentation, route-level LCP findings, and critical-path constraints.
-last_audited: 2026-07-22
+last_audited: 2026-07-23
 owners:
   - engineering
 domains:
@@ -18,6 +18,7 @@ source_paths:
   - app/lib/admin-web-vitals-diagnostics.client.ts
   - app/routes/app/app.settings/SettingsRoute.tsx
   - app/routes/app/app.settings/DesignSettingsView.tsx
+  - app/routes/app/app.settings/DesignLivePreview.tsx
 related_docs:
   - internal docs/Operations/LCP and CLS Playbook.md
 tags:
@@ -102,7 +103,7 @@ Measured in the Shopify Admin chrome on `wolfpack-store-test-1` / SIT using
 | `/app/pricing` | Source audit: no first-viewport owned image | No image preload fix |
 | `/app/bundles/cart-transform` | Source audit: no first-viewport owned image | No image preload fix |
 | `/app/attribution` | Current local app candidate: critical funnel heading; historical candidates: inactive tracking body copy, deferred funnel hero title | Render the funnel heading in the route shell before analytics resolves; keep inactive/no-data copy out of the critical first-paint path; render the deferred funnel metrics without duplicating the late heading. |
-| `/app/settings` | Source audit: dynamic settings preview images are not route hero content | The Design subpage and its redesigned CSS are lazy-loaded only after the merchant enters Design. Its representative preview uses local markup and CSS with no remote media, storefront iframe, or widget runtime. Do not add speculative preloads; use repeated `?wpbWebVitalsDebug=1` samples for concrete settings-subview evidence. |
+| `/app/settings` | Source audit: dynamic settings preview images are not route hero content | The complete Settings workspace, including Design, is lazy-loaded through one post-click boundary. Its representative preview uses local markup and CSS with no remote media, storefront iframe, widget runtime, or fake Images & GIFs loading state. Do not add speculative preloads; use repeated `?wpbWebVitalsDebug=1` samples for concrete settings-subview evidence. |
 | `/app/store-files` / `/app/upload-store-file` | Source audit: images are picker/file content, not initial route hero content | No route preload |
 | Configure routes | Source audit: dynamic product/template images depend on loaded bundle state and active section/modal | Do not globally preload; measure concrete FPB/PPB configure URLs and preload only confirmed above-fold candidates |
 
@@ -114,18 +115,28 @@ first-render JavaScript instead.
 ## Settings Design Control Panel
 
 The Settings landing route renders a small Polaris card shell and keeps the
-workspace implementation behind a React lazy boundary. The 2026-07-22
-production build split the initial Settings route (`app.settings`, 1.89 kB /
-0.96 kB gzip) from `SettingsRoute` (29.84 kB / 8.15 kB gzip) and
-`DesignSettingsView` (11.70 kB / 3.54 kB gzip). Neither workspace chunk is
-required for the first Settings paint.
+workspace implementation behind one React lazy boundary. The 2026-07-23
+production build split the initial Settings route (`app.settings`, 2.00 kB /
+1.00 kB gzip) from the complete `SettingsRoute` workspace (40.31 kB / 10.57 kB
+gzip). Design is statically part of that post-click workspace chunk, so entering
+Design no longer waits for a second sequential JavaScript request. The workspace
+chunk is not required for the first Settings paint.
 
-The Design chunk owns its inspector/preview layout and the eight-template
-representative preview. Its responsive behavior is container-driven because
+The Settings workspace owns the Design inspector/preview layout and the
+eight-template representative preview. Its responsive behavior is
+container-driven because
 the usable width of a Shopify Admin iframe is independent of the browser's
 top-level viewport. The preview uses local fixture markup, validated CSS
 variables, and Polaris controls; it does not fetch storefront assets or
-duplicate the storefront runtime.
+duplicate the storefront runtime. Images & GIFs uses the same immediately
+available local preview instead of displaying a loading status for work that
+does not exist.
+
+For interaction acceptance, measure at least ten cache-bypassed Design entries
+from card activation until the live preview controls and surface are usable.
+The click-to-preview target is p75 at or below `750ms`. Intent-based workspace
+prefetching is justified only if the single-boundary implementation misses that
+target in SIT.
 
 For local acceptance, collect at least ten cache-bypassed loads of
 `/app/settings?wpbWebVitalsDebug=1`, enter Design on each pass, and inspect the

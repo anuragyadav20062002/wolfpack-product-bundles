@@ -1,5 +1,15 @@
 /* ── Page Shell ───────────────────────────────────────────────── */
+.wizardQueryContainer,
+.wizardQueryContainer > s-query-container {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .page {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   min-height: 100vh;
   background: #f1f1f1;
   padding: 24px;
@@ -39,6 +49,8 @@
   gap: 0;
   overflow-x: auto;
   scrollbar-width: thin;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .stepItem {
@@ -136,6 +148,7 @@
   grid-template-columns: 1fr 340px;
   gap: 20px;
   align-items: start;
+  min-width: 0;
 }
 
 .leftCol {
@@ -531,91 +544,12 @@
   min-height: 44px;
 }
 
-/* ── Multi-Language Modal ─────────────────────────────────────── */
-.modalBackdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  animation: fadeIn 0.15s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.modal {
-  background: white;
-  border-radius: 14px;
-  width: min(520px, 100%);
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  animation: modalSlideIn 0.2s ease;
-}
-
-@keyframes modalSlideIn {
-  from {
-    transform: translateY(-16px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.modalHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid #f3f4f6;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 1;
-}
-
-.modalTitle {
-  font-size: 17px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0;
-}
-
-.modalCloseBtn {
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-.modalCloseBtn:hover {
-  background: #f3f4f6;
-}
-
-.modalBody {
-  padding: 20px 24px 24px;
+.wizardModalBody {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .modalSectionTitle {
@@ -631,19 +565,8 @@
   margin-bottom: 12px;
 }
 
-.modalFooter {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 16px 24px;
-  border-top: 1px solid #f3f4f6;
-  position: sticky;
-  bottom: 0;
-  background: white;
-}
-
 /* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width: 900px) {
+@container create-wizard (inline-size <= 900px) {
   .layout {
     grid-template-columns: 1fr;
   }
@@ -658,10 +581,9 @@
   }
 }
 
-@media (max-width: 767px) {
+@container create-wizard (inline-size <= 767px) {
   .page {
     padding: 16px;
-    overflow-x: clip;
   }
   .pageHeader {
     align-items: flex-start;
@@ -697,13 +619,33 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
   }
-  .modalFooter {
-    align-items: stretch;
-    flex-direction: column-reverse;
-    padding: 14px 16px max(14px, env(safe-area-inset-bottom));
-  }
-  .modalFooter > * {
+
+  .pageHeader > s-stack {
     width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .stepItemClickable,
+  .stepChip,
+  .stepChipActive,
+  .addStepBtn,
+  .tab,
+  .tabActive,
+  .pageHeader s-button,
+  .wizardModalBody button,
+  .wizardModalBody s-button {
+    min-block-size: 44px;
+  }
+
+  .categoryNameInput,
+  .wizardModalBody s-text-field,
+  .wizardModalBody s-select {
+    min-block-size: 44px;
+  }
+
+  .wizardFooter {
+    padding-right: 0;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
   }
 }
 
@@ -821,7 +763,7 @@
   border-top: 1px solid #f3f4f6;
 }
 
-@media (max-width: 900px) {
+@container create-wizard (inline-size <= 900px) {
   .discountRuleFields {
     grid-template-columns: 1fr 1fr;
   }
@@ -925,7 +867,7 @@
   align-items: end;
 }
 
-@media (max-width: 900px) {
+@container create-wizard (inline-size <= 900px) {
   .assetsGrid {
     grid-template-columns: 1fr;
   }

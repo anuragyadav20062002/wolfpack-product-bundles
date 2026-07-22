@@ -5,7 +5,7 @@ title: Settings Design API, State, and UI
 type: test-spec
 status: active
 summary: Behavior coverage for the Settings Design DTO, persistence document, preview state, and lightweight route shell.
-last_audited: 2026-07-22
+last_audited: 2026-07-23
 owners:
   - engineering
 domains:
@@ -19,6 +19,7 @@ source_paths:
   - app/lib/settings-design-runtime.ts
   - app/routes/app/app.settings.tsx
   - app/routes/app/app.settings/DesignSettingsView.tsx
+  - app/routes/app/app.settings/SettingsDesignFields.tsx
 related_docs:
   - internal docs/EB Settings Design Reference.md
   - internal docs/Operations/Admin Performance.md
@@ -70,6 +71,7 @@ Keep the Design subpage state and save DTO aligned with the store-level EB-shape
 | --- | --- | --- | --- | --- |
 | 1 | Modern field controls | Color, number, select, and status fields | Polaris web components render | Behavior only; no CSS assertions |
 | 2 | Lightweight landing shell | Initial Settings route render | Three actionable cards render without Design workspace | Protects landing LCP |
+| 3 | Expert visual guides | Expert scope sections | Five local AVIF links open in a new tab | Guides use Wolfpack-owned assets |
 
 ## Acceptance Criteria
 
@@ -79,4 +81,5 @@ Keep the Design subpage state and save DTO aligned with the store-level EB-shape
 - [x] Basic and expert preview precedence matches the expert toggle.
 - [x] Failed saves remain dirty; successful saves use confirmed state.
 - [x] Design form controls are Polaris-first.
+- [x] Expert color scopes link to Wolfpack AVIF guides in a new tab.
 - [ ] Settings landing app-owned LCP p75 is at or below 2,000 ms with CLS below 0.1 across at least ten cache-bypassed loads.

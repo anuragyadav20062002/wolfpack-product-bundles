@@ -29,28 +29,30 @@ const SETTINGS_SECTIONS: Array<{
 export function SettingsLandingShell({ onSelect }: { onSelect: (view: SettingsWorkspaceView) => void }) {
   return (
     <s-page heading="Settings" inlineSize="large">
-      <s-grid
-        gridTemplateColumns="@container (inline-size <= 720px) 1fr, repeat(3, minmax(0, 1fr))"
-        gap="base"
-      >
-        {SETTINGS_SECTIONS.map((section) => (
-          <s-clickable
-            key={section.id}
-            accessibilityLabel={`Configure ${section.title}`}
-            padding="base"
-            border="base"
-            borderRadius="base"
-            onClick={() => onSelect(section.id)}
-          >
-            <s-stack gap="base">
-              <s-icon type={section.icon} size="base" />
-              <s-heading>{section.title}</s-heading>
-              <s-paragraph color="subdued">{section.description}</s-paragraph>
-              <s-text type="strong">Configure</s-text>
-            </s-stack>
-          </s-clickable>
-        ))}
-      </s-grid>
+      <s-query-container containerName="settings-landing">
+        <s-grid
+          gridTemplateColumns="@container settings-landing (inline-size > 720px) repeat(3, minmax(0, 1fr)), 1fr"
+          gap="base"
+        >
+          {SETTINGS_SECTIONS.map((section) => (
+            <s-clickable
+              key={section.id}
+              accessibilityLabel={`Configure ${section.title}`}
+              padding="base"
+              border="base"
+              borderRadius="base"
+              onClick={() => onSelect(section.id)}
+            >
+              <s-stack gap="base">
+                <s-icon type={section.icon} size="base" />
+                <s-heading>{section.title}</s-heading>
+                <s-paragraph color="subdued">{section.description}</s-paragraph>
+                <s-text type="strong">Configure</s-text>
+              </s-stack>
+            </s-clickable>
+          ))}
+        </s-grid>
+      </s-query-container>
     </s-page>
   );
 }

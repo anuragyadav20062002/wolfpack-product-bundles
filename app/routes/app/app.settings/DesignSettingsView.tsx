@@ -192,7 +192,6 @@ export function DesignSettingsView({
           <DesignLivePreview
             previewBundle={previewBundle}
             previewVariables={previewVariables}
-            isLoading={selectedDesignTab.title === "Images & GIFs"}
           />
         ) : (
           <section className={styles.previewPanel} aria-label="Live bundle preview">

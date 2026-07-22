@@ -48,11 +48,6 @@ export function DesignFields({
         return (
           <s-section key={group.title} heading={group.title || undefined}>
             <s-stack gap="base">
-              {guideUrl ? (
-                <s-link href={guideUrl} target="_blank">
-                  Show color guide
-                </s-link>
-              ) : null}
               {group.fields.map((field) => {
                 const fieldKey = field.key ?? field.label;
                 const value = values[fieldKey] ?? field.value ?? "";
@@ -116,6 +111,22 @@ export function DesignFields({
                   />
                 );
               })}
+              {guideUrl ? (
+                <s-box padding="base" background="subdued" borderRadius="base">
+                  <s-stack gap="small">
+                    <s-stack direction="inline" gap="small" alignItems="center">
+                      <s-icon type="view" size="small" />
+                      <s-text type="strong">Visual reference</s-text>
+                    </s-stack>
+                    <s-paragraph color="subdued">
+                      See which storefront elements these color controls affect.
+                    </s-paragraph>
+                    <s-link href={guideUrl} target="_blank">
+                      Open visual guide
+                    </s-link>
+                  </s-stack>
+                </s-box>
+              ) : null}
             </s-stack>
           </s-section>
         );
