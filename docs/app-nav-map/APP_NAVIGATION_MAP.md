@@ -159,7 +159,8 @@ Primary action:
 - While the lazy Settings workspace loads after any card selection, the route shows three skeleton cards instead of a spinner.
 - The Design Control Panel lazy-loads after entry and uses a responsive three-column workspace: section navigation on the left, the largest app-owned preview in the middle, and active fields on the right. At medium widths the preview spans the first row; at phone widths preview, navigation, and fields stack in that order.
 - Preview-only Bundle Type and Template selectors cover Landing Page Standard, Classic, Compact, and Horizontal plus Product Page Product List, Product Grid, Horizontal Slots, and Vertical Slots.
-- Preview state and desktop/mobile controls switch deterministic Builder, Loading, Validation, and Upsell fixtures without saving or clearing unsaved Design values.
+- The template-aware Preview surface control exposes only valid local scenes: Builder, Cart / summary, Loading, Validation, and Upsell for every template, plus Product picker for the two slot templates. Desktop/mobile switching preserves the selected surface when it remains valid.
+- Editing a preview-relevant field selects the scene where its effect is visible. Slot product-card fields reveal Product picker, cart/footer fields reveal Cart / summary, and loading, toast, and upsell fields reveal their matching surfaces.
 - Unsaved design values are applied through the normalized storefront Design runtime and a semantic field-target contract; arbitrary CSS, remote preview requests, and cart mutations are rejected.
 - Local Design controls and template previews remain available without a storefront-ready bundle. Only the separate Preview Bundle action requires a storefront URL.
 - Relevant Expert Colour Control groups expose `Show Colour Guide` links to the five app-owned AVIF guide paths generated from tracked public PNG sources by CI/CD.
@@ -489,9 +490,11 @@ On tablet and phone containers, configure section changes use the compact curren
 /app/settings
   └── Click Design card → Settings -> Design panel opens
       ├── Existing Design sections and fields render in one inspector pane
-      ├── Select preview-only bundle type, template, and desktop/mobile viewport
+      ├── Select preview-only bundle type, template, surface, and desktop/mobile viewport
       ├── Change setting → app-owned live preview updates immediately (no persistence)
-      ├── Images & GIFs section → same app-owned preview renders its loading state
+      ├── Slot product-card field → Product picker modal/bottom sheet is revealed
+      ├── Cart/footer field → Cart / summary surface is revealed
+      ├── Loading, toast, or upsell field → matching deterministic surface is revealed
       ├── Preview blocks add-to-cart and form submission
       └── [Save] → Save Bar submits → toast confirmation
 ```

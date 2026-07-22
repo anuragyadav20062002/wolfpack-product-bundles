@@ -5,7 +5,7 @@ title: Widget Architecture
 type: architecture
 status: authoritative
 summary: FPB and PPB bootstrap, hydration, extension-asset, and widget runtime architecture.
-last_audited: 2026-07-14
+last_audited: 2026-07-23
 owners:
   - engineering
 domains:
@@ -15,6 +15,7 @@ systems:
 source_paths:
   - app/assets/bundle-widget-full-page.js
   - app/assets/bundle-widget-product-page.js
+  - app/routes/app/app.settings/design-preview-model.ts
   - app/routes/root/wpb.$bundleId.tsx
 related_docs:
   - Architecture/FPB Host Evaluation.md
@@ -44,6 +45,22 @@ Template behavior is resolved through plain config modules and method modules:
 - Registries resolve canonical app template identifiers to those target template configs. FPB Standard is stored and emitted as `STANDARD`.
 
 Template installer/prototype patch functions have been removed. Widget entry files compose exported template method objects in the same central `Object.assign` used for controller method modules.
+
+## Admin Design Preview Adapter
+
+Settings -> Design resolves its eight local preview descriptors from
+`mapTemplateSelection` and the same FPB/PPB template config registries listed
+above. The descriptor reads canonical product-card mode, configured columns,
+timeline mode, summary mode, and slot orientation; its Admin-only adapter adds
+supported surfaces, semantic fixture regions, and responsive composition.
+
+The Admin preview must remain a local structural representation. It uses
+deterministic fixture records and `buildSettingsDesignRuntime` theme values, but
+does not import storefront CSS, instantiate a widget controller, fetch a bundle,
+embed an iframe, mutate a cart, or persist preview state. Public template images
+are reference evidence only. This boundary lets template IDs and runtime design
+tokens stay canonical without coupling the Settings chunk to the storefront
+runtime.
 
 Source module names should describe their storefront responsibility. Avoid mechanical names such as `chunk-01.js` or `part-01.css`; those hide ownership and make stale widget code harder to spot.
 
