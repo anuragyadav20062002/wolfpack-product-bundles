@@ -12,10 +12,12 @@ import { CartTransformService } from "../../services/cart-transform-service.serv
 import { buildFpbStorefrontUrl } from "../../lib/fpb-storefront-url";
 import { SettingsLandingShell, type SettingsWorkspaceView } from "./app.settings/SettingsLandingShell";
 
-const SettingsWorkspace = lazy(async () => {
+const loadSettingsWorkspace = async () => {
   const module = await import("./app.settings/SettingsRoute");
   return { default: module.SettingsRoute };
-});
+};
+
+const SettingsWorkspace = lazy(loadSettingsWorkspace);
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await requireAdminSession(request);
@@ -257,7 +259,14 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function SettingsRouteDefault() {
   const [workspaceView, setWorkspaceView] = useState<SettingsWorkspaceView | null>(null);
   if (!workspaceView) {
-    return <SettingsLandingShell onSelect={setWorkspaceView} />;
+    return (
+      <SettingsLandingShell
+        onSelect={setWorkspaceView}
+        onIntent={() => {
+          void loadSettingsWorkspace();
+        }}
+      />
+    );
   }
 
   return (
