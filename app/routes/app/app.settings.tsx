@@ -10,7 +10,11 @@ import { parseSettingsDesignPayload } from "../../lib/settings-design-contract";
 import { SETTINGS_LANGUAGE_BUNDLE_TYPES, buildSettingsLanguageRuntime } from "../../lib/settings-language-runtime";
 import { CartTransformService } from "../../services/cart-transform-service.server";
 import { buildFpbStorefrontUrl } from "../../lib/fpb-storefront-url";
-import { SettingsLandingShell, type SettingsWorkspaceView } from "./app.settings/SettingsLandingShell";
+import {
+  SettingsLandingShell,
+  SettingsWorkspaceSkeleton,
+  type SettingsWorkspaceView,
+} from "./app.settings/SettingsLandingShell";
 
 const loadSettingsWorkspace = async () => {
   const module = await import("./app.settings/SettingsRoute");
@@ -270,7 +274,7 @@ export default function SettingsRouteDefault() {
   }
 
   return (
-    <Suspense fallback={<s-spinner accessibilityLabel="Loading Settings" />}>
+    <Suspense fallback={<SettingsWorkspaceSkeleton />}>
       <SettingsWorkspace initialView={workspaceView} />
     </Suspense>
   );

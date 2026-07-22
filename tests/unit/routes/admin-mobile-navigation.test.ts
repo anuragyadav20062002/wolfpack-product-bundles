@@ -1,5 +1,6 @@
 import {
   getActiveConfigureSectionLabel,
+  getMobileSetupChevronIcon,
   selectConfigureSection,
 } from "../../../app/routes/app/_shared/bundle-configure/CommonConfigureSidebar";
 
@@ -10,6 +11,11 @@ const bundleSetupItems = [
 ];
 
 describe("Admin mobile configure navigation", () => {
+  it("uses a down chevron when collapsed and an up chevron when expanded", () => {
+    expect(getMobileSetupChevronIcon(false)).toBe("chevron-down");
+    expect(getMobileSetupChevronIcon(true)).toBe("chevron-up");
+  });
+
   it("uses the active parent section label", () => {
     expect(getActiveConfigureSectionLabel({
       activeSection: "discount_pricing",

@@ -122,7 +122,7 @@ export function DesignFields({
                       See which storefront elements these color controls affect.
                     </s-paragraph>
                     <s-link href={guideUrl} target="_blank">
-                      Open visual guide
+                      Show Colour Guide
                     </s-link>
                   </s-stack>
                 </s-box>

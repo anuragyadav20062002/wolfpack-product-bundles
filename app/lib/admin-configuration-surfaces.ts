@@ -7,7 +7,6 @@ export type SettingsCard = {
   title: string;
   description: string;
   icon: string;
-  actionLabel: string;
 };
 
 export type SettingsField = {
@@ -90,21 +89,18 @@ export const SETTINGS_CARDS: SettingsCard[] = [
     title: "Design",
     description: "Modify and customize all design elements of the bundle here",
     icon: "edit",
-    actionLabel: "Configure",
   },
   {
     id: "language",
     title: "Language",
     description: "Configure all text, labels, and translations for your bundle here",
     icon: "globe",
-    actionLabel: "Configure",
   },
   {
     id: "controls",
     title: "Controls",
     description: "Change loading screen gif, add custom CSS, modify checkout settings and more",
     icon: "filter",
-    actionLabel: "Configure",
   },
 ];
 
