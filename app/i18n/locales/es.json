@@ -119,8 +119,6 @@
     "preview": {
       "heading": "Vista previa en directo",
       "unsaved": "Los cambios sin guardar aparecen aquí.",
-      "emptyHeading": "Crea un paquete para previsualizar",
-      "emptyBody": "Se necesita un paquete listo para la tienda antes de editar los ajustes visuales.",
       "surface": {
         "description": "Elige productos para crear tu paquete.",
         "stepOne": "1. Elegir productos",

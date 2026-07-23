@@ -1,5 +1,9 @@
-import { CommonConfigureSidebar } from "../_shared/bundle-configure/CommonConfigureSidebar";
+import {
+  CommonConfigureSidebar,
+  CommonConfigureSupplement,
+} from "../_shared/bundle-configure/CommonConfigureSidebar";
 import { usePpbConfigureContext } from "./PpbConfigureContext";
+import { buildPpbLiveCard } from "./ppb-live-card-model";
 
 export function PpbConfigureSidebar() {
   const flow = usePpbConfigureContext();
@@ -17,14 +21,6 @@ export function PpbConfigureSidebar() {
         handleBundleProductSelect: flow.handleBundleProductSelect,
         handleSectionChange: flow.handleSectionChange,
         handleSyncProduct: flow.handleSyncProduct,
-        liveCard: {
-          title: "Take your bundle live",
-          label: "Place on theme",
-          actionLabel: "Place Widget",
-          loading: flow.isPreparingPlacementTemplates,
-          disabled: flow.isPreparingPlacementTemplates,
-          onAction: flow.handlePlaceWidget,
-        },
         openProductInAdmin: flow.openProductInAdmin,
         openSelectTemplateModal: flow.openSelectTemplateModal,
         parentProductStatusUi: flow.parentProductStatusUi,
@@ -37,6 +33,21 @@ export function PpbConfigureSidebar() {
         styles: flow.productPageBundleStyles,
         VisibilityBadge: flow.VisibilityBadge,
       }}
+    />
+  );
+}
+
+export function PpbConfigureSupplement() {
+  const flow = usePpbConfigureContext();
+  const liveCard = buildPpbLiveCard({
+    isPreparingPlacementTemplates: flow.isPreparingPlacementTemplates,
+    handlePlaceWidget: flow.handlePlaceWidget,
+  });
+
+  return (
+    <CommonConfigureSupplement
+      liveCard={liveCard}
+      styles={flow.productPageBundleStyles}
     />
   );
 }

@@ -41,73 +41,97 @@ export function DesignFields({
   };
 
   return (
-    <div className={styles.designFieldStack}>
+    <s-stack gap="base">
       {groupedFields.map((group) => {
         const guideUrl = group.fields.find((field) => field.guideUrl)?.guideUrl;
 
         return (
-          <section key={group.title} className={styles.designFieldGroup}>
-            {group.title ? (
-              <div className={styles.designFieldPanelHeader}>
-                <h2>{group.title}</h2>
-                {guideUrl ? (
-                  <a href={guideUrl} target="_blank" rel="noreferrer" className={styles.designGuideLink}>
-                    Show Color Guide
-                  </a>
-                ) : null}
-              </div>
-            ) : null}
-            {group.fields.map((field) => {
-              const fieldKey = field.key ?? field.label;
-              const value = values[fieldKey] ?? field.value ?? "";
-              const colorValue = colorPickerValue(value, field.value || "#000000");
+          <s-section key={group.title} heading={group.title || undefined}>
+            <s-stack gap="base">
+              {group.fields.map((field) => {
+                const fieldKey = field.key ?? field.label;
+                const value = values[fieldKey] ?? field.value ?? "";
+                const colorValue = colorPickerValue(value, field.value || "#000000");
+                const handleInput = (event: Event) => {
+                  onFieldChange(fieldKey, (event.target as HTMLInputElement).value);
+                };
 
-              return (
-                <label key={`${group.title}:${field.label}`} className={styles.designFieldRow}>
-                  <span className={styles.designFieldCopy}>
-                    <span className={styles.designFieldLabel}>{field.label}</span>
-                    {field.description && <span className={styles.designFieldHelp}>{field.description}</span>}
-                  </span>
-                  {field.kind === "color" ? (
-                    <span className={styles.designColorControl}>
-                      <input
-                        type="color"
-                        value={colorValue}
-                        aria-label={`${field.label} color`}
-                        onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
-                      />
-                      <input
-                        value={value}
-                        aria-label={`${field.label} Hex Code`}
-                        onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
-                      />
-                    </span>
-                  ) : field.kind === "select" ? (
-                    <select
-                      className={styles.designInput}
+                if (field.kind === "color") {
+                  return (
+                    <s-color-field
+                      key={`${group.title}:${field.label}`}
+                      label={field.label}
+                      name={fieldKey}
+                      value={colorValue}
+                      details={field.description}
+                      alpha
+                      onInput={handleInput}
+                    />
+                  );
+                }
+                if (field.kind === "select") {
+                  return (
+                    <s-select
+                      key={`${group.title}:${field.label}`}
+                      label={field.label}
+                      name={fieldKey}
                       value={value || field.options?.[0] || ""}
-                      onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
+                      details={field.description}
+                      onChange={handleInput}
                     >
                       {(field.options?.length ? field.options : [field.value ?? ""]).map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
+                        <s-option key={option} value={option}>{option}</s-option>
                       ))}
-                    </select>
-                  ) : (
-                    <input
-                      className={styles.designInput}
-                      value={value}
-                      onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
+                    </s-select>
+                  );
+                }
+                if (field.kind === "number") {
+                  return (
+                    <s-number-field
+                      key={`${group.title}:${field.label}`}
+                      label={field.label}
+                      name={fieldKey}
+                      value={value.replace(/(px|rem|em)$/i, "")}
+                      details={field.description}
+                      min={0}
+                      max={999}
+                      onInput={handleInput}
                     />
-                  )}
-                </label>
-              );
-            })}
-          </section>
+                  );
+                }
+                return (
+                  <s-text-field
+                    key={`${group.title}:${field.label}`}
+                    label={field.label}
+                    name={fieldKey}
+                    value={value}
+                    details={field.description}
+                    disabled={field.kind === "loadingSpinner"}
+                    onInput={handleInput}
+                  />
+                );
+              })}
+              {guideUrl ? (
+                <s-box padding="base" background="subdued" borderRadius="base">
+                  <s-stack gap="small">
+                    <s-stack direction="inline" gap="small" alignItems="center">
+                      <s-icon type="view" size="small" />
+                      <s-text type="strong">Visual reference</s-text>
+                    </s-stack>
+                    <s-paragraph color="subdued">
+                      See which storefront elements these color controls affect.
+                    </s-paragraph>
+                    <s-link href={guideUrl} target="_blank">
+                      Show Colour Guide
+                    </s-link>
+                  </s-stack>
+                </s-box>
+              ) : null}
+            </s-stack>
+          </s-section>
         );
       })}
-    </div>
+    </s-stack>
   );
 }
 

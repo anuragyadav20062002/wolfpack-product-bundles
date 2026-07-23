@@ -203,7 +203,20 @@
 }
 
 .bundlesPanel {
+  min-width: 0;
   padding: 12px 14px;
+}
+
+.bundlesQueryContainer {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.bundlesQueryContainer > s-query-container {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .bundlesToolbar {
@@ -212,6 +225,7 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+  min-width: 0;
 }
 
 .filterGroup {
@@ -227,7 +241,8 @@
 }
 
 .bundlesTableShell {
-  border: 1px solid #d8dbe1;
+  min-width: 0;
+  max-width: 100%;
   border-radius: 12px;
   overflow: hidden;
   background: #fff;
@@ -343,6 +358,69 @@
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+@container dashboard-bundles (inline-size <= 767px) {
+  .bundlesToolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .filterGroup {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filterGroup s-button,
+  .bundleActions s-button,
+  .paginationArrow s-button {
+    min-block-size: 44px;
+  }
+
+  .filterGroup s-button,
+  .searchField,
+  .searchField s-text-field {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .bundleActions {
+    min-height: 44px;
+    gap: 4px;
+  }
+
+  .paginationBar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    justify-items: stretch;
+  }
+
+  .paginationSpacer {
+    display: none;
+  }
+
+  .paginationControls {
+    width: 100%;
+    justify-self: stretch;
+    justify-content: space-between;
+  }
+
+  .paginationArrow {
+    min-width: 44px;
+  }
+
+  .perPageControls {
+    width: 100%;
+    justify-self: stretch;
+    justify-content: space-between;
+  }
+}
+
+@container dashboard-bundles (inline-size <= 359px) {
+  .filterGroup {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .layoutGrid {
@@ -604,6 +682,10 @@
 }
 
 @media (max-width: 1100px) {
+  .dashboardPage {
+    padding-inline: 24px;
+  }
+
   .dashboardHeader {
     flex-direction: column;
   }
@@ -626,16 +708,9 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 767px) {
   .dashboardPage {
-    padding-inline: 40px;
-  }
-
-  .dashboardActions,
-  .bundlesToolbar,
-  .paginationBar {
-    align-items: stretch;
-    flex-direction: column;
+    padding-inline: 16px;
   }
 
   .dashboardActions {
@@ -644,10 +719,6 @@
     flex-direction: row;
     flex-wrap: nowrap;
     gap: 8px;
-  }
-
-  .searchField {
-    width: 100%;
   }
 
   .languageSelect {
@@ -670,13 +741,6 @@
 
   .supportAvatarWrap {
     margin-top: 0;
-  }
-
-  .bundlesTableHeader {
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding-inline: 14px;
-    font-size: 12px;
-    column-gap: 14px;
   }
 
   .resourcesList {

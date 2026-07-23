@@ -5,7 +5,7 @@ title: Wolfpack Product Bundles App Navigation and UI Map
 type: navigation-map
 status: authoritative
 summary: Routes, screens, actions, modals, and storefront-preview flows for the embedded app.
-last_audited: 2026-07-22
+last_audited: 2026-07-23
 owners:
   - engineering
 domains:
@@ -29,7 +29,7 @@ keywords:
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-07-22
+**Last Updated:** 2026-07-23
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -93,6 +93,7 @@ Dashboard preview behavior:
 - Product-page bundle preview opens `/products/{shopifyProductHandle}`.
 - Every full-page bundle preview requests a new 15-minute signed `wpb_preview` URL on each click; active and unlisted bundles remain publicly accessible at the canonical URL without the token.
 - First successful preview records the Admin `bundle_previewed` event with bundle id, type, status, and link.
+- The bundle table uses Polaris automatic table/list presentation: desktop keeps Name, Status, Type, and Actions columns, while phone containers expose the same record fields and row actions as a stacked list.
 
 #### "Create Bundle" Button
 Navigates to: `/app/bundles/create` (bundle type selection entry)
@@ -125,6 +126,7 @@ Configure page storefront sync status:
 - Save persists DB changes and publishes Shopify storefront data synchronously before returning a compact success response.
 - Existing Sync Bundle actions run the same direct storefront sync path.
 - Preview Bundle posts one compact `/prepare-preview` request before opening storefront preview; failed checks surface through the preview error toast while the button spinner is active.
+- Bundle creation and cloning route directly to the bundle type's configure page; there is no intermediate configuration wizard route.
 
 #### Modal: Delete Bundle Confirmation
 Triggered by: "Delete" row action
@@ -152,13 +154,18 @@ Settings
 ```
 
 Primary action:
-- Design card Configure opens the Settings -> Design subpage
-- The Design Control Panel lazy-loads after entry and uses a responsive two-pane view: one inspector for the existing sections and fields, plus a sticky app-owned preview that stacks above the inspector at narrow widths.
+- The complete Design, Language, and Controls cards are the actions; they do not render separate `Configure` affordances.
+- Selecting Design opens the Settings -> Design subpage.
+- While the lazy Settings workspace loads after any card selection, the route shows three skeleton cards instead of a spinner.
+- The Design Control Panel lazy-loads after entry and uses a responsive three-column workspace: section navigation on the left, the largest app-owned preview in the middle, and active fields on the right. At medium widths the preview spans the first row; at phone widths preview, navigation, and fields stack in that order.
 - Preview-only Bundle Type and Template selectors cover Landing Page Standard, Classic, Compact, and Horizontal plus Product Page Product List, Product Grid, Horizontal Slots, and Vertical Slots.
-- Adjacent desktop and mobile icon buttons switch the representative preview viewport without saving or clearing unsaved Design values. Images & GIFs uses the same preview surface in its loading state.
-- Unsaved design values are applied to an app-owned bundle preview through a validated CSS-variable contract; arbitrary CSS and cart mutations are rejected.
-- Design controls are unavailable until at least one storefront-ready bundle exists.
+- The template-aware Preview surface control exposes only valid local scenes: Builder, Cart / summary, Loading, Validation, and Upsell for every template, plus Product picker for the two slot templates. Desktop/mobile switching preserves the selected surface when it remains valid.
+- Editing a preview-relevant field selects the scene where its effect is visible. Slot product-card fields reveal Product picker, cart/footer fields reveal Cart / summary, and loading, toast, and upsell fields reveal their matching surfaces.
+- Unsaved design values are applied through the normalized storefront Design runtime and a semantic field-target contract; arbitrary CSS, remote preview requests, and cart mutations are rejected.
+- Local Design controls and template previews remain available without a storefront-ready bundle. Only the separate Preview Bundle action requires a storefront URL.
+- Relevant Expert Colour Control groups expose `Show Colour Guide` links to the five app-owned AVIF guide paths generated from tracked public PNG sources by CI/CD.
 - Settings back actions await App Bridge Save Bar leave confirmation while unsaved changes exist.
+- At phone widths, Language and Controls section navigation becomes a native disclosure that closes after a section is selected while retaining the current unsaved form state.
 
 ---
 
@@ -253,6 +260,10 @@ Pricing Page
 └── Modal: Upgrade Confirmation (before billing redirect)
 ```
 
+At phone widths, the FPB Bundle Setup sidebar becomes a native disclosure whose
+summary shows the active section; selecting a parent or child section closes the
+disclosure and preserves the existing configure state.
+
 ---
 
 ### 2.5 Updates & FAQs — `/app/events`
@@ -318,6 +329,12 @@ FPB Configure Page
     ├── Bundle Quantity Options Multi Language Modal (Box Label / Box Subtext)
     └── Progress Bar Multi Language Modal (Tier Text / Tier Subtext)
 ```
+
+Responsive configure behavior:
+- FPB and PPB keep the full Bundle Product and Bundle Setup sidebar on wide screens.
+- Tablet and phone containers show Bundle Product first and replace the long setup sidebar with a compact native disclosure labelled with the active parent or nested section.
+- Selecting a section closes the mobile disclosure without changing save, dirty-state, or route adapter behavior.
+- Readiness feedback participates in page flow on phones and remains floating on desktop so it cannot cover mobile editor actions.
 
 ---
 
@@ -414,6 +431,10 @@ PPB Configure Page
     └── Click to expand/collapse
 ```
 
+At phone widths, the PPB Bundle Setup sidebar uses the same active-section
+disclosure behavior as FPB, including nested Step Setup and Bundle Visibility
+items.
+
 **Widget storefront features (as of v2.9.0):**
 - Step slot cards (empty/filled/locked states) with `addonLabel` for free gift tabs
 - Quantity option pills (from `displayOptions.bundleQuantityOptions`)
@@ -450,22 +471,30 @@ Billing Page
 ### Flow B: Create & Configure Bundle
 ```
 /app/dashboard
-  └── [Create Bundle] → Create Bundle Modal → POST
-      └── redirect → /app/bundles/{type}/configure/{bundleId}
+  └── [Create Bundle] → /app/bundles/create → select type + enter name → POST
+      └── redirect → /app/bundles/{type}/configure/{bundleId}?mode=create
           ├── Fill Bundle Settings tab
           ├── Add Steps tab
           ├── Set Pricing tab
           └── [Save] → [Sync Bundle tab → Sync Now]
+
+/app/dashboard
+  └── [Clone] → POST
+      └── follow response redirectTo → /app/bundles/{type}/configure/{bundleId}?mode=create
 ```
+
+On tablet and phone containers, configure section changes use the compact current-section disclosure.
 
 ### Flow C: Design Customisation
 ```
 /app/settings
   └── Click Design card → Settings -> Design panel opens
       ├── Existing Design sections and fields render in one inspector pane
-      ├── Select preview-only bundle type, template, and desktop/mobile viewport
+      ├── Select preview-only bundle type, template, surface, and desktop/mobile viewport
       ├── Change setting → app-owned live preview updates immediately (no persistence)
-      ├── Images & GIFs section → same app-owned preview renders its loading state
+      ├── Slot product-card field → Product picker modal/bottom sheet is revealed
+      ├── Cart/footer field → Cart / summary surface is revealed
+      ├── Loading, toast, or upsell field → matching deterministic surface is revealed
       ├── Preview blocks add-to-cart and form submission
       └── [Save] → Save Bar submits → toast confirmation
 ```

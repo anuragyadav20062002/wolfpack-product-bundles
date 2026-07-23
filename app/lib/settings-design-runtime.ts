@@ -1,4 +1,5 @@
 import { BundleType } from "../constants/bundle";
+import { parseSettingsDesignPayload } from "./settings-design-contract";
 
 type JsonObject = Record<string, unknown>;
 
@@ -329,6 +330,22 @@ function setPath(target: JsonObject, path: string, value: unknown) {
   current[key] = value;
 }
 
+function mergeJsonObject(base: JsonObject, patch: JsonObject): JsonObject {
+  const merged: JsonObject = { ...base };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const current = merged[key];
+      merged[key] = mergeJsonObject(
+        current && typeof current === "object" && !Array.isArray(current) ? current as JsonObject : {},
+        value as JsonObject,
+      );
+      continue;
+    }
+    merged[key] = value;
+  }
+  return merged;
+}
+
 function getField(fieldValues: Record<string, unknown>, key: string, fallback: string) {
   const value = fieldValues[key];
   if (value === null || value === undefined || value === "") {
@@ -398,11 +415,10 @@ function flattenRuntimeSettings(designSettings: JsonObject, pageCustomization: J
   };
 }
 
-export function buildSettingsDesignRuntime(payload: Record<string, unknown>) {
-  const fieldValues = payload.fieldValues && typeof payload.fieldValues === "object"
-    ? payload.fieldValues as Record<string, unknown>
-    : {};
-  const isExpertControlsEnabled = payload.isExpertControlsEnabled === true;
+export function buildSettingsDesignRuntime(payload: unknown, currentPageCustomization: JsonObject = {}) {
+  const parsedPayload = parseSettingsDesignPayload(payload);
+  const fieldValues = parsedPayload.fieldValues;
+  const isExpertControlsEnabled = parsedPayload.isExpertControlsEnabled;
 
   const primaryColor = getField(fieldValues, "Primary Color", DEFAULT_STYLE_PRESETS.colors.primaryColor);
   const buttonTextColor = getField(fieldValues, "Button Text Color", DEFAULT_STYLE_PRESETS.colors.buttonTextColor);
@@ -424,16 +440,16 @@ export function buildSettingsDesignRuntime(payload: Record<string, unknown>) {
   const cardRadius = radiusForStyle(cardRadiusStyle, cardRadiusBase);
   const cardImageRadius = imageRadiusFromBase(cardRadiusBase);
 
-  const pageCustomization: JsonObject = {};
+  const designPatch: JsonObject = {};
 
-  applyMapping(pageCustomization, BRAND_COLOR_TARGETS, {
+  applyMapping(designPatch, BRAND_COLOR_TARGETS, {
     primaryColor,
     buttonTextColor,
     primaryTextColor,
     accentColor,
     backgroundColor,
   });
-  applyMapping(pageCustomization, TYPOGRAPHY_TARGETS, {
+  applyMapping(designPatch, TYPOGRAPHY_TARGETS, {
     primaryFontSize,
     primaryFontWeight,
     secondaryFontSize,
@@ -441,10 +457,10 @@ export function buildSettingsDesignRuntime(payload: Record<string, unknown>) {
     bodyFontSize,
     bodyFontWeight,
   });
-  BUTTON_RADIUS_TARGETS.forEach((path) => setPath(pageCustomization, path, buttonRadius));
-  CARD_RADIUS_TARGETS.forEach((path) => setPath(pageCustomization, path, cardRadius));
-  IMAGE_RADIUS_TARGETS.forEach((path) => setPath(pageCustomization, path, cardImageRadius));
-  IMAGE_FIT_TARGETS.forEach((path) => setPath(pageCustomization, path, productImageFit));
+  BUTTON_RADIUS_TARGETS.forEach((path) => setPath(designPatch, path, buttonRadius));
+  CARD_RADIUS_TARGETS.forEach((path) => setPath(designPatch, path, cardRadius));
+  IMAGE_RADIUS_TARGETS.forEach((path) => setPath(designPatch, path, cardImageRadius));
+  IMAGE_FIT_TARGETS.forEach((path) => setPath(designPatch, path, productImageFit));
 
   if (isExpertControlsEnabled) {
     Object.entries(EXPERT_TARGETS).forEach(([fieldKey, paths]) => {
@@ -452,11 +468,11 @@ export function buildSettingsDesignRuntime(payload: Record<string, unknown>) {
       if (value === null || value === undefined || value === "") {
         return;
       }
-      paths.forEach((path) => setPath(pageCustomization, path, String(value)));
+      paths.forEach((path) => setPath(designPatch, path, String(value)));
     });
   }
 
-  pageCustomization.stylePresets = {
+  designPatch.stylePresets = {
     colors: {
       primaryColor,
       buttonTextColor,
@@ -483,6 +499,17 @@ export function buildSettingsDesignRuntime(payload: Record<string, unknown>) {
     },
     isExpertControlsEnabled,
   };
+  designPatch.quickSettings = {
+    isQuickSettingsEnabled: true,
+    colors: {
+      primaryColor,
+      buttonBgColor: primaryColor,
+      buttonTextColor,
+    },
+  };
+  setPath(designPatch, "generalSettings.applyNewPageCustomization", true);
+
+  const pageCustomization = mergeJsonObject(currentPageCustomization, designPatch);
 
   const designSettings: JsonObject = {
     globalColorsSettings: {

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 5.0.201
+ * Version : 5.0.202
  * Built   : 2026-07-22
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '5.0.201';
+window.__BUNDLE_WIDGET_VERSION__ = '5.0.202';
 (function() {
   'use strict';
 
@@ -243,7 +243,9 @@ const ConditionValidator = (function () {
     const normalizedConditionValue = _normalizeConditionRuleValue(conditionType, step.conditionValue);
     const normalizedConditionValue2 = _normalizeConditionRuleValue(conditionType, step.conditionValue2);
 
-    if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
+    if (!step.conditionType) return true;
+
+    if (!step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
@@ -5985,7 +5987,7 @@ function shouldUseMobileSummarySlotTiles({ designPreset, productSlotsEnabled } =
   if (productSlotsEnabled !== true) return false;
 
   const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
-  return preset === 'STANDARD' || preset === 'CLASSIC';
+  return ['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
 }
 
 function getMobileAdditionalOffersPulseState({
@@ -6733,6 +6735,16 @@ createStandardSidebarDiscountProgress({ discountMessage, combinedDiscountInfo, t
 
 };
 
+function shouldUseSharedDesktopSummarySlotTiles({
+  designPreset,
+  productSlotsEnabled,
+} = {}) {
+  if (productSlotsEnabled !== true) return false;
+
+  const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
+  return preset === 'STANDARD' || preset === 'COMPACT' || preset === 'HORIZONTAL';
+}
+
 const fullPageSidePanelMethods = {
 renderSidePanel(panel) {
   if (!panel) return;
@@ -6770,6 +6782,10 @@ renderSidePanel(panel) {
     !isMobileSheet;
   const summaryEmptyStateMode = this.getSummarySidebarEmptyStateMode();
   const useInlineSummarySlots = summaryEmptyStateMode === 'slots';
+  const useSharedDesktopSummarySlotTiles = shouldUseSharedDesktopSummarySlotTiles({
+    designPreset: this.getFullPageDesignPreset(),
+    productSlotsEnabled: useInlineSummarySlots,
+  });
 
   panel.classList.toggle('full-page-side-panel--inline-slots', useInlineSummarySlots);
   panel.classList.toggle('full-page-side-panel--skeleton-list', !useInlineSummarySlots);
@@ -6934,7 +6950,7 @@ renderSidePanel(panel) {
     productsContainer.classList.toggle('side-panel-products--inline-slots', useInlineSummarySlots);
     productsContainer.classList.toggle('side-panel-products--skeleton-list', !useInlineSummarySlots);
 
-    if (isStandardDesktopSidebar && useInlineSummarySlots) {
+    if (useSharedDesktopSummarySlotTiles) {
       this._renderStandardSidebarSlotTiles(productsContainer, allSelectedProducts);
     } else if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
@@ -7032,7 +7048,7 @@ renderSidePanel(panel) {
         mode: summaryEmptyStateMode,
       });
     }
-    if (isHorizontalPreset) {
+    if (isHorizontalPreset && !useSharedDesktopSummarySlotTiles) {
       const requiredSlots = Math.max(
         totalQuantity + 1,
         activeStep?.maxQuantity || activeStep?.minQuantity || 2,

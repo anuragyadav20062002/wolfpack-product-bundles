@@ -229,8 +229,9 @@ export default function BillingPage() {
         </button>
       </ui-title-bar>
 
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
-        <s-stack direction="block" gap="large">
+      <s-query-container containerName="billing-page">
+        <div className={billingStyles.pageShell}>
+          <s-stack direction="block" gap="large">
 
           {showSuccessBanner && (
             <UpgradeSuccessBanner
@@ -305,7 +306,7 @@ export default function BillingPage() {
                   <s-divider />
                   <s-stack direction="block" gap="small-100">
                     <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t("billing.route.overview")}</p>
-                    <s-stack direction="inline" gap="base">
+                    <s-grid gridTemplateColumns="@container billing-page (inline-size > 560px) repeat(4, minmax(0, 1fr)), repeat(2, minmax(0, 1fr))" gap="base">
                       <s-stack direction="block" gap="small-400">
                         <span style={{ fontSize: 16, fontWeight: 700 }}>{data.stats.activeBundles}</span>
                         <span style={{ fontSize: 12, color: "#6d7175" }}>{t("billing.route.activeBundles")}</span>
@@ -322,7 +323,7 @@ export default function BillingPage() {
                         <span style={{ fontSize: 16, fontWeight: 700 }}>{data.stats.bundleTypes.fullPage}</span>
                         <span style={{ fontSize: 12, color: "#6d7175" }}>{t("billing.route.fullPage")}</span>
                       </s-stack>
-                    </s-stack>
+                    </s-grid>
                   </s-stack>
                 </>
               )}
@@ -413,8 +414,9 @@ export default function BillingPage() {
             </s-stack>
           </s-section>
 
-        </s-stack>
-      </div>
+          </s-stack>
+        </div>
+      </s-query-container>
     </>
   );
 }

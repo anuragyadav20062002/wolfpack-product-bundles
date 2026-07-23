@@ -1,5 +1,5 @@
 import { useActionData, useLoaderData, useSubmit } from "@remix-run/react";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import {
   CONTROL_LAYOUTS,
@@ -7,7 +7,6 @@ import {
   LANGUAGE_CONFIGURATION,
   SETTINGS_CARDS,
   SUPPORTED_LANGUAGE_LABELS,
-  type SettingsCardId,
 } from "../../../lib/admin-configuration-surfaces";
 import styles from "../../../styles/routes/admin-configuration-surfaces.module.css";
 import type { action, loader } from "../app.settings";
@@ -31,17 +30,16 @@ import {
   SettingsToast,
 } from "./SettingsFeedback";
 import { runAfterSaveBarLeaveConfirmation } from "../../../lib/admin-savebar-navigation.client";
+import { createSettingsDesignState, type SettingsDesignPayload } from "../../../lib/settings-design-contract";
+import { DesignSettingsView } from "./DesignSettingsView";
 
-const DesignSettingsView = lazy(async () => {
-  const module = await import("./DesignSettingsView");
-  return { default: module.DesignSettingsView };
-});
-
-export function SettingsRoute() {
+export function SettingsRoute({ initialView = "landing" }: { initialView?: "landing" | "design" | "language" | "controls" }) {
   const { settingsPage, previewBundles } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const shopify = useAppBridge();
+  const languageNavigationRef = useRef<HTMLDetailsElement>(null);
+  const controlsNavigationRef = useRef<HTMLDetailsElement>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [settingsHelpArticle, setSettingsHelpArticle] = useState<"inventory" | null>(null);
   const [settingsVariablesModal, setSettingsVariablesModal] = useState<{ title: string; variables: string[] } | null>(null);
@@ -57,11 +55,8 @@ export function SettingsRoute() {
   const persistedControlState = settingsPage?.controls && typeof settingsPage.controls === "object"
     ? settingsPage.controls as Record<string, string>
     : null;
-  const persistedDesignState = settingsPage?.design && typeof settingsPage.design === "object"
-    ? settingsPage.design as { fieldValues?: Record<string, string>; isExpertControlsEnabled?: boolean }
-    : null;
-  const [activeCard, setActiveCard] = useState<SettingsCardId>("design");
-  const [settingsView, setSettingsView] = useState<"landing" | "design" | "language" | "controls">("landing");
+  const persistedDesignState = createSettingsDesignState(settingsPage?.design);
+  const [settingsView, setSettingsView] = useState<"landing" | "design" | "language" | "controls">(initialView);
   const [isMultilanguageEnabled, setIsMultilanguageEnabled] = useState(persistedLanguageState?.isMultilanguageEnabled ?? LANGUAGE_CONFIGURATION.enabled);
   const [selectedLanguage, setSelectedLanguage] = useState(persistedLanguageState?.selectedLanguage ?? LANGUAGE_CONFIGURATION.selectedLanguage);
   const [languageFieldValues, setLanguageFieldValues] = useState<Record<string, string>>({
@@ -90,17 +85,17 @@ export function SettingsRoute() {
   const [activeDesignTab, setActiveDesignTab] = useState(DESIGN_CONFIGURATION[0].title);
   const [designFieldValues, setDesignFieldValues] = useState<Record<string, string>>({
     ...getInitialDesignFieldValues(),
-    ...(persistedDesignState?.fieldValues ?? {}),
+    ...persistedDesignState.fieldValues,
   });
   const [savedDesignFieldValues, setSavedDesignFieldValues] = useState<Record<string, string>>({
     ...getInitialDesignFieldValues(),
-    ...(persistedDesignState?.fieldValues ?? {}),
+    ...persistedDesignState.fieldValues,
   });
   const [activeControlLayout, setActiveControlLayout] = useState(CONTROL_LAYOUTS[0].label);
   const [activeControlTab, setActiveControlTab] = useState(CONTROL_LAYOUTS[0].tabs[0].title);
   const [activeControlGroup, setActiveControlGroup] = useState("");
-  const [isExpertColorControls, setIsExpertColorControls] = useState(persistedDesignState?.isExpertControlsEnabled ?? false);
-  const [savedIsExpertColorControls, setSavedIsExpertColorControls] = useState(persistedDesignState?.isExpertControlsEnabled ?? false);
+  const [isExpertColorControls, setIsExpertColorControls] = useState(persistedDesignState.isExpertControlsEnabled);
+  const [savedIsExpertColorControls, setSavedIsExpertColorControls] = useState(persistedDesignState.isExpertControlsEnabled);
   const [activeDesignScope, setActiveDesignScope] = useState("General");
   const [isExpertScopeActive, setIsExpertScopeActive] = useState(false);
   const [designGateMessage, setDesignGateMessage] = useState<string | null>(null);
@@ -152,12 +147,11 @@ export function SettingsRoute() {
 
   const saveActiveSettingsChanges = () => {
     if (settingsView === "design") {
+      const designPayload: SettingsDesignPayload = createSettingsDesignState(currentDesignState);
       submit({
         intent: "saveSettingsDesign",
-        payload: JSON.stringify(currentDesignState),
+        payload: JSON.stringify(designPayload),
       }, { method: "post" });
-      setSavedDesignFieldValues(designFieldValues);
-      setSavedIsExpertColorControls(isExpertColorControls);
       return;
     }
     if (settingsView === "language") {
@@ -181,36 +175,44 @@ export function SettingsRoute() {
     if (!actionData) {
       return;
     }
+    if (
+      actionData.success
+      && "intent" in actionData
+      && actionData.intent === "saveSettingsDesign"
+      && "savedState" in actionData
+    ) {
+      const confirmedState = createSettingsDesignState(actionData.savedState);
+      setSavedDesignFieldValues(confirmedState.fieldValues);
+      setSavedIsExpertColorControls(confirmedState.isExpertControlsEnabled);
+    }
     setSaveMessage(actionData.success ? "Settings saved successfully" : actionData.message || "Something went wrong");
   }, [actionData]);
 
   if (settingsView === "design") {
     return (
-      <Suspense fallback={<s-spinner accessibilityLabel="Loading Design Control Panel" />}>
-        <DesignSettingsView
-          selectedDesignTab={selectedDesignTab}
-          isExpertColorControls={isExpertColorControls}
-          isExpertScopeActive={isExpertScopeActive}
-          activeDesignScope={activeDesignScope}
-          designFieldValues={designFieldValues}
-          designGateMessage={designGateMessage}
-          isActiveSubpageDirty={isActiveSubpageDirty}
-          isPreviewModalOpen={isPreviewModalOpen}
-          previewBundles={previewBundles}
-          saveMessage={saveMessage}
-          setSettingsView={() => returnToSettingsLanding()}
-          setIsPreviewModalOpen={setIsPreviewModalOpen}
-          setActiveDesignTab={setActiveDesignTab}
-          setIsExpertScopeActive={setIsExpertScopeActive}
-          setDesignGateMessage={setDesignGateMessage}
-          setActiveDesignScope={setActiveDesignScope}
-          setDesignFieldValues={setDesignFieldValues}
-          setIsExpertColorControls={setIsExpertColorControls}
-          setSaveMessage={setSaveMessage}
-          discardActiveSettingsChanges={discardActiveSettingsChanges}
-          saveActiveSettingsChanges={saveActiveSettingsChanges}
-        />
-      </Suspense>
+      <DesignSettingsView
+        selectedDesignTab={selectedDesignTab}
+        isExpertColorControls={isExpertColorControls}
+        isExpertScopeActive={isExpertScopeActive}
+        activeDesignScope={activeDesignScope}
+        designFieldValues={designFieldValues}
+        designGateMessage={designGateMessage}
+        isActiveSubpageDirty={isActiveSubpageDirty}
+        isPreviewModalOpen={isPreviewModalOpen}
+        previewBundles={previewBundles}
+        saveMessage={saveMessage}
+        setSettingsView={() => returnToSettingsLanding()}
+        setIsPreviewModalOpen={setIsPreviewModalOpen}
+        setActiveDesignTab={setActiveDesignTab}
+        setIsExpertScopeActive={setIsExpertScopeActive}
+        setDesignGateMessage={setDesignGateMessage}
+        setActiveDesignScope={setActiveDesignScope}
+        setDesignFieldValues={setDesignFieldValues}
+        setIsExpertColorControls={setIsExpertColorControls}
+        setSaveMessage={setSaveMessage}
+        discardActiveSettingsChanges={discardActiveSettingsChanges}
+        saveActiveSettingsChanges={saveActiveSettingsChanges}
+      />
     );
   }
 
@@ -248,35 +250,24 @@ export function SettingsRoute() {
 
           <section className={styles.languageTopCard} aria-label="Language mode">
             <div className={styles.languageTopCopy}>
-              <label className={styles.languageSwitchRow}>
-                <span>
-                  <span className={styles.languageTopTitle}>Enable Multilanguage</span>
-                  <span className={styles.languageTopHelp}>Select the language mode for your app</span>
-                </span>
-                <input
-                  className={styles.languageSwitch}
-                  type="checkbox"
-                  checked={isMultilanguageEnabled}
-                  onChange={(event) => setIsMultilanguageEnabled(event.currentTarget.checked)}
-                />
-              </label>
+              <s-switch
+                label="Enable Multilanguage"
+                details="Select the language mode for your app"
+                checked={isMultilanguageEnabled || undefined}
+                onChange={(event) => setIsMultilanguageEnabled(Boolean(event.currentTarget.checked))}
+              />
             </div>
-            <label className={styles.languageSelectStack}>
-              <span>Add preferred languages</span>
-              <span className={styles.ebSelectWrap}>
-                <select
-                  className={styles.ebSelect}
-                  value={selectedLanguage}
-                  onChange={(event) => setSelectedLanguage(event.currentTarget.value)}
-                >
-                  {SUPPORTED_LANGUAGE_LABELS.map((language) => (
-                    <option key={language} value={language}>
-                      {language}
-                    </option>
-                  ))}
-                </select>
-              </span>
-            </label>
+            <div className={styles.languageSelectStack}>
+              <s-select
+                label="Add preferred languages"
+                value={selectedLanguage}
+                onChange={(event) => setSelectedLanguage(event.currentTarget.value || selectedLanguage)}
+              >
+                {SUPPORTED_LANGUAGE_LABELS.map((language) => (
+                  <s-option key={language} value={language}>{language}</s-option>
+                ))}
+              </s-select>
+            </div>
           </section>
 
           <section className={styles.languageEditorCard} aria-label="Language Configurations">
@@ -284,14 +275,25 @@ export function SettingsRoute() {
               {selectedLanguage}
             </button>
             <div className={styles.languageContentLayout}>
-              <aside className={styles.languageSidebarCard}>
+              <details ref={languageNavigationRef} className={styles.responsiveSectionDisclosure}>
+                <summary className={styles.responsiveSectionSummary}>
+                  <span>
+                    <span className={styles.responsiveSectionEyebrow}>Language section</span>
+                    <strong>{activeLanguagePanel === "cartCheckout" ? "Cart & Checkout" : activeLanguagePanel}</strong>
+                  </span>
+                  <span aria-hidden="true">▾</span>
+                </summary>
+                <aside className={`${styles.languageSidebarCard} ${styles.responsiveSectionContent}`}>
                 <section className={styles.languageSidebarSection}>
                   <h2 className={styles.languageSidebarTitle}>Shared Components</h2>
                   <p className={styles.languageSidebarDescription}>Customize language for components across all templates</p>
                   <button
                     type="button"
                     className={activeLanguagePanel === "cartCheckout" ? styles.languageSharedButtonActive : styles.languageSharedButton}
-                    onClick={() => setActiveLanguagePanel("cartCheckout")}
+                    onClick={() => {
+                      setActiveLanguagePanel("cartCheckout");
+                      languageNavigationRef.current?.removeAttribute("open");
+                    }}
                   >
                     Cart &amp; Checkout
                   </button>
@@ -310,6 +312,7 @@ export function SettingsRoute() {
                         setActiveLanguagePanel(nextLayout === "Product Page Layout"
                           ? LANGUAGE_CONFIGURATION.productPageTemplateSections[0]
                           : LANGUAGE_CONFIGURATION.templateSections[0]);
+                        languageNavigationRef.current?.removeAttribute("open");
                       }}
                     >
                       <option value="Landing Page Layout">Landing Page Layout</option>
@@ -322,7 +325,10 @@ export function SettingsRoute() {
                         key={section}
                         type="button"
                         className={activeLanguagePanel === section ? styles.languageNavActive : styles.languageNavButton}
-                        onClick={() => setActiveLanguagePanel(section)}
+                        onClick={() => {
+                          setActiveLanguagePanel(section);
+                          languageNavigationRef.current?.removeAttribute("open");
+                        }}
                       >
                         <span className={styles.languageNavIcon} aria-hidden="true" />
                         {section}
@@ -330,7 +336,8 @@ export function SettingsRoute() {
                     ))}
                   </div>
                 </section>
-              </aside>
+                </aside>
+              </details>
               <section className={styles.languageFieldPanel}>
                 {languageGroups.map((group) => (
                   <ControlsFormGroup
@@ -382,7 +389,15 @@ export function SettingsRoute() {
           </header>
 
           <section className={styles.controlsLayout} aria-label="Additional Configurations">
-            <aside className={styles.controlsSidebarCard}>
+            <details ref={controlsNavigationRef} className={styles.responsiveSectionDisclosure}>
+              <summary className={styles.responsiveSectionSummary}>
+                <span>
+                  <span className={styles.responsiveSectionEyebrow}>Configuration section</span>
+                  <strong>{hasNestedControlGroups ? selectedControlGroupTitle : selectedControlTab.title}</strong>
+                </span>
+                <span aria-hidden="true">▾</span>
+              </summary>
+              <aside className={`${styles.controlsSidebarCard} ${styles.responsiveSectionContent}`}>
               <h2>App Configurations</h2>
               <p>Configure your bundle settings</p>
               <span className={styles.controlsLayoutSelectWrap}>
@@ -396,6 +411,7 @@ export function SettingsRoute() {
                     setActiveControlLayout(nextLayout.label);
                     setActiveControlTab(nextLayout.tabs[0]?.title ?? CONTROL_LAYOUTS[0].tabs[0].title);
                     setActiveControlGroup("");
+                    controlsNavigationRef.current?.removeAttribute("open");
                   }}
                 >
                   {CONTROL_LAYOUTS.map((layout) => (
@@ -414,6 +430,7 @@ export function SettingsRoute() {
                     onClick={() => {
                       setActiveControlTab(tab.title);
                       setActiveControlGroup("");
+                      controlsNavigationRef.current?.removeAttribute("open");
                     }}
                   >
                     <s-icon type={getControlTabIcon(tab.title)} size="small"></s-icon>
@@ -428,14 +445,18 @@ export function SettingsRoute() {
                       key={groupTitle}
                       type="button"
                       className={selectedControlGroupTitle === groupTitle ? styles.controlsSubNavActive : styles.controlsSubNavButton}
-                      onClick={() => setActiveControlGroup(groupTitle)}
+                      onClick={() => {
+                        setActiveControlGroup(groupTitle);
+                        controlsNavigationRef.current?.removeAttribute("open");
+                      }}
                     >
                       {groupTitle}
                     </button>
                   ))}
                 </div>
               ) : null}
-            </aside>
+              </aside>
+            </details>
             <section className={styles.controlsContentColumn}>
               <ControlsContentCards
                 title={hasNestedControlGroups ? selectedControlGroupTitle : selectedControlTab.contentTitle ?? selectedControlTab.title}
@@ -481,31 +502,14 @@ export function SettingsRoute() {
               key={card.id}
               type="button"
               className={styles.settingCard}
-              onClick={() => {
-                if (card.id === "design") {
-                  setActiveCard(card.id);
-                  setSettingsView("design");
-                  return;
-                }
-                if (card.id === "language") {
-                  setActiveCard(card.id);
-                  setSettingsView("language");
-                  return;
-                }
-                if (card.id === "controls") {
-                  setActiveCard(card.id);
-                  setSettingsView("controls");
-                  return;
-                }
-                setActiveCard(card.id);
-              }}
+              aria-label={`Open ${card.title} settings`}
+              onClick={() => setSettingsView(card.id)}
             >
               <span className={styles.settingsCardContent}>
                 <SettingsCardIcon icon={card.icon} />
                 <h2 className={styles.cardTitle}>{card.title}</h2>
                 <p className={styles.cardDescription}>{card.description}</p>
               </span>
-              <span className={styles.settingsConfigureButton}>{card.actionLabel}</span>
             </button>
           ))}
         </section>

@@ -80,12 +80,12 @@ export function useConfigureTemplatePricingController(
     const modalElement = selectTemplateModalRef.current as HTMLElement;
     return Array.from(
       modalElement.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        'button, s-button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       ),
     ).filter(
       (element) =>
         !element.hasAttribute("disabled") &&
-        element.tabIndex >= 0 &&
+        (element.tagName === "S-BUTTON" || element.tabIndex >= 0) &&
         window.getComputedStyle(element).display !== "none" &&
         window.getComputedStyle(element).visibility !== "hidden",
     );
