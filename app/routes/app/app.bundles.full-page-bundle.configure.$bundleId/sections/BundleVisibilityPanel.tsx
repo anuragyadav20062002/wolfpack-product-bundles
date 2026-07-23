@@ -13,7 +13,6 @@ export function FpbBundleVisibilityPanel({
   const link = buildBundleLinkModel({
     bundleType: "full_page",
     fullPageUrl: flow.bundlePageUrl,
-    pageHandle: flow.bundle.shopifyPageHandle,
   });
 
   return CommonBundleVisibilityOverview({
@@ -27,16 +26,8 @@ export function FpbBundleVisibilityPanel({
         isError: false,
       });
     },
-    onCreatePage: flow.handleAddToStorefront,
     onEnableEmbed: flow.openThemeEditorForAppEmbed,
     onOpenLink: () => window.open(link.url, "_blank"),
-    onPageSlugBlur: () => flow.setPageSlug(flow.slugify(flow.pageSlug)),
-    onPageSlugEdited: () => {
-      flow.setHasManuallyEditedSlug(true);
-      flow.markAsDirty();
-    },
-    pageSlug: flow.pageSlug,
-    pageSlugError: flow.pageSlugError,
     placementOptions: [
         {
           title: "Bundle Widget",
@@ -47,7 +38,6 @@ export function FpbBundleVisibilityPanel({
           onAction: () => flow.handleSectionChange("bundle_widget"),
         },
       ],
-    setPageSlug: flow.setPageSlug,
     styles: flow.fullPageBundleStyles,
     themeEditorUrl: flow.themeEditorUrl,
   });

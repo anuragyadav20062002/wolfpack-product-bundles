@@ -75,7 +75,7 @@ async renderFullPageLayout() {
   }
 
   // 1. Render step timeline at top (if enabled in theme settings)
-  if (this.config.showStepTimeline) {
+  if (this.config.showStepTimeline && this.shouldRenderFullPageStepChrome()) {
     const stepTimeline = this.createStepTimeline();
     contentSection.appendChild(stepTimeline);
   }
@@ -164,7 +164,7 @@ async renderFullPageLayoutWithSidebar() {
 
   // ABOVE: Step timeline sits above the two-column area (same horizontal position as
   // the floating footer layout) so tabs always appear at the top, not as a left column.
-  if (this.config.showStepTimeline) {
+  if (this.config.showStepTimeline && this.shouldRenderFullPageStepChrome()) {
     this.elements.stepsContainer.appendChild(this.createStepTimeline());
   }
 

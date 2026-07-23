@@ -4,11 +4,23 @@ import { getDiscountProgressData } from '../../shared/engine/bundle-selectors.js
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { renderSharedProductCard } from '../../shared/components/product-card.js';
 import { shouldRenderInlineVariantSelector } from '../../shared/variant-selector-policy.js';
-import { resolveProductPageCardButtonText } from './modal-methods.js';
+import { resolveProductPageCardButtonText, resolveProductPageInlineAddText } from './modal-methods.js';
 
 function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
 function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
+
+function makeSlotCardKeyboardAccessible(card, activate) {
+  card.setAttribute('role', 'button');
+  card.tabIndex = 0;
+  card.addEventListener('click', activate);
+  card.addEventListener('keydown', (event) => {
+    if (event.target && event.target !== card) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    activate();
+  });
+}
 
 export function resolveSelectedSlotTitle(title, isVertical) {
   const normalizedTitle = String(title || '');
@@ -107,47 +119,25 @@ export function resolveInpageProductSelection(
   };
 }
 
-const INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH = 110;
-
-function resolveProductCardDescription(product = {}) {
-  const candidate =
-    (typeof product.description === 'string' && product.description.trim())
-    || (typeof product.descriptionHtml === 'string' && product.descriptionHtml.trim())
-    || '';
-
-  return String(candidate).trim();
-}
-
-function renderInpageProductCardDescription(product = {}, showSeeMore) {
-  if (!showSeeMore) return '';
-
-  const description = resolveProductCardDescription(product);
-  if (!description) return '';
-
-  const showToggle = description.length > INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH;
-  const shortDescription = showToggle
-    ? `${description.slice(0, INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH).trim()}...`
-    : description;
-
-  return `
-    <div class="bw-product-card__description" data-bw-card-description="true" data-bw-card-description-expanded="false">
-      <span class="bw-product-card__description-short"${showToggle ? '' : ' hidden'}>${ComponentGenerator.escapeHtml(shortDescription)}</span>
-      <span class="bw-product-card__description-full"${showToggle ? ' hidden' : ''}>${ComponentGenerator.escapeHtml(description)}</span>
-      ${showToggle ? '<button type="button" class="bw-product-card__see-more" aria-expanded="false">See more</button>' : ''}
-    </div>
-  `;
-}
-
 export const ProductPageInpageRenderMethods = {
 _renderInpageStepProducts(stepIndex, target) {
   const rawProducts = this.stepProductData[stepIndex] || [];
+  if (!this._inpageStepProductsLoaded) this._inpageStepProductsLoaded = {};
   target.classList.toggle('bw-ppb-cascade-product-list', this._isProductPageCascadeTemplate());
   target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
+  const currentStep = this.selectedBundle?.steps?.[stepIndex];
+  const prependStepBanner = () => {
+    const banner = this._createStepBannerImage?.(currentStep);
+    if (banner) target.prepend(banner);
+  };
 
-  if (rawProducts.length === 0 && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
+  const stepProductsLoaded = this._inpageStepProductsLoaded[stepIndex] === true;
+  if (rawProducts.length === 0 && !stepProductsLoaded && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
     target.setAttribute?.('aria-busy', 'true');
     target.innerHTML = renderInpageProductLoadingRows();
+    prependStepBanner();
     this.loadStepProducts(stepIndex).then(() => {
+      this._inpageStepProductsLoaded[stepIndex] = true;
       if (target.isConnected) this._renderInpageStepProducts(stepIndex, target);
     }).catch(() => {
       if (!this._stepFetchFailed) this._stepFetchFailed = {};
@@ -157,7 +147,6 @@ _renderInpageStepProducts(stepIndex, target) {
     return;
   }
 
-  const currentStep = this.selectedBundle?.steps?.[stepIndex];
   const categoryDisplaysVariantsAsIndividual = shouldDisplayVariantsAsIndividualForInpageCategory(
     currentStep,
     stepIndex,
@@ -175,21 +164,18 @@ _renderInpageStepProducts(stepIndex, target) {
     target.innerHTML = this._stepFetchFailed?.[stepIndex]
       ? '<p class="modal-fetch-error">Could not load products. Please check your connection and try again.</p>'
       : '<p class="no-products-message">No products are configured for this step.</p>';
+    prependStepBanner();
     return;
   }
 
   const usesCascadeCards = this._isProductPageCascadeTemplate();
   const usesGridCards = this._isProductPageGridTemplate();
   const widgetConfig = this.config || {};
-  const showSeeMoreLink = widgetConfig.displaySeeMoreLink === true;
-  const expandOnHover = widgetConfig.expandProductCardOnHover === true;
-  const cardHoverClass = expandOnHover ? 'bw-product-card--hover-expand' : '';
-  const cardSeeMoreClass = showSeeMoreLink ? 'bw-product-card--see-more' : '';
-
   const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
     this.selectedBundle?.validateQuantityPerProduct
   );
   const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const inlineAddText = resolveProductPageInlineAddText(this._resolveText?.bind(this));
 
   target.innerHTML = products.map(product => {
     const directSelectionKey = product.variantId || product.id;
@@ -224,19 +210,17 @@ _renderInpageStepProducts(stepIndex, target) {
           mode: 'row',
           className: [
             'bw-ppb-cascade-product-row',
-            cardHoverClass,
-            cardSeeMoreClass,
             'wpbMixCascadeProductWrapper',
             variantSelectorHtml ? 'bw-ppb-cascade-product-row--has-variant-selector' : '',
             currentQuantity > 0 ? 'selected' : '',
             outOfStock ? 'is-out-of-stock' : '',
           ].filter(Boolean).join(' '),
-          description: resolveProductCardDescription(product),
-          displaySeeMoreLink: showSeeMoreLink,
-          descriptionMaxLength: INPAGE_PRODUCT_CARD_DESCRIPTION_PREVIEW_LENGTH,
-          expandProductCardOnHover: expandOnHover,
+          description: '',
+          displaySeeMoreLink: false,
+          expandProductCardOnHover: false,
+          showCompareAtPrice: this._shouldShowProductComparedAtPrice(),
           variantSelectorHtml,
-          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           addDisabled: outOfStock,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -254,11 +238,12 @@ _renderInpageStepProducts(stepIndex, target) {
           description: '',
           displaySeeMoreLink: false,
           expandProductCardOnHover: false,
+          showCompareAtPrice: this._shouldShowProductComparedAtPrice(),
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`.trim(),
-          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           selectedAction: 'button',
-          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
+          selectedButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText }),
           addDisabled: false,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -269,7 +254,6 @@ _renderInpageStepProducts(stepIndex, target) {
     const addUnavailableAttribute = outOfStock ? 'aria-disabled="true"' : '';
     const showQuantitySelector = !this._usesCompactInpageProductCards()
       && widgetConfig.showQuantitySelectorOnCard;
-    const showSeeMoreLinkOnRow = widgetConfig.displaySeeMoreLink === true;
     const productContent = `
       <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
       ${product.price ? `
@@ -279,7 +263,6 @@ _renderInpageStepProducts(stepIndex, target) {
         </div>
       ` : ''}
       ${this.renderInlineCardVariantSelector(product, currentStep)}
-      ${renderInpageProductCardDescription(product, showSeeMoreLinkOnRow)}
       ${showQuantitySelector ? `
         <div class="product-quantity-wrapper">
           <div class="product-quantity-selector">
@@ -292,13 +275,12 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
     const addButton = `
       <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addUnavailableAttribute}>
-        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
+        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: inlineAddText })}
       </button>
     `;
 
     return `
-      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${cardHoverClass} ${cardSeeMoreClass} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
+      <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'bw-product-card--selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
         <div class="product-image">
           <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           ${stockBadge}
@@ -311,6 +293,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
   }).join('');
 
+  prependStepBanner();
   this.attachProductEventHandlers(target, stepIndex);
 },
 
@@ -379,7 +362,8 @@ createSelectedProductCard(item, cardIndex) {
 
   // Remove button — hidden for default (non-removable) steps
   if (!isDefault) {
-    const clearBadge = document.createElement('div');
+    const clearBadge = document.createElement('button');
+    clearBadge.type = 'button';
     clearBadge.className = 'step-clear-badge';
     clearBadge.innerHTML = `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -388,6 +372,7 @@ createSelectedProductCard(item, cardIndex) {
       </svg>
     `;
     clearBadge.title = 'Remove this product';
+    clearBadge.setAttribute('aria-label', clearBadge.title);
     clearBadge.addEventListener('click', (e) => {
       e.stopPropagation();
       this.removeProductFromSelection(stepIndex, variantId);
@@ -426,7 +411,13 @@ createSelectedProductCard(item, cardIndex) {
 
   // Filled slots stay editable. Selection validation still runs inside the
   // picker, while reopening lets shoppers replace an exact-one choice.
-  stepBox.addEventListener('click', () => this.openModal(stepIndex));
+  makeSlotCardKeyboardAccessible(stepBox, () => {
+    this._modalSlotReplacementTarget = {
+      stepIndex,
+      selectionKey: this.normalizeSelectionKey?.(variantId) || variantId,
+    };
+    this.openModal(stepIndex);
+  });
 
   return stepBox;
 },
@@ -528,9 +519,12 @@ createFreeGiftSlotCard(step, stepIndex) {
       stepBox.appendChild(imageWrapper);
 
       // Remove button
-      const clearBadge = document.createElement('div');
+      const clearBadge = document.createElement('button');
+      clearBadge.type = 'button';
       clearBadge.className = 'step-clear-badge';
       clearBadge.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#f3f4f6"/><path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      clearBadge.title = 'Remove this product';
+      clearBadge.setAttribute('aria-label', clearBadge.title);
       clearBadge.addEventListener('click', (e) => {
         e.stopPropagation();
         this.removeProductFromSelection(stepIndex, variantId);
@@ -548,7 +542,7 @@ createFreeGiftSlotCard(step, stepIndex) {
 
       // Ribbon overlay even in filled state
       stepBox.appendChild(this._createRibbonSvg());
-      stepBox.addEventListener('click', () => this.openModal(stepIndex));
+      makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
       return stepBox;
     }
   }
@@ -583,7 +577,7 @@ createFreeGiftSlotCard(step, stepIndex) {
   stepBox.appendChild(this._createRibbonSvg());
 
   if (unlocked) {
-    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+    makeSlotCardKeyboardAccessible(stepBox, () => this.openModal(stepIndex));
   }
 
   return stepBox;

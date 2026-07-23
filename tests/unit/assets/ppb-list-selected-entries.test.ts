@@ -78,6 +78,41 @@ describe('PPB List Cascade selected entries integration', () => {
     expect(renderCascadeFooter).toHaveBeenCalledWith(footer);
   });
 
+  it('preserves an open Product Grid drawer before footer replacement', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ProductPageFooterModalStateMethods } = require('../../../app/assets/widgets/product-page/methods/footer-modal-state-methods.js');
+    const openDrawer = {
+      className: 'gbbMixCascadeCartDrawerContainer--open',
+      getBoundingClientRect: () => ({ height: 132 }),
+    };
+    const footer = {
+      innerHTML: 'existing grid drawer',
+      querySelector: jest.fn(() => openDrawer),
+    };
+    const renderCogniveFooter = jest.fn();
+    const context: {
+      elements: { footer: typeof footer };
+      cascadeSelectedDrawerState: { isOpen: boolean; height?: number };
+      _isProductPageCascadeTemplate: () => boolean;
+      _isProductPageGridTemplate: () => boolean;
+      _renderCogniveFooter: typeof renderCogniveFooter;
+    } = {
+      elements: { footer },
+      cascadeSelectedDrawerState: { isOpen: false },
+      _isProductPageCascadeTemplate: () => false,
+      _isProductPageGridTemplate: () => true,
+      _renderCogniveFooter: renderCogniveFooter,
+    };
+
+    ProductPageFooterModalStateMethods.renderFooter.call(context);
+
+    expect(footer.querySelector).toHaveBeenCalledWith('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
+    expect(context.cascadeSelectedDrawerState.isOpen).toBe(true);
+    expect(context.cascadeSelectedDrawerState.height).toBe(132);
+    expect(footer.innerHTML).toBe('');
+    expect(renderCogniveFooter).toHaveBeenCalledWith(footer);
+  });
+
   it('keeps the selected drawer collapsed by default when Cascade has selected entries', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getCascadeSelectedDrawerState } = require('../../../app/assets/widgets/product-page/templates/cascade-template.js');
@@ -283,5 +318,51 @@ describe('PPB List Cascade selected entries integration', () => {
     expect(shouldMountCascadeAddToCartInFooter({ parentElement: {} }, footer)).toBe(true);
     expect(shouldMountCascadeAddToCartInFooter({ parentElement: footer }, footer)).toBe(false);
     expect(shouldMountCascadeAddToCartInFooter(null, footer)).toBe(false);
+  });
+
+  it('preserves an open Product Grid drawer before a selection update re-renders the footer', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ProductPageSelectionMethods } = require('../../../app/assets/widgets/product-page/methods/selection-methods.js');
+    const openDrawer = {
+      getBoundingClientRect: () => ({ height: 144 }),
+    };
+    const footer = {
+      querySelector: jest.fn(() => openDrawer),
+    };
+    const context: any = {
+      elements: { footer },
+      selectedBundle: { steps: [{}] },
+      stepProductData: [[{ id: 'variant_a', variantId: 'variant_a' }]],
+      cascadeSelectedDrawerState: { isOpen: false },
+      normalizeSelectionKey: (value: string) => value,
+      _getDirectDefaultRequiredQuantity: () => null,
+      getVariantAvailable: () => ({ available: null, outOfStock: false }),
+      getSelectedQuantity: () => 1,
+      validateStepCondition: () => true,
+      _isProductPageCascadeTemplate: () => false,
+      _isProductPageGridTemplate: () => true,
+      setSelectedQuantity: jest.fn(),
+      updateProductQuantityDisplay: jest.fn(),
+      _renderDirectDefaultProducts: jest.fn(),
+      renderModalTabs: jest.fn(),
+      updateModalNavigation: jest.fn(),
+      updateModalFooterMessaging: jest.fn(),
+      updateAddToCartButton: jest.fn(),
+      updateFooterMessaging: jest.fn(),
+      _syncFreeGiftSlotCard: jest.fn(),
+      findProductBySelectionKey: () => ({ id: 'variant_a' }),
+      _usesCascadeStepFlow: () => false,
+      _autoProgressBottomSheet: jest.fn(),
+      _maybeAutoAddAfterLastStep: jest.fn(),
+    };
+
+    ProductPageSelectionMethods.updateProductSelection.call(context, 0, 'variant_a', 2);
+
+    expect(footer.querySelector).toHaveBeenCalledWith('.bw-ppb-cascade-selected-drawer--open, .gbbMixCascadeCartDrawerContainer--open');
+    expect(context.cascadeSelectedDrawerState).toMatchObject({
+      isOpen: true,
+      height: 144,
+    });
+    expect(context.setSelectedQuantity).toHaveBeenCalledWith(0, 'variant_a', 2);
   });
 });

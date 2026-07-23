@@ -1,0 +1,66 @@
+.scrollRegion {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.scrollRegion:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+}
+
+.table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.featureHeading,
+.featureCell,
+.planHeading,
+.planCell {
+  padding: 12px 8px;
+}
+
+.featureHeading {
+  color: #202223;
+  font-weight: 600;
+  text-align: left;
+}
+
+.planHeading {
+  width: clamp(96px, 18vw, 120px);
+  color: #202223;
+  font-weight: 600;
+  text-align: center;
+}
+
+.featureCell {
+  color: #202223;
+}
+
+.featureCell[data-highlight="true"] {
+  font-weight: 500;
+}
+
+.planCell {
+  text-align: center;
+}
+
+.growColumn {
+  background: #f0f5ff;
+  color: #005bd3;
+}
+
+@media (max-width: 767px) {
+  .featureHeading,
+  .featureCell {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 180px;
+    background: #ffffff;
+    box-shadow: 1px 0 0 #e1e3e5;
+  }
+}

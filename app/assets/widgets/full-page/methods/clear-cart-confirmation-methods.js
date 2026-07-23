@@ -61,7 +61,9 @@ confirmClearCartSelection() {
 
 clearFullPageSelections() {
   const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
-  this.selectedProducts = steps.map(() => ({}));
+  this.selectedProducts = steps.map((_, stepIndex) => ({
+    ...this._getDirectDefaultSelectionQuantities(stepIndex),
+  }));
   this.currentStepIndex = 0;
   this.searchQuery = '';
   this.activeCollectionId = null;

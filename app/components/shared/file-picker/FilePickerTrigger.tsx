@@ -1,7 +1,7 @@
 import type { KeyboardEvent, MouseEvent } from "react";
 import { BlockStack, Button, InlineStack, Spinner, Text } from "@shopify/polaris";
 import { XCircleIcon } from "@shopify/polaris-icons";
-import { MonitorIcon } from "./FilePickerIcons";
+import { MobileIcon, MonitorIcon } from "./FilePickerIcons";
 import { truncateStoreFileText } from "./utils";
 
 type FilePickerTriggerProps = {
@@ -10,6 +10,10 @@ type FilePickerTriggerProps = {
   label: string;
   hint?: string;
   uploadLabel: string;
+  triggerIcon: "desktop" | "mobile";
+  uploadButtonAction: "upload" | "openPicker";
+  fitPreviewToTrigger: boolean;
+  previewActionsMenuId: string;
   triggerIsUploading: boolean;
   uploadStatus: "idle" | "uploading" | "polling" | "success" | "timeout" | "error";
   handleOpen: () => void;
@@ -23,6 +27,10 @@ export function FilePickerTrigger({
   label,
   hint,
   uploadLabel,
+  triggerIcon,
+  uploadButtonAction,
+  fitPreviewToTrigger,
+  previewActionsMenuId,
   triggerIsUploading,
   uploadStatus,
   handleOpen,
@@ -30,6 +38,56 @@ export function FilePickerTrigger({
   handleTriggerUpload,
 }: FilePickerTriggerProps) {
   if (value) {
+    if (fitPreviewToTrigger) {
+      return (
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "180px",
+            border: "1px solid #c9cccf",
+            borderRadius: "8px",
+            overflow: "hidden",
+            background: "#fafbfb",
+            boxSizing: "border-box",
+          }}
+        >
+          <img
+            src={value}
+            alt={currentFilename ?? "Background image"}
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "block",
+              objectFit: "contain",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+            }}
+          >
+            <s-button
+              commandFor={previewActionsMenuId}
+              icon="menu-horizontal"
+              variant="secondary"
+              accessibilityLabel="Banner image actions"
+            />
+            <s-menu id={previewActionsMenuId} accessibilityLabel="Banner image actions">
+              <s-button icon="edit" onClick={handleOpen}>
+                Change image
+              </s-button>
+              <s-button icon="delete" tone="critical" onClick={handleRemove}>
+                Remove image
+              </s-button>
+            </s-menu>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         style={{
@@ -93,6 +151,7 @@ export function FilePickerTrigger({
         gap: "8px",
         textAlign: "center",
         boxSizing: "border-box",
+        height: fitPreviewToTrigger ? "180px" : undefined,
       }}
     >
       {triggerIsUploading ? (
@@ -104,7 +163,7 @@ export function FilePickerTrigger({
         </>
       ) : (
         <>
-          <MonitorIcon />
+          {triggerIcon === "mobile" ? <MobileIcon /> : <MonitorIcon />}
           <Text as="p" variant="bodySm" fontWeight="semibold">
             {label}
           </Text>
@@ -115,7 +174,14 @@ export function FilePickerTrigger({
           )}
           <button
             type="button"
-            onClick={handleTriggerUpload}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (uploadButtonAction === "openPicker") {
+                handleOpen();
+                return;
+              }
+              handleTriggerUpload(event);
+            }}
             style={{
               marginTop: "4px",
               padding: "6px 20px",

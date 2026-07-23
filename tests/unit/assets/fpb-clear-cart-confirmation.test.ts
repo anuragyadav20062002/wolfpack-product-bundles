@@ -127,6 +127,9 @@ function createWidget() {
     activeCollectionId: 'collection-1',
     compactMobileSummaryTrayExpanded: true,
     reRenderFullPage: jest.fn(),
+    _getDirectDefaultSelectionQuantities: (stepIndex: number) => (
+      stepIndex === 0 ? { defaultVariant: 1 } : {}
+    ),
     _clearCartConfirmationModal: null as FakeElement | null,
     _clearCartConfirmationKeydownHandler: null,
     ...fullPageClearCartConfirmationMethods,
@@ -168,12 +171,22 @@ describe('fullPageClearCartConfirmationMethods', () => {
     widget.showClearCartConfirmation();
     widget._clearCartConfirmationModal?.querySelector('.wpb-clear-cart-confirmation__confirm')?.click();
 
-    expect(widget.selectedProducts).toEqual([{}, {}]);
+    expect(widget.selectedProducts).toEqual([{ defaultVariant: 1 }, {}]);
     expect(widget.currentStepIndex).toBe(0);
     expect(widget.searchQuery).toBe('');
     expect(widget.activeCollectionId).toBeNull();
     expect(widget.compactMobileSummaryTrayExpanded).toBe(false);
     expect(widget.reRenderFullPage).toHaveBeenCalledTimes(1);
     expect(document.body.children).toHaveLength(0);
+  });
+
+  it('clears every step when no default products are configured', () => {
+    const widget = createWidget();
+    widget._getDirectDefaultSelectionQuantities = () => ({});
+
+    widget.showClearCartConfirmation();
+    widget._clearCartConfirmationModal?.querySelector('.wpb-clear-cart-confirmation__confirm')?.click();
+
+    expect(widget.selectedProducts).toEqual([{}, {}]);
   });
 });

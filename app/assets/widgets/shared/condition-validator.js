@@ -298,8 +298,12 @@ const ConditionValidator = (function () {
     const normalizedConditionValue = _normalizeConditionRuleValue(conditionType, step.conditionValue);
     const normalizedConditionValue2 = _normalizeConditionRuleValue(conditionType, step.conditionValue2);
 
-    // No explicit condition configured → only enforce minQuantity; no upper bound
-    if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
+    // No rule configured means the step is optional. Persisted min/max fields
+    // describe the retired rule and must not recreate it at navigation time.
+    if (!step.conditionType) return true;
+
+    // An incomplete active condition keeps the existing minimum guard.
+    if (!step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
@@ -344,6 +348,15 @@ const ConditionValidator = (function () {
       allowed: proposed <= limit,
       limit,
     };
+  }
+
+  function isProductQuantityIncreaseDisabled(validateQuantityPerProduct, currentQuantity) {
+    const current = Number(currentQuantity) || 0;
+    return !canUpdateProductQuantity(
+      validateQuantityPerProduct,
+      current,
+      current + 1,
+    ).allowed;
   }
 
   // ─── Private helpers ──────────────────────────────────────────────────────
@@ -413,6 +426,7 @@ const ConditionValidator = (function () {
     isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
+    isProductQuantityIncreaseDisabled,
     _formatStepLimitToast,
   };
 }());

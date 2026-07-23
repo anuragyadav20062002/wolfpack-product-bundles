@@ -1,8 +1,28 @@
 ---
+schema_version: 1
+id: build-process
 title: Build Process
 type: operations
-audited: 2026-04-16
-sources: CLAUDE.md, scripts/build-widget-bundles.js
+status: authoritative
+summary: Build, minification, lint, and pre-commit requirements for deployable application and storefront assets.
+last_audited: 2026-07-22
+owners:
+  - engineering
+domains:
+  - operations
+systems:
+  - asset-pipeline
+source_paths:
+  - scripts/build-widget-bundles.js
+  - scripts/minify-assets.js
+related_docs:
+  - internal docs/index.md
+tags:
+  - build
+  - storefront-assets
+keywords:
+  - widget bundles
+  - css minification
 ---
 
 # Build Process
@@ -53,6 +73,10 @@ Do not fix an oversized file by making source CSS unreadable. Reduce the base as
 | `bundle-widget.css` | `bundle-widget-product-page-cascade.css`, `bundle-widget-product-page-cognive.css`, `bundle-widget-product-page-modal.css` |
 
 `scripts/minify-assets.js` validates every generated CSS asset against Shopify's limit.
+
+### Selector minification gotcha
+
+Do not write a descendant selector as `.parent :is(.child-a, .child-b)` in storefront source CSS. The current minifier can remove the descendant combinator and emit `.parent:is(...)`, which changes the selector to target one element matching both sides. Use explicit descendant selectors, or a combinator such as `.parent > :is(...)` when direct-child semantics are correct. Compound selectors such as `.parent:is(.variant-a, .variant-b)` are safe when they intentionally target the same element.
 
 ## Linting
 

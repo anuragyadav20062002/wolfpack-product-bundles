@@ -61,6 +61,14 @@ describe("shop-wide Admin locale wiring contract", () => {
     path.join(process.cwd(), "app/routes/app/app.dashboard/route.tsx"),
     "utf8",
   );
+  const dashboardPage = fs.readFileSync(
+    path.join(process.cwd(), "app/routes/app/app.dashboard/DashboardPage.tsx"),
+    "utf8",
+  );
+  const dashboardLocaleState = fs.readFileSync(
+    path.join(process.cwd(), "app/routes/app/app.dashboard/dashboard-locale-state.ts"),
+    "utf8",
+  );
 
   it("stores the Admin locale on Shop rather than Session", () => {
     expect(schema).toMatch(/model Shop \{[\s\S]*?adminLocale\s+String\?/);
@@ -68,34 +76,34 @@ describe("shop-wide Admin locale wiring contract", () => {
 
   it("loads the authoritative shop-wide locale in the app shell", () => {
     expect(appShell).toContain("loadShopAdminLocale");
-    expect(appShell).toContain("const locale = await loadShopAdminLocale(session.shop)");
+    expect(appShell).toContain("loadShopAdminLocale(session.shop)");
   });
 
   it("translates the global embedded Admin navigation", () => {
     expect(appShell).toContain('t("nav.dashboard")');
-    expect(appShell).toContain('t("nav.designControlPanel")');
+    expect(appShell).toContain('t("nav.settings")');
+    expect(appShell).toContain('t("nav.integrations")');
     expect(appShell).toContain('t("nav.analytics")');
-    expect(appShell).toContain('t("nav.pricing")');
     expect(appShell).toContain('t("nav.events")');
   });
 
   it("adds a dashboard save intent for shop-wide locale persistence", () => {
     expect(dashboard).toContain('intent === "saveAdminLocale"');
-    expect(dashboard).toContain('formData.append("intent", "saveAdminLocale")');
+    expect(dashboardLocaleState).toContain('formData.append("intent", "saveAdminLocale")');
   });
 
   it("saves from the language dropdown without rendering a separate Save button", () => {
-    const handler = dashboard.match(
+    const handler = dashboardPage.match(
       /const handleLanguageChange = useCallback\([\s\S]*?\n  \}, \[[^\]]*\]\);/,
     )?.[0];
     expect(handler).toBeDefined();
-    expect(handler).toContain('formData.append("intent", "saveAdminLocale")');
-    expect(dashboard).not.toContain('onClick={handleSaveLanguage}');
-    expect(dashboard).not.toContain('{t("dashboard.language.save")}');
+    expect(handler).toContain("applyDashboardLocaleSelection");
+    expect(dashboardPage).not.toContain('onClick={handleSaveLanguage}');
+    expect(dashboardPage).not.toContain('{t("dashboard.language.save")}');
   });
 
   it("does not write browser cache from the dropdown change handler", () => {
-    const handler = dashboard.match(
+    const handler = dashboardPage.match(
       /const handleLanguageChange = useCallback\([\s\S]*?\n  \}, \[[^\]]*\]\);/,
     )?.[0];
     expect(handler).toBeDefined();
@@ -103,6 +111,6 @@ describe("shop-wide Admin locale wiring contract", () => {
   });
 
   it("updates browser cache only after the save response confirms the locale", () => {
-    expect(dashboard).toContain('localStorage.setItem("wolfpack-locale", data.locale)');
+    expect(dashboardPage).toContain('localStorage.setItem("wolfpack-locale", locale)');
   });
 });

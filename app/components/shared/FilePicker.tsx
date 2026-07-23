@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
 import { Banner, BlockStack, Text } from "@shopify/polaris";
 import {
   useLazyGetUploadStoreFileStatusQuery,
@@ -15,6 +15,7 @@ import {
   MAX_POLLS,
   filenameFromUrl,
 } from "./file-picker/utils";
+import { shouldApplyUploadMutationResult } from "../../lib/file-picker-upload-state";
 
 export function FilePicker({
   value,
@@ -22,13 +23,17 @@ export function FilePicker({
   label = "Choose background image",
   hint,
   uploadLabel = "Upload image",
+  triggerIcon = "desktop",
+  uploadButtonAction = "upload",
+  fitPreviewToTrigger = false,
   maxUploadBytes = MAX_BYTES,
   maxUploadErrorMessage = "File must be under 20 MB.",
   autoOpen = false,
   onClose,
 }: FilePickerProps) {
   const [open, setOpen] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const previewActionsMenuId = `file-picker-preview-actions-${useId().replace(/:/g, "")}`;
+  const dialogRef = useRef<any>(null);
   const [files, setFiles] = useState<StoreFile[]>([]);
   const [search, setSearch] = useState("");
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
@@ -42,10 +47,13 @@ export function FilePicker({
   const [uploadFromTrigger, setUploadFromTrigger] = useState(false);
   const pollCountRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasCurrentUploadAttemptRef = useRef(false);
 
   const [loadStoreFiles, filesQuery] = useLazyListStoreFilesQuery();
   const [uploadStoreFile, uploadResult] = useUploadStoreFileMutation();
   const [loadUploadStatus, statusQuery] = useLazyGetUploadStoreFileStatusQuery();
+  const resetUploadMutationRef = useRef(uploadResult.reset);
+  resetUploadMutationRef.current = uploadResult.reset;
 
   const filesLoading = filesQuery.isFetching;
   const isBlocked = uploadStatus === "uploading" || uploadStatus === "polling";
@@ -53,8 +61,8 @@ export function FilePicker({
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
+    if (open) dialog.show?.();
+    if (!open) dialog.hide?.();
   }, [open]);
 
   useEffect(() => {
@@ -76,7 +84,11 @@ export function FilePicker({
   }, [filesQuery.data]);
 
   useEffect(() => {
-    if (!uploadResult.isSuccess || !uploadResult.data) return;
+    if (!shouldApplyUploadMutationResult({
+      hasCurrentAttempt: hasCurrentUploadAttemptRef.current,
+      isSuccess: uploadResult.isSuccess,
+      isError: uploadResult.isError,
+    }) || !uploadResult.isSuccess || !uploadResult.data) return;
     const result = uploadResult.data;
     if (result.ok && result.fileId) {
       setPendingFileId(result.fileId);
@@ -88,14 +100,20 @@ export function FilePicker({
     setUploadStatus("error");
     setUploadError(result.error ?? "Upload failed. Please try again.");
     setUploadFromTrigger(false);
-  }, [uploadResult.data, uploadResult.isSuccess]);
+    hasCurrentUploadAttemptRef.current = false;
+  }, [uploadResult.data, uploadResult.isError, uploadResult.isSuccess]);
 
   useEffect(() => {
-    if (!uploadResult.isError) return;
+    if (!shouldApplyUploadMutationResult({
+      hasCurrentAttempt: hasCurrentUploadAttemptRef.current,
+      isSuccess: uploadResult.isSuccess,
+      isError: uploadResult.isError,
+    }) || !uploadResult.isError) return;
     setUploadStatus("error");
     setUploadError("Upload failed. Please try again.");
     setUploadFromTrigger(false);
-  }, [uploadResult.isError]);
+    hasCurrentUploadAttemptRef.current = false;
+  }, [uploadResult.isError, uploadResult.isSuccess]);
 
   useEffect(() => {
     if (uploadStatus !== "polling" || !pendingFileId) return;
@@ -132,6 +150,7 @@ export function FilePicker({
       }
       setUploadStatus("success");
       setPendingFileId(null);
+      hasCurrentUploadAttemptRef.current = false;
       return;
     }
 
@@ -140,6 +159,7 @@ export function FilePicker({
       setUploadError("Upload processing failed. Please try again.");
       setPendingFileId(null);
       setUploadFromTrigger(false);
+      hasCurrentUploadAttemptRef.current = false;
       return;
     }
 
@@ -152,6 +172,7 @@ export function FilePicker({
       setUploadError("Upload processing failed. Please try again.");
       setPendingFileId(null);
       setUploadFromTrigger(false);
+      hasCurrentUploadAttemptRef.current = false;
     }
   }, [statusQuery.isError, uploadStatus]);
 
@@ -162,6 +183,8 @@ export function FilePicker({
   }, [uploadStatus]);
 
   const resetUploadState = useCallback(() => {
+    hasCurrentUploadAttemptRef.current = false;
+    resetUploadMutationRef.current();
     setUploadStatus("idle");
     setUploadError(null);
     setSizeError(null);
@@ -265,12 +288,13 @@ export function FilePicker({
       pollCountRef.current = 0;
       setPollTrigger(0);
       setUploadStatus("uploading");
+      hasCurrentUploadAttemptRef.current = true;
 
       const form = new FormData();
       form.append("file", file);
       void uploadStoreFile(form);
     },
-    [uploadStoreFile],
+    [maxUploadBytes, maxUploadErrorMessage, uploadStoreFile],
   );
 
   const filteredFiles = search
@@ -298,6 +322,10 @@ export function FilePicker({
           label={label}
           hint={hint}
           uploadLabel={uploadLabel}
+          triggerIcon={triggerIcon}
+          uploadButtonAction={uploadButtonAction}
+          fitPreviewToTrigger={fitPreviewToTrigger}
+          previewActionsMenuId={previewActionsMenuId}
           triggerIsUploading={triggerIsUploading}
           uploadStatus={uploadStatus}
           handleOpen={handleOpen}

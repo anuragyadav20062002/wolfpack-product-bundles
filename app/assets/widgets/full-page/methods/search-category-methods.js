@@ -392,7 +392,7 @@ getStepCategoryTabEntries(step) {
         displayVariantsAsSwatches: category.displayVariantsAsSwatches === true,
       };
     })
-    .filter(entry => entry && (entry.handles.length > 0 || entry.productIds.length > 0));
+    .filter(Boolean);
 },
 
 getActiveStepCategoryId(step) {

@@ -75,6 +75,40 @@ describe('PPB category-scoped variants', () => {
     expect(hydratedProduct.variants).toHaveLength(2);
   });
 
+  it('keeps only explicitly configured variants when categories are keyed by category id', () => {
+    const step = {
+      categories: {
+        category38661: {
+          categoryId: 'category38661',
+          products: [{
+            id: 'gid://shopify/Product/101',
+            variants: [{ id: 'gid://shopify/ProductVariant/1002' }],
+          }],
+        },
+      },
+    };
+    const context = {
+      ...createContext(),
+      activeInpageCategoryIndexes: { 0: 0 },
+    };
+
+    const result = ProductPageLayoutShellMethods._filterProductsForInpageCategory.call(
+      context,
+      step,
+      [hydratedProduct],
+      0,
+    );
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: '101',
+        variantId: '1002',
+        variantTitle: '10',
+        variants: [expect.objectContaining({ id: '1002', title: '10' })],
+      }),
+    ]);
+  });
+
   it('keeps every hydrated variant when the category has no explicit subset', () => {
     const step = {
       categories: [{

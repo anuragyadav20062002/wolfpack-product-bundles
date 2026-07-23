@@ -6,11 +6,14 @@ import { OptimisedImage } from "../../../components/OptimisedImage";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { DashboardBannerSkeleton } from "../../../components/skeletons/DashboardBannerSkeleton";
 import { useDashboardState } from "../../../hooks/useDashboardState";
-import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
+import { getBundleEditPath, resolveCloneConfigureRedirect } from "../../../lib/bundle-navigation";
 import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
+import {
+  closePendingDashboardPreview,
+  navigatePendingDashboardPreview,
+  openPendingDashboardPreview,
+} from "../../../lib/dashboard-preview-window";
 import { openSupportChat } from "../../../lib/support-chat.client";
-import { openThemeEditorInNewTab } from "../../../lib/theme-editor-navigation.client";
-import { checkAppEmbedStatusFromCurrentRoute } from "../../../lib/app-embed-status-check.client";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import {
   changeAdminI18nLanguage,
@@ -39,6 +42,10 @@ import {
   shouldApplyDashboardLocaleSave,
 } from "./dashboard-locale-state";
 import { BundleActionsButtons } from "./BundleActionsButtons";
+import {
+  buildDashboardTablePage,
+  buildDashboardTableRows,
+} from "./dashboard-table-model";
 import dashboardStyles from "./dashboard.module.css";
 
 const STATUS_TONE_MAP = { active: 'success', draft: 'info', unlisted: 'warning' } as const;
@@ -90,6 +97,7 @@ export function DashboardPage() {
   const statusPopoverRef = useRef<any>(null);
   const typePopoverRef = useRef<any>(null);
   const fetcherIntentRef = useRef<string | null>(null);
+  const pendingPreviewWindowRef = useRef<Window | null>(null);
   const lastAppliedLocaleSaveRef = useRef<string | null>(null);
   const [previewingBundleId, setPreviewingBundleId] = useState<string | null>(null);
   const [editingBundleId, setEditingBundleId] = useState<string | null>(null);
@@ -115,25 +123,36 @@ export function DashboardPage() {
     const intent = fetcherIntentRef.current;
     if (!intent) return;
     const data = fetcher.data as Record<string, unknown>;
+    const cloneRedirect = resolveCloneConfigureRedirect(data);
     if (data.success) {
-      if (intent === 'createPreviewPage') {
+      if (intent === 'createFpbPreview') {
         const previewUrl = typeof data.shareablePreviewUrl === 'string' ? data.shareablePreviewUrl : '';
         if (previewUrl) {
           shopify.toast.show("Opening preview in new tab…", { duration: 2000 });
-          window.open(previewUrl, "_blank", "noopener,noreferrer");
+          const pendingWindow = pendingPreviewWindowRef.current;
+          pendingPreviewWindowRef.current = null;
+          if (!navigatePendingDashboardPreview(pendingWindow, previewUrl)) {
+            window.open(previewUrl, "_blank", "noopener,noreferrer");
+          }
         } else {
-          shopify.toast.show("Preview page was created, but no preview URL was returned.", { isError: true, duration: 5000 });
+          closePendingDashboardPreview(pendingPreviewWindowRef.current);
+          pendingPreviewWindowRef.current = null;
+          shopify.toast.show("No preview URL was returned.", { isError: true, duration: 5000 });
         }
-      } else if (intent === 'cloneBundle' && data.bundleId) {
+      } else if (intent === 'cloneBundle' && cloneRedirect) {
         shopify.toast.show(t("dashboard.actions.cloneSuccess"));
-        navigate(getBundleWizardConfigurePath(String(data.bundleId)));
+        navigate(cloneRedirect);
       } else if (intent === 'deleteBundle') {
         shopify.toast.show(t("dashboard.actions.deleteSuccess"));
       }
     } else if (data.error) {
+      if (intent === 'createFpbPreview') {
+        closePendingDashboardPreview(pendingPreviewWindowRef.current);
+        pendingPreviewWindowRef.current = null;
+      }
       shopify.toast.show(String(data.error), { isError: true, duration: 5000 });
     }
-    if (intent === 'createPreviewPage') {
+    if (intent === 'createFpbPreview') {
       setPreviewingBundleId(null);
     }
     fetcherIntentRef.current = null;
@@ -229,7 +248,6 @@ export function DashboardPage() {
         bundleType: bundle.bundleType as "full_page" | "product_page",
         bundleId: bundle.id,
         shopifyProductHandle: bundle.shopifyProductHandle,
-        shopifyPageHandle: bundle.shopifyPageHandle,
         shop,
         appEmbedEnabled: resolvedAppEmbedStatus.appEmbedEnabled,
         bundleStatus: bundle.status,
@@ -241,11 +259,13 @@ export function DashboardPage() {
         return;
       }
 
-      if (action.kind === "create_preview_page") {
+      if (action.kind === "create_fpb_preview") {
+        closePendingDashboardPreview(pendingPreviewWindowRef.current);
+        pendingPreviewWindowRef.current = openPendingDashboardPreview();
         const formData = new FormData();
-        formData.append("intent", "createPreviewPage");
+        formData.append("intent", "createFpbPreview");
         formData.append("bundleId", bundle.id);
-        fetcherIntentRef.current = "createPreviewPage";
+        fetcherIntentRef.current = "createFpbPreview";
         fetcher.submit(formData, { method: "post" });
         return;
       }
@@ -423,36 +443,34 @@ export function DashboardPage() {
     navigate('/app/events');
   }, [navigate]);
 
-  const handleAppEmbedCardClick = useCallback(async () => {
-    if (resolvedAppEmbedStatus.themeEditorUrl) {
-      openThemeEditorInNewTab(resolvedAppEmbedStatus.themeEditorUrl);
-      return;
-    }
-
-    const checkedStatus = await checkAppEmbedStatusFromCurrentRoute();
-    setResolvedAppEmbedStatus(checkedStatus);
-    if (checkedStatus.themeEditorUrl) {
-      openThemeEditorInNewTab(checkedStatus.themeEditorUrl);
-      return;
-    }
-
-    shopify.toast.show(t("dashboard.actions.themeEditorUnavailable"), { isError: true });
-  }, [resolvedAppEmbedStatus.themeEditorUrl, shopify, t]);
-
-  const filteredBundles = useMemo(() =>
-    bundles
-      .filter(b => typeFilter === "all" || b.bundleType === typeFilter)
-      .filter(b => statusFilter === "all" || b.status === statusFilter)
-      .filter(b => !bundleFilter || b.name.toLowerCase().includes(bundleFilter.toLowerCase())),
-    [bundles, typeFilter, statusFilter, bundleFilter]
+  const {
+    effectivePage,
+    filteredBundles,
+    pagedBundles,
+    totalPages,
+  } = useMemo(
+    () =>
+      buildDashboardTablePage({
+        bundles,
+        bundleFilter,
+        typeFilter,
+        statusFilter,
+        currentPage,
+        bundlesPerPage,
+      }),
+    [
+      bundleFilter,
+      bundles,
+      bundlesPerPage,
+      currentPage,
+      statusFilter,
+      typeFilter,
+    ],
   );
-
-  const totalPages = Math.max(1, Math.ceil(filteredBundles.length / bundlesPerPage));
-  const effectivePage = Math.min(currentPage, totalPages);
-
-  const pagedBundles = useMemo(() =>
-    filteredBundles.slice((effectivePage - 1) * bundlesPerPage, effectivePage * bundlesPerPage),
-    [filteredBundles, effectivePage, bundlesPerPage]
+  const dashboardTableRows = buildDashboardTableRows(
+    pagedBundles,
+    getStatusDisplay,
+    getBundleTypeDisplay,
   );
   const renderResourceCard = shouldRenderDashboardResourceCard({
     hasMainContentSettled,
@@ -507,8 +525,21 @@ export function DashboardPage() {
                   ))}
                 </s-select>
               </div>
-              <s-button icon="refresh" onClick={handleSyncCollections}>{t("dashboard.header.syncCollections")}</s-button>
-              <s-button variant="primary" onClick={() => navigate('/app/bundles/create')}>{t("dashboard.header.createBundle")}</s-button>
+              <s-button
+                icon="refresh"
+                accessibilityLabel={t("dashboard.header.syncCollections")}
+                onClick={handleSyncCollections}
+              >
+                <span className={dashboardStyles.dashboardActionLabel}>{t("dashboard.header.syncCollections")}</span>
+              </s-button>
+              <s-button
+                icon="plus"
+                variant="primary"
+                accessibilityLabel={t("dashboard.header.createBundle")}
+                onClick={() => navigate('/app/bundles/create')}
+              >
+                <span className={dashboardStyles.dashboardActionLabel}>{t("dashboard.header.createBundle")}</span>
+              </s-button>
               <s-button icon="notification" onClick={handleBellClick} accessibilityLabel={t("dashboard.header.changelog")} />
             </div>
           </div>
@@ -526,12 +557,13 @@ export function DashboardPage() {
 
           <DashboardTopCards
             handleDirectChat={handleDirectChat}
-            handleAppEmbedCardClick={handleAppEmbedCardClick}
           />
 
           {/* Bundles panel */}
-          <s-section padding="none">
-            <div className={dashboardStyles.bundlesPanel}>
+          <div className={dashboardStyles.bundlesQueryContainer}>
+            <s-query-container containerName="dashboard-bundles">
+              <s-section padding="none">
+                <div className={dashboardStyles.bundlesPanel}>
               <div className={dashboardStyles.bundlesToolbar}>
                 <div className={dashboardStyles.filterGroup}>
                   {/* Status filter pill */}
@@ -577,15 +609,6 @@ export function DashboardPage() {
               </div>
 
               <div className={dashboardStyles.bundlesTableShell}>
-                <div className={dashboardStyles.bundlesTableHeader}>
-                  <span>{t("dashboard.table.bundleName")}</span>
-                  <div className={dashboardStyles.bundleMetaGroup}>
-                    <span>{t("dashboard.table.status")}</span>
-                    <span>{t("dashboard.table.type")}</span>
-                    <span>{t("dashboard.table.actions")}</span>
-                  </div>
-                </div>
-
                 {bundles.length === 0 ? (
                   <div className={dashboardStyles.emptyBundlesState}>
                     <div className={dashboardStyles.emptyBundlesIcon}>
@@ -609,30 +632,38 @@ export function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    {pagedBundles.map((bundle) => (
-                      <div key={bundle.id} className={dashboardStyles.bundleTableRow}>
-                        <span className={dashboardStyles.bundleTableCell}>{bundle.name}</span>
-                        <div className={dashboardStyles.bundleMetaGroup}>
-                          <span className={dashboardStyles.bundleTableCell}>{getStatusDisplay(bundle.status)}</span>
-                          <span className={dashboardStyles.bundleTableCell}>{getBundleTypeDisplay(bundle.bundleType)}</span>
-                          <span className={dashboardStyles.bundleTableCell}>
-                            <BundleActionsButtons
-                              bundleId={bundle.id}
-                              bundleType={bundle.bundleType}
-                              bundle={bundle}
-                              isEditing={editingBundleId === bundle.id}
-                              onEdit={handleEditBundle}
-                              onClone={handleCloneBundle}
-                              onDelete={handleDeleteBundle}
-                              onPreview={handlePreviewBundle}
-                              activeActionMenuBundleId={activeActionMenuBundleId}
-                              onActionMenuRequest={setActiveActionMenuBundleId}
-                              isPreviewing={previewingBundleId === bundle.id}
-                            />
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                    <s-table variant="auto">
+                      <s-table-header-row>
+                        <s-table-header listSlot="primary">{t("dashboard.table.bundleName")}</s-table-header>
+                        <s-table-header listSlot="secondary">{t("dashboard.table.status")}</s-table-header>
+                        <s-table-header listSlot="labeled">{t("dashboard.table.type")}</s-table-header>
+                        <s-table-header listSlot="labeled">{t("dashboard.table.actions")}</s-table-header>
+                      </s-table-header-row>
+                      <s-table-body>
+                        {dashboardTableRows.map((row) => (
+                          <s-table-row key={row.id}>
+                            <s-table-cell>{row.name}</s-table-cell>
+                            <s-table-cell>{row.status}</s-table-cell>
+                            <s-table-cell>{row.type}</s-table-cell>
+                            <s-table-cell>
+                              <BundleActionsButtons
+                                bundleId={row.id}
+                                bundleType={row.bundle.bundleType}
+                                bundle={row.bundle}
+                                isEditing={editingBundleId === row.id}
+                                onEdit={handleEditBundle}
+                                onClone={handleCloneBundle}
+                                onDelete={handleDeleteBundle}
+                                onPreview={handlePreviewBundle}
+                                activeActionMenuBundleId={activeActionMenuBundleId}
+                                onActionMenuRequest={setActiveActionMenuBundleId}
+                                isPreviewing={previewingBundleId === row.id}
+                              />
+                            </s-table-cell>
+                          </s-table-row>
+                        ))}
+                      </s-table-body>
+                    </s-table>
 
                     {filteredBundles.length === 0 && (
                       <div className={dashboardStyles.noFilteredBundles}>
@@ -688,8 +719,10 @@ export function DashboardPage() {
                   </>
                 )}
               </div>
-            </div>
-          </s-section>
+                </div>
+              </s-section>
+            </s-query-container>
+          </div>
 
           {/* Resources card */}
           {renderResourceCard && (

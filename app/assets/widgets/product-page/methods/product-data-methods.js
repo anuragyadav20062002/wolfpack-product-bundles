@@ -148,6 +148,10 @@ processProductsForStep(products, step) {
   const trackInventoryOnAddToCart = typeof this.isInventoryTrackingOnAddToCartEnabled === 'function'
     ? this.isInventoryTrackingOnAddToCartEnabled()
     : this._getProductPageControls?.()?.trackInventoryOnAddToCart === true;
+  const controls = typeof this._getProductPageControls === 'function'
+    ? this._getProductPageControls()
+    : null;
+  const hideOutOfStockProducts = controls?.hideOutOfStockProducts !== false;
   const isTrackedZeroStock = (variant) => (
     variant?.quantityAvailable === 0 && variant?.currentlyNotInStock !== true
   );
@@ -176,22 +180,25 @@ processProductsForStep(products, step) {
 
   return products.flatMap(product => {
     const sourceVariants = Array.isArray(product.variants) ? product.variants : [];
-    const customerSelectableVariants = sourceVariants.filter(variant => variant?.available !== false);
+    const customerVisibleVariants = hideOutOfStockProducts
+      ? sourceVariants.filter(variant => variant?.available !== false)
+      : sourceVariants;
 
     if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
-      if (customerSelectableVariants.length === 0) {
+      if (customerVisibleVariants.length === 0) {
         return [];
       }
-      // Display each variant as separate product - filter out unavailable variants
+      // Display each variant as a separate product; keep unavailable variants
+      // only when the saved Product Page control says not to hide them.
       // Preserve parent product reference for variant selection and tracking
-      const processedVariants = customerSelectableVariants.map(normalizeVariant);
+      const processedVariants = customerVisibleVariants.map(normalizeVariant);
 
       const processedOptions = (product.options || []).map(opt => {
         if (typeof opt === 'string') return opt;
         return opt.name || opt;
       });
 
-      return customerSelectableVariants
+      return customerVisibleVariants
         .map(variant => {
           // Storefront API: prioritize variant image, fallback to product featured image
           const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
@@ -218,19 +225,19 @@ processProductsForStep(products, step) {
           };
         });
     } else {
-      if (sourceVariants.length > 0 && customerSelectableVariants.length === 0) {
+      if (sourceVariants.length > 0 && customerVisibleVariants.length === 0) {
         return [];
       }
       // Display product with the first sellable variant when variants are not separate cards.
-      const defaultVariant = customerSelectableVariants.find(isVariantSelectableForInventory)
-        || customerSelectableVariants[0]
+      const defaultVariant = customerVisibleVariants.find(isVariantSelectableForInventory)
+        || customerVisibleVariants[0]
         || null;
 
       // Storefront API: prioritize variant image, fallback to product featured image
       const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
       // Process variants array for variant selection in modal
-      const processedVariants = customerSelectableVariants.map(normalizeVariant);
+      const processedVariants = customerVisibleVariants.map(normalizeVariant);
 
       // Process options array for variant selector labels
       const processedOptions = (product.options || []).map(opt => {

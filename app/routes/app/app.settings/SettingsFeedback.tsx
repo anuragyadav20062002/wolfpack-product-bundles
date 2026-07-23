@@ -1,23 +1,17 @@
 import { useEffect } from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import type { SettingsField } from "../../../lib/admin-configuration-surfaces";
 import styles from "../../../styles/routes/admin-configuration-surfaces.module.css";
 
 export function SettingsContextualSaveBar({ isOpen, onDiscard, onSave }: { isOpen: boolean; onDiscard: () => void; onSave: () => void }) {
+  const shopify = useAppBridge();
   useEffect(() => {
-    const shopify = (window as typeof window & {
-      shopify?: { saveBar?: { show: (id: string) => void; hide: (id: string) => void } };
-    }).shopify;
-
-    if (!shopify?.saveBar) {
-      return;
-    }
-
     if (isOpen) {
-      shopify.saveBar.show("settings-contextual-save-bar");
+      void shopify.saveBar.show("settings-contextual-save-bar");
     } else {
-      shopify.saveBar.hide("settings-contextual-save-bar");
+      void shopify.saveBar.hide("settings-contextual-save-bar");
     }
-  }, [isOpen]);
+  }, [isOpen, shopify]);
 
   return (
     <ui-save-bar id="settings-contextual-save-bar">
@@ -136,4 +130,3 @@ export function DetailGroup({
     </section>
   );
 }
-

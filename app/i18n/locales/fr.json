@@ -27,10 +27,15 @@
       "imageAlt": "Parth, fondateur",
       "imageLoading": "Chargement de la photo de Parth"
     },
-    "appEmbeds": {
-      "headingMain": "Intégrations d'app",
-      "headingHint": "(Activez-les pour rendre le bundle visible dans la boutique)",
-      "instruction": "Cliquez sur Boutique en ligne → Modifier le thème → Activez le bouton et enregistrez"
+    "supportIssues": {
+      "title": "Besoin d’aide ?",
+      "featureNotWorking": "Une fonctionnalité ne marche pas ?",
+      "bundleNotShowing": "Le bundle n’apparaît pas sur la boutique ?",
+      "uninstallHelp": "Vous souhaitez désinstaller ?",
+      "storeDesignHelp": "Vous souhaitez un design adapté à votre boutique ?",
+      "analyticsNotWorking": "Les analyses ne fonctionnent pas ?",
+      "description": "Laissez-nous résoudre tous vos problèmes.",
+      "cta": "Parler à un expert du support"
     },
     "filters": {
       "status": "Statut",
@@ -110,6 +115,25 @@
       "saveError": "Impossible d'enregistrer la langue d'administration"
     }
   },
+  "settingsDcp": {
+    "preview": {
+      "heading": "Aperçu en direct",
+      "unsaved": "Les modifications non enregistrées apparaissent ici.",
+      "surface": {
+        "description": "Choisissez des produits pour créer votre bundle.",
+        "stepOne": "1. Choisir les produits",
+        "stepTwo": "2. Vérifier le bundle",
+        "products": {
+          "first": { "name": "Indispensable du quotidien", "price": "24,00 $" },
+          "second": { "name": "Ajout populaire", "price": "18,00 $" }
+        },
+        "add": "Ajouter",
+        "summary": "Récapitulatif du bundle",
+        "total": "2 produits sélectionnés · 42,00 $",
+        "next": "Continuer"
+      }
+    }
+  },
   "tooltips": {
     "stepFlow": {
       "title": "Step Flow",
@@ -145,6 +169,18 @@
     "productSlots": {
       "title": "Product Slots",
       "description": "Display empty slots on the storefront and use the configured Slot Icon for those empty slots."
+    },
+    "variantSelector": {
+      "title": "Variant Selector",
+      "description": "Show a variant dropdown on each product card so shoppers can pick options without opening quick look."
+    },
+    "showTextOnAddButton": {
+      "title": "Show Text on + Button",
+      "description": "Replace the + icon with a text Add to Cart button placed below the product price."
+    },
+    "cartLineItemDiscountDisplay": {
+      "title": "Cart Line Item Discount Display",
+      "description": "Control how bundle savings appear on the cart line item, including retail price and You Save messaging."
     }
   },
   "common": {
@@ -188,13 +224,11 @@
   },
   "createBundle": {
     "title": "Créer un lot", "dashboard": "Tableau de bord", "heading": "Sélectionner le type de créateur de lots", "help": "Comment fonctionnent les types de créateurs de lots ?",
-    "steps": { "details": "Nom du lot\net description", "configuration": "Configuration", "pricing": "Tarification", "assets": "Ressources" },
     "validation": { "required": "Le nom du lot est requis", "minLength": "Le nom du lot doit comporter au moins 3 caractères" },
-    "fields": { "name": "Nom du lot", "namePlaceholder": "Ex. : lot de t-shirts", "description": "Description", "descriptionPlaceholder": "Ex. : ceci est un lot de t-shirts" },
+    "fields": { "name": "Nom du lot", "namePlaceholder": "Ex. : lot de t-shirts" },
     "bundleType": {
-      "heading": "Type de lot",
-      "productPage": { "title": "Créateur de lots sur page produit", "description": "Afficher le créateur de lots sur les pages produit existantes (recommandé pour la plupart des boutiques)", "alt": "Lot sur page produit" },
-      "fullPage": { "title": "Créateur de lots en pleine page", "description": "Créer une page de destination dédiée à votre lot avec des onglets et une personnalisation complète", "alt": "Lot en pleine page" }
+      "productPage": { "title": "Créateur de lots sur page produit", "description": "Afficher le créateur de lots sur les pages produit existantes (recommandé pour la plupart des boutiques)" },
+      "fullPage": { "title": "Créateur de lots en pleine page", "description": "Créer une page de destination dédiée à votre lot avec des onglets et une personnalisation complète" }
     },
     "actions": { "selected": "Sélectionné", "select": "Sélectionner", "next": "Suivant" }
   },
@@ -210,6 +244,6 @@
     "success": { "heading": "Bienvenue dans le forfait Grow !", "body": "Votre abonnement a été activé. Vous avez maintenant accès à toutes les fonctionnalités premium.", "bundleLimit": "Limite de lots", "bundleLimitValue": "20 lots", "designControl": "Contrôle du design", "fullAccess": "Accès complet", "support": "Assistance", "priority": "Prioritaire" },
     "cards": { "currentPlan": "Forfait actuel", "freePrice": "Gratuit", "freeDescription": "Pour les ventes de lots jusqu'à 500 $/mois - gratuit jusqu'à votre croissance", "includes": "Comprend :", "freePlan": "Forfait gratuit", "mostPopular": "Le plus populaire", "perMonth": "/ mois", "growDescription": "Pour les ventes de lots supérieures à 500 $/mois - aucun plafond de revenus", "growIncludes": "Tout ce qui est inclus dans Gratuit, plus :", "upgradeToGrow": "Passer à Grow", "cancelAnytimeBilled": "Annulez à tout moment. Facturé via Shopify." },
     "cta": { "heading": "Prêt à développer votre activité de lots ?", "body": "Passez au forfait Grow pour doubler le nombre de lots, personnaliser entièrement le design et bénéficier d'une assistance prioritaire.", "highlights": { "bundles": "20 lots", "design": "Panneau de contrôle du design", "support": "Assistance prioritaire" }, "upgrade": "Passer à Grow - {{price}} $/mois", "cancelAnytime": "Annulez à tout moment" },
-    "route": { "title": "Abonnement et facturation", "dashboard": "Tableau de bord", "currentPlan": "Forfait actuel", "active": "Actif", "inactive": "Inactif", "bundleUsage": "Utilisation des lots", "bundleCount": "{{current}} / {{limit}} lots", "limitReached": "Vous avez atteint votre limite de lots.", "limitUpgrade": "Passez à Grow pour obtenir plus de lots.", "overview": "Aperçu des lots", "activeBundles": "Lots actifs", "totalSteps": "Total des étapes", "productPage": "Page produit", "fullPage": "Pleine page", "cancelSubscription": "Annuler l'abonnement", "cancelHeading": "Annuler l'abonnement ?", "downgradeBody": "Vous passerez au forfait Gratuit avec une limite de {{limit}} lots.", "archiveWarning": "Attention : vous avez {{current}} lots. Les {{excess}} lots excédentaires seront archivés (pas supprimés).", "confirmCancellation": "Confirmer l'annulation", "keepSubscription": "Conserver l'abonnement", "features": "Fonctionnalités de votre forfait", "wantMore": "Vous voulez plus de fonctionnalités ?", "viewPlans": "Voir tous les forfaits", "needHelp": "Besoin d'aide ?", "helpBody": "Vous avez des questions sur la facturation ou besoin d'un forfait personnalisé ? Notre équipe est là pour vous aider." }
+    "route": { "title": "Abonnement et facturation", "dashboard": "Tableau de bord", "currentPlan": "Forfait actuel", "active": "Actif", "inactive": "Inactif", "bundleUsage": "Utilisation des lots", "bundleCount": "{{current}} / {{limit}} lots", "limitReached": "Vous avez atteint votre limite de lots.", "limitUpgrade": "Passez à Grow pour obtenir plus de lots.", "overview": "Aperçu des lots", "activeBundles": "Lots actifs", "totalSteps": "Total des étapes", "productPage": "Page produit", "fullPage": "Pleine page", "cancelSubscription": "Annuler l'abonnement", "cancelHeading": "Annuler l'abonnement ?", "downgradeBody": "Vous passerez au forfait Gratuit avec une limite de {{limit}} lots.", "archiveWarning": "Attention : vous avez {{current}} lots. Les {{excess}} lots excédentaires seront archivés (pas supprimés).", "confirmCancellation": "Confirmer l'annulation", "keepSubscription": "Conserver l'abonnement", "features": "Fonctionnalités de votre forfait", "needHelp": "Besoin d'aide ?", "helpBody": "Vous avez des questions sur la facturation ou besoin d'un forfait personnalisé ? Notre équipe est là pour vous aider." }
   }
 }

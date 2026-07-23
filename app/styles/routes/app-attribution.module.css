@@ -79,9 +79,11 @@
 }
 
 .dashboardShell {
-  max-width: 1320px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1384px;
   margin: 0 auto;
-  padding: 0 4px 88px;
+  padding: 0 clamp(16px, 3vw, 32px) 88px;
 }
 
 .pixelStatusShell {
@@ -120,8 +122,17 @@
   gap: 8px;
 }
 
-.inlineForm {
-  display: inline;
+.analyticsActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.analyticsActionButton {
+  width: max-content;
+  min-width: 0;
 }
 
 .customUtmBody {
@@ -517,6 +528,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
 }
 
 .sectionTitle {
@@ -855,4 +867,85 @@
   font-weight: 500;
   color: #5c6ac4;
   white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .dashboardShell {
+    padding-inline: 16px;
+  }
+
+  .dashboardChartGrid,
+  .dashboardActivityGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .headerRow {
+    align-items: stretch;
+  }
+
+  .comparePillSlot {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .analyticsActions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analyticsActionButton {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .analyticsActionButton:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .comparePillSlot .datePickerWrap,
+  .comparePillSlot .dateSelector {
+    width: auto;
+    min-width: 0;
+  }
+
+  .sectionHeader {
+    align-items: flex-start;
+  }
+
+  .customUtmBody {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboardShell {
+    padding-inline: 16px;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+  }
+
+  .sectionHeader > s-button {
+    width: 100%;
+  }
+
+  .datePopover {
+    right: auto;
+    left: 0;
+    width: min(280px, calc(100vw - 48px));
+    min-width: 0;
+  }
+}
+
+@media (max-width: 359px) {
+  .analyticsActions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .analyticsActionButton:first-child {
+    grid-column: auto;
+  }
 }

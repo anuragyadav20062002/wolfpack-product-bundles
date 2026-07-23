@@ -6,8 +6,7 @@ import { AppLogger } from "../../../lib/logger";
 import { fetchEmbedData } from "../../../lib/bundle-configure-loader.server";
 import { getSubscriptionInfoFromCache } from "../../../services/subscription-cache.server";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
-import { handleCreatePreviewPage } from "../app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
-import { handleRecordBundlePreview } from "../shared/bundle-preview-action.server";
+import { handleCreateFpbPreview, handleRecordBundlePreview } from "../shared/bundle-preview-action.server";
 import { saveShopAdminLocale } from "../../../services/admin-locale.server";
 import { handleCloneBundle, handleDeleteBundle } from "./handlers";
 import { DashboardPage } from "./DashboardPage";
@@ -93,7 +92,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     },
     select: {
       id: true, name: true, status: true, bundleType: true, createdAt: true,
-      shopifyProductId: true, shopifyProductHandle: true, shopifyPageHandle: true,
+      shopifyProductId: true, shopifyProductHandle: true,
       pricing: { select: { enabled: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -112,7 +111,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 
   const bundles = await bundlesPromise;
-
   const bundlesNeedingBackfill = bundles.filter(
     b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId && !b.shopifyProductHandle
   );
@@ -220,10 +218,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ success: false, error: "Unsupported Admin locale" }, { status: 400 });
     }
   }
-  if (intent === "createPreviewPage") {
+  if (intent === "createFpbPreview") {
     const bundleId = String(formData.get("bundleId") || "");
     if (!bundleId) return json({ success: false, error: "Missing bundleId" }, { status: 400 });
-    return handleCreatePreviewPage(admin, session, bundleId, "dashboard");
+    return handleCreateFpbPreview(admin, session, bundleId, "dashboard");
   }
   if (intent === "recordBundlePreview") {
     const bundleId = String(formData.get("bundleId") || "");

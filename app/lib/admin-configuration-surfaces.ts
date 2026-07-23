@@ -7,7 +7,6 @@ export type SettingsCard = {
   title: string;
   description: string;
   icon: string;
-  actionLabel: string;
 };
 
 export type SettingsField = {
@@ -90,21 +89,18 @@ export const SETTINGS_CARDS: SettingsCard[] = [
     title: "Design",
     description: "Modify and customize all design elements of the bundle here",
     icon: "edit",
-    actionLabel: "Configure",
   },
   {
     id: "language",
     title: "Language",
     description: "Configure all text, labels, and translations for your bundle here",
     icon: "globe",
-    actionLabel: "Configure",
   },
   {
     id: "controls",
     title: "Controls",
     description: "Change loading screen gif, add custom CSS, modify checkout settings and more",
     icon: "filter",
-    actionLabel: "Configure",
   },
 ];
 
@@ -199,11 +195,11 @@ export const DESIGN_CONFIGURATION: SettingsTab[] = [
     description: "Text token defaults for primary, secondary, and body labels.",
     fields: [
       { label: "Primary Font Size", value: "16", kind: "number" },
-      { label: "Primary Font Weight", value: "Bold", kind: "select" },
+      { label: "Primary Font Weight", value: "Bold", kind: "select", options: ["Regular", "Bold"] },
       { label: "Secondary Font Size", value: "14", kind: "number" },
-      { label: "Secondary Font Weight", value: "Bold", kind: "select" },
+      { label: "Secondary Font Weight", value: "Bold", kind: "select", options: ["Regular", "Bold"] },
       { label: "Body Font Size", value: "14", kind: "number" },
-      { label: "Body Font Weight", value: "Regular", kind: "select" },
+      { label: "Body Font Weight", value: "Regular", kind: "select", options: ["Regular", "Bold"] },
     ],
   },
   {
@@ -229,7 +225,7 @@ export const DESIGN_CONFIGURATION: SettingsTab[] = [
 
 export const EXPERT_COLOR_CONTROLS: Record<string, SettingsField[]> = {
   General: [
-    { key: "expert.navigationBanner.navigationBannerStepCompletionColor", label: "Completed step color", value: "#000000", kind: "color", description: "Background color for completed step indicators", guideUrl: "https://d3ks0ngva6go34.cloudfront.net/public/BundleDcpPreview.webp" },
+    { key: "expert.navigationBanner.navigationBannerStepCompletionColor", label: "Completed step color", value: "#000000", kind: "color", description: "Background color for completed step indicators", guideUrl: "/design-color-guide-general.avif" },
     { key: "expert.navigationBanner.navigationCheckColor", label: "Check Mark Color", value: "#FFFFFF", kind: "color", description: "Check mark icons displayed on completed bundle steps" },
     { key: "expert.navigationBanner.navigationBannerStepTextColor", label: "Step Text Color", value: "#000000", kind: "color", description: "Text color for step names and navigation labels" },
     { key: "expert.generalSettings.productPageTitleColor", label: "Product Page Title Color", value: "#000000", kind: "color", description: "Title text color on the bundle builder page" },
@@ -237,13 +233,13 @@ export const EXPERT_COLOR_CONTROLS: Record<string, SettingsField[]> = {
     { key: "expert.generalSettings.loadingBgColor", label: "Loading Screen Background Color", value: "transparent", kind: "color", description: "Background color bundle loading screen" },
     { key: "expert.generalSettings.conditionToastBgColor", label: "Condition Toast Background Color", value: "#000000", kind: "color", description: "Background color for condition toast" },
     { key: "expert.generalSettings.conditionToastTextColor", label: "Condition Toast Text Color", value: "#ffffff", kind: "color", description: "Text color for condition toast" },
-    { key: "expert.navigationBanner.tabsActiveBgColor", label: "Active Tab Background Color", value: "#000000", kind: "color", description: "Background color for the currently selected category tab", group: "Categories", guideUrl: "https://d3ks0ngva6go34.cloudfront.net/public/CategoriesDcpPreview.webp" },
+    { key: "expert.navigationBanner.tabsActiveBgColor", label: "Active Tab Background Color", value: "#000000", kind: "color", description: "Background color for the currently selected category tab", group: "Categories", guideUrl: "/design-color-guide-categories.avif" },
     { key: "expert.navigationBanner.tabsActiveTextColor", label: "Active Tab Text Color", value: "#F6f6f6", kind: "color", description: "Text color for the currently selected category tab", group: "Categories" },
     { key: "expert.navigationBanner.tabsInactiveBgColor", label: "Inactive Tab Background Color", value: "#FFFFFF", kind: "color", description: "Background color for unselected category tabs", group: "Categories" },
     { key: "expert.navigationBanner.tabsInactiveTextColor", label: "Inactive Tab Text Color", value: "#000000", kind: "color", description: "Text color for unselected category tabs", group: "Categories" },
   ],
   "Product Card": [
-    { key: "expert.productCard.productCardBgColor", label: "Background Color", value: "#ffffff", kind: "color", description: "Background color of individual product cards", guideUrl: "https://d3ks0ngva6go34.cloudfront.net/public/ProductCardDcpPreview.webp" },
+    { key: "expert.productCard.productCardBgColor", label: "Background Color", value: "#ffffff", kind: "color", description: "Background color of individual product cards", guideUrl: "/design-color-guide-product-card.avif" },
     { key: "expert.productCard.productCardTextColor", label: "Product Title Text Color", value: "#252525", kind: "color", description: "Text color for product names displayed on cards" },
     { key: "expert.productCard.productCardButtonColor", label: "Add Product Button Color", value: "#000000", kind: "color", description: "Color for the button on the product card" },
     { key: "expert.productCard.productCardButtonTextColor", label: "Add Product Button Text Color", value: "#ffffff", kind: "color", description: "Text color for the button on the product card" },
@@ -251,7 +247,7 @@ export const EXPERT_COLOR_CONTROLS: Record<string, SettingsField[]> = {
     { key: "expert.emptyStateCard.emptyStateCardTextColor", label: "Empty State Text Color", value: "#3E3E3E", kind: "color", description: "Text color for placeholder messages in empty product slots" },
   ],
   "Bundle Cart": [
-    { key: "expert.cartFooter.cartFooterBgColor", label: "Cart Background Color", value: "#ffffff", kind: "color", description: "Background color for bundle cart", guideUrl: "https://d3ks0ngva6go34.cloudfront.net/public/BundleCartDcpPreview.webp" },
+    { key: "expert.cartFooter.cartFooterBgColor", label: "Cart Background Color", value: "#ffffff", kind: "color", description: "Background color for bundle cart", guideUrl: "/design-color-guide-bundle-cart.avif" },
     { key: "expert.cartFooter.cartFooterTextColor", label: "Cart Text Color", value: "#000000", kind: "color", description: "Text color for cart content, totals, and labels" },
     { key: "expert.cartFooter.cartFooterNextButtonColor", label: "Next Button Color", value: "#000000", kind: "color", description: "Background color for the next step button" },
     { key: "expert.cartFooter.cartFooterNextButtonTextColor", label: "Next Button Text Color", value: "#ffffff", kind: "color", description: "Text color for the next step button" },
@@ -262,7 +258,7 @@ export const EXPERT_COLOR_CONTROLS: Record<string, SettingsField[]> = {
     { key: "expert.cartFooter.cartFooterDiscountProgressBarFilledColor", label: "Discount Progress Bar Filled Color", value: "#15A524", kind: "color", description: "Fill color for completed part of discount progress bar" },
   ],
   Upsell: [
-    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonBg", label: "Upsell Button Color", value: "#000000", kind: "color", description: "Background color for upsell buttons", guideUrl: "https://d3ks0ngva6go34.cloudfront.net/public/UpsellDcpPreview.webp" },
+    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonBg", label: "Upsell Button Color", value: "#000000", kind: "color", description: "Background color for upsell buttons", guideUrl: "/design-color-guide-upsell.avif" },
     { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonTextColor", label: "Upsell Button Text Color", value: "#ffffff", kind: "color", description: "Text color displayed on upsell buttons" },
     { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellFontColor", label: "Upsell Widget Body Text Color", value: "#000000", kind: "color", description: "Text color displayed on upsell widget" },
   ],

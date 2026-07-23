@@ -29,6 +29,12 @@ function makePayload(overrides: Record<string, string> = {}, isExpertControlsEna
   };
 }
 
+function expectGeneratedCssToInclude(css: string, declarations: string[]) {
+  declarations.forEach((declaration) => {
+    expect(css.includes(declaration)).toBe(true);
+  });
+}
+
 describe("buildSettingsDesignRuntime", () => {
   it("fans out brand colors to EB pageCustomization targets when expert controls are disabled", () => {
     const runtime = buildSettingsDesignRuntime(makePayload());
@@ -159,6 +165,34 @@ describe("buildSettingsDesignRuntime", () => {
   it("declares both WPB bundle types as Settings Design save targets", () => {
     expect(SETTINGS_DESIGN_BUNDLE_TYPES).toEqual(["product_page", "full_page"]);
   });
+
+  it("preserves unrelated pageCustomization roots while applying the Design patch", () => {
+    const runtime = buildSettingsDesignRuntime(makePayload(), {
+      banners: { landingPageImageSrc: "https://cdn.example.test/banner.webp" },
+      mixAndMatchData: { redirectToCartEnabled: true },
+      generalSettings: { customBehaviorFlag: true },
+    });
+    const pageCustomization = runtime.pageCustomization as any;
+
+    expect(pageCustomization.banners.landingPageImageSrc).toBe("https://cdn.example.test/banner.webp");
+    expect(pageCustomization.mixAndMatchData.redirectToCartEnabled).toBe(true);
+    expect(pageCustomization.generalSettings.customBehaviorFlag).toBe(true);
+    expect(pageCustomization.generalSettings.applyNewPageCustomization).toBe(true);
+  });
+
+  it("emits the EB quickSettings bridge alongside stylePresets", () => {
+    const runtime = buildSettingsDesignRuntime(makePayload());
+    const pageCustomization = runtime.pageCustomization as any;
+
+    expect(pageCustomization.quickSettings).toEqual({
+      isQuickSettingsEnabled: true,
+      colors: {
+        primaryColor: "#111111",
+        buttonBgColor: "#111111",
+        buttonTextColor: "#fafafa",
+      },
+    });
+  });
 });
 
 describe("Settings Design CSS variable aliases", () => {
@@ -166,31 +200,35 @@ describe("Settings Design CSS variable aliases", () => {
     const runtime = buildSettingsDesignRuntime(makePayload());
     const css = generateCSSFromSettings(runtime.cssSettings as any, "product_page");
 
-    expect(css).toContain("--product-card-bg-color: #ffffff");
-    expect(css).toContain("--product-card-border-radius: 11px");
-    expect(css).toContain("--product-card-image-border-radius: 9px");
-    expect(css).toContain("--product-card-image-fit: contain");
-    expect(css).toContain("--product-card-title-color: #222222");
-    expect(css).toContain("--product-card-title-font: 18px");
-    expect(css).toContain("--product-card-title-weight: 700");
-    expect(css).toContain("--product-card-button-bg-color: #111111");
-    expect(css).toContain("--product-card-button-text-color: #fafafa");
-    expect(css).toContain("--tabs-active-bg-color: #111111");
-    expect(css).toContain("--tabs-inactive-bg-color: #dddddd");
-    expect(css).toContain("--footer-next-btn-bg-color: #111111");
-    expect(css).toContain("--footer-next-btn-text-color: #fafafa");
-    expect(css).toContain("--empty-state-card-bg-color: #ffffff");
-    expect(css).toContain('body[wpb-mix-consolidated-design="true"]');
-    expect(css).toContain("--wpbMix-primary-color: var(--product-card-button-bg-color, #111111)");
-    expect(css).toContain("--wpbMix-button-border-radius: var(--product-card-button-border-radius, 7px)");
+    expectGeneratedCssToInclude(css, [
+      "--product-card-bg-color: #ffffff",
+      "--product-card-border-radius: 11px",
+      "--product-card-image-border-radius: 9px",
+      "--product-card-image-fit: contain",
+      "--product-card-title-color: #222222",
+      "--product-card-title-font: 18px",
+      "--product-card-title-weight: 700",
+      "--product-card-button-bg-color: #111111",
+      "--product-card-button-text-color: #fafafa",
+      "--tabs-active-bg-color: #111111",
+      "--tabs-inactive-bg-color: #dddddd",
+      "--footer-next-btn-bg-color: #111111",
+      "--footer-next-btn-text-color: #fafafa",
+      "--empty-state-card-bg-color: #ffffff",
+      'body[wpb-mix-consolidated-design="true"]',
+      "--wpbMix-primary-color: var(--product-card-button-bg-color, #111111)",
+      "--wpbMix-button-border-radius: var(--product-card-button-border-radius, 7px)",
+    ]);
   });
 
   it("emits the EB PDP_INPAGE font-size adjustment", () => {
     const runtime = buildSettingsDesignRuntime(makePayload());
     const css = generateCSSFromSettings(runtime.cssSettings as any, "product_page");
 
-    expect(css).toContain('body[wpb-mix-consolidated-design="true"][wpbmix-template-type="PDP_INPAGE"]');
-    expect(css).toContain("--wpbMix-primary-font-size: calc(var(--product-card-title-font, 16px) - 2px)");
-    expect(css).toContain("--wpbMix-body-font-size: calc(var(--product-card-variant-selector-font-size, 14px) - 2px)");
+    expectGeneratedCssToInclude(css, [
+      'body[wpb-mix-consolidated-design="true"][wpbmix-template-type="PDP_INPAGE"]',
+      "--wpbMix-primary-font-size: calc(var(--product-card-title-font, 16px) - 2px)",
+      "--wpbMix-body-font-size: calc(var(--product-card-variant-selector-font-size, 14px) - 2px)",
+    ]);
   });
 });

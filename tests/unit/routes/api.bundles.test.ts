@@ -40,7 +40,7 @@ describe("api.bundles.json", () => {
     } as any);
   });
 
-  it("includes shopifyPageHandle for active full-page bundles", async () => {
+  it("does not expose retired Shopify Page fields for active full-page bundles", async () => {
     mockFindMany().mockResolvedValue([
       {
         id: "bundle-1",
@@ -59,6 +59,6 @@ describe("api.bundles.json", () => {
     const body = await (response as Response).json();
 
     expect(body.success).toBe(true);
-    expect(body.bundles["bundle-1"].shopifyPageHandle).toBe("build-your-bundle");
+    expect(body.bundles["bundle-1"]).not.toHaveProperty("shopifyPageHandle");
   });
 });

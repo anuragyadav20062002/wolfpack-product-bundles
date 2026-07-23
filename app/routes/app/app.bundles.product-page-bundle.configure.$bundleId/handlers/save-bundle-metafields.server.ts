@@ -1,7 +1,6 @@
 import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import type { BundleStatus } from "../../../../constants/bundle";
 import { AppLogger } from "../../../../lib/logger";
-import db from "../../../../db.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -12,7 +11,6 @@ import {
 } from "../../../../services/bundles/standard-metafields.server";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { buildBundleBaseConfig } from "./runtime-config.server";
-import { syncBundleProductToShopify } from "./product-sync.server";
 
 type SaveBundleMetafieldSyncInput = {
   admin: ShopifyAdmin;
@@ -52,33 +50,12 @@ type SavedBundleForMetafieldSync = {
 
 export async function syncSavedBundleMetafields({
   admin,
-  bundleId,
-  finalStatus,
   updatedBundle,
   stepsData,
   stepConditionsData,
   discountData,
 }: SaveBundleMetafieldSyncInput) {
   if (!updatedBundle.shopifyProductId) return;
-
-  const productSyncResult = await syncBundleProductToShopify(
-    admin,
-    updatedBundle.shopifyProductId,
-    finalStatus,
-    updatedBundle.name,
-    updatedBundle.description,
-    bundleId,
-  );
-  if (
-    productSyncResult.handle &&
-    productSyncResult.handle !== updatedBundle.shopifyProductHandle
-  ) {
-    await db.bundle.update({
-      where: { id: bundleId },
-      data: { shopifyProductHandle: productSyncResult.handle },
-    });
-    updatedBundle.shopifyProductHandle = productSyncResult.handle;
-  }
 
   const bundleParentVariantId = await getBundleProductVariantId(
     admin,

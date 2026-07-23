@@ -33,6 +33,8 @@ export function PpbBundleBannerSettings() {
             </p>
             <FilePicker
               value={bundleBannerDesktopUrl || null}
+              uploadButtonAction="openPicker"
+              fitPreviewToTrigger
               onChange={(url) => {
                 setBundleBannerDesktopUrl(url ?? "");
                 markAsDirty();
@@ -49,6 +51,9 @@ export function PpbBundleBannerSettings() {
             </p>
             <FilePicker
               value={bundleBannerMobileUrl || null}
+              triggerIcon="mobile"
+              uploadButtonAction="openPicker"
+              fitPreviewToTrigger
               onChange={(url) => {
                 setBundleBannerMobileUrl(url ?? "");
                 markAsDirty();

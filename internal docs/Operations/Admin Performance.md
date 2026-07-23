@@ -1,7 +1,32 @@
 ---
+schema_version: 1
+id: admin-performance
 title: Admin Performance
 type: operations
-last_audited: 2026-07-10
+status: authoritative
+summary: Embedded Admin Web Vitals instrumentation, route-level LCP findings, and critical-path constraints.
+last_audited: 2026-07-23
+owners:
+  - engineering
+domains:
+  - admin
+  - performance
+systems:
+  - app-bridge
+  - remix
+source_paths:
+  - app/lib/admin-web-vitals-diagnostics.client.ts
+  - app/routes/app/app.settings/SettingsRoute.tsx
+  - app/routes/app/app.settings/DesignSettingsView.tsx
+  - app/routes/app/app.settings/DesignLivePreview.tsx
+related_docs:
+  - internal docs/Operations/LCP and CLS Playbook.md
+tags:
+  - web-vitals
+  - lcp
+keywords:
+  - wpbWebVitalsDebug
+  - settings
 ---
 
 # Admin Performance
@@ -78,7 +103,7 @@ Measured in the Shopify Admin chrome on `wolfpack-store-test-1` / SIT using
 | `/app/pricing` | Source audit: no first-viewport owned image | No image preload fix |
 | `/app/bundles/cart-transform` | Source audit: no first-viewport owned image | No image preload fix |
 | `/app/attribution` | Current local app candidate: critical funnel heading; historical candidates: inactive tracking body copy, deferred funnel hero title | Render the funnel heading in the route shell before analytics resolves; keep inactive/no-data copy out of the critical first-paint path; render the deferred funnel metrics without duplicating the late heading. |
-| `/app/settings` | Source audit: dynamic settings preview images are not route hero content | No speculative preload; measure a concrete settings subview before adding one |
+| `/app/settings` | Source audit: dynamic settings preview images are not route hero content | The complete Settings workspace, including Design, is lazy-loaded through one post-click boundary. Its representative preview uses local markup and CSS with no remote media, storefront iframe, widget runtime, or fake Images & GIFs loading state. Do not add speculative preloads; use repeated `?wpbWebVitalsDebug=1` samples for concrete settings-subview evidence. |
 | `/app/store-files` / `/app/upload-store-file` | Source audit: images are picker/file content, not initial route hero content | No route preload |
 | Configure routes | Source audit: dynamic product/template images depend on loaded bundle state and active section/modal | Do not globally preload; measure concrete FPB/PPB configure URLs and preload only confirmed above-fold candidates |
 
@@ -86,6 +111,59 @@ Pages without first-viewport owned media should be treated as text/bootstrap-bou
 unless a future debug run logs an owned image candidate. For text LCP pages, do
 not add image preloads speculatively; focus on loader critical path and reducing
 first-render JavaScript instead.
+
+## Settings Design Control Panel
+
+The Settings landing route renders a small Polaris card shell and keeps the
+workspace implementation behind one React lazy boundary. The 2026-07-23 local
+production build split the initial Settings route (`app.settings`, 2.99 kB /
+1.27 kB gzip) from the complete `SettingsRoute` workspace (81.39 kB / 18.60 kB
+gzip, plus 22.22 kB / 4.30 kB gzip CSS). The template-specific scene registry,
+fixture model, and local surface renderers account for the workspace increase.
+Design is statically part of that post-click workspace chunk, so entering Design
+does not wait for a second sequential JavaScript request. The workspace chunk is
+not required for the first Settings paint.
+
+The three landing cards are the complete interactive targets and do not render
+separate button-like `Configure` labels. After a card is selected, the Suspense
+boundary preserves the three-card footprint with lightweight local skeletons;
+do not replace this transition with a centered spinner because that collapses
+the established layout while the workspace chunk resolves.
+
+The Settings workspace owns the Design inspector/preview layout and the
+eight-template representative preview. Wide containers use three columns for
+section navigation, the larger preview surface, and the active fields. Medium
+containers place the preview across the first row with navigation and fields
+beneath it; phone containers stack preview, navigation, then fields. All
+breakpoints are container-driven because the usable width of a Shopify Admin
+iframe is independent of the browser's top-level viewport.
+
+The preview uses local fixture markup and media, canonical template descriptors
+derived from the storefront registries, and theme values from the normalized
+storefront Design runtime. Builder, Product Picker, Cart / Summary, Loading,
+Validation, and Upsell are deterministic representative surfaces rather than
+storefront interactions. Only slot templates include Product Picker. It does not
+fetch bundle data, load remote media, embed a storefront iframe, duplicate the
+widget runtime, mutate a cart, or persist preview state. Local Design editing and
+preview rendering therefore remain available when the shop has no storefront-ready
+bundle; only the separate Preview Bundle action requires one.
+
+Fixture product PNGs are rendered through `OptimisedImage`, so production builds
+emit AVIF/WebP siblings while preserving explicit dimensions. Keep those sources
+compact and local; do not preload them on the Settings landing route because the
+Design workspace remains behind the post-click lazy boundary.
+
+For interaction acceptance, measure at least ten cache-bypassed Design entries
+from card activation until the live preview controls and surface are usable.
+The click-to-preview target is p75 at or below `750ms`. Intent-based workspace
+prefetching is justified only if the single-boundary implementation misses that
+target in SIT.
+
+For local acceptance, collect at least ten cache-bypassed loads of
+`/app/settings?wpbWebVitalsDebug=1`, enter Design on each pass, and inspect the
+app-owned sample set. The planned Design target is LCP p75 at or below `2000ms`,
+with a hard failure above `2500ms`, and CLS below `0.1`. Shopify/App Bridge field
+metrics after a manual SIT deployment remain the final p75 source of truth.
 
 ## Removed Custom Telemetry
 

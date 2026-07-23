@@ -197,36 +197,7 @@ export async function handleSaveBundle(
       tierTextByLocaleByRuleId: discountData.tierTextByLocaleByRuleId ?? null,
     };
 
-    // Automatically set status to 'active' if bundle has configured steps
-    let finalStatus = bundleStatus as BundleStatus;
-    if (
-      bundleStatus === BundleStatus.DRAFT &&
-      stepsData &&
-      stepsData.length > 0
-    ) {
-      const hasConfiguredSteps = stepsData.some(
-        (step: any) =>
-          (step.StepProduct && step.StepProduct.length > 0) ||
-          (step.collections && step.collections.length > 0) ||
-          (Array.isArray(step.StepCategory) &&
-            step.StepCategory.some(
-              (cat: any) =>
-                (cat.products && cat.products.length > 0) ||
-                (cat.collections && cat.collections.length > 0),
-            )),
-      );
-      AppLogger.debug("[BUNDLE_CONFIG] Status evaluation:", {
-        originalStatus: bundleStatus,
-        hasConfiguredSteps,
-        stepsCount: stepsData.length,
-      });
-      if (hasConfiguredSteps) {
-        finalStatus = BundleStatus.ACTIVE;
-        AppLogger.debug(
-          "[BUNDLE_CONFIG] Auto-activating bundle with configured steps",
-        );
-      }
-    }
+    const finalStatus = bundleStatus as BundleStatus;
 
     // Get existing bundle to preserve shopifyProductId/Handle if not provided
     const existingBundle = await db.bundle.findUnique({

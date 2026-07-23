@@ -169,6 +169,68 @@ describe("cart transform runtime token service", () => {
     ]);
   });
 
+  it("validates hydrated category variants by matching the configured product when cached variants are empty", () => {
+    const selection = validateRuntimeTokenSelection(makeBundle({
+      steps: [
+        {
+          StepProduct: [],
+          StepCategory: [
+            {
+              products: [
+                {
+                  id: "gid://shopify/Product/5",
+                  variants: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }), {
+      components: [
+        {
+          variantId: "501",
+          productId: "gid://shopify/Product/5",
+          quantity: 1,
+        },
+      ],
+      addons: [],
+    });
+
+    expect(selection.components).toEqual([
+      { variantId: "gid://shopify/ProductVariant/501", quantity: 1 },
+    ]);
+  });
+
+  it("rejects hydrated variants that claim an unconfigured product", () => {
+    expect(() => validateRuntimeTokenSelection(makeBundle({
+      steps: [
+        {
+          StepProduct: [],
+          StepCategory: [
+            {
+              products: [
+                {
+                  id: "gid://shopify/Product/5",
+                  variants: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }), {
+      components: [
+        {
+          variantId: "501",
+          productId: "gid://shopify/Product/999",
+          quantity: 1,
+        },
+      ],
+      addons: [],
+    })).toThrow(/not part of bundle/i);
+  });
+
   it("rejects selected variants outside the bundle config", () => {
     expect(() => validateRuntimeTokenSelection(makeBundle(), {
       components: [{ variantId: "gid://shopify/ProductVariant/999", quantity: 1 }],
@@ -203,5 +265,39 @@ describe("cart transform runtime token service", () => {
       method: "percentage_off",
       value: 15,
     });
+  });
+
+  it("omits validation-only product IDs from the signed runtime token payload", () => {
+    const payload = buildRuntimeTokenPayload({
+      shop: "test-shop.myshopify.com",
+      bundle: makeBundle({
+        steps: [
+          {
+            StepProduct: [],
+            StepCategory: [
+              {
+                products: [
+                  {
+                    id: "gid://shopify/Product/5",
+                    variants: [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+      parentVariantId: "gid://shopify/ProductVariant/PARENT",
+      offerGroupId: "MIX-bundle-1_ABC",
+      bundleType: "product_page",
+      selection: {
+        components: [{ variantId: "501", productId: "gid://shopify/Product/5", quantity: 1 }],
+        addons: [],
+      },
+    });
+
+    expect(payload.components).toEqual([
+      { variantId: "gid://shopify/ProductVariant/501", quantity: 1 },
+    ]);
   });
 });

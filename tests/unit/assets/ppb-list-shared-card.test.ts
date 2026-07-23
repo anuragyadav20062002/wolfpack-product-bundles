@@ -112,6 +112,48 @@ describe('PPB List shared product cards', () => {
     expect(soldOutButton).toContain('Out of stock');
   });
 
+  it('honors disabled compare-at visibility for Product List rows', () => {
+    const target = new FakeTarget();
+    const context = createContext({
+      stepProductData: [[{
+        id: 'product-sale',
+        variantId: 'variant-sale',
+        title: 'Sale list product',
+        imageUrl: 'https://cdn.shopify.com/sale.jpg',
+        price: 1299,
+        compareAtPrice: 1599,
+      }]],
+      _shouldShowProductComparedAtPrice: () => false,
+    });
+
+    ProductPageInpageRenderMethods._renderInpageStepProducts.call(context, 0, target);
+
+    expect(target.innerHTML).toContain('Sale list product');
+    expect(target.innerHTML).toContain('$12.99');
+    expect(target.innerHTML).not.toContain('$15.99');
+  });
+
+  it('honors enabled compare-at visibility for Product List rows', () => {
+    const target = new FakeTarget();
+    const context = createContext({
+      stepProductData: [[{
+        id: 'product-sale',
+        variantId: 'variant-sale',
+        title: 'Sale list product',
+        imageUrl: 'https://cdn.shopify.com/sale.jpg',
+        price: 1299,
+        compareAtPrice: 1599,
+      }]],
+      _shouldShowProductComparedAtPrice: () => true,
+    });
+
+    ProductPageInpageRenderMethods._renderInpageStepProducts.call(context, 0, target);
+
+    expect(target.innerHTML).toContain('Sale list product');
+    expect(target.innerHTML).toContain('$12.99');
+    expect(target.innerHTML).toContain('$15.99');
+  });
+
   it('marks pending Product List product loads busy without visible loading copy', () => {
     const target = new FakeTarget();
     const loadStepProducts = jest.fn(() => new Promise(() => {}));

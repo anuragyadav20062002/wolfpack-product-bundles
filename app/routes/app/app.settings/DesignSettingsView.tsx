@@ -1,7 +1,8 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { DESIGN_CONFIGURATION, EXPERT_COLOR_CONTROLS } from "../../../lib/admin-configuration-surfaces";
-import styles from "../../../styles/routes/admin-configuration-surfaces.module.css";
 import { BundlePreviewModal, DesignFields, getDesignIconKey } from "./SettingsDesignFields";
+import { DesignLivePreview } from "./DesignLivePreview";
+import styles from "./DesignSettingsView.module.css";
 import { SettingsContextualSaveBar, SettingsToast } from "./SettingsFeedback";
 
 type PreviewBundle = { id: string; name: string; type: string; viewUrl: string | null };
@@ -53,53 +54,51 @@ export function DesignSettingsView({
   discardActiveSettingsChanges,
   saveActiveSettingsChanges,
 }: DesignSettingsViewProps) {
-const selectedDesignFields = isExpertColorControls && selectedDesignTab.title === "Brand Colors" && isExpertScopeActive
-  ? EXPERT_COLOR_CONTROLS[activeDesignScope] ?? EXPERT_COLOR_CONTROLS.General
-  : selectedDesignTab.fields;
-const isBrandColorsPanelGated = isExpertColorControls && selectedDesignTab.title === "Brand Colors" && !isExpertScopeActive;
-const resetSelectedDesignTab = () => {
-  setDesignFieldValues((current) => ({
-    ...current,
-    ...Object.fromEntries(selectedDesignFields.map((field) => [field.key ?? field.label, field.value ?? ""])),
-  }));
-};
+  const selectedDesignFields = isExpertColorControls && selectedDesignTab.title === "Brand Colors" && isExpertScopeActive
+    ? EXPERT_COLOR_CONTROLS[activeDesignScope] ?? EXPERT_COLOR_CONTROLS.General
+    : selectedDesignTab.fields;
+  const isBrandColorsPanelGated = isExpertColorControls && selectedDesignTab.title === "Brand Colors" && !isExpertScopeActive;
+  const hasPreviewableBundle = previewBundles.some((bundle) => Boolean(bundle.viewUrl));
+  const [activePreviewFieldKey, setActivePreviewFieldKey] = useState<string | null>(null);
+  const resetSelectedDesignTab = () => {
+    setDesignFieldValues((current) => ({
+      ...current,
+      ...Object.fromEntries(selectedDesignFields.map((field) => [field.key ?? field.label, field.value ?? ""])),
+    }));
+  };
 
-return (
-  <>
-    <ui-title-bar title="Design Control Panel" />
+  return (
     <main className={styles.page}>
       <header className={styles.hero}>
-        <div className={styles.settingsSubpageHeaderLeft}>
-          <button
-            type="button"
-            className={styles.settingsSubpageBackButton}
-            aria-label="Back to Settings"
+        <s-stack direction="inline" gap="small" alignItems="center">
+          <s-button
+            variant="tertiary"
+            icon="arrow-left"
+            accessibilityLabel="Back to Settings"
             onClick={() => setSettingsView("landing")}
-          >
-            <s-icon type="arrow-left" size="small"></s-icon>
-          </button>
-          <h1 className={styles.title}>Design Control Panel</h1>
-        </div>
-        <button type="button" className={styles.settingsPreviewButton} onClick={() => setIsPreviewModalOpen(true)}>
-          <s-icon type="view" size="small"></s-icon>
+          />
+          <s-heading>Design Control Panel</s-heading>
+        </s-stack>
+        <s-button icon="view" disabled={!hasPreviewableBundle} onClick={() => setIsPreviewModalOpen(true)}>
           Preview Bundle
-        </button>
+        </s-button>
       </header>
 
-      <section className={styles.designLayout} aria-label="Design">
-        <aside className={styles.designSidebar}>
-          <section className={styles.designSideCard}>
+      <section className={styles.layout} aria-label="Design">
+        <aside className={styles.inspectorNavigation}>
+          <section className={styles.navigationSection}>
             <h2>Bundle Design</h2>
             <p>Customize your bundle in a few clicks</p>
-            <div className={styles.designNavList} role="tablist" aria-label="Design sections">
+            <div className={styles.navList} role="tablist" aria-label="Design sections">
               {DESIGN_CONFIGURATION.map((tab) => (
                 <button
                   key={tab.title}
                   type="button"
-                  className={selectedDesignTab.title === tab.title && !isExpertScopeActive ? styles.designNavActive : styles.designNavButton}
+                  className={selectedDesignTab.title === tab.title && !isExpertScopeActive ? styles.navActive : styles.navButton}
                   onClick={() => {
                     setActiveDesignTab(tab.title);
                     setIsExpertScopeActive(false);
+                    setActivePreviewFieldKey(tab.fields[0] ? tab.fields[0].key ?? tab.fields[0].label : null);
                     if (tab.title === "Brand Colors" && isExpertColorControls) {
                       setDesignGateMessage("Disable Expert Color Controls to access brand colors.");
                       return;
@@ -107,7 +106,7 @@ return (
                     setDesignGateMessage(null);
                   }}
                 >
-                  <span className={styles.designNavIcon}>
+                  <span className={styles.navIcon}>
                     <s-icon type={getDesignIconKey(tab.title)} />
                   </span>
                   {tab.title}
@@ -115,45 +114,41 @@ return (
               ))}
             </div>
           </section>
-          <section className={styles.designSideCard}>
-            <label className={styles.designSwitchRow}>
-              <span>
-                <span className={styles.designSideTitle}>Expert Color Controls</span>
-                <span className={styles.designSideDescription}>Change colors of individual elements of the bundle</span>
-              </span>
-              <span className={styles.designExpertSwitch}>
-                <input
-                  type="checkbox"
-                  checked={isExpertColorControls}
-                  aria-label="Expert Color Controls"
-                  onChange={(event) => {
-                    const isChecked = event.currentTarget.checked;
-                    setIsExpertColorControls(isChecked);
-                    if (isChecked) {
-                      setActiveDesignTab("Brand Colors");
-                      setIsExpertScopeActive(false);
-                    }
-                    setDesignGateMessage(isChecked ? "Disable Expert Color Controls to access brand colors." : null);
-                  }}
-                />
-                <span aria-hidden="true" />
-              </span>
-            </label>
+          <section className={`${styles.navigationSection} ${styles.expertControl}`}>
+            <s-switch
+              label="Expert Color Controls"
+              details="Change colors of individual elements of the bundle"
+              checked={isExpertColorControls}
+              onChange={(event: Event) => {
+                const isChecked = (event.target as HTMLInputElement).checked;
+                setIsExpertColorControls(isChecked);
+                if (isChecked) {
+                  setActiveDesignTab("Brand Colors");
+                  setIsExpertScopeActive(false);
+                  setActivePreviewFieldKey(null);
+                } else {
+                  setActivePreviewFieldKey("Primary Color");
+                }
+                setDesignGateMessage(isChecked ? "Disable Expert Color Controls to access brand colors." : null);
+              }}
+            />
             {isExpertColorControls ? (
-              <div className={styles.designNavList} role="tablist" aria-label="Color control scopes">
+              <div className={`${styles.navList} ${styles.expertScopes}`} role="tablist" aria-label="Color control scopes">
                 {["General", "Product Card", "Bundle Cart", "Upsell"].map((scope) => (
                   <button
                     key={scope}
                     type="button"
-                    className={activeDesignScope === scope && selectedDesignTab.title === "Brand Colors" && isExpertScopeActive ? styles.designScopeActive : styles.designScopeButton}
+                    className={activeDesignScope === scope && selectedDesignTab.title === "Brand Colors" && isExpertScopeActive ? styles.scopeActive : styles.scopeButton}
                     onClick={() => {
                       setDesignGateMessage(null);
                       setActiveDesignTab("Brand Colors");
                       setActiveDesignScope(scope);
                       setIsExpertScopeActive(true);
+                      const firstField = EXPERT_COLOR_CONTROLS[scope]?.[0];
+                      setActivePreviewFieldKey(firstField ? firstField.key ?? firstField.label : null);
                     }}
                   >
-                    <span className={styles.designNavIcon}>
+                    <span className={styles.navIcon}>
                       <s-icon type={getDesignIconKey(scope)} />
                     </span>
                     {scope}
@@ -162,17 +157,22 @@ return (
               </div>
             ) : null}
           </section>
-          <button type="button" className={styles.designResetButton} onClick={resetSelectedDesignTab}>
+          <s-button variant="tertiary" tone="critical" onClick={resetSelectedDesignTab}>
             Reset to default
-          </button>
+          </s-button>
         </aside>
-        <section className={styles.designContentCard}>
+        <DesignLivePreview
+          fieldValues={designFieldValues}
+          isExpertControlsEnabled={isExpertColorControls}
+          activeFieldKey={activePreviewFieldKey}
+        />
+        <section className={styles.inspectorContent}>
           {isBrandColorsPanelGated || designGateMessage ? (
-            <div className={styles.designGateAlert} role="alert" aria-live="polite">
+            <s-banner tone="warning">
               {designGateMessage ?? "Disable Expert Color Controls to access brand colors."}
-            </div>
+            </s-banner>
           ) : null}
-          <div className={isBrandColorsPanelGated ? styles.designGatedPanel : undefined}>
+          <div className={isBrandColorsPanelGated ? styles.gatedPanel : undefined}>
             <DesignFields
               title={isExpertColorControls && selectedDesignTab.title === "Brand Colors" && isExpertScopeActive ? activeDesignScope : selectedDesignTab.title}
               fields={selectedDesignFields}
@@ -181,6 +181,7 @@ return (
                 if (isBrandColorsPanelGated) {
                   return;
                 }
+                setActivePreviewFieldKey(label);
                 setDesignFieldValues((current) => ({ ...current, [label]: value }));
               }}
             />
@@ -195,6 +196,5 @@ return (
       />
       <SettingsToast message={saveMessage} onDismiss={() => setSaveMessage(null)} />
     </main>
-  </>
-);
+  );
 }

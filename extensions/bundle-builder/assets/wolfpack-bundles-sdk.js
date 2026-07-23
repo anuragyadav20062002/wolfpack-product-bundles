@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 5.0.172
- * Built   : 2026-07-13
+ * Version : 5.0.202
+ * Built   : 2026-07-22
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.172';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '5.0.202';
 (function (window) {
   'use strict';
 
@@ -312,8 +312,12 @@ const ConditionValidator = (function () {
     const normalizedConditionValue = _normalizeConditionRuleValue(conditionType, step.conditionValue);
     const normalizedConditionValue2 = _normalizeConditionRuleValue(conditionType, step.conditionValue2);
 
-    // No explicit condition configured → only enforce minQuantity; no upper bound
-    if (!step.conditionType || !step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
+    // No rule configured means the step is optional. Persisted min/max fields
+    // describe the retired rule and must not recreate it at navigation time.
+    if (!step.conditionType) return true;
+
+    // An incomplete active condition keeps the existing minimum guard.
+    if (!step.conditionOperator || !_isPositiveConditionValue(step.conditionValue)) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
@@ -358,6 +362,15 @@ const ConditionValidator = (function () {
       allowed: proposed <= limit,
       limit,
     };
+  }
+
+  function isProductQuantityIncreaseDisabled(validateQuantityPerProduct, currentQuantity) {
+    const current = Number(currentQuantity) || 0;
+    return !canUpdateProductQuantity(
+      validateQuantityPerProduct,
+      current,
+      current + 1,
+    ).allowed;
   }
 
   // ─── Private helpers ──────────────────────────────────────────────────────
@@ -427,6 +440,7 @@ const ConditionValidator = (function () {
     isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
+    isProductQuantityIncreaseDisabled,
     _formatStepLimitToast,
   };
 }());
@@ -2378,10 +2392,16 @@ class VariantSelectorComponent {
     if (variants.length <= 1 || optionNames.length === 0) return '';
 
     const primaryIdx = VariantSelectorComponent._primaryIdx(optionNames, primaryOptionName);
-    const selectedLabel = options.placeholder || '';
+    const selectedVariant = variants.find(variant => String(variant.id) === String(product.variantId)) || variants[0];
+    const selectedPrimaryValue = selectedVariant?.[`option${primaryIdx}`] || selectedVariant?.title || '';
+    const selectedLabel = options.placeholder || selectedPrimaryValue;
     const productId = product.id || product.variantId;
+    const mobileMode = options.mobileMode === 'inline' ? 'inline' : 'drawer';
 
-    const optionHtml = variants.map((variant) => {
+    const dropdownVariants = options.hideUnavailable === true
+      ? variants.filter(VariantSelectorComponent._isSelectableVariant)
+      : variants;
+    const optionHtml = dropdownVariants.map((variant) => {
       const primaryValue = variant[`option${primaryIdx}`] || variant.title || '';
       const value = optionNames.length > 1 && variant.title ? variant.title : primaryValue;
       const imageUrl = VariantSelectorComponent._variantImageUrl(variant);
@@ -2395,7 +2415,7 @@ class VariantSelectorComponent {
     }).join('');
 
     return `
-      <div class="vs-wrapper vs-wrapper--standard" data-vs-product-id="${VariantSelectorComponent._esc(productId)}" data-vs-primary-idx="${primaryIdx}" data-vs-placeholder="${VariantSelectorComponent._esc(selectedLabel)}">
+      <div class="vs-wrapper vs-wrapper--standard" data-vs-product-id="${VariantSelectorComponent._esc(productId)}" data-vs-primary-idx="${primaryIdx}" data-vs-placeholder="${VariantSelectorComponent._esc(selectedLabel)}" data-vs-mobile-mode="${mobileMode}">
         <button type="button" class="vs-selected" aria-expanded="false">
           <span class="vs-selected-label">${VariantSelectorComponent._esc(selectedLabel)}</span>
           <span class="vs-selected-icon" aria-hidden="true">
@@ -2688,7 +2708,9 @@ class VariantSelectorComponent {
   }
 
   static handleStandardSelectorClick(selected, cardEl, product, onVariantChange) {
-    if (VariantSelectorComponent.isMobileViewport()) {
+    const wrapper = selected.closest('.vs-wrapper--standard');
+    const opensInlineOnMobile = wrapper?.dataset.vsMobileMode === 'inline';
+    if (VariantSelectorComponent.isMobileViewport() && !opensInlineOnMobile) {
       VariantSelectorComponent.openStandardMobileDrawer(selected, cardEl, product, onVariantChange);
       return;
     }

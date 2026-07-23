@@ -177,6 +177,7 @@ export function FpbTemplateDialog({
                 </div>
                 <div className={fullPageBundleStyles.templateDialogFooter}>
                   <s-button
+                    type="button"
                     variant="primary"
                     disabled={!pendingDesignPresetId || undefined}
                     loading={
@@ -364,6 +365,7 @@ export function FpbTemplateDialog({
                     Back
                   </s-button>
                   <s-button
+                    type="button"
                     variant="primary"
                     disabled={!pendingDesignPresetId || undefined}
                     loading={

@@ -1,9 +1,10 @@
 import { json } from "@remix-run/node";
-import { useNavigate } from "@remix-run/react";
+import { useNavigate, useRouteLoaderData } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import styles from "../../styles/routes/app-index.module.css";
 import { navigateBackOrFallback } from "../../lib/navigation";
 import { openSupportChat } from "../../lib/support-chat.client";
+import type { loader as appLoader } from "./app";
 
 // This route handles /app → shows the Welcome landing screen for intentional visits,
 // and silently redirects to the dashboard when Shopify's auth flow lands here.
@@ -25,6 +26,14 @@ import { openSupportChat } from "../../lib/support-chat.client";
 export const loader = async () => {
   return json(null);
 };
+
+export function getInitialAppDestination(
+  isAuthFlow: boolean,
+  firstCreateTourEligible: boolean,
+): "/app/onboarding" | "/app/dashboard" | null {
+  if (!isAuthFlow) return null;
+  return firstCreateTourEligible ? "/app/onboarding" : "/app/dashboard";
+}
 
 const FEATURES = [
   {
@@ -67,6 +76,7 @@ const FEATURES = [
 
 export default function AppIndex() {
   const navigate = useNavigate();
+  const appData = useRouteLoaderData<typeof appLoader>("routes/app/app");
   // Start false so the server renders nothing (no SSR flash during auth bounces).
   // The useEffect below flips this to true only for intentional /app visits.
   const [showLanding, setShowLanding] = useState(false);
@@ -78,12 +88,16 @@ export default function AppIndex() {
     const isAuthFlow =
       params.has("id_token") || params.has("host") || params.has("shop");
 
-    if (isAuthFlow) {
-      navigate("/app/dashboard", { replace: true });
+    const destination = getInitialAppDestination(
+      isAuthFlow,
+      appData?.firstCreateTourEligible === true,
+    );
+    if (destination) {
+      navigate(destination, { replace: true });
     } else {
       setShowLanding(true);
     }
-  }, [navigate]);
+  }, [appData?.firstCreateTourEligible, navigate]);
 
   if (!showLanding) return null;
 

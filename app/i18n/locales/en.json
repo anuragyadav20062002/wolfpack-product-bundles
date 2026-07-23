@@ -9,7 +9,7 @@
     "events": "Updates & FAQs"
   },
   "dashboard": {
-    "title": "Dashboard: Wolfpack Bundle Builder",
+    "title": "Dashboard: Wolfpack Bundles",
     "subtitle": "Access your bundles, Customer support and more.",
     "header": {
       "syncCollections": "Sync Collections",
@@ -27,10 +27,15 @@
       "imageAlt": "Parth, Founder",
       "imageLoading": "Loading Parth profile photo"
     },
-    "appEmbeds": {
-      "headingMain": "App Embeds",
-      "headingHint": "(Turn ON to make bundle visible on store)",
-      "instruction": "Click on Online store → Edit Theme → Enable the toggle and Save it"
+    "supportIssues": {
+      "title": "Stuck Somewhere?",
+      "featureNotWorking": "Feature not working?",
+      "bundleNotShowing": "Bundle not showing on store?",
+      "uninstallHelp": "Want to uninstall?",
+      "storeDesignHelp": "Want to get things designed as per your store?",
+      "analyticsNotWorking": "Analytics not working?",
+      "description": "Allow us to fix all your issues.",
+      "cta": "Talk to a support expert"
     },
     "filters": {
       "status": "Status",
@@ -108,6 +113,87 @@
       "save": "Save",
       "saveSuccess": "Admin language saved",
       "saveError": "Unable to save Admin language"
+    }
+  },
+  "settingsDcp": {
+    "preview": {
+      "heading": "Live preview",
+      "unsaved": "Unsaved changes appear here.",
+      "bundleType": {
+        "label": "Bundle type",
+        "landingPage": "Landing Page",
+        "productPage": "Product Page"
+      },
+      "templateLabel": "Template",
+      "surfaceSelector": {
+        "label": "Preview surface",
+        "builder": "Builder",
+        "product-picker": "Product picker",
+        "cart-summary": "Cart / summary",
+        "loading": "Loading",
+        "validation": "Validation",
+        "upsell": "Upsell"
+      },
+      "templates": {
+        "standard": "Standard",
+        "classic": "Classic",
+        "compact": "Compact",
+        "horizontal": "Horizontal",
+        "productList": "Product List",
+        "productGrid": "Product Grid",
+        "horizontalSlots": "Horizontal Slots",
+        "verticalSlots": "Vertical Slots"
+      },
+      "viewport": {
+        "label": "Preview viewport",
+        "desktop": "Desktop preview",
+        "mobile": "Mobile preview"
+      },
+      "previewOnly": "Preview only",
+      "loading": "Loading preview",
+      "notApplicable": "This setting is not used by the selected template.",
+      "surface": {
+        "bundleName": "Build your perfect bundle",
+        "description": "Choose products to build your bundle.",
+        "navigationLabel": "Bundle steps",
+        "slotsLabel": "Bundle slots",
+        "stepOne": "1. Choose products",
+        "stepTwo": "2. Review bundle",
+        "stepOneShort": "Products",
+        "stepTwoShort": "Extras",
+        "stepThreeShort": "Review",
+        "categoryOne": "Essentials",
+        "categoryTwo": "Favourites",
+        "categoryThree": "Extras",
+        "selectionRule": "Choose at least 2 products",
+        "progressCount": "1 of 2 selected",
+        "variant": "Standard",
+        "products": {
+          "first": { "name": "Everyday essential", "price": "$24.00", "compareAt": "$28.00" },
+          "second": { "name": "Popular addition", "price": "$18.00", "compareAt": "$22.00" },
+          "third": { "name": "Customer favourite", "price": "$16.00", "compareAt": "$20.00" },
+          "fourth": { "name": "Bundle extra", "price": "$12.00", "compareAt": "$15.00" }
+        },
+        "add": "Add",
+        "added": "Added ×1",
+        "upsellTitle": "Complete your bundle",
+        "upsellBody": "Add a popular extra.",
+        "upsellEyebrow": "Recommended for your bundle",
+        "summary": "Bundle summary",
+        "selectedCount": "2 items",
+        "discount": "You are $8 away from 15% off",
+        "totalLabel": "Bundle total",
+        "totalPrice": "$42.00",
+        "total": "2 products selected · $42.00",
+        "back": "Back",
+        "next": "Continue",
+        "emptySlot": "Choose a product",
+        "chooseProduct": "Choose a product",
+        "slotNumber": "Product {{number}}",
+        "addBundle": "Add bundle to cart",
+        "loadingBody": "Preparing your bundle…",
+        "validationMessage": "Add at least 2 products on this step"
+      }
     }
   },
   "tooltips": {
@@ -213,13 +299,11 @@
   },
   "createBundle": {
     "title": "Create Bundle", "dashboard": "Dashboard", "heading": "Select bundle builder type", "help": "How do bundle builder types work?",
-    "steps": { "details": "Bundle name\n& Description", "configuration": "Configuration", "pricing": "Pricing", "assets": "Assets" },
     "validation": { "required": "Bundle name is required", "minLength": "Bundle name must be at least 3 characters" },
-    "fields": { "name": "Bundle name", "namePlaceholder": "Eg:- T-shirt bundle", "description": "Description", "descriptionPlaceholder": "Eg:- This is a T-shirt bundle" },
+    "fields": { "name": "Bundle name", "namePlaceholder": "Eg:- T-shirt bundle" },
     "bundleType": {
-      "heading": "Bundle Type",
-      "productPage": { "title": "Product page bundle builder", "description": "Display bundle builder on existing product pages (recommended for most stores)", "alt": "Product page bundle" },
-      "fullPage": { "title": "Full page bundle builder", "description": "Create a dedicated landing page for your bundle with tabs and full customization", "alt": "Full page bundle" }
+      "productPage": { "title": "Product page bundle builder", "description": "Display bundle builder on existing product pages (recommended for most stores)" },
+      "fullPage": { "title": "Full page bundle builder", "description": "Create a dedicated landing page for your bundle with tabs and full customization" }
     },
     "actions": { "selected": "Selected", "select": "Select", "next": "Next" }
   },
@@ -235,6 +319,6 @@
     "success": { "heading": "Welcome to the Grow Plan!", "body": "Your subscription has been activated. You now have access to all premium features.", "bundleLimit": "Bundle Limit", "bundleLimitValue": "20 bundles", "designControl": "Design Control", "fullAccess": "Full Access", "support": "Support", "priority": "Priority" },
     "cards": { "currentPlan": "Current Plan", "freePrice": "Free", "freeDescription": "For bundle sales up to $500/month - free until you grow", "includes": "Includes:", "freePlan": "Free Plan", "mostPopular": "Most Popular", "perMonth": "/ month", "growDescription": "For bundle sales above $500/month - no revenue cap", "growIncludes": "Everything in Free, plus:", "upgradeToGrow": "Upgrade to Grow", "cancelAnytimeBilled": "Cancel anytime. Billed through Shopify." },
     "cta": { "heading": "Ready to grow your bundle business?", "body": "Upgrade to the Grow plan for double the bundles, full design customization, and priority support.", "highlights": { "bundles": "20 bundles", "design": "Design Control Panel", "support": "Priority Support" }, "upgrade": "Upgrade to Grow - ${{price}}/month", "cancelAnytime": "Cancel anytime" },
-    "route": { "title": "Subscription & Billing", "dashboard": "Dashboard", "currentPlan": "Current Plan", "active": "Active", "inactive": "Inactive", "bundleUsage": "Bundle Usage", "bundleCount": "{{current}} / {{limit}} bundles", "limitReached": "You've reached your bundle limit.", "limitUpgrade": "Upgrade to Grow for more bundles.", "overview": "Bundle Overview", "activeBundles": "Active Bundles", "totalSteps": "Total Steps", "productPage": "Product Page", "fullPage": "Full Page", "cancelSubscription": "Cancel Subscription", "cancelHeading": "Cancel Subscription?", "downgradeBody": "You will be downgraded to the Free plan with a limit of {{limit}} bundles.", "archiveWarning": "Warning: You have {{current}} bundles. The excess {{excess}} bundles will be archived (not deleted).", "confirmCancellation": "Confirm Cancellation", "keepSubscription": "Keep Subscription", "features": "Your Plan Features", "wantMore": "Want more features?", "viewPlans": "View all plans", "needHelp": "Need Help?", "helpBody": "Have questions about billing or need a custom plan? Our team is here to help." }
+    "route": { "title": "Subscription & Billing", "dashboard": "Dashboard", "currentPlan": "Current Plan", "active": "Active", "inactive": "Inactive", "bundleUsage": "Bundle Usage", "bundleCount": "{{current}} / {{limit}} bundles", "limitReached": "You've reached your bundle limit.", "limitUpgrade": "Upgrade to Grow for more bundles.", "overview": "Bundle Overview", "activeBundles": "Active Bundles", "totalSteps": "Total Steps", "productPage": "Product Page", "fullPage": "Full Page", "cancelSubscription": "Cancel Subscription", "cancelHeading": "Cancel Subscription?", "downgradeBody": "You will be downgraded to the Free plan with a limit of {{limit}} bundles.", "archiveWarning": "Warning: You have {{current}} bundles. The excess {{excess}} bundles will be archived (not deleted).", "confirmCancellation": "Confirm Cancellation", "keepSubscription": "Keep Subscription", "features": "Your Plan Features", "needHelp": "Need Help?", "helpBody": "Have questions about billing or need a custom plan? Our team is here to help." }
   }
 }

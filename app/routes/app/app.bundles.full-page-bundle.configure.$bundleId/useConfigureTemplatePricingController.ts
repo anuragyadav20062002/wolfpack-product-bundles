@@ -9,6 +9,7 @@ import fullPageBundleStyles from "../../../styles/routes/full-page-bundle-config
 import { FPB_DESIGN_CONTROL_PANEL_URL } from "./configure-constants";
 import { buildVisibilityDisplayConfiguration } from "./visibility-helpers";
 import type { ConfigureBundleFlowDraft } from "./configure-flow-types";
+import { runAfterSaveBarLeaveConfirmation } from "../../../lib/admin-savebar-navigation.client";
 
 export function useConfigureTemplatePricingController(
   flow: ConfigureBundleFlowDraft,
@@ -79,12 +80,12 @@ export function useConfigureTemplatePricingController(
     const modalElement = selectTemplateModalRef.current as HTMLElement;
     return Array.from(
       modalElement.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        'button, s-button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       ),
     ).filter(
       (element) =>
         !element.hasAttribute("disabled") &&
-        element.tabIndex >= 0 &&
+        (element.tagName === "S-BUTTON" || element.tabIndex >= 0) &&
         window.getComputedStyle(element).display !== "none" &&
         window.getComputedStyle(element).visibility !== "hidden",
     );
@@ -158,8 +159,8 @@ export function useConfigureTemplatePricingController(
     setTemplateSaveError,
   ]);
   const openDesignControlPanel = useCallback(() => {
-    navigate(FPB_DESIGN_CONTROL_PANEL_URL);
-  }, [navigate]);
+    void runAfterSaveBarLeaveConfirmation(flow.shopify, () => navigate(FPB_DESIGN_CONTROL_PANEL_URL));
+  }, [flow.shopify, navigate]);
 
   useEffect(() => {
     if (isSelectTemplateModalOpen) {

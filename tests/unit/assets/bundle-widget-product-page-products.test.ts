@@ -55,10 +55,14 @@ function processProductPageProductsForStep(
   products: StorefrontProduct[],
   step: WidgetStep,
   trackInventoryOnAddToCart = false,
+  hideOutOfStockProducts = true,
 ): any[] {
   return ProductPageProductDataMethods.processProductsForStep.call({
     extractId,
-    _getProductPageControls: () => ({ trackInventoryOnAddToCart }),
+    _getProductPageControls: () => ({
+      trackInventoryOnAddToCart,
+      hideOutOfStockProducts,
+    }),
   }, products, step);
 }
 
@@ -164,6 +168,59 @@ describe('processProductPageProductsForStep', () => {
     ], { displayVariantsAsIndividual: false }, true);
 
     expect(products).toEqual([]);
+  });
+
+  it('keeps unavailable variants in grouped product selectors when hide out-of-stock products is disabled', () => {
+    const products = processProductPageProductsForStep([
+      {
+        id: 'gid://shopify/Product/8322633760964',
+        title: 'Massage Oil',
+        imageUrl: 'https://cdn.example/massage-oil.jpg',
+        variants: [
+          {
+            id: 'gid://shopify/ProductVariant/1',
+            title: 'Grapefruit',
+            price: '25.00',
+            available: true,
+            quantityAvailable: 4,
+            currentlyNotInStock: false,
+          },
+          {
+            id: 'gid://shopify/ProductVariant/2',
+            title: 'Pepper',
+            price: '25.00',
+            available: false,
+            quantityAvailable: 0,
+            currentlyNotInStock: false,
+          },
+          {
+            id: 'gid://shopify/ProductVariant/3',
+            title: 'Rosemary',
+            price: '25.00',
+            available: false,
+            quantityAvailable: 0,
+            currentlyNotInStock: false,
+          },
+        ],
+        options: [{ name: 'Scent' }],
+      },
+    ], { displayVariantsAsIndividual: false }, false, false);
+
+    expect(products).toHaveLength(1);
+    expect(products[0]).toMatchObject({
+      title: 'Massage Oil',
+      variantId: '1',
+      available: true,
+    });
+    expect(products[0].variants.map((variant: StorefrontVariant) => ({
+      id: variant.id,
+      title: variant.title,
+      available: variant.available,
+    }))).toEqual([
+      { id: '1', title: 'Grapefruit', available: true },
+      { id: '2', title: 'Pepper', available: false },
+      { id: '3', title: 'Rosemary', available: false },
+    ]);
   });
 });
 

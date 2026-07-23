@@ -7,9 +7,13 @@ const {
   formatProductPageStepValidationToast,
 } = require('../../../app/assets/widgets/product-page/methods/modal-state-methods.js');
 const {
+  ProductPageLayoutShellMethods,
   shouldUseCascadeStepFlow,
   getCascadeStepNavigationState,
 } = require('../../../app/assets/widgets/product-page/methods/layout-shell-methods.js');
+const {
+  ProductPageSelectionMethods,
+} = require('../../../app/assets/widgets/product-page/methods/selection-methods.js');
 
 function makeConditionContext(overrides: Record<string, unknown> = {}) {
   return {
@@ -143,6 +147,62 @@ describe('PPB Product List step conditions', () => {
     })).toEqual({ targetStepIndex: 1, blocked: false, isFinal: false });
   });
 
+  it('routes Product List auto-next through the in-page step flow instead of the modal bottom sheet', () => {
+    const context = {
+      ...ProductPageSelectionMethods,
+      selectedBundle: {
+        validateQuantityPerProduct: null,
+        steps: [
+          {
+            autoNextStepOnConditionMet: true,
+            conditionType: 'quantity',
+            conditionOperator: 'greater_than_or_equal_to',
+            conditionValue: 1,
+          },
+          {
+            conditionType: 'quantity',
+            conditionOperator: 'equal_to',
+            conditionValue: 1,
+          },
+        ],
+      },
+      selectedProducts: [{}, {}],
+      stepProductData: [[{
+        id: 'gid://shopify/Product/9001',
+        parentProductId: 'gid://shopify/Product/9001',
+        variantId: 'gid://shopify/ProductVariant/7001',
+      }]],
+      normalizeSelectionKey: jest.fn((value: string) => value),
+      _getDirectDefaultRequiredQuantity: jest.fn(() => null),
+      getVariantAvailable: jest.fn(() => ({ available: null, outOfStock: false })),
+      getSelectedQuantity: jest.fn(() => 0),
+      validateStepCondition: jest.fn(() => true),
+      setSelectedQuantity: jest.fn(function setSelectedQuantity(stepIndex: number, selectionKey: string, quantity: number) {
+        this.selectedProducts[stepIndex][selectionKey] = quantity;
+      }),
+      updateProductQuantityDisplay: jest.fn(),
+      _renderDirectDefaultProducts: jest.fn(),
+      renderModalTabs: jest.fn(),
+      updateModalNavigation: jest.fn(),
+      updateModalFooterMessaging: jest.fn(),
+      updateAddToCartButton: jest.fn(),
+      updateFooterMessaging: jest.fn(),
+      _syncFreeGiftSlotCard: jest.fn(),
+      findProductBySelectionKey: jest.fn(() => ({
+        parentProductId: 'gid://shopify/Product/9001',
+      })),
+      _usesCascadeStepFlow: jest.fn(() => true),
+      navigateCascadeStep: jest.fn(() => true),
+      _autoProgressBottomSheet: jest.fn(),
+      _maybeAutoAddAfterLastStep: jest.fn(),
+    } as any;
+
+    context.updateProductSelection(0, 'gid://shopify/ProductVariant/7001', 1);
+
+    expect(context.navigateCascadeStep).toHaveBeenCalledWith(1);
+    expect(context._autoProgressBottomSheet).not.toHaveBeenCalled();
+  });
+
   it('moves backward without validating the current Product List step', () => {
     expect(getCascadeStepNavigationState({
       currentStepIndex: 1,
@@ -150,6 +210,39 @@ describe('PPB Product List step conditions', () => {
       stepCount: 2,
       isCurrentStepValid: false,
     })).toEqual({ targetStepIndex: 0, blocked: false, isFinal: false });
+  });
+
+  it('restores focus to the active Product List step after its step strip rerenders', () => {
+    const originalDocument = global.document;
+    const replacementButtons = [{ focus: jest.fn() }, { focus: jest.fn() }];
+    global.document = createStepFlowDocument() as unknown as Document;
+    const context = {
+      ...ProductPageLayoutShellMethods,
+      currentStepIndex: 0,
+      selectedBundle: {
+        steps: [{ name: 'Step 1' }, { name: 'Step 2' }],
+      },
+      elements: {
+        stepsContainer: {
+          querySelectorAll: jest.fn(() => replacementButtons),
+        },
+      },
+      validateStep: jest.fn(() => true),
+      isStepAccessible: jest.fn(() => true),
+      renderSteps: jest.fn(),
+      renderFooter: jest.fn(),
+      updateAddToCartButton: jest.fn(),
+    } as any;
+
+    try {
+      const header = context._createCascadeStepFlowHeader();
+      header.children[1].dispatch('click');
+
+      expect(context.currentStepIndex).toBe(1);
+      expect(replacementButtons[1].focus).toHaveBeenCalledTimes(1);
+    } finally {
+      global.document = originalDocument;
+    }
   });
 
   it('reports the final Product List step instead of navigating past it', () => {
@@ -180,4 +273,55 @@ describe('PPB Product List step conditions', () => {
       conditionValue: 1,
     })).toBe('Add exactly 01 products on this step');
   });
+
+  it('uses active Product Page quantity validation language when provided', () => {
+    const resolveText = jest.fn((key, fallback) => ({
+      conditionQuantityGreaterThanOrEqualTo: 'Choose at least {{conditionQuantity}} items',
+    }[key] || fallback));
+
+    expect(formatProductPageStepValidationToast({
+      conditionType: 'quantity',
+      conditionOperator: 'greater_than_or_equal_to',
+      conditionValue: 2,
+    }, resolveText)).toBe('Choose at least 02 items');
+  });
+
+  it('uses active Product Page amount validation language when provided', () => {
+    const resolveText = jest.fn((key, fallback) => ({
+      conditionAmountGreaterThanOrEqualTo: 'Choose products worth {{conditionAmount}}',
+    }[key] || fallback));
+
+    expect(formatProductPageStepValidationToast({
+      conditionType: 'amount',
+      conditionOperator: 'greater_than_or_equal_to',
+      conditionValue: 300,
+    }, resolveText)).toBe('Choose products worth 300');
+  });
 });
+
+function createStepFlowDocument() {
+  return {
+    createElement: (tagName: string) => {
+      const listeners = new Map<string, () => void>();
+      return {
+        tagName: tagName.toUpperCase(),
+        children: [] as any[],
+        className: '',
+        classList: { toggle: jest.fn() },
+        disabled: false,
+        setAttribute: jest.fn(),
+        addEventListener(name: string, listener: () => void) {
+          listeners.set(name, listener);
+        },
+        appendChild(child: any) {
+          this.children.push(child);
+          return child;
+        },
+        dispatch(name: string) {
+          listeners.get(name)?.();
+        },
+        set innerHTML(_value: string) {},
+      };
+    },
+  };
+}

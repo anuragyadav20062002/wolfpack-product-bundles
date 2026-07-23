@@ -799,6 +799,7 @@ processProductsForStep(products, step) {
       const processedOptions = deriveProductOptionNames(product);
 
       return product.variants
+        .filter(variant => this.isVariantSelectableForInventory(variant))
         .map(variant => {
           // Storefront API: prioritize variant image, fallback to product featured image.
           // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
@@ -811,7 +812,7 @@ processProductsForStep(products, step) {
             || product.images?.[0]?.url
             || product.images?.[0]?.src
             || product.images?.[0]?.originalSrc
-            || 'https://via.placeholder.com/150';
+            || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
           return {
             id: this.extractId(variant.id),
@@ -837,11 +838,12 @@ processProductsForStep(products, step) {
           };
         });
     } else {
-      // Display product with the first sellable variant when possible, but keep
-      // fully unavailable products visible so their title/image/price stay intact.
-      const defaultVariant = this.getFirstAvailableVariant(product)
-        || product.variants?.[0]
-        || null;
+      // Grouped cards require at least one sellable variant. This also removes
+      // tracked zero-stock products when the global inventory control is active.
+      const defaultVariant = this.getFirstAvailableVariant(product);
+      if (Array.isArray(product?.variants) && product.variants.length > 0 && !defaultVariant) {
+        return [];
+      }
 
       // Storefront API: prioritize variant image, fallback to product featured image.
       // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
@@ -854,7 +856,7 @@ processProductsForStep(products, step) {
         || product.images?.[0]?.url
         || product.images?.[0]?.src
         || product.images?.[0]?.originalSrc
-        || 'https://via.placeholder.com/150';
+        || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
       // Process variants array for variant selection in modal
       const processedVariants = (product.variants || []).map(normalizeVariant);
@@ -919,7 +921,10 @@ isVariantOutOfStock(product) {
 
 getVariantAvailable(stepIndex, variantId) {
   const products = this.stepProductData[stepIndex] || [];
-  const product = products.find(p => (p.variantId || p.id) === variantId);
+  const requestedVariantKey = variantLookupKey({ id: variantId });
+  const product = products.find(p => variantLookupKey(p) === requestedVariantKey)
+    || products.flatMap(p => Array.isArray(p?.variants) ? p.variants : [])
+      .find(variant => variantLookupKey(variant) === requestedVariantKey);
   if (!product) {
     return { available: null, outOfStock: false, acceptsBackorder: false };
   }

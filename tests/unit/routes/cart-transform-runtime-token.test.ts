@@ -170,6 +170,46 @@ describe("cart transform runtime token route", () => {
     });
   });
 
+  it("returns a token for a product-page selection hydrated from a configured category product", async () => {
+    mockDb.bundle.findFirst.mockResolvedValue(makeBundle({
+      steps: [
+        {
+          StepProduct: [],
+          StepCategory: [
+            {
+              products: [
+                {
+                  id: "gid://shopify/Product/5",
+                  variants: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }));
+
+    const response = await action({
+      request: makeSignedRequest({
+        bundleId: "bundle-1",
+        bundleType: "product_page",
+        offerGroupId: "MIX-bundle-1_ABC",
+        components: [{ variantId: 501, productId: "gid://shopify/Product/5", quantity: 1 }],
+      }),
+      params: {},
+      context: {},
+    } as any) as Response;
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    const secret = generateCartTransformRuntimeTokenSecret("test-shop.myshopify.com", "test_api_secret");
+    expect(verifyRuntimeCartToken(body.token, secret)).toMatchObject({
+      bundleType: "product_page",
+      offerGroupId: "MIX-bundle-1_ABC",
+      components: [{ variantId: "gid://shopify/ProductVariant/501", quantity: 1 }],
+    });
+  });
+
   it("returns a token for a valid full-page runtime selection", async () => {
     mockDb.bundle.findFirst.mockResolvedValue(makeBundle({ bundleType: "full_page" }));
 

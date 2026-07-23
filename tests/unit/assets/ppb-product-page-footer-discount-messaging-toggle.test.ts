@@ -132,7 +132,7 @@ describe('PPB product-page discount messaging rendering', () => {
     });
   });
 
-  xit('renders stepped markup when step_based is enabled', () => {
+  it('renders stepped markup when step_based is enabled', () => {
     withDocumentShim(() => {
       const context = createBaseContext();
       context.selectedBundle.messaging.displayOptions.progressBar.type = 'step_based';

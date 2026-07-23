@@ -1,7 +1,34 @@
 ---
+schema_version: 1
+id: eb-settings-design-reference
 title: EB Settings Design Reference
 type: reference
-last_audited: 2026-06-04
+status: authoritative
+summary: Live EB Settings Design request, state, and storefront-mapping contract used to implement Wolfpack Design settings.
+last_audited: 2026-07-23
+owners:
+  - engineering
+domains:
+  - admin
+  - settings
+systems:
+  - design-settings
+  - storefront-runtime
+source_paths:
+  - app/lib/settings-design-contract.ts
+  - app/lib/settings-design-runtime.ts
+  - app/routes/app/app.settings.tsx
+  - app/routes/app/app.settings/SettingsDesignFields.tsx
+  - app/routes/app/app.settings/design-preview-model.ts
+  - public/design-color-guide-*.png
+related_docs:
+  - internal docs/Operations/Admin Performance.md
+tags:
+  - design-settings
+  - runtime-contract
+keywords:
+  - pageCustomization
+  - stylePresets
 ---
 
 # EB Settings Design Reference
@@ -17,7 +44,14 @@ Evidence sources:
 
 ## Store-Level Contract
 
-EB Settings -> Design is store-level, not per bundle. A save from the Design Control Panel posts the full page-customization document to:
+EB Settings -> Design is store-level, not per bundle. The Admin reads the full
+page-customization document from:
+
+```text
+GET https://prod.backend.giftbox.giftkart.app/api/pageCustomization/read?shopName={shop}
+```
+
+A save from the Design Control Panel posts the full document to:
 
 ```text
 POST https://prod.backend.giftbox.giftkart.app/api/pageCustomization/update?shopName={shop}
@@ -40,6 +74,32 @@ banners
 stylePresets
 templateLevelConfig
 ```
+
+The read response also carries a `quickSettings` bridge and the feature flag
+used by the consolidated runtime:
+
+```json
+{
+  "quickSettings": {
+    "isQuickSettingsEnabled": true,
+    "colors": {
+      "primaryColor": "#000000",
+      "buttonBgColor": "#000000",
+      "buttonTextColor": "#ffffff"
+    }
+  },
+  "generalSettings": {
+    "applyNewPageCustomization": true
+  }
+}
+```
+
+Updates are full-document writes. A Design save must merge its owned fields
+into the current document and preserve every unrelated root, including bundle
+configuration, add-ons, banners, template configuration, and mix-and-match
+data. Wolfpack applies the same merged Design runtime atomically to its
+`product_page` and `full_page` DesignSettings rows so both storefront surfaces
+receive one store-level state.
 
 The same save also posts loading/control-related data to:
 
@@ -109,6 +169,59 @@ The EB Design page exposes image guide links rather than text docs. All visible 
 | Product Card | `https://d3ks0ngva6go34.cloudfront.net/public/ProductCardDcpPreview.webp` |
 | Bundle Cart | `https://d3ks0ngva6go34.cloudfront.net/public/BundleCartDcpPreview.webp` |
 | Upsell | `https://d3ks0ngva6go34.cloudfront.net/public/UpsellDcpPreview.webp` |
+
+Wolfpack does not load those competitor assets. The Design field column renders
+an exact `Show Colour Guide` hyperlink in a compact visual-reference callout
+after each applicable scope's controls. Each hyperlink opens its Wolfpack-owned
+AVIF guide in a new tab:
+
+| Scope | Wolfpack guide |
+| --- | --- |
+| Expert General | `/design-color-guide-general.avif` |
+| Categories | `/design-color-guide-categories.avif` |
+| Product Card | `/design-color-guide-product-card.avif` |
+| Bundle Cart | `/design-color-guide-bundle-cart.avif` |
+| Upsell | `/design-color-guide-upsell.avif` |
+
+The tracked PNG files in `public/` are the source assets. The existing
+`scripts/optimise-public-images.mjs` build step emits their ignored AVIF
+siblings, which are the paths rendered by the Admin UI.
+
+## Local Template Preview Contract
+
+The Design Control Panel preview is independent from storefront-ready bundle
+records. It uses deterministic local fixture data and eight descriptors aligned
+with the canonical template selection keys. FPB previews represent Standard,
+Classic, Compact, and Horizontal side-footer structures. PPB previews represent
+Product List, Product Grid, Horizontal Slots, and Vertical Slots product-page
+structures.
+
+The preview consumes the normalized output of `buildSettingsDesignRuntime`
+rather than maintaining a separate partial color mapper. A field-target registry
+associates every editable preview-relevant control with its semantic surface,
+applicable template set, and representative Builder, Product Picker, Cart /
+Summary, Loading, Validation, or Upsell surface. The surface selector exposes
+only scenes supported by the selected template. A template change preserves a
+valid surface and otherwise returns to Builder. Disabled loading-GIF placeholders
+are not treated as configurable preview fields.
+
+Descriptor identity and layout modes come from `mapTemplateSelection` and the
+FPB/PPB storefront template registries. The Admin adapter owns only preview
+composition details: semantic scene regions, supported surfaces, neutral PDP
+framing, fixture columns, and field focus targets. It does not establish a
+second template identity contract.
+
+The deterministic fixture covers multiple steps and categories, discount tiers,
+selected products with quantity controls, unselected products, empty slots,
+validation copy, and an upsell. Product images are tracked local PNG sources
+rendered through `OptimisedImage`; production builds generate ignored AVIF and
+WebP siblings. The public FPB/PPB template screenshots remain visual references
+and are never rendered as previews.
+
+The local preview deliberately does not import the storefront widget runtime,
+fetch bundle data, embed an iframe, or reproduce cart mutations. The separate
+Preview Bundle action remains the path to a real storefront bundle and is
+disabled when no storefront URL exists.
 
 ## Style Presets
 

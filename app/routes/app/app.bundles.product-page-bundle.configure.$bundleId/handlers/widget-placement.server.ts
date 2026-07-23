@@ -53,6 +53,16 @@ export async function handleValidateWidgetPlacement(
       );
     }
 
+    if (!result.widgetInstalled) {
+      return json(
+        {
+          success: false,
+          message: result.message,
+        },
+        { status: 400 },
+      );
+    }
+
     return json({
       success: true,
       productUrl: result.productUrl,

@@ -22,7 +22,8 @@ describe("Full Page widget cart display properties", () => {
   it("emits EB public bundle cart properties without step attribution", () => {
     const source = readFullPageWidgetSources();
 
-    expect(source).toContain("Box: String(itemNumber)");
+    expect(source).toContain("if (shouldIncludeBundleQuantityCartProperties(this)) {");
+    expect(source).toContain("properties.Box = String(itemNumber);");
     expect(source).toContain("'_bundleName': bundleName");
     expect(source).toContain("'_wolfpackProductBundle:prodQty': String(quantity)");
     expect(source).toContain("'_wolfpackProductBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`");

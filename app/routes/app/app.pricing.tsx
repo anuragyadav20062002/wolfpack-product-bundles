@@ -181,8 +181,9 @@ function PricingBody({
         />
       )}
 
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
-        <s-stack direction="block" gap="large">
+      <s-query-container containerName="pricing-page">
+        <div className={pricingStyles.pageShell}>
+          <s-stack direction="block" gap="large">
           <SubscriptionQuotaCard
             currentBundleCount={currentBundleCount}
             bundleLimit={bundleLimit}
@@ -205,15 +206,16 @@ function PricingBody({
           <FeatureComparisonTable />
 
           <FAQSection />
-        </s-stack>
-      </div>
+          </s-stack>
+        </div>
+      </s-query-container>
     </>
   );
 }
 
 function PricingSkeleton() {
   return (
-    <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
+    <div className={pricingStyles.pageShell}>
       <s-stack direction="block" gap="large">
         <s-section>
           <s-stack direction="block" gap="base">

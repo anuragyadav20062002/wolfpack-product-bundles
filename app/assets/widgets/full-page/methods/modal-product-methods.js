@@ -185,6 +185,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
       {
         variantSelectorHtml,
         stockBadgeHtml: stockBadge,
+        showCompareAtPrice: this.selectedBundle?.showProductComparedAtPrice === true,
         addButtonText: outOfStock ? 'Out of stock' : this.getProductAddButtonText(),
         addDisabled,
         decreaseDisabled: currentQuantity <= 0,

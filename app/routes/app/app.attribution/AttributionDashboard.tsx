@@ -1,5 +1,6 @@
 import { Await, useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
 import { useState, useMemo, useEffect, useRef, Suspense } from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import "../../../components/analytics/shared/tokens.css";
 import {
   FunnelHero,
@@ -115,7 +116,7 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
 
   return (
     <div ref={containerRef} className={styles.dateSelector}>
-      <s-button onClick={() => setPopoverOpen((v) => !v)}>
+      <s-button icon="calendar" onClick={() => setPopoverOpen((v) => !v)}>
         {triggerLabel}
       </s-button>
 
@@ -175,6 +176,69 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
   );
 }
 
+interface BackfillWindowModalProps {
+  days: number;
+  from?: string;
+  to?: string;
+  isSubmitting: boolean;
+  onConfirm: () => void;
+}
+
+export function BackfillWindowModal({
+  days,
+  from,
+  to,
+  isSubmitting,
+  onConfirm,
+}: BackfillWindowModalProps) {
+  const selectedWindow = formatRangeLabel(days, from, to);
+
+  return (
+    <s-modal
+      id="analytics-backfill-window-modal"
+      heading="Backfill analytics window"
+      size="base"
+    >
+      <s-button
+        slot="primary-action"
+        variant="primary"
+        icon="refresh"
+        loading={isSubmitting || undefined}
+        disabled={isSubmitting || undefined}
+        commandFor="analytics-backfill-window-modal"
+        command="--hide"
+        onClick={onConfirm}
+      >
+        Backfill selected window
+      </s-button>
+      <s-button
+        slot="secondary-actions"
+        commandFor="analytics-backfill-window-modal"
+        command="--hide"
+      >
+        Close
+      </s-button>
+
+      <s-stack direction="block" gap="base">
+        <s-banner heading={`Selected window: ${selectedWindow}`} tone="info">
+          This queries Shopify orders for the selected period and creates attribution records that Analytics may have missed.
+        </s-banner>
+        <s-unordered-list>
+          <s-list-item>
+            Matches order line items to bundles and imports available revenue, landing-page, and UTM details.
+          </s-list-item>
+          <s-list-item>
+            Existing attribution records are skipped, so running the same window again does not create duplicates.
+          </s-list-item>
+          <s-list-item>
+            Shopify orders and storefront tracking are not modified.
+          </s-list-item>
+        </s-unordered-list>
+      </s-stack>
+    </s-modal>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────
 
 export function removeCustomUtmParameter(
@@ -225,7 +289,10 @@ export function CustomUtmTrackingCard({
   }>();
   const [input, setInput] = useState(customUtmParameters.join("\n"));
   const [savedParameters, setSavedParameters] = useState(customUtmParameters);
+  const shopify = useAppBridge();
   const inputAnalysis = useMemo(() => analyzeCustomUtmInput(input), [input]);
+  const savedInput = savedParameters.join("\n");
+  const isDirty = input !== savedInput;
 
   useEffect(() => {
     setInput(customUtmParameters.join("\n"));
@@ -233,11 +300,21 @@ export function CustomUtmTrackingCard({
   }, [customUtmParameters]);
 
   useEffect(() => {
-    if (Array.isArray(fetcher.data?.customUtmParameters)) {
+    if (fetcher.data?.success && Array.isArray(fetcher.data.customUtmParameters)) {
       setInput(fetcher.data.customUtmParameters.join("\n"));
       setSavedParameters(fetcher.data.customUtmParameters);
     }
   }, [fetcher.data]);
+
+  useEffect(() => {
+    void (isDirty
+      ? shopify.saveBar.show("analytics-custom-utm-save-bar")
+      : shopify.saveBar.hide("analytics-custom-utm-save-bar"));
+  }, [isDirty, shopify]);
+
+  useEffect(() => () => {
+    void shopify.saveBar.hide("analytics-custom-utm-save-bar");
+  }, [shopify]);
 
   const isSaving = fetcher.state !== "idle";
   const feedback = fetcher.data?.error ?? fetcher.data?.message;
@@ -248,9 +325,7 @@ export function CustomUtmTrackingCard({
     ? "Currently tracking"
     : "No custom attributes are configured yet.";
 
-  function submitCustomUtmParameters(nextInput: string, nextSavedParameters: string[]) {
-    setSavedParameters(nextSavedParameters);
-    setInput(nextInput);
+  function submitCustomUtmParameters(nextInput: string) {
     fetcher.submit(
       {
         intent: "saveCustomUtms",
@@ -262,14 +337,16 @@ export function CustomUtmTrackingCard({
 
   function handleSaveSubmit(event?: { preventDefault: () => void }) {
     event?.preventDefault();
-    submitCustomUtmParameters(input, inputAnalysis.accepted);
+    submitCustomUtmParameters(input);
   }
 
   function handleRemoveSavedParameter(parameterToRemove: string) {
     const nextParameters = removeCustomUtmParameter(savedParameters, parameterToRemove);
-    const nextInput = nextParameters.join("\n");
+    setInput(nextParameters.join("\n"));
+  }
 
-    submitCustomUtmParameters(nextInput, nextParameters);
+  function handleDiscard() {
+    setInput(savedInput);
   }
 
   return (
@@ -283,6 +360,7 @@ export function CustomUtmTrackingCard({
         </div>
         <s-button
           variant="secondary"
+          icon="info"
           commandFor="custom-utm-attributes-help"
           command="--show"
         >
@@ -342,30 +420,17 @@ export function CustomUtmTrackingCard({
               </p>
             ) : null}
           </div>
-          <s-stack direction="inline" alignItems="center" gap="small-100">
-            <s-button
-              variant="primary"
-              onClick={() => handleSaveSubmit()}
-            >
-              <span className={styles.customUtmSaveButtonContent}>
-                <span
-                  className={styles.customUtmSaveButtonSpinner}
-                  aria-hidden={!isSaving}
-                  data-visible={isSaving ? "true" : "false"}
-                >
-                  <s-spinner size="base" />
-                </span>
-                <span>Save custom attributes</span>
-              </span>
-            </s-button>
-            {feedback ? (
-              <span className={fetcher.data?.error ? styles.errorText : styles.successText}>
-                {feedback}
-              </span>
-            ) : null}
-          </s-stack>
+          {feedback ? (
+            <span className={fetcher.data?.error ? styles.errorText : styles.successText}>
+              {feedback}
+            </span>
+          ) : null}
         </fetcher.Form>
       </div>
+      <ui-save-bar id="analytics-custom-utm-save-bar">
+        <button variant="primary" onClick={() => handleSaveSubmit()} disabled={isSaving}>Save</button>
+        <button onClick={handleDiscard} disabled={isSaving}>Discard</button>
+      </ui-save-bar>
       <s-modal
         id="custom-utm-attributes-help"
         heading="Custom UTM attributes"
@@ -430,6 +495,14 @@ function AttributionDashboardContent({
     customUtmParameters,
   } = data;
   const navigate = useNavigate();
+  const shopify = useAppBridge();
+  const exportFetcher = useFetcher<{
+    success?: boolean;
+    csv?: string;
+    filename?: string;
+    error?: string;
+  }>();
+  const backfillFetcher = useFetcher<{ success?: boolean; message?: string; error?: string }>();
 
   const [compare, setCompare] = useState(true);
 
@@ -445,6 +518,47 @@ function AttributionDashboardContent({
 
   const hasNoData = summary.totalOrders === 0 && summary.prevTotalOrders === 0;
 
+  useEffect(() => {
+    const result = exportFetcher.data;
+    if (!result) return;
+    if (!result.success || !result.csv || !result.filename) {
+      if (result.error) {
+        shopify.toast.show(result.error, { isError: true, duration: 5000 });
+      }
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(new Blob([result.csv], {
+      type: "text/csv;charset=utf-8",
+    }));
+    const downloadLink = document.createElement("a");
+    downloadLink.href = objectUrl;
+    downloadLink.download = result.filename;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+    URL.revokeObjectURL(objectUrl);
+    shopify.toast.show("Analytics CSV exported");
+  }, [exportFetcher.data, shopify]);
+
+  function handleBackfillConfirm() {
+    backfillFetcher.submit(
+      from && to
+        ? { intent: "backfill", from, to }
+        : { intent: "backfill", days: String(days) },
+      { method: "post" },
+    );
+  }
+
+  function handleExport() {
+    exportFetcher.submit(
+      from && to
+        ? { intent: "export", from, to }
+        : { intent: "export", days: String(days) },
+      { method: "post" },
+    );
+  }
+
   return (
     <div className={styles.dashboardShell}>
         <div className={styles.dashboardStack}>
@@ -455,57 +569,64 @@ function AttributionDashboardContent({
           {/* Date range selector + Compare toggle + Export */}
           <div className={styles.headerRow}>
             <div className={styles.comparePillSlot}>
+              <div className={styles.datePickerWrap}>
+                <DateRangeSelector days={days} from={from} to={to} />
+              </div>
               {compare && comparePeriodLabel && (
                 <span className={styles.comparePill}>
                   vs {comparePeriodLabel}
                 </span>
               )}
             </div>
-            <s-stack direction="inline" alignItems="center" gap="small-100">
-              <form
-                method="post"
-                className={styles.inlineForm}
-                onSubmit={(e) => {
-                  if (!window.confirm("Reconcile orders from Shopify for the selected analytics window? Existing rows are skipped.")) {
-                    e.preventDefault();
-                  }
-                }}
-              >
-                <input type="hidden" name="intent" value="backfill" />
-                {from && to ? (
-                  <>
-                    <input type="hidden" name="from" value={from} />
-                    <input type="hidden" name="to" value={to} />
-                  </>
-                ) : (
-                  <input type="hidden" name="days" value={String(days)} />
-                )}
-                <s-button variant="secondary">Backfill window</s-button>
-              </form>
-              <form method="post" className={styles.inlineForm}>
-                <input type="hidden" name="intent" value="export" />
-                {from && to ? (
-                  <>
-                    <input type="hidden" name="from" value={from} />
-                    <input type="hidden" name="to" value={to} />
-                  </>
-                ) : (
-                  <input type="hidden" name="days" value={String(days)} />
-                )}
-                <s-button variant="secondary">Export CSV</s-button>
-              </form>
-              <button
-                className={`${styles.compareToggle}${compare ? ` ${styles.compareToggleActive}` : ""}`}
-                onClick={() => setCompare(v => !v)}
-                type="button"
-              >
-                Compare
-              </button>
-              <div className={styles.datePickerWrap}>
-                <DateRangeSelector days={days} from={from} to={to} />
+            <div className={styles.analyticsActions}>
+              <div className={styles.analyticsActionButton}>
+                <s-button
+                  inlineSize="fill"
+                  variant={compare ? "primary" : "secondary"}
+                  icon={compare ? "check" : "chart-line"}
+                  onClick={() => setCompare(v => !v)}
+                >
+                  Compare {compare ? "on" : "off"}
+                </s-button>
               </div>
-            </s-stack>
+              <div className={styles.analyticsActionButton}>
+                <s-button
+                  inlineSize="fill"
+                  variant="secondary"
+                  icon="download"
+                  loading={exportFetcher.state !== "idle" || undefined}
+                  disabled={exportFetcher.state !== "idle" || undefined}
+                  onClick={handleExport}
+                >
+                  Export CSV
+                </s-button>
+              </div>
+              <div className={styles.analyticsActionButton}>
+                <s-button
+                  inlineSize="fill"
+                  variant="secondary"
+                  icon="refresh"
+                  loading={backfillFetcher.state !== "idle" || undefined}
+                  commandFor="analytics-backfill-window-modal"
+                  command="--show"
+                >
+                  Backfill window
+                </s-button>
+              </div>
+            </div>
           </div>
+          <BackfillWindowModal
+            days={days}
+            from={from}
+            to={to}
+            isSubmitting={backfillFetcher.state !== "idle"}
+            onConfirm={handleBackfillConfirm}
+          />
+          {backfillFetcher.data?.message ? (
+            <s-banner tone="success">{backfillFetcher.data.message}</s-banner>
+          ) : backfillFetcher.data?.error ? (
+            <s-banner tone="critical">{backfillFetcher.data.error}</s-banner>
+          ) : null}
 
           {/* ────────── Revamped analytics sections (wpb-analytics-revamp-1) ─────── */}
 

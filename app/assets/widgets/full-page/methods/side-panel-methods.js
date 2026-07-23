@@ -23,6 +23,15 @@ import {
 } from '../../shared/engine/cart-lines.js';
 import { shouldDisplayClassicFixedBundleRawTotal } from '../shared/summary-pricing-display.js';
 
+export function shouldUseSharedDesktopSummarySlotTiles({
+  designPreset,
+  productSlotsEnabled,
+} = {}) {
+  if (productSlotsEnabled !== true) return false;
+
+  const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
+  return preset === 'STANDARD' || preset === 'COMPACT' || preset === 'HORIZONTAL';
+}
 
 export const fullPageSidePanelMethods = {
 renderSidePanel(panel) {
@@ -61,6 +70,10 @@ renderSidePanel(panel) {
     !isMobileSheet;
   const summaryEmptyStateMode = this.getSummarySidebarEmptyStateMode();
   const useInlineSummarySlots = summaryEmptyStateMode === 'slots';
+  const useSharedDesktopSummarySlotTiles = shouldUseSharedDesktopSummarySlotTiles({
+    designPreset: this.getFullPageDesignPreset(),
+    productSlotsEnabled: useInlineSummarySlots,
+  });
 
   panel.classList.toggle('full-page-side-panel--inline-slots', useInlineSummarySlots);
   panel.classList.toggle('full-page-side-panel--skeleton-list', !useInlineSummarySlots);
@@ -230,7 +243,7 @@ renderSidePanel(panel) {
     productsContainer.classList.toggle('side-panel-products--inline-slots', useInlineSummarySlots);
     productsContainer.classList.toggle('side-panel-products--skeleton-list', !useInlineSummarySlots);
 
-    if (isStandardDesktopSidebar && useInlineSummarySlots) {
+    if (useSharedDesktopSummarySlotTiles) {
       this._renderStandardSidebarSlotTiles(productsContainer, allSelectedProducts);
     } else if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
@@ -301,7 +314,10 @@ renderSidePanel(panel) {
           const removeBtn = document.createElement('button');
           removeBtn.className = 'side-panel-product-remove';
           removeBtn.type = 'button';
-          removeBtn.setAttribute('aria-label', `Delete ${summaryTitle || 'product'}`);
+          removeBtn.setAttribute(
+            'aria-label',
+            this.getSummaryProductRemoveButtonLabel(summaryTitle)
+          );
           const removalState = this.getSummaryProductRemovalState(item);
           if (!removalState.canRemove) {
             removeBtn.classList.add('side-panel-product-remove--disabled');
@@ -326,7 +342,7 @@ renderSidePanel(panel) {
         mode: summaryEmptyStateMode,
       });
     }
-    if (isHorizontalPreset) {
+    if (isHorizontalPreset && !useSharedDesktopSummarySlotTiles) {
       const requiredSlots = Math.max(
         totalQuantity + 1,
         activeStep?.maxQuantity || activeStep?.minQuantity || 2,
@@ -592,6 +608,13 @@ getSummaryProductRemovalState(item = {}) {
     targetStepName,
     blockedMessage: canRemove ? '' : `Remove This Product From ${targetStepName}`,
   };
+},
+
+getSummaryProductRemoveButtonLabel(summaryTitle = '') {
+  const normalizedTitle = typeof summaryTitle === 'string'
+    ? summaryTitle.trim()
+    : '';
+  return `Delete ${normalizedTitle || 'product'}`;
 },
 
 removeSummarySelectedProduct(item = {}, summaryTitle = '') {

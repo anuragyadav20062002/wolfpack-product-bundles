@@ -26,6 +26,7 @@ const {
   isStepConditionSatisfied,
   getAllowedQuantityPerProduct,
   canUpdateProductQuantity,
+  isProductQuantityIncreaseDisabled,
   OPERATORS,
 } = ConditionValidator;
 
@@ -144,6 +145,12 @@ describe('canUpdateProductQuantity — per-product validation', () => {
   it('always allows decreases and removals', () => {
     expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 1 }, 2, 1).allowed).toBe(true);
     expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 1 }, 1, 0).allowed).toBe(true);
+  });
+
+  it('disables the next increment only when the configured per-product limit is reached', () => {
+    expect(isProductQuantityIncreaseDisabled({ isEnabled: true, allowedQuantity: 3 }, 2)).toBe(false);
+    expect(isProductQuantityIncreaseDisabled({ isEnabled: true, allowedQuantity: 3 }, 3)).toBe(true);
+    expect(isProductQuantityIncreaseDisabled({ isEnabled: false, allowedQuantity: 1 }, 99)).toBe(false);
   });
 });
 
@@ -270,12 +277,18 @@ describe('canUpdateQuantity — unknown operator', () => {
 // ─── isStepConditionSatisfied — no condition ─────────────────────────────────
 
 describe('isStepConditionSatisfied — no condition', () => {
-  it('falls back to minQuantity (default 1) with no conditionType', () => {
-    // No condition → defaults to minQuantity:1, so empty selections fail
-    expect(isStepConditionSatisfied({ conditionType: null, conditionOperator: EQ, conditionValue: 2 }, {})).toBe(false);
-    // With at least 1 selected, it passes
+  it('allows an empty step when no rule is configured', () => {
+    expect(isStepConditionSatisfied({
+      conditionType: null,
+      conditionOperator: null,
+      conditionValue: null,
+      minQuantity: 1,
+      maxQuantity: 1,
+    }, {})).toBe(true);
+
+    // Stale quantity fields must not silently recreate a removed step rule.
+    expect(isStepConditionSatisfied({ conditionType: null, conditionOperator: EQ, conditionValue: 2 }, {})).toBe(true);
     expect(isStepConditionSatisfied({ conditionType: null, conditionOperator: EQ, conditionValue: 2 }, { A: 1 })).toBe(true);
-    // With explicit minQuantity: 0, empty selections pass (truly optional)
     expect(isStepConditionSatisfied({ conditionType: null, conditionOperator: EQ, conditionValue: 2, minQuantity: 0 }, {})).toBe(true);
   });
 
@@ -530,7 +543,7 @@ describe('non-positive condition values', () => {
     };
 
     expect(isStepConditionSatisfied(step, { '9427287703811': 1 })).toBe(true);
-    expect(isStepConditionSatisfied(step, {})).toBe(false);
+    expect(isStepConditionSatisfied(step, {})).toBe(true);
   });
 });
 

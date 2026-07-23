@@ -446,4 +446,14 @@ describe('full-page app embed marker hydration contract', () => {
     expect(embedSource).toContain("document.querySelector('#bundle-builder-app, .bundle-widget-full-page[data-bundle-id]')");
     expect(embedSource).toContain('WolfpackFullPageBundle.init()');
   });
+
+  it('redirects full-page parent product documents to the canonical proxy outside Theme Editor', () => {
+    const embedSource = readFileSync(join(process.cwd(), 'extensions/bundle-builder/blocks/bundle-app-embed.liquid'), 'utf8');
+
+    expect(embedSource).toContain("product.variants.first.metafields[app_namespace]");
+    expect(embedSource).toContain("bundle_ui_config.bundleType == 'full_page'");
+    expect(embedSource).toContain("request.design_mode == false");
+    expect(embedSource).toContain("'/apps/product-bundles/wpb/'");
+    expect(embedSource).toContain('window.location.replace');
+  });
 });

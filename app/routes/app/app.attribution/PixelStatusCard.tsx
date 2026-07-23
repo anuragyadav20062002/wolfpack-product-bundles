@@ -40,23 +40,31 @@ export function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
   return (
     <>
       <div className={styles.pixelStatusCard} data-status={model.statusDotTone}>
-        <s-stack direction="inline" alignItems="center" justifyContent="space-between" gap="base">
-          <s-stack direction="inline" alignItems="center" gap="small">
-            <span className={styles.pixelStatusDot} aria-hidden="true" />
-            <h2 className={styles.pixelStatusTitle}>UTM Pixel Tracking</h2>
-            <s-badge tone={model.tone}>{model.statusLabel}</s-badge>
-          </s-stack>
+        <div className={styles.pixelStatusBody}>
+          <div className={styles.pixelStatusIcon} aria-hidden="true">
+            <s-icon type="globe" />
+          </div>
+          <div className={styles.pixelStatusContent}>
+            <div className={styles.pixelStatusHeading}>
+              <h2 className={styles.pixelStatusTitle}>UTM Pixel Tracking</h2>
+              <s-badge tone={model.tone}>{model.statusLabel}</s-badge>
+            </div>
+            <p className={styles.pixelStatusDescription}>{model.description}</p>
+          </div>
 
           {model.actionLabel ? (
-            <s-button
-              variant="secondary"
-              commandFor="utm-pixel-tracking-disclosure"
-              command="--show"
-            >
-              {model.actionLabel}
-            </s-button>
+            <div className={styles.pixelStatusAction}>
+              <s-button
+                variant="secondary"
+                icon="info"
+                commandFor="utm-pixel-tracking-disclosure"
+                command="--show"
+              >
+                {model.actionLabel}
+              </s-button>
+            </div>
           ) : null}
-        </s-stack>
+        </div>
       </div>
 
       {!active ? (
@@ -67,6 +75,7 @@ export function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
           <s-button
             slot="primary-action"
             variant="primary"
+            icon="check"
             loading={isSubmitting || undefined}
             disabled={isSubmitting || undefined}
             onClick={handleToggle}

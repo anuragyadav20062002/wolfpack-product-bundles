@@ -1,6 +1,5 @@
 import { useCallback, useEffect } from "react";
 import { AppLogger } from "../../../lib/logger";
-import { validateSlug } from "../../../lib/slug-utils";
 import { serializePricingDisplayOptions } from "../../../lib/pricing-display-options";
 import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness";
 import { DiscountMethod } from "../../../types/pricing";
@@ -17,54 +16,6 @@ export function useConfigureSaveController(flow: ConfigureBundleFlowDraft) {
   }, [flow]);
   const handleSave = useCallback(async () => {
     try {
-      if (flow.bundle.bundleType === "full_page" && flow.bundle.shopifyPageId) {
-        const normalizedSlugError = validateSlug(flow.normalizedPageSlug);
-        if (normalizedSlugError) {
-          flow.shopify.toast.show(normalizedSlugError, {
-            isError: true,
-            duration: 5000,
-          });
-          return;
-        }
-        if (flow.normalizedPageSlug !== (flow.bundle.shopifyPageHandle ?? "")) {
-          const renameData = new FormData();
-          renameData.append("intent", "renamePageSlug");
-          renameData.append("newSlug", flow.normalizedPageSlug);
-          const renameResponse = await fetch(window.location.pathname, {
-            method: "POST",
-            body: renameData,
-          });
-          const renameResult = (await renameResponse.json()) as {
-            success?: boolean;
-            error?: string;
-            newHandle?: string;
-            adjusted?: boolean;
-          };
-          if (
-            !renameResponse.ok ||
-            !renameResult.success ||
-            !renameResult.newHandle
-          ) {
-            flow.shopify.toast.show(
-              renameResult.error || "Could not rename page slug",
-              { isError: true, duration: 5000 },
-            );
-            return;
-          }
-          if (
-            renameResult.adjusted &&
-            renameResult.newHandle !== flow.normalizedPageSlug
-          ) {
-            flow.shopify.toast.show(
-              `The slug '${flow.normalizedPageSlug}' was taken - using '${renameResult.newHandle}' instead.`,
-              { duration: 6000 },
-            );
-          }
-          flow.setPageSlug(renameResult.newHandle);
-          flow.originalPageSlugRef.current = renameResult.newHandle;
-          flow.setHasManuallyEditedSlug(true);
-        }
-      }
       const formData = new FormData();
       formData.append("intent", "saveBundle");
       formData.append("bundleName", flow.formState.bundleName);

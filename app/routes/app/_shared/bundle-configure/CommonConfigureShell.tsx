@@ -7,6 +7,7 @@ interface CommonConfigureShellProps {
   saveForm: ReactNode;
   header: ReactNode;
   sidebar: ReactNode;
+  supplementaryContent?: ReactNode;
   children: ReactNode;
   overlays: ReactNode;
 }
@@ -18,29 +19,41 @@ export function CommonConfigureShell({
   saveForm,
   header,
   sidebar,
+  supplementaryContent,
   children,
   overlays,
 }: CommonConfigureShellProps) {
   return (
-    <div
-      className={styles.editCanvas}
-      data-admin-save-lock-active={isSaveInFlight || undefined}
-      onBeforeInputCapture={blockConfigurationChangeWhileSaving}
-      onChangeCapture={blockConfigurationChangeWhileSaving}
-      onClickCapture={blockConfigurationChangeWhileSaving}
-      onDropCapture={blockConfigurationChangeWhileSaving}
-      onInputCapture={blockConfigurationChangeWhileSaving}
-      onKeyDownCapture={blockConfigurationChangeWhileSaving}
-      onPasteCapture={blockConfigurationChangeWhileSaving}
-      onPointerDownCapture={blockConfigurationChangeWhileSaving}
-    >
-      {saveForm}
-      {header}
-      <div className={styles.editGrid}>
-        {sidebar}
-        <div className={styles.mainColumn}>{children}</div>
-      </div>
-      {overlays}
+    <div className={styles.configureQueryContainer}>
+      <s-query-container containerName="bundle-configure">
+        <div
+          className={styles.editCanvas}
+          data-admin-save-lock-active={isSaveInFlight || undefined}
+          onBeforeInputCapture={blockConfigurationChangeWhileSaving}
+          onChangeCapture={blockConfigurationChangeWhileSaving}
+          onClickCapture={blockConfigurationChangeWhileSaving}
+          onDropCapture={blockConfigurationChangeWhileSaving}
+          onInputCapture={blockConfigurationChangeWhileSaving}
+          onKeyDownCapture={blockConfigurationChangeWhileSaving}
+          onPasteCapture={blockConfigurationChangeWhileSaving}
+          onPointerDownCapture={blockConfigurationChangeWhileSaving}
+        >
+          {saveForm}
+          {header}
+          {overlays}
+          <div className={styles.editGrid}>
+            <div className={styles.leftRail}>
+              {sidebar}
+              {supplementaryContent && (
+                <div className={styles.configureSupplement}>
+                  {supplementaryContent}
+                </div>
+              )}
+            </div>
+            <div className={styles.mainColumn}>{children}</div>
+          </div>
+        </div>
+      </s-query-container>
     </div>
   );
 }

@@ -7,6 +7,8 @@ const { PricingCalculator, ToastManager } = require('../../../app/assets/bundle-
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { shouldUseMobileSummarySlotTiles } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const { shouldUseSharedDesktopSummarySlotTiles } = require('../../../app/assets/widgets/full-page/methods/side-panel-methods.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getMobileAdditionalOffersPulseState } = require('../../../app/assets/widgets/full-page/methods/mobile-summary-methods.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getMobileBottomBarActionState } = require('../../../app/assets/widgets/full-page/methods/responsive-layout-methods.js');
@@ -157,9 +159,10 @@ describe('FPB Standard mobile summary action', () => {
     const context = {
       ...createContext(),
       selectedBundle: {
-        steps: [{ pageTitle: 'Choose your product' }],
+        steps: [{ pageTitle: 'Choose your product' }, { pageTitle: 'Next step' }],
       },
       getCurrentStepContentText: fullPageMobileSummaryMethods.getCurrentStepContentText,
+      shouldRenderFullPageStepChrome: () => true,
     };
 
     const header = fullPageMobileSummaryMethods.createStepContentHeader.call(context, 0);
@@ -171,9 +174,10 @@ describe('FPB Standard mobile summary action', () => {
     const context = {
       ...createContext(),
       selectedBundle: {
-        steps: [{ pageTitle: 'Chrome async text' }],
+        steps: [{ pageTitle: 'Chrome async text' }, { pageTitle: 'Next step' }],
       },
       getCurrentStepContentText: fullPageMobileSummaryMethods.getCurrentStepContentText,
+      shouldRenderFullPageStepChrome: () => true,
     };
 
     expect(fullPageMobileSummaryMethods.getCurrentStepContentText.call(context, 0)).toEqual({
@@ -186,9 +190,10 @@ describe('FPB Standard mobile summary action', () => {
     const context = {
       ...createContext(),
       selectedBundle: {
-        steps: [{ pageTitle: 'Chrome async 08:17:02' }],
+        steps: [{ pageTitle: 'Chrome async 08:17:02' }, { pageTitle: 'Next step' }],
       },
       getCurrentStepContentText: fullPageMobileSummaryMethods.getCurrentStepContentText,
+      shouldRenderFullPageStepChrome: () => true,
     };
 
     expect(fullPageMobileSummaryMethods.getCurrentStepContentText.call(context, 0)).toEqual({
@@ -568,7 +573,7 @@ describe('FPB Standard mobile summary action', () => {
     }).shouldPulse).toBe(false);
   });
 
-  it('uses slot tiles for slot-enabled Classic and Standard compact summaries only', () => {
+  it('uses slot tiles for every slot-enabled FPB summary preset', () => {
     expect(shouldUseMobileSummarySlotTiles({
       designPreset: 'CLASSIC',
       productSlotsEnabled: true,
@@ -582,11 +587,31 @@ describe('FPB Standard mobile summary action', () => {
     expect(shouldUseMobileSummarySlotTiles({
       designPreset: 'COMPACT',
       productSlotsEnabled: true,
-    })).toBe(false);
+    })).toBe(true);
+
+    expect(shouldUseMobileSummarySlotTiles({
+      designPreset: 'HORIZONTAL',
+      productSlotsEnabled: true,
+    })).toBe(true);
 
     expect(shouldUseMobileSummarySlotTiles({
       designPreset: 'CLASSIC',
       productSlotsEnabled: false,
+    })).toBe(false);
+
+    expect(shouldUseSharedDesktopSummarySlotTiles({
+      designPreset: 'COMPACT',
+      productSlotsEnabled: true,
+    })).toBe(true);
+
+    expect(shouldUseSharedDesktopSummarySlotTiles({
+      designPreset: 'HORIZONTAL',
+      productSlotsEnabled: true,
+    })).toBe(true);
+
+    expect(shouldUseSharedDesktopSummarySlotTiles({
+      designPreset: 'CLASSIC',
+      productSlotsEnabled: true,
     })).toBe(false);
   });
 
@@ -611,12 +636,12 @@ describe('FPB Standard mobile summary action', () => {
     expect(container.getChildren()[0].getChildren()).toHaveLength(0);
   });
 
-  it('keeps Standard mobile category tabs from switching the expanded product body', () => {
+  it('uses the normal category-switching path for Standard mobile tabs', () => {
     expect(shouldCategoryTabActivateProducts({
       designPreset: 'STANDARD',
       viewportWidth: 390,
       hasCategoryEntries: true,
-    })).toBe(false);
+    })).toBe(true);
   });
 
   it('keeps desktop and non-Standard category tabs on the normal switching path', () => {

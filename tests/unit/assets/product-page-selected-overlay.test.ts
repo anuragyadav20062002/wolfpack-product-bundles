@@ -2,40 +2,51 @@ export {};
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const {
-  syncProductPageSelectedOverlay,
+  ProductPageSelectionMethods,
 } = require('../../../app/assets/widgets/product-page/methods/selection-methods.js');
 
+function createContext(marker: { remove: jest.Mock } | null = null) {
+  const productCard = {
+    classList: {
+      contains: jest.fn(() => false),
+      add: jest.fn(),
+      remove: jest.fn(),
+    },
+    querySelector: jest.fn((selector: string) => (
+      selector === '.selected-overlay' ? marker : null
+    )),
+    ownerDocument: {
+      createElement: jest.fn(() => ({ style: {} })),
+    },
+    prepend: jest.fn(),
+  };
+  const context = {
+    elements: { modal: null },
+    container: { querySelector: jest.fn(() => productCard) },
+    selectedBundle: { steps: [{}], validateQuantityPerProduct: null },
+    getVariantAvailable: jest.fn(() => ({ available: null, outOfStock: false })),
+    _resolveText: jest.fn((_key: string, fallback: string) => fallback),
+  };
+
+  return { context, productCard };
+}
+
 describe('PPB selected product marker', () => {
-  it('creates the marker when an initially empty card becomes selected', () => {
-    let marker: Record<string, unknown> | null = null;
-    const productCard = {
-      querySelector: jest.fn(() => marker),
-      ownerDocument: {
-        createElement: jest.fn(() => ({ style: {} })),
-      },
-      prepend: jest.fn((node) => {
-        marker = node;
-      }),
-    };
+  it('does not create a tick badge when a card becomes selected', () => {
+    const { context, productCard } = createContext();
 
-    const result = syncProductPageSelectedOverlay(productCard, 1);
+    ProductPageSelectionMethods.updateProductQuantityDisplay.call(context, 0, 'variant-1', 1);
 
-    expect(productCard.prepend).toHaveBeenCalledWith(result);
-    // The unit uses a minimal DOM double because the unit project runs in Node.
-    // eslint-disable-next-line jest-dom/prefer-to-have-text-content
-    expect(result.textContent).toBe('✓');
+    expect(productCard.prepend).not.toHaveBeenCalled();
+    expect(productCard.ownerDocument.createElement).not.toHaveBeenCalled();
   });
 
-  it('does not create a marker for an unselected card', () => {
-    const productCard = {
-      querySelector: jest.fn(() => null),
-      ownerDocument: {
-        createElement: jest.fn(),
-      },
-      prepend: jest.fn(),
-    };
+  it('removes a stale tick badge while updating selection state', () => {
+    const marker = { remove: jest.fn() };
+    const { context } = createContext(marker);
 
-    expect(syncProductPageSelectedOverlay(productCard, 0)).toBeNull();
-    expect(productCard.prepend).not.toHaveBeenCalled();
+    ProductPageSelectionMethods.updateProductQuantityDisplay.call(context, 0, 'variant-1', 1);
+
+    expect(marker.remove).toHaveBeenCalledTimes(1);
   });
 });

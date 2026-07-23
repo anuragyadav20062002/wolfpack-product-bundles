@@ -8,6 +8,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package.json package-lock.json* ./
+COPY scripts/install-git-hooks.mjs ./scripts/install-git-hooks.mjs
 
 RUN npm ci --omit=dev && npm cache clean --force
 # Remove CLI packages since we don't need them in production by default.

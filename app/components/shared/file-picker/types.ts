@@ -9,6 +9,9 @@ export interface FilePickerProps {
   label?: string;
   hint?: string;
   uploadLabel?: string;
+  triggerIcon?: "desktop" | "mobile";
+  uploadButtonAction?: "upload" | "openPicker";
+  fitPreviewToTrigger?: boolean;
   maxUploadBytes?: number;
   maxUploadErrorMessage?: string;
   autoOpen?: boolean;
@@ -16,7 +19,7 @@ export interface FilePickerProps {
 }
 
 export type FilePickerDialogProps = {
-  dialogRef: RefObject<HTMLDialogElement>;
+  dialogRef: RefObject<any>;
   label: string;
   search: string;
   setSearch: (value: string) => void;

@@ -126,6 +126,7 @@ export function PpbDiscountLanguageModals() {
         </s-stack>
         <s-button
           slot="primary-action"
+          variant="primary"
           onClick={() => setIsBundleQuantityMultiLangModalOpen(false)}
         >
           Save and close
@@ -236,6 +237,7 @@ export function PpbDiscountLanguageModals() {
         </s-stack>
         <s-button
           slot="primary-action"
+          variant="primary"
           onClick={() => setIsProgressBarMultiLangModalOpen(false)}
         >
           Save and close

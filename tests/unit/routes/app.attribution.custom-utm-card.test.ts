@@ -16,6 +16,15 @@ jest.mock("@remix-run/react", () => ({
   useNavigate: jest.fn(() => jest.fn()),
 }));
 
+jest.mock("@shopify/app-bridge-react", () => ({
+  useAppBridge: () => ({
+    saveBar: {
+      show: jest.fn().mockResolvedValue(undefined),
+      hide: jest.fn().mockResolvedValue(undefined),
+    },
+  }),
+}));
+
 jest.mock("../../../app/components/analytics", () => ({
   BundlePerformanceMatrix: () => null,
   FunnelHero: () => null,
@@ -51,7 +60,9 @@ describe("CustomUtmTrackingCard", () => {
     expect(view).toContain("Wolfpack saves up to 10 valid names");
     expect(view).toContain("Do not track shopper identifiers");
     expect(view).toContain("new visits after you save");
-    expect(view).toContain("Save custom attributes");
+    expect(view).toContain('id="analytics-custom-utm-save-bar"');
+    expect(view).toContain(">Save</button>");
+    expect(view).toContain(">Discard</button>");
   });
 
   it("renders saved custom attributes as removable chips", async () => {
@@ -72,7 +83,7 @@ describe("CustomUtmTrackingCard", () => {
     expect(view).toContain('aria-label="Remove partner_id"');
   });
 
-  it("keeps the save button label stable and shows an inline spinner while saving", async () => {
+  it("disables contextual save actions while saving", async () => {
     mockFetcherState = "submitting";
     const { CustomUtmTrackingCard } = await import(
       "../../../app/routes/app/app.attribution/AttributionDashboard"
@@ -84,10 +95,8 @@ describe("CustomUtmTrackingCard", () => {
       }),
     );
 
-    expect(view).toContain("Save custom attributes");
-    expect(view).toContain("<s-spinner");
-    expect(view).not.toContain("Updating tracking");
-    expect(view).not.toContain('<s-button variant="primary" disabled');
+    expect(view).toContain('<button variant="primary" disabled="">Save</button>');
+    expect(view).toContain('<button disabled="">Discard</button>');
   });
 
   it("removes a saved custom attribute from the submitted parameter list", async () => {

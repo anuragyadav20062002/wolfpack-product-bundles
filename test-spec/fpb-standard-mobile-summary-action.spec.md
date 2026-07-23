@@ -1,10 +1,38 @@
+---
+schema_version: 1
+id: fpb-standard-mobile-summary-action
+title: Test Spec for FPB Standard Mobile Summary Action
+type: test-spec
+status: active
+summary: Covers mobile summary actions, category switching, defaults, validation, and navigation behavior for FPB storefronts.
+last_audited: 2026-07-21
+owners:
+  - Wolfpack Product Bundles
+domains:
+  - storefront
+systems:
+  - full-page-bundle-widget
+source_paths:
+  - app/assets/widgets/full-page/methods/product-grid-methods.js
+  - tests/unit/assets/fpb-standard-mobile-summary-action.test.ts
+related_docs:
+  - docs/competitor-analysis/fpb-feature-to-storefront-matrix.md
+tags:
+  - fpb
+  - mobile
+  - behavior
+keywords:
+  - Standard category switching
+  - mobile summary action
+---
+
 # Test Spec: FPB Standard Mobile Summary Action
 **Spec ID:** fpb-standard-mobile-summary-action
 **Created:** 2026-06-28
 
 ## Purpose
 
-Lock the storefront behavior observed in EB Standard and Classic: a one-step FPB mobile footer remains an add-to-cart action even when the quantity rule is not yet satisfied, Classic keeps the underfilled final CTA clickable so the existing validation toast appears on press, the compact mobile summary can expand before any product is selected, Standard mobile category tabs do not directly swap the expanded product body, and direct default selections count toward cart/discount totals without satisfying exact step-rule navigation.
+Lock the storefront behavior observed in EB Standard and Classic: a one-step FPB mobile footer remains an add-to-cart action even when the quantity rule is not yet satisfied, Classic keeps the underfilled final CTA clickable so the existing validation toast appears on press, the compact mobile summary can expand before any product is selected, Standard mobile category tabs switch the active category and product body, and direct default selections count toward cart/discount totals without satisfying exact step-rule navigation.
 
 ## Test Cases
 
@@ -18,7 +46,7 @@ Lock the storefront behavior observed in EB Standard and Classic: a one-step FPB
 | 4 | Alternate bottom bar final step with unmet conditions | `isLastStep=true`, `isComplete=false`, `conditionlessMobile=false` | Action state resolves to add-to-cart and disabled | Prevents the same final-step mismatch in the non-summary mobile bar path. |
 | 5 | Alternate bottom bar non-final step | `isLastStep=false`, `conditionlessMobile=false` | Action state resolves to next and enabled | Preserves multi-step navigation behavior in the non-summary mobile bar path. |
 | 6 | Compact summary empty state toggle | No selected products and collapsed summary tray | Summary tray state changes to expanded and open animation is scheduled | EB allows opening the mobile summary before product selection. |
-| 7 | Standard mobile category tab click | `STANDARD`, mobile width, category-backed step | Tab click does not activate a different product body | EB mobile expands categories from the lower row. |
+| 7 | Standard mobile category tab click | `STANDARD`, mobile width, category-backed step | Tab click activates the selected category and its product body | Current corrected EB Standard mobile evidence switches from 80 populated cards to the native empty state. |
 | 8 | Desktop or non-Standard category tab click | Desktop Standard or mobile Compact | Tab click activates the selected category normally | Preserves existing non-target behavior. |
 | 9 | Direct default product normalization | EB-style `defaultProductsData` with selected product | Normalized default item contains product id, variant id, title, price, image, quantity | Seeds full-page direct defaults from the durable runtime payload. |
 | 10 | Direct default merge | Step product list excludes default product | Default product is merged into step data for totals/cart lookup | Lets a preselected product count for discount/cart totals even when absent from the active step products. |

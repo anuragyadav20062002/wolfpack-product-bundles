@@ -5,6 +5,7 @@ export type UtmPixelStatusBannerModel = {
   statusLabel: "Active" | "Not active";
   tone: "success" | "neutral";
   statusDotTone: "online" | "offline";
+  description: string;
   actionLabel: "Learn more" | null;
   opensDisclosure: boolean;
 };
@@ -15,6 +16,7 @@ export function getUtmPixelStatusBannerModel(active: boolean): UtmPixelStatusBan
       statusLabel: "Active",
       tone: "success",
       statusDotTone: "online",
+      description: "Campaign attribution is active and following Shopify's customer privacy choices.",
       actionLabel: null,
       opensDisclosure: false,
     };
@@ -24,6 +26,7 @@ export function getUtmPixelStatusBannerModel(active: boolean): UtmPixelStatusBan
     statusLabel: "Not active",
     tone: "neutral",
     statusDotTone: "offline",
+    description: "Activate tracking to connect UTM-tagged visits with bundle orders.",
     actionLabel: "Learn more",
     opensDisclosure: true,
   };

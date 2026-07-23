@@ -6,6 +6,8 @@ import { markBundlePreviewComplete } from "../../../lib/bundle-preview-readiness
 import { verifyAppEmbedEnabledBeforePreview } from "../../../lib/app-embed-status-check.client";
 import { pickPpbPreviewUrl } from "../../../lib/ppb-preview-url";
 import { prepareStorefrontPreviewForOpen } from "../../../lib/storefront-sync-preview.client";
+import { validatePpbWidgetPlacementBeforePreview } from "../../../lib/ppb-widget-placement.client";
+import { openThemeEditorInNewTab } from "../../../lib/theme-editor-navigation.client";
 import type { BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import type { TourStep } from "../../../components/bundle-configure/tourSteps";
 
@@ -108,6 +110,23 @@ export function usePpbPreviewReadinessHandlers({
             {},
             err,
           );
+        }
+      }
+      if (isStorefrontUrl) {
+        const placement = await validatePpbWidgetPlacementBeforePreview(
+          window.location.href,
+        );
+        if (!placement.ready) {
+          base.shopify.toast.show(
+            placement.message ?? "Place the bundle widget before previewing",
+            { isError: true, duration: 5000 },
+          );
+          if (placement.installationLink) {
+            openThemeEditorInNewTab(placement.installationLink);
+          } else {
+            base.setActiveSection("bundle_visibility");
+          }
+          return false;
         }
       }
       window.open(productUrl, "_blank", "noopener,noreferrer");
@@ -230,6 +249,7 @@ export function usePpbPreviewReadinessHandlers({
           "Please save or discard your changes before switching sections",
           { isError: true, duration: 4000 },
         );
+        void base.shopify.saveBar.leaveConfirmation();
         return;
       }
       base.setActiveSection(section);
@@ -296,7 +316,7 @@ export function usePpbPreviewReadinessHandlers({
         "Save or discard your changes before moving to another section.",
         { isError: true, duration: 5000 },
       );
-      void (base.shopify as any).saveBar?.leaveConfirmation?.();
+      void base.shopify.saveBar.leaveConfirmation();
       return;
     }
     navigateBackOrFallback(base.navigate, "/app/dashboard", { replaceFallback: true });

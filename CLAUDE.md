@@ -18,6 +18,38 @@ Document only durable knowledge:
 - **Gotcha moments** — document non-obvious debugging findings, Shopify/API behavior, build constraints, deployment quirks, or data-model facts that will matter again.
 - **Routine edits** — do not create process docs for ordinary implementation progress, cosmetic changes, or one-off fixes.
 
+### Documentation Metadata Standard
+
+Every new Markdown documentation file, and every existing Markdown documentation file that receives a material documentation update, must begin with YAML frontmatter using exactly these fields in this order:
+
+```yaml
+---
+schema_version: 1
+id: <stable-kebab-case-id>
+title: <document-title>
+type: <document-type>
+status: <document-status>
+summary: <one-sentence-summary>
+last_audited: YYYY-MM-DD
+owners:
+  - <owner>
+domains:
+  - <domain>
+systems:
+  - <system>
+source_paths:
+  - <source-path>
+related_docs:
+  - <related-document-path>
+tags:
+  - <tag>
+keywords:
+  - <search-keyword>
+---
+```
+
+Do not omit, rename, reorder, or add metadata fields unless the user explicitly changes this standard. Use empty YAML lists (`[]`) when a list field has no values. Keep `id` stable across renames and moves, and update `last_audited` whenever the document is materially verified or revised.
+
 ---
 
 ## 🧪 Test-Driven Development (TDD)
@@ -138,6 +170,8 @@ Check availability: `mcp__shopify-dev-mcp__learn_shopify_api(api: "polaris-app-h
 ---
 
 ## 🔄 No Backwards Compatibility Rule
+
+Do not consider writing any fallbacks to support legacy code. Ignore any legacy code and strive to update/remove any legacy code when you encounter it.
 
 **NEVER add backwards-compatibility code.** The app has a "Sync Bundle" feature — merchants re-sync to pick up new defaults.
 
