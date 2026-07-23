@@ -168,19 +168,17 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
           <button
             type="button"
             data-tour-target="fpb-readiness-score"
-            className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
+            className={styles.collapsed}
             onClick={toggle}
             aria-label={t("common.readiness.toggleAccessibility")}
           >
             {donut}
-            {expanded && (
-              <div className={styles.scoreLabel}>
-                <span className={styles.scoreLabelTitle}>{t("common.readiness.title")}</span>
-                <span className={styles.scoreLabelSub}>
-                  {t("common.readiness.helper")}
-                </span>
-              </div>
-            )}
+            <div className={styles.scoreLabel}>
+              <span className={styles.scoreLabelTitle}>{t("common.readiness.title")}</span>
+              <span className={styles.scoreLabelSub}>
+                {t("common.readiness.helper")}
+              </span>
+            </div>
             {chevron}
           </button>
         )}
