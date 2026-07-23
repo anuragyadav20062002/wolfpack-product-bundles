@@ -125,9 +125,11 @@
         "productPage": "Product Page"
       },
       "templateLabel": "Template",
-      "mode": {
-        "label": "Preview state",
+      "surfaceSelector": {
+        "label": "Preview surface",
         "builder": "Builder",
+        "product-picker": "Product picker",
+        "cart-summary": "Cart / summary",
         "loading": "Loading",
         "validation": "Validation",
         "upsell": "Upsell"
@@ -186,6 +188,7 @@
         "back": "Back",
         "next": "Continue",
         "emptySlot": "Choose a product",
+        "chooseProduct": "Choose a product",
         "slotNumber": "Product {{number}}",
         "addBundle": "Add bundle to cart",
         "loadingBody": "Preparing your bundle…",
