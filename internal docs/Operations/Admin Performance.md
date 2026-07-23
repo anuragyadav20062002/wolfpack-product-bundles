@@ -116,11 +116,13 @@ first-render JavaScript instead.
 
 The Settings landing route renders a small Polaris card shell and keeps the
 workspace implementation behind one React lazy boundary. The 2026-07-23 local
-production build split the initial Settings route (`app.settings`, 2.95 kB /
-1.25 kB gzip) from the complete `SettingsRoute` workspace (70.51 kB / 16.04 kB
-gzip). Design is statically part of that post-click workspace chunk, so entering
-Design does not wait for a second sequential JavaScript request. The workspace
-chunk is not required for the first Settings paint.
+production build split the initial Settings route (`app.settings`, 2.99 kB /
+1.27 kB gzip) from the complete `SettingsRoute` workspace (81.39 kB / 18.60 kB
+gzip, plus 22.22 kB / 4.30 kB gzip CSS). The template-specific scene registry,
+fixture model, and local surface renderers account for the workspace increase.
+Design is statically part of that post-click workspace chunk, so entering Design
+does not wait for a second sequential JavaScript request. The workspace chunk is
+not required for the first Settings paint.
 
 The three landing cards are the complete interactive targets and do not render
 separate button-like `Configure` labels. After a card is selected, the Suspense
@@ -136,13 +138,20 @@ beneath it; phone containers stack preview, navigation, then fields. All
 breakpoints are container-driven because the usable width of a Shopify Admin
 iframe is independent of the browser's top-level viewport.
 
-The preview uses local fixture markup, a canonical template descriptor registry,
-and theme values derived from the normalized storefront Design runtime. Builder,
-Loading, Validation, and Upsell are deterministic representative states rather
-than storefront interactions. It does not fetch bundle data, load remote media,
-embed a storefront iframe, or duplicate the widget runtime. Local Design editing
-and preview rendering therefore remain available when the shop has no
-storefront-ready bundle; only the separate Preview Bundle action requires one.
+The preview uses local fixture markup and media, canonical template descriptors
+derived from the storefront registries, and theme values from the normalized
+storefront Design runtime. Builder, Product Picker, Cart / Summary, Loading,
+Validation, and Upsell are deterministic representative surfaces rather than
+storefront interactions. Only slot templates include Product Picker. It does not
+fetch bundle data, load remote media, embed a storefront iframe, duplicate the
+widget runtime, mutate a cart, or persist preview state. Local Design editing and
+preview rendering therefore remain available when the shop has no storefront-ready
+bundle; only the separate Preview Bundle action requires one.
+
+Fixture product PNGs are rendered through `OptimisedImage`, so production builds
+emit AVIF/WebP siblings while preserving explicit dimensions. Keep those sources
+compact and local; do not preload them on the Settings landing route because the
+Design workspace remains behind the post-click lazy boundary.
 
 For interaction acceptance, measure at least ten cache-bypassed Design entries
 from card activation until the live preview controls and surface are usable.

@@ -199,9 +199,24 @@ structures.
 The preview consumes the normalized output of `buildSettingsDesignRuntime`
 rather than maintaining a separate partial color mapper. A field-target registry
 associates every editable preview-relevant control with its semantic surface,
-applicable template set, and representative Builder, Loading, Validation, or
-Upsell state. Disabled loading-GIF placeholders are not treated as configurable
-preview fields.
+applicable template set, and representative Builder, Product Picker, Cart /
+Summary, Loading, Validation, or Upsell surface. The surface selector exposes
+only scenes supported by the selected template. A template change preserves a
+valid surface and otherwise returns to Builder. Disabled loading-GIF placeholders
+are not treated as configurable preview fields.
+
+Descriptor identity and layout modes come from `mapTemplateSelection` and the
+FPB/PPB storefront template registries. The Admin adapter owns only preview
+composition details: semantic scene regions, supported surfaces, neutral PDP
+framing, fixture columns, and field focus targets. It does not establish a
+second template identity contract.
+
+The deterministic fixture covers multiple steps and categories, discount tiers,
+selected products with quantity controls, unselected products, empty slots,
+validation copy, and an upsell. Product images are tracked local PNG sources
+rendered through `OptimisedImage`; production builds generate ignored AVIF and
+WebP siblings. The public FPB/PPB template screenshots remain visual references
+and are never rendered as previews.
 
 The local preview deliberately does not import the storefront widget runtime,
 fetch bundle data, embed an iframe, or reproduce cart mutations. The separate

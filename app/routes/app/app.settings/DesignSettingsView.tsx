@@ -2,7 +2,6 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import { DESIGN_CONFIGURATION, EXPERT_COLOR_CONTROLS } from "../../../lib/admin-configuration-surfaces";
 import { BundlePreviewModal, DesignFields, getDesignIconKey } from "./SettingsDesignFields";
 import { DesignLivePreview } from "./DesignLivePreview";
-import { buildDesignPreviewTheme } from "./design-preview-model";
 import styles from "./DesignSettingsView.module.css";
 import { SettingsContextualSaveBar, SettingsToast } from "./SettingsFeedback";
 
@@ -60,7 +59,6 @@ export function DesignSettingsView({
     : selectedDesignTab.fields;
   const isBrandColorsPanelGated = isExpertColorControls && selectedDesignTab.title === "Brand Colors" && !isExpertScopeActive;
   const hasPreviewableBundle = previewBundles.some((bundle) => Boolean(bundle.viewUrl));
-  const previewTheme = buildDesignPreviewTheme(designFieldValues, isExpertColorControls);
   const [activePreviewFieldKey, setActivePreviewFieldKey] = useState<string | null>(null);
   const resetSelectedDesignTab = () => {
     setDesignFieldValues((current) => ({
@@ -164,7 +162,8 @@ export function DesignSettingsView({
           </s-button>
         </aside>
         <DesignLivePreview
-          previewTheme={previewTheme}
+          fieldValues={designFieldValues}
+          isExpertControlsEnabled={isExpertColorControls}
           activeFieldKey={activePreviewFieldKey}
         />
         <section className={styles.inspectorContent}>
