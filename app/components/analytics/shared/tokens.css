@@ -541,6 +541,15 @@
   .wpb-matrix-table {
     min-width: 720px;
   }
+
+  .wpb-matrix-th:first-child,
+  .wpb-matrix-cell:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--wpb-ink-100);
+    box-shadow: 1px 0 0 var(--wpb-line);
+  }
 }
 
 @media (max-width: 520px) {
@@ -572,5 +581,12 @@
 
   .wpb-activity-row > .wpb-nowrap {
     grid-column: 2;
+  }
+}
+
+@media (max-width: 359px) {
+  .wpb-funnel-grid[data-step-count="4"],
+  .wpb-funnel-grid[data-step-count="5"] {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

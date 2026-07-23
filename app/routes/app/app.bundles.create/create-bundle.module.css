@@ -82,8 +82,32 @@
 }
 
 @media (max-width: 600px) {
+  .page {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 18px 16px 88px;
+    overflow-x: clip;
+  }
+
   .bundleTypeGrid {
     grid-template-columns: 1fr;
+  }
+
+  .pageHeaderLeft,
+  .bundleCardBody,
+  .layoutCardBody {
+    align-items: flex-start;
+  }
+
+  .modalActions,
+  .wizardFooter {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .modalActions > *,
+  .wizardFooter > * {
+    width: 100%;
   }
 }
 

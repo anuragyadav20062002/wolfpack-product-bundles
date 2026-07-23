@@ -27,7 +27,7 @@ export function shouldUseMobileSummarySlotTiles({ designPreset, productSlotsEnab
   if (productSlotsEnabled !== true) return false;
 
   const preset = typeof designPreset === 'string' ? designPreset.trim().toUpperCase() : '';
-  return preset === 'STANDARD' || preset === 'CLASSIC';
+  return ['STANDARD', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
 }
 
 export function getMobileAdditionalOffersPulseState({

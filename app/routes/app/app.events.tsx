@@ -2,6 +2,7 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { authenticate } from "../../shopify.server";
 import { AccordionItem } from "../../components/AccordionItem";
+import styles from "../../styles/routes/app-events.module.css";
 import { CartPropertyFixContent } from "../../components/CartPropertyFixCard";
 import { navigateBackOrFallback } from "../../lib/navigation";
 
@@ -81,8 +82,9 @@ export default function EventsPage() {
         </button>
       </ui-title-bar>
 
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
-        <s-stack direction="block" gap="large">
+      <s-query-container containerName="events-page">
+        <div className={styles.pageShell}>
+          <s-stack direction="block" gap="large">
 
           {/* Latest Updates */}
           <s-stack direction="block" gap="base">
@@ -122,8 +124,9 @@ export default function EventsPage() {
             </s-stack>
           </s-stack>
 
-        </s-stack>
-      </div>
+          </s-stack>
+        </div>
+      </s-query-container>
     </>
   );
 }
