@@ -25,13 +25,14 @@
   align-items: flex-start;
 }
 
-/* Collapsed trigger — compact pill (gauge + chevron only) */
+/* Collapsed trigger — gauge, score label, and chevron */
 .collapsed {
   appearance: none;
   font: inherit;
   display: flex;
   align-items: center;
   gap: 10px;
+  width: min(360px, calc(100vw - 40px));
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 16px;
@@ -50,11 +51,6 @@
 .collapsed:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   border-color: #ccc;
-}
-
-/* Expanded trigger — wide to accommodate score label text */
-.collapsedOpen {
-  width: min(360px, calc(100vw - 40px));
 }
 
 .arc {
@@ -78,10 +74,7 @@
 .scoreLabelSub {
   font-size: 11px;
   color: #6d7175;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: 1.3;
 }
 
 .chevron {
